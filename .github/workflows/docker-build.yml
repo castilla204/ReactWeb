@@ -35,4 +35,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/ReactWeb:latest  # Cambia 'nombre-del-repo' por el nombre de tu repositorio en Docker Hub
+          tags: ${{ secrets.DOCKER_USERNAME }}/reactweb:latest  # Cambia 'nombre-del-repo' por el nombre de tu repositorio en Docker Hub
