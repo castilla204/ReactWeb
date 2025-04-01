@@ -1,4 +1,4 @@
-# Deployment
+# k8s/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,7 +21,6 @@ spec:
         - containerPort: 80
 
 ---
-# Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -33,10 +32,9 @@ spec:
     targetPort: 80
   selector:
     app: react-web
-  type: NodePort  # Para acceso externo, ajusta según necesidad
+  type: NodePort
 
 ---
-# HPA (Autoescalado)
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
