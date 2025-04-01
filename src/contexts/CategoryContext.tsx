@@ -1,5 +1,6 @@
 import  { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getAuthToken } from '../lib/auth';
+import { API_CONFIG } from '../config/api';
 
 interface Category {
     id: number;
@@ -30,7 +31,7 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await fetch('http://localhost:7124/api/Categories', {
+                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.categories.list}`, {
                     headers: getAuthToken() ? {
                         'Authorization': `Bearer ${getAuthToken()}`
                     } : {}
