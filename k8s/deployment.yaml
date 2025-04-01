@@ -17,6 +17,7 @@ spec:
       containers:
       - name: react-web
         image: erizo9/reactweb:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
 
