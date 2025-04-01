@@ -1,6 +1,6 @@
 // API configuration
 export const API_CONFIG = {
-    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:7124',
+    baseUrl: import.meta.env.VITE_API_URL || 'http://new-api-svc:80',
     endpoints: {
         auth: {
             googleAuth: '/api/User/google-auth',
