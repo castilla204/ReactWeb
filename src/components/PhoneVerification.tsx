@@ -4,6 +4,8 @@ import { getAuthToken } from '../lib/auth';
 import { useAuth } from '../contexts/AuthContext';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
+import { API_CONFIG } from '../config/api';
+
 
 interface PhoneVerificationProps {
     onVerificationComplete: () => void;
@@ -24,7 +26,7 @@ export function PhoneVerification({ onVerificationComplete }: PhoneVerificationP
 
         try {
             const formattedPhone = '+' + phoneNumber;
-            const response = await fetch('http://localhost:7124/api/User/send-verification', {
+            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.sendVerification}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -53,7 +55,7 @@ export function PhoneVerification({ onVerificationComplete }: PhoneVerificationP
 
         try {
             const formattedPhone = '+' + phoneNumber;
-            const response = await fetch('http://localhost:7124/api/User/verify-code', {
+            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.verifyCode}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
