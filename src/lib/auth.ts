@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:7124';
+const API_URL = 'http://new-api-svc:80';
 
 export async function authenticateWithGoogle(accessToken: string, email: string, name: string, googleId: string) {
     try {
