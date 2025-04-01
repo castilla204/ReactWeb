@@ -428,7 +428,7 @@ const App: React.FC = React.memo(() => {
                                                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-500 to-blue-600 p-8 flex flex-col justify-between min-h-[320px]">
                                                     <div>
                                                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                                                            The Best Platform<br />
+                                                            The Best Platform mami <br />
                                                             for Car Search
                                                         </h2>
                                                         <p className="text-blue-100 text-sm md:text-base mb-6">
