@@ -42,7 +42,6 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
                 }
 
                 const data = await response.json();
-                console.log('Fetched categories:', data);
                 setCategories(data);
             } catch (err) {
                 console.error('Error fetching categories:', err);
