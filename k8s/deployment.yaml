@@ -15,15 +15,14 @@ spec:
     spec:
       containers:
       - name: react-web
-        image: erizo9/reactweb:834ed26e6ca8c7c069b305e3c0071ecf81ccf212
+        image: erizo9/reactweb:834ed26e6ca8c7c069b305e3c0071ecf81ccf212  # El workflow lo actualizará
         imagePullPolicy: Always
         ports:
         - containerPort: 80
         env:
-        - name: REACT_APP_API_URL
-          value: "http://new-api-svc"  # Corrige esto para usar el servicio interno
         - name: NODE_ENV
           value: "production"
+        # Si usas rutas relativas (/api/), no necesitas REACT_APP_API_URL
 
 ---
 apiVersion: v1
