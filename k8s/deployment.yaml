@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: react-web
-        image: erizo9/reactweb:4cf080597535ac7b3be46283077e3778c06f0362  # El workflow lo actualizará
+        image: erizo9/reactweb:834ed26e6ca8c7c069b305e3c0071ecf81ccf212
         imagePullPolicy: Always
         ports:
         - containerPort: 80
