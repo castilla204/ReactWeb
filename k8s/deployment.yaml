@@ -16,10 +16,15 @@ spec:
     spec:
       containers:
       - name: react-web
-        image: erizo9/reactweb:latest
+        image: erizo9/reactweb:latest  # Cambia a erizo9/reactweb:<SHA> si usas tags dinámicos
         imagePullPolicy: Always
         ports:
         - containerPort: 80
+        env:  # Opcional: añade tus variables de entorno aquí
+        - name: REACT_APP_API_URL
+          value: "http://api.example.com"
+        - name: NODE_ENV
+          value: "production"
 
 ---
 apiVersion: v1
