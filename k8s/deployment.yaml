@@ -1,4 +1,3 @@
-# k8s/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,13 +15,13 @@ spec:
     spec:
       containers:
       - name: react-web
-        image: erizo9/reactweb:latest  # Cambia a erizo9/reactweb:<SHA> si usas tags dinámicos
+        image: erizo9/reactweb:4cf080597535ac7b3be46283077e3778c06f0362  # El workflow lo actualizará
         imagePullPolicy: Always
         ports:
         - containerPort: 80
-        env:  # Opcional: añade tus variables de entorno aquí
+        env:
         - name: REACT_APP_API_URL
-          value: "http://api.example.com"
+          value: "http://new-api-svc"  # Corrige esto para usar el servicio interno
         - name: NODE_ENV
           value: "production"
 
