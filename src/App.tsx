@@ -27,19 +27,10 @@ const App: React.FC = React.memo(() => {
     const [currentStep, setCurrentStep] = useState(0);
     const [showAdminPanel, setShowAdminPanel] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
-    const [, setCurrentWordIndex] = useState(0);
-    const rotatingWords = ['Coche', 'Casa', 'Moto', 'Portátil'];
     const [notification, setNotification] = useState<{
         type: NotificationType;
         message: string;
     } | null>(null);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentWordIndex((prev) => (prev + 1) % rotatingWords.length);
-        }, 2000);
-        return () => clearInterval(interval);
-    }, []);
 
     const [searchParameters, setSearchParameters] = useState<any>(null);
     const [formData, setFormData] = useState({
@@ -428,7 +419,7 @@ const App: React.FC = React.memo(() => {
                                                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-500 to-blue-600 p-8 flex flex-col justify-between min-h-[320px]">
                                                     <div>
                                                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                                                            The Best Platform mami <br />
+                                                            The Best Platform<br />
                                                             for Car Search
                                                         </h2>
                                                         <p className="text-blue-100 text-sm md:text-base mb-6">

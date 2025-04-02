@@ -29,7 +29,7 @@ function ImageGallery({ images, title, currentIndex, onImageSelect }: ImageGalle
                     className="w-full h-full object-contain"
                     onError={(e) => {
                         const img = e.target as HTMLImageElement;
-                        img.src = "/src/media/Car.png"; // Fallback image
+                        img.src = new URL('../media/Car.png', import.meta.url).href; // Fallback image
                     }}
                 />
             </div>
@@ -49,7 +49,7 @@ function ImageGallery({ images, title, currentIndex, onImageSelect }: ImageGalle
                             className="w-full h-full object-contain"
                             onError={(e) => {
                                 const img = e.target as HTMLImageElement;
-                                img.src = "/src/media/Car.png"; // Fallback image
+                                img.src = new URL('../media/Car.png', import.meta.url).href; // Fallback image
                             }}
                         />
                     </button>

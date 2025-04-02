@@ -1,10 +1,10 @@
-const API_URL = 'http://new-api-svc:80';
+import { API_CONFIG } from '../config/api';
 
 export async function authenticateWithGoogle(accessToken: string, email: string, name: string, googleId: string) {
     try {
-        console.log('Sending auth request to:', `${API_URL}/api/User/google-auth`);
+        console.log('Sending auth request to:', API_CONFIG.endpoints.auth.googleAuth);
 
-        const response = await fetch(`${API_URL}/api/User/google-auth`, {
+        const response = await fetch(API_CONFIG.endpoints.auth.googleAuth, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
