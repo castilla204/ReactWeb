@@ -1,4 +1,4 @@
-# Etapa de construcción
+# Etapa de construcciÃ³n
 FROM node:20 AS build
 WORKDIR /app
 COPY package*.json ./
@@ -6,9 +6,9 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Etapa de producción
+# Etapa de producciÃ³n
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf  # Añade esta línea para usar la config personalizada
+COPY nginx.conf /etc/nginx/conf.d/default.conf  # ConfiguraciÃ³n personalizada para proxy
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
