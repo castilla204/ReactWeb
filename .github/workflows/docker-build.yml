@@ -31,5 +31,4 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/reactweb:latest
             ${{ secrets.DOCKER_USERNAME }}/reactweb:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Sin caché para forzar un build limpio
