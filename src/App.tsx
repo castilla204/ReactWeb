@@ -420,7 +420,7 @@ const App: React.FC = React.memo(() => {
                                                     <div>
                                                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
                                                             The Best Platform<br />
-                                                            for Car Search papii
+                                                            for Car Search chuloo
                                                         </h2>
                                                         <p className="text-blue-100 text-sm md:text-base mb-6">
                                                             Ease of doing a car search safely and<br />
