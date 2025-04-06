@@ -17,7 +17,7 @@ spec:
           service:
             name: react-web-svc
             port:
-              number: 80  # O 443 si prefieres HTTPS interno
+              number: 443  # Cambia de 80 a 443
   - host: www.atrapo.io
     http:
       paths:
@@ -27,7 +27,7 @@ spec:
           service:
             name: react-web-svc
             port:
-              number: 80  # O 443 si prefieres HTTPS interno
+              number: 443  # Cambia de 80 a 443
   tls:
   - hosts:
     - atrapo.io
