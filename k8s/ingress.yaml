@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: react-web-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: atrapo.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: react-web-svc
+            port:
+              number: 80  # O 443 si prefieres HTTPS interno
+  - host: www.atrapo.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: react-web-svc
+            port:
+              number: 80  # O 443 si prefieres HTTPS interno
+  tls:
+  - hosts:
+    - atrapo.io
+    - www.atrapo.io
+    secretName: react-web-ssl
