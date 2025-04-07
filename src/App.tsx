@@ -16,6 +16,7 @@ import { SearchParameterForm } from './components/SearchParameterForm'
 import { SearchDashboard } from './components/SearchDashboard'
 import { removeAuthToken } from './lib/auth'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import { AdDetails } from './components/AdDetails'
 import { Notification, NotificationType } from './components/Notification';
 import { useEffect } from 'react';
@@ -359,6 +360,7 @@ const App: React.FC = React.memo(() => {
                     <section className="container mx-auto px-6 min-h-screen flex flex-col pt-24">
                         <Routes>
                             <Route path="/verify-phone" element={<PhoneVerificationPage />} />
+                            <Route path="/privacy-policy.html" element={<PrivacyPolicy />} />
                             <Route path="/ad/:id" element={<AdDetails onBack={() => window.history.back()} />} />
                             <Route path="/" element={showAdminPanel ? (
                                 <UserManagement onBack={() => setShowAdminPanel(false)} />
@@ -420,7 +422,7 @@ const App: React.FC = React.memo(() => {
                                                     <div>
                                                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
                                                             The Best Platform<br />
-                                                            for Car Search chuloo
+                                                            for Car Search
                                                         </h2>
                                                         <p className="text-blue-100 text-sm md:text-base mb-6">
                                                             Ease of doing a car search safely and<br />
@@ -567,4 +569,3 @@ const App: React.FC = React.memo(() => {
 });
 
 export default App
-
