@@ -15,29 +15,27 @@ spec:
     spec:
       containers:
       - name: react-web
-        image: erizo9/reactweb:834ed26e6ca8c7c069b305e3c0071ecf81ccf212  # El workflow lo actualizará
+        image: erizo9/reactweb:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 80
+        - containerPort: 443
         env:
         - name: NODE_ENV
           value: "production"
-        # Si usas rutas relativas (/api/), no necesitas REACT_APP_API_URL
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: react-web-svc
-  namespace: default
-spec:
-  ports:
-  - port: 80
-    targetPort: 80
-  selector:
-    app: react-web
-  type: NodePort
-
+        volumeMounts:
+        - name: ssl-certs
+          mountPath: "/etc/nginx/certs"
+          readOnly: true
+      volumes:
+      - name: ssl-certs
+        secret:
+          secretName: react-web-ssl
+          items:
+          - key: tls.crt
+            path: origin-cert.pem
+          - key: tls.key
+            path: origin-key.key
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
