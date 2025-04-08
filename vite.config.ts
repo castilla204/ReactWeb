@@ -9,10 +9,10 @@ export default defineConfig({
         port: 5173
     },
     build: {
-        assetsDir: 'assets',
+        assetsDir: '',
         rollupOptions: {
             output: {
-                assetFileNames: 'assets/[name].[hash][extname]'
+                assetFileNames: '[name].[hash][extname]'
             }
         }
     }
