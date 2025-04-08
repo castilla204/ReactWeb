@@ -433,7 +433,7 @@ const App: React.FC = React.memo(() => {
                                                         </button>
                                                     </div>
                                                     <img
-                                                        src="/src/media/Car.png"
+                                                        src={new URL('./media/Car.png', import.meta.url).href}
                                                         alt="White Sports Car"
                                                         className="absolute -right-12 bottom-0 w-64 md:w-72 object-contain"
                                                     />
@@ -455,7 +455,7 @@ const App: React.FC = React.memo(() => {
                                                         </button>
                                                     </div>
                                                     <img
-                                                        src="/src/media/house.png"
+                                                        src={new URL('./media/house.png', import.meta.url).href}
                                                         alt="Modern House"
                                                         className="absolute -right-12 -bottom-16 w-64 md:w-72 object-contain transform-gpu [filter:drop-shadow(2px_4px_8px_rgba(0,0,0,0.2))_drop-shadow(0_30px_30px_rgba(29,78,216,0.35))_drop-shadow(0_20px_20px_rgba(59,130,246,0.45))]"
                                                     />
@@ -527,6 +527,14 @@ const App: React.FC = React.memo(() => {
                                                     <span>Watch the video</span>
                                                 </button>
                                             </div>
+                                            <div className="fixed bottom-4 right-4 z-50">
+                                                <a
+                                                    href="/privacy-policy.html"
+                                                    className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                                                >
+                                                    Privacy Policy
+                                                </a>
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="max-w-4xl mx-auto">
@@ -569,3 +577,4 @@ const App: React.FC = React.memo(() => {
 });
 
 export default App
+
