@@ -103,7 +103,7 @@ const App: React.FC = React.memo(() => {
                     <div className="container mx-auto h-full px-4 flex items-center justify-between">
                         <div className="flex items-center gap-6">
                             <h1 className="text-2xl font-bold text-blue-600">ATRAPO</h1>
-                            <div className="relative hidden lg:block">
+                            <div className="relative hidden md:block">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
                                     type="text"
@@ -114,55 +114,59 @@ const App: React.FC = React.memo(() => {
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => {
-                                    setShowSubscriptions(false);
-                                    setCurrentStep(3);
-                                }}
-                                className="p-2 hover:bg-gray-50 rounded-lg"
-                            >
-                                <Search className="w-5 h-5 text-gray-600" />
-                            </button>
-                            <button className="p-2 hover:bg-gray-50 rounded-lg">
-                                <Heart className="w-5 h-5 text-gray-600" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setShowNotifications(true)}
-                                className="p-2 hover:bg-gray-50 rounded-lg relative"
-                            >
-                                {unreadCount > 0 && (
-                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full">
-                                        {unreadCount}
-                                    </div>
-                                )}
-                                <Bell className="w-5 h-5 text-gray-600" />
-                            </button>
-                            {user?.email === 'dcastillaa@gmail.com' && (
+                            {/* Desktop Navigation */}
+                            <div className="hidden md:flex items-center gap-4">
                                 <button
                                     onClick={() => {
-                                        setShowFavorites(false);
                                         setShowSubscriptions(false);
-                                        setCurrentStep(0);
-                                        setShowAdminPanel(true);
+                                        setCurrentStep(3);
                                     }}
-                                    className={`p-2 rounded-lg transition-colors ${showAdminPanel
-                                            ? 'bg-blue-50 text-blue-600'
-                                            : 'hover:bg-gray-50 text-gray-600'
-                                        }`}
-                                    title="Admin Panel"
+                                    className="p-2 hover:bg-gray-50 rounded-lg"
                                 >
-                                    <Shield className="w-5 h-5" />
+                                    <Search className="w-5 h-5 text-gray-600" />
                                 </button>
-                            )}
-                            <button className="p-2 hover:bg-gray-50 rounded-lg">
-                                <Settings className="w-5 h-5 text-gray-600" />
-                            </button>
+                                <button className="p-2 hover:bg-gray-50 rounded-lg">
+                                    <Heart className="w-5 h-5 text-gray-600" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowNotifications(true)}
+                                    className="p-2 hover:bg-gray-50 rounded-lg relative"
+                                >
+                                    {unreadCount > 0 && (
+                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full">
+                                            {unreadCount}
+                                        </div>
+                                    )}
+                                    <Bell className="w-5 h-5 text-gray-600" />
+                                </button>
+                                {user?.email === 'dcastillaa@gmail.com' && (
+                                    <button
+                                        onClick={() => {
+                                            setShowFavorites(false);
+                                            setShowSubscriptions(false);
+                                            setCurrentStep(0);
+                                            setShowAdminPanel(true);
+                                        }}
+                                        className={`p-2 rounded-lg transition-colors ${showAdminPanel
+                                                ? 'bg-blue-50 text-blue-600'
+                                                : 'hover:bg-gray-50 text-gray-600'
+                                            }`}
+                                        title="Admin Panel"
+                                    >
+                                        <Shield className="w-5 h-5" />
+                                    </button>
+                                )}
+                                <button className="p-2 hover:bg-gray-50 rounded-lg">
+                                    <Settings className="w-5 h-5 text-gray-600" />
+                                </button>
+                            </div>
+
                             {isAuthenticated ? (
                                 <div className="relative" ref={profileMenuRef}>
                                     <button
                                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                                        className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center hover:bg-blue-200 transition-colors"
+                                        className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center hover:bg-blue-200 transition-colors"
                                     >
                                         <span className="text-sm font-medium text-blue-600">
                                             {user?.name?.[0]?.toUpperCase()}
@@ -199,7 +203,7 @@ const App: React.FC = React.memo(() => {
                                     )}
                                 </div>
                             ) : (
-                                <div className="bg-white p-1 rounded-lg shadow-sm border border-gray-200">
+                                <div className="bg-white p-1.5 rounded-lg shadow-sm border border-gray-200">
                                     <GoogleAuth />
                                 </div>
                             )}
@@ -210,13 +214,13 @@ const App: React.FC = React.memo(() => {
                 {/* Mobile Menu Button */}
                 <button
                     onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="fixed top-4 right-4 z-50 p-2 bg-white shadow-lg rounded-lg lg:hidden border border-gray-100"
+                    className="fixed top-4 right-4 z-50 p-2 bg-white shadow-lg rounded-lg md:hidden border border-gray-100"
                 >
                     <Menu className="w-6 h-6 text-gray-600" />
                 </button>
 
                 {/* Sidebar */}
-                <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-xl transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:hidden`}>
+                <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-xl transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden`}>
                     <div className="flex flex-col h-full">
                         {/* Logo */}
                         <div className="p-4 border-b border-gray-100">
@@ -316,7 +320,7 @@ const App: React.FC = React.memo(() => {
                 {/* Overlay for mobile */}
                 {sidebarOpen && (
                     <div
-                        className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-30 lg:hidden"
+                        className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-30 md:hidden"
                         onClick={() => setSidebarOpen(false)}
                     />
                 )}
@@ -418,7 +422,7 @@ const App: React.FC = React.memo(() => {
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {/* First Card */}
-                                                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-500 to-blue-600 p-8 flex flex-col justify-between min-h-[320px]">
+                                                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-500 to-blue-600 p-6 md:p-8 flex flex-col justify-between min-h-[280px] md:min-h-[320px]">
                                                     <div>
                                                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
                                                             The Best Platform<br />
@@ -440,7 +444,7 @@ const App: React.FC = React.memo(() => {
                                                 </div>
 
                                                 {/* Second Card */}
-                                                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-blue-700 p-8 flex flex-col justify-between min-h-[320px]">
+                                                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-blue-700 p-6 md:p-8 flex flex-col justify-between min-h-[280px] md:min-h-[320px]">
                                                     <div>
                                                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
                                                             Easy way to find a<br />
@@ -462,7 +466,7 @@ const App: React.FC = React.memo(() => {
                                                 </div>
                                             </div>
                                             {/* Search Form */}
-                                            <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-6">
+                                            <div className="mt-6 md:mt-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6">
                                                 <div className="relative z-10">
                                                     <div className="flex flex-wrap gap-1.5 mb-4">
                                                         {categories?.map((category) => (
@@ -521,17 +525,18 @@ const App: React.FC = React.memo(() => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="mt-6 flex justify-center">
+                                            <div className="mt-4 md:mt-6 flex justify-center">
                                                 <button className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition-colors bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200 text-xs">
                                                     <Play className="w-4 h-4" />
                                                     <span>Watch the video</span>
                                                 </button>
                                             </div>
-                                            <div className="fixed bottom-4 right-4 z-50">
+                                            <div className="fixed bottom-6 right-6 z-50">
                                                 <a
                                                     href="/privacy-policy.html"
-                                                    className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                                                    className="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-900 bg-white/80 hover:bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200/50 transition-all hover:shadow-xl flex items-center gap-2"
                                                 >
+                                                    <Shield className="w-4 h-4" />
                                                     Privacy Policy
                                                 </a>
                                             </div>
@@ -576,5 +581,4 @@ const App: React.FC = React.memo(() => {
     )
 });
 
-export default App
-
+export default App;
