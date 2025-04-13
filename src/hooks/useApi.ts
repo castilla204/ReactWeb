@@ -8,7 +8,7 @@ interface RequestConfig extends RequestInit {
 export const useApi = () => {
     const fetchApi = async <T>(endpoint: string, config: RequestConfig = {}): Promise<T> => {
         const { requiresAuth = true, ...fetchConfig } = config;
-        const url = `${API_CONFIG.baseUrl}${endpoint}`;
+        const url = endpoint.startsWith('http') ? endpoint : `${API_CONFIG.baseUrl}${endpoint}`;
         let responseText = '';
 
         const headers: HeadersInit = {

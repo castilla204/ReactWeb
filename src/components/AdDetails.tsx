@@ -165,24 +165,24 @@ export function AdDetails({ onBack }: AdDetailsProps) {
                                 <p className="text-gray-900 font-medium">{result.category}</p>
                             </div>
                             <div>
-                                <span className="text-gray-500 text-sm">Province</span>
+                                <span className="text-gray-500 text-sm">Provincia</span>
                                 <p className="text-gray-900 font-medium">{result.province}</p>
                             </div>
                         </div>
                         <div className="space-y-4">
                             <div>
-                                <span className="text-gray-500 text-sm">City</span>
+                                <span className="text-gray-500 text-sm">Ciudad</span>
                                 <p className="text-gray-900 font-medium">{result.city}</p>
                             </div>
                             <div>
-                                <span className="text-gray-500 text-sm">Seller Type</span>
+                                <span className="text-gray-500 text-sm">Tipo de Vendedor</span>
                                 <p className="text-gray-900 font-medium">{result.sellerType}</p>
                             </div>
                         </div>
                     </div>
 
                     <div className="py-4 border-t border-b border-gray-100 mb-8">
-                        <h3 className="font-medium text-gray-900 mb-2">Good Things</h3>
+                        <h3 className="font-medium text-gray-900 mb-2">Aspectos Positivos</h3>
                         <ul className="space-y-1">
                             {result.goodThings?.map((thing: string, index: number) => (
                                 <li key={index} className="text-green-600 text-sm flex items-center gap-2">
@@ -194,7 +194,7 @@ export function AdDetails({ onBack }: AdDetailsProps) {
 
                         {result.badThings?.length > 0 && (
                             <>
-                                <h3 className="font-medium text-gray-900 mt-4 mb-2">Bad Things</h3>
+                                <h3 className="font-medium text-gray-900 mt-4 mb-2">Aspectos Negativos</h3>
                                 <ul className="space-y-1">
                                     {result.badThings?.map((thing: string, index: number) => (
                                         <li key={index} className="text-red-600 text-sm flex items-center gap-2">
@@ -209,7 +209,7 @@ export function AdDetails({ onBack }: AdDetailsProps) {
 
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <p className="text-gray-500 text-sm">Price</p>
+                            <p className="text-gray-500 text-sm">Precio</p>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-3xl font-bold text-gray-900">
                                     {new Intl.NumberFormat('es-ES', {
@@ -225,7 +225,7 @@ export function AdDetails({ onBack }: AdDetailsProps) {
                             rel="noopener noreferrer"
                             className="px-8 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
                         >
-                            View Ad
+                            Ver Anuncio
                         </a>
                     </div>
                 </div>

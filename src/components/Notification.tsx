@@ -1,5 +1,5 @@
 ﻿import React, { useEffect } from 'react';
-import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, X, ArrowRight } from 'lucide-react';
 
 export type NotificationType = 'success' | 'error' | 'info';
 
@@ -41,10 +41,10 @@ export function Notification({ type, message, action, onClose, duration = 5000 }
 
     const styles = {
         success: {
-            background: 'rgba(52, 211, 153, 0.1)',
-            borderColor: 'rgba(52, 211, 153, 0.2)',
-            color: '#34D399',
-            boxShadow: '0 8px 16px rgba(52, 211, 153, 0.2)'
+            background: 'rgba(59, 130, 246, 0.1)',
+            borderColor: 'rgba(59, 130, 246, 0.2)',
+            color: '#3B82F6',
+            boxShadow: '0 8px 16px rgba(59, 130, 246, 0.2)'
         },
         error: {
             background: 'rgba(248, 113, 113, 0.1)',
@@ -53,10 +53,10 @@ export function Notification({ type, message, action, onClose, duration = 5000 }
             boxShadow: '0 8px 16px rgba(248, 113, 113, 0.2)'
         },
         info: {
-            background: 'rgba(96, 165, 250, 0.1)',
-            borderColor: 'rgba(96, 165, 250, 0.2)',
-            color: '#60A5FA',
-            boxShadow: '0 8px 16px rgba(96, 165, 250, 0.2)'
+            background: 'rgba(59, 130, 246, 0.1)',
+            borderColor: 'rgba(59, 130, 246, 0.2)',
+            color: '#3B82F6',
+            boxShadow: '0 8px 16px rgba(59, 130, 246, 0.2)'
         }
     };
 
@@ -118,7 +118,7 @@ export function Notification({ type, message, action, onClose, duration = 5000 }
                                 onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
                                 onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
                             >
-                                Mejorar Plan →
+                                Mejorar Plan <ArrowRight className="inline-block w-4 h-4 ml-1" />
                             </button>
                         )}
                     </div>
