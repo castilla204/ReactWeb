@@ -34,3 +34,14 @@
 .animate-pulse {
     animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Remove outline flash on all inputs and textareas */
+input, textarea {
+    -webkit-tap-highlight-color: transparent;
+}
+
+    /* Ensure no outline on focus for Firefox */
+    input::-moz-focus-inner,
+    textarea::-moz-focus-inner {
+        border: 0;
+    }

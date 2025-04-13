@@ -43,7 +43,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
-                    message: `🔄 Search ${!currentStatus ? 'activated' : 'deactivated'} successfully`
+                    message: `🔄 Búsqueda ${!currentStatus ? 'activada' : 'desactivada'} correctamente`
                 }
             }));
         } catch (error) {
@@ -51,7 +51,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'error',
-                    message: '❌ Failed to update search status'
+                    message: '❌ Error al actualizar el estado de la búsqueda'
                 }
             }));
         }
@@ -80,7 +80,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
-                    message: '🗑️ Search deleted successfully'
+                    message: '🗑️ Búsqueda eliminada correctamente'
                 }
             }));
         } catch (error) {
@@ -88,7 +88,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'error',
-                    message: '❌ Failed to delete search'
+                    message: '❌ Error al eliminar la búsqueda'
                 }
             }));
         }
@@ -120,7 +120,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
-                    message: '✏️ Search updated successfully'
+                    message: '✏️ Búsqueda actualizada correctamente'
                 }
             }));
         } catch (error) {
@@ -128,7 +128,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'error',
-                    message: '❌ Failed to update search'
+                    message: '❌ Error al actualizar la búsqueda'
                 }
             }));
         }

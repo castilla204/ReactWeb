@@ -72,8 +72,9 @@ export function GoogleAuth() {
                 {
                     type: 'standard',
                     theme: 'outline',
-                    size: 'large',
-                    text: 'signin_with'
+                    size: 'medium',
+                    text: 'signin_with',
+                    width: 200
                 }
             );
         };

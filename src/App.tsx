@@ -46,6 +46,32 @@ const App: React.FC = React.memo(() => {
     const { unreadCount } = useNotifications();
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const profileMenuRef = useRef<HTMLDivElement>(null);
+    const [currentCard, setCurrentCard] = useState(0);
+    const cards = [
+        {
+            title: "Forma fácil de encontrar\ncasa a buen precio",
+            description: "Ofreciendo servicios de búsqueda\nseguros y confortables.",
+            buttonText: "Buscar Casa",
+            image: new URL('./media/house.png', import.meta.url).href,
+            gradient: "from-blue-600 to-blue-700",
+            imageClass: "-right-12 -bottom-16 transform-gpu [filter:drop-shadow(2px_4px_8px_rgba(0,0,0,0.2))_drop-shadow(0_30px_30px_rgba(29,78,216,0.35))_drop-shadow(0_20px_20px_rgba(59,130,246,0.45))]"
+        },
+        {
+            title: "La Mejor Plataforma\npara Buscar Coches",
+            description: "Facilidad para buscar coches de forma segura\ny cercana. Por supuesto, a bajo precio.",
+            buttonText: "Buscar Coche",
+            image: new URL('./media/Car.png', import.meta.url).href,
+            gradient: "from-blue-500 to-blue-600",
+            imageClass: "-right-12 bottom-0"
+        }
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentCard((current) => (current + 1) % cards.length);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handleClickOutside = useCallback((event: MouseEvent) => {
         if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
@@ -71,7 +97,7 @@ const App: React.FC = React.memo(() => {
     const handleSearchComplete = () => {
         setNotification({
             type: 'success',
-            message: '🎉 Search created successfully! You will be notified of any matches.'
+            message: '🎉 ¡Búsqueda creada con éxito! Te notificaremos cuando encontremos coincidencias.'
         });
         setCurrentStep(0);
         setSearchParameters(null);
@@ -87,7 +113,7 @@ const App: React.FC = React.memo(() => {
         if (!isAuthenticated) {
             setNotification({
                 type: 'error',
-                message: '🔒 Please sign in to create a search'
+                message: '🔒 Por favor, inicia sesión para crear una búsqueda'
             });
             return;
         }
@@ -99,7 +125,7 @@ const App: React.FC = React.memo(() => {
         <Router>
             <div className="min-h-screen bg-white text-gray-900 relative overflow-x-hidden">
                 {/* Header */}
-                <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-100 z-50">
+                <header className="fixed top-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-sm border-b border-gray-100/50 z-40">
                     <div className="container mx-auto h-full px-4 flex items-center justify-between">
                         <div className="flex items-center gap-6">
                             <h1 className="text-2xl font-bold text-blue-600">ATRAPO</h1>
@@ -149,8 +175,8 @@ const App: React.FC = React.memo(() => {
                                             setShowAdminPanel(true);
                                         }}
                                         className={`p-2 rounded-lg transition-colors ${showAdminPanel
-                                                ? 'bg-blue-50 text-blue-600'
-                                                : 'hover:bg-gray-50 text-gray-600'
+                                            ? 'bg-blue-50 text-blue-600'
+                                            : 'hover:bg-gray-50 text-gray-600'
                                             }`}
                                         title="Admin Panel"
                                     >
@@ -166,7 +192,7 @@ const App: React.FC = React.memo(() => {
                                 <div className="relative" ref={profileMenuRef}>
                                     <button
                                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                                        className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center hover:bg-blue-200 transition-colors"
+                                        className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center hover:bg-blue-200 transition-colors mr-12 md:mr-0"
                                     >
                                         <span className="text-sm font-medium text-blue-600">
                                             {user?.name?.[0]?.toUpperCase()}
@@ -203,7 +229,7 @@ const App: React.FC = React.memo(() => {
                                     )}
                                 </div>
                             ) : (
-                                <div className="bg-white p-1.5 rounded-lg shadow-sm border border-gray-200">
+                                <div className="mr-12 md:mr-0">
                                     <GoogleAuth />
                                 </div>
                             )}
@@ -214,9 +240,9 @@ const App: React.FC = React.memo(() => {
                 {/* Mobile Menu Button */}
                 <button
                     onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="fixed top-4 right-4 z-50 p-2 bg-white shadow-lg rounded-lg md:hidden border border-gray-100"
+                    className="fixed top-3 right-3 z-50 p-2 bg-white/95 backdrop-blur-sm shadow-sm hover:shadow md:hidden border border-gray-100/50 rounded-full transition-all"
                 >
-                    <Menu className="w-6 h-6 text-gray-600" />
+                    <Menu className="w-5 h-5 text-gray-600" />
                 </button>
 
                 {/* Sidebar */}
@@ -361,7 +387,7 @@ const App: React.FC = React.memo(() => {
 
                 {/* Main Content */}
                 <main className="relative z-10">
-                    <section className="container mx-auto px-6 min-h-screen flex flex-col pt-24">
+                    <section className="container mx-auto px-6 min-h-screen flex flex-col pt-20 md:pt-24">
                         <Routes>
                             <Route path="/verify-phone" element={<PhoneVerificationPage />} />
                             <Route path="/privacy-policy.html" element={<PrivacyPolicy />} />
@@ -387,8 +413,8 @@ const App: React.FC = React.memo(() => {
                                     ) : currentStep === 3 ? (
                                         <SearchDashboard onBack={() => setCurrentStep(0)} />
                                     ) : currentStep === 0 ? (
-                                        <div className="relative max-w-7xl mx-auto px-4 pt-8">
-                                            {/* Enhanced Landing Page Background */}
+                                        <div className="relative max-w-7xl mx-auto px-4 pt-4 md:pt-8">
+                                            {/* Enhanced Landing Page Background - Mobile Optimized */}
                                             <div className="fixed inset-0 -z-10">
                                                 {/* Base layer with subtle gradient */}
                                                 <div className="absolute inset-0 bg-gradient-to-b from-blue-50 via-white to-blue-50" />
@@ -420,65 +446,99 @@ const App: React.FC = React.memo(() => {
                                                 }} />
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                {/* First Card */}
-                                                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-500 to-blue-600 p-6 md:p-8 flex flex-col justify-between min-h-[280px] md:min-h-[320px]">
+                                            {/* Mobile Carousel */}
+                                            <div className="md:hidden relative w-full max-w-2xl mx-auto overflow-hidden mt-2">
+                                                <div
+                                                    className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${cards[currentCard].gradient} p-6 md:p-8 flex flex-col justify-between min-h-[280px] md:min-h-[320px] transition-opacity duration-500`}
+                                                >
                                                     <div>
                                                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                                                            The Best Platform<br />
-                                                            for Car Search
+                                                            {cards[currentCard].title}
                                                         </h2>
                                                         <p className="text-blue-100 text-sm md:text-base mb-6">
-                                                            Ease of doing a car search safely and<br />
-                                                            nearby. Of course at a low price.
+                                                            {cards[currentCard].description}
                                                         </p>
                                                         <button className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors">
-                                                            Search Car
+                                                            {cards[currentCard].buttonText}
+                                                        </button>
+                                                    </div>
+                                                    <img
+                                                        src={cards[currentCard].image}
+                                                        alt={cards[currentCard].buttonText}
+                                                        className={`absolute w-64 md:w-72 object-contain ${cards[currentCard].imageClass}`}
+                                                    />
+                                                </div>
+                                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                                                    {cards.map((_, index) => (
+                                                        <button
+                                                            key={index}
+                                                            onClick={() => setCurrentCard(index)}
+                                                            className={`w-2 h-2 rounded-full transition-colors ${index === currentCard ? 'bg-white' : 'bg-white/50'}`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Desktop Grid */}
+                                            <div className="hidden md:grid grid-cols-2 gap-6">
+                                                {/* First Card */}
+                                                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-500 to-blue-600 p-8 flex flex-col justify-between min-h-[320px]">
+                                                    <div>
+                                                        <h2 className="text-3xl font-bold text-white mb-4">
+                                                            La Mejor Plataforma<br />
+                                                            para Buscar Coches
+                                                        </h2>
+                                                        <p className="text-blue-100 text-base mb-6">
+                                                            Facilidad para buscar coches de forma segura<br />
+                                                            y cercana. Por supuesto, a bajo precio.
+                                                        </p>
+                                                        <button className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors">
+                                                            Buscar Coche
                                                         </button>
                                                     </div>
                                                     <img
                                                         src={new URL('./media/Car.png', import.meta.url).href}
                                                         alt="White Sports Car"
-                                                        className="absolute -right-12 bottom-0 w-64 md:w-72 object-contain"
+                                                        className="absolute -right-12 bottom-0 w-72 object-contain"
                                                     />
                                                 </div>
 
                                                 {/* Second Card */}
-                                                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-blue-700 p-6 md:p-8 flex flex-col justify-between min-h-[280px] md:min-h-[320px]">
+                                                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-blue-700 p-8 flex flex-col justify-between min-h-[320px]">
                                                     <div>
-                                                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                                                            Easy way to find a<br />
-                                                            house at a low price
+                                                        <h2 className="text-3xl font-bold text-white mb-4">
+                                                            Forma fácil de encontrar<br />
+                                                            casa a buen precio
                                                         </h2>
-                                                        <p className="text-blue-100 text-sm md:text-base mb-6">
-                                                            Providing cheap car search services<br />
-                                                            and safe and comfortable facilities.
+                                                        <p className="text-blue-100 text-base mb-6">
+                                                            Ofreciendo servicios de búsqueda<br />
+                                                            seguros y confortables.
                                                         </p>
                                                         <button className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors">
-                                                            Search House
+                                                            Buscar Casa
                                                         </button>
                                                     </div>
                                                     <img
                                                         src={new URL('./media/house.png', import.meta.url).href}
                                                         alt="Modern House"
-                                                        className="absolute -right-12 -bottom-16 w-64 md:w-72 object-contain transform-gpu [filter:drop-shadow(2px_4px_8px_rgba(0,0,0,0.2))_drop-shadow(0_30px_30px_rgba(29,78,216,0.35))_drop-shadow(0_20px_20px_rgba(59,130,246,0.45))]"
+                                                        className="absolute -right-12 -bottom-16 w-72 object-contain transform-gpu [filter:drop-shadow(2px_4px_8px_rgba(0,0,0,0.2))_drop-shadow(0_30px_30px_rgba(29,78,216,0.35))_drop-shadow(0_20px_20px_rgba(59,130,246,0.45))]"
                                                     />
                                                 </div>
                                             </div>
                                             {/* Search Form */}
-                                            <div className="mt-6 md:mt-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6">
+                                            <div className="mt-4 md:mt-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6">
                                                 <div className="relative z-10">
                                                     <div className="flex flex-wrap gap-1.5 mb-4">
                                                         {categories?.map((category) => (
                                                             <button
                                                                 key={category.id}
                                                                 onClick={() => setSelectedCategory(category.id)}
-                                                                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${selectedCategory === category.id
-                                                                    ? 'bg-blue-600 text-white shadow-sm'
-                                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedCategory === category.id
+                                                                    ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200 shadow-sm'
+                                                                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                                                     }`}
                                                             >
-                                                                <span className="flex items-center gap-2">
+                                                                <span className="flex items-center gap-1.5">
                                                                     {category.id === 1 && <Car className="w-4 h-4" />}
                                                                     {category.id === 2 && <Bike className="w-4 h-4" />}
                                                                     {category.id === 3 && <Home className="w-4 h-4" />}
@@ -494,7 +554,7 @@ const App: React.FC = React.memo(() => {
                                                             value={formData.keywords}
                                                             onChange={(e) => setFormData(prev => ({ ...prev, keywords: e.target.value }))}
                                                             placeholder="¿Qué estás buscando? (Ej: Tesla Model 3, BMW M4...)"
-                                                            className="w-full px-3 py-2 rounded-lg bg-white/80 border border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 text-gray-900 text-sm placeholder-gray-500 transition-all"
+                                                            className="w-full px-4 py-2.5 rounded-lg bg-white/80 border border-gray-200 text-gray-900 text-sm placeholder-gray-500 transition-all focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 outline-none select-none"
                                                         />
                                                     </div>
 
@@ -503,7 +563,7 @@ const App: React.FC = React.memo(() => {
                                                             value={formData.userSearch}
                                                             onChange={(e) => setFormData(prev => ({ ...prev, userSearch: e.target.value }))}
                                                             placeholder="Describe los detalles que buscas..."
-                                                            className="w-full px-3 py-2 rounded-lg bg-white/80 border border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 text-gray-900 text-xs min-h-[80px] placeholder-gray-500 transition-all resize-none"
+                                                            className="w-full px-4 py-2.5 rounded-lg bg-white/80 border border-gray-200 text-gray-900 text-xs min-h-[80px] placeholder-gray-500 transition-all resize-none focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 outline-none select-none"
                                                         />
                                                     </div>
 
@@ -513,31 +573,25 @@ const App: React.FC = React.memo(() => {
                                                             disabled={!formData.keywords || !formData.userSearch || !selectedCategory}
                                                             className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                                                         >
-                                                            <span>Generate</span>
+                                                            <span>Generar</span>
                                                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                                         </button>
                                                     </div>
                                                     {isAuthenticated && (
                                                         <div className="mt-3 text-[10px] text-gray-400 flex items-center justify-center gap-1.5">
                                                             <Search className="w-4 h-4" />
-                                                            <span>Active searches: {currentSearchCount} / {maxSearches}</span>
+                                                            <span>Búsquedas activas: {currentSearchCount} / {maxSearches}</span>
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="mt-4 md:mt-6 flex justify-center">
-                                                <button className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition-colors bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200 text-xs">
-                                                    <Play className="w-4 h-4" />
-                                                    <span>Watch the video</span>
-                                                </button>
-                                            </div>
-                                            <div className="fixed bottom-6 right-6 z-50">
+                                            <div className="mt-8 pb-4 md:fixed md:bottom-6 md:right-6 md:mt-0 md:pb-0 z-50 flex justify-end">
                                                 <a
                                                     href="/privacy-policy.html"
-                                                    className="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-900 bg-white/80 hover:bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200/50 transition-all hover:shadow-xl flex items-center gap-2"
+                                                    className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1.5"
                                                 >
-                                                    <Shield className="w-4 h-4" />
-                                                    Privacy Policy
+                                                    <Shield className="w-3.5 h-3.5" />
+                                                    Política de Privacidad
                                                 </a>
                                             </div>
                                         </div>
@@ -582,3 +636,4 @@ const App: React.FC = React.memo(() => {
 });
 
 export default App;
+

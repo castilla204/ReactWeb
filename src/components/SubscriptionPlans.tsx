@@ -28,32 +28,32 @@ export function SubscriptionPlans() {
     const getFeatures = (plan: Plan) => [
         {
             icon: <Search className="w-4 h-4" />,
-            text: `Up to ${plan.maxSearches} concurrent searches`,
+            text: `Hasta ${plan.maxSearches} búsquedas simultáneas`,
             included: true
         },
         {
             icon: <Clock className="w-4 h-4" />,
-            text: `${Math.floor(plan.minSearchInterval / 60)} minute update interval`,
+            text: `Actualización cada ${Math.floor(plan.minSearchInterval / 60)} minutos`,
             included: true
         },
         {
             icon: <Bell className="w-4 h-4" />,
-            text: 'Email notifications',
+            text: 'Notificaciones por email',
             included: true
         },
         {
             icon: <Sparkles className="w-4 h-4" />,
-            text: 'Advanced filters',
+            text: 'Filtros avanzados',
             included: plan.name !== 'Free'
         },
         {
             icon: <Shield className="w-4 h-4" />,
-            text: 'Priority support',
+            text: 'Soporte prioritario',
             included: plan.name === 'Business'
         },
         {
             icon: <Zap className="w-4 h-4" />,
-            text: 'Real-time updates',
+            text: 'Actualizaciones en tiempo real',
             included: plan.name === 'Business'
         }
     ];
@@ -63,7 +63,7 @@ export function SubscriptionPlans() {
             setError(null);
 
             if (plan.name === 'Free') {
-                setError('Cannot subscribe to free plan');
+                setError('No es posible suscribirse al plan gratuito');
                 return;
             }
 
@@ -74,7 +74,7 @@ export function SubscriptionPlans() {
 
             window.location.href = url;
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to process payment');
+            setError(err instanceof Error ? err.message : 'Error al procesar el pago');
             console.error('Error creating checkout session:', err);
         }
     };
@@ -82,7 +82,7 @@ export function SubscriptionPlans() {
     if (plans.isLoading || currentPlan.isLoading || subscriptionDetails.isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="text-gray-400">Loading plans...</div>
+                <div className="text-gray-400">Cargando planes...</div>
             </div>
         );
     }
@@ -90,7 +90,7 @@ export function SubscriptionPlans() {
     if (plans.error || currentPlan.error || subscriptionDetails.error) {
         return (
             <div className="flex items-center justify-center min-h-[50vh] text-red-400">
-                {(plans.error || currentPlan.error || subscriptionDetails.error)?.message || 'An error occurred'}
+                {(plans.error || currentPlan.error || subscriptionDetails.error)?.message || 'Ha ocurrido un error'}
             </div>
         );
     }
@@ -128,15 +128,15 @@ export function SubscriptionPlans() {
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="mx-auto max-w-4xl text-center">
                     <h2 className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-600 text-sm font-medium mb-8">
-                        Pricing Plans
+                        Planes de Suscripción
                     </h2>
                     <p className="mt-2 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
                         <span className="text-gray-900">
-                            Choose the perfect plan
+                            Elige el plan perfecto
                         </span>
                         <br />
                         <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                            for your needs
+                            para tus necesidades
                         </span>
                     </p>
                 </div>
@@ -148,14 +148,14 @@ export function SubscriptionPlans() {
                             className={`flex items-center gap-1 rounded-full px-4 md:px-6 py-2 md:py-2.5 text-xs md:text-sm font-semibold transition-all ${!isYearly ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
                             onClick={() => setIsYearly(false)}
                         >
-                            Monthly
+                            Mensual
                         </button>
                         <button
                             type="button"
                             className={`flex items-center gap-1 rounded-full px-4 md:px-6 py-2 md:py-2.5 text-xs md:text-sm font-semibold transition-all ${isYearly ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
                             onClick={() => setIsYearly(true)}
                         >
-                            Yearly <span className="text-xs opacity-75">(Save 20%)</span>
+                            Anual <span className="text-xs opacity-75">(Ahorra 20%)</span>
                         </button>
                     </div>
                 </div>
@@ -175,7 +175,7 @@ export function SubscriptionPlans() {
                             >
                                 {isCurrentPlan && (
                                     <div className="absolute -top-3 md:-top-4 left-1/2 -translate-x-1/2 px-4 md:px-5 py-1.5 bg-green-500/90 text-white text-xs md:text-sm font-medium rounded-full shadow-lg backdrop-blur-xl border border-green-400/20">
-                                        Current Plan ({isYearly ? 'Yearly' : 'Monthly'})
+                                        Plan Actual ({isYearly ? 'Anual' : 'Mensual'})
                                     </div>
                                 )}
 
@@ -188,7 +188,7 @@ export function SubscriptionPlans() {
                                         {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(isYearly ? plan.priceYearly : plan.priceMonthly)}
                                     </span>
                                     <span className="text-xs md:text-sm font-semibold leading-6 text-gray-500">
-                                        {isYearly ? '/year' : '/month'}
+                                        {isYearly ? '/año' : '/mes'}
                                     </span>
                                 </p>
 
@@ -228,12 +228,12 @@ export function SubscriptionPlans() {
                                         }`}
                                 >
                                     {isCurrentPlan
-                                        ? `Current ${isYearly ? 'Yearly' : 'Monthly'} Plan`
+                                        ? `Plan ${isYearly ? 'Anual' : 'Mensual'} Actual`
                                         : plan.name === 'Free'
-                                            ? 'Free Plan'
+                                            ? 'Plan Gratuito'
                                             : createCheckout.isPending
-                                                ? 'Processing...'
-                                                : 'Get Started'}
+                                                ? 'Procesando...'
+                                                : 'Comenzar'}
                                 </button>
                             </div>
                         );
@@ -246,7 +246,7 @@ export function SubscriptionPlans() {
                 )}
                 {successMessage && (
                     <div className="mt-6 text-center text-sm text-green-600 bg-green-50 px-4 py-3 rounded-xl border border-green-100">
-                        {successMessage}
+                        ¡Pago exitoso! Tu suscripción ha sido activada.
                     </div>
                 )}
             </div>

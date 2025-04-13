@@ -137,7 +137,7 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
                             <div className="space-y-3">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Área de Búsqueda</span>
-                                    <span className="text-gray-900 font-medium">{parameters.locationRange} km radio</span>
+                                    <span className="text-gray-900 font-medium">{parameters.locationRange} km de radio</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Punto Central</span>
@@ -157,7 +157,7 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
                         {/* Price Card */}
                         <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
-                                <DollarSign className="w-5 h-5 text-blue-600" />
+                                <DollarSign className="w-5 h-5 text-blue-600" title="Precio" />
                                 <h3 className="text-sm font-medium text-gray-900">Rango de Precio</h3>
                             </div>
                             <div className="space-y-3">

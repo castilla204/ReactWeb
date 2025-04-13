@@ -127,3 +127,20 @@ export function getUserData(): any | null {
         return null;
     }
 }
+
+export function updateUserData(updates: Partial<any>) {
+    try {
+        const userData = getUserData();
+        if (!userData) {
+            throw new Error('No user data found');
+        }
+
+        const updatedUserData = { ...userData, ...updates };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+
+        return updatedUserData;
+    } catch (error) {
+        console.error('Error updating user data:', error);
+        throw error;
+    }
+}
