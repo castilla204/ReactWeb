@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 
@@ -43,11 +43,29 @@ export const useSubscription = () => {
         mutationFn: (data: { planId: number; isYearly: boolean }) =>
             fetchApi<{ url: string }>(API_CONFIG.endpoints.subscription.createCheckout, {
                 method: 'POST',
-                body: JSON.stringify(data),
+                body: JSON.stringify(data)
             }),
-        onSuccess: () => {
+        onMutate: (variables) => {
+            console.log('🔵 Creating checkout session:', {
+                planId: variables.planId,
+                isYearly: variables.isYearly,
+                environment: import.meta.env.MODE,
+                endpoint: API_CONFIG.endpoints.subscription.createCheckout
+            });
+        },
+        onSuccess: (data) => {
+            console.log('✅ Checkout session created successfully:', {
+                url: data.url,
+                environment: import.meta.env.MODE
+            });
             queryClient.invalidateQueries({ queryKey: ['subscription'] });
         },
+        onError: (error) => {
+            console.error('❌ Error creating checkout session:', {
+                error,
+                environment: import.meta.env.MODE
+            });
+        }
     });
 
     return {
