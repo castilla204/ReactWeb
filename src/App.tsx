@@ -483,6 +483,11 @@ const App: React.FC = React.memo(() => {
                                                     <div>
                                                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
                                                             {cards[currentCard].title}
+                                                            <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
+                                                                <span>+</span>
+                                                                <Sparkles className="w-4 h-4" />
+                                                                <span>IA</span>
+                                                            </div>
                                                         </h2>
                                                         <p className="text-blue-100 text-sm md:text-base mb-6">
                                                             {cards[currentCard].description}
@@ -516,6 +521,11 @@ const App: React.FC = React.memo(() => {
                                                         <h2 className="text-3xl font-bold text-white mb-4">
                                                             La Mejor Plataforma<br />
                                                             para Buscar Coches
+                                                            <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
+                                                                <span>+</span>
+                                                                <Sparkles className="w-4 h-4" />
+                                                                <span>IA</span>
+                                                            </div>
                                                         </h2>
                                                         <p className="text-blue-100 text-base mb-6">
                                                             Facilidad para buscar coches de forma segura<br />
@@ -538,6 +548,11 @@ const App: React.FC = React.memo(() => {
                                                         <h2 className="text-3xl font-bold text-white mb-4">
                                                             Forma fácil de encontrar<br />
                                                             casa a buen precio
+                                                            <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
+                                                                <span>+</span>
+                                                                <Sparkles className="w-4 h-4" />
+                                                                <span>IA</span>
+                                                            </div>
                                                         </h2>
                                                         <p className="text-blue-100 text-base mb-6">
                                                             Ofreciendo servicios de búsqueda<br />
@@ -553,6 +568,22 @@ const App: React.FC = React.memo(() => {
                                                         className="absolute -right-12 -bottom-16 w-72 object-contain transform-gpu [filter:drop-shadow(2px_4px_8px_rgba(0,0,0,0.2))_drop-shadow(0_30px_30px_rgba(29,78,216,0.35))_drop-shadow(0_20px_20px_rgba(59,130,246,0.45))]"
                                                     />
                                                 </div>
+
+                                                {/* AI Separator */}
+                                                <div className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
+                                                    <div className="w-px h-32 bg-gradient-to-b from-transparent via-blue-500/20 to-transparent animate-pulse" />
+                                                    <div className="relative group">
+                                                        <div className="absolute inset-0 bg-[conic-gradient(from_0deg,theme(colors.blue.400/20),theme(colors.violet.400/20),theme(colors.blue.400/20))] rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 animate-spin [animation-duration:4s]" />
+                                                        <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-white/90 to-white/80 backdrop-blur-xl flex items-center justify-center shadow-[0_8px_32px_-8px_rgba(59,130,246,0.3)] border border-blue-100/50 group-hover:border-blue-200/80 group-hover:shadow-[0_12px_36px_-8px_rgba(59,130,246,0.4)] transition-all duration-500">
+                                                            <div className="relative">
+                                                                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-full blur opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
+                                                                <Sparkles className="w-7 h-7 text-blue-600 group-hover:scale-110 transition-transform duration-500 relative z-10" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-px h-32 bg-gradient-to-b from-transparent via-blue-500/20 to-transparent animate-pulse [animation-delay:0.5s]" />
+                                                </div>
+
                                             </div>
                                             {/* Search Form */}
                                             <div className="mt-4 md:mt-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6">
@@ -665,5 +696,4 @@ const App: React.FC = React.memo(() => {
 });
 
 export default App;
-
 
