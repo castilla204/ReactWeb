@@ -11,12 +11,28 @@ export function SubscriptionPlans() {
 
     // Check URL parameters for payment status
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('success')) {
-        setSuccessMessage('Payment successful! Your subscription has been activated.');
-    }
-    if (urlParams.get('canceled')) {
-        setError('Payment was canceled.');
-    }
+    React.useEffect(() => {
+        const checkPaymentStatus = async () => {
+            if (urlParams.get('success')) {
+                try {
+                    // Verify the payment status with the API
+                    await fetchApi('/api/Subscription/verify-payment', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            sessionId: urlParams.get('session_id')
+                        })
+                    });
+                    setSuccessMessage('¡Pago exitoso! Tu suscripción ha sido activada.');
+                } catch (err) {
+                    setError('Error al verificar el pago');
+                }
+            }
+            if (urlParams.get('canceled')) {
+                setError('El pago fue cancelado.');
+            }
+        };
+        checkPaymentStatus();
+    }, []);
 
     // Set yearly subscription based on current subscription
     React.useEffect(() => {
@@ -61,18 +77,20 @@ export function SubscriptionPlans() {
     const handleSubscribe = async (plan: Plan) => {
         try {
             setError(null);
-
             if (plan.name === 'Free') {
                 setError('No es posible suscribirse al plan gratuito');
                 return;
             }
-
             const { url } = await createCheckout.mutateAsync({
                 planId: plan.id,
                 isYearly
             });
-
-            window.location.href = url;
+            // Ensure we have a valid URL before redirecting
+            if (url && url.trim()) {
+                window.location.href = url;
+            } else {
+                throw new Error('No se recibió una URL válida para el pago');
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error al procesar el pago');
             console.error('Error creating checkout session:', err);
