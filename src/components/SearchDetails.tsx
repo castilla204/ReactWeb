@@ -1,7 +1,7 @@
 ﻿import React, { useLayoutEffect, useState } from 'react';
 import { ArrowLeft, Heart, Car, Users, Gauge, Filter, ChevronDown, ArrowRight, Plus, Check, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useSearch, type SearchResult, type FilteredResult } from '../hooks/useSearch.hooks';
+import { useSearch } from '../hooks/useSearch.hooks';
 import { useLikes } from '../hooks/useLikes.hooks';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,12 +21,11 @@ const categoryBanners = {
 };
 
 export function SearchDetails({ searchId, onBack }: SearchDetailsProps) {
-    const { getResults, getSearch, getFilteredResults } = useSearch();
+    const { getResults, getSearch } = useSearch();
     const { categories } = useCategories();
     const { user } = useAuth();
     const { fetchApi } = useApi();
     const resultsQuery = getResults(searchId);
-    const filteredResultsQuery = getFilteredResults(searchId);
     const searchQuery = getSearch(searchId);
     const isAdmin = user?.email === 'dcastillaa@gmail.com';
     const [showAddAdForm, setShowAddAdForm] = useState(false);
@@ -166,9 +165,7 @@ export function SearchDetails({ searchId, onBack }: SearchDetailsProps) {
         );
     }
 
-    const allResults = resultsQuery.data || [];
-    const filteredResults = filteredResultsQuery.data || [];
-    const results = isAdmin ? allResults : filteredResults.map((fr: FilteredResult) => fr.ad);
+    const results = resultsQuery.data || [];
     const search = searchQuery.data;
     const category = categories?.find(c => c.id === search?.category);
 
@@ -263,7 +260,7 @@ export function SearchDetails({ searchId, onBack }: SearchDetailsProps) {
             <div className="min-h-[400px]">
                 {results.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-[400px] bg-white/90 backdrop-blur-xl rounded-xl border border-gray-100 shadow-lg">
-                        <p className="text-gray-500">{isAdmin ? 'No results found' : 'No filtered results found'}</p>
+                        <p className="text-gray-500">No results found</p>
                         {isAdmin && <p className="text-sm text-gray-400 mt-2">Try adjusting your search criteria</p>}
                     </div>
                 ) : (
@@ -437,7 +434,14 @@ export function SearchDetails({ searchId, onBack }: SearchDetailsProps) {
 }
 
 interface ResultCardProps {
-    result: SearchResult;
+    result: {
+        id: string;
+        images: string[];
+        title: string;
+        category: string;
+        price: number;
+        url: string;
+    };
     searchId: number;
 }
 
@@ -509,8 +513,8 @@ function ResultCard({ result, searchId }: ResultCardProps) {
                         <button
                             onClick={handleToggleFiltered}
                             className={`p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg transition-colors group ${isFiltered
-                                ? 'text-green-500 hover:text-green-600 hover:bg-green-50'
-                                : 'text-blue-500 hover:text-blue-600 hover:bg-blue-50'
+                                    ? 'text-green-500 hover:text-green-600 hover:bg-green-50'
+                                    : 'text-blue-500 hover:text-blue-600 hover:bg-blue-50'
                                 }`}
                             title={isFiltered ? "Remove from filtered list" : "Add to filtered list"}
                         >
