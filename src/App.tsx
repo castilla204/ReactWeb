@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react'
-import { Search, Car, Home, Bike, Heart, Sparkles, ArrowRight, Shield, ArrowLeft, Settings, HelpCircle, CreditCard, LogOut, Menu, Play, Bell } from 'lucide-react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Search, Car, Home, Bike, Heart, Sparkles, ArrowRight, Shield, ArrowLeft, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext'
 import { UserManagement } from './components/UserManagement'
 import { GoogleAuth } from './components/GoogleAuth'
@@ -20,11 +20,14 @@ import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import { AdDetails } from './components/AdDetails'
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage'
 import { PaymentCancelPage } from './pages/PaymentCancelPage'
+import { SearchesPage } from './pages/SearchesPage';
+import { SearchResultsPage } from './pages/SearchResultsPage';
 import { Notification, NotificationType } from './components/Notification';
 import { useEffect } from 'react';
 import { useSubscriptionLimits } from './hooks/useSubscriptionLimits'
 
 const App: React.FC = React.memo(() => {
+    const navigate = useNavigate();
     const { user, setUser, isAuthenticated } = useAuth()
     const [showFavorites, setShowFavorites] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
@@ -174,7 +177,7 @@ const App: React.FC = React.memo(() => {
                                             setShowFavorites(false);
                                             setShowSubscriptions(false);
                                             setCurrentStep(0);
-                                            setShowAdminPanel(true);
+                                            navigate('/searches');
                                         }}
                                         className={`p-2 rounded-lg transition-colors ${showAdminPanel
                                             ? 'bg-blue-50 text-blue-600'
@@ -273,7 +276,7 @@ const App: React.FC = React.memo(() => {
                                 <button
                                     onClick={() => {
                                         setShowSubscriptions(false);
-                                        setCurrentStep(3);
+                                        navigate('/searches');
                                         setSidebarOpen(false);
                                     }}
                                     className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -420,6 +423,8 @@ const App: React.FC = React.memo(() => {
                             <Route path="/privacy-policy.html" element={<PrivacyPolicy />} />
                             <Route path="/success" element={<PaymentSuccessPage />} />
                             <Route path="/cancel" element={<PaymentCancelPage />} />
+                            <Route path="/searches" element={<SearchesPage />} />
+                            <Route path="/searches/:id" element={<SearchResultsPage />} />
                             <Route path="/ad/:id" element={<AdDetails onBack={() => window.history.back()} />} />
                             <Route path="/" element={showAdminPanel ? (
                                 <UserManagement onBack={() => setShowAdminPanel(false)} />
@@ -481,8 +486,8 @@ const App: React.FC = React.memo(() => {
                                                     className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${cards[currentCard].gradient} p-6 md:p-8 flex flex-col justify-between min-h-[280px] md:min-h-[320px] transition-opacity duration-500`}
                                                 >
                                                     <div>
-                                                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                                                            {cards[currentCard].title}
+                                                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 flex flex-wrap items-center gap-2">
+                                                            <span className="inline-block">{cards[currentCard].title}</span>
                                                             <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
                                                                 <span>+</span>
                                                                 <Sparkles className="w-4 h-4" />
@@ -521,11 +526,6 @@ const App: React.FC = React.memo(() => {
                                                         <h2 className="text-3xl font-bold text-white mb-4">
                                                             La Mejor Plataforma<br />
                                                             para Buscar Coches
-                                                            <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
-                                                                <span>+</span>
-                                                                <Sparkles className="w-4 h-4" />
-                                                                <span>IA</span>
-                                                            </div>
                                                         </h2>
                                                         <p className="text-blue-100 text-base mb-6">
                                                             Facilidad para buscar coches de forma segura<br />
@@ -548,11 +548,6 @@ const App: React.FC = React.memo(() => {
                                                         <h2 className="text-3xl font-bold text-white mb-4">
                                                             Forma fácil de encontrar<br />
                                                             casa a buen precio
-                                                            <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
-                                                                <span>+</span>
-                                                                <Sparkles className="w-4 h-4" />
-                                                                <span>IA</span>
-                                                            </div>
                                                         </h2>
                                                         <p className="text-blue-100 text-base mb-6">
                                                             Ofreciendo servicios de búsqueda<br />
@@ -696,4 +691,5 @@ const App: React.FC = React.memo(() => {
 });
 
 export default App;
+
 
