@@ -31,6 +31,7 @@ export interface SearchParameters {
     minPrice: number | null;
     maxPrice: number | null;
     shippingAvailable: boolean;
+    strictMatchOnly: boolean;
     platformIds: number[];
 }
 

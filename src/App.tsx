@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react'
-import { Search, Car, Home, Bike, Heart, Sparkles, ArrowRight, Shield, ArrowLeft, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell } from 'lucide-react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { Search, Car, Home, Bike, Heart, Sparkles, ArrowRight, Shield, ArrowLeft, Settings, HelpCircle, CreditCard, LogOut, Menu, Play, Bell } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext'
 import { UserManagement } from './components/UserManagement'
 import { GoogleAuth } from './components/GoogleAuth'
@@ -11,7 +11,7 @@ import { useRef, useCallback } from 'react';
 import { FavoritesModal } from './components/FavoritesModal'
 import SearchForm from './components/SearchForm'
 import { SubscriptionPlans } from './components/SubscriptionPlans'
-import { PhoneVerificationPage } from './pages/PhoneVerificationPage'
+import { PhoneVerification as PhoneVerificationPage } from './pages/PhoneVerificationPage';
 import { SearchParameterForm } from './components/SearchParameterForm'
 import { SearchDashboard } from './components/SearchDashboard'
 import { removeAuthToken } from './lib/auth'
@@ -20,19 +20,18 @@ import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import { AdDetails } from './components/AdDetails'
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage'
 import { PaymentCancelPage } from './pages/PaymentCancelPage'
-import { SearchesPage } from './pages/SearchesPage';
-import { SearchResultsPage } from './pages/SearchResultsPage';
 import { Notification, NotificationType } from './components/Notification';
 import { useEffect } from 'react';
 import { useSubscriptionLimits } from './hooks/useSubscriptionLimits'
+import { useUserSettings } from './hooks/useUserSettings'
 
 const App: React.FC = React.memo(() => {
-    const navigate = useNavigate();
     const { user, setUser, isAuthenticated } = useAuth()
     const [showFavorites, setShowFavorites] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const [showAdminPanel, setShowAdminPanel] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const { settings, toggleWhatsApp } = useUserSettings();
     const [notification, setNotification] = useState<{
         type: NotificationType;
         message: string;
@@ -52,6 +51,8 @@ const App: React.FC = React.memo(() => {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const profileMenuRef = useRef<HTMLDivElement>(null);
     const [currentCard, setCurrentCard] = useState(0);
+    const [showSearchOptions, setShowSearchOptions] = useState(false);
+    const [strictMatchOnly, setStrictMatchOnly] = useState(false);
     const cards = [
         {
             title: "Forma fácil de encontrar\ncasa a buen precio",
@@ -177,7 +178,7 @@ const App: React.FC = React.memo(() => {
                                             setShowFavorites(false);
                                             setShowSubscriptions(false);
                                             setCurrentStep(0);
-                                            navigate('/searches');
+                                            setShowAdminPanel(true);
                                         }}
                                         className={`p-2 rounded-lg transition-colors ${showAdminPanel
                                             ? 'bg-blue-50 text-blue-600'
@@ -191,6 +192,30 @@ const App: React.FC = React.memo(() => {
                                 <button className="p-2 hover:bg-gray-50 rounded-lg">
                                     <Settings className="w-5 h-5 text-gray-600" />
                                 </button>
+                                {isAuthenticated && (
+                                    <button
+                                        onClick={() => toggleWhatsApp()}
+                                        className={`p-2 rounded-lg transition-colors ${settings?.isWhatsAppEnabled
+                                            ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                                            : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                                            }`}
+                                        title={`WhatsApp notifications ${settings?.isWhatsAppEnabled ? 'enabled' : 'disabled'}`}
+                                    >
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            width="20"
+                                            height="20"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            fill="none"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+                                            <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
+                                        </svg>
+                                    </button>
+                                )}
                             </div>
 
                             {isAuthenticated ? (
@@ -276,7 +301,7 @@ const App: React.FC = React.memo(() => {
                                 <button
                                     onClick={() => {
                                         setShowSubscriptions(false);
-                                        navigate('/searches');
+                                        setCurrentStep(3);
                                         setSidebarOpen(false);
                                     }}
                                     className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -423,8 +448,6 @@ const App: React.FC = React.memo(() => {
                             <Route path="/privacy-policy.html" element={<PrivacyPolicy />} />
                             <Route path="/success" element={<PaymentSuccessPage />} />
                             <Route path="/cancel" element={<PaymentCancelPage />} />
-                            <Route path="/searches" element={<SearchesPage />} />
-                            <Route path="/searches/:id" element={<SearchResultsPage />} />
                             <Route path="/ad/:id" element={<AdDetails onBack={() => window.history.back()} />} />
                             <Route path="/" element={showAdminPanel ? (
                                 <UserManagement onBack={() => setShowAdminPanel(false)} />
@@ -486,8 +509,8 @@ const App: React.FC = React.memo(() => {
                                                     className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${cards[currentCard].gradient} p-6 md:p-8 flex flex-col justify-between min-h-[280px] md:min-h-[320px] transition-opacity duration-500`}
                                                 >
                                                     <div>
-                                                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 flex flex-wrap items-center gap-2">
-                                                            <span className="inline-block">{cards[currentCard].title}</span>
+                                                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                                                            {cards[currentCard].title}
                                                             <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
                                                                 <span>+</span>
                                                                 <Sparkles className="w-4 h-4" />
@@ -526,6 +549,11 @@ const App: React.FC = React.memo(() => {
                                                         <h2 className="text-3xl font-bold text-white mb-4">
                                                             La Mejor Plataforma<br />
                                                             para Buscar Coches
+                                                            <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
+                                                                <span>+</span>
+                                                                <Sparkles className="w-4 h-4" />
+                                                                <span>IA</span>
+                                                            </div>
                                                         </h2>
                                                         <p className="text-blue-100 text-base mb-6">
                                                             Facilidad para buscar coches de forma segura<br />
@@ -548,6 +576,11 @@ const App: React.FC = React.memo(() => {
                                                         <h2 className="text-3xl font-bold text-white mb-4">
                                                             Forma fácil de encontrar<br />
                                                             casa a buen precio
+                                                            <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
+                                                                <span>+</span>
+                                                                <Sparkles className="w-4 h-4" />
+                                                                <span>IA</span>
+                                                            </div>
                                                         </h2>
                                                         <p className="text-blue-100 text-base mb-6">
                                                             Ofreciendo servicios de búsqueda<br />
@@ -563,22 +596,6 @@ const App: React.FC = React.memo(() => {
                                                         className="absolute -right-12 -bottom-16 w-72 object-contain transform-gpu [filter:drop-shadow(2px_4px_8px_rgba(0,0,0,0.2))_drop-shadow(0_30px_30px_rgba(29,78,216,0.35))_drop-shadow(0_20px_20px_rgba(59,130,246,0.45))]"
                                                     />
                                                 </div>
-
-                                                {/* AI Separator */}
-                                                <div className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
-                                                    <div className="w-px h-32 bg-gradient-to-b from-transparent via-blue-500/20 to-transparent animate-pulse" />
-                                                    <div className="relative group">
-                                                        <div className="absolute inset-0 bg-[conic-gradient(from_0deg,theme(colors.blue.400/20),theme(colors.violet.400/20),theme(colors.blue.400/20))] rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 animate-spin [animation-duration:4s]" />
-                                                        <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-white/90 to-white/80 backdrop-blur-xl flex items-center justify-center shadow-[0_8px_32px_-8px_rgba(59,130,246,0.3)] border border-blue-100/50 group-hover:border-blue-200/80 group-hover:shadow-[0_12px_36px_-8px_rgba(59,130,246,0.4)] transition-all duration-500">
-                                                            <div className="relative">
-                                                                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-violet-600 rounded-full blur opacity-0 group-hover:opacity-30 transition-opacity duration-500" />
-                                                                <Sparkles className="w-7 h-7 text-blue-600 group-hover:scale-110 transition-transform duration-500 relative z-10" />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="w-px h-32 bg-gradient-to-b from-transparent via-blue-500/20 to-transparent animate-pulse [animation-delay:0.5s]" />
-                                                </div>
-
                                             </div>
                                             {/* Search Form */}
                                             <div className="mt-4 md:mt-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6">
@@ -623,14 +640,44 @@ const App: React.FC = React.memo(() => {
                                                     </div>
 
                                                     <div className="mt-4">
-                                                        <button
-                                                            onClick={handleStartSearch}
-                                                            disabled={!formData.keywords || !formData.userSearch || !selectedCategory}
-                                                            className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-                                                        >
-                                                            <span>Generar</span>
-                                                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                                        </button>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={handleStartSearch}
+                                                                disabled={!formData.keywords || !formData.userSearch || !selectedCategory}
+                                                                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                                                            >
+                                                                <span>Generar</span>
+                                                                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                                            </button>
+                                                            <div className="relative">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setShowSearchOptions(prev => !prev)}
+                                                                    className="h-full px-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
+                                                                >
+                                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                        <circle cx="12" cy="12" r="1" />
+                                                                        <circle cx="12" cy="5" r="1" />
+                                                                        <circle cx="12" cy="19" r="1" />
+                                                                    </svg>
+                                                                </button>
+                                                                {showSearchOptions && (
+                                                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                                                                        <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors">
+                                                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={strictMatchOnly}
+                                                                                    onChange={(e) => setStrictMatchOnly(e.target.checked)}
+                                                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                                />
+                                                                                <span className="text-sm text-gray-700">Coincidencia exacta</span>
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                     {isAuthenticated && (
                                                         <div className="mt-3 text-[10px] text-gray-400 flex items-center justify-center gap-1.5">
@@ -691,5 +738,4 @@ const App: React.FC = React.memo(() => {
 });
 
 export default App;
-
 
