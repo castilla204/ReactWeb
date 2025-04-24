@@ -85,9 +85,10 @@ interface SearchParameterFormProps {
     initialKeywords: string;
     initialUserSearch: string;
     selectedCategory: number | null;
+    StrictMatchOnly?: boolean;
 }
 
-export function SearchParameterForm({ onComplete, setCurrentStep, initialKeywords, initialUserSearch, selectedCategory }: SearchParameterFormProps) {
+export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, StrictMatchOnly = false }: SearchParameterFormProps) {
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
         libraries
@@ -96,6 +97,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, initialKeyword
     const [error, setError] = useState<string | null>(null);
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const { minSearchInterval } = useSubscriptionLimits();
+    const [isStrictMatch, setIsStrictMatch] = useState(StrictMatchOnly);
 
     const initialFormState = {
         keywords: initialKeywords,
@@ -218,6 +220,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, initialKeyword
             category: selectedCategory,
             keywords: formData.keywords || initialKeywords,
             userSearch: formData.userSearch || initialUserSearch,
+            StrictMatchOnly: isStrictMatch,
             latitude: selectedLocation.lat.toString(),
             longitude: selectedLocation.lng.toString(),
             locationRange: formData.locationRange ? parseInt(formData.locationRange) : null,
@@ -581,8 +584,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, initialKeyword
                 {/* Submit Button */}
                 <div
                     className={`fixed bottom-8 right-1/2 translate-x-1/2 md:right-8 md:translate-x-0 z-50 transition-opacity duration-300 ${window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 300
-                            ? 'opacity-100'
-                            : 'opacity-0 pointer-events-none'
+                        ? 'opacity-100'
+                        : 'opacity-0 pointer-events-none'
                         }`}
                 >
                     <button
@@ -592,6 +595,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, initialKeyword
                         className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/30 backdrop-blur-sm w-[200px] md:w-auto">
                         Continuar
                         <ArrowRight className="w-4 h-4" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setIsStrictMatch(!isStrictMatch)}
+                        className={`p-2 rounded-lg transition-colors ${isStrictMatch
+                                ? 'bg-blue-100 text-blue-600'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                        title="Toggle strict match"
+                    >
+                        <span className="text-xs">Strict</span>
                     </button>
                 </div>
             </form>
