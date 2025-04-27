@@ -81,36 +81,36 @@ export function PhoneVerification() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center">
-            <div className="w-full max-w-xl mx-4 bg-white/95 backdrop-blur-sm p-8 rounded-3xl shadow-2xl border border-gray-100 my-8 md:my-0">
-                <div className="text-center mb-8">
-                    <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-500/20 transform -rotate-6">
+        <div className="min-h-screen flex items-start justify-center pt-24">
+            <div className="w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-100">
+                <div className="text-center mb-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xl shadow-blue-500/20 transform -rotate-6">
                         {step === 'phone' ? (
-                            <Phone className="w-12 h-12 text-white" />
+                            <Phone className="w-6 h-6 text-white" />
                         ) : (
-                            <Shield className="w-12 h-12 text-white" />
+                            <Shield className="w-6 h-6 text-white" />
                         )}
                     </div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                    <h2 className="text-lg font-bold text-gray-900 mb-1">
                         Verificación de Teléfono
                     </h2>
-                    <p className="text-gray-500 text-base max-w-sm mx-auto">
+                    <p className="text-sm text-gray-500 max-w-sm mx-auto">
                         {step === 'phone'
                             ? 'Introduce tu número de teléfono para recibir un código de verificación'
                             : 'Introduce el código que hemos enviado a tu teléfono'}
                     </p>
                 </div>
 
-                <form onSubmit={step === 'phone' ? handlePhoneSubmit : handleCodeSubmit} className="space-y-6">
+                <form onSubmit={step === 'phone' ? handlePhoneSubmit : handleCodeSubmit} className="space-y-4">
                     {step === 'phone' ? (
                         <div className="relative">
                             <PhoneInput
                                 country={'es'}
                                 value={phoneNumber}
                                 onChange={setPhoneNumber}
-                                inputClass="!w-full !h-16 !text-gray-900 !bg-white !border-gray-200 !pl-16 !rounded-xl !focus:border-blue-500 !focus:ring-4 !focus:ring-blue-500/10 !text-lg"
+                                inputClass="!w-full !h-11 !text-gray-900 !bg-white !border-gray-200 !pl-12 !rounded-xl !focus:border-blue-500 !focus:ring-4 !focus:ring-blue-500/10 !text-base"
                                 containerClass="!bg-transparent"
-                                buttonClass="!bg-white !border-gray-200 !rounded-l-xl !h-16 !w-16"
+                                buttonClass="!bg-white !border-gray-200 !rounded-l-xl !h-11 !w-12"
                                 dropdownClass="!bg-white !text-gray-900"
                                 searchClass="!bg-gray-800 !text-white"
                                 enableSearch={true}
@@ -124,7 +124,7 @@ export function PhoneVerification() {
                                 value={verificationCode}
                                 onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                 placeholder="Introduce el código"
-                                className="w-full px-6 py-4 bg-white border border-gray-200 rounded-xl text-gray-900 text-center text-2xl tracking-[0.5em] font-medium focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 text-center text-lg tracking-[0.5em] font-medium focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
                                 maxLength={6}
                             />
                         </div>
@@ -145,7 +145,7 @@ export function PhoneVerification() {
                                 </label>
                             </div>
                             <p className="text-xs text-gray-400 pl-7">
-                                Al marcar esta casilla, aceptas que procesemos tus datos personales de acuerdo con nuestra política de privacidad. Utilizaremos tu número de teléfono únicamente para verificar tu identidad y enviarte notificaciones importantes sobre tu cuenta.
+                                Al marcar esta casilla, aceptas que procesemos tus datos personales de acuerdo con nuestra política de privacidad.
                             </p>
                         </div>
                     )}
@@ -160,7 +160,7 @@ export function PhoneVerification() {
                     <button
                         type="submit"
                         disabled={loading || (step === 'phone' && (!phoneNumber || !acceptedPrivacy)) || (step === 'code' && verificationCode.length !== 6)}
-                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-xl font-medium transition-all disabled:opacity-50 disabled:hover:from-blue-600 disabled:hover:to-blue-700 shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/30"
+                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-6 rounded-xl font-medium transition-all disabled:opacity-50 disabled:hover:from-blue-600 disabled:hover:to-blue-700 shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/30"
                     >
                         {loading ? (
                             <Loader2 className="w-5 h-5 animate-spin" />
