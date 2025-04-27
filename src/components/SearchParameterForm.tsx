@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { AlertCircle, MapPin, ArrowRight, ArrowLeft } from 'lucide-react';
+import { MapPin, ArrowRight, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { GoogleMap, useLoadScript, Marker, Libraries } from '@react-google-maps/api';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 
@@ -85,10 +86,9 @@ interface SearchParameterFormProps {
     initialKeywords: string;
     initialUserSearch: string;
     selectedCategory: number | null;
-    StrictMatchOnly?: boolean;
 }
 
-export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, StrictMatchOnly = false }: SearchParameterFormProps) {
+export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch }: SearchParameterFormProps) {
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
         libraries
@@ -97,7 +97,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [error, setError] = useState<string | null>(null);
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const { minSearchInterval } = useSubscriptionLimits();
-    const [isStrictMatch, setIsStrictMatch] = useState(StrictMatchOnly);
+    const [strictMatchOnly, setStrictMatchOnly] = useState(false);
 
     const initialFormState = {
         keywords: initialKeywords,
@@ -220,7 +220,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             category: selectedCategory,
             keywords: formData.keywords || initialKeywords,
             userSearch: formData.userSearch || initialUserSearch,
-            StrictMatchOnly: isStrictMatch,
+            strictMatchOnly,
             latitude: selectedLocation.lat.toString(),
             longitude: selectedLocation.lng.toString(),
             locationRange: formData.locationRange ? parseInt(formData.locationRange) : null,
@@ -251,9 +251,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     Atrás
                 </button>
             </div>
+
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Map Container */}
-                <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200/80 ring-1 ring-gray-100">
+                <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200/80">
                     {/* Map Section */}
                     <div className="relative h-[400px]">
                         {!isLoaded ? (
@@ -286,7 +287,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     onLoad={async (map) => {
                                         setMap(map);
                                         const radius = parseInt(formData.locationRange);
-                                        // Calculate zoom based on screen size and radius
                                         const baseZoom = window.innerWidth < 768 ? 4 : 5;
                                         const zoom = Math.max(2, Math.min(baseZoom, 6 - Math.log2(radius / 50)));
                                         map.setZoom(zoom);
@@ -503,109 +503,67 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     {/* Update Frequency Settings */}
                     <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-6 space-y-4 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
                         <div>
-                            <h3 className="text-sm font-medium text-gray-900 mb-1">Frecuencia de Actualización</h3>
-                            <p className="text-xs text-gray-400">Con qué frecuencia buscar nuevos resultados</p>
+                            <h3 className="text-sm font-medium text-gray-900 mb-4">Configuración de Búsqueda</h3>
+                            <p className="text-xs text-gray-400">Establece la frecuencia de actualización y el tipo de coincidencia</p>
                         </div>
 
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-400">Revisar cada</span>
-                                <div className="flex items-center gap-1">
-                                    <span className="text-lg font-semibold text-white">{formData.frequency}</span>
-                                    <span className="text-sm text-gray-500">horas</span>
+                        <div className="space-y-6">
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-400">Frecuencia de actualización</span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-lg font-semibold text-gray-900">{formData.frequency}</span>
+                                        <span className="text-sm text-gray-500">horas</span>
+                                    </div>
+                                </div>
+                                <input
+                                    type="range"
+                                    min={minSearchInterval}
+                                    max="24"
+                                    value={formData.frequency}
+                                    onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
+                                    className="w-full h-1.5 bg-blue-100 rounded-full appearance-none cursor-pointer focus:outline-none transition-all [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:border-blue-600"
+                                    style={{
+                                        background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${(parseInt(formData.frequency) / 24) * 100}%, rgb(219, 234, 254) ${(parseInt(formData.frequency) / 24) * 100}%, rgb(219, 234, 254) 100%)`,
+                                        height: '6px'
+                                    }}
+                                />
+                                <div className="flex justify-between text-xs text-gray-500">
+                                    <span>{minSearchInterval}h</span>
+                                    <span>12h</span>
+                                    <span>24h</span>
                                 </div>
                             </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="24"
-                                value={formData.frequency}
-                                step="1"
-                                onChange={(e) => {
-                                    const value = parseInt(e.target.value);
-                                    if (value < minSearchInterval) {
-                                        setFormData({ ...formData, frequency: minSearchInterval.toString() });
-                                    } else {
-                                        setFormData({ ...formData, frequency: value.toString() });
-                                    }
-                                }}
-                                className="relative w-full h-1.5 bg-blue-100 rounded-full appearance-none cursor-pointer focus:outline-none transition-all [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:border-blue-600"
-                                style={{
-                                    background: `linear-gradient(to right, 
-                                        rgba(245,158,11,0.3) 0%, 
-                                        rgba(245,158,11,0.3) ${(minSearchInterval / 24) * 100}%,
-                                        rgb(59, 130, 246) ${(minSearchInterval / 24) * 100}%,
-                                        rgb(59, 130, 246) ${(parseInt(formData.frequency) / 24) * 100}%, 
-                                        rgb(219, 234, 254) ${(parseInt(formData.frequency) / 24) * 100}%, 
-                                        rgb(219, 234, 254) 100%)`,
-                                    height: '6px'
-                                }}
-                                onInput={(e) => {
-                                    const input = e.target as HTMLInputElement;
-                                    const value = parseInt(input.value);
-                                    if (value < minSearchInterval) {
-                                        input.value = minSearchInterval.toString();
-                                        setFormData({ ...formData, frequency: minSearchInterval.toString() });
-                                    }
-                                }}
-                            />
-                            <div className="flex justify-between text-xs text-gray-500">
-                                <span>0h</span>
-                                <span>12h</span>
-                                <span>24h</span>
-                            </div>
-                            <div className="text-xs text-gray-400 mt-2 flex items-center gap-1">
-                                <span className="w-2 h-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600"></span>
-                                <span className="flex items-center gap-1">
-                                    Área restringida (mínimo {minSearchInterval}h) -
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setCurrentStep(0);
-                                            window.dispatchEvent(new CustomEvent('showSubscriptions'));
-                                        }}
-                                        className="text-amber-500 hover:text-amber-400 font-medium transition-colors"
-                                    >
-                                        Mejorar Plan
-                                    </button>
-                                </span>
+
+                            <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={strictMatchOnly}
+                                        onChange={(e) => setStrictMatchOnly(e.target.checked)}
+                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm text-gray-700">Coincidencia exacta</span>
+                                </label>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {error && (
-                    <div className="flex items-center gap-2 text-red-400 text-sm bg-red-50 border border-red-100 px-4 py-3 rounded-xl shadow-sm">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{error}</span>
+                    <div className="text-red-600 text-sm bg-red-50 border border-red-100 px-4 py-3 rounded-xl flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                        {error}
                     </div>
                 )}
 
-                {/* Submit Button */}
-                <div
-                    className={`fixed bottom-8 right-1/2 translate-x-1/2 md:right-8 md:translate-x-0 z-50 transition-opacity duration-300 ${window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 300
-                        ? 'opacity-100'
-                        : 'opacity-0 pointer-events-none'
-                        }`}
-                >
+                <div className="sticky bottom-8 flex justify-end">
                     <button
                         type="submit"
-                        onClick={(e) => handleSubmit(e)}
-                        disabled={window.innerHeight + window.scrollY < document.documentElement.scrollHeight - 300}
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/30 backdrop-blur-sm w-[200px] md:w-auto">
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/30"
+                    >
                         Continuar
                         <ArrowRight className="w-4 h-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setIsStrictMatch(!isStrictMatch)}
-                        className={`p-2 rounded-lg transition-colors ${isStrictMatch
-                                ? 'bg-blue-100 text-blue-600'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}
-                        title="Toggle strict match"
-                    >
-                        <span className="text-xs">Strict</span>
                     </button>
                 </div>
             </form>
