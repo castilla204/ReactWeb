@@ -6,6 +6,8 @@ interface AuthContextType {
     user: User | null;
     setUser: (user: User | null | ((prevUser: User | null) => User | null)) => void;
     isAuthenticated: boolean;
+    isLoading: boolean;
+    signOut: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -13,26 +15,31 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
 
     useEffect(() => {
         const restoreSession = async () => {
-            const token = getAuthToken();
-
-            if (!token) {
-                setUser(null);
-                setIsAuthenticated(false);
-                return;
-            }
-
+            setIsLoading(true);
             try {
-                const storedUserData = getUserData();
+                const token = getAuthToken();
 
-                if (!storedUserData) {
+                if (!token) {
+                    console.log('No token found, user not authenticated');
                     setUser(null);
                     setIsAuthenticated(false);
                     return;
                 }
 
+                const storedUserData = await getUserData();
+
+                if (!storedUserData) {
+                    console.log('No user data found, user not authenticated');
+                    setUser(null);
+                    setIsAuthenticated(false);
+                    return;
+                }
+
+                console.log('Restoring session with user:', storedUserData);
                 setUser(storedUserData);
                 setIsAuthenticated(true);
             } catch (error) {
@@ -40,24 +47,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(null);
                 setIsAuthenticated(false);
                 removeAuthToken();
+            } finally {
+                setIsLoading(false);
             }
         };
 
         restoreSession();
     }, []);
 
+    const signOut = () => {
+        console.log('Signing out user');
+        setUser(null);
+        setIsAuthenticated(false);
+        removeAuthToken();
+    };
+
+    // Log state changes for debugging
     useEffect(() => {
-        setIsAuthenticated(!!user);
-    }, [user]);
+        console.log('AuthContext - user:', user);
+        console.log('AuthContext - isAuthenticated:', isAuthenticated);
+        console.log('AuthContext - isLoading:', isLoading);
+    }, [user, isAuthenticated, isLoading]);
 
     return (
-        <AuthContext.Provider value={{ user, setUser, isAuthenticated }}>
+        <AuthContext.Provider value={{ user, setUser, isAuthenticated, isLoading, signOut }}>
             {children}
         </AuthContext.Provider>
     );
 }
 
-// Main hook for accessing auth context
 export function useAuth() {
     const context = useContext(AuthContext);
     if (context === undefined) {
@@ -66,5 +84,4 @@ export function useAuth() {
     return context;
 }
 
-// Alias for components using the auth context to avoid confusion with useAuth hook
 export const useAuthContext = useAuth;
