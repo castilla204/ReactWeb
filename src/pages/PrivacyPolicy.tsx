@@ -69,6 +69,26 @@ export function PrivacyPolicy() {
                             <li>Manage user account</li>
                         </ul>
 
+                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">WhatsApp Notifications</h2>
+                        <p className="mb-6">
+                            If you choose to receive notifications via WhatsApp, we collect and use your phone number solely for the purpose of sending transactional alerts related to products you have actively requested through our service. These include matches for second-hand products you are searching for.
+                        </p>
+                        <p className="mb-6">
+                            Messages are sent only with your explicit consent, obtained through a clearly marked checkbox in our registration form.
+                        </p>
+                        <p className="mb-6">
+                            We do not send promotional or advertising messages via WhatsApp.
+                        </p>
+                        <p className="mb-6">
+                            All messages are sent through the official WhatsApp Business API and use only templates approved by WhatsApp.
+                        </p>
+                        <p className="mb-6">
+                            You can unsubscribe at any time by contacting us at info@atrapo.io or by clicking the WhatsApp icon in your account dashboard once registered.
+                        </p>
+                        <p className="mb-6">
+                            We store a record of the consent given, including the user's phone number, date and time of consent, and the context in which it was granted.
+                        </p>
+
                         <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">How We Share Your Information:</h2>
                         <p className="mb-4">
                             We will not transfer your personal information to any third party without seeking your consent, except in limited circumstances as described below:
