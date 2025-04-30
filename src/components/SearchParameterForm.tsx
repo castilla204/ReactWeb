@@ -9,11 +9,11 @@ const libraries: Libraries = ['drawing', 'geometry'];
 const getDrawingManagerOptions = () => ({
     drawingControl: false,
     circleOptions: {
-        fillColor: 'rgba(120,80,255,1)',
+        fillColor: 'rgba(59, 130, 246, 0.1)',
         fillOpacity: 0.15,
-        strokeColor: 'rgba(120,80,255,1)',
+        strokeColor: 'rgba(59, 130, 246, 0.5)',
         strokeOpacity: 1,
-        strokeWeight: 3,
+        strokeWeight: 2,
         clickable: false,
         editable: true,
         zIndex: 1
@@ -21,12 +21,12 @@ const getDrawingManagerOptions = () => ({
 });
 
 const markerIcon = {
-    path: "M -8,0 A 8,8 0 1,0 8,0 A 8,8 0 1,0 -8,0",
+    path: "M -4,0 A 4,4 0 1,0 4,0 A 4,4 0 1,0 -4,0",
     fillColor: '#3b82f6',
     fillOpacity: 1,
     strokeColor: '#ffffff',
-    strokeWeight: 2,
-    scale: 3,
+    strokeWeight: 1.5,
+    scale: 1.5,
     zIndex: 3
 };
 
@@ -34,12 +34,20 @@ const circleOptions = {
     fillColor: '#3b82f6',
     fillOpacity: 0.15,
     strokeColor: '#3b82f6',
-    strokeOpacity: 1,
-    strokeWeight: 3,
+    strokeOpacity: 0.5,
+    strokeWeight: 2,
     zIndex: 1,
     clickable: false,
     editable: false,
     draggable: false
+};
+
+// Function to calculate zoom level based on radius
+const getZoomLevel = (radius: number) => {
+    // Convert radius from km to meters
+    const radiusInMeters = radius * 1000;
+    // Calculate zoom level using the formula: zoom = 14 - log2(radius / 500)
+    return Math.min(14, Math.max(4, Math.floor(14 - Math.log2(radiusInMeters / 500))));
 };
 
 const mapStyles = [
@@ -83,9 +91,9 @@ const defaultCenter = {
 interface SearchParameterFormProps {
     onComplete: (parameters: any) => void;
     setCurrentStep: (step: number) => void;
+    selectedCategory: number | null;
     initialKeywords: string;
     initialUserSearch: string;
-    selectedCategory: number | null;
 }
 
 export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch }: SearchParameterFormProps) {
@@ -97,7 +105,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [error, setError] = useState<string | null>(null);
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const { minSearchInterval } = useSubscriptionLimits();
-    const [strictMatchOnly, setStrictMatchOnly] = useState(false);
 
     const initialFormState = {
         keywords: initialKeywords,
@@ -139,12 +146,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     if (map) {
                         map.panTo(currentLocation);
                         const radius = parseInt(formData.locationRange);
-                        const zoom = Math.max(6, Math.min(12, 13 - Math.log2(radius / 5)));
+                        const zoom = getZoomLevel(radius);
                         map.setZoom(zoom);
 
                         if (circle) {
                             circle.setCenter(currentLocation);
-                            circle.setRadius(parseInt(formData.locationRange) * 1000);
+                            circle.setRadius(radius * 1000);
                         }
                     }
                 },
@@ -157,12 +164,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     if (map) {
                         map.panTo(defaultCenter);
                         const radius = parseInt(formData.locationRange);
-                        const zoom = Math.max(10, Math.min(12, 13 - Math.log2(radius / 10)));
+                        const zoom = getZoomLevel(radius);
                         map.setZoom(zoom);
 
                         if (circle) {
                             circle.setCenter(defaultCenter);
-                            circle.setRadius(parseInt(formData.locationRange) * 1000);
+                            circle.setRadius(radius * 1000);
                         }
                     }
                 }
@@ -173,7 +180,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     useEffect(() => {
         if (map && circle) {
             const radius = parseInt(formData.locationRange);
-            const zoom = Math.max(6, Math.min(12, 13 - Math.log2(radius / 5)));
+            const zoom = getZoomLevel(radius);
             map.setZoom(zoom);
             circle.setRadius(radius * 1000);
         }
@@ -220,7 +227,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             category: selectedCategory,
             keywords: formData.keywords || initialKeywords,
             userSearch: formData.userSearch || initialUserSearch,
-            strictMatchOnly,
             latitude: selectedLocation.lat.toString(),
             longitude: selectedLocation.lng.toString(),
             locationRange: formData.locationRange ? parseInt(formData.locationRange) : null,
@@ -254,7 +260,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Map Container */}
-                <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200/80">
+                <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200">
                     {/* Map Section */}
                     <div className="relative h-[400px]">
                         {!isLoaded ? (
@@ -281,14 +287,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 )}
                                 <GoogleMap
                                     mapContainerStyle={{ width: '100%', height: '100%' }}
-                                    zoom={window.innerWidth < 768 ? 5 : 6}
+                                    zoom={getZoomLevel(parseInt(formData.locationRange))}
                                     center={selectedLocation}
                                     onClick={handleMapClick}
                                     onLoad={async (map) => {
                                         setMap(map);
                                         const radius = parseInt(formData.locationRange);
-                                        const baseZoom = window.innerWidth < 768 ? 4 : 5;
-                                        const zoom = Math.max(2, Math.min(baseZoom, 6 - Math.log2(radius / 50)));
+                                        const zoom = getZoomLevel(radius);
                                         map.setZoom(zoom);
 
                                         const manager = new google.maps.drawing.DrawingManager(getDrawingManagerOptions());
@@ -298,7 +303,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         const initialCircle = new google.maps.Circle({
                                             map,
                                             center: selectedLocation,
-                                            radius: parseInt(formData.locationRange) * 1000,
+                                            radius: radius * 1000,
                                             ...circleOptions
                                         });
                                         setCircle(initialCircle);
@@ -407,8 +412,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         setFormData({ ...formData, locationRange: e.target.value });
                                         if (map) {
                                             const radius = parseInt(e.target.value);
-                                            const baseZoom = window.innerWidth < 768 ? 4 : 5;
-                                            const zoom = Math.max(2, Math.min(baseZoom, 6 - Math.log2(radius / 50)));
+                                            const zoom = getZoomLevel(radius);
                                             map.setZoom(zoom);
                                         }
                                     }}
@@ -504,7 +508,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-6 space-y-4 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
                         <div>
                             <h3 className="text-sm font-medium text-gray-900 mb-4">Configuración de Búsqueda</h3>
-                            <p className="text-xs text-gray-400">Establece la frecuencia de actualización y el tipo de coincidencia</p>
+                            <p className="text-xs text-gray-400">Establece la frecuencia de actualización</p>
                         </div>
 
                         <div className="space-y-6">
@@ -533,18 +537,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     <span>12h</span>
                                     <span>24h</span>
                                 </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={strictMatchOnly}
-                                        onChange={(e) => setStrictMatchOnly(e.target.checked)}
-                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Coincidencia exacta</span>
-                                </label>
                             </div>
                         </div>
                     </div>

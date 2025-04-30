@@ -7,7 +7,6 @@ import { NotificationCenter } from './components/NotificationCenter';
 import { useNotifications } from './hooks/useNotifications';
 import { FavoritesModal } from './components/FavoritesModal';
 import { PhoneVerification as PhoneVerificationPage } from './pages/PhoneVerificationPage';
-import { removeAuthToken } from './lib/auth';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { AdDetails } from './components/AdDetails';
@@ -22,7 +21,7 @@ import AdminPanelPage from './pages/AdminPanelPage';
 import Background from './components/Background';
 
 const App: React.FC = React.memo(() => {
-    const { user, setUser, isAuthenticated } = useAuth();
+    const { user, setUser, isAuthenticated, signOut } = useAuth();
     const [showFavorites, setShowFavorites] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const { settings, toggleWhatsApp } = useUserSettings();
@@ -47,9 +46,27 @@ const App: React.FC = React.memo(() => {
     }, [handleClickOutside]);
 
     const handleSignOut = () => {
-        setUser(null);
-        removeAuthToken();
+        signOut();
+        setShowProfileMenu(false);
+        window.dispatchEvent(new CustomEvent('showNotification', {
+            detail: {
+                type: 'info',
+                message: '👋 ¡Hasta pronto!'
+            }
+        }));
     };
+
+    useEffect(() => {
+        const handleNotification = (event: CustomEvent<{ type: NotificationType; message: string }>) => {
+            setNotification({
+                type: event.detail.type,
+                message: event.detail.message
+            });
+        };
+
+        window.addEventListener('showNotification', handleNotification as EventListener);
+        return () => window.removeEventListener('showNotification', handleNotification as EventListener);
+    }, []);
 
     return (
         <Router>
@@ -59,49 +76,44 @@ const App: React.FC = React.memo(() => {
                     <div className="container mx-auto h-full px-4 flex items-center justify-between">
                         <div className="flex items-center gap-6">
                             <h1 className="text-2xl font-bold text-blue-600">ATRAPO</h1>
-                            <div className="relative hidden md:block">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search something here"
-                                    className="w-[320px] pl-10 pr-4 py-2 bg-gray-50 rounded-lg text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <div className="hidden md:flex items-center gap-4">
-                                <a href="/busquedas" className="p-2 hover:bg-gray-50 rounded-lg">
-                                    <Search className="w-5 h-5 text-gray-600" />
-                                </a>
-                                <button className="p-2 hover:bg-gray-50 rounded-lg">
-                                    <Heart className="w-5 h-5 text-gray-600" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowNotifications(true)}
-                                    className="p-2 hover:bg-gray-50 rounded-lg relative"
-                                >
-                                    {unreadCount > 0 && (
-                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full">
-                                            {unreadCount}
-                                        </div>
-                                    )}
-                                    <Bell className="w-5 h-5 text-gray-600" />
-                                </button>
-                                {user?.email === 'dcastillaa@gmail.com' && (
-                                    <a
-                                        href="/admin"
-                                        className="p-2 hover:bg-gray-50 rounded-lg text-gray-600"
-                                        title="Admin Panel"
-                                    >
-                                        <Shield className="w-5 h-5" />
+                            {isAuthenticated && (
+                                <div className="hidden md:flex items-center gap-4">
+                                    <a href="/busquedas" className="p-2 hover:bg-gray-50 rounded-lg">
+                                        <Search className="w-5 h-5 text-gray-600" />
                                     </a>
-                                )}
-                                <button className="p-2 hover:bg-gray-50 rounded-lg">
-                                    <Settings className="w-5 h-5 text-gray-600" />
-                                </button>
-                                {isAuthenticated && (
+                                    <button
+                                        onClick={() => setShowFavorites(true)}
+                                        className="p-2 hover:bg-gray-50 rounded-lg"
+                                    >
+                                        <Heart className="w-5 h-5 text-gray-600" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNotifications(true)}
+                                        className="p-2 hover:bg-gray-50 rounded-lg relative"
+                                    >
+                                        {unreadCount > 0 && (
+                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full">
+                                                {unreadCount}
+                                            </div>
+                                        )}
+                                        <Bell className="w-5 h-5 text-gray-600" />
+                                    </button>
+                                    {user?.email === 'dcastillaa@gmail.com' && (
+                                        <a
+                                            href="/admin"
+                                            className="p-2 hover:bg-gray-50 rounded-lg text-gray-600"
+                                            title="Admin Panel"
+                                        >
+                                            <Shield className="w-5 h-5" />
+                                        </a>
+                                    )}
+                                    <button className="p-2 hover:bg-gray-50 rounded-lg">
+                                        <Settings className="w-5 h-5 text-gray-600" />
+                                    </button>
                                     <button
                                         onClick={() => toggleWhatsApp()}
                                         className={`p-2 rounded-lg transition-colors ${settings?.isWhatsAppEnabled
@@ -124,8 +136,8 @@ const App: React.FC = React.memo(() => {
                                             <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
                                         </svg>
                                     </button>
-                                )}
-                            </div>
+                                </div>
+                            )}
 
                             {isAuthenticated ? (
                                 <div className="relative" ref={profileMenuRef}>
@@ -171,85 +183,77 @@ const App: React.FC = React.memo(() => {
                     </div>
                 </header>
 
-                {/* Mobile Menu Button */}
-                <button
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="fixed top-3 right-3 z-50 p-2 bg-white/95 backdrop-blur-sm shadow-sm hover:shadow md:hidden border border-gray-100/50 rounded-full transition-all"
-                >
-                    <Menu className="w-5 h-5 text-gray-600" />
-                </button>
+                {/* Mobile Menu Button - Only show when authenticated */}
+                {isAuthenticated && (
+                    <button
+                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                        className="fixed top-3 right-3 z-50 p-2 bg-white/95 backdrop-blur-sm shadow-sm hover:shadow md:hidden border border-gray-100/50 rounded-full transition-all"
+                    >
+                        <Menu className="w-5 h-5 text-gray-600" />
+                    </button>
+                )}
 
-                {/* Sidebar */}
-                <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-xl transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden`}>
-                    <div className="flex flex-col h-full">
-                        <div className="p-4 border-b border-gray-100">
-                            <h1 className="text-xl font-bold text-gray-900">ATRAPO</h1>
-                        </div>
-                        <div className="p-4">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                <input
-                                    type="text"
-                                    placeholder="Buscar..."
-                                    className="w-full pl-10 pr-4 py-2 bg-gray-50 rounded-lg text-sm text-gray-900 placeholder-gray-500 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                />
+                {/* Sidebar - Only show when authenticated */}
+                {isAuthenticated && (
+                    <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-xl transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden`}>
+                        <div className="flex flex-col h-full">
+                            <div className="p-4 border-b border-gray-100">
+                                <h1 className="text-xl font-bold text-gray-900">ATRAPO</h1>
                             </div>
-                        </div>
-                        <nav className="flex-1 overflow-y-auto p-4">
-                            <div className="space-y-1">
-                                <a
-                                    href="/busquedas"
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                    onClick={() => setSidebarOpen(false)}
-                                >
-                                    <Search className="w-4 h-4 text-blue-600" />
-                                    Mis Búsquedas
-                                </a>
-                                <button
-                                    onClick={() => {
-                                        setShowFavorites(true);
-                                        setSidebarOpen(false);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <Heart className="w-4 h-4 text-blue-600" />
-                                    Favoritos
-                                </button>
-                                <a
-                                    href="/suscripciones"
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                    onClick={() => setSidebarOpen(false)}
-                                >
-                                    <Sparkles className="w-4 h-4 text-blue-600" />
-                                    Mejorar Plan
-                                </a>
-                            </div>
-                            <div className="mt-8 space-y-1">
-                                <button
-                                    onClick={() => setSidebarOpen(false)}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <Settings className="w-4 h-4 text-gray-500" />
-                                    Configuración
-                                </button>
-                                <button
-                                    onClick={() => setSidebarOpen(false)}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <HelpCircle className="w-4 h-4 text-gray-500" />
-                                    Centro de Ayuda
-                                </button>
-                                <a
-                                    href="/suscripciones"
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                    onClick={() => setSidebarOpen(false)}
-                                >
-                                    <CreditCard className="w-4 h-4 text-gray-500" />
-                                    Mi Suscripción
-                                </a>
-                            </div>
-                        </nav>
-                        {isAuthenticated && (
+                            <nav className="flex-1 overflow-y-auto p-4">
+                                <div className="space-y-1">
+                                    <a
+                                        href="/busquedas"
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        onClick={() => setSidebarOpen(false)}
+                                    >
+                                        <Search className="w-4 h-4 text-blue-600" />
+                                        Mis Búsquedas
+                                    </a>
+                                    <button
+                                        onClick={() => {
+                                            setShowFavorites(true);
+                                            setSidebarOpen(false);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        <Heart className="w-4 h-4 text-blue-600" />
+                                        Favoritos
+                                    </button>
+                                    <a
+                                        href="/suscripciones"
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        onClick={() => setSidebarOpen(false)}
+                                    >
+                                        <Sparkles className="w-4 h-4 text-blue-600" />
+                                        Mejorar Plan
+                                    </a>
+                                </div>
+                                <div className="mt-8 space-y-1">
+                                    <button
+                                        onClick={() => setSidebarOpen(false)}
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        <Settings className="w-4 h-4 text-gray-500" />
+                                        Configuración
+                                    </button>
+                                    <button
+                                        onClick={() => setSidebarOpen(false)}
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        <HelpCircle className="w-4 h-4 text-gray-500" />
+                                        Centro de Ayuda
+                                    </button>
+                                    <a
+                                        href="/suscripciones"
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        onClick={() => setSidebarOpen(false)}
+                                    >
+                                        <CreditCard className="w-4 h-4 text-gray-500" />
+                                        Mi Suscripción
+                                    </a>
+                                </div>
+                            </nav>
                             <div className="p-4 border-t border-gray-100">
                                 <div className="flex items-center gap-3 mb-3">
                                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -270,9 +274,9 @@ const App: React.FC = React.memo(() => {
                                     Cerrar Sesión
                                 </button>
                             </div>
-                        )}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {sidebarOpen && (
                     <div
@@ -294,7 +298,7 @@ const App: React.FC = React.memo(() => {
                             <Route path="/busquedas" element={<ProtectedRoute><SearchesPage /></ProtectedRoute>} />
                             <Route path="/suscripciones" element={<ProtectedRoute><SubscriptionsPage /></ProtectedRoute>} />
                             <Route path="/admin" element={<ProtectedRoute><AdminPanelPage /></ProtectedRoute>} />
-                            <Route path="/" element={<ProtectedRoute><SearchCreationPage /></ProtectedRoute>} />
+                            <Route path="/" element={<SearchCreationPage />} />
                         </Routes>
                     </section>
                 </main>

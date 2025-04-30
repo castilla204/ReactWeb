@@ -24,7 +24,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const token = getAuthToken();
 
                 if (!token) {
-                    console.log('No token found, user not authenticated');
                     setUser(null);
                     setIsAuthenticated(false);
                     return;
@@ -33,13 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const storedUserData = await getUserData();
 
                 if (!storedUserData) {
-                    console.log('No user data found, user not authenticated');
                     setUser(null);
                     setIsAuthenticated(false);
                     return;
                 }
 
-                console.log('Restoring session with user:', storedUserData);
                 setUser(storedUserData);
                 setIsAuthenticated(true);
             } catch (error) {
@@ -55,19 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         restoreSession();
     }, []);
 
+    useEffect(() => {
+        // Update authentication state whenever user changes
+        setIsAuthenticated(!!user);
+    }, [user]);
+
     const signOut = () => {
-        console.log('Signing out user');
         setUser(null);
         setIsAuthenticated(false);
         removeAuthToken();
     };
-
-    // Log state changes for debugging
-    useEffect(() => {
-        console.log('AuthContext - user:', user);
-        console.log('AuthContext - isAuthenticated:', isAuthenticated);
-        console.log('AuthContext - isLoading:', isLoading);
-    }, [user, isAuthenticated, isLoading]);
 
     return (
         <AuthContext.Provider value={{ user, setUser, isAuthenticated, isLoading, signOut }}>

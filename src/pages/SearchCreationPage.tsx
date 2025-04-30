@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { Car, Home, Bike, Search, ArrowRight, Shield } from 'lucide-react';
+import { Car, Home, Bike, Search, ArrowRight, Shield, Wand2 } from 'lucide-react';
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
@@ -8,11 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Notification, NotificationType } from '../components/Notification';
 import HomeHero from '../components/HomeHero';
 
-interface SearchCreationPageProps {
-    // Removed setShowSubscriptions prop
-}
-
-const SearchCreationPage: React.FC<SearchCreationPageProps> = () => {
+const SearchCreationPage: React.FC = () => {
     const { isAuthenticated } = useAuth();
     const [notification, setNotification] = useState<{
         type: NotificationType;
@@ -26,11 +22,11 @@ const SearchCreationPage: React.FC<SearchCreationPageProps> = () => {
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const { categories } = useCategories();
     const { currentSearchCount, maxSearches } = useSubscriptionLimits();
-    const [showSearchOptions, setShowSearchOptions] = useState(false);
     const [strictMatchOnly, setStrictMatchOnly] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
 
     const handleParametersComplete = (parameters: any) => {
+        parameters.strictMatchOnly = strictMatchOnly;
         setSearchParameters(parameters);
         setCurrentStep(2);
     };
@@ -96,53 +92,42 @@ const SearchCreationPage: React.FC<SearchCreationPageProps> = () => {
                                     className="w-full px-4 py-2.5 rounded-lg bg-white/80 border border-gray-200 text-gray-900 text-sm placeholder-gray-500 transition-all focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 outline-none select-none"
                                 />
                             </div>
-                            <div className="mt-3">
-                                <textarea
-                                    value={formData.userSearch}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, userSearch: e.target.value }))}
-                                    placeholder="Describe los detalles que buscas..."
-                                    className="w-full px-4 py-2.5 rounded-lg bg-white/80 border border-gray-200 text-gray-900 text-xs min-h-[80px] placeholder-gray-500 transition-all resize-none focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 outline-none select-none"
-                                />
-                            </div>
-                            <div className="mt-4">
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={handleStartSearch}
-                                        disabled={!formData.keywords || !formData.userSearch || !selectedCategory}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-                                    >
-                                        <span>Generar</span>
-                                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                    </button>
-                                    <div className="relative">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowSearchOptions(prev => !prev)}
-                                            className="h-full px-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
-                                        >
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                <circle cx="12" cy="12" r="1" />
-                                                <circle cx="12" cy="5" r="1" />
-                                                <circle cx="12" cy="19" r="1" />
-                                            </svg>
-                                        </button>
-                                        {showSearchOptions && (
-                                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-                                                <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors">
-                                                    <label className="flex items-center gap-2 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={strictMatchOnly}
-                                                            onChange={(e) => setStrictMatchOnly(e.target.checked)}
-                                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                        />
-                                                        <span className="text-sm text-gray-700">Coincidencia exacta</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        )}
+                            <div className="mt-3 flex gap-2">
+                                <div className="flex-1">
+                                    <textarea
+                                        value={formData.userSearch}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, userSearch: e.target.value }))}
+                                        placeholder="Describe los detalles que buscas..."
+                                        className="w-full px-4 py-2.5 rounded-lg bg-white/80 border border-gray-200 text-gray-900 text-xs min-h-[80px] placeholder-gray-500 transition-all resize-none focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 outline-none select-none"
+                                    />
+                                </div>
+                                <div className="flex items-start gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 w-[200px]">
+                                    <input
+                                        type="checkbox"
+                                        checked={strictMatchOnly}
+                                        onChange={(e) => setStrictMatchOnly(e.target.checked)}
+                                        className="mt-1 w-4 h-4 rounded border-gray-300 text-gray-500 focus:ring-gray-400"
+                                    />
+                                    <div>
+                                        <div className="flex items-center gap-1.5">
+                                            <Wand2 className="w-3.5 h-3.5 text-gray-500" />
+                                            <span className="text-xs font-medium text-gray-900">Coincidencia exacta</span>
+                                        </div>
+                                        <p className="text-[10px] text-gray-500 mt-1 leading-tight">
+                                            Al activar esta opción, solo recibirás notificaciones de anuncios que coincidan exactamente con tus criterios de búsqueda.
+                                        </p>
                                     </div>
                                 </div>
+                            </div>
+                            <div className="mt-4">
+                                <button
+                                    onClick={handleStartSearch}
+                                    disabled={!formData.keywords || !formData.userSearch || !selectedCategory}
+                                    className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                                >
+                                    <span>Generar</span>
+                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </button>
                             </div>
                             {isAuthenticated && (
                                 <div className="mt-3 text-[10px] text-gray-400 flex items-center justify-center gap-1.5">
