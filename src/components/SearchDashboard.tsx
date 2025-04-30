@@ -1,5 +1,5 @@
-﻿import React, { useState } from 'react';
-import { Search, Clock, Power, ChevronRight, AlertCircle, CheckCircle, Calendar, Trash2, Pencil, ArrowLeft, Tag } from 'lucide-react';
+﻿import React, { useState, useMemo } from 'react';
+import { Search, Clock, Power, ChevronRight, AlertCircle, CheckCircle, Calendar, Trash2, Pencil, ArrowLeft, Tag, Filter, X, Car, Home, Bike, LayoutGrid, LayoutList } from 'lucide-react';
 import { SearchDetails } from './SearchDetails';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
@@ -8,6 +8,12 @@ import type { SearchItem } from '../hooks/useSearch.hooks';
 
 interface SearchDashboardProps {
     onBack: () => void;
+}
+
+interface Filters {
+    search: string;
+    category: number | null;
+    status: 'all' | 'active' | 'inactive';
 }
 
 const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
@@ -21,6 +27,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
         reviseSearch: reviseSearchMutation,
         updateSearch: updateSearchMutation
     } = useSearch();
+
     const [selectedSearch, setSelectedSearch] = useState<number | null>(null);
     const isAdmin = user?.email === 'dcastillaa@gmail.com';
     const [editingSearch, setEditingSearch] = useState<number | null>(null);
@@ -30,16 +37,42 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
         frequency: 0
     });
 
+    // View mode state
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+    // Filters state
+    const [filters, setFilters] = useState<Filters>({
+        search: '',
+        category: null,
+        status: 'all'
+    });
+
     const searchesData = isAdmin ? adminSearchesQuery : searchesQuery;
     const loading = searchesData.isLoading;
     const error = searchesData.error;
     const searchesList: SearchItem[] = searchesData.data || [];
 
+    // Filter searches
+    const filteredSearches = useMemo(() => {
+        return searchesList.filter(search => {
+            const searchMatch = filters.search.toLowerCase().trim() === '' ||
+                search.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+                search.description.toLowerCase().includes(filters.search.toLowerCase());
+
+            const categoryMatch = filters.category === null || search.category === filters.category;
+
+            const statusMatch = filters.status === 'all' ||
+                (filters.status === 'active' && search.isActive) ||
+                (filters.status === 'inactive' && !search.isActive);
+
+            return searchMatch && categoryMatch && statusMatch;
+        });
+    }, [searchesList, filters]);
+
     const handleToggleActive = async (searchId: number, currentStatus: boolean, e: React.MouseEvent) => {
         e.stopPropagation();
         try {
             await toggleActiveMutation.mutateAsync(searchId);
-
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
@@ -76,7 +109,6 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
 
         try {
             await deleteSearchMutation.mutateAsync(searchId);
-
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
@@ -116,7 +148,6 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
             });
 
             setEditingSearch(null);
-
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
@@ -139,17 +170,25 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
         setEditingSearch(null);
     };
 
+    const clearFilters = () => {
+        setFilters({
+            search: '',
+            category: null,
+            status: 'all'
+        });
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-gray-400">Loading searches...</div>
+                <div className="text-gray-500">Loading searches...</div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="flex items-center justify-center min-h-[400px] text-red-400">
+            <div className="flex items-center justify-center min-h-[400px] text-red-500">
                 <AlertCircle className="w-5 h-5 mr-2" />
                 <span>{error instanceof Error ? error.message : 'An error occurred'}</span>
             </div>
@@ -186,23 +225,113 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                         </p>
                     </div>
                 </div>
-                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg text-sm text-gray-500 border border-gray-100">
-                    <Search className="w-4 h-4" />
-                    {searchesList.length} {searchesList.length === 1 ? 'búsqueda' : 'búsquedas'} encontradas
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setViewMode('grid')}
+                        className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                    >
+                        <LayoutGrid className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={() => setViewMode('list')}
+                        className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                    >
+                        <LayoutList className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
 
-            {searchesList.length === 0 ? (
-                <div className="col-span-full text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-lg">
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+                {/* Search input */}
+                <div className="flex-1 min-w-[240px]">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            value={filters.search}
+                            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                            placeholder="Buscar por título o descripción..."
+                            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                        />
+                    </div>
+                </div>
+
+                {/* Category filter */}
+                <div className="flex flex-wrap gap-2">
+                    {categories?.map((category) => (
+                        <button
+                            key={category.id}
+                            onClick={() => setFilters(prev => ({
+                                ...prev,
+                                category: prev.category === category.id ? null : category.id
+                            }))}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${filters.category === category.id
+                                    ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
+                                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                }`}
+                        >
+                            {category.id === 1 && <Car className="w-3.5 h-3.5" />}
+                            {category.id === 2 && <Bike className="w-3.5 h-3.5" />}
+                            {category.id === 3 && <Home className="w-3.5 h-3.5" />}
+                            {category.name}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Status filter */}
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setFilters(prev => ({ ...prev, status: 'active' }))}
+                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${filters.status === 'active'
+                                ? 'bg-green-50 text-green-600 ring-1 ring-green-200'
+                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                            }`}
+                    >
+                        Activas
+                    </button>
+                    <button
+                        onClick={() => setFilters(prev => ({ ...prev, status: 'inactive' }))}
+                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${filters.status === 'inactive'
+                                ? 'bg-red-50 text-red-600 ring-1 ring-red-200'
+                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                            }`}
+                    >
+                        Inactivas
+                    </button>
+                </div>
+
+                {/* Clear filters */}
+                {(filters.search || filters.category !== null || filters.status !== 'all') && (
+                    <button
+                        onClick={clearFilters}
+                        className="px-3 py-2 text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1.5 hover:bg-gray-50 rounded-lg transition-all"
+                    >
+                        <X className="w-3.5 h-3.5" />
+                        Limpiar filtros
+                    </button>
+                )}
+            </div>
+
+            {/* Results count */}
+            <div className="flex items-center gap-2 mb-6 text-sm text-gray-500">
+                <Search className="w-4 h-4" />
+                <span>
+                    {filteredSearches.length} {filteredSearches.length === 1 ? 'búsqueda encontrada' : 'búsquedas encontradas'}
+                </span>
+            </div>
+
+            {filteredSearches.length === 0 ? (
+                <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-lg">
                     <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Search className="w-8 h-8 text-gray-400" />
                     </div>
-                    <p className="text-gray-500 font-medium">No se encontraron búsquedas activas</p>
-                    <p className="text-gray-400 text-sm mt-1">Crea una nueva búsqueda para empezar</p>
+                    <p className="text-gray-500 font-medium">No se encontraron búsquedas</p>
+                    <p className="text-gray-400 text-sm mt-1">Prueba con otros filtros</p>
                 </div>
-            ) : (
+            ) : viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {searchesList.map((search) => (
+                    {filteredSearches.map((search) => (
                         <div
                             key={search.id}
                             onClick={() => handleSearchClick(search.id)}
@@ -340,6 +469,85 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                             </div>
                         </div>
                     ))}
+                </div>
+            ) : (
+                <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="bg-gray-50 border-b border-gray-200">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Título</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frecuencia</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Última Ejecución</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {filteredSearches.map((search) => (
+                                <tr
+                                    key={search.id}
+                                    onClick={() => handleSearchClick(search.id)}
+                                    className="hover:bg-gray-50 cursor-pointer"
+                                >
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center">
+                                            <div>
+                                                <div className="text-sm font-medium text-gray-900">{search.title}</div>
+                                                <div className="text-sm text-gray-500 line-clamp-1">{search.description}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            {categories?.find(c => c.id === search.category)?.name}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span
+                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${search.isActive
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-gray-100 text-gray-800'
+                                                }`}
+                                        >
+                                            {search.isActive ? 'Activa' : 'Inactiva'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-500">
+                                        Cada {search.frequency} horas
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-500">
+                                        {new Date(search.lastExecution).toLocaleDateString()}
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-sm font-medium">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={(e) => handleToggleActive(search.id, search.isActive, e)}
+                                                className={`p-2 rounded-lg transition-colors ${search.isActive
+                                                        ? 'text-green-600 hover:bg-green-50'
+                                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                <Power className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleEdit(search, e)}
+                                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDelete(search.id, e)}
+                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             )}
         </div>
