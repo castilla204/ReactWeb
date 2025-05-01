@@ -1,273 +1,248 @@
-import React, { useState } from 'react';
-import { Check, X, Sparkles, Zap, Shield, Clock, Search, Bell } from 'lucide-react';
-import { useSubscription, type Plan } from '../hooks/useSubscription.hooks';
+Ôªøimport React, { useState } from 'react';
+import { useSubscription } from '../hooks/useSubscription.hooks';
+import { Check, Crown, Sparkles, ArrowRight, Loader2, XCircle } from 'lucide-react';
+import type { Plan } from '../hooks/useSubscription.hooks';
+import { useNavigate } from 'react-router-dom';
 
 export function SubscriptionPlans() {
-    const [isYearly, setIsYearly] = useState(false);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
-
-    const { plans, currentPlan, subscriptionDetails, createCheckout } = useSubscription();
-
-    // Check URL parameters for payment status
-    const urlParams = new URLSearchParams(window.location.search);
-    React.useEffect(() => {
-        const checkPaymentStatus = async () => {
-            if (urlParams.get('success')) {
-                try {
-                    // Verify the payment status with the API
-                    await fetchApi('/api/Subscription/verify-payment', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            sessionId: urlParams.get('session_id')
-                        })
-                    });
-                    setSuccessMessage('°Pago exitoso! Tu suscripciÛn ha sido activada.');
-                } catch (err) {
-                    setError('Error al verificar el pago');
-                }
-            }
-            if (urlParams.get('canceled')) {
-                setError('El pago fue cancelado.');
-            }
-        };
-        checkPaymentStatus();
-    }, []);
-
-    // Set yearly subscription based on current subscription
-    React.useEffect(() => {
-        if (subscriptionDetails.data?.isYearly) {
-            setIsYearly(subscriptionDetails.data.isYearly);
-        }
-    }, [subscriptionDetails.data]);
-
-    const getFeatures = (plan: Plan) => [
-        {
-            icon: <Search className="w-4 h-4" />,
-            text: `Hasta ${plan.maxSearches} b˙squedas simult·neas`,
-            included: true
-        },
-        {
-            icon: <Clock className="w-4 h-4" />,
-            text: `ActualizaciÛn cada ${Math.floor(plan.minSearchInterval / 60)} minutos`,
-            included: true
-        },
-        {
-            icon: <Bell className="w-4 h-4" />,
-            text: 'Notificaciones por email',
-            included: true
-        },
-        {
-            icon: <Sparkles className="w-4 h-4" />,
-            text: 'Filtros avanzados',
-            included: plan.name !== 'Free'
-        },
-        {
-            icon: <Shield className="w-4 h-4" />,
-            text: 'Soporte prioritario',
-            included: plan.name === 'Business'
-        },
-        {
-            icon: <Zap className="w-4 h-4" />,
-            text: 'Actualizaciones en tiempo real',
-            included: plan.name === 'Business'
-        }
-    ];
+    const navigate = useNavigate();
+    const { plans, currentPlan, subscriptionDetails, createCheckout, cancelSubscription } = useSubscription();
+    const [selectedBillingCycle, setSelectedBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
     const handleSubscribe = async (plan: Plan) => {
         try {
-            setError(null);
-            if (plan.name === 'Free') {
-                setError('No es posible suscribirse al plan gratuito');
-                return;
-            }
-            const { url } = await createCheckout.mutateAsync({
+            const result = await createCheckout.mutateAsync({
                 planId: plan.id,
-                isYearly
+                isYearly: selectedBillingCycle === 'yearly'
             });
-            // Ensure we have a valid URL before redirecting
-            if (url && url.trim()) {
-                window.location.href = url;
-            } else {
-                throw new Error('No se recibiÛ una URL v·lida para el pago');
+
+            if (result.url) {
+                window.location.href = result.url;
             }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Error al procesar el pago');
-            console.error('Error creating checkout session:', err);
+        } catch (error) {
+            console.error('Error creating checkout session:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: '‚ùå Error al procesar el pago'
+                }
+            }));
+        }
+    };
+
+    const handleCancelSubscription = async () => {
+        try {
+            await cancelSubscription.mutateAsync();
+            setShowCancelConfirm(false);
+            navigate('/');
+        } catch (error) {
+            console.error('Error canceling subscription:', error);
         }
     };
 
     if (plans.isLoading || currentPlan.isLoading || subscriptionDetails.isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="text-gray-400">Cargando planes...</div>
-            </div>
-        );
-    }
-
-    if (plans.error || currentPlan.error || subscriptionDetails.error) {
-        return (
-            <div className="flex items-center justify-center min-h-[50vh] text-red-400">
-                {(plans.error || currentPlan.error || subscriptionDetails.error)?.message || 'Ha ocurrido un error'}
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex items-center gap-3 text-gray-500">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Cargando planes...</span>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="relative py-8 sm:py-16">
-            {/* Background Effects */}
-            <div className="absolute inset-0 -z-10">
-                {/* Base layer with subtle gradient */}
-                <div className="absolute inset-0 bg-gradient-to-b from-blue-50 via-white to-blue-50" />
-
-                {/* Animated gradient spheres */}
-                <div className="absolute top-0 -right-1/4 w-full h-full">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-blue-300/10 to-transparent rounded-full blur-3xl animate-pulse" />
-                </div>
-                <div className="absolute bottom-0 -left-1/4 w-full h-full">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 via-blue-400/10 to-transparent rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
-                </div>
-
-                {/* Radial gradient overlays */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent_50%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(37,99,235,0.1),transparent_50%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_80%,rgba(96,165,250,0.1),transparent_50%)]" />
-
-                {/* Grid pattern */}
-                <div className="absolute inset-0" style={{
-                    backgroundImage: `
-                        linear-gradient(to right, rgba(59, 130, 246, 0.1) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
-                    `,
-                    backgroundSize: '40px 40px'
-                }} />
+        <div className="max-w-7xl mx-auto px-4 py-12">
+            <div className="text-center mb-12">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                    Planes y Precios
+                </h1>
+                <p className="text-gray-500 max-w-2xl mx-auto">
+                    Elige el plan que mejor se adapte a tus necesidades. Todos los planes incluyen acceso a nuestras funciones principales.
+                </p>
             </div>
 
-            <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="mx-auto max-w-4xl text-center">
-                    <h2 className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-600 text-sm font-medium mb-8">
-                        Planes de SuscripciÛn
-                    </h2>
-                    <p className="mt-2 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-                        <span className="text-gray-900">
-                            Elige el plan perfecto
-                        </span>
-                        <br />
-                        <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                            para tus necesidades
-                        </span>
-                    </p>
+            <div className="flex justify-center mb-8">
+                <div className="bg-white rounded-xl p-1 shadow-sm border border-gray-200">
+                    <button
+                        onClick={() => setSelectedBillingCycle('monthly')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedBillingCycle === 'monthly'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                    >
+                        Mensual
+                    </button>
+                    <button
+                        onClick={() => setSelectedBillingCycle('yearly')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedBillingCycle === 'yearly'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                    >
+                        Anual
+                        <span className="ml-1 text-xs text-blue-200">-20%</span>
+                    </button>
                 </div>
+            </div>
 
-                <div className="mt-6 flex justify-center">
-                    <div className="relative flex rounded-full bg-white p-1 border border-gray-200 shadow-sm">
-                        <button
-                            type="button"
-                            className={`flex items-center gap-1 rounded-full px-4 md:px-6 py-2 md:py-2.5 text-xs md:text-sm font-semibold transition-all ${!isYearly ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
-                            onClick={() => setIsYearly(false)}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {plans.data?.map((plan) => {
+                    const price = selectedBillingCycle === 'yearly' ? plan.priceYearly : plan.priceMonthly;
+                    const isCurrentPlan = currentPlan.data?.id === plan.id;
+
+                    return (
+                        <div
+                            key={plan.id}
+                            className={`relative bg-white rounded-2xl p-8 transition-all ${isCurrentPlan
+                                ? 'ring-2 ring-blue-500 shadow-xl shadow-blue-500/10'
+                                : 'border border-gray-200 shadow-lg hover:shadow-xl'
+                                }`}
                         >
-                            Mensual
-                        </button>
-                        <button
-                            type="button"
-                            className={`flex items-center gap-1 rounded-full px-4 md:px-6 py-2 md:py-2.5 text-xs md:text-sm font-semibold transition-all ${isYearly ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
-                            onClick={() => setIsYearly(true)}
-                        >
-                            Anual <span className="text-xs opacity-75">(Ahorra 20%)</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div className="isolate mx-auto mt-12 md:mt-16 grid max-w-md grid-cols-1 gap-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
-                    {plans.data?.map((plan) => {
-                        const features = getFeatures(plan);
-                        const isCurrentPlan = currentPlan.data?.id === plan.id;
-
-                        return (
-                            <div
-                                key={plan.id}
-                                className={`relative rounded-2xl md:rounded-3xl p-6 md:p-8 transition-all duration-300 hover:translate-y-[-4px] ${plan.name === 'Pro'
-                                    ? 'bg-white border-2 border-blue-500 shadow-xl'
-                                    : 'bg-white border border-gray-200 shadow-lg'
-                                    } ${isCurrentPlan ? 'ring-2 ring-green-500' : ''}`}
-                            >
-                                {isCurrentPlan && (
-                                    <div className="absolute -top-3 md:-top-4 left-1/2 -translate-x-1/2 px-4 md:px-5 py-1.5 bg-green-500/90 text-white text-xs md:text-sm font-medium rounded-full shadow-lg backdrop-blur-xl border border-green-400/20">
-                                        Plan Actual ({isYearly ? 'Anual' : 'Mensual'})
-                                    </div>
-                                )}
-
-                                <h3 className="text-lg md:text-xl font-bold text-gray-900">
-                                    {plan.name}
-                                </h3>
-                                <p className="mt-2 text-sm leading-6 text-gray-500">{plan.description}</p>
-                                <p className="mt-6 flex items-baseline gap-x-1">
-                                    <span className="text-4xl md:text-5xl font-bold tracking-tight text-blue-600">
-                                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(isYearly ? plan.priceYearly : plan.priceMonthly)}
-                                    </span>
-                                    <span className="text-xs md:text-sm font-semibold leading-6 text-gray-500">
-                                        {isYearly ? '/aÒo' : '/mes'}
-                                    </span>
-                                </p>
-
-                                <ul role="list" className="mt-6 md:mt-8 space-y-2 md:space-y-3 text-xs md:text-sm leading-6 text-gray-600">
-                                    {features.map((feature, index) => (
-                                        <li key={index} className="flex gap-x-3">
-                                            {feature.included ? (
-                                                <>
-                                                    <div className="flex items-center gap-2">
-                                                        {feature.icon}
-                                                        <Check className="h-3 md:h-4 w-3 md:w-4 flex-none text-green-500" />
-                                                    </div>
-                                                    <span>{feature.text}</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div className="flex items-center gap-2 text-gray-500">
-                                                        {feature.icon}
-                                                        <X className="h-3 md:h-4 w-3 md:w-4 flex-none" />
-                                                    </div>
-                                                    <span className="text-gray-500">{feature.text}</span>
-                                                </>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-
-                                <button
-                                    type="button"
-                                    disabled={isCurrentPlan || plan.name === 'Free' || createCheckout.isPending}
-                                    onClick={() => handleSubscribe(plan)}
-                                    className={`mt-8 w-full rounded-xl px-4 md:px-6 py-3 md:py-3.5 text-sm md:text-base font-semibold leading-6 text-white transition-all ${isCurrentPlan
-                                        ? 'bg-green-500/90 cursor-default'
-                                        : plan.name === 'Free'
-                                            ? 'bg-gray-500/50 cursor-not-allowed'
-                                            : 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30'
-                                        }`}
-                                >
-                                    {isCurrentPlan
-                                        ? `Plan ${isYearly ? 'Anual' : 'Mensual'} Actual`
-                                        : plan.name === 'Free'
-                                            ? 'Plan Gratuito'
-                                            : createCheckout.isPending
-                                                ? 'Procesando...'
-                                                : 'Comenzar'}
-                                </button>
+                            {isCurrentPlan && (
+                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full">
+                                    Plan Actual
+                                </div>
+                            )}
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
+                                    {plan.priceMonthly === 0 ? (
+                                        <Sparkles className="w-6 h-6 text-white" />
+                                    ) : (
+                                        <Crown className="w-6 h-6 text-white" />
+                                    )}
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
+                                    <p className="text-sm text-gray-500">{plan.description}</p>
+                                </div>
                             </div>
-                        );
-                    })}
-                </div>
-                {error && (
-                    <div className="mt-6 text-center text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl border border-red-100">
-                        {error}
-                    </div>
-                )}
-                {successMessage && (
-                    <div className="mt-6 text-center text-sm text-green-600 bg-green-50 px-4 py-3 rounded-xl border border-green-100">
-                        °Pago exitoso! Tu suscripciÛn ha sido activada.
-                    </div>
-                )}
+
+                            <div className="mb-6">
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-3xl font-bold text-gray-900">
+                                        {price === 0 ? 'Gratis' : `${price}‚Ç¨`}
+                                    </span>
+                                    {price > 0 && (
+                                        <span className="text-gray-500">/{selectedBillingCycle === 'yearly' ? 'a√±o' : 'mes'}</span>
+                                    )}
+                                </div>
+                                {selectedBillingCycle === 'yearly' && price > 0 && (
+                                    <p className="text-sm text-green-600 mt-1">
+                                        Ahorra {((plan.priceMonthly * 12 - plan.priceYearly) / (plan.priceMonthly * 12) * 100).toFixed(0)}% con facturaci√≥n anual
+                                    </p>
+                                )}
+                            </div>
+
+                            <ul className="space-y-4 mb-8">
+                                <li className="flex items-center gap-3 text-sm text-gray-600">
+                                    <Check className="w-5 h-5 text-green-500" />
+                                    <span>Hasta {plan.maxSearches} b√∫squedas activas</span>
+                                </li>
+                                <li className="flex items-center gap-3 text-sm text-gray-600">
+                                    <Check className="w-5 h-5 text-green-500" />
+                                    <span>Actualizaci√≥n cada {plan.minSearchInterval}h</span>
+                                </li>
+                                {plan.priceMonthly > 0 && (
+                                    <>
+                                        <li className="flex items-center gap-3 text-sm text-gray-600">
+                                            <Check className="w-5 h-5 text-green-500" />
+                                            <span>Notificaciones por WhatsApp</span>
+                                        </li>
+                                        <li className="flex items-center gap-3 text-sm text-gray-600">
+                                            <Check className="w-5 h-5 text-green-500" />
+                                            <span>An√°lisis de precios</span>
+                                        </li>
+                                        <li className="flex items-center gap-3 text-sm text-gray-600">
+                                            <Check className="w-5 h-5 text-green-500" />
+                                            <span>Filtros avanzados</span>
+                                        </li>
+                                    </>
+                                )}
+                            </ul>
+
+                            {isCurrentPlan ? (
+                                <div className="space-y-3">
+                                    <button
+                                        disabled
+                                        className="w-full px-6 py-3 bg-gray-100 text-gray-400 rounded-xl font-medium cursor-not-allowed"
+                                    >
+                                        Plan Actual
+                                    </button>
+                                    {plan.priceMonthly > 0 && (
+                                        <button
+                                            onClick={() => setShowCancelConfirm(true)}
+                                            className="w-full px-6 py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium transition-colors"
+                                        >
+                                            Cancelar Suscripci√≥n
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => handleSubscribe(plan)}
+                                    disabled={createCheckout.isPending}
+                                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+                                >
+                                    {createCheckout.isPending ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            <span>Procesando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>Seleccionar Plan</span>
+                                            <ArrowRight className="w-5 h-5" />
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
+
+            {/* Confirmation Modal */}
+            {showCancelConfirm && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <XCircle className="w-6 h-6 text-red-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                Cancelar Suscripci√≥n
+                            </h3>
+                        </div>
+                        <p className="text-gray-600 mb-6">
+                            ¬øEst√°s seguro de que quieres cancelar tu suscripci√≥n? Perder√°s acceso a todas las funciones premium al final del per√≠odo de facturaci√≥n actual.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowCancelConfirm(false)}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleCancelSubscription}
+                                disabled={cancelSubscription.isPending}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {cancelSubscription.isPending ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <span>Cancelando...</span>
+                                    </>
+                                ) : (
+                                    'Confirmar Cancelaci√≥n'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

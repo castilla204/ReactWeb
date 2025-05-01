@@ -206,7 +206,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 pt-24 pb-8 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 pt-24 pb-8">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3 md:gap-6">
                     <button
@@ -242,9 +242,9 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center gap-4 mb-6">
+            <div className="flex flex-col gap-4 mb-6">
                 {/* Search input */}
-                <div className="flex-1 min-w-[240px]">
+                <div className="w-full">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
@@ -257,8 +257,9 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                     </div>
                 </div>
 
-                {/* Category filter */}
-                <div className="flex flex-wrap gap-2">
+                {/* Horizontal scrollable filters */}
+                <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 hide-scrollbar">
+                    {/* Category filters */}
                     {categories?.map((category) => (
                         <button
                             key={category.id}
@@ -266,9 +267,9 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                                 ...prev,
                                 category: prev.category === category.id ? null : category.id
                             }))}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${filters.category === category.id
-                                    ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
-                                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.category === category.id
+                                ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
+                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
                             {category.id === 1 && <Car className="w-3.5 h-3.5" />}
@@ -277,40 +278,38 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                             {category.name}
                         </button>
                     ))}
-                </div>
 
-                {/* Status filter */}
-                <div className="flex gap-2">
+                    {/* Status filters */}
                     <button
                         onClick={() => setFilters(prev => ({ ...prev, status: 'active' }))}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${filters.status === 'active'
-                                ? 'bg-green-50 text-green-600 ring-1 ring-green-200'
-                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                        className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'active'
+                            ? 'bg-green-50 text-green-600 ring-1 ring-green-200'
+                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         Activas
                     </button>
                     <button
                         onClick={() => setFilters(prev => ({ ...prev, status: 'inactive' }))}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${filters.status === 'inactive'
-                                ? 'bg-red-50 text-red-600 ring-1 ring-red-200'
-                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                        className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'inactive'
+                            ? 'bg-red-50 text-red-600 ring-1 ring-red-200'
+                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         Inactivas
                     </button>
-                </div>
 
-                {/* Clear filters */}
-                {(filters.search || filters.category !== null || filters.status !== 'all') && (
-                    <button
-                        onClick={clearFilters}
-                        className="px-3 py-2 text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1.5 hover:bg-gray-50 rounded-lg transition-all"
-                    >
-                        <X className="w-3.5 h-3.5" />
-                        Limpiar filtros
-                    </button>
-                )}
+                    {/* Clear filters */}
+                    {(filters.search || filters.category !== null || filters.status !== 'all') && (
+                        <button
+                            onClick={clearFilters}
+                            className="px-3 py-2 text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1.5 hover:bg-gray-50 rounded-lg transition-all whitespace-nowrap"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                            Limpiar filtros
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Results count */}
@@ -437,14 +436,14 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                                             <div className="flex items-center gap-2 w-full justify-end">
                                                 <button
                                                     onClick={(e) => handleEdit(search, e)}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-blue-50"
+                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
                                                     title="Edit search"
                                                 >
                                                     <Pencil className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={(e) => handleDelete(search.id, e)}
-                                                    className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
+                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
                                                     title="Delete search"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -506,8 +505,8 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                                     <td className="px-6 py-4">
                                         <span
                                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${search.isActive
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-gray-100 text-gray-800'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-gray-100 text-gray-800'
                                                 }`}
                                         >
                                             {search.isActive ? 'Activa' : 'Inactiva'}
@@ -524,8 +523,8 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                                             <button
                                                 onClick={(e) => handleToggleActive(search.id, search.isActive, e)}
                                                 className={`p-2 rounded-lg transition-colors ${search.isActive
-                                                        ? 'text-green-600 hover:bg-green-50'
-                                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                                    ? 'text-green-600 hover:bg-green-50'
+                                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                                                     }`}
                                             >
                                                 <Power className="w-4 h-4" />
