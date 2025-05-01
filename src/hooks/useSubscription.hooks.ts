@@ -68,10 +68,36 @@ export const useSubscription = () => {
         }
     });
 
+    const cancelSubscriptionMutation = useMutation({
+        mutationFn: () =>
+            fetchApi(API_CONFIG.endpoints.subscription.cancel, {
+                method: 'POST'
+            }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['subscription'] });
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'success',
+                    message: '✅ Suscripción cancelada correctamente'
+                }
+            }));
+        },
+        onError: (error) => {
+            console.error('Error canceling subscription:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: '❌ Error al cancelar la suscripción'
+                }
+            }));
+        }
+    });
+
     return {
         plans: plansQuery,
         currentPlan: currentPlanQuery,
         subscriptionDetails: subscriptionDetailsQuery,
         createCheckout: createCheckoutMutation,
+        cancelSubscription: cancelSubscriptionMutation,
     };
 };

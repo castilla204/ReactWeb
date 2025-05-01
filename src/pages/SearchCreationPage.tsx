@@ -1,5 +1,5 @@
-﻿import React, { useState } from 'react';
-import { Car, Home, Bike, Search, ArrowRight, Shield, Wand2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Car, Home, Bike, Search, ArrowRight, Shield, Wand2, ChevronDown } from 'lucide-react';
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
@@ -24,6 +24,7 @@ const SearchCreationPage: React.FC = () => {
     const { currentSearchCount, maxSearches } = useSubscriptionLimits();
     const [strictMatchOnly, setStrictMatchOnly] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
+    const [showMobileOptions, setShowMobileOptions] = useState(false);
 
     const handleParametersComplete = (parameters: any) => {
         parameters.strictMatchOnly = strictMatchOnly;
@@ -92,7 +93,7 @@ const SearchCreationPage: React.FC = () => {
                                     className="w-full px-4 py-2.5 rounded-lg bg-white/80 border border-gray-200 text-gray-900 text-sm placeholder-gray-500 transition-all focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 outline-none select-none"
                                 />
                             </div>
-                            <div className="mt-3 flex gap-2">
+                            <div className="mt-3 flex gap-3">
                                 <div className="flex-1">
                                     <textarea
                                         value={formData.userSearch}
@@ -101,7 +102,8 @@ const SearchCreationPage: React.FC = () => {
                                         className="w-full px-4 py-2.5 rounded-lg bg-white/80 border border-gray-200 text-gray-900 text-xs min-h-[80px] placeholder-gray-500 transition-all resize-none focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 outline-none select-none"
                                     />
                                 </div>
-                                <div className="flex items-start gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 w-[200px]">
+                                {/* Desktop version */}
+                                <div className="hidden md:flex items-start gap-2 px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 min-h-[80px] w-[200px]">
                                     <input
                                         type="checkbox"
                                         checked={strictMatchOnly}
@@ -119,16 +121,45 @@ const SearchCreationPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="mt-4">
+                            <div className="mt-4 flex gap-2">
                                 <button
                                     onClick={handleStartSearch}
                                     disabled={!formData.keywords || !formData.userSearch || !selectedCategory}
-                                    className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                                    className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                                 >
                                     <span>Generar</span>
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
+                                {/* Mobile version */}
+                                <button
+                                    onClick={() => setShowMobileOptions(!showMobileOptions)}
+                                    className="md:hidden px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                >
+                                    <Wand2 className="w-5 h-5 text-gray-600" />
+                                </button>
                             </div>
+                            {/* Mobile options panel */}
+                            {showMobileOptions && (
+                                <div className="md:hidden mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in slide-in-from-top">
+                                    <div className="flex items-start gap-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={strictMatchOnly}
+                                            onChange={(e) => setStrictMatchOnly(e.target.checked)}
+                                            className="mt-1 w-4 h-4 rounded border-gray-300 text-gray-500 focus:ring-gray-400"
+                                        />
+                                        <div>
+                                            <div className="flex items-center gap-1.5">
+                                                <Wand2 className="w-3.5 h-3.5 text-gray-500" />
+                                                <span className="text-sm font-medium text-gray-900">Coincidencia exacta</span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Al activar esta opción, solo recibirás notificaciones de anuncios que coincidan exactamente con tus criterios de búsqueda.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             {isAuthenticated && (
                                 <div className="mt-3 text-[10px] text-gray-400 flex items-center justify-center gap-1.5">
                                     <Search className="w-4 h-4" />

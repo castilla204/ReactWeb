@@ -47,6 +47,7 @@ export const API_CONFIG = {
             current: `${API_PATH}/Subscription/current`,
             details: `${API_PATH}/Subscription/details`,
             createCheckout: `${API_PATH}/Subscription/create-checkout-session`,
+            cancel: `${API_PATH}/Subscription/cancel`,
         },
         notifications: {
             list: `${API_PATH}/Notification`,
