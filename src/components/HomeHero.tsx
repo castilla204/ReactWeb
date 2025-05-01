@@ -5,7 +5,7 @@ const HomeHero: React.FC = () => {
     const [currentCard, setCurrentCard] = useState(0);
     const cards = [
         {
-            title: "Forma fácil de encontrar\ncasa a buen preci",
+            title: "Forma facil de encontrar\ncasa a buen preci",
             description: "Ofreciendo servicios de búsqueda\nseguros y confortables.",
             buttonText: "Buscar Casa",
             image: new URL('../media/house.png', import.meta.url).href,

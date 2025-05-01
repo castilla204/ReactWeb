@@ -86,7 +86,7 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
     };
 
     return (
-        <div className="w-full max-w-7xl mx-auto px-4 lg:px-0 flex flex-col">
+        <div className="w-full max-w-7xl mx-auto px-0 lg:px-0 flex flex-col">
             <div className="flex items-center gap-2 mb-6">
                 <button
                     onClick={handleBack}
