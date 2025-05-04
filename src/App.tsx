@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Heart, Sparkles, Shield, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell } from 'lucide-react';
+import { Search, Heart, Sparkles, Shield, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { GoogleAuth } from './components/GoogleAuth';
@@ -19,6 +19,8 @@ import SearchCreationPage from './pages/SearchCreationPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import AdminPanelPage from './pages/AdminPanelPage';
 import Background from './components/Background';
+import { BecomeExpertPage } from './pages/BecomeExpertPage';
+import { ExpertPanelPage } from './pages/ExpertPanelPage';
 
 const App: React.FC = React.memo(() => {
     const { user, setUser, isAuthenticated, signOut } = useAuth();
@@ -56,17 +58,7 @@ const App: React.FC = React.memo(() => {
         }));
     };
 
-    useEffect(() => {
-        const handleNotification = (event: CustomEvent<{ type: NotificationType; message: string }>) => {
-            setNotification({
-                type: event.detail.type,
-                message: event.detail.message
-            });
-        };
-
-        window.addEventListener('showNotification', handleNotification as EventListener);
-        return () => window.removeEventListener('showNotification', handleNotification as EventListener);
-    }, []);
+    const isExpert = user?.role === 'Expert';
 
     return (
         <Router>
@@ -136,6 +128,23 @@ const App: React.FC = React.memo(() => {
                                             <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
                                         </svg>
                                     </button>
+                                    {isAuthenticated && (isExpert ? (
+                                        <a
+                                            href="/expert-panel"
+                                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm"
+                                        >
+                                            <Briefcase className="w-4 h-4" />
+                                            <span className="text-sm font-medium">Panel de Experto</span>
+                                        </a>
+                                    ) : (
+                                        <a
+                                            href="/become-expert"
+                                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm"
+                                        >
+                                            <UserPlus className="w-4 h-4" />
+                                            <span className="text-sm font-medium">Hazte Buscador</span>
+                                        </a>
+                                    ))}
                                 </div>
                             )}
 
@@ -228,6 +237,25 @@ const App: React.FC = React.memo(() => {
                                         <Sparkles className="w-4 h-4 text-blue-600" />
                                         Mejorar Plan
                                     </a>
+                                    {isExpert ? (
+                                        <a
+                                            href="/expert-panel"
+                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                            onClick={() => setSidebarOpen(false)}
+                                        >
+                                            <Briefcase className="w-4 h-4 text-blue-600" />
+                                            Panel de Experto
+                                        </a>
+                                    ) : (
+                                        <a
+                                            href="/become-expert"
+                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                            onClick={() => setSidebarOpen(false)}
+                                        >
+                                            <UserPlus className="w-4 h-4 text-blue-600" />
+                                            Hazte Buscador
+                                        </a>
+                                    )}
                                 </div>
                                 <div className="mt-8 space-y-1">
                                     <button
@@ -280,7 +308,7 @@ const App: React.FC = React.memo(() => {
 
                 {sidebarOpen && (
                     <div
-                        className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-30 md:hidden"
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 md:hidden"
                         onClick={() => setSidebarOpen(false)}
                     />
                 )}
@@ -298,6 +326,8 @@ const App: React.FC = React.memo(() => {
                             <Route path="/busquedas" element={<ProtectedRoute><SearchesPage /></ProtectedRoute>} />
                             <Route path="/suscripciones" element={<ProtectedRoute><SubscriptionsPage /></ProtectedRoute>} />
                             <Route path="/admin" element={<ProtectedRoute><AdminPanelPage /></ProtectedRoute>} />
+                            <Route path="/become-expert" element={<ProtectedRoute><BecomeExpertPage /></ProtectedRoute>} />
+                            <Route path="/expert-panel" element={<ProtectedRoute><ExpertPanelPage /></ProtectedRoute>} />
                             <Route path="/" element={<SearchCreationPage />} />
                         </Routes>
                     </section>
