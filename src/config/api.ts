@@ -55,5 +55,16 @@ export const API_CONFIG = {
             delete: (id: string) => `${API_PATH}/Notification/${id}`,
             markAsRead: (id: string) => `${API_PATH}/Notification/${id}/read`,
         },
+        expert: {
+            profile: `${API_PATH}/User/expert-profile`,
+            becomeExpert: `${API_PATH}/User/become-expert`,
+            services: {
+                list: `${API_PATH}/SearchService`,
+                create: `${API_PATH}/SearchService`,
+                get: (id: number) => `${API_PATH}/SearchService/${id}`,
+                update: (id: number) => `${API_PATH}/SearchService/${id}`,
+                delete: (id: number) => `${API_PATH}/SearchService/${id}`,
+            }
+        }
     }
 }
