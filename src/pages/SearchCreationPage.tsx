@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Car, Home, Bike, Search, ArrowRight, Shield, Wand2, ChevronDown } from 'lucide-react';
+import { Car, Home, Bike, Search, ArrowRight, Shield, Wand2 } from 'lucide-react';
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
+import { ServiceSelection } from '../components/ServiceSelection';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import { useAuth } from '../contexts/AuthContext';
 import { Notification, NotificationType } from '../components/Notification';
@@ -15,6 +16,7 @@ const SearchCreationPage: React.FC = () => {
         message: string;
     } | null>(null);
     const [searchParameters, setSearchParameters] = useState<any>(null);
+    const [selectedService, setSelectedService] = useState<number | null>(null);
     const [formData, setFormData] = useState({
         keywords: '',
         userSearch: '',
@@ -32,6 +34,11 @@ const SearchCreationPage: React.FC = () => {
         setCurrentStep(2);
     };
 
+    const handleServiceSelected = (serviceId: number) => {
+        setSelectedService(serviceId);
+        setCurrentStep(3);
+    };
+
     const handleSearchComplete = () => {
         setNotification({
             type: 'success',
@@ -39,6 +46,7 @@ const SearchCreationPage: React.FC = () => {
         });
         setCurrentStep(0);
         setSearchParameters(null);
+        setSelectedService(null);
         setFormData({
             keywords: '',
             userSearch: ''
@@ -56,6 +64,7 @@ const SearchCreationPage: React.FC = () => {
         }
         setCurrentStep(1);
         setSearchParameters(null);
+        setSelectedService(null);
     };
 
     return (
@@ -102,7 +111,6 @@ const SearchCreationPage: React.FC = () => {
                                         className="w-full px-4 py-2.5 rounded-lg bg-white/80 border border-gray-200 text-gray-900 text-xs min-h-[80px] placeholder-gray-500 transition-all resize-none focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 outline-none select-none"
                                     />
                                 </div>
-                                {/* Desktop version */}
                                 <div className="hidden md:flex items-start gap-2 px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 min-h-[80px] w-[200px]">
                                     <input
                                         type="checkbox"
@@ -130,7 +138,6 @@ const SearchCreationPage: React.FC = () => {
                                     <span>Generar</span>
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
-                                {/* Mobile version */}
                                 <button
                                     onClick={() => setShowMobileOptions(!showMobileOptions)}
                                     className="md:hidden px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
@@ -138,7 +145,6 @@ const SearchCreationPage: React.FC = () => {
                                     <Wand2 className="w-5 h-5 text-gray-600" />
                                 </button>
                             </div>
-                            {/* Mobile options panel */}
                             {showMobileOptions && (
                                 <div className="md:hidden mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in slide-in-from-top">
                                     <div className="flex items-start gap-3">
@@ -190,8 +196,18 @@ const SearchCreationPage: React.FC = () => {
                         />
                     )}
                     {currentStep === 2 && (
+                        <ServiceSelection
+                            onBack={() => setCurrentStep(1)}
+                            onComplete={handleServiceSelected}
+                            selectedCategory={selectedCategory!}
+                        />
+                    )}
+                    {currentStep === 3 && (
                         <SearchForm
-                            parameters={searchParameters}
+                            parameters={{
+                                ...searchParameters,
+                                serviceId: selectedService
+                            }}
                             setCurrentStep={setCurrentStep}
                             onComplete={handleSearchComplete}
                         />
