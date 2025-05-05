@@ -47,29 +47,32 @@ export function ExpertPanelPage() {
     const handleCreateService = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!profile) return;
+        if (!profile) {
+            console.error('No expert profile found');
+            return;
+        }
 
-        createService({
-            expertProfileId: profile.id,
-            categoryId: parseInt(formData.categoryId),
-            price: parseFloat(formData.price),
-            conditions: formData.conditions,
-            durationInHours: parseInt(formData.durationInHours),
-            images: selectedImages
-        });
+        try {
+            await createService({
+                expertProfileId: profile.id,
+                categoryId: parseInt(formData.categoryId),
+                price: parseFloat(formData.price),
+                conditions: formData.conditions,
+                durationInHours: parseInt(formData.durationInHours),
+                images: selectedImages
+            });
 
-        setShowServiceForm(false);
-        setFormData({
-            categoryId: '',
-            price: '',
-            conditions: '',
-            durationInHours: '24'
-        });
-        setSelectedImages([]);
-    };
-
-    const goToSearch = (searchId: number) => {
-        navigate(`/busquedas/${searchId}`);
+            setShowServiceForm(false);
+            setFormData({
+                categoryId: '',
+                price: '',
+                conditions: '',
+                durationInHours: '24'
+            });
+            setSelectedImages([]);
+        } catch (error) {
+            console.error('Error creating service:', error);
+        }
     };
 
     return (
@@ -91,8 +94,8 @@ export function ExpertPanelPage() {
                         <button
                             onClick={() => setActiveTab('services')}
                             className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'services'
-                                    ? 'bg-blue-100 text-blue-600'
-                                    : 'text-gray-600 hover:bg-gray-100'
+                                ? 'bg-blue-100 text-blue-600'
+                                : 'text-gray-600 hover:bg-gray-100'
                                 }`}
                         >
                             Servicios
@@ -100,8 +103,8 @@ export function ExpertPanelPage() {
                         <button
                             onClick={() => setActiveTab('hires')}
                             className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'hires'
-                                    ? 'bg-blue-100 text-blue-600'
-                                    : 'text-gray-600 hover:bg-gray-100'
+                                ? 'bg-blue-100 text-blue-600'
+                                : 'text-gray-600 hover:bg-gray-100'
                                 }`}
                         >
                             Contrataciones

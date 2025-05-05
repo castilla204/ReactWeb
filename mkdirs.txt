@@ -1,0 +1,10 @@
+mkdir src
+mkdir src/components
+mkdir src/config
+mkdir src/contexts
+mkdir src/hooks
+mkdir src/lib
+mkdir src/media
+mkdir src/pages
+mkdir src/types
+mkdir TS
