@@ -48,28 +48,48 @@ export const useExpert = () => {
 
     // Create Service Mutation
     const createServiceMutation = useMutation({
-        mutationFn: (data: CreateServiceData) => {
+        mutationFn: async (data: CreateServiceData) => {
+            console.log('Creating service with data:', data);
+
             const formData = new FormData();
-            formData.append('expertProfileId', data.expertProfileId.toString());
-            formData.append('categoryId', data.categoryId.toString());
-            formData.append('price', data.price.toString());
-            formData.append('conditions', data.conditions);
-            formData.append('durationInHours', data.durationInHours.toString());
+            formData.append('ExpertProfileId', data.expertProfileId.toString());
+            formData.append('CategoryId', data.categoryId.toString());
+            formData.append('Price', data.price.toString());
+            formData.append('Conditions', data.conditions);
+            formData.append('DurationInHours', data.durationInHours.toString());
 
             if (data.images) {
                 data.images.forEach(image => {
-                    formData.append('images', image);
+                    formData.append('Images', image);
                 });
             }
 
-            return fetchApi(API_CONFIG.endpoints.expert.services.create, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    // Remove Content-Type to let browser set it with boundary
-                    'Content-Type': undefined,
-                },
-            });
+            // Log FormData contents for debugging
+            for (const [key, value] of formData.entries()) {
+                console.log(`${key}:`, value);
+            }
+
+            try {
+                const response = await fetch('/api/SearchService', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to create service');
+                }
+
+                const result = await response.json();
+                console.log('Service created successfully:', result);
+                return result;
+            } catch (error) {
+                console.error('Error in API call:', error);
+                throw error;
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expertServices'] });
@@ -80,11 +100,12 @@ export const useExpert = () => {
                 }
             }));
         },
-        onError: () => {
+        onError: (error) => {
+            console.error('Error creating service:', error);
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'error',
-                    message: '❌ Error al crear el servicio'
+                    message: '❌ Error al crear el servicio: ' + (error instanceof Error ? error.message : 'Error desconocido')
                 }
             }));
         }
