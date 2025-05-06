@@ -62,9 +62,20 @@ export const API_CONFIG = {
                 list: `${API_PATH}/SearchService`,
                 create: `${API_PATH}/SearchService`,
                 get: (id: number) => `${API_PATH}/SearchService/${id}`,
-                update: (id: number) => `${API_PATH}/SearchService/${id}`,
-                delete: (id: number) => `${API_PATH}/SearchService/${id}`,
+                getByExpert: (expertId: number) => `${API_PATH}/SearchService/expert/${expertId}`,
+            },
+            hires: {
+                createCheckout: (serviceId: number) => `${API_PATH}/SearchHire/create-checkout-session/${serviceId}`,
+                webhook: `${API_PATH}/SearchHire/webhook`,
+                listAsClient: `${API_PATH}/SearchHire/client`,
+                listAsExpert: `${API_PATH}/SearchHire/expert`,
+                updateStatus: (hireId: number) => `${API_PATH}/SearchHire/${hireId}/status`,
             }
+        },
+        users: {
+            list: `${API_PATH}/User/all`,
+            block: (userId: number) => `${API_PATH}/User/${userId}/block`,
+            delete: (userId: number) => `${API_PATH}/User/${userId}`,
         }
     }
 }
