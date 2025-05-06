@@ -1,4 +1,6 @@
-﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿// src/hooks/useExpert.ts
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 
@@ -19,6 +21,21 @@ interface ExpertService {
     durationInHours: number;
     createdAt: string;
     imageUrls: string[];
+}
+
+interface ExpertSearch {
+    id: number;
+    title: string;
+    description: string;
+    frequency: number;
+    isActive: boolean;
+    lastExecution: string;
+    nextExecution: string;
+    createdAt: string;
+    client: {
+        name: string;
+        email: string;
+    };
 }
 
 interface CreateServiceData {
@@ -44,13 +61,19 @@ export const useExpert = () => {
     const servicesQuery = useQuery({
         queryKey: ['expertServices'],
         queryFn: () => fetchApi<ExpertService[]>(API_CONFIG.endpoints.expert.services.list),
+        enabled: !!profileQuery.data?.id,
+    });
+
+    // Expert's Searches Query
+    const searchesQuery = useQuery({
+        queryKey: ['expertSearches'],
+        queryFn: () => fetchApi<ExpertSearch[]>('/api/Search/expert'),
+        enabled: !!profileQuery.data?.id,
     });
 
     // Create Service Mutation
     const createServiceMutation = useMutation({
         mutationFn: async (data: CreateServiceData) => {
-            console.log('Creating service with data:', data);
-
             const formData = new FormData();
             formData.append('ExpertProfileId', data.expertProfileId.toString());
             formData.append('CategoryId', data.categoryId.toString());
@@ -64,32 +87,14 @@ export const useExpert = () => {
                 });
             }
 
-            // Log FormData contents for debugging
-            for (const [key, value] of formData.entries()) {
-                console.log(`${key}:`, value);
-            }
-
-            try {
-                const response = await fetch('/api/SearchService', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-                    },
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Failed to create service');
-                }
-
-                const result = await response.json();
-                console.log('Service created successfully:', result);
-                return result;
-            } catch (error) {
-                console.error('Error in API call:', error);
-                throw error;
-            }
+            return await fetchApi('/api/SearchService', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    // Remove Content-Type to let browser set it with boundary
+                    'Content-Type': undefined,
+                },
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expertServices'] });
@@ -100,15 +105,6 @@ export const useExpert = () => {
                 }
             }));
         },
-        onError: (error) => {
-            console.error('Error creating service:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: '❌ Error al crear el servicio: ' + (error instanceof Error ? error.message : 'Error desconocido')
-                }
-            }));
-        }
     });
 
     return {
@@ -121,6 +117,11 @@ export const useExpert = () => {
         services: servicesQuery.data || [],
         isLoadingServices: servicesQuery.isLoading,
         servicesError: servicesQuery.error,
+
+        // Searches data
+        searches: searchesQuery.data || [],
+        isLoadingSearches: searchesQuery.isLoading,
+        searchesError: searchesQuery.error,
 
         // Mutations
         createService: createServiceMutation.mutate,
