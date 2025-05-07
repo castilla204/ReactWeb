@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Clock, Users, DollarSign, Search, Loader2, CheckCircle, XCircle, User, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Clock, Users, DollarSign, Search, Loader2, CheckCircle, XCircle, User, Upload, AlertTriangle } from 'lucide-react';
 import Background from '../components/Background';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
@@ -26,7 +26,9 @@ export function ExpertPanelPage() {
         services,
         isLoadingServices,
         createService,
-        isCreatingService
+        isCreatingService,
+        startOnboarding,
+        isStartingOnboarding
     } = useExpert();
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,6 +76,56 @@ export function ExpertPanelPage() {
             console.error('Error creating service:', error);
         }
     };
+
+    const handleStartOnboarding = () => {
+        startOnboarding();
+    };
+
+    if (!profile?.stripeAccountId) {
+        return (
+            <div className="relative min-h-screen">
+                <Background />
+                <div className="relative z-10 max-w-2xl mx-auto px-4 py-12">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-8"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                        Volver
+                    </button>
+
+                    <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-lg text-center">
+                        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <AlertTriangle className="w-8 h-8 text-amber-600" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                            Validación Pendiente
+                        </h2>
+                        <p className="text-gray-600 mb-8">
+                            Para empezar a ofrecer tus servicios como experto, necesitas validar tu información de pago con Stripe.
+                        </p>
+                        <button
+                            onClick={handleStartOnboarding}
+                            disabled={isStartingOnboarding}
+                            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        >
+                            {isStartingOnboarding ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Cargando...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle className="w-5 h-5" />
+                                    Validar Información
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="relative min-h-screen">

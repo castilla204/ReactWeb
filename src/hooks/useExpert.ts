@@ -1,9 +1,6 @@
-﻿// src/hooks/useExpert.ts
-
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
-
 interface ExpertProfile {
     id: number;
     userId: number;
@@ -45,6 +42,10 @@ interface CreateServiceData {
     conditions: string;
     durationInHours: number;
     images?: File[];
+}
+
+interface OnboardingResponse {
+    url: string;
 }
 
 export const useExpert = () => {
@@ -107,6 +108,16 @@ export const useExpert = () => {
         },
     });
 
+    // Onboarding Mutation
+    const startOnboardingMutation = useMutation({
+        mutationFn: () => fetchApi<OnboardingResponse>('/api/Subscription/expert-onboarding', {
+            method: 'POST'
+        }),
+        onSuccess: (data) => {
+            window.location.href = data.url;
+        },
+    });
+
     return {
         // Profile data
         profile: profileQuery.data,
@@ -126,5 +137,7 @@ export const useExpert = () => {
         // Mutations
         createService: createServiceMutation.mutate,
         isCreatingService: createServiceMutation.isPending,
+        startOnboarding: startOnboardingMutation.mutate,
+        isStartingOnboarding: startOnboardingMutation.isPending,
     };
 };

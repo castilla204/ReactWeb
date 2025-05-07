@@ -1,21 +1,24 @@
+import { useQuery } from '@tanstack/react-query';
+import { useApi } from './useApi';
 
-import { useSubscription } from './useSubscription.hooks';
-import { useSearch } from './useSearch.hooks';
+interface SubscriptionLimits {
+    maxSearches: number;
+    minSearchInterval: number;
+}
 
 export const useSubscriptionLimits = () => {
-    const { currentPlan } = useSubscription();
-    const { searches } = useSearch();
+    const { fetchApi } = useApi();
 
-    const activeSearchesCount = searches.data?.filter(s => s.isActive).length ?? 0;
-    const maxSearchesReached = currentPlan.data ? activeSearchesCount >= currentPlan.data.maxSearches : false;
-    const minSearchInterval = currentPlan.data?.minSearchInterval ?? 6;
-    const maxSearches = currentPlan.data?.maxSearches ?? 1;
+    const limitsQuery = useQuery({
+        queryKey: ['subscriptionLimits'],
+        queryFn: () => fetchApi<SubscriptionLimits>('/api/Subscription/limits'),
+    });
 
     return {
-        maxSearches,
-        minSearchInterval,
-        currentSearchCount: activeSearchesCount,
-        maxSearchesReached,
-        isLoading: currentPlan.isLoading || searches.isLoading,
+        maxSearches: limitsQuery.data?.maxSearches ?? 1,
+        minSearchInterval: limitsQuery.data?.minSearchInterval ?? 6,
+        currentSearchCount: 0,
+        maxSearchesReached: false,
+        isLoading: limitsQuery.isLoading,
     };
 };
