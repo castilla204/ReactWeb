@@ -1,103 +1,34 @@
-﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation } from '@tanstack/react-query';
 import { useApi } from './useApi';
-import { API_CONFIG } from '../config/api';
 
-interface Plan {
-    id: number;
-    name: string;
-    description: string;
-    priceMonthly: number;
-    priceYearly: number;
-    maxSearches: number;
-    minSearchInterval: number;
-    isActive: boolean;
-}
-
-export type { Plan };
-
-interface SubscriptionDetails {
-    isYearly: boolean;
-    // Add other subscription details as needed
+interface LoadMoneyResponse {
+    url: string;
 }
 
 export const useSubscription = () => {
     const { fetchApi } = useApi();
-    const queryClient = useQueryClient();
 
-    const plansQuery = useQuery({
-        queryKey: ['subscription', 'plans'],
-        queryFn: () => fetchApi<Plan[]>(API_CONFIG.endpoints.subscription.plans),
-    });
-
-    const currentPlanQuery = useQuery({
-        queryKey: ['subscription', 'current'],
-        queryFn: () => fetchApi<Plan>(API_CONFIG.endpoints.subscription.current),
-    });
-
-    const subscriptionDetailsQuery = useQuery({
-        queryKey: ['subscription', 'details'],
-        queryFn: () => fetchApi<SubscriptionDetails>(API_CONFIG.endpoints.subscription.details),
-    });
-
-    const createCheckoutMutation = useMutation({
-        mutationFn: (data: { planId: number; isYearly: boolean }) =>
-            fetchApi<{ url: string }>(API_CONFIG.endpoints.subscription.createCheckout, {
+    const loadMoneyMutation = useMutation({
+        mutationFn: (amount: number) =>
+            fetchApi<LoadMoneyResponse>('/api/Subscription/load-money', {
                 method: 'POST',
-                body: JSON.stringify(data)
+                body: JSON.stringify({ amount })
             }),
-        onMutate: (variables) => {
-            console.log('🔵 Creating checkout session:', {
-                planId: variables.planId,
-                isYearly: variables.isYearly,
-                environment: import.meta.env.MODE,
-                endpoint: API_CONFIG.endpoints.subscription.createCheckout
-            });
-        },
         onSuccess: (data) => {
-            console.log('✅ Checkout session created successfully:', {
-                url: data.url,
-                environment: import.meta.env.MODE
-            });
-            queryClient.invalidateQueries({ queryKey: ['subscription'] });
+            window.location.href = data.url;
         },
-        onError: (error) => {
-            console.error('❌ Error creating checkout session:', {
-                error,
-                environment: import.meta.env.MODE
-            });
-        }
-    });
-
-    const cancelSubscriptionMutation = useMutation({
-        mutationFn: () =>
-            fetchApi(API_CONFIG.endpoints.subscription.cancel, {
-                method: 'POST'
-            }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['subscription'] });
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: '✅ Suscripción cancelada correctamente'
-                }
-            }));
-        },
-        onError: (error) => {
-            console.error('Error canceling subscription:', error);
+        onError: () => {
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'error',
-                    message: '❌ Error al cancelar la suscripción'
+                    message: '❌ Error al procesar el pago'
                 }
             }));
         }
     });
 
     return {
-        plans: plansQuery,
-        currentPlan: currentPlanQuery,
-        subscriptionDetails: subscriptionDetailsQuery,
-        createCheckout: createCheckoutMutation,
-        cancelSubscription: cancelSubscriptionMutation,
+        loadMoney: loadMoneyMutation.mutateAsync,
+        isLoading: loadMoneyMutation.isPending
     };
 };
