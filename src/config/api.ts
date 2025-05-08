@@ -48,6 +48,8 @@ export const API_CONFIG = {
             details: `${API_PATH}/Subscription/details`,
             createCheckout: `${API_PATH}/Subscription/create-checkout-session`,
             cancel: `${API_PATH}/Subscription/cancel`,
+            loadMoney: `${API_PATH}/Subscription/load-money`,
+            hireService: `${API_PATH}/Subscription/hire-service`,
         },
         notifications: {
             list: `${API_PATH}/Notification`,

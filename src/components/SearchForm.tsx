@@ -4,9 +4,11 @@ import { useSearch } from '../hooks/useSearch.hooks';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import type { SearchParameters } from '../hooks/useSearch.hooks';
 import { Notification, NotificationType } from './Notification';
+import { useApi } from '../hooks/useApi';
+import { API_CONFIG } from '../config/api';
 
 export interface SearchFormProps {
-    parameters: SearchParameters;
+    parameters: SearchParameters & { serviceId?: number };
     onComplete: () => void;
     setCurrentStep: (step: number) => void;
     setShowSubscriptions: (show: boolean) => void;
@@ -16,6 +18,7 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
     const { createSearch, createParameters } = useSearch();
     const { maxSearchesReached, maxSearches } = useSubscriptionLimits();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { fetchApi } = useApi();
     const [notification, setNotification] = useState<{
         type: NotificationType;
         message: string;
@@ -54,6 +57,32 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
 
             const { id: searchId } = await createSearch.mutateAsync(searchData);
             await createParameters.mutateAsync({ searchId, data: parameters });
+
+            // If a service was selected, hire it
+            if (parameters.serviceId) {
+                try {
+                    const response = await fetchApi<{ url: string }>(API_CONFIG.endpoints.subscription.hireService, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            searchServiceId: parameters.serviceId,
+                            searchId: searchId
+                        })
+                    });
+
+                    // If we get a URL back, redirect to it
+                    if (response.url) {
+                        window.location.href = response.url;
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error hiring service:', error);
+                    setNotification({
+                        type: 'error',
+                        message: '❌ Error al contratar el servicio. Por favor, inténtalo de nuevo.'
+                    });
+                }
+            }
+
             onComplete();
             setIsSubmitting(false);
         } catch (err) {
