@@ -1,6 +1,7 @@
 ﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
+
 interface ExpertProfile {
     id: number;
     userId: number;
@@ -60,15 +61,17 @@ export const useExpert = () => {
 
     // Services Query
     const servicesQuery = useQuery({
-        queryKey: ['expertServices'],
-        queryFn: () => fetchApi<ExpertService[]>(API_CONFIG.endpoints.expert.services.list),
+        queryKey: ['expertServices', profileQuery.data?.id],
+        queryFn: () => profileQuery.data?.id
+            ? fetchApi<ExpertService[]>(API_CONFIG.endpoints.expert.services.getByExpert(profileQuery.data.id))
+            : Promise.resolve([]),
         enabled: !!profileQuery.data?.id,
     });
 
     // Expert's Searches Query
     const searchesQuery = useQuery({
         queryKey: ['expertSearches'],
-        queryFn: () => fetchApi<ExpertSearch[]>('/api/Search/expert'),
+        queryFn: () => fetchApi<ExpertSearch[]>(API_CONFIG.endpoints.expert.hires.listAsExpert),
         enabled: !!profileQuery.data?.id,
     });
 
@@ -76,25 +79,21 @@ export const useExpert = () => {
     const createServiceMutation = useMutation({
         mutationFn: async (data: CreateServiceData) => {
             const formData = new FormData();
-            formData.append('ExpertProfileId', data.expertProfileId.toString());
-            formData.append('CategoryId', data.categoryId.toString());
-            formData.append('Price', data.price.toString());
-            formData.append('Conditions', data.conditions);
-            formData.append('DurationInHours', data.durationInHours.toString());
+            formData.append('expertProfileId', data.expertProfileId.toString());
+            formData.append('categoryId', data.categoryId.toString());
+            formData.append('price', data.price.toString());
+            formData.append('conditions', data.conditions);
+            formData.append('durationInHours', data.durationInHours.toString());
 
             if (data.images) {
                 data.images.forEach(image => {
-                    formData.append('Images', image);
+                    formData.append('images', image);
                 });
             }
 
             return await fetchApi('/api/SearchService', {
                 method: 'POST',
-                body: formData,
-                headers: {
-                    // Remove Content-Type to let browser set it with boundary
-                    'Content-Type': undefined,
-                },
+                body: formData
             });
         },
         onSuccess: () => {
@@ -106,6 +105,16 @@ export const useExpert = () => {
                 }
             }));
         },
+        onError: (error: any) => {
+            console.error('Error creating service:', error);
+            const errorMessage = error.message || error.errors?.Conditions?.[0] || 'Error al crear el servicio';
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: `❌ ${errorMessage}`
+                }
+            }));
+        }
     });
 
     // Onboarding Mutation

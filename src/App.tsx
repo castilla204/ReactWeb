@@ -21,6 +21,7 @@ import AdminPanelPage from './pages/AdminPanelPage';
 import Background from './components/Background';
 import { BecomeExpertPage } from './pages/BecomeExpertPage';
 import { ExpertPanelPage } from './pages/ExpertPanelPage';
+import { SearchResultsPage } from './pages/SearchResultsPage';
 
 const App: React.FC = React.memo(() => {
     const { user, setUser, isAuthenticated, signOut } = useAuth();
@@ -324,6 +325,7 @@ const App: React.FC = React.memo(() => {
                             <Route path="/cancel" element={<PaymentCancelPage />} />
                             <Route path="/ad/:id" element={<AdDetails onBack={() => window.history.back()} />} />
                             <Route path="/busquedas" element={<ProtectedRoute><SearchesPage /></ProtectedRoute>} />
+                            <Route path="/busquedas/:id" element={<ProtectedRoute><SearchResultsPage /></ProtectedRoute>} />
                             <Route path="/suscripciones" element={<ProtectedRoute><SubscriptionsPage /></ProtectedRoute>} />
                             <Route path="/admin" element={<ProtectedRoute><AdminPanelPage /></ProtectedRoute>} />
                             <Route path="/become-expert" element={<ProtectedRoute><BecomeExpertPage /></ProtectedRoute>} />

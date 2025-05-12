@@ -12,10 +12,14 @@ export const useApi = () => {
         let responseText = '';
 
         const headers: HeadersInit = {
-            'Content-Type': 'application/json',
             ...(requiresAuth && getAuthToken() ? { 'Authorization': `Bearer ${getAuthToken()}` } : {}),
             ...config.headers,
         };
+
+        // Only add Content-Type if we're not sending FormData
+        if (!(config.body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
 
         try {
             const response = await fetch(url, {
@@ -31,8 +35,13 @@ export const useApi = () => {
             }
 
             if (!response.ok) {
-                const error = responseText ? JSON.parse(responseText) : { message: `Request failed with status ${response.status}` };
-                throw new Error(error.message || 'Request failed');
+                let error;
+                try {
+                    error = responseText ? JSON.parse(responseText) : { message: `Request failed with status ${response.status}` };
+                } catch {
+                    error = { message: responseText || `Request failed with status ${response.status}` };
+                }
+                throw error;
             }
 
             // Parse JSON only if we have content
