@@ -5,6 +5,7 @@ import Background from '../components/Background';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
+import { useExpertHires } from '../hooks/useExpertHires';
 
 export function ExpertPanelPage() {
     const navigate = useNavigate();
@@ -13,6 +14,7 @@ export function ExpertPanelPage() {
     const [activeTab, setActiveTab] = useState<'services' | 'hires'>('services');
     const [showServiceForm, setShowServiceForm] = useState(false);
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
+    const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [formData, setFormData] = useState({
         categoryId: '',
         price: '',
@@ -30,6 +32,37 @@ export function ExpertPanelPage() {
         startOnboarding,
         isStartingOnboarding
     } = useExpert();
+
+    const {
+        hires,
+        isLoading: isLoadingHires,
+        updateStatus
+    } = useExpertHires();
+
+    const validateForm = () => {
+        const errors: { [key: string]: string } = {};
+
+        if (!formData.categoryId) {
+            errors.categoryId = 'La categoría es requerida';
+        }
+
+        if (!formData.conditions.trim()) {
+            errors.conditions = 'Las condiciones son requeridas';
+        }
+
+        const price = parseFloat(formData.price);
+        if (isNaN(price) || price <= 0) {
+            errors.price = 'El precio debe ser mayor que 0';
+        }
+
+        const duration = parseInt(formData.durationInHours);
+        if (isNaN(duration) || duration <= 0) {
+            errors.durationInHours = 'La duración debe ser mayor que 0';
+        }
+
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -49,6 +82,10 @@ export function ExpertPanelPage() {
     const handleCreateService = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!validateForm()) {
+            return;
+        }
+
         if (!profile) {
             console.error('No expert profile found');
             return;
@@ -59,7 +96,7 @@ export function ExpertPanelPage() {
                 expertProfileId: profile.id,
                 categoryId: parseInt(formData.categoryId),
                 price: parseFloat(formData.price),
-                conditions: formData.conditions,
+                conditions: formData.conditions.trim(),
                 durationInHours: parseInt(formData.durationInHours),
                 images: selectedImages
             });
@@ -72,6 +109,7 @@ export function ExpertPanelPage() {
                 durationInHours: '24'
             });
             setSelectedImages([]);
+            setFormErrors({});
         } catch (error) {
             console.error('Error creating service:', error);
         }
@@ -79,6 +117,12 @@ export function ExpertPanelPage() {
 
     const handleStartOnboarding = () => {
         startOnboarding();
+    };
+
+    const handleViewSearch = (searchId: number | null) => {
+        if (searchId) {
+            navigate(`/busquedas/${searchId}`);
+        }
     };
 
     if (!profile?.stripeAccountId) {
@@ -275,8 +319,101 @@ export function ExpertPanelPage() {
                         )}
                     </div>
                 ) : (
-                    <div className="flex items-center justify-center py-12">
-                        <p className="text-gray-500">No hay contrataciones disponibles</p>
+                    <div className="space-y-6">
+                        {isLoadingHires ? (
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                            </div>
+                        ) : hires.length === 0 ? (
+                            <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-lg">
+                                <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                <p className="text-gray-600">No tienes contrataciones activas</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {hires.map((hire) => (
+                                    <div
+                                        key={hire.id}
+                                        className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg hover:shadow-xl transition-all"
+                                    >
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <User className="w-5 h-5 text-blue-600" />
+                                                <div>
+                                                    <h3 className="font-medium text-gray-900">
+                                                        {hire.client.name}
+                                                    </h3>
+                                                    <p className="text-xs text-gray-500">
+                                                        {hire.client.email}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${hire.status === 'Completed'
+                                                ? 'bg-green-100 text-green-600'
+                                                : hire.status === 'InProgress'
+                                                    ? 'bg-blue-100 text-blue-600'
+                                                    : 'bg-gray-100 text-gray-600'
+                                                }`}>
+                                                {hire.status}
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-500">Servicio</span>
+                                                <span className="font-medium text-gray-900">
+                                                    {categories?.find(c => c.id === hire.service.categoryId)?.name}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-500">Precio</span>
+                                                <span className="font-medium text-gray-900">
+                                                    {new Intl.NumberFormat('es-ES', {
+                                                        style: 'currency',
+                                                        currency: 'EUR'
+                                                    }).format(hire.amount)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-500">Fecha</span>
+                                                <span className="text-gray-900">
+                                                    {new Date(hire.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 space-y-2">
+                                            {hire.status === 'Pending' && (
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => updateStatus({ hireId: hire.id, status: 'InProgress' })}
+                                                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                                                    >
+                                                        Aceptar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => updateStatus({ hireId: hire.id, status: 'Cancelled' })}
+                                                        className="flex-1 px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors text-sm"
+                                                    >
+                                                        Rechazar
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {hire.searchId && (
+                                                <button
+                                                    onClick={() => handleViewSearch(hire.searchId)}
+                                                    className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center gap-2"
+                                                >
+                                                    <Search className="w-4 h-4" />
+                                                    Ver Búsqueda
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -294,7 +431,8 @@ export function ExpertPanelPage() {
                                     <select
                                         value={formData.categoryId}
                                         onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.categoryId ? 'border-red-300' : 'border-gray-300'
+                                            }`}
                                         required
                                     >
                                         <option value="">Seleccionar categoría</option>
@@ -304,6 +442,9 @@ export function ExpertPanelPage() {
                                             </option>
                                         ))}
                                     </select>
+                                    {formErrors.categoryId && (
+                                        <p className="mt-1 text-xs text-red-500">{formErrors.categoryId}</p>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -315,10 +456,14 @@ export function ExpertPanelPage() {
                                             type="number"
                                             value={formData.price}
                                             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.price ? 'border-red-300' : 'border-gray-300'
+                                                }`}
                                             placeholder="0.00"
                                             required
                                         />
+                                        {formErrors.price && (
+                                            <p className="mt-1 text-xs text-red-500">{formErrors.price}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -328,10 +473,14 @@ export function ExpertPanelPage() {
                                             type="number"
                                             value={formData.durationInHours}
                                             onChange={(e) => setFormData({ ...formData, durationInHours: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.durationInHours ? 'border-red-300' : 'border-gray-300'
+                                                }`}
                                             min="1"
                                             required
                                         />
+                                        {formErrors.durationInHours && (
+                                            <p className="mt-1 text-xs text-red-500">{formErrors.durationInHours}</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -342,11 +491,15 @@ export function ExpertPanelPage() {
                                     <textarea
                                         value={formData.conditions}
                                         onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.conditions ? 'border-red-300' : 'border-gray-300'
+                                            }`}
                                         rows={3}
                                         placeholder="Describe las condiciones de tu servicio..."
                                         required
                                     />
+                                    {formErrors.conditions && (
+                                        <p className="mt-1 text-xs text-red-500">{formErrors.conditions}</p>
+                                    )}
                                 </div>
 
                                 <div>

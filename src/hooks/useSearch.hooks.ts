@@ -14,6 +14,10 @@ export interface SearchItem {
     createdAt: string;
     startDate: string;
     userId: number;
+    searchHire?: {
+        expertId: number;
+        status: string;
+    };
     user?: {
         email: string;
         name: string;
