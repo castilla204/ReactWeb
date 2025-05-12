@@ -1,18 +1,18 @@
 ﻿import React, { useLayoutEffect, useState } from 'react';
-import { ArrowLeft, Heart, Car, Users, Gauge, Filter, ChevronDown, ArrowRight, Plus, Check, Trash2 } from 'lucide-react';
+import { MapPin, ArrowLeft, Heart, Car, Users, Gauge, Filter, ChevronDown, ArrowRight, Plus, Check, Trash2, XCircle, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useLikes } from '../hooks/useLikes.hooks';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useApi } from '../hooks/useApi';
+import { useSubscription } from '../hooks/useSubscription.hooks';
 
 interface SearchDetailsProps {
     searchId: number;
     onBack: () => void;
-    isAdmin: boolean;  // Agregada propiedad isAdmin
+    isAdmin: boolean;
 }
-
 
 const categoryBanners = {
     1: "/src/media/Car.png", // Cars
@@ -20,14 +20,17 @@ const categoryBanners = {
     3: "/src/media/house.png" // Houses
 };
 
-export function SearchDetails({ searchId, onBack }: SearchDetailsProps) {
+export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps) {
+    const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+    const { forceFinalize } = useSubscription();
     const { getResults, getSearch } = useSearch();
     const { categories } = useCategories();
     const { user } = useAuth();
     const { fetchApi } = useApi();
+    const navigate = useNavigate();
     const resultsQuery = getResults(searchId);
     const searchQuery = getSearch(searchId);
-    const isAdmin = user?.email === 'dcastillaa@gmail.com';
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [showAddAdForm, setShowAddAdForm] = useState(false);
     const [newAd, setNewAd] = useState({
         title: '',
@@ -41,6 +44,44 @@ export function SearchDetails({ searchId, onBack }: SearchDetailsProps) {
         sellerType: 'particular',
         platformId: 1
     });
+
+    const handleCancelService = async () => {
+        try {
+            await fetchApi('/api/Subscription/cancel-service', {
+                method: 'POST',
+                body: JSON.stringify({ searchId })
+            });
+
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'success',
+                    message: '✅ Servicio cancelado correctamente'
+                }
+            }));
+
+            navigate('/expert-panel');
+        } catch (error) {
+            console.error('Error canceling service:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: '❌ Error al cancelar el servicio'
+                }
+            }));
+        }
+    };
+
+    const handleForceFinalize = async (favorExpert: boolean) => {
+        try {
+            await forceFinalize({ searchId, favorExpert });
+            setShowFinalizeModal(false);
+            // Refresh the search data
+            resultsQuery.refetch();
+            searchQuery.refetch();
+        } catch (error) {
+            console.error('Error finalizing search:', error);
+        }
+    };
 
     const addImageField = () => {
         setNewAd(prev => ({
@@ -171,25 +212,6 @@ export function SearchDetails({ searchId, onBack }: SearchDetailsProps) {
 
     return (
         <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24">
-            {/* Enhanced Background Effect */}
-            <div className="fixed inset-0 -z-10">
-                {/* Base layer with subtle gradient */}
-                <div className="absolute inset-0 bg-gradient-to-b from-blue-50 via-white to-blue-50" />
-
-                {/* Animated gradient spheres */}
-                <div className="absolute top-0 -right-1/4 w-full h-full">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-blue-300/10 to-transparent rounded-full blur-3xl animate-pulse" />
-                </div>
-                <div className="absolute bottom-0 -left-1/4 w-full h-full">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 via-blue-400/10 to-transparent rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
-                </div>
-
-                {/* Radial gradient overlays */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent_50%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(37,99,235,0.1),transparent_50%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_80%,rgba(96,165,250,0.1),transparent_50%)]" />
-            </div>
-
             {/* Category Banner */}
             <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 via-blue-500/95 to-blue-600/90" />
@@ -206,10 +228,7 @@ export function SearchDetails({ searchId, onBack }: SearchDetailsProps) {
                 <div className="relative h-full flex items-center px-8">
                     <div>
                         <div className="flex items-center gap-4 mb-2">
-                            <button
-                                onClick={onBack}
-                                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-                            >
+                            <button onClick={onBack} className="flex items-center gap-2 text-white/90 hover:text-white transition-colors">
                                 <ArrowLeft className="w-5 h-5" />
                                 <span className="font-medium">Back</span>
                             </button>
@@ -220,6 +239,24 @@ export function SearchDetails({ searchId, onBack }: SearchDetailsProps) {
                                 >
                                     <Plus className="w-4 h-4" />
                                     <span>Add Ad</span>
+                                </button>
+                            )}
+                            {user?.role === 'Expert' && searchQuery.data?.searchHire?.expertId === user.id && (
+                                <button
+                                    onClick={() => setShowCancelConfirm(true)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-white rounded-lg transition-colors"
+                                >
+                                    <XCircle className="w-4 h-4" />
+                                    <span>Cancelar Servicio</span>
+                                </button>
+                            )}
+                            {isAdmin && searchQuery.data?.searchHire?.status === 'InProgress' && (
+                                <button
+                                    onClick={() => setShowFinalizeModal(true)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-white rounded-lg transition-colors"
+                                >
+                                    <AlertTriangle className="w-4 h-4" />
+                                    <span>Finalizar Búsqueda</span>
                                 </button>
                             )}
                         </div>
@@ -271,6 +308,8 @@ export function SearchDetails({ searchId, onBack }: SearchDetailsProps) {
                     </div>
                 )}
             </div>
+
+            {/* Add Ad Form Modal */}
             {showAddAdForm && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4">
@@ -429,6 +468,73 @@ export function SearchDetails({ searchId, onBack }: SearchDetailsProps) {
                     </div>
                 </div>
             )}
+
+            {/* Cancel Confirmation Modal */}
+            {showCancelConfirm && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <XCircle className="w-6 h-6 text-red-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                Cancelar Servicio
+                            </h3>
+                        </div>
+                        <p className="text-gray-600 mb-6">
+                            ¿Estás seguro de que quieres cancelar este servicio? Esta acción no se puede deshacer.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowCancelConfirm(false)}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleCancelService}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                            >
+                                Confirmar Cancelación
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Force Finalize Modal */}
+            {showFinalizeModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            Finalizar Búsqueda
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                            ¿A quién deseas dar la razón al finalizar esta búsqueda?
+                        </p>
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => handleForceFinalize(true)}
+                                className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                Dar razón al Experto
+                            </button>
+                            <button
+                                onClick={() => handleForceFinalize(false)}
+                                className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                            >
+                                Dar razón al Cliente
+                            </button>
+                            <button
+                                onClick={() => setShowFinalizeModal(false)}
+                                className="w-full px-4 py-3 text-gray-600 hover:text-gray-900 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -513,8 +619,8 @@ function ResultCard({ result, searchId }: ResultCardProps) {
                         <button
                             onClick={handleToggleFiltered}
                             className={`p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg transition-colors group ${isFiltered
-                                    ? 'text-green-500 hover:text-green-600 hover:bg-green-50'
-                                    : 'text-blue-500 hover:text-blue-600 hover:bg-blue-50'
+                                ? 'text-green-500 hover:text-green-600 hover:bg-green-50'
+                                : 'text-blue-500 hover:text-blue-600 hover:bg-blue-50'
                                 }`}
                             title={isFiltered ? "Remove from filtered list" : "Add to filtered list"}
                         >

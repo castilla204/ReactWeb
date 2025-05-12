@@ -5,6 +5,11 @@ interface LoadMoneyResponse {
     url: string;
 }
 
+interface ForceFinalizeRequest {
+    searchId: number;
+    favorExpert: boolean;
+}
+
 export const useSubscription = () => {
     const { fetchApi } = useApi();
 
@@ -27,8 +32,33 @@ export const useSubscription = () => {
         }
     });
 
+    const forceFinalizeMutation = useMutation({
+        mutationFn: (data: ForceFinalizeRequest) =>
+            fetchApi('/api/Subscription/force-finalize', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            }),
+        onSuccess: () => {
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'success',
+                    message: '✅ Búsqueda finalizada exitosamente'
+                }
+            }));
+        },
+        onError: () => {
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: '❌ Error al finalizar la búsqueda'
+                }
+            }));
+        }
+    });
+
     return {
         loadMoney: loadMoneyMutation.mutateAsync,
-        isLoading: loadMoneyMutation.isPending
+        forceFinalize: forceFinalizeMutation.mutateAsync,
+        isLoading: loadMoneyMutation.isPending || forceFinalizeMutation.isPending
     };
 };
