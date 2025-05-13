@@ -6,8 +6,13 @@ interface LoadMoneyResponse {
 }
 
 interface ForceFinalizeRequest {
-    searchId: number;
-    favorExpert: boolean;
+    SearchHireId: number;
+    ResolveInFavorOfClient: boolean;
+}
+
+interface CompleteServiceRequest {
+    SearchHireId: number;
+    ClientApproved: boolean;
 }
 
 export const useSubscription = () => {
@@ -56,9 +61,34 @@ export const useSubscription = () => {
         }
     });
 
+    const completeServiceMutation = useMutation({
+        mutationFn: (data: CompleteServiceRequest) =>
+            fetchApi('/api/Subscription/complete-service', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            }),
+        onSuccess: () => {
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'success',
+                    message: '✅ Servicio completado exitosamente'
+                }
+            }));
+        },
+        onError: () => {
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: '❌ Error al completar el servicio'
+                }
+            }));
+        }
+    });
+
     return {
         loadMoney: loadMoneyMutation.mutateAsync,
         forceFinalize: forceFinalizeMutation.mutateAsync,
-        isLoading: loadMoneyMutation.isPending || forceFinalizeMutation.isPending
+        completeService: completeServiceMutation.mutateAsync,
+        isLoading: loadMoneyMutation.isPending || forceFinalizeMutation.isPending || completeServiceMutation.isPending
     };
 };

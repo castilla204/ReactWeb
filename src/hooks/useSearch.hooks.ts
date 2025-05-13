@@ -15,6 +15,7 @@ export interface SearchItem {
     startDate: string;
     userId: number;
     searchHire?: {
+        id: number; // Added to ensure SearchHireId is included
         expertId: number;
         status: string;
     };
