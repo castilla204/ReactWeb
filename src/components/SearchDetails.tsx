@@ -22,7 +22,9 @@ const categoryBanners = {
 
 export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps) {
     const [showFinalizeModal, setShowFinalizeModal] = useState(false);
-    const { forceFinalize } = useSubscription();
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [showAddAdForm, setShowAddAdForm] = useState(false);
+    const { forceFinalize, completeService } = useSubscription();
     const { getResults, getSearch } = useSearch();
     const { categories } = useCategories();
     const { user } = useAuth();
@@ -30,8 +32,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     const navigate = useNavigate();
     const resultsQuery = getResults(searchId);
     const searchQuery = getSearch(searchId);
-    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-    const [showAddAdForm, setShowAddAdForm] = useState(false);
     const [newAd, setNewAd] = useState({
         title: '',
         description: '',
@@ -45,11 +45,21 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
         platformId: 1
     });
 
+    // Debug logs to diagnose button visibility
+    console.log('User:', user);
+    console.log('SearchQuery Data:', searchQuery.data);
+    console.log('IsClient:', user?.id === searchQuery.data?.userId && user?.role !== 'Expert' && !isAdmin);
+    console.log('SearchHire Status:', searchQuery.data?.searchHire?.status);
+
     const handleCancelService = async () => {
         try {
+            const searchHireId = searchQuery.data?.searchHire?.id;
+            if (!searchHireId) {
+                throw new Error('SearchHire ID not found');
+            }
             await fetchApi('/api/Subscription/cancel-service', {
                 method: 'POST',
-                body: JSON.stringify({ searchId })
+                body: JSON.stringify({ SearchHireId: searchHireId })
             });
 
             window.dispatchEvent(new CustomEvent('showNotification', {
@@ -73,13 +83,56 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
 
     const handleForceFinalize = async (favorExpert: boolean) => {
         try {
-            await forceFinalize({ searchId, favorExpert });
+            const searchHireId = searchQuery.data?.searchHire?.id;
+            if (!searchHireId) {
+                throw new Error('SearchHire ID not found');
+            }
+            await forceFinalize({
+                SearchHireId: searchHireId,
+                ResolveInFavorOfClient: !favorExpert // Invert logic: favorExpert=true means ResolveInFavorOfClient=false
+            });
             setShowFinalizeModal(false);
             // Refresh the search data
             resultsQuery.refetch();
             searchQuery.refetch();
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'success',
+                    message: '✅ Búsqueda finalizada exitosamente'
+                }
+            }));
         } catch (error) {
             console.error('Error finalizing search:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: '❌ Error al finalizar la búsqueda'
+                }
+            }));
+        }
+    };
+
+    const handleCompleteService = async () => {
+        try {
+            const searchHireId = searchQuery.data?.searchHire?.id;
+            if (!searchHireId) {
+                throw new Error('SearchHire ID not found');
+            }
+            await completeService({
+                SearchHireId: searchHireId,
+                ClientApproved: true // User is satisfied
+            });
+            // Refresh the search data
+            resultsQuery.refetch();
+            searchQuery.refetch();
+        } catch (error) {
+            console.error('Error completing service:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: '❌ Error al completar el servicio'
+                }
+            }));
         }
     };
 
@@ -209,6 +262,7 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     const results = resultsQuery.data || [];
     const search = searchQuery.data;
     const category = categories?.find(c => c.id === search?.category);
+    const isClient = user?.id === search?.userId && user?.role !== 'Expert' && !isAdmin;
 
     return (
         <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24">
@@ -250,13 +304,22 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                                     <span>Cancelar Servicio</span>
                                 </button>
                             )}
-                            {isAdmin && searchQuery.data?.searchHire?.status === 'InProgress' && (
+                            {isAdmin && searchQuery.data?.searchHire && (
                                 <button
                                     onClick={() => setShowFinalizeModal(true)}
                                     className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-white rounded-lg transition-colors"
                                 >
                                     <AlertTriangle className="w-4 h-4" />
                                     <span>Finalizar Búsqueda</span>
+                                </button>
+                            )}
+                            {searchQuery.data?.searchHire && (
+                                <button
+                                    onClick={handleCompleteService}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-white rounded-lg transition-colors"
+                                >
+                                    <Check className="w-4 h-4" />
+                                    <span>Completar Servicio</span>
                                 </button>
                             )}
                         </div>
