@@ -350,7 +350,7 @@ export function ExpertPanelPage() {
                                             </div>
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${hire.status === 'Completed'
                                                 ? 'bg-green-100 text-green-600'
-                                                : hire.status === 'InProgress'
+                                                : hire.status === 'pending'
                                                     ? 'bg-blue-100 text-blue-600'
                                                     : 'bg-gray-100 text-gray-600'
                                                 }`}>
@@ -386,7 +386,7 @@ export function ExpertPanelPage() {
                                             {hire.status === 'Pending' && (
                                                 <div className="flex gap-2">
                                                     <button
-                                                        onClick={() => updateStatus({ hireId: hire.id, status: 'InProgress' })}
+                                                        onClick={() => updateStatus({ hireId: hire.id, status: 'pending' })}
                                                         className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                                                     >
                                                         Aceptar
