@@ -24,7 +24,7 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     const [showFinalizeModal, setShowFinalizeModal] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [showAddAdForm, setShowAddAdForm] = useState(false);
-    const { forceFinalize, completeService } = useSubscription();
+    const { forceFinalize, completeService, disputeService } = useSubscription();
     const { getResults, getSearch } = useSearch();
     const { categories } = useCategories();
     const { user } = useAuth();
@@ -45,11 +45,23 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
         platformId: 1
     });
 
-    // Debug logs to diagnose button visibility
+    // Enhanced debug logs to diagnose isClient issue
+    console.log('SearchDetails Debug:');
     console.log('User:', user);
+    console.log('User ID:', user?.id);
+    console.log('User Role:', user?.role);
+    console.log('IsAdmin:', isAdmin);
     console.log('SearchQuery Data:', searchQuery.data);
-    console.log('IsClient:', user?.id === searchQuery.data?.userId && user?.role !== 'Expert' && !isAdmin);
+    console.log('Search UserID:', searchQuery.data?.userId);
+    console.log('SearchHire:', searchQuery.data?.searchHire);
     console.log('SearchHire Status:', searchQuery.data?.searchHire?.status);
+    console.log('IsClient Breakdown:', {
+        userIdMatches: user?.id === searchQuery.data?.userId,
+        notExpert: user?.role !== 'Expert',
+        notAdmin: !isAdmin
+    });
+    console.log('IsClient:', user?.id === searchQuery.data?.userId && user?.role !== 'Expert' && !isAdmin);
+    console.log('Status Match:', searchQuery.data?.searchHire?.status === 'awaiting_client_decision');
 
     const handleCancelService = async () => {
         try {
@@ -89,10 +101,9 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
             }
             await forceFinalize({
                 SearchHireId: searchHireId,
-                ResolveInFavorOfClient: !favorExpert // Invert logic: favorExpert=true means ResolveInFavorOfClient=false
+                ResolveInFavorOfClient: !favorExpert
             });
             setShowFinalizeModal(false);
-            // Refresh the search data
             resultsQuery.refetch();
             searchQuery.refetch();
             window.dispatchEvent(new CustomEvent('showNotification', {
@@ -120,9 +131,8 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
             }
             await completeService({
                 SearchHireId: searchHireId,
-                ClientApproved: true // User is satisfied
+                ClientApproved: true
             });
-            // Refresh the search data
             resultsQuery.refetch();
             searchQuery.refetch();
         } catch (error) {
@@ -131,6 +141,28 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 detail: {
                     type: 'error',
                     message: '❌ Error al completar el servicio'
+                }
+            }));
+        }
+    };
+
+    const handleDisputeService = async () => {
+        try {
+            const searchHireId = searchQuery.data?.searchHire?.id;
+            if (!searchHireId) {
+                throw new Error('SearchHire ID not found');
+            }
+            await disputeService({
+                SearchHireId: searchHireId
+            });
+            resultsQuery.refetch();
+            searchQuery.refetch();
+        } catch (error) {
+            console.error('Error disputing service:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: '❌ Error al iniciar la disputa'
                 }
             }));
         }
@@ -185,8 +217,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 sellerType: 'particular',
                 platformId: 1
             });
-
-            // Refresh results
             resultsQuery.refetch();
         } catch (error) {
             window.dispatchEvent(new CustomEvent('showNotification', {
@@ -206,7 +236,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     if (resultsQuery.isLoading || searchQuery.isLoading) {
         return (
             <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen">
-                {/* Category Banner */}
                 <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 via-blue-500/95 to-blue-600/90" />
                     <div className="absolute inset-0">
@@ -223,7 +252,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                         </div>
                     </div>
                 </div>
-                {/* Loading State */}
                 <div className="flex items-center justify-center h-[400px] bg-white/90 backdrop-blur-xl rounded-xl border border-gray-100 shadow-lg">
                     <div className="text-gray-600">Loading results...</div>
                 </div>
@@ -234,7 +262,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     if (resultsQuery.error || searchQuery.error) {
         return (
             <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen">
-                {/* Category Banner */}
                 <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 via-blue-500/95 to-blue-600/90" />
                     <div className="absolute inset-0">
@@ -251,7 +278,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                         </div>
                     </div>
                 </div>
-                {/* Error State */}
                 <div className="text-center py-12 bg-white/90 backdrop-blur-xl rounded-xl border border-red-100 shadow-lg">
                     <p className="text-red-600">Error loading results</p>
                 </div>
@@ -313,15 +339,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                                     <span>Finalizar Búsqueda</span>
                                 </button>
                             )}
-                            {searchQuery.data?.searchHire && (
-                                <button
-                                    onClick={handleCompleteService}
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-white rounded-lg transition-colors"
-                                >
-                                    <Check className="w-4 h-4" />
-                                    <span>Completar Servicio</span>
-                                </button>
-                            )}
                         </div>
                         <h1 className="text-3xl font-bold text-white mb-2">
                             {search?.title}
@@ -332,6 +349,46 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                     </div>
                 </div>
             </div>
+
+            {/* Debug Status Display */}
+            <div className="mb-8 p-4 bg-yellow-100 rounded-xl">
+                <p><strong>Debug Info:</strong></p>
+                <p>SearchHire Status: {searchQuery.data?.searchHire?.status || 'No Status'}</p>
+                <p>IsClient: {isClient.toString()}</p>
+            </div>
+
+            {/* Awaiting Client Decision Module */}
+            {isClient && searchQuery.data?.searchHire?.status === 'awaiting_client_decision' && (
+                <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-blue-100 shadow-lg">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Check className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            ¡La búsqueda ha finalizado!
+                        </h3>
+                    </div>
+                    <p className="text-gray-600 mb-6">
+                        El experto ha completado la búsqueda. Por favor, revisa los resultados y decide si estás satisfecho con el servicio.
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <button
+                            onClick={handleDisputeService}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-700 rounded-lg transition-colors"
+                        >
+                            <XCircle className="w-4 h-4" />
+                            <span>Disputar Servicio</span>
+                        </button>
+                        <button
+                            onClick={handleCompleteService}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-700 rounded-lg transition-colors"
+                        >
+                            <Check className="w-4 h-4" />
+                            <span>Aprobar Servicio</span>
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Filters Bar */}
             <div className="mb-8">
@@ -667,7 +724,6 @@ function ResultCard({ result, searchId }: ResultCardProps) {
 
     return (
         <div className="bg-white/95 backdrop-blur-xl rounded-xl overflow-hidden border border-blue-100 shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 group flex flex-col h-full">
-            {/* Image */}
             <div
                 className="relative aspect-[4/3] overflow-hidden bg-gray-50 cursor-pointer"
             >
@@ -706,14 +762,11 @@ function ResultCard({ result, searchId }: ResultCardProps) {
                     </button>
                 </div>
             </div>
-
-            {/* Content */}
             <div className="p-4 flex flex-col flex-1 cursor-pointer" onClick={handleClick}>
                 <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium text-gray-900 line-clamp-1">{result.title}</h3>
                     <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{result.category}</span>
                 </div>
-
                 <div className="flex items-center justify-between py-3 border-t border-b border-blue-50 mb-3">
                     <div className="flex items-center gap-2 text-gray-600 text-sm">
                         <Users className="w-4 h-4" />
@@ -728,7 +781,6 @@ function ResultCard({ result, searchId }: ResultCardProps) {
                         <span>70L</span>
                     </div>
                 </div>
-
                 <div className="flex items-center justify-between mt-auto">
                     <div className="flex items-baseline gap-1">
                         <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
@@ -736,7 +788,6 @@ function ResultCard({ result, searchId }: ResultCardProps) {
                         </span>
                         <span className="text-xs text-gray-500">/day</span>
                     </div>
-
                     <a
                         href={result.url}
                         target="_blank"

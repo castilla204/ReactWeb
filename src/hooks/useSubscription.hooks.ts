@@ -15,6 +15,10 @@ interface CompleteServiceRequest {
     ClientApproved: boolean;
 }
 
+interface DisputeServiceRequest {
+    SearchHireId: number;
+}
+
 export const useSubscription = () => {
     const { fetchApi } = useApi();
 
@@ -85,10 +89,35 @@ export const useSubscription = () => {
         }
     });
 
+    const disputeServiceMutation = useMutation({
+        mutationFn: (data: DisputeServiceRequest) =>
+            fetchApi('/api/Subscription/dispute-service', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            }),
+        onSuccess: () => {
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'success',
+                    message: '✅ Disputa iniciada exitosamente'
+                }
+            }));
+        },
+        onError: () => {
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: '❌ Error al iniciar la disputa'
+                }
+            }));
+        }
+    });
+
     return {
         loadMoney: loadMoneyMutation.mutateAsync,
         forceFinalize: forceFinalizeMutation.mutateAsync,
         completeService: completeServiceMutation.mutateAsync,
-        isLoading: loadMoneyMutation.isPending || forceFinalizeMutation.isPending || completeServiceMutation.isPending
+        disputeService: disputeServiceMutation.mutateAsync,
+        isLoading: loadMoneyMutation.isPending || forceFinalizeMutation.isPending || completeServiceMutation.isPending || disputeServiceMutation.isPending
     };
 };
