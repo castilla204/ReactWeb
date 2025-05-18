@@ -51,6 +51,9 @@ export const API_CONFIG = {
             loadMoney: `${API_PATH}/Subscription/load-money`,
             hireService: `${API_PATH}/Subscription/hire-service`,
         },
+        dispute: {
+            details: (searchHireId: number) => `${API_PATH}/Dispute/details/${searchHireId}`,
+        },
         notifications: {
             list: `${API_PATH}/Notification`,
             create: `${API_PATH}/Notification`,
@@ -80,4 +83,4 @@ export const API_CONFIG = {
             delete: (userId: number) => `${API_PATH}/User/${userId}`,
         }
     }
-}
+};

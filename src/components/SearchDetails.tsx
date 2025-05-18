@@ -1,5 +1,5 @@
 ﻿import React, { useLayoutEffect, useState } from 'react';
-import { MapPin, ArrowLeft, Heart, Car, Users, Gauge, Filter, ChevronDown, ArrowRight, Plus, Check, Trash2, XCircle, AlertTriangle } from 'lucide-react';
+import { MapPin, ArrowLeft, Heart, Car, Users, Gauge, Filter, ChevronDown, ArrowRight, Plus, Check, Trash2, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useLikes } from '../hooks/useLikes.hooks';
@@ -24,7 +24,12 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     const [showFinalizeModal, setShowFinalizeModal] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [showAddAdForm, setShowAddAdForm] = useState(false);
-    const { forceFinalize, completeService, disputeService } = useSubscription();
+    const [showDisputeModal, setShowDisputeModal] = useState(false);
+    const [disputeReason, setDisputeReason] = useState('');
+    const [showResolveDisputeModal, setShowResolveDisputeModal] = useState(false);
+    const [resolveInFavorOfClient, setResolveInFavorOfClient] = useState<boolean | null>(null);
+    const [resolutionReason, setResolutionReason] = useState('');
+    const { forceFinalize, completeService, disputeService, resolveDispute, getDisputeDetails } = useSubscription();
     const { getResults, getSearch } = useSearch();
     const { categories } = useCategories();
     const { user } = useAuth();
@@ -32,10 +37,11 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     const navigate = useNavigate();
     const resultsQuery = getResults(searchId);
     const searchQuery = getSearch(searchId);
+    const disputeQuery = getDisputeDetails(searchQuery.data?.searchHire?.id || 0);
     const [newAd, setNewAd] = useState({
         title: '',
         description: '',
-        price: 0,
+        price: 0 as number,
         url: '',
         images: [] as string[],
         category: categories?.[0]?.id.toString() ?? '1',
@@ -45,7 +51,7 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
         platformId: 1
     });
 
-    // Enhanced debug logs to diagnose isClient issue
+    // Enhanced debug logs to diagnose isClient and disputeQuery
     console.log('SearchDetails Debug:');
     console.log('User:', user);
     console.log('User ID:', user?.id);
@@ -55,6 +61,7 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     console.log('Search UserID:', searchQuery.data?.userId);
     console.log('SearchHire:', searchQuery.data?.searchHire);
     console.log('SearchHire Status:', searchQuery.data?.searchHire?.status);
+    console.log('SearchHire ID:', searchQuery.data?.searchHire?.id);
     console.log('IsClient Breakdown:', {
         userIdMatches: user?.id === searchQuery.data?.userId,
         notExpert: user?.role !== 'Expert',
@@ -62,6 +69,15 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     });
     console.log('IsClient:', user?.id === searchQuery.data?.userId && user?.role !== 'Expert' && !isAdmin);
     console.log('Status Match:', searchQuery.data?.searchHire?.status === 'awaiting_client_decision');
+    console.log('DisputeQuery:', {
+        isLoading: disputeQuery.isLoading,
+        isSuccess: disputeQuery.isSuccess,
+        isError: disputeQuery.isError,
+        data: disputeQuery.data,
+        error: disputeQuery.error
+    });
+
+    const isClient = user?.id === searchQuery.data?.userId && user?.role !== 'Expert' && !isAdmin;
 
     const handleCancelService = async () => {
         try {
@@ -106,6 +122,7 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
             setShowFinalizeModal(false);
             resultsQuery.refetch();
             searchQuery.refetch();
+            disputeQuery.refetch();
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
@@ -135,6 +152,7 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
             });
             resultsQuery.refetch();
             searchQuery.refetch();
+            disputeQuery.refetch();
         } catch (error) {
             console.error('Error completing service:', error);
             window.dispatchEvent(new CustomEvent('showNotification', {
@@ -147,22 +165,85 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     };
 
     const handleDisputeService = async () => {
+        setShowDisputeModal(true);
+    };
+
+    const handleDisputeSubmit = async () => {
         try {
             const searchHireId = searchQuery.data?.searchHire?.id;
             if (!searchHireId) {
                 throw new Error('SearchHire ID not found');
             }
+            if (!disputeReason.trim()) {
+                window.dispatchEvent(new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Por favor, ingrese una razón para la disputa'
+                    }
+                }));
+                return;
+            }
             await disputeService({
-                SearchHireId: searchHireId
+                SearchHireId: searchHireId,
+                Reason: disputeReason
             });
+            setShowDisputeModal(false);
+            setDisputeReason('');
             resultsQuery.refetch();
             searchQuery.refetch();
+            disputeQuery.refetch();
         } catch (error) {
             console.error('Error disputing service:', error);
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'error',
                     message: '❌ Error al iniciar la disputa'
+                }
+            }));
+        }
+    };
+
+    const handleResolveDispute = async () => {
+        try {
+            const searchHireId = searchQuery.data?.searchHire?.id;
+            if (!searchHireId) {
+                throw new Error('SearchHire ID not found');
+            }
+            if (!resolutionReason.trim()) {
+                window.dispatchEvent(new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Por favor, ingrese una razón para la resolución'
+                    }
+                }));
+                return;
+            }
+            if (resolveInFavorOfClient === null) {
+                window.dispatchEvent(new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Por favor, seleccione a quién dar la razón'
+                    }
+                }));
+                return;
+            }
+            await resolveDispute({
+                SearchHireId: searchHireId,
+                ResolveInFavorOfClient: resolveInFavorOfClient,
+                Resolution: resolutionReason
+            });
+            setShowResolveDisputeModal(false);
+            setResolveInFavorOfClient(null);
+            setResolutionReason('');
+            resultsQuery.refetch();
+            searchQuery.refetch();
+            disputeQuery.refetch();
+        } catch (error) {
+            console.error('Error resolving dispute:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: '❌ Error al resolver la disputa'
                 }
             }));
         }
@@ -208,10 +289,10 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
             setNewAd({
                 title: '',
                 description: '',
-                price: 0,
+                price: 0 as number,
                 url: '',
                 images: [] as string[],
-                category: '',
+                category: categories?.[0]?.id.toString() ?? '1',
                 province: '',
                 city: '',
                 sellerType: 'particular',
@@ -219,6 +300,7 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
             });
             resultsQuery.refetch();
         } catch (error) {
+            console.error('Error adding ad:', error);
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'error',
@@ -288,7 +370,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     const results = resultsQuery.data || [];
     const search = searchQuery.data;
     const category = categories?.find(c => c.id === search?.category);
-    const isClient = user?.id === search?.userId && user?.role !== 'Expert' && !isAdmin;
 
     return (
         <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24">
@@ -339,6 +420,15 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                                     <span>Finalizar Búsqueda</span>
                                 </button>
                             )}
+                            {isAdmin && searchQuery.data?.searchHire?.status === 'disputed' && (
+                                <button
+                                    onClick={() => setShowResolveDisputeModal(true)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-white rounded-lg transition-colors"
+                                >
+                                    <AlertTriangle className="w-4 h-4" />
+                                    <span>Resolver Disputa</span>
+                                </button>
+                            )}
                         </div>
                         <h1 className="text-3xl font-bold text-white mb-2">
                             {search?.title}
@@ -354,8 +444,60 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
             <div className="mb-8 p-4 bg-yellow-100 rounded-xl">
                 <p><strong>Debug Info:</strong></p>
                 <p>SearchHire Status: {searchQuery.data?.searchHire?.status || 'No Status'}</p>
+                <p>SearchHire ID: {searchQuery.data?.searchHire?.id || 'No ID'}</p>
                 <p>IsClient: {isClient.toString()}</p>
+                <p>DisputeQuery Status: {disputeQuery.isLoading ? 'Loading' : disputeQuery.isSuccess ? 'Success' : disputeQuery.isError ? 'Error' : 'Idle'}</p>
+                <p>DisputeQuery Data: {JSON.stringify(disputeQuery.data)}</p>
             </div>
+
+            {/* Dispute Details Section */}
+            {searchQuery.data?.searchHire?.status === 'dispute-resolved' && (
+                <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-gray-100 shadow-lg">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <AlertTriangle className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            Dispute Details
+                        </h3>
+                    </div>
+                    <div className="flex justify-end mb-2">
+                        <button
+                            onClick={() => disputeQuery.refetch()}
+                            className="flex items-center gap-2 px-3 py-1 text-sm text-blue-600 hover:text-blue-700"
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                            <span>Refetch Dispute</span>
+                        </button>
+                    </div>
+                    {disputeQuery.isLoading ? (
+                        <p className="text-gray-600">Loading dispute details...</p>
+                    ) : disputeQuery.isError ? (
+                        <p className="text-red-600">Error loading dispute details: {disputeQuery.error?.message || 'Unknown error'}</p>
+                    ) : disputeQuery.data ? (
+                        <div className="space-y-2 text-gray-600">
+                            <p><strong>Reason:</strong> {disputeQuery.data.Reason || 'N/A'}</p>
+                            <p><strong>Resolution:</strong> {disputeQuery.data.Resolution || 'N/A'}</p>
+                            <p>
+                                <strong>Outcome:</strong>{' '}
+                                {disputeQuery.data.ResolvedInFavorOfClient === null
+                                    ? 'Not specified'
+                                    : disputeQuery.data.ResolvedInFavorOfClient
+                                        ? 'In favor of client'
+                                        : 'In favor of expert'}
+                            </p>
+                            <p>
+                                <strong>Dispute Created:</strong>{' '}
+                                {disputeQuery.data.CreatedAt
+                                    ? new Date(disputeQuery.data.CreatedAt).toLocaleDateString()
+                                    : 'N/A'}
+                            </p>
+                        </div>
+                    ) : (
+                        <p className="text-gray-600">No dispute details available for this search hire.</p>
+                    )}
+                </div>
+            )}
 
             {/* Awaiting Client Decision Module */}
             {isClient && searchQuery.data?.searchHire?.status === 'awaiting_client_decision' && (
@@ -428,6 +570,107 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                     </div>
                 )}
             </div>
+
+            {/* Dispute Modal */}
+            {showDisputeModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            Iniciar Disputa
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                            Por favor, indique la razón de la disputa.
+                        </p>
+                        <textarea
+                            value={disputeReason}
+                            onChange={(e) => setDisputeReason(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            rows={4}
+                            placeholder="Explique por qué desea disputar el servicio..."
+                        />
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button
+                                onClick={() => {
+                                    setShowDisputeModal(false);
+                                    setDisputeReason('');
+                                }}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleDisputeSubmit}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                            >
+                                Enviar Disputa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Resolve Dispute Modal */}
+            {showResolveDisputeModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            Resolver Disputa
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                            Seleccione a quién dar la razón y proporcione una razón para la resolución.
+                        </p>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Dar razón a:
+                            </label>
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setResolveInFavorOfClient(false)}
+                                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${resolveInFavorOfClient === false ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                >
+                                    Experto
+                                </button>
+                                <button
+                                    onClick={() => setResolveInFavorOfClient(true)}
+                                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${resolveInFavorOfClient === true ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                >
+                                    Cliente
+                                </button>
+                            </div>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Razón de la Resolución
+                            </label>
+                            <textarea
+                                value={resolutionReason}
+                                onChange={(e) => setResolutionReason(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                rows={4}
+                                placeholder="Explique la razón de la resolución..."
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowResolveDisputeModal(false);
+                                    setResolveInFavorOfClient(null);
+                                    setResolutionReason('');
+                                }}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleResolveDispute}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                            >
+                                Resolver Disputa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Add Ad Form Modal */}
             {showAddAdForm && (
@@ -703,6 +946,7 @@ function ResultCard({ result, searchId }: ResultCardProps) {
                 }
             }));
         } catch (error) {
+            console.error('Error toggling filtered:', error);
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'error',
@@ -767,7 +1011,7 @@ function ResultCard({ result, searchId }: ResultCardProps) {
                     <h3 className="font-medium text-gray-900 line-clamp-1">{result.title}</h3>
                     <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{result.category}</span>
                 </div>
-                <div className="flex items-center justify-between py-3 border-t border-b border-blue-50 mb-3">
+                <div className="flex items-center py-3 border-t border-b border-blue-50 mb-3">
                     <div className="flex items-center gap-2 text-gray-600 text-sm">
                         <Users className="w-4 h-4" />
                         <span>4 People</span>
