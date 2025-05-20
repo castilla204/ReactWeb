@@ -1,5 +1,22 @@
 ﻿import React, { useLayoutEffect, useState } from 'react';
-import { MapPin, ArrowLeft, Heart, Car, Users, Gauge, Filter, ChevronDown, ArrowRight, Plus, Check, Trash2, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import {
+    MapPin,
+    ArrowLeft,
+    Heart,
+    Car,
+    Users,
+    Gauge,
+    Filter,
+    ChevronDown,
+    ArrowRight,
+    Plus,
+    Check,
+    Trash2,
+    XCircle,
+    AlertTriangle,
+    RefreshCw,
+    Star,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useLikes } from '../hooks/useLikes.hooks';
@@ -7,6 +24,7 @@ import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { useSubscription } from '../hooks/useSubscription.hooks';
+import { useReview } from '../hooks/useReview.hooks';
 
 interface SearchDetailsProps {
     searchId: number;
@@ -15,9 +33,9 @@ interface SearchDetailsProps {
 }
 
 const categoryBanners = {
-    1: "/src/media/Car.png", // Cars
-    2: "/src/media/motorcycle.png", // Motorcycles
-    3: "/src/media/house.png" // Houses
+    1: '/src/media/Car.png', // Cars
+    2: '/src/media/motorcycle.png', // Motorcycles
+    3: '/src/media/house.png', // Houses
 };
 
 export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps) {
@@ -29,15 +47,30 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
     const [showResolveDisputeModal, setShowResolveDisputeModal] = useState(false);
     const [resolveInFavorOfClient, setResolveInFavorOfClient] = useState<boolean | null>(null);
     const [resolutionReason, setResolutionReason] = useState('');
-    const { forceFinalize, completeService, disputeService, resolveDispute, getDisputeDetails } = useSubscription();
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [reviewForm, setReviewForm] = useState({
+        score: 0,
+        description: '',
+        images: [] as File[],
+    });
+
+    const { forceFinalize, completeService, disputeService, resolveDispute, getDisputeDetails } =
+        useSubscription();
+    const { createReview, getExpertReviews, isCreatingReview } = useReview();
     const { getResults, getSearch } = useSearch();
     const { categories } = useCategories();
     const { user } = useAuth();
     const { fetchApi } = useApi();
     const navigate = useNavigate();
+
     const resultsQuery = getResults(searchId);
     const searchQuery = getSearch(searchId);
     const disputeQuery = getDisputeDetails(searchQuery.data?.searchHire?.id || 0);
+
+    // Fetch reviews for the expert (if SearchHire exists)
+    const expertId = searchQuery.data?.searchHire?.expertId || 0;
+    const reviewsQuery = getExpertReviews(expertId);
+
     const [newAd, setNewAd] = useState({
         title: '',
         description: '',
@@ -48,36 +81,63 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
         province: '',
         city: '',
         sellerType: 'particular',
-        platformId: 1
-    });
-
-    // Enhanced debug logs to diagnose isClient and disputeQuery
-    console.log('SearchDetails Debug:');
-    console.log('User:', user);
-    console.log('User ID:', user?.id);
-    console.log('User Role:', user?.role);
-    console.log('IsAdmin:', isAdmin);
-    console.log('SearchQuery Data:', searchQuery.data);
-    console.log('Search UserID:', searchQuery.data?.userId);
-    console.log('SearchHire:', searchQuery.data?.searchHire);
-    console.log('SearchHire Status:', searchQuery.data?.searchHire?.status);
-    console.log('SearchHire ID:', searchQuery.data?.searchHire?.id);
-    console.log('IsClient Breakdown:', {
-        userIdMatches: user?.id === searchQuery.data?.userId,
-        notExpert: user?.role !== 'Expert',
-        notAdmin: !isAdmin
-    });
-    console.log('IsClient:', user?.id === searchQuery.data?.userId && user?.role !== 'Expert' && !isAdmin);
-    console.log('Status Match:', searchQuery.data?.searchHire?.status === 'awaiting_client_decision');
-    console.log('DisputeQuery:', {
-        isLoading: disputeQuery.isLoading,
-        isSuccess: disputeQuery.isSuccess,
-        isError: disputeQuery.isError,
-        data: disputeQuery.data,
-        error: disputeQuery.error
+        platformId: 1,
     });
 
     const isClient = user?.id === searchQuery.data?.userId && user?.role !== 'Expert' && !isAdmin;
+
+    // Check if a review already exists for this SearchHire by the current user
+    const hasReviewed = reviewsQuery.data?.some(
+        (review) =>
+            review.searchHireId === searchQuery.data?.searchHire?.id &&
+            review.reviewerId === user?.id
+    ) || false;
+
+    // Only allow review if client, SearchHire is completed or dispute-resolved, and no review exists
+    const canReview =
+        isClient &&
+        searchQuery.data?.searchHire &&
+        ['completed', 'dispute-resolved'].includes(searchQuery.data.searchHire.status) &&
+        !hasReviewed;
+
+    console.log('SearchDetails Debug:', {
+        User: user,
+        UserID: user?.id,
+        UserRole: user?.role,
+        IsAdmin: isAdmin,
+        SearchQueryData: searchQuery.data,
+        SearchUserID: searchQuery.data?.userId,
+        SearchHire: searchQuery.data?.searchHire,
+        SearchHireStatus: searchQuery.data?.searchHire?.status,
+        SearchHireID: searchQuery.data?.searchHire?.id,
+        ExpertId: expertId,
+        HasReviewed: hasReviewed,
+        IsClientBreakdown: {
+            userIdMatches: user?.id === searchQuery.data?.userId,
+            notExpert: user?.role !== 'Expert',
+            notAdmin: !isAdmin,
+        },
+        IsClient: isClient,
+        CanReview: canReview,
+        ReviewsQuery: {
+            isLoading: reviewsQuery.isLoading,
+            isSuccess: reviewsQuery.isSuccess,
+            isError: reviewsQuery.isError,
+            data: reviewsQuery.data?.map(r => ({
+                id: r.id,
+                searchHireId: r.searchHireId,
+                reviewerId: r.reviewerId,
+            })),
+            error: reviewsQuery.error,
+        },
+        DisputeQuery: {
+            isLoading: disputeQuery.isLoading,
+            isSuccess: disputeQuery.isSuccess,
+            isError: disputeQuery.isError,
+            data: disputeQuery.data,
+            error: disputeQuery.error,
+        },
+    });
 
     const handleCancelService = async () => {
         try {
@@ -87,25 +147,29 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
             }
             await fetchApi('/api/Subscription/cancel-service', {
                 method: 'POST',
-                body: JSON.stringify({ SearchHireId: searchHireId })
+                body: JSON.stringify({ SearchHireId: searchHireId }),
             });
 
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: '✅ Servicio cancelado correctamente'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'success',
+                        message: '✅ Servicio cancelado correctamente',
+                    },
+                }),
+            );
 
             navigate('/expert-panel');
         } catch (error) {
             console.error('Error canceling service:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: '❌ Error al cancelar el servicio'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Error al cancelar el servicio',
+                    },
+                }),
+            );
         }
     };
 
@@ -117,26 +181,30 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
             }
             await forceFinalize({
                 SearchHireId: searchHireId,
-                ResolveInFavorOfClient: !favorExpert
+                ResolveInFavorOfClient: !favorExpert,
             });
             setShowFinalizeModal(false);
             resultsQuery.refetch();
             searchQuery.refetch();
             disputeQuery.refetch();
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: '✅ Búsqueda finalizada exitosamente'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'success',
+                        message: '✅ Búsqueda finalizada exitosamente',
+                    },
+                }),
+            );
         } catch (error) {
             console.error('Error finalizing search:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: '❌ Error al finalizar la búsqueda'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Error al finalizar la búsqueda',
+                    },
+                }),
+            );
         }
     };
 
@@ -148,19 +216,29 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
             }
             await completeService({
                 SearchHireId: searchHireId,
-                ClientApproved: true
+                ClientApproved: true,
             });
             resultsQuery.refetch();
             searchQuery.refetch();
             disputeQuery.refetch();
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'success',
+                        message: '✅ Servicio completado exitosamente',
+                    },
+                }),
+            );
         } catch (error) {
             console.error('Error completing service:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: '❌ Error al completar el servicio'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Error al completar el servicio',
+                    },
+                }),
+            );
         }
     };
 
@@ -175,31 +253,43 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 throw new Error('SearchHire ID not found');
             }
             if (!disputeReason.trim()) {
-                window.dispatchEvent(new CustomEvent('showNotification', {
-                    detail: {
-                        type: 'error',
-                        message: '❌ Por favor, ingrese una razón para la disputa'
-                    }
-                }));
+                window.dispatchEvent(
+                    new CustomEvent('showNotification', {
+                        detail: {
+                            type: 'error',
+                            message: '❌ Por favor, ingrese una razón para la disputa',
+                        },
+                    }),
+                );
                 return;
             }
             await disputeService({
                 SearchHireId: searchHireId,
-                Reason: disputeReason
+                Reason: disputeReason,
             });
             setShowDisputeModal(false);
             setDisputeReason('');
             resultsQuery.refetch();
             searchQuery.refetch();
             disputeQuery.refetch();
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'success',
+                        message: '✅ Disputa iniciada exitosamente',
+                    },
+                }),
+            );
         } catch (error) {
             console.error('Error disputing service:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: '❌ Error al iniciar la disputa'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Error al iniciar la disputa',
+                    },
+                }),
+            );
         }
     };
 
@@ -210,27 +300,31 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 throw new Error('SearchHire ID not found');
             }
             if (!resolutionReason.trim()) {
-                window.dispatchEvent(new CustomEvent('showNotification', {
-                    detail: {
-                        type: 'error',
-                        message: '❌ Por favor, ingrese una razón para la resolución'
-                    }
-                }));
+                window.dispatchEvent(
+                    new CustomEvent('showNotification', {
+                        detail: {
+                            type: 'error',
+                            message: '❌ Por favor, ingrese una razón para la resolución',
+                        },
+                    }),
+                );
                 return;
             }
             if (resolveInFavorOfClient === null) {
-                window.dispatchEvent(new CustomEvent('showNotification', {
-                    detail: {
-                        type: 'error',
-                        message: '❌ Por favor, seleccione a quién dar la razón'
-                    }
-                }));
+                window.dispatchEvent(
+                    new CustomEvent('showNotification', {
+                        detail: {
+                            type: 'error',
+                            message: '❌ Por favor, seleccione a quién dar la razón',
+                        },
+                    }),
+                );
                 return;
             }
             await resolveDispute({
                 SearchHireId: searchHireId,
                 ResolveInFavorOfClient: resolveInFavorOfClient,
-                Resolution: resolutionReason
+                Resolution: resolutionReason,
             });
             setShowResolveDisputeModal(false);
             setResolveInFavorOfClient(null);
@@ -238,35 +332,86 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
             resultsQuery.refetch();
             searchQuery.refetch();
             disputeQuery.refetch();
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'success',
+                        message: '✅ Disputa resuelta exitosamente',
+                    },
+                }),
+            );
         } catch (error) {
             console.error('Error resolving dispute:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: '❌ Error al resolver la disputa'
-                }
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Error al resolver la disputa',
+                    },
+                }),
+            );
+        }
+    };
+
+    const handleReviewSubmit = async () => {
+        try {
+            const searchHireId = searchQuery.data?.searchHire?.id;
+            if (!searchHireId) {
+                throw new Error('SearchHire ID not found');
+            }
+            if (reviewForm.score < 1 || reviewForm.score > 5) {
+                window.dispatchEvent(
+                    new CustomEvent('showNotification', {
+                        detail: {
+                            type: 'error',
+                            message: '❌ Score must be between 1 and 5',
+                        },
+                    }),
+                );
+                return;
+            }
+            if (!reviewForm.description.trim()) {
+                window.dispatchEvent(
+                    new CustomEvent('showNotification', {
+                        detail: {
+                            type: 'error',
+                            message: '❌ Please provide a review description',
+                        },
+                    }),
+                );
+                return;
+            }
+            await createReview({
+                searchHireId,
+                score: reviewForm.score,
+                description: reviewForm.description,
+                images: reviewForm.images,
+            });
+            setShowReviewModal(false);
+            setReviewForm({ score: 0, description: '', images: [] });
+            searchQuery.refetch();
+            reviewsQuery.refetch(); // Refetch reviews to update hasReviewed
+        } catch (error) {
+            console.error('Error submitting review:', error);
+            // Notification handled by useReview hook
+        }
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files).filter((file) => file instanceof File);
+            console.log('Selected files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+            setReviewForm((prev) => ({
+                ...prev,
+                images: [...prev.images, ...files],
             }));
         }
     };
 
-    const addImageField = () => {
-        setNewAd(prev => ({
+    const removeImage = (index: number) => {
+        setReviewForm((prev) => ({
             ...prev,
-            images: [...prev.images, '']
-        }));
-    };
-
-    const removeImageField = (index: number) => {
-        setNewAd(prev => ({
-            ...prev,
-            images: prev.images.filter((_, i) => i !== index)
-        }));
-    };
-
-    const updateImageUrl = (index: number, value: string) => {
-        setNewAd(prev => ({
-            ...prev,
-            images: prev.images.map((url, i) => i === index ? value : url)
+            images: prev.images.filter((_, i) => i !== index),
         }));
     };
 
@@ -275,15 +420,17 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
         try {
             await fetchApi(`/api/SearchResult/${searchId}/manual-ad`, {
                 method: 'POST',
-                body: JSON.stringify(newAd)
+                body: JSON.stringify(newAd),
             });
 
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: '✅ Ad added successfully'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'success',
+                        message: '✅ Ad added successfully',
+                    },
+                }),
+            );
 
             setShowAddAdForm(false);
             setNewAd({
@@ -296,17 +443,19 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 province: '',
                 city: '',
                 sellerType: 'particular',
-                platformId: 1
+                platformId: 1,
             });
             resultsQuery.refetch();
         } catch (error) {
             console.error('Error adding ad:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: '❌ Failed to add ad'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Failed to add ad',
+                    },
+                }),
+            );
         }
     };
 
@@ -315,7 +464,7 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
         document.body.scrollTop = 0;
     }, []);
 
-    if (resultsQuery.isLoading || searchQuery.isLoading) {
+    if (resultsQuery.isLoading || searchQuery.isLoading || reviewsQuery.isLoading) {
         return (
             <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen">
                 <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
@@ -327,7 +476,10 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                     </div>
                     <div className="relative h-full flex items-center px-8">
                         <div className="flex items-center gap-4">
-                            <button onClick={onBack} className="flex items-center gap-2 text-white/90 hover:text-white transition-colors">
+                            <button
+                                onClick={onBack}
+                                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                            >
                                 <ArrowLeft className="w-5 h-5" />
                                 <span className="font-medium">Back</span>
                             </button>
@@ -341,7 +493,7 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
         );
     }
 
-    if (resultsQuery.error || searchQuery.error) {
+    if (resultsQuery.error || searchQuery.error || reviewsQuery.error) {
         return (
             <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen">
                 <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
@@ -353,7 +505,10 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                     </div>
                     <div className="relative h-full flex items-center px-8">
                         <div className="flex items-center gap-4">
-                            <button onClick={onBack} className="flex items-center gap-2 text-white/90 hover:text-white transition-colors">
+                            <button
+                                onClick={onBack}
+                                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                            >
                                 <ArrowLeft className="w-5 h-5" />
                                 <span className="font-medium">Back</span>
                             </button>
@@ -369,11 +524,10 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
 
     const results = resultsQuery.data || [];
     const search = searchQuery.data;
-    const category = categories?.find(c => c.id === search?.category);
+    const category = categories?.find((c) => c.id === search?.category);
 
     return (
         <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24">
-            {/* Category Banner */}
             <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 via-blue-500/95 to-blue-600/90" />
                 <div className="absolute inset-0">
@@ -389,7 +543,10 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 <div className="relative h-full flex items-center px-8">
                     <div>
                         <div className="flex items-center gap-4 mb-2">
-                            <button onClick={onBack} className="flex items-center gap-2 text-white/90 hover:text-white transition-colors">
+                            <button
+                                onClick={onBack}
+                                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                            >
                                 <ArrowLeft className="w-5 h-5" />
                                 <span className="font-medium">Back</span>
                             </button>
@@ -402,15 +559,16 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                                     <span>Add Ad</span>
                                 </button>
                             )}
-                            {user?.role === 'Expert' && searchQuery.data?.searchHire?.expertId === user.id && (
-                                <button
-                                    onClick={() => setShowCancelConfirm(true)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-white rounded-lg transition-colors"
-                                >
-                                    <XCircle className="w-4 h-4" />
-                                    <span>Cancelar Servicio</span>
-                                </button>
-                            )}
+                            {user?.role === 'Expert' &&
+                                searchQuery.data?.searchHire?.expertId === user.id && (
+                                    <button
+                                        onClick={() => setShowCancelConfirm(true)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-white rounded-lg transition-colors"
+                                    >
+                                        <XCircle className="w-4 h-4" />
+                                        <span>Cancelar Servicio</span>
+                                    </button>
+                                )}
                             {isAdmin && searchQuery.data?.searchHire && (
                                 <button
                                     onClick={() => setShowFinalizeModal(true)}
@@ -429,10 +587,17 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                                     <span>Resolver Disputa</span>
                                 </button>
                             )}
+                            {canReview && (
+                                <button
+                                    onClick={() => setShowReviewModal(true)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-white rounded-lg transition-colors"
+                                >
+                                    <Star className="w-4 h-4" />
+                                    <span>Submit Review</span>
+                                </button>
+                            )}
                         </div>
-                        <h1 className="text-3xl font-bold text-white mb-2">
-                            {search?.title}
-                        </h1>
+                        <h1 className="text-3xl font-bold text-white mb-2">{search?.title}</h1>
                         <p className="text-white/80">
                             {results.length} {results.length === 1 ? 'result' : 'results'} found
                         </p>
@@ -440,26 +605,35 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 </div>
             </div>
 
-            {/* Debug Status Display */}
             <div className="mb-8 p-4 bg-yellow-100 rounded-xl">
-                <p><strong>Debug Info:</strong></p>
+                <p>
+                    <strong>Debug Info:</strong>
+                </p>
                 <p>SearchHire Status: {searchQuery.data?.searchHire?.status || 'No Status'}</p>
                 <p>SearchHire ID: {searchQuery.data?.searchHire?.id || 'No ID'}</p>
                 <p>IsClient: {isClient.toString()}</p>
-                <p>DisputeQuery Status: {disputeQuery.isLoading ? 'Loading' : disputeQuery.isSuccess ? 'Success' : disputeQuery.isError ? 'Error' : 'Idle'}</p>
+                <p>CanReview: {canReview.toString()}</p>
+                <p>HasReviewed: {hasReviewed.toString()}</p>
+                <p>
+                    DisputeQuery Status:{' '}
+                    {disputeQuery.isLoading
+                        ? 'Loading'
+                        : disputeQuery.isSuccess
+                            ? 'Success'
+                            : disputeQuery.isError
+                                ? 'Error'
+                                : 'Idle'}
+                </p>
                 <p>DisputeQuery Data: {JSON.stringify(disputeQuery.data)}</p>
             </div>
 
-            {/* Dispute Details Section */}
             {searchQuery.data?.searchHire?.status === 'dispute-resolved' && (
                 <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-gray-100 shadow-lg">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                             <AlertTriangle className="w-6 h-6 text-blue-600" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                            Dispute Details
-                        </h3>
+                        <h3 className="text-lg font-semibold text-gray-900">Dispute Details</h3>
                     </div>
                     <div className="flex justify-end mb-2">
                         <button
@@ -473,11 +647,19 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                     {disputeQuery.isLoading ? (
                         <p className="text-gray-600">Loading dispute details...</p>
                     ) : disputeQuery.isError ? (
-                        <p className="text-red-600">Error loading dispute details: {disputeQuery.error?.message || 'Unknown error'}</p>
+                        <p className="text-red-600">
+                            Error loading dispute details:{' '}
+                            {disputeQuery.error?.message || 'Unknown error'}
+                        </p>
                     ) : disputeQuery.data ? (
                         <div className="space-y-2 text-gray-600">
-                            <p><strong>Reason:</strong> {disputeQuery.data.Reason || 'N/A'}</p>
-                            <p><strong>Resolution:</strong> {disputeQuery.data.Resolution || 'N/A'}</p>
+                            <p>
+                                <strong>Reason:</strong> {disputeQuery.data.Reason || 'N/A'}
+                            </p>
+                            <p>
+                                <strong>Resolution:</strong>{' '}
+                                {disputeQuery.data.Resolution || 'N/A'}
+                            </p>
                             <p>
                                 <strong>Outcome:</strong>{' '}
                                 {disputeQuery.data.ResolvedInFavorOfClient === null
@@ -494,12 +676,39 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                             </p>
                         </div>
                     ) : (
-                        <p className="text-gray-600">No dispute details available for this search hire.</p>
+                        <p className="text-gray-600">
+                            No dispute details available for this search hire.
+                        </p>
                     )}
                 </div>
             )}
 
-            {/* Awaiting Client Decision Module */}
+            {canReview && (
+                <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-yellow-100 shadow-lg">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <Star className="w-6 h-6 text-yellow-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            Rate This Service
+                        </h3>
+                    </div>
+                    <p className="text-gray-600 mb-6">
+                        The service has been completed or a dispute has been resolved. Please provide
+                        your feedback by submitting a review.
+                    </p>
+                    <div className="flex justify-end">
+                        <button
+                            onClick={() => setShowReviewModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 rounded-lg transition-colors"
+                        >
+                            <Star className="w-4 h-4" />
+                            <span>Write a Review</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {isClient && searchQuery.data?.searchHire?.status === 'awaiting_client_decision' && (
                 <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-blue-100 shadow-lg">
                     <div className="flex items-center gap-3 mb-4">
@@ -511,7 +720,8 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                         </h3>
                     </div>
                     <p className="text-gray-600 mb-6">
-                        El experto ha completado la búsqueda. Por favor, revisa los resultados y decide si estás satisfecho con el servicio.
+                        El experto ha completado la búsqueda. Por favor, revisa los resultados y
+                        decide si estás satisfecho con el servicio.
                     </p>
                     <div className="flex justify-end gap-3">
                         <button
@@ -532,7 +742,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 </div>
             )}
 
-            {/* Filters Bar */}
             <div className="mb-8">
                 <div className="flex items-center gap-3 p-4 bg-white/90 backdrop-blur-xl rounded-xl border border-blue-100 shadow-lg w-full">
                     <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors">
@@ -555,12 +764,15 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 </div>
             </div>
 
-            {/* Results Grid */}
             <div className="min-h-[400px]">
                 {results.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-[400px] bg-white/90 backdrop-blur-xl rounded-xl border border-gray-100 shadow-lg">
                         <p className="text-gray-500">No results found</p>
-                        {isAdmin && <p className="text-sm text-gray-400 mt-2">Try adjusting your search criteria</p>}
+                        {isAdmin && (
+                            <p className="text-sm text-gray-400 mt-2">
+                                Try adjusting your search criteria
+                            </p>
+                        )}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr relative">
@@ -571,7 +783,112 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 )}
             </div>
 
-            {/* Dispute Modal */}
+            {showReviewModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            Submit Your Review
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                            Please provide your feedback for the service. Images are optional.
+                        </p>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Rating (1–5)
+                            </label>
+                            <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                        key={star}
+                                        type="button"
+                                        onClick={() =>
+                                            setReviewForm((prev) => ({ ...prev, score: star }))
+                                        }
+                                        className={`p-2 ${reviewForm.score >= star
+                                                ? 'text-yellow-500'
+                                                : 'text-gray-300'
+                                            } hover:text-yellow-600 transition-colors`}
+                                    >
+                                        <Star className="w-6 h-6" fill="currentColor" />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Description
+                            </label>
+                            <textarea
+                                value={reviewForm.description}
+                                onChange={(e) =>
+                                    setReviewForm((prev) => ({
+                                        ...prev,
+                                        description: e.target.value,
+                                    }))
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                rows={4}
+                                placeholder="Share your experience..."
+                                required
+                            />
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Images (Optional)
+                            </label>
+                            <div className="space-y-2">
+                                {reviewForm.images
+                                    .filter((image) => image instanceof File)
+                                    .map((image, index) => (
+                                        <div key={index} className="flex items-center gap-2">
+                                            <span className="text-sm text-gray-600 truncate">
+                                                {image.name}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(index)}
+                                                className="p-1 text-red-500 hover:text-red-600"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleImageChange}
+                                    className="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-gray-500"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowReviewModal(false);
+                                    setReviewForm({ score: 0, description: '', images: [] });
+                                }}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleReviewSubmit}
+                                disabled={isCreatingReview}
+                                className={`px-4 py-2 rounded-lg transition-colors ${isCreatingReview
+                                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                                        : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                                    }`}
+                            >
+                                {isCreatingReview ? 'Submitting...' : 'Submit Review'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {showDisputeModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
@@ -609,7 +926,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 </div>
             )}
 
-            {/* Resolve Dispute Modal */}
             {showResolveDisputeModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
@@ -617,7 +933,8 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                             Resolver Disputa
                         </h3>
                         <p className="text-gray-600 mb-4">
-                            Seleccione a quién dar la razón y proporcione una razón para la resolución.
+                            Seleccione a quién dar la razón y proporcione una razón para la
+                            resolución.
                         </p>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -626,13 +943,19 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                             <div className="flex gap-4">
                                 <button
                                     onClick={() => setResolveInFavorOfClient(false)}
-                                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${resolveInFavorOfClient === false ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${resolveInFavorOfClient === false
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
                                 >
                                     Experto
                                 </button>
                                 <button
                                     onClick={() => setResolveInFavorOfClient(true)}
-                                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${resolveInFavorOfClient === true ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                    className={`flex-1 px-4 py-2 rounded-lg transition-colors ${resolveInFavorOfClient === true
+                                            ? 'bg-green-600 text-white'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
                                 >
                                     Cliente
                                 </button>
@@ -672,27 +995,34 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 </div>
             )}
 
-            {/* Add Ad Form Modal */}
             {showAddAdForm && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4">
                         <h3 className="text-lg font-semibold mb-4">Add Manual Ad</h3>
                         <form onSubmit={handleAddAd} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Title
+                                </label>
                                 <input
                                     type="text"
                                     value={newAd.title}
-                                    onChange={(e) => setNewAd({ ...newAd, title: e.target.value })}
+                                    onChange={(e) =>
+                                        setNewAd({ ...newAd, title: e.target.value })
+                                    }
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Description
+                                </label>
                                 <textarea
                                     value={newAd.description}
-                                    onChange={(e) => setNewAd({ ...newAd, description: e.target.value })}
+                                    onChange={(e) =>
+                                        setNewAd({ ...newAd, description: e.target.value })
+                                    }
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     rows={3}
                                     required
@@ -700,21 +1030,32 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Price
+                                    </label>
                                     <input
                                         type="number"
                                         value={newAd.price}
-                                        onChange={(e) => setNewAd({ ...newAd, price: parseFloat(e.target.value) })}
+                                        onChange={(e) =>
+                                            setNewAd({
+                                                ...newAd,
+                                                price: parseFloat(e.target.value),
+                                            })
+                                        }
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        URL
+                                    </label>
                                     <input
                                         type="url"
                                         value={newAd.url}
-                                        onChange={(e) => setNewAd({ ...newAd, url: e.target.value })}
+                                        onChange={(e) =>
+                                            setNewAd({ ...newAd, url: e.target.value })
+                                        }
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         required
                                     />
@@ -722,10 +1063,17 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                             </div>
                             <div>
                                 <div className="flex items-center justify-between mb-1">
-                                    <label className="block text-sm font-medium text-gray-700">Image URLs</label>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Image URLs
+                                    </label>
                                     <button
                                         type="button"
-                                        onClick={addImageField}
+                                        onClick={() =>
+                                            setNewAd((prev) => ({
+                                                ...prev,
+                                                images: [...prev.images, ''],
+                                            }))
+                                        }
                                         className="text-sm text-blue-600 hover:text-blue-700"
                                     >
                                         + Add Image
@@ -737,14 +1085,28 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                                             <input
                                                 type="url"
                                                 value={url}
-                                                onChange={(e) => updateImageUrl(index, e.target.value)}
+                                                onChange={(e) =>
+                                                    setNewAd((prev) => ({
+                                                        ...prev,
+                                                        images: prev.images.map((u, i) =>
+                                                            i === index ? e.target.value : u,
+                                                        ),
+                                                    }))
+                                                }
                                                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                 placeholder="Enter image URL"
                                                 required
                                             />
                                             <button
                                                 type="button"
-                                                onClick={() => removeImageField(index)}
+                                                onClick={() =>
+                                                    setNewAd((prev) => ({
+                                                        ...prev,
+                                                        images: prev.images.filter(
+                                                            (_, i) => i !== index,
+                                                        ),
+                                                    }))
+                                                }
                                                 className="p-2 text-red-500 hover:text-red-600"
                                             >
                                                 <Trash2 className="w-5 h-5" />
@@ -754,7 +1116,12 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                                     {newAd.images.length === 0 && (
                                         <button
                                             type="button"
-                                            onClick={addImageField}
+                                            onClick={() =>
+                                                setNewAd((prev) => ({
+                                                    ...prev,
+                                                    images: [...prev.images, ''],
+                                                }))
+                                            }
                                             className="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-gray-700 hover:border-gray-400 transition-colors"
                                         >
                                             Click to add an image URL
@@ -764,10 +1131,14 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Category
+                                    </label>
                                     <select
                                         value={newAd.category}
-                                        onChange={(e) => setNewAd({ ...newAd, category: e.target.value })}
+                                        onChange={(e) =>
+                                            setNewAd({ ...newAd, category: e.target.value })
+                                        }
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         required
                                     >
@@ -779,31 +1150,43 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Province
+                                    </label>
                                     <input
                                         type="text"
                                         value={newAd.province}
-                                        onChange={(e) => setNewAd({ ...newAd, province: e.target.value })}
+                                        onChange={(e) =>
+                                            setNewAd({ ...newAd, province: e.target.value })
+                                        }
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         required
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    City
+                                </label>
                                 <input
                                     type="text"
                                     value={newAd.city}
-                                    onChange={(e) => setNewAd({ ...newAd, city: e.target.value })}
+                                    onChange={(e) =>
+                                        setNewAd({ ...newAd, city: e.target.value })
+                                    }
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Seller Type</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Seller Type
+                                </label>
                                 <select
                                     value={newAd.sellerType}
-                                    onChange={(e) => setNewAd({ ...newAd, sellerType: e.target.value })}
+                                    onChange={(e) =>
+                                        setNewAd({ ...newAd, sellerType: e.target.value })
+                                    }
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     required
                                 >
@@ -832,7 +1215,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 </div>
             )}
 
-            {/* Cancel Confirmation Modal */}
             {showCancelConfirm && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
@@ -845,7 +1227,8 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                             </h3>
                         </div>
                         <p className="text-gray-600 mb-6">
-                            ¿Estás seguro de que quieres cancelar este servicio? Esta acción no se puede deshacer.
+                            ¿Estás seguro de que quieres cancelar este servicio? Esta acción no se
+                            puede deshacer.
                         </p>
                         <div className="flex justify-end gap-3">
                             <button
@@ -865,7 +1248,6 @@ export function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps)
                 </div>
             )}
 
-            {/* Force Finalize Modal */}
             {showFinalizeModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
@@ -921,7 +1303,7 @@ function ResultCard({ result, searchId }: ResultCardProps) {
     const navigate = useNavigate();
     const isAdmin = user?.email === 'dcastillaa@gmail.com';
     const filteredResults = getFilteredResults(searchId);
-    const filteredResult = filteredResults.data?.find(fr => fr.ad.id === result.id);
+    const filteredResult = filteredResults.data?.find((fr) => fr.ad.id === result.id);
     const isFiltered = !!filteredResult;
 
     const handleToggleFiltered = async (e: React.MouseEvent) => {
@@ -931,7 +1313,7 @@ function ResultCard({ result, searchId }: ResultCardProps) {
                 await addToFiltered.mutateAsync({
                     searchId: searchId,
                     adId: result.id,
-                    notes: 'Added by admin'
+                    notes: 'Added by admin',
                 });
             } else {
                 if (filteredResult?.id) {
@@ -939,20 +1321,27 @@ function ResultCard({ result, searchId }: ResultCardProps) {
                 }
             }
 
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: isFiltered ? '🗑️ Ad removed from filtered list' : '✅ Ad added to filtered list'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'success',
+                        message: isFiltered
+                            ? '🗑️ Ad removed from filtered list'
+                            : '✅ Ad added to filtered list',
+                    },
+                }),
+            );
         } catch (error) {
             console.error('Error toggling filtered:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: `❌ Failed to ${isFiltered ? 'remove from' : 'add to'} filtered list`
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: `❌ Failed to ${isFiltered ? 'remove from' : 'add to'
+                            } filtered list`,
+                    },
+                }),
+            );
         }
     };
 
@@ -963,14 +1352,12 @@ function ResultCard({ result, searchId }: ResultCardProps) {
     const priceFormatter = new Intl.NumberFormat('es-ES', {
         style: 'currency',
         currency: 'EUR',
-        maximumFractionDigits: 0
+        maximumFractionDigits: 0,
     });
 
     return (
         <div className="bg-white/95 backdrop-blur-xl rounded-xl overflow-hidden border border-blue-100 shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 group flex flex-col h-full">
-            <div
-                className="relative aspect-[4/3] overflow-hidden bg-gray-50 cursor-pointer"
-            >
+            <div className="relative aspect-[4/3] overflow-hidden bg-gray-50 cursor-pointer">
                 <img
                     src={result.images[0]}
                     alt={result.title}
@@ -982,10 +1369,12 @@ function ResultCard({ result, searchId }: ResultCardProps) {
                         <button
                             onClick={handleToggleFiltered}
                             className={`p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg transition-colors group ${isFiltered
-                                ? 'text-green-500 hover:text-green-600 hover:bg-green-50'
-                                : 'text-blue-500 hover:text-blue-600 hover:bg-blue-50'
+                                    ? 'text-green-500 hover:text-green-600 hover:bg-green-50'
+                                    : 'text-blue-500 hover:text-blue-600 hover:bg-blue-50'
                                 }`}
-                            title={isFiltered ? "Remove from filtered list" : "Add to filtered list"}
+                            title={
+                                isFiltered ? 'Remove from filtered list' : 'Add to filtered list'
+                            }
                         >
                             {isFiltered ? (
                                 <Check className="w-4 h-4 group-hover:scale-110 transition-transform" />
@@ -1002,14 +1391,19 @@ function ResultCard({ result, searchId }: ResultCardProps) {
                         className={`p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg ${isLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-500'
                             } transition-colors`}
                     >
-                        <Heart className="w-4 h-4" fill={isLiked ? "currentColor" : "none"} />
+                        <Heart className="w-4 h-4" fill={isLiked ? 'currentColor' : 'none'} />
                     </button>
                 </div>
             </div>
-            <div className="p-4 flex flex-col flex-1 cursor-pointer" onClick={handleClick}>
+            <div
+                className="p-4 flex flex-col flex-1 cursor-pointer"
+                onClick={handleClick}
+            >
                 <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium text-gray-900 line-clamp-1">{result.title}</h3>
-                    <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{result.category}</span>
+                    <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                        {result.category}
+                    </span>
                 </div>
                 <div className="flex items-center py-3 border-t border-b border-blue-50 mb-3">
                     <div className="flex items-center gap-2 text-gray-600 text-sm">
