@@ -4,8 +4,6 @@ import { useSearch } from '../hooks/useSearch.hooks';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import type { SearchParameters } from '../hooks/useSearch.hooks';
 import { Notification, NotificationType } from './Notification';
-import { useApi } from '../hooks/useApi';
-import { API_CONFIG } from '../config/api';
 
 export interface SearchFormProps {
     parameters: SearchParameters & { serviceId?: number };
@@ -14,11 +12,15 @@ export interface SearchFormProps {
     setShowSubscriptions: (show: boolean) => void;
 }
 
-export default function SearchForm({ parameters, onComplete, setCurrentStep, setShowSubscriptions }: SearchFormProps) {
-    const { createSearch, createParameters } = useSearch();
+export default function SearchForm({
+    parameters,
+    onComplete,
+    setCurrentStep,
+    setShowSubscriptions,
+}: SearchFormProps) {
+    const { createSearchWithHire } = useSearch();
     const { maxSearchesReached, maxSearches } = useSubscriptionLimits();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { fetchApi } = useApi();
     const [notification, setNotification] = useState<{
         type: NotificationType;
         message: string;
@@ -34,62 +36,47 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
                 type: 'error',
                 message: `👑 Has alcanzado el límite de ${maxSearches} búsquedas activas. ¡Mejora tu plan para crear más búsquedas!`,
                 action: () => {
-                    window.dispatchEvent(new CustomEvent('showSubscriptions'));
-                }
+                    setShowSubscriptions(true);
+                },
             });
             setIsSubmitting(false);
             return;
         }
 
-        if (createSearch.isPending || createParameters.isPending || isSubmitting) {
+        if (createSearchWithHire.isPending || isSubmitting) {
             return;
         }
 
         try {
             const searchData = {
-                title: parameters.userSearch,
-                description: 'Descripción por defecto',
+                title: parameters.keywords,
+                description: parameters.userSearch || 'Descripción por defecto',
                 category: parameters.category || 0,
                 frequency: parseInt(parameters.frequency.toString()),
                 isActive: true,
-                startDate: new Date().toISOString()
+                startDate: new Date().toISOString(),
             };
 
-            const { id: searchId } = await createSearch.mutateAsync(searchData);
-            await createParameters.mutateAsync({ searchId, data: parameters });
+            const { hireUrl } = await createSearchWithHire.mutateAsync({
+                searchData,
+                parameters,
+                serviceId: parameters.serviceId,
+            });
 
-            // If a service was selected, hire it
-            if (parameters.serviceId) {
-                try {
-                    const response = await fetchApi<{ url: string }>(API_CONFIG.endpoints.subscription.hireService, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            searchServiceId: parameters.serviceId,
-                            searchId: searchId
-                        })
-                    });
-
-                    // If we get a URL back, redirect to it
-                    if (response.url) {
-                        window.location.href = response.url;
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Error hiring service:', error);
-                    setNotification({
-                        type: 'error',
-                        message: '❌ Error al contratar el servicio. Por favor, inténtalo de nuevo.'
-                    });
-                }
+            if (hireUrl) {
+                window.location.href = hireUrl;
+                return;
             }
 
+            setNotification({
+                type: 'success',
+                message: '✅ Búsqueda creada exitosamente',
+            });
             onComplete();
-            setIsSubmitting(false);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Error creating search';
             console.error('Error creating search:', err);
 
-            // If it's the search limit error, show upgrade button
             if (errorMessage.includes("You've reached your plan's limit")) {
                 setNotification({
                     type: 'error',
@@ -97,14 +84,15 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
                     action: () => {
                         setCurrentStep(0);
                         setShowSubscriptions(true);
-                    }
+                    },
                 });
             } else {
                 setNotification({
                     type: 'error',
-                    message: `❌ ${errorMessage}`
+                    message: `❌ ${errorMessage}`,
                 });
             }
+        } finally {
             setIsSubmitting(false);
         }
     };
@@ -134,8 +122,12 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
                                 <Sparkles className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
-                                <h2 className="text-lg md:text-xl font-semibold text-gray-900">Configuración de Búsqueda</h2>
-                                <p className="text-sm text-gray-500">Revisa y confirma tu configuración de búsqueda inteligente</p>
+                                <h2 className="text-lg md:text-xl font-semibold text-gray-900">
+                                    Configuración de Búsqueda
+                                </h2>
+                                <p className="text-sm text-gray-500">
+                                    Revisa y confirma tu configuración de búsqueda inteligente
+                                </p>
                             </div>
                         </div>
 
@@ -145,7 +137,9 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
                                     <Zap className="w-5 h-5 text-blue-600" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-medium text-gray-900 mb-2">Análisis de IA</h3>
+                                    <h3 className="text-sm font-medium text-gray-900 mb-2">
+                                        Análisis de IA
+                                    </h3>
                                     <p className="text-sm text-gray-600 leading-relaxed break-words">
                                         {parameters.userSearch}
                                     </p>
@@ -161,17 +155,22 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
                         <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
                                 <Target className="w-5 h-5 text-blue-600" />
-                                <h3 className="text-sm font-medium text-gray-900">Configuración de Ubicación</h3>
+                                <h3 className="text-sm font-medium text-gray-900">
+                                    Configuración de Ubicación
+                                </h3>
                             </div>
                             <div className="space-y-3">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Área de Búsqueda</span>
-                                    <span className="text-gray-900 font-medium">{parameters.locationRange} km de radio</span>
+                                    <span className="text-gray-900 font-medium">
+                                        {parameters.locationRange} km de radio
+                                    </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Punto Central</span>
                                     <span className="text-gray-900 font-medium">
-                                        {parameters.latitude.slice(0, 6)}, {parameters.longitude.slice(0, 6)}
+                                        {parameters.latitude.slice(0, 6)},{' '}
+                                        {parameters.longitude.slice(0, 6)}
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
@@ -187,7 +186,9 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
                         <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
                                 <DollarSign className="w-5 h-5 text-blue-600" title="Precio" />
-                                <h3 className="text-sm font-medium text-gray-900">Rango de Precio</h3>
+                                <h3 className="text-sm font-medium text-gray-900">
+                                    Rango de Precio
+                                </h3>
                             </div>
                             <div className="space-y-3">
                                 <div className="flex justify-between text-sm">
@@ -205,7 +206,9 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Rango de Presupuesto</span>
                                     <span className="text-gray-900 font-medium">
-                                        {parameters.maxPrice ? `€${parameters.maxPrice - (parameters.minPrice || 0)}` : 'Flexible'}
+                                        {parameters.maxPrice
+                                            ? `€${parameters.maxPrice - (parameters.minPrice || 0)}`
+                                            : 'Flexible'}
                                     </span>
                                 </div>
                             </div>
@@ -215,19 +218,25 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
                         <div className="col-span-1 lg:col-span-3 bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
                                 <Clock className="w-5 h-5 text-blue-600" />
-                                <h3 className="text-sm font-medium text-gray-900">Actualizaciones Automáticas</h3>
+                                <h3 className="text-sm font-medium text-gray-900">
+                                    Actualizaciones Automáticas
+                                </h3>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6">
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500">Frecuencia</span>
-                                        <span className="text-gray-900 font-medium">Cada {parameters.frequency}h</span>
+                                        <span className="text-gray-900 font-medium">
+                                            Cada {parameters.frequency}h
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500">Actualizaciones por Día</span>
-                                        <span className="text-gray-900 font-medium">{24 / parseInt(parameters.frequency.toString())}</span>
+                                        <span className="text-gray-900 font-medium">
+                                            {24 / parseInt(parameters.frequency.toString())}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
@@ -258,10 +267,10 @@ export default function SearchForm({ parameters, onComplete, setCurrentStep, set
                         ) : (
                             <button
                                 type="submit"
-                                disabled={createSearch.isPending || createParameters.isPending || maxSearchesReached || isSubmitting}
+                                disabled={createSearchWithHire.isPending || isSubmitting}
                                 className="w-full md:w-auto md:ml-auto flex items-center justify-center gap-2 py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
                             >
-                                {(createSearch.isPending || createParameters.isPending || isSubmitting) ? (
+                                {createSearchWithHire.isPending || isSubmitting ? (
                                     <div className="flex items-center gap-2">
                                         <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                                         <span className="text-sm">Creando Búsqueda...</span>
