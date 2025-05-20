@@ -15,7 +15,7 @@ export interface SearchItem {
     startDate: string;
     userId: number;
     searchHire?: {
-        id: number; // Added to ensure SearchHireId is included
+        id: number;
         expertId: number;
         status: string;
     };
@@ -76,6 +76,17 @@ interface SearchData {
     startDate: string;
 }
 
+interface HireServiceData {
+    searchServiceId: number;
+    searchId: number;
+}
+
+interface CreateSearchWithHireData {
+    searchData: SearchData;
+    parameters: SearchParameters;
+    serviceId?: number;
+}
+
 export const useSearch = () => {
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
@@ -91,10 +102,11 @@ export const useSearch = () => {
         queryFn: () => fetchApi<SearchItem[]>(API_CONFIG.endpoints.search.listAll),
     });
 
-    const getSearch = (searchId: number) => useQuery({
-        queryKey: ['search', searchId],
-        queryFn: () => fetchApi<SearchItem>(API_CONFIG.endpoints.search.get(searchId)),
-    });
+    const getSearch = (searchId: number) =>
+        useQuery({
+            queryKey: ['search', searchId],
+            queryFn: () => fetchApi<SearchItem>(API_CONFIG.endpoints.search.get(searchId)),
+        });
 
     // Mutations
     const createSearchMutation = useMutation({
@@ -152,6 +164,44 @@ export const useSearch = () => {
         },
     });
 
+    const hireServiceMutation = useMutation({
+        mutationFn: (data: HireServiceData) =>
+            fetchApi<{ url: string }>(API_CONFIG.endpoints.subscription.hireService, {
+                method: 'POST',
+                body: JSON.stringify(data),
+            }),
+    });
+
+    const createSearchWithHireMutation = useMutation({
+        mutationFn: async ({ searchData, parameters, serviceId }: CreateSearchWithHireData) => {
+            // Step 1: Create the search
+            const searchResponse = await createSearchMutation.mutateAsync(searchData);
+            const searchId = searchResponse.id;
+
+            // Step 2: Create the search parameters
+            await createParametersMutation.mutateAsync({ searchId, data: parameters });
+
+            // Step 3: Hire the service if serviceId is provided
+            let hireUrl: string | undefined;
+            if (serviceId) {
+                const hireResponse = await hireServiceMutation.mutateAsync({
+                    searchServiceId: serviceId,
+                    searchId,
+                });
+                hireUrl = hireResponse.url;
+            }
+
+            return { searchId, hireUrl };
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['searches'] });
+        },
+        onError: (error) => {
+            console.error('Error creating search with hire:', error);
+            // Note: Rollback is handled by not committing changes if any step fails
+        },
+    });
+
     // Search Parameters
     const createParametersMutation = useMutation({
         mutationFn: ({ searchId, data }: { searchId: number; data: SearchParameters }) =>
@@ -161,10 +211,11 @@ export const useSearch = () => {
             }),
     });
 
-    const getParameters = (searchId: number) => useQuery({
-        queryKey: ['searchParameters', searchId],
-        queryFn: () => fetchApi(API_CONFIG.endpoints.searchParameters.get(searchId)),
-    });
+    const getParameters = (searchId: number) =>
+        useQuery({
+            queryKey: ['searchParameters', searchId],
+            queryFn: () => fetchApi(API_CONFIG.endpoints.searchParameters.get(searchId)),
+        });
 
     const updateParametersMutation = useMutation({
         mutationFn: ({ searchId, data }: { searchId: number; data: Partial<SearchParameters> }) =>
@@ -178,15 +229,18 @@ export const useSearch = () => {
     });
 
     // Search Results
-    const getResults = (searchId: number) => useQuery({
-        queryKey: ['searchResults', searchId],
-        queryFn: () => fetchApi<SearchResult[]>(API_CONFIG.endpoints.searchResults.list(searchId)),
-    });
+    const getResults = (searchId: number) =>
+        useQuery({
+            queryKey: ['searchResults', searchId],
+            queryFn: () => fetchApi<SearchResult[]>(API_CONFIG.endpoints.searchResults.list(searchId)),
+        });
 
-    const getFilteredResults = (searchId: number) => useQuery({
-        queryKey: ['searchResults', searchId, 'filtered'],
-        queryFn: () => fetchApi<FilteredResult[]>(API_CONFIG.endpoints.searchResults.filtered.list(searchId)),
-    });
+    const getFilteredResults = (searchId: number) =>
+        useQuery({
+            queryKey: ['searchResults', searchId, 'filtered'],
+            queryFn: () =>
+                fetchApi<FilteredResult[]>(API_CONFIG.endpoints.searchResults.filtered.list(searchId)),
+        });
 
     const addToFilteredMutation = useMutation({
         mutationFn: ({ searchId, adId, notes }: { searchId: number; adId: string; notes: string }) =>
@@ -202,12 +256,11 @@ export const useSearch = () => {
     const removeFromFilteredMutation = useMutation({
         mutationFn: (id: number) =>
             fetchApi(API_CONFIG.endpoints.searchResults.filtered.remove(id), {
-                method: 'DELETE'
+                method: 'DELETE',
             }),
         onSuccess: () => {
-            // Invalidate all filtered results queries
             queryClient.invalidateQueries({
-                predicate: (query) => query.queryKey[0] === 'searchResults' && query.queryKey[2] === 'filtered'
+                predicate: (query) => query.queryKey[0] === 'searchResults' && query.queryKey[2] === 'filtered',
             });
         },
     });
@@ -231,5 +284,7 @@ export const useSearch = () => {
         updateParameters: updateParametersMutation,
         addToFiltered: addToFilteredMutation,
         removeFromFiltered: removeFromFilteredMutation,
+        hireService: hireServiceMutation,
+        createSearchWithHire: createSearchWithHireMutation,
     };
 };
