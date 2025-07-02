@@ -91,7 +91,7 @@ const HomeHero: React.FC = () => {
                     <div>
                         <h2 className="text-3xl font-bold text-white mb-4">
                             La Mejor Plataforma<br />
-                            para Buscar Coches
+                            para Buscar Cochess
                             <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
                                 <span>+</span>
                                 <Sparkles className="w-4 h-4" />
