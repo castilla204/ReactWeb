@@ -7,7 +7,7 @@ import { API_CONFIG } from '../config/api';
 interface ExpertHire {
     id: number;
     clientId: number;
-    expertId: number;
+    expertId: number | null;
     searchServiceId: number;
     searchId: number | null;
     status: string;
