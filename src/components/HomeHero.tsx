@@ -13,7 +13,7 @@ const HomeHero: React.FC = () => {
             imageClass: "-right-12 -bottom-16 transform-gpu [filter:drop-shadow(2px_4px_8px_rgba(0,0,0,0.2))_drop-shadow(0_30px_30px_rgba(29,78,216,0.35))_drop-shadow(0_20px_20px_rgba(59,130,246,0.45))]"
         },
         {
-            title: "La Mejor Plataforma\npara Buscar Coches",
+            title: "La Mejor Plataforma\npara Buscar Cochess",
             description: "Facilidad para buscar coches de forma segura\ny cercana. Por supuesto, a bajo precio.",
             buttonText: "Buscar Coche",
             image: new URL('../media/Car.png', import.meta.url).href,
