@@ -1,152 +1,219 @@
-﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from './useApi';
-import { API_CONFIG } from '../config/api';
+﻿import { useState, useCallback, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ExpertProfile {
     id: number;
-    userId: number;
     profilePictureUrl: string;
     description: string;
-    stripeAccountId: string;
+    stripeAccountId: string | null;
     createdAt: string;
 }
 
-interface ExpertService {
+interface Service {
     id: number;
-    categoryId: number;
-    price: number;
-    conditions: string;
-    durationInHours: number;
-    createdAt: string;
-    imageUrls: string[];
-}
-
-interface ExpertSearch {
-    id: number;
-    title: string;
-    description: string;
-    frequency: number;
-    isActive: boolean;
-    lastExecution: string;
-    nextExecution: string;
-    createdAt: string;
-    client: {
-        name: string;
-        email: string;
-    };
-}
-
-interface CreateServiceData {
     expertProfileId: number;
     categoryId: number;
     price: number;
     conditions: string;
     durationInHours: number;
-    images?: File[];
+    imageUrls: string[];
+    createdAt: string;
 }
 
-interface OnboardingResponse {
-    url: string;
+interface Search {
+    id: number;
+    client: { name: string; email: string };
+    categoryId: number;
+    status: string;
+    createdAt: string;
 }
 
-export const useExpert = () => {
-    const { fetchApi } = useApi();
-    const queryClient = useQueryClient();
+export function useExpert() {
+    const { user, signOut } = useAuth();
+    const [profile, setProfile] = useState<ExpertProfile | null>(null);
+    const [services, setServices] = useState<Service[]>([]);
+    const [searches, setSearches] = useState<Search[]>([]);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+    const [isLoadingServices, setIsLoadingServices] = useState(false);
+    const [isLoadingSearches, setIsLoadingSearches] = useState(false);
+    const [isCreatingService, setIsCreatingService] = useState(false);
+    const [isStartingOnboarding, setIsStartingOnboarding] = useState(false);
+    const [profileError, setProfileError] = useState<Error | null>(null);
 
-    // Profile Query
-    const profileQuery = useQuery({
-        queryKey: ['expertProfile'],
-        queryFn: () => fetchApi<ExpertProfile>(API_CONFIG.endpoints.expert.profile),
-    });
+    const fetchProfile = useCallback(async () => {
+        if (!user) {
+            console.log('No user, cannot fetch profile');
+            return;
+        }
 
-    // Services Query
-    const servicesQuery = useQuery({
-        queryKey: ['expertServices', profileQuery.data?.id],
-        queryFn: () => profileQuery.data?.id
-            ? fetchApi<ExpertService[]>(API_CONFIG.endpoints.expert.services.getByExpert(profileQuery.data.id))
-            : Promise.resolve([]),
-        enabled: !!profileQuery.data?.id,
-    });
-
-    // Expert's Searches Query
-    const searchesQuery = useQuery({
-        queryKey: ['expertSearches'],
-        queryFn: () => fetchApi<ExpertSearch[]>(API_CONFIG.endpoints.expert.hires.listAsExpert),
-        enabled: !!profileQuery.data?.id,
-    });
-
-    // Create Service Mutation
-    const createServiceMutation = useMutation({
-        mutationFn: async (data: CreateServiceData) => {
-            const formData = new FormData();
-            formData.append('expertProfileId', data.expertProfileId.toString());
-            formData.append('categoryId', data.categoryId.toString());
-            formData.append('price', data.price.toString());
-            formData.append('conditions', data.conditions);
-            formData.append('durationInHours', data.durationInHours.toString());
-
-            if (data.images) {
-                data.images.forEach(image => {
-                    formData.append('images', image);
-                });
+        setIsLoadingProfile(true);
+        setProfileError(null);
+        try {
+            const token = localStorage.getItem('authToken');
+            console.log('Fetching expert profile with token:', token ? 'present' : 'missing');
+            if (!token) {
+                throw new Error('No authentication token found');
             }
 
-            return await fetchApi('/api/SearchService', {
+            const response = await fetch('/api/User/expert-profile', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('Request failed with status 401');
+                }
+                throw new Error(`Failed to fetch profile: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('Fetched expert profile:', data);
+            setProfile(data);
+        } catch (error: any) {
+            console.error('Error fetching profile:', error);
+            setProfileError(error);
+        } finally {
+            setIsLoadingProfile(false);
+        }
+    }, [user, signOut]);
+
+    const fetchServices = useCallback(async () => {
+        if (!user) return;
+
+        setIsLoadingServices(true);
+        try {
+            const response = await fetch('/api/Services', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch services: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setServices(data);
+        } catch (error) {
+            console.error('Error fetching services:', error);
+        } finally {
+            setIsLoadingServices(false);
+        }
+    }, [user]);
+
+    const fetchSearches = useCallback(async () => {
+        if (!user) return;
+
+        setIsLoadingSearches(true);
+        try {
+            const response = await fetch('/api/Searches/expert', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch searches: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setSearches(data);
+        } catch (error) {
+            console.error('Error fetching searches:', error);
+        } finally {
+            setIsLoadingSearches(false);
+        }
+    }, [user]);
+
+    const createService = async (serviceData: {
+        expertProfileId: number;
+        categoryId: number;
+        price: number;
+        conditions: string;
+        durationInHours: number;
+        images: File[];
+    }) => {
+        setIsCreatingService(true);
+        try {
+            const formData = new FormData();
+            formData.append('expertProfileId', serviceData.expertProfileId.toString());
+            formData.append('categoryId', serviceData.categoryId.toString());
+            formData.append('price', serviceData.price.toString());
+            formData.append('conditions', serviceData.conditions);
+            formData.append('durationInHours', serviceData.durationInHours.toString());
+            serviceData.images.forEach((image, index) => {
+                formData.append(`images[${index}]`, image);
+            });
+
+            const response = await fetch('/api/Services', {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
                 body: formData
             });
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['expertServices'] });
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: '✨ Servicio creado exitosamente'
-                }
-            }));
-        },
-        onError: (error: any) => {
-            console.error('Error creating service:', error);
-            const errorMessage = error.message || error.errors?.Conditions?.[0] || 'Error al crear el servicio';
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: `❌ ${errorMessage}`
-                }
-            }));
-        }
-    });
 
-    // Onboarding Mutation
-    const startOnboardingMutation = useMutation({
-        mutationFn: () => fetchApi<OnboardingResponse>('/api/Subscription/expert-onboarding', {
-            method: 'POST'
-        }),
-        onSuccess: (data) => {
-            window.location.href = data.url;
-        },
-    });
+            if (!response.ok) {
+                throw new Error(`Failed to create service: ${response.statusText}`);
+            }
+
+            await fetchServices();
+        } catch (error) {
+            console.error('Error creating service:', error);
+            throw error;
+        } finally {
+            setIsCreatingService(false);
+        }
+    };
+
+    const startOnboarding = async () => {
+        setIsStartingOnboarding(true);
+        try {
+            const response = await fetch('/api/Subscription/expert-onboarding', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to start onboarding: ${response.statusText}`);
+            }
+
+            const { url } = await response.json();
+            window.location.href = url;
+        } catch (error) {
+            console.error('Error starting onboarding:', error);
+            throw error;
+        } finally {
+            setIsStartingOnboarding(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.role === 'Expert') {
+            fetchProfile();
+            fetchServices();
+            fetchSearches();
+        }
+    }, [user, fetchProfile, fetchServices, fetchSearches]);
 
     return {
-        // Profile data
-        profile: profileQuery.data,
-        isLoadingProfile: profileQuery.isLoading,
-        profileError: profileQuery.error,
-
-        // Services data
-        services: servicesQuery.data || [],
-        isLoadingServices: servicesQuery.isLoading,
-        servicesError: servicesQuery.error,
-
-        // Searches data
-        searches: searchesQuery.data || [],
-        isLoadingSearches: searchesQuery.isLoading,
-        searchesError: searchesQuery.error,
-
-        // Mutations
-        createService: createServiceMutation.mutate,
-        isCreatingService: createServiceMutation.isPending,
-        startOnboarding: startOnboardingMutation.mutate,
-        isStartingOnboarding: startOnboardingMutation.isPending,
+        profile,
+        isLoadingProfile,
+        profileError,
+        services,
+        isLoadingServices,
+        searches,
+        isLoadingSearches,
+        createService,
+        isCreatingService,
+        startOnboarding,
+        isStartingOnboarding,
+        fetchProfile,
     };
-};
+}
