@@ -1,21 +1,29 @@
-﻿import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Upload, Shield, CheckCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Background from '../components/Background';
+import { setAuthToken } from '../lib/auth';
 
 export function BecomeExpertPage() {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         description: '',
-        stripeAccountId: '',
-        profilePicture: null as File | null
+        profilePicture: null as File | null,
     });
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        console.log('BecomeExpertPage - Current user:', user);
+        if (user?.role === 'Expert') {
+            console.log('User is already Expert, redirecting to expert-panel');
+            navigate('/expert-panel');
+        }
+    }, [user, navigate]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -41,20 +49,28 @@ export function BecomeExpertPage() {
         setIsSubmitting(true);
         setError(null);
 
+        if (!formData.profilePicture) {
+            setError('La foto de perfil es requerida');
+            setIsSubmitting(false);
+            return;
+        }
+
         try {
             const data = new FormData();
             data.append('description', formData.description);
-            data.append('stripeAccountId', formData.stripeAccountId);
             if (formData.profilePicture) {
                 data.append('profilePicture', formData.profilePicture);
             }
 
+            const token = localStorage.getItem('authToken');
+            console.log('Sending request to /api/User/become-expert with token:', token ? 'present' : 'missing');
+
             const response = await fetch('/api/User/become-expert', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Authorization': `Bearer ${token}`,
                 },
-                body: data
+                body: data,
             });
 
             if (!response.ok) {
@@ -63,15 +79,31 @@ export function BecomeExpertPage() {
             }
 
             const result = await response.json();
+            console.log('BecomeExpert API response:', result);
+
+            // Verificar que el usuario tiene rol Expert
+            if (result.user?.role !== 'Expert') {
+                throw new Error('El usuario no tiene el rol de Experto después del registro');
+            }
+
+            // Guardar el token y los datos del usuario explícitamente
+            setAuthToken(result.token, result.user);
+            console.log('Token saved, verifying:', localStorage.getItem('authToken'));
+
+            // Actualizar el usuario y redirigir
+            updateUser(result.user, result.token, () => {
+                console.log('User updated, redirecting to expert-panel');
+                navigate('/expert-panel');
+            });
+
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
-                    message: '✨ ¡Te has registrado exitosamente como buscador experto!'
-                }
+                    message: '✨ ¡Te has registrado exitosamente como buscador experto!',
+                },
             }));
-
-            navigate('/');
         } catch (err) {
+            console.error('BecomeExpert error:', err);
             setError(err instanceof Error ? err.message : 'Error al procesar la solicitud');
         } finally {
             setIsSubmitting(false);
@@ -144,7 +176,7 @@ export function BecomeExpertPage() {
                                             Arrastra una imagen o haz clic para seleccionar
                                         </div>
                                         <div className="text-xs text-gray-400">
-                                            PNG o JPG (max. 5MB)
+                                            PNG o JPG (máx. 5MB)
                                         </div>
                                     </div>
                                 )}
@@ -170,23 +202,6 @@ export function BecomeExpertPage() {
                                 placeholder="Cuéntanos sobre tu experiencia y especialidad..."
                                 required
                             />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                ID de Cuenta Stripe
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.stripeAccountId}
-                                onChange={(e) => setFormData(prev => ({ ...prev, stripeAccountId: e.target.value }))}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                                placeholder="acct_..."
-                                required
-                            />
-                            <p className="mt-1 text-xs text-gray-500">
-                                Necesario para recibir pagos por tus servicios
-                            </p>
                         </div>
 
                         {error && (

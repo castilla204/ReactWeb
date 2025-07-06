@@ -29,10 +29,8 @@ export async function authenticateWithGoogle(accessToken: string, email: string,
             throw new Error('Invalid response from server');
         }
 
-        // Guardar temporalmente los datos del usuario
-        localStorage.setItem('tempUserData', JSON.stringify(data.user));
-
         console.log('Authentication successful:', { userId: data.user.id, name: data.user.name });
+        setAuthToken(data.token, data.user); // Guardar token y usuario directamente
         return data;
     } catch (error) {
         console.error('Authentication error:', error);
@@ -40,64 +38,44 @@ export async function authenticateWithGoogle(accessToken: string, email: string,
     }
 }
 
-export function setAuthToken(token: string) {
+export function setAuthToken(token: string, user?: any) {
+    console.log('Setting auth token:', token ? 'present' : 'missing');
     localStorage.setItem('authToken', token);
-
-    try {
-        // Decodificar el token JWT y extraer los claims
-        const [, payloadBase64] = token.split('.');
-        const payload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
-
-        console.log('Token payload:', payload); // Para debugging
-
-        // Usar directamente los datos del usuario de la respuesta
-        const userData = JSON.parse(localStorage.getItem('tempUserData') || '{}');
-        localStorage.removeItem('tempUserData'); // Limpiar datos temporales
-
-        console.log('Processed user data:', userData); // Para debugging
-
-        if (isNaN(userData.id) || !userData.name || !userData.email) {
-            throw new Error('Invalid user data');
-        }
-
-        localStorage.setItem('userData', JSON.stringify(userData));
-    } catch (error) {
-        console.error('Error storing user data:', error);
-        removeAuthToken();
+    if (user) {
+        console.log('Setting user data:', user);
+        localStorage.setItem('userData', JSON.stringify(user));
     }
 }
 
 export function getAuthToken(): string | null {
     const token = localStorage.getItem('authToken');
+    console.log('Getting auth token:', token ? 'present' : 'missing');
     if (!token) return null;
 
     try {
-        const [, payloadBase64] = token.split('.');
-        const payload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
-
-        const hasRequiredFields =
-            (payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || payload.nameid) &&
-            (payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || payload.name) &&
-            (payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || payload.email);
-
-        if (!hasRequiredFields) {
-            throw new Error('Token missing required fields');
+        // Verificar si el token tiene el formato JWT básico
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            console.error('Invalid JWT format');
+            return null;
         }
 
-        // Verificar si el token ha expirado
-        if (payload.exp * 1000 < Date.now()) {
-            throw new Error('Token has expired');
+        // Decodificar el payload para verificar expiración
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+            console.log('Token has expired');
+            return null; // No eliminamos el token, solo retornamos null
         }
 
         return token;
     } catch (error) {
         console.error('Error parsing token:', error);
-        removeAuthToken();
-        return null;
+        return null; // No eliminamos el token automáticamente
     }
 }
 
 export function removeAuthToken() {
+    console.log('Removing auth token and user data');
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
 }
@@ -105,25 +83,20 @@ export function removeAuthToken() {
 export function getUserData(): any | null {
     try {
         const userData = localStorage.getItem('userData');
+        console.log('Getting user data:', userData ? JSON.parse(userData) : 'no user data');
         if (!userData) return null;
 
         const parsedData = JSON.parse(userData);
-        console.log('Retrieved user data:', parsedData); // Para debugging
-
-        if (!parsedData || isNaN(parsedData.id) || !parsedData.name || !parsedData.email ||
-            typeof parsedData.phoneVerified !== 'boolean') {
+        if (!parsedData || isNaN(parsedData.id) || !parsedData.name || !parsedData.email) {
             console.error('Invalid stored user data');
-            removeAuthToken();
             return null;
         }
 
         // Asegurarse de que phoneVerified sea un booleano
         parsedData.phoneVerified = Boolean(parsedData.phoneVerified);
-
         return parsedData;
     } catch (error) {
         console.error('Error getting user data:', error);
-        removeAuthToken();
         return null;
     }
 }
@@ -137,7 +110,7 @@ export function updateUserData(updates: Partial<any>) {
 
         const updatedUserData = { ...userData, ...updates };
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
-
+        console.log('Updated user data:', updatedUserData);
         return updatedUserData;
     } catch (error) {
         console.error('Error updating user data:', error);

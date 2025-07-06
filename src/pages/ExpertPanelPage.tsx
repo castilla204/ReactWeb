@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Clock, Users, DollarSign, Search, Loader2, CheckCircle, XCircle, User, Upload, AlertTriangle } from 'lucide-react';
 import Background from '../components/Background';
@@ -9,9 +9,9 @@ import { useExpertHires } from '../hooks/useExpertHires';
 
 export function ExpertPanelPage() {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, signOut } = useAuth();
     const { categories } = useCategories();
-    const [activeTab, setActiveTab] = useState<'services' | 'hires'>('services');
+    const [activeTab, setActiveTab] = useState<'services' | 'searches'>('services');
     const [showServiceForm, setShowServiceForm] = useState(false);
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
@@ -19,25 +19,40 @@ export function ExpertPanelPage() {
         categoryId: '',
         price: '',
         conditions: '',
-        durationInHours: '24'
+        durationInHours: '24',
     });
 
     const {
         profile,
         isLoadingProfile,
+        profileError,
         services,
         isLoadingServices,
         createService,
         isCreatingService,
         startOnboarding,
-        isStartingOnboarding
+        isStartingOnboarding,
+        fetchProfile,
+        searches,
+        isLoadingSearches,
     } = useExpert();
 
-    const {
-        hires,
-        isLoading: isLoadingHires,
-        updateStatus
-    } = useExpertHires();
+    const { updateStatus } = useExpertHires();
+
+    useEffect(() => {
+        console.log('ExpertPanelPage State:', { user, profile, isLoadingProfile, profileError });
+        if (user && user.role !== 'Expert') {
+            console.log('User is not Expert, redirecting to become-expert');
+            navigate('/become-expert');
+        }
+    }, [user, navigate]);
+
+    useEffect(() => {
+        if (user?.role === 'Expert' && !profile && !isLoadingProfile && !profileError) {
+            console.log('Fetching expert profile');
+            fetchProfile();
+        }
+    }, [user, profile, isLoadingProfile, profileError, fetchProfile]);
 
     const validateForm = () => {
         const errors: { [key: string]: string } = {};
@@ -98,7 +113,7 @@ export function ExpertPanelPage() {
                 price: parseFloat(formData.price),
                 conditions: formData.conditions.trim(),
                 durationInHours: parseInt(formData.durationInHours),
-                images: selectedImages
+                images: selectedImages,
             });
 
             setShowServiceForm(false);
@@ -106,7 +121,7 @@ export function ExpertPanelPage() {
                 categoryId: '',
                 price: '',
                 conditions: '',
-                durationInHours: '24'
+                durationInHours: '24',
             });
             setSelectedImages([]);
             setFormErrors({});
@@ -115,8 +130,12 @@ export function ExpertPanelPage() {
         }
     };
 
-    const handleStartOnboarding = () => {
-        startOnboarding();
+    const handleStartOnboarding = async () => {
+        try {
+            await startOnboarding();
+        } catch (error) {
+            console.error('Error in startOnboarding:', error);
+        }
     };
 
     const handleViewSearch = (searchId: number | null) => {
@@ -124,6 +143,53 @@ export function ExpertPanelPage() {
             navigate(`/busquedas/${searchId}`);
         }
     };
+
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-gray-600">Por favor, inicia sesión para continuar</p>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg"
+                    >
+                        Volver al inicio
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (isLoadingProfile) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
+        );
+    }
+
+    if (profileError) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center bg-red-50 text-red-600 px-4 py-3 rounded-xl max-w-md">
+                    <p>{profileError.message === 'No authentication token found' ? 'Sesión expirada. Por favor, inicia sesión nuevamente.' : `Error al cargar el perfil: ${profileError.message}`}</p>
+                    <button
+                        onClick={() => {
+                            if (profileError.message === 'No authentication token found') {
+                                signOut();
+                                navigate('/');
+                            } else {
+                                fetchProfile();
+                            }
+                        }}
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg"
+                    >
+                        {profileError.message === 'No authentication token found' ? 'Iniciar sesión' : 'Reintentar'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     if (!profile?.stripeAccountId) {
         return (
@@ -146,7 +212,7 @@ export function ExpertPanelPage() {
                             Validación Pendiente
                         </h2>
                         <p className="text-gray-600 mb-8">
-                            Para empezar a ofrecer tus servicios como experto, necesitas validar tu información de pago con Stripe.
+                            Para empezar a ofrecer tus servicios como experto, necesitas completar la configuración de tu cuenta de Stripe.
                         </p>
                         <button
                             onClick={handleStartOnboarding}
@@ -161,7 +227,7 @@ export function ExpertPanelPage() {
                             ) : (
                                 <>
                                     <CheckCircle className="w-5 h-5" />
-                                    Validar Información
+                                    Configurar Cuenta de Stripe
                                 </>
                             )}
                         </button>
@@ -189,19 +255,13 @@ export function ExpertPanelPage() {
                     <div className="flex gap-2">
                         <button
                             onClick={() => setActiveTab('services')}
-                            className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'services'
-                                ? 'bg-blue-100 text-blue-600'
-                                : 'text-gray-600 hover:bg-gray-100'
-                                }`}
+                            className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'services' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
                         >
                             Servicios
                         </button>
                         <button
-                            onClick={() => setActiveTab('hires')}
-                            className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'hires'
-                                ? 'bg-blue-100 text-blue-600'
-                                : 'text-gray-600 hover:bg-gray-100'
-                                }`}
+                            onClick={() => setActiveTab('searches')}
+                            className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'searches' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
                         >
                             Contrataciones
                         </button>
@@ -209,11 +269,7 @@ export function ExpertPanelPage() {
                 </div>
 
                 <div className="mb-8 bg-white rounded-xl p-6 border border-gray-200 shadow-lg">
-                    {isLoadingProfile ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
-                        </div>
-                    ) : profile ? (
+                    {profile ? (
                         <div className="flex items-start gap-6">
                             <div className="flex-shrink-0">
                                 {profile.profilePictureUrl ? (
@@ -299,7 +355,7 @@ export function ExpertPanelPage() {
                                                 <span className="font-medium text-gray-900">
                                                     {new Intl.NumberFormat('es-ES', {
                                                         style: 'currency',
-                                                        currency: 'EUR'
+                                                        currency: 'EUR',
                                                     }).format(service.price)}
                                                 </span>
                                             </div>
@@ -309,9 +365,7 @@ export function ExpertPanelPage() {
                                                     {service.durationInHours}h
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-gray-600">
-                                                {service.conditions}
-                                            </p>
+                                            <p className="text-sm text-gray-600">{service.conditions}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -320,41 +374,39 @@ export function ExpertPanelPage() {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {isLoadingHires ? (
+                        {isLoadingSearches ? (
                             <div className="flex items-center justify-center py-12">
                                 <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
                             </div>
-                        ) : hires.length === 0 ? (
+                        ) : searches.length === 0 ? (
                             <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-lg">
                                 <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                                 <p className="text-gray-600">No tienes contrataciones activas</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {hires.map((hire) => (
+                                {searches.map((search) => (
                                     <div
-                                        key={hire.id}
+                                        key={search.id}
                                         className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg hover:shadow-xl transition-all"
                                     >
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="flex items-center gap-2">
                                                 <User className="w-5 h-5 text-blue-600" />
                                                 <div>
-                                                    <h3 className="font-medium text-gray-900">
-                                                        {hire.client.name}
-                                                    </h3>
-                                                    <p className="text-xs text-gray-500">
-                                                        {hire.client.email}
-                                                    </p>
+                                                    <h3 className="font-medium text-gray-900">{search.client.name}</h3>
+                                                    <p className="text-xs text-gray-500">{search.client.email}</p>
                                                 </div>
                                             </div>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${hire.status === 'Completed'
-                                                ? 'bg-green-100 text-green-600'
-                                                : hire.status === 'pending'
-                                                    ? 'bg-blue-100 text-blue-600'
-                                                    : 'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                {hire.status}
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${search.status === 'Completed'
+                                                    ? 'bg-green-100 text-green-600'
+                                                    : search.status === 'Pending'
+                                                        ? 'bg-blue-100 text-blue-600'
+                                                        : 'bg-gray-100 text-gray-600'
+                                                    }`}
+                                            >
+                                                {search.status || 'Pending'}
                                             </span>
                                         </div>
 
@@ -362,37 +414,28 @@ export function ExpertPanelPage() {
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-gray-500">Servicio</span>
                                                 <span className="font-medium text-gray-900">
-                                                    {categories?.find(c => c.id === hire.service.categoryId)?.name}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-500">Precio</span>
-                                                <span className="font-medium text-gray-900">
-                                                    {new Intl.NumberFormat('es-ES', {
-                                                        style: 'currency',
-                                                        currency: 'EUR'
-                                                    }).format(hire.amount)}
+                                                    {categories?.find(c => c.id === search.categoryId)?.name || 'Sin categoría'}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-gray-500">Fecha</span>
                                                 <span className="text-gray-900">
-                                                    {new Date(hire.createdAt).toLocaleDateString()}
+                                                    {new Date(search.createdAt).toLocaleDateString()}
                                                 </span>
                                             </div>
                                         </div>
 
                                         <div className="mt-4 space-y-2">
-                                            {hire.status === 'Pending' && (
+                                            {search.status === 'Pending' && (
                                                 <div className="flex gap-2">
                                                     <button
-                                                        onClick={() => updateStatus({ hireId: hire.id, status: 'pending' })}
+                                                        onClick={() => updateStatus({ hireId: search.id, status: 'Accepted' })}
                                                         className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                                                     >
                                                         Aceptar
                                                     </button>
                                                     <button
-                                                        onClick={() => updateStatus({ hireId: hire.id, status: 'Cancelled' })}
+                                                        onClick={() => updateStatus({ hireId: search.id, status: 'Cancelled' })}
                                                         className="flex-1 px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors text-sm"
                                                     >
                                                         Rechazar
@@ -400,9 +443,9 @@ export function ExpertPanelPage() {
                                                 </div>
                                             )}
 
-                                            {hire.searchId && (
+                                            {search.id && (
                                                 <button
-                                                    onClick={() => handleViewSearch(hire.searchId)}
+                                                    onClick={() => handleViewSearch(search.id)}
                                                     className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center gap-2"
                                                 >
                                                     <Search className="w-4 h-4" />
@@ -431,8 +474,7 @@ export function ExpertPanelPage() {
                                     <select
                                         value={formData.categoryId}
                                         onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.categoryId ? 'border-red-300' : 'border-gray-300'
-                                            }`}
+                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.categoryId ? 'border-red-300' : 'border-gray-300'}`}
                                         required
                                     >
                                         <option value="">Seleccionar categoría</option>
@@ -456,14 +498,11 @@ export function ExpertPanelPage() {
                                             type="number"
                                             value={formData.price}
                                             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.price ? 'border-red-300' : 'border-gray-300'
-                                                }`}
+                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.price ? 'border-red-300' : 'border-gray-300'}`}
                                             placeholder="0.00"
                                             required
                                         />
-                                        {formErrors.price && (
-                                            <p className="mt-1 text-xs text-red-500">{formErrors.price}</p>
-                                        )}
+                                        {formErrors.price && <p className="mt-1 text-xs text-red-500">{formErrors.price}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -473,8 +512,7 @@ export function ExpertPanelPage() {
                                             type="number"
                                             value={formData.durationInHours}
                                             onChange={(e) => setFormData({ ...formData, durationInHours: e.target.value })}
-                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.durationInHours ? 'border-red-300' : 'border-gray-300'
-                                                }`}
+                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.durationInHours ? 'border-red-300' : 'border-gray-300'}`}
                                             min="1"
                                             required
                                         />
@@ -491,8 +529,7 @@ export function ExpertPanelPage() {
                                     <textarea
                                         value={formData.conditions}
                                         onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
-                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.conditions ? 'border-red-300' : 'border-gray-300'
-                                            }`}
+                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.conditions ? 'border-red-300' : 'border-gray-300'}`}
                                         rows={3}
                                         placeholder="Describe las condiciones de tu servicio..."
                                         required
