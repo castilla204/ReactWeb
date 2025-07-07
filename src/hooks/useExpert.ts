@@ -1,5 +1,6 @@
 ﻿import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { getAuthToken } from '../lib/auth';
 
 interface ExpertProfile {
     id: number;
@@ -49,9 +50,11 @@ export function useExpert() {
         setIsLoadingProfile(true);
         setProfileError(null);
         try {
-            const token = localStorage.getItem('authToken');
+            const token = getAuthToken();
             console.log('Fetching expert profile with token:', token ? 'present' : 'missing');
             if (!token) {
+                console.log('No token found, signing out');
+                signOut();
                 throw new Error('No authentication token found');
             }
 
@@ -86,13 +89,25 @@ export function useExpert() {
 
         setIsLoadingServices(true);
         try {
-            const response = await fetch('/api/Services', {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch('/api/SearchService', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('Request failed with status 401');
+                }
                 throw new Error(`Failed to fetch services: ${response.statusText}`);
             }
 
@@ -103,20 +118,32 @@ export function useExpert() {
         } finally {
             setIsLoadingServices(false);
         }
-    }, [user]);
+    }, [user, signOut]);
 
     const fetchSearches = useCallback(async () => {
         if (!user) return;
 
         setIsLoadingSearches(true);
         try {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
             const response = await fetch('/api/Searches/expert', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('Request failed with status 401');
+                }
                 throw new Error(`Failed to fetch searches: ${response.statusText}`);
             }
 
@@ -127,7 +154,7 @@ export function useExpert() {
         } finally {
             setIsLoadingSearches(false);
         }
-    }, [user]);
+    }, [user, signOut]);
 
     const createService = async (serviceData: {
         expertProfileId: number;
@@ -139,29 +166,50 @@ export function useExpert() {
     }) => {
         setIsCreatingService(true);
         try {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
             const formData = new FormData();
             formData.append('expertProfileId', serviceData.expertProfileId.toString());
             formData.append('categoryId', serviceData.categoryId.toString());
             formData.append('price', serviceData.price.toString());
             formData.append('conditions', serviceData.conditions);
             formData.append('durationInHours', serviceData.durationInHours.toString());
-            serviceData.images.forEach((image, index) => {
-                formData.append(`images[${index}]`, image);
+            console.log('Images to send:', serviceData.images.map(img => ({ name: img.name, size: img.size, type: img.type })));
+            serviceData.images.forEach((image) => {
+                formData.append('Images', image); // Usar 'Images' para coincidir con CreateSearchServiceRequestDto
             });
 
-            const response = await fetch('/api/Services', {
+            // Log para verificar que los archivos se añaden al FormData
+            for (const [key, value] of formData.entries()) {
+                if (value instanceof File) {
+                    console.log(`FormData entry: ${key} = ${value.name}, ${value.size} bytes, ${value.type}`);
+                } else {
+                    console.log(`FormData entry: ${key} = ${value}`);
+                }
+            }
+
+            const response = await fetch('/api/SearchService', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: formData
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to create service: ${response.statusText}`);
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to create service: ${response.statusText}`);
             }
 
+            const result = await response.json();
+            console.log('Create service response:', result);
             await fetchServices();
+            return result;
         } catch (error) {
             console.error('Error creating service:', error);
             throw error;
@@ -173,14 +221,26 @@ export function useExpert() {
     const startOnboarding = async () => {
         setIsStartingOnboarding(true);
         try {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
             const response = await fetch('/api/Subscription/expert-onboarding', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('Request failed with status 401');
+                }
                 throw new Error(`Failed to start onboarding: ${response.statusText}`);
             }
 
