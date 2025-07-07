@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Clock, Users, DollarSign, Search, Loader2, CheckCircle, XCircle, User, Upload, AlertTriangle } from 'lucide-react';
 import Background from '../components/Background';
@@ -11,7 +11,7 @@ export function ExpertPanelPage() {
     const navigate = useNavigate();
     const { user, signOut } = useAuth();
     const { categories } = useCategories();
-    const [activeTab, setActiveTab] = useState<'services' | 'searches'>('services');
+    const [activeTab, setActiveTab] = useState<'services' | 'hires'>('services');
     const [showServiceForm, setShowServiceForm] = useState(false);
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
@@ -21,6 +21,7 @@ export function ExpertPanelPage() {
         conditions: '',
         durationInHours: '24',
     });
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const {
         profile,
@@ -33,14 +34,12 @@ export function ExpertPanelPage() {
         startOnboarding,
         isStartingOnboarding,
         fetchProfile,
-        searches,
-        isLoadingSearches,
     } = useExpert();
 
-    const { updateStatus } = useExpertHires();
+    const { hires, isLoading, error, updateStatus } = useExpertHires();
 
     useEffect(() => {
-        console.log('ExpertPanelPage State:', { user, profile, isLoadingProfile, profileError });
+        console.log('ExpertPanelPage State:', { user, profile, isLoadingProfile, profileError, hires });
         if (user && user.role !== 'Expert') {
             console.log('User is not Expert, redirecting to become-expert');
             navigate('/become-expert');
@@ -53,6 +52,17 @@ export function ExpertPanelPage() {
             fetchProfile();
         }
     }, [user, profile, isLoadingProfile, profileError, fetchProfile]);
+
+    useEffect(() => {
+        console.log('selectedImages changed:', selectedImages.map(f => ({ name: f.name, size: f.size, type: f.type })));
+    }, [selectedImages]);
+
+    useEffect(() => {
+        console.log('Hires data:', hires);
+        if (error) {
+            console.error('Error loading hires:', error);
+        }
+    }, [hires, error]);
 
     const validateForm = () => {
         const errors: { [key: string]: string } = {};
@@ -75,39 +85,75 @@ export function ExpertPanelPage() {
             errors.durationInHours = 'La duración debe ser mayor que 0';
         }
 
+        if (selectedImages.length === 0) {
+            errors.images = 'Se requiere al menos una imagen';
+        }
+
         setFormErrors(errors);
+        console.log('Form validation errors:', errors);
         return Object.keys(errors).length === 0;
     };
 
-    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
+        console.log('Selected files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+        if (files.length === 0) {
+            console.warn('No files selected in handleImageSelect');
+            setFormErrors(prev => ({ ...prev, images: 'No se seleccionaron archivos' }));
+            return;
+        }
+
         const validFiles = files.filter(file => {
             const isValidType = ['image/jpeg', 'image/png'].includes(file.type);
             const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
+            if (!isValidType) {
+                setFormErrors(prev => ({ ...prev, images: 'Solo se permiten imágenes JPG o PNG' }));
+            }
+            if (!isValidSize) {
+                setFormErrors(prev => ({ ...prev, images: 'Las imágenes no pueden superar los 5MB' }));
+            }
             return isValidType && isValidSize;
         });
 
-        setSelectedImages(prev => [...prev, ...validFiles]);
-    };
+        if (validFiles.length === 0) {
+            console.warn('No valid files after filtering');
+            setFormErrors(prev => ({ ...prev, images: 'Ninguna imagen válida seleccionada' }));
+            return;
+        }
 
-    const removeImage = (index: number) => {
-        setSelectedImages(prev => prev.filter((_, i) => i !== index));
-    };
+        setSelectedImages(prev => {
+            const newImages = [...prev, ...validFiles];
+            console.log('Updated selectedImages:', newImages.map(f => ({ name: f.name, size: f.size, type: f.type })));
+            return newImages;
+        });
+        setFormErrors(prev => ({ ...prev, images: '' }));
+    }, []);
+
+    const removeImage = useCallback((index: number) => {
+        setSelectedImages(prev => {
+            const newImages = prev.filter((_, i) => i !== index);
+            console.log('Images after removal:', newImages.map(f => ({ name: f.name, size: f.size, type: f.type })));
+            return newImages;
+        });
+    }, []);
 
     const handleCreateService = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!validateForm()) {
+            console.warn('Form validation failed');
             return;
         }
 
         if (!profile) {
             console.error('No expert profile found');
+            setFormErrors({ general: 'No se encontró el perfil de experto' });
             return;
         }
 
+        console.log('Creating service with images:', selectedImages.map(img => ({ name: img.name, size: img.size, type: img.type })));
         try {
-            await createService({
+            const result = await createService({
                 expertProfileId: profile.id,
                 categoryId: parseInt(formData.categoryId),
                 price: parseFloat(formData.price),
@@ -124,9 +170,20 @@ export function ExpertPanelPage() {
                 durationInHours: '24',
             });
             setSelectedImages([]);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
             setFormErrors({});
-        } catch (error) {
+
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'success',
+                    message: 'Servicio creado exitosamente',
+                },
+            }));
+        } catch (error: any) {
             console.error('Error creating service:', error);
+            setFormErrors({ general: error.message || 'Error al crear el servicio' });
         }
     };
 
@@ -138,9 +195,9 @@ export function ExpertPanelPage() {
         }
     };
 
-    const handleViewSearch = (searchId: number | null) => {
-        if (searchId) {
-            navigate(`/busquedas/${searchId}`);
+    const handleViewHire = (hireId: number | null) => {
+        if (hireId) {
+            navigate(`/contrataciones/${hireId}`);
         }
     };
 
@@ -260,8 +317,8 @@ export function ExpertPanelPage() {
                             Servicios
                         </button>
                         <button
-                            onClick={() => setActiveTab('searches')}
-                            className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'searches' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
+                            onClick={() => setActiveTab('hires')}
+                            className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'hires' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
                         >
                             Contrataciones
                         </button>
@@ -296,6 +353,8 @@ export function ExpertPanelPage() {
                                     <span>Miembro desde {new Date(profile.createdAt).toLocaleDateString()}</span>
                                     <span>•</span>
                                     <span>{services.length} servicios activos</span>
+                                    <span>•</span>
+                                    <span>{hires.length} contrataciones activas</span>
                                 </div>
                             </div>
                         </div>
@@ -374,39 +433,45 @@ export function ExpertPanelPage() {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {isLoadingSearches ? (
+                        {isLoading ? (
                             <div className="flex items-center justify-center py-12">
                                 <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
                             </div>
-                        ) : searches.length === 0 ? (
+                        ) : error ? (
+                            <div className="text-center py-12 bg-red-50 text-red-600 rounded-xl border border-red-200 shadow-lg">
+                                <p>Error al cargar contrataciones: {error.message}</p>
+                            </div>
+                        ) : hires.length === 0 ? (
                             <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-lg">
                                 <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                                 <p className="text-gray-600">No tienes contrataciones activas</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {searches.map((search) => (
+                                {hires.map((hire) => (
                                     <div
-                                        key={search.id}
+                                        key={hire.id}
                                         className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg hover:shadow-xl transition-all"
                                     >
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="flex items-center gap-2">
                                                 <User className="w-5 h-5 text-blue-600" />
                                                 <div>
-                                                    <h3 className="font-medium text-gray-900">{search.client.name}</h3>
-                                                    <p className="text-xs text-gray-500">{search.client.email}</p>
+                                                    <h3 className="font-medium text-gray-900">{hire.client.name}</h3>
+                                                    <p className="text-xs text-gray-500">{hire.client.email}</p>
                                                 </div>
                                             </div>
                                             <span
-                                                className={`px-2 py-1 rounded-full text-xs font-medium ${search.status === 'Completed'
-                                                    ? 'bg-green-100 text-green-600'
-                                                    : search.status === 'Pending'
-                                                        ? 'bg-blue-100 text-blue-600'
-                                                        : 'bg-gray-100 text-gray-600'
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${hire.status === 'Completed'
+                                                        ? 'bg-green-100 text-green-600'
+                                                        : hire.status === 'Pending'
+                                                            ? 'bg-blue-100 text-blue-600'
+                                                            : hire.status === 'Cancelled'
+                                                                ? 'bg-red-100 text-red-600'
+                                                                : 'bg-gray-100 text-gray-600'
                                                     }`}
                                             >
-                                                {search.status || 'Pending'}
+                                                {hire.status || 'Pending'}
                                             </span>
                                         </div>
 
@@ -414,28 +479,37 @@ export function ExpertPanelPage() {
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-gray-500">Servicio</span>
                                                 <span className="font-medium text-gray-900">
-                                                    {categories?.find(c => c.id === search.categoryId)?.name || 'Sin categoría'}
+                                                    {categories?.find(c => c.id === hire.service.categoryId)?.name || 'Sin categoría'}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-gray-500">Fecha</span>
                                                 <span className="text-gray-900">
-                                                    {new Date(search.createdAt).toLocaleDateString()}
+                                                    {new Date(hire.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-500">Monto</span>
+                                                <span className="font-medium text-gray-900">
+                                                    {new Intl.NumberFormat('es-ES', {
+                                                        style: 'currency',
+                                                        currency: 'EUR',
+                                                    }).format(hire.amount)}
                                                 </span>
                                             </div>
                                         </div>
 
                                         <div className="mt-4 space-y-2">
-                                            {search.status === 'Pending' && (
+                                            {hire.status === 'Pending' && (
                                                 <div className="flex gap-2">
                                                     <button
-                                                        onClick={() => updateStatus({ hireId: search.id, status: 'Accepted' })}
+                                                        onClick={() => updateStatus({ hireId: hire.id, status: 'Accepted' })}
                                                         className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                                                     >
                                                         Aceptar
                                                     </button>
                                                     <button
-                                                        onClick={() => updateStatus({ hireId: search.id, status: 'Cancelled' })}
+                                                        onClick={() => updateStatus({ hireId: hire.id, status: 'Cancelled' })}
                                                         className="flex-1 px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors text-sm"
                                                     >
                                                         Rechazar
@@ -443,15 +517,13 @@ export function ExpertPanelPage() {
                                                 </div>
                                             )}
 
-                                            {search.id && (
-                                                <button
-                                                    onClick={() => handleViewSearch(search.id)}
-                                                    className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center gap-2"
-                                                >
-                                                    <Search className="w-4 h-4" />
-                                                    Ver Búsqueda
-                                                </button>
-                                            )}
+                                            <button
+                                                onClick={() => handleViewHire(hire.id)}
+                                                className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center gap-2"
+                                            >
+                                                <Search className="w-4 h-4" />
+                                                Ver Contratación
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -541,12 +613,12 @@ export function ExpertPanelPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Imágenes (opcional)
+                                        Imágenes (al menos una requerida)
                                     </label>
                                     <div className="space-y-2">
                                         <div
                                             className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-500 transition-colors cursor-pointer"
-                                            onClick={() => document.getElementById('image-input')?.click()}
+                                            onClick={() => fileInputRef.current?.click()}
                                         >
                                             <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                                             <p className="text-sm text-gray-500">
@@ -562,8 +634,12 @@ export function ExpertPanelPage() {
                                                 multiple
                                                 onChange={handleImageSelect}
                                                 className="hidden"
+                                                ref={fileInputRef}
                                             />
                                         </div>
+                                        {formErrors.images && (
+                                            <p className="mt-1 text-xs text-red-500">{formErrors.images}</p>
+                                        )}
                                         {selectedImages.length > 0 && (
                                             <div className="grid grid-cols-3 gap-2">
                                                 {selectedImages.map((image, index) => (
@@ -587,10 +663,22 @@ export function ExpertPanelPage() {
                                     </div>
                                 </div>
 
+                                {formErrors.general && (
+                                    <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm">
+                                        {formErrors.general}
+                                    </div>
+                                )}
+
                                 <div className="flex justify-end gap-3">
                                     <button
                                         type="button"
-                                        onClick={() => setShowServiceForm(false)}
+                                        onClick={() => {
+                                            setShowServiceForm(false);
+                                            setSelectedImages([]);
+                                            if (fileInputRef.current) {
+                                                fileInputRef.current.value = '';
+                                            }
+                                        }}
                                         className="px-4 py-2 text-gray-600 hover:text-gray-900"
                                     >
                                         Cancelar
