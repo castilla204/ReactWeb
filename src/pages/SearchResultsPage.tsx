@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { SearchDetails } from '../components/SearchDetails';
+import SearchDetails from '../components/SearchDetails';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
