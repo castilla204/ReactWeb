@@ -1,6 +1,6 @@
 ﻿import React, { useState, useMemo } from 'react';
 import { Search, Clock, Power, ChevronRight, AlertCircle, CheckCircle, Calendar, Trash2, Pencil, ArrowLeft, Tag, Filter, X, Car, Home, Bike, LayoutGrid, LayoutList } from 'lucide-react';
-import { SearchDetails } from './SearchDetails';
+import SearchDetails from './SearchDetails'; // Default import
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useSearch } from '../hooks/useSearch.hooks';

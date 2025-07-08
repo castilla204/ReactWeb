@@ -153,7 +153,7 @@ export function ExpertPanelPage() {
 
         console.log('Creating service with images:', selectedImages.map(img => ({ name: img.name, size: img.size, type: img.type })));
         try {
-            const result = await createService({
+            await createService({
                 expertProfileId: profile.id,
                 categoryId: parseInt(formData.categoryId),
                 price: parseFloat(formData.price),
@@ -197,7 +197,18 @@ export function ExpertPanelPage() {
 
     const handleViewHire = (hireId: number | null) => {
         if (hireId) {
-            navigate(`/contrataciones/${hireId}`);
+            const hire = hires.find(h => h.id === hireId);
+            if (hire && hire.searchId) {
+                navigate(`/busquedas/${hire.searchId}`);
+            } else {
+                console.error('Search ID not found for hire:', hireId);
+                window.dispatchEvent(new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: 'No se pudo encontrar la búsqueda asociada',
+                    },
+                }));
+            }
         }
     };
 
@@ -463,12 +474,12 @@ export function ExpertPanelPage() {
                                             </div>
                                             <span
                                                 className={`px-2 py-1 rounded-full text-xs font-medium ${hire.status === 'Completed'
-                                                        ? 'bg-green-100 text-green-600'
-                                                        : hire.status === 'Pending'
-                                                            ? 'bg-blue-100 text-blue-600'
-                                                            : hire.status === 'Cancelled'
-                                                                ? 'bg-red-100 text-red-600'
-                                                                : 'bg-gray-100 text-gray-600'
+                                                    ? 'bg-green-100 text-green-600'
+                                                    : hire.status === 'Pending'
+                                                        ? 'bg-blue-100 text-blue-600'
+                                                        : hire.status === 'Cancelled'
+                                                            ? 'bg-red-100 text-red-600'
+                                                            : 'bg-gray-100 text-gray-600'
                                                     }`}
                                             >
                                                 {hire.status || 'Pending'}
