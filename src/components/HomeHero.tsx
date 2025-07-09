@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+ï»¿import React, { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 
 const HomeHero: React.FC = () => {
@@ -6,7 +6,7 @@ const HomeHero: React.FC = () => {
     const cards = [
         {
             title: "Forma facil de encontrar\ncasa a buen preci",
-            description: "Ofreciendo servicios de búsqueda\nseguros y confortables.",
+            description: "Ofreciendo servicios de bÃºsqueda\nseguros y confortables.",
             buttonText: "Buscar Casa",
             image: new URL('../media/house.png', import.meta.url).href,
             gradient: "from-blue-600 to-blue-700",
@@ -115,7 +115,7 @@ const HomeHero: React.FC = () => {
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-blue-700 p-8 flex flex-col justify-between min-h-[320px]">
                     <div>
                         <h2 className="text-3xl font-bold text-white mb-4">
-                            Forma fácil de encontrar<br />
+                            Forma fÃ¡cil de encontrar<br />
                             casa a buen precio
                             <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
                                 <span>+</span>
@@ -124,7 +124,7 @@ const HomeHero: React.FC = () => {
                             </div>
                         </h2>
                         <p className="text-blue-100 text-base mb-6">
-                            Ofreciendo servicios de búsqueda<br />
+                            Ofreciendo servicios de bÃºsqueda<br />
                             seguros y confortables.
                         </p>
                         <button className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors">
