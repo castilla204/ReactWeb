@@ -75,8 +75,9 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
         (review) => review.searchHireId === searchQuery.data?.searchHire?.id && review.reviewerId === user?.id
     ) || false;
     const canReview = isClient && searchQuery.data?.searchHire && ['completed', 'dispute-resolved'].includes(searchQuery.data.searchHire.status) && !hasReviewed;
-    const canDispute = (isClient || isExpert) && searchQuery.data?.searchHire?.status === 'awaiting_client_decision';
+    const canDispute = isClient && searchQuery.data?.searchHire?.status === 'awaiting_client_decision';
     const canCancel = isExpert && searchQuery.data?.searchHire && !['completed', 'canceled', 'disputed'].includes(searchQuery.data.searchHire.status);
+    const isDisputed = (isClient || isExpert) && searchQuery.data?.searchHire?.status === 'disputed';
 
     const category = categories?.find((c) => c.id === searchQuery.data?.category);
 
@@ -105,6 +106,41 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
                 sellerType: 'particular',
                 platformId: 1,
             });
+        });
+    };
+
+    const handleDisputeSubmitAndClose = async () => {
+        await handleDisputeSubmit(searchQuery.data?.searchHire?.id, disputeReason, () => {
+            resultsQuery.refetch();
+            searchQuery.refetch();
+            setModalState((prev) => ({ ...prev, showDisputeModal: false }));
+            setDisputeReason('');
+        });
+    };
+
+    const handleResolveDisputeAndClose = async () => {
+        await handleResolveDispute(searchQuery.data?.searchHire?.id, resolveInFavorOfClient, resolutionReason, () => {
+            resultsQuery.refetch();
+            searchQuery.refetch();
+            setModalState((prev) => ({ ...prev, showResolveDisputeModal: false }));
+            setResolveInFavorOfClient(null);
+            setResolutionReason('');
+        });
+    };
+
+    const handleCancelServiceAndClose = async () => {
+        await handleCancelService(searchQuery.data?.searchHire?.id, () => {
+            resultsQuery.refetch();
+            searchQuery.refetch();
+            setModalState((prev) => ({ ...prev, showCancelConfirm: false }));
+        });
+    };
+
+    const handleForceFinalizeAndClose = async (favorExpert: boolean) => {
+        await handleForceFinalize(searchQuery.data?.searchHire?.id, favorExpert, () => {
+            resultsQuery.refetch();
+            searchQuery.refetch();
+            setModalState((prev) => ({ ...prev, showFinalizeModal: false }));
         });
     };
 
@@ -231,7 +267,7 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
                                     <span>Finalizar Búsqueda</span>
                                 </button>
                             )}
-                            {isAdmin && searchQuery.data?.searchHire?.status === 'disputed' && (
+                            {isAdmin && isDisputed && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showResolveDisputeModal: true }))}
                                     className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-white rounded-lg transition-colors"
@@ -268,10 +304,39 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
                     <p>CanReview: {canReview.toString()}</p>
                     <p>CanDispute: {canDispute.toString()}</p>
                     <p>CanCancel: {canCancel.toString()}</p>
+                    <p>IsDisputed: {isDisputed.toString()}</p>
                     <p>HasReviewed: {hasReviewed.toString()}</p>
                     <p>User Role: {user?.role || 'N/A'}</p>
                     <p>User ID: {user?.id || 'N/A'}</p>
                     <p>Expert ID: {searchQuery.data?.searchHire?.expertId || 'N/A'}</p>
+                </div>
+            )}
+
+            {isDisputed && (
+                <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-amber-100 shadow-lg">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                            <AlertTriangle className="w-6 h-6 text-amber-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">Disputa Abierta</h3>
+                    </div>
+                    <p className="text-gray-600 mb-6">
+                        Hay una disputa abierta para esta búsqueda. Será resuelta pronto por un administrador.
+                    </p>
+                </div>
+            )}
+
+            {isExpert && searchQuery.data?.searchHire?.status === 'awaiting_client_decision' && (
+                <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-blue-100 shadow-lg">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Check className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">Esperando Aprobación del Cliente</h3>
+                    </div>
+                    <p className="text-gray-600 mb-6">
+                        La búsqueda está lista para la decisión del cliente. Por favor, espera a que el cliente apruebe o dispute el servicio.
+                    </p>
                 </div>
             )}
 
@@ -284,9 +349,7 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
                         <h3 className="text-lg font-semibold text-gray-900">¡La búsqueda ha finalizado!</h3>
                     </div>
                     <p className="text-gray-600 mb-6">
-                        {isClient
-                            ? 'El experto ha completado la búsqueda. Por favor, revisa los resultados y decide si estás satisfecho con el servicio.'
-                            : 'La búsqueda está lista para la decisión del cliente. Revisa los resultados y decide si deseas disputar el servicio.'}
+                        El experto ha completado la búsqueda. Por favor, revisa los resultados y decide si estás satisfecho con el servicio.
                     </p>
                     <div className="flex justify-end gap-3">
                         <button
@@ -296,18 +359,16 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
                             <XCircle className="w-4 h-4" />
                             <span>Disputar Servicio</span>
                         </button>
-                        {isClient && (
-                            <button
-                                onClick={() => handleCompleteService(searchQuery.data?.searchHire?.id, () => {
-                                    resultsQuery.refetch();
-                                    searchQuery.refetch();
-                                })}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-700 rounded-lg transition-colors"
-                            >
-                                <Check className="w-4 h-4" />
-                                <span>Aprobar Servicio</span>
-                            </button>
-                        )}
+                        <button
+                            onClick={() => handleCompleteService(searchQuery.data?.searchHire?.id, () => {
+                                resultsQuery.refetch();
+                                searchQuery.refetch();
+                            })}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-700 rounded-lg transition-colors"
+                        >
+                            <Check className="w-4 h-4" />
+                            <span>Aprobar Servicio</span>
+                        </button>
                     </div>
                 </div>
             )}
@@ -363,6 +424,8 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
                 onSubmit={() => {
                     searchQuery.refetch();
                     reviewsQuery.refetch();
+                    setModalState((prev) => ({ ...prev, showReviewModal: false }));
+                    setReviewForm({ score: 0, description: '', images: [] });
                 }}
                 setNotifications={setNotifications}
             />
@@ -374,10 +437,7 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
                 }}
                 disputeReason={disputeReason}
                 setDisputeReason={setDisputeReason}
-                onSubmit={() => handleDisputeSubmit(searchQuery.data?.searchHire?.id, disputeReason, () => {
-                    resultsQuery.refetch();
-                    searchQuery.refetch();
-                })}
+                onSubmit={handleDisputeSubmitAndClose}
             />
             <ResolveDisputeModal
                 isOpen={modalState.showResolveDisputeModal}
@@ -390,10 +450,7 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
                 setResolveInFavorOfClient={setResolveInFavorOfClient}
                 resolutionReason={resolutionReason}
                 setResolutionReason={setResolutionReason}
-                onSubmit={() => handleResolveDispute(searchQuery.data?.searchHire?.id, resolveInFavorOfClient, resolutionReason, () => {
-                    resultsQuery.refetch();
-                    searchQuery.refetch();
-                })}
+                onSubmit={handleResolveDisputeAndClose}
             />
             <AddAdModal
                 isOpen={modalState.showAddAdForm}
@@ -420,15 +477,12 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
             <CancelServiceModal
                 isOpen={modalState.showCancelConfirm}
                 onClose={() => setModalState((prev) => ({ ...prev, showCancelConfirm: false }))}
-                onConfirm={() => handleCancelService(searchQuery.data?.searchHire?.id)}
+                onConfirm={handleCancelServiceAndClose}
             />
             <FinalizeModal
                 isOpen={modalState.showFinalizeModal}
                 onClose={() => setModalState((prev) => ({ ...prev, showFinalizeModal: false }))}
-                onFinalize={(favorExpert) => handleForceFinalize(searchQuery.data?.searchHire?.id, favorExpert, () => {
-                    resultsQuery.refetch();
-                    searchQuery.refetch();
-                })}
+                onFinalize={handleForceFinalizeAndClose}
             />
             {notifications.map((notification) => (
                 <Notification
