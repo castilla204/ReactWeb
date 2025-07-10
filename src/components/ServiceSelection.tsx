@@ -1,46 +1,77 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Clock, Star, Search, Loader2, CheckCircle, Shield, Users } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi';
 import { useCategories } from '../contexts/CategoryContext';
-
-interface ServiceSelectionProps {
-    onBack: () => void;
-    onComplete: (serviceId: number) => void;
-    selectedCategory: number;
-}
+import { useServices } from '../hooks/useServices';
+import { useServiceTypes } from '../hooks/useServiceTypes';
 
 interface Service {
     id: number;
     categoryId: number;
+    serviceTypeId: number;
+    serviceTypeName: string;
     price: number;
     conditions: string;
     durationInHours: number;
     createdAt: string;
     imageUrls: string[];
+    categoryName: string;
+    completedSearches: number;
+    averageRating: number;
+    expert: {
+        id: number;
+        profilePictureUrl: string;
+        description: string;
+        createdAt: string;
+        user: {
+            name: string;
+            email: string;
+        };
+    } | null;
 }
 
-export function ServiceSelection({ onBack, onComplete, selectedCategory }: ServiceSelectionProps) {
-    const { fetchApi } = useApi();
+interface ServiceSelectionProps {
+    onBack: () => void;
+    onComplete: (serviceId: number) => void;
+    selectedCategory: number;
+    selectedServiceTypeId: number | null; // Allow null
+}
+
+export function ServiceSelection({ onBack, onComplete, selectedCategory, selectedServiceTypeId }: ServiceSelectionProps) {
     const { categories } = useCategories();
+    const { serviceTypes } = useServiceTypes();
     const [selectedService, setSelectedService] = useState<number | null>(null);
+    const { services, isLoading, error } = useServices(selectedCategory, selectedServiceTypeId || 0);
 
-    const servicesQuery = useQuery({
-        queryKey: ['services'],
-        queryFn: () => fetchApi<Service[]>('/api/SearchService'),
-    });
+    console.log('ServiceSelection props:', { selectedCategory, selectedServiceTypeId, services });
 
-    const filteredServices = servicesQuery.data?.filter(
-        service => service.categoryId === selectedCategory
-    ) || [];
+    if (selectedCategory <= 0 || !selectedServiceTypeId || selectedServiceTypeId <= 0) {
+        return (
+            <div className="max-w-2xl mx-auto px-4 py-12">
+                <div className="text-center bg-red-50 text-red-600 px-4 py-3 rounded-xl shadow-lg">
+                    <p>Error: Por favor selecciona una categoría y un tipo de servicio válidos.</p>
+                    <button
+                        onClick={onBack}
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Volver a seleccionar tipo de servicio
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     const handleContinue = () => {
         if (selectedService !== null) {
+            console.log('Continuing with ServiceId:', selectedService);
             onComplete(selectedService);
         }
     };
 
-    if (servicesQuery.isLoading) {
+    // Get serviceTypeName from serviceTypes if services is empty
+    const serviceType = serviceTypes.find((st) => st.id === selectedServiceTypeId);
+    const serviceTypeName = services.length > 0 ? services[0].serviceTypeName : (serviceType?.name || 'Servicios');
+
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="flex items-center gap-3 text-gray-500">
@@ -51,15 +82,15 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory }: Servi
         );
     }
 
-    if (servicesQuery.error) {
+    if (error) {
         return (
             <div className="text-center py-12 text-red-500">
-                Error al cargar los servicios
+                Error al cargar los servicios: {(error as Error).message}
             </div>
         );
     }
 
-    if (filteredServices.length === 0) {
+    if (services.length === 0) {
         return (
             <div className="max-w-2xl mx-auto px-4">
                 <div className="flex items-center gap-2 mb-8">
@@ -73,7 +104,12 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory }: Servi
                 </div>
                 <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-lg">
                     <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No hay servicios disponibles para esta categoría</p>
+                    <p className="text-gray-600">
+                        No hay servicios disponibles para {serviceTypeName} en esta categoría.
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                        Por favor intenta con otro tipo de servicio o categoría.
+                    </p>
                 </div>
             </div>
         );
@@ -92,7 +128,7 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory }: Servi
                     </button>
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                            Servicios de Búsqueda Disponibles
+                            Servicios de {serviceTypeName}
                         </h2>
                         <p className="text-sm text-gray-500">
                             Selecciona el servicio que mejor se adapte a tus necesidades
@@ -102,7 +138,7 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory }: Servi
             </div>
 
             <div className="space-y-4">
-                {filteredServices.map((service) => (
+                {services.map((service) => (
                     <div
                         key={service.id}
                         onClick={() => setSelectedService(service.id)}
@@ -112,7 +148,6 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory }: Servi
                             }`}
                     >
                         <div className="flex h-full">
-                            {/* Image Section */}
                             <div className="relative w-48 flex-shrink-0">
                                 {service.imageUrls && service.imageUrls.length > 0 ? (
                                     <img
@@ -127,27 +162,30 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory }: Servi
                                 )}
                                 <div className="absolute top-3 left-3">
                                     <div className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-900 shadow-sm">
-                                        {categories?.find(c => c.id === service.categoryId)?.name}
+                                        {service.categoryName}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Content Section */}
                             <div className="flex-1 p-4 flex flex-col justify-between">
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
                                             <div className="flex items-center gap-1">
                                                 <Star className="w-3.5 h-3.5 text-yellow-400 fill-current" />
-                                                <span className="text-sm font-medium text-gray-900">4.8</span>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {service.averageRating.toFixed(1)}
+                                                </span>
                                             </div>
-                                            <span className="text-xs text-gray-500">(120 valoraciones)</span>
+                                            <span className="text-xs text-gray-500">
+                                                ({service.completedSearches} valoraciones)
+                                            </span>
                                         </div>
                                         <div className="flex items-baseline gap-1.5">
                                             <span className="text-lg font-bold text-gray-900">
                                                 {new Intl.NumberFormat('es-ES', {
                                                     style: 'currency',
-                                                    currency: 'EUR'
+                                                    currency: 'EUR',
                                                 }).format(service.price)}
                                             </span>
                                             <span className="text-xs text-gray-500">por búsqueda</span>
@@ -161,9 +199,7 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory }: Servi
                                     )}
                                 </div>
 
-                                <p className="text-gray-600 text-sm line-clamp-2 mb-2">
-                                    {service.conditions}
-                                </p>
+                                <p className="text-gray-600 text-sm line-clamp-2 mb-2">{service.conditions}</p>
 
                                 <div className="flex items-center gap-4 text-sm">
                                     <div className="flex items-center gap-1.5">
@@ -172,7 +208,7 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory }: Servi
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <Users className="w-4 h-4 text-gray-400" />
-                                        <span className="text-gray-600">+500 búsquedas</span>
+                                        <span className="text-gray-600">+{service.completedSearches} búsquedas</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <Shield className="w-4 h-4 text-gray-400" />
