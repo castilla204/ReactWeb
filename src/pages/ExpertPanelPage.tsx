@@ -1,11 +1,27 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Clock, Users, DollarSign, Search, Loader2, CheckCircle, XCircle, User, Upload, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Loader2, CheckCircle, XCircle, User, Upload, AlertTriangle } from 'lucide-react';
 import Background from '../components/Background';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
 import { useExpertHires } from '../hooks/useExpertHires';
+import { useServices } from '../hooks/useServices';
+
+interface Hire {
+    id: number;
+    searchId: number;
+    client: {
+        name: string;
+        email: string;
+    };
+    service: {
+        categoryId: number;
+    };
+    status: 'Pending' | 'Accepted' | 'Completed' | 'Cancelled';
+    createdAt: string;
+    amount: number;
+}
 
 export function ExpertPanelPage() {
     const navigate = useNavigate();
@@ -17,7 +33,7 @@ export function ExpertPanelPage() {
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [formData, setFormData] = useState({
         categoryId: '',
-        serviceTypeId: '', // Added
+        serviceTypeId: '',
         price: '',
         conditions: '',
         durationInHours: '24',
@@ -28,18 +44,15 @@ export function ExpertPanelPage() {
         profile,
         isLoadingProfile,
         profileError,
-        services,
-        isLoadingServices,
-        serviceTypes, // Added
-        isLoadingServiceTypes, // Added
-        createService,
-        isCreatingService,
+        serviceTypes,
+        isLoadingServiceTypes,
         startOnboarding,
         isStartingOnboarding,
         fetchProfile,
     } = useExpert();
 
-    const { hires, isLoading, error, updateStatus } = useExpertHires();
+    const { services, isLoadingServices, error: servicesError, createService, isCreatingService } = useServices(undefined, undefined, profile?.id);
+    const { hires, isLoading: isLoadingHires, error: hiresError, updateStatus } = useExpertHires();
 
     useEffect(() => {
         console.log('ExpertPanelPage State:', { user, profile, isLoadingProfile, profileError, hires });
@@ -62,10 +75,10 @@ export function ExpertPanelPage() {
 
     useEffect(() => {
         console.log('Hires data:', hires);
-        if (error) {
-            console.error('Error loading hires:', error);
+        if (hiresError) {
+            console.error('Error loading hires:', hiresError);
         }
-    }, [hires, error]);
+    }, [hires, hiresError]);
 
     const validateForm = () => {
         const errors: { [key: string]: string } = {};
@@ -74,7 +87,7 @@ export function ExpertPanelPage() {
             errors.categoryId = 'La categoría es requerida';
         }
 
-        if (!formData.serviceTypeId) { // Added
+        if (!formData.serviceTypeId) {
             errors.serviceTypeId = 'El tipo de servicio es requerido';
         }
 
@@ -163,7 +176,7 @@ export function ExpertPanelPage() {
             await createService({
                 expertProfileId: profile.id,
                 categoryId: parseInt(formData.categoryId),
-                serviceTypeId: parseInt(formData.serviceTypeId), // Added
+                serviceTypeId: parseInt(formData.serviceTypeId),
                 price: parseFloat(formData.price),
                 conditions: formData.conditions.trim(),
                 durationInHours: parseInt(formData.durationInHours),
@@ -173,7 +186,7 @@ export function ExpertPanelPage() {
             setShowServiceForm(false);
             setFormData({
                 categoryId: '',
-                serviceTypeId: '', // Added
+                serviceTypeId: '',
                 price: '',
                 conditions: '',
                 durationInHours: '24',
@@ -206,7 +219,7 @@ export function ExpertPanelPage() {
 
     const handleViewHire = (hireId: number | null) => {
         if (hireId) {
-            const hire = hires.find(h => h.id === hireId);
+            const hire = hires.find((h: Hire) => h.id === hireId);
             if (hire && hire.searchId) {
                 navigate(`/busquedas/${hire.searchId}`);
             } else {
@@ -401,6 +414,15 @@ export function ExpertPanelPage() {
                             <div className="flex items-center justify-center py-12">
                                 <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
                             </div>
+                        ) : servicesError ? (
+                            <div className="text-center py-12 bg-red-50 text-red-600 rounded-xl border border-red-200 shadow-lg">
+                                <p>Error al cargar servicios: {servicesError.message}</p>
+                            </div>
+                        ) : services.length === 0 ? (
+                            <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-lg">
+                                <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                <p className="text-gray-600">No tienes servicios activos</p>
+                            </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {services.map((service) => (
@@ -459,13 +481,13 @@ export function ExpertPanelPage() {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {isLoading ? (
+                        {isLoadingHires ? (
                             <div className="flex items-center justify-center py-12">
                                 <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
                             </div>
-                        ) : error ? (
+                        ) : hiresError ? (
                             <div className="text-center py-12 bg-red-50 text-red-600 rounded-xl border border-red-200 shadow-lg">
-                                <p>Error al cargar contrataciones: {error.message}</p>
+                                <p>Error al cargar contrataciones: {hiresError.message}</p>
                             </div>
                         ) : hires.length === 0 ? (
                             <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-lg">
@@ -474,7 +496,7 @@ export function ExpertPanelPage() {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {hires.map((hire) => (
+                                {hires.map((hire: Hire) => (
                                     <div
                                         key={hire.id}
                                         className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg hover:shadow-xl transition-all"
@@ -489,12 +511,12 @@ export function ExpertPanelPage() {
                                             </div>
                                             <span
                                                 className={`px-2 py-1 rounded-full text-xs font-medium ${hire.status === 'Completed'
-                                                    ? 'bg-green-100 text-green-600'
-                                                    : hire.status === 'Pending'
-                                                        ? 'bg-blue-100 text-blue-600'
-                                                        : hire.status === 'Cancelled'
-                                                            ? 'bg-red-100 text-red-600'
-                                                            : 'bg-gray-100 text-gray-600'
+                                                        ? 'bg-green-100 text-green-600'
+                                                        : hire.status === 'Pending'
+                                                            ? 'bg-blue-100 text-blue-600'
+                                                            : hire.status === 'Cancelled'
+                                                                ? 'bg-red-100 text-red-600'
+                                                                : 'bg-gray-100 text-gray-600'
                                                     }`}
                                             >
                                                 {hire.status || 'Pending'}
