@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, ArrowRight, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { GoogleMap, useLoadScript, Marker, Libraries } from '@react-google-maps/api';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 
@@ -42,11 +41,8 @@ const circleOptions = {
     draggable: false
 };
 
-// Function to calculate zoom level based on radius
 const getZoomLevel = (radius: number) => {
-    // Convert radius from km to meters
     const radiusInMeters = radius * 1000;
-    // Calculate zoom level using the formula: zoom = 14 - log2(radius / 500)
     return Math.min(14, Math.max(4, Math.floor(14 - Math.log2(radiusInMeters / 500))));
 };
 
@@ -94,9 +90,10 @@ interface SearchParameterFormProps {
     selectedCategory: number | null;
     initialKeywords: string;
     initialUserSearch: string;
+    serviceTypeId: number | null; // Added: serviceTypeId
 }
 
-export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch }: SearchParameterFormProps) {
+export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId }: SearchParameterFormProps) {
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
         libraries
@@ -235,7 +232,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             maxPrice: formData.maxPrice ? parseInt(formData.maxPrice) : null,
             brandId: null,
             modelId: null,
-            platformIds: [1, 2]
+            platformIds: [1, 2],
+            serviceTypeId // Added: Include serviceTypeId
         };
 
         onComplete(searchParameterData);
@@ -261,7 +259,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Map Container */}
                 <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200">
-                    {/* Map Section */}
                     <div className="relative h-[400px]">
                         {!isLoaded ? (
                             <div className="h-full flex items-center justify-center bg-gray-50">
@@ -387,57 +384,50 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
 
                 {/* Settings Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Location Settings */}
                     <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-6 space-y-4 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
-                        <div className="space-y-4">
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-900 mb-1">Configuración de Ubicación</h3>
-                                <p className="text-xs text-gray-400">Establece el área y radio de búsqueda</p>
+                        <div>
+                            <h3 className="text-sm font-medium text-gray-900 mb-1">Configuración de Ubicación</h3>
+                            <p className="text-xs text-gray-400">Establece el área y radio de búsqueda</p>
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-400">Radio de Búsqueda</span>
+                                <div className="flex items-center gap-1">
+                                    <span className="text-lg font-semibold text-gray-900">{formData.locationRange}</span>
+                                    <span className="text-sm text-gray-500">km</span>
+                                </div>
                             </div>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-400">Radio de Búsqueda</span>
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-lg font-semibold text-gray-900">{formData.locationRange}</span>
-                                        <span className="text-sm text-gray-500">km</span>
-                                    </div>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="1"
-                                    max="600"
-                                    value={formData.locationRange}
-                                    onChange={(e) => {
-                                        setFormData({ ...formData, locationRange: e.target.value });
-                                        if (map) {
-                                            const radius = parseInt(e.target.value);
-                                            const zoom = getZoomLevel(radius);
-                                            map.setZoom(zoom);
-                                        }
-                                    }}
-                                    className="w-full h-1.5 bg-blue-100 rounded-full appearance-none cursor-pointer focus:outline-none transition-all [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:border-blue-600"
-                                    style={{
-                                        background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${(parseInt(formData.locationRange) / 600) * 100}%, rgb(219, 234, 254) ${(parseInt(formData.locationRange) / 600) * 100}%, rgb(219, 234, 254) 100%)`,
-                                        height: '6px'
-                                    }}
-                                />
-                                <div className="flex justify-between text-xs text-gray-500">
-                                    <span>1km</span>
-                                    <span>300km</span>
-                                    <span>600km</span>
-                                </div>
+                            <input
+                                type="range"
+                                min="1"
+                                max="600"
+                                value={formData.locationRange}
+                                onChange={(e) => {
+                                    setFormData({ ...formData, locationRange: e.target.value });
+                                    if (map) {
+                                        const radius = parseInt(e.target.value);
+                                        const zoom = getZoomLevel(radius);
+                                        map.setZoom(zoom);
+                                    }
+                                }}
+                                className="w-full h-1.5 bg-blue-100 rounded-full appearance-none cursor-pointer focus:outline-none transition-all [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:border-blue-600"
+                                style={{
+                                    background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${(parseInt(formData.locationRange) / 600) * 100}%, rgb(219, 234, 254) ${(parseInt(formData.locationRange) / 600) * 100}%, rgb(219, 234, 254) 100%)`,
+                                    height: '6px'
+                                }}
+                            />
+                            <div className="flex justify-between text-xs text-gray-500">
+                                <span>1km</span>
+                                <span>300km</span>
+                                <span>600km</span>
                             </div>
                         </div>
                     </div>
-
-                    {/* Price Range Settings */}
                     <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-6 space-y-4 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
                         <div>
                             <h3 className="text-sm font-medium text-gray-900 mb-4">Rango de Precio</h3>
                             <p className="text-xs text-gray-400">Establece los límites de precio mínimo y máximo</p>
                         </div>
-
                         <div className="space-y-6">
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
@@ -503,14 +493,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                         </div>
                     </div>
-
-                    {/* Update Frequency Settings */}
                     <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-6 space-y-4 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
                         <div>
                             <h3 className="text-sm font-medium text-gray-900 mb-4">Configuración de Búsqueda</h3>
                             <p className="text-xs text-gray-400">Establece la frecuencia de actualización</p>
                         </div>
-
                         <div className="space-y-6">
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">

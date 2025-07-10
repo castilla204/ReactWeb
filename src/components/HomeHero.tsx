@@ -1,24 +1,29 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 
-const HomeHero: React.FC = () => {
+interface HomeHeroProps {
+    onSelectService: (serviceTypeId: number) => void;
+    selectedServiceTypeId: number | null;
+}
+
+const HomeHero: React.FC<HomeHeroProps> = ({ onSelectService, selectedServiceTypeId }) => {
     const [currentCard, setCurrentCard] = useState(0);
     const cards = [
         {
-            title: "Forma facil de encontrar\ncasa a buen preci",
-            description: "Ofreciendo servicios de búsqueda\nseguros y confortables.",
-            buttonText: "Buscar Casa",
-            image: new URL('../media/house.png', import.meta.url).href,
-            gradient: "from-blue-600 to-blue-700",
-            imageClass: "-right-12 -bottom-16 transform-gpu [filter:drop-shadow(2px_4px_8px_rgba(0,0,0,0.2))_drop-shadow(0_30px_30px_rgba(29,78,216,0.35))_drop-shadow(0_20px_20px_rgba(59,130,246,0.45))]"
+            title: "Encuentra tu hogar ideal\ncon facilidad",
+            description: "Búsqueda avanzada en web combinada con revisiones presenciales para garantizar la mejor elección.",
+            buttonText: "Búsqueda Web + Revisión Presencial",
+            image: new URL('../media/house-modern.png', import.meta.url).href,
+            gradient: "from-blue-700 via-blue-600 to-blue-500",
+            serviceTypeId: 1
         },
         {
-            title: "La Mejor Plataforma\npara Buscar Cochess",
-            description: "Facilidad para buscar coches de forma segura\ny cercana. Por supuesto, a bajo precio.",
-            buttonText: "Buscar Coche",
-            image: new URL('../media/Car.png', import.meta.url).href,
-            gradient: "from-blue-500 to-blue-600",
-            imageClass: "-right-12 bottom-0"
+            title: "El coche perfecto\nestá a tu alcance",
+            description: "Revisiones presenciales detalladas para asegurar la calidad de tu próxima compra.",
+            buttonText: "Solo Revisión Presencial",
+            image: new URL('../media/car-modern.png', import.meta.url).href,
+            gradient: "from-blue-600 via-blue-500 to-blue-400",
+            serviceTypeId: 2
         }
     ];
 
@@ -50,30 +55,32 @@ const HomeHero: React.FC = () => {
                     filter: 'contrast(200%) brightness(150%)'
                 }} />
             </div>
-            <div className="md:hidden relative w-full max-w-2xl mx-auto overflow-hidden mt-2">
+            <div className="md:hidden relative w-full max-w-2xl mx-auto overflow-hidden mt-4">
                 <div
-                    className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${cards[currentCard].gradient} p-6 md:p-8 flex flex-col justify-between min-h-[280px] md:min-h-[320px] transition-opacity duration-500`}
+                    className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${cards[currentCard].gradient} p-6 flex flex-col justify-between min-h-[360px] transition-all duration-500 cursor-pointer hover:scale-[1.02] hover:shadow-2xl ${selectedServiceTypeId === cards[currentCard].serviceTypeId ? 'ring-4 ring-blue-400/50 shadow-xl scale-[1.01]' : ''}`}
+                    onClick={() => onSelectService(cards[currentCard].serviceTypeId)}
                 >
-                    <div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                            {cards[currentCard].title}
-                            <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
-                                <span>+</span>
-                                <Sparkles className="w-4 h-4" />
-                                <span>IA</span>
+                    <div className="relative z-10">
+                        <h2 className="text-3xl font-extrabold text-white mb-3 leading-tight drop-shadow-md">
+                            {cards[currentCard].title.split('\n').map((line, index) => (
+                                <span key={index} className="block">{line}</span>
+                            ))}
+                            <div className="inline-flex items-center gap-2 ml-2 mt-2 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold text-white">
+                                <Sparkles className="w-4 h-4 text-yellow-300" />
+                                <span>Potenciado por IA</span>
                             </div>
                         </h2>
-                        <p className="text-blue-100 text-sm md:text-base mb-6">
+                        <p className="text-blue-100 text-base mb-6 font-medium max-w-[60%] leading-relaxed">
                             {cards[currentCard].description}
                         </p>
-                        <button className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors">
+                        <button className="bg-white text-blue-700 px-6 py-2.5 rounded-xl font-semibold hover:bg-blue-50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                             {cards[currentCard].buttonText}
                         </button>
                     </div>
                     <img
                         src={cards[currentCard].image}
                         alt={cards[currentCard].buttonText}
-                        className={`absolute w-64 md:w-72 object-contain ${cards[currentCard].imageClass}`}
+                        className="absolute right-0 bottom-0 w-[50%] object-cover rounded-bl-2xl shadow-2xl transform translate-x-4 -translate-y-4"
                     />
                 </div>
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
@@ -81,62 +88,42 @@ const HomeHero: React.FC = () => {
                         <button
                             key={index}
                             onClick={() => setCurrentCard(index)}
-                            className={`w-2 h-2 rounded-full transition-colors ${index === currentCard ? 'bg-white' : 'bg-white/50'}`}
+                            className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${index === currentCard ? 'bg-white scale-125' : 'bg-white/40 hover:bg-white/70'}`}
                         />
                     ))}
                 </div>
             </div>
-            <div className="hidden md:grid grid-cols-2 gap-6">
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-500 to-blue-600 p-8 flex flex-col justify-between min-h-[320px]">
-                    <div>
-                        <h2 className="text-3xl font-bold text-white mb-4">
-                            La Mejor Plataforma<br />
-                            para Buscar Cochess
-                            <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
-                                <span>+</span>
-                                <Sparkles className="w-4 h-4" />
-                                <span>IA</span>
-                            </div>
-                        </h2>
-                        <p className="text-blue-100 text-base mb-6">
-                            Facilidad para buscar coches de forma segura<br />
-                            y cercana. Por supuesto, a bajo precio.
-                        </p>
-                        <button className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors">
-                            Buscar Coche
-                        </button>
+            <div className="hidden md:grid grid-cols-2 gap-8 mt-8">
+                {cards.map((card, index) => (
+                    <div
+                        key={index}
+                        className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-8 flex flex-col justify-between min-h-[400px] cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${selectedServiceTypeId === card.serviceTypeId ? 'ring-4 ring-blue-400/50 shadow-xl scale-[1.01]' : ''}`}
+                        onClick={() => onSelectService(card.serviceTypeId)}
+                    >
+                        <div className="relative z-10">
+                            <h2 className="text-4xl font-extrabold text-white mb-4 leading-tight drop-shadow-md">
+                                {card.title.split('\n').map((line, i) => (
+                                    <span key={i} className="block">{line}</span>
+                                ))}
+                                <div className="inline-flex items-center gap-2 ml-3 mt-2 px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold text-white">
+                                    <Sparkles className="w-5 h-5 text-yellow-300" />
+                                    <span>Potenciado por IA</span>
+                                </div>
+                            </h2>
+                            <p className="text-blue-100 text-lg mb-8 font-medium max-w-[60%] leading-relaxed">
+                                {card.description}
+                            </p>
+                            <button className="bg-white text-blue-700 px-8 py-3 rounded-xl font-semibold hover:bg-blue-50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                                {card.buttonText}
+                            </button>
+                        </div>
+                        <img
+                            src={card.image}
+                            alt={card.buttonText}
+                            className="absolute right-0 bottom-0 w-[45%] object-cover rounded-bl-2xl shadow-2xl transform translate-x-6 -translate-y-6"
+                        />
                     </div>
-                    <img
-                        src={new URL('../media/Car.png', import.meta.url).href}
-                        alt="White Sports Car"
-                        className="absolute -right-12 bottom-0 w-72 object-contain"
-                    />
-                </div>
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-blue-700 p-8 flex flex-col justify-between min-h-[320px]">
-                    <div>
-                        <h2 className="text-3xl font-bold text-white mb-4">
-                            Forma fácil de encontrar<br />
-                            casa a buen precio
-                            <div className="inline-flex items-center gap-2 ml-3 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium">
-                                <span>+</span>
-                                <Sparkles className="w-4 h-4" />
-                                <span>IA</span>
-                            </div>
-                        </h2>
-                        <p className="text-blue-100 text-base mb-6">
-                            Ofreciendo servicios de búsqueda<br />
-                            seguros y confortables.
-                        </p>
-                        <button className="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors">
-                            Buscar Casa
-                        </button>
-                    </div>
-                    <img
-                        src={new URL('../media/house.png', import.meta.url).href}
-                        alt="Modern House"
-                        className="absolute -right-12 -bottom-16 w-72 object-contain transform-gpu [filter:drop-shadow(2px_4px_8px_rgba(0,0,0,0.2))_drop-shadow(0_30px_30px_rgba(29,78,216,0.35))_drop-shadow(0_20px_20px_rgba(59,130,246,0.45))]"
-                    />
-                </div>
+                ))}
             </div>
         </>
     );

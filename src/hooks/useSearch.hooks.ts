@@ -38,6 +38,7 @@ export interface SearchParameters {
     shippingAvailable: boolean;
     strictMatchOnly: boolean;
     platformIds: number[];
+    serviceTypeId: number | null; // Added: serviceTypeId
 }
 
 export interface SearchResult {
