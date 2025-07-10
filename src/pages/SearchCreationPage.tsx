@@ -16,7 +16,8 @@ const SearchCreationPage: React.FC = () => {
         message: string;
     } | null>(null);
     const [searchParameters, setSearchParameters] = useState<any>(null);
-    const [selectedService, setSelectedService] = useState<number | null>(null);
+    const [selectedServiceTypeId, setSelectedServiceTypeId] = useState<number | null>(null);
+    const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
     const [formData, setFormData] = useState({
         keywords: '',
         userSearch: '',
@@ -31,26 +32,42 @@ const SearchCreationPage: React.FC = () => {
     const handleParametersComplete = (parameters: any) => {
         parameters.strictMatchOnly = strictMatchOnly;
         setSearchParameters(parameters);
-        setCurrentStep(2);
+        if (selectedServiceTypeId) {
+            console.log('Moving to ServiceSelection with serviceTypeId:', selectedServiceTypeId);
+            setCurrentStep(2); // Go to ServiceSelection
+        } else {
+            setNotification({
+                type: 'error',
+                message: '📍 Por favor, selecciona un tipo de servicio antes de continuar.',
+            });
+        }
     };
 
-    const handleServiceSelected = (serviceId: number) => {
-        setSelectedService(serviceId);
-        setCurrentStep(3);
+    const handleServiceSelected = (serviceTypeId: number) => {
+        console.log('Selected service type:', serviceTypeId);
+        setSelectedServiceTypeId(serviceTypeId);
+    };
+
+    const handleServiceSelectionComplete = (serviceId: number) => {
+        console.log('Selected service:', serviceId);
+        setSelectedServiceId(serviceId);
+        setCurrentStep(3); // Go to SearchForm
     };
 
     const handleSearchComplete = () => {
         setNotification({
             type: 'success',
-            message: '🎉 ¡Búsqueda creada con éxito! Te notificaremos cuando encontremos coincidencias.'
+            message: '🎉 ¡Búsqueda creada con éxito! Te notificaremos cuando encontremos coincidencias.',
         });
         setCurrentStep(0);
         setSearchParameters(null);
-        setSelectedService(null);
+        setSelectedServiceTypeId(null);
+        setSelectedServiceId(null);
         setFormData({
             keywords: '',
-            userSearch: ''
+            userSearch: '',
         });
+        setSelectedCategory(null);
     };
 
     const handleStartSearch = () => {
@@ -58,30 +75,66 @@ const SearchCreationPage: React.FC = () => {
         if (!isAuthenticated) {
             setNotification({
                 type: 'error',
-                message: '🔒 Por favor, inicia sesión para crear una búsqueda'
+                message: '🔒 Por favor, inicia sesión para crear una búsqueda',
             });
             return;
         }
+        if (!selectedServiceTypeId) {
+            setNotification({
+                type: 'error',
+                message: '📍 Por favor, selecciona un tipo de servicio',
+            });
+            return;
+        }
+        if (!selectedCategory) {
+            setNotification({
+                type: 'error',
+                message: '📍 Por favor, selecciona una categoría',
+            });
+            return;
+        }
+        if (!formData.keywords || !formData.userSearch) {
+            setNotification({
+                type: 'error',
+                message: '📍 Por favor, completa los campos de búsqueda',
+            });
+            return;
+        }
+        console.log('Moving to SearchParameterForm with:', { selectedCategory, selectedServiceTypeId });
         setCurrentStep(1);
-        setSearchParameters(null);
-        setSelectedService(null);
+    };
+
+    const handleBack = () => {
+        if (currentStep === 0) {
+            // Optionally navigate to home or stay
+        } else if (currentStep === 1) {
+            setCurrentStep(0);
+        } else if (currentStep === 2) {
+            setCurrentStep(1);
+        } else if (currentStep === 3) {
+            setCurrentStep(2);
+            setSelectedServiceId(null);
+        }
     };
 
     return (
         <div className="relative max-w-7xl mx-auto px-4 pt-4 md:pt-8">
             {currentStep === 0 ? (
                 <>
-                    <HomeHero />
+                    <HomeHero onSelectService={handleServiceSelected} selectedServiceTypeId={selectedServiceTypeId} />
                     <div className="mt-4 md:mt-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6">
                         <div className="relative z-10">
                             <div className="flex flex-wrap gap-1.5 mb-4">
                                 {categories?.map((category) => (
                                     <button
                                         key={category.id}
-                                        onClick={() => setSelectedCategory(category.id)}
+                                        onClick={() => {
+                                            console.log('Selected category:', category.id);
+                                            setSelectedCategory(category.id);
+                                        }}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedCategory === category.id
-                                            ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200 shadow-sm'
-                                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                                ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200 shadow-sm'
+                                                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                             }`}
                                     >
                                         <span className="flex items-center gap-1.5">
@@ -97,7 +150,7 @@ const SearchCreationPage: React.FC = () => {
                                 <input
                                     type="text"
                                     value={formData.keywords}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, keywords: e.target.value }))}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, keywords: e.target.value }))}
                                     placeholder="¿Qué estás buscando? (Ej: Tesla Model 3, BMW M4...)"
                                     className="w-full px-4 py-2.5 rounded-lg bg-white/80 border border-gray-200 text-gray-900 text-sm placeholder-gray-500 transition-all focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 outline-none select-none"
                                 />
@@ -106,7 +159,9 @@ const SearchCreationPage: React.FC = () => {
                                 <div className="flex-1">
                                     <textarea
                                         value={formData.userSearch}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, userSearch: e.target.value }))}
+                                        onChange={(e) =>
+                                            setFormData((prev) => ({ ...prev, userSearch: e.target.value }))
+                                        }
                                         placeholder="Describe los detalles que buscas..."
                                         className="w-full px-4 py-2.5 rounded-lg bg-white/80 border border-gray-200 text-gray-900 text-xs min-h-[80px] placeholder-gray-500 transition-all resize-none focus:bg-white focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 outline-none select-none"
                                     />
@@ -121,10 +176,13 @@ const SearchCreationPage: React.FC = () => {
                                     <div>
                                         <div className="flex items-center gap-1.5">
                                             <Wand2 className="w-3.5 h-3.5 text-gray-500" />
-                                            <span className="text-xs font-medium text-gray-900">Coincidencia exacta</span>
+                                            <span className="text-xs font-medium text-gray-900">
+                                                Coincidencia exacta
+                                            </span>
                                         </div>
                                         <p className="text-[10px] text-gray-500 mt-1 leading-tight">
-                                            Al activar esta opción, solo recibirás notificaciones de anuncios que coincidan exactamente con tus criterios de búsqueda.
+                                            Al activar esta opción, solo recibirás notificaciones de anuncios que
+                                            coincidan exactamente con tus criterios de búsqueda.
                                         </p>
                                     </div>
                                 </div>
@@ -132,10 +190,15 @@ const SearchCreationPage: React.FC = () => {
                             <div className="mt-4 flex gap-2">
                                 <button
                                     onClick={handleStartSearch}
-                                    disabled={!formData.keywords || !formData.userSearch || !selectedCategory}
+                                    disabled={
+                                        !formData.keywords ||
+                                        !formData.userSearch ||
+                                        !selectedCategory ||
+                                        !selectedServiceTypeId
+                                    }
                                     className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
                                 >
-                                    <span>Generar</span>
+                                    <span>Siguiente</span>
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
                                 <button
@@ -157,10 +220,13 @@ const SearchCreationPage: React.FC = () => {
                                         <div>
                                             <div className="flex items-center gap-1.5">
                                                 <Wand2 className="w-3.5 h-3.5 text-gray-500" />
-                                                <span className="text-sm font-medium text-gray-900">Coincidencia exacta</span>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    Coincidencia exacta
+                                                </span>
                                             </div>
                                             <p className="text-xs text-gray-500 mt-1">
-                                                Al activar esta opción, solo recibirás notificaciones de anuncios que coincidan exactamente con tus criterios de búsqueda.
+                                                Al activar esta opción, solo recibirás notificaciones de anuncios que
+                                                coincidan exactamente con tus criterios de búsqueda.
                                             </p>
                                         </div>
                                     </div>
@@ -185,31 +251,34 @@ const SearchCreationPage: React.FC = () => {
                     </div>
                 </>
             ) : (
-                <div className="max-w-4xl mx-auto">
-                    {currentStep === 1 && (
+                <div className="max-w-5xl mx-auto">
+                    {currentStep === 1 && selectedCategory && selectedServiceTypeId && (
                         <SearchParameterForm
                             onComplete={handleParametersComplete}
                             setCurrentStep={setCurrentStep}
                             selectedCategory={selectedCategory}
                             initialKeywords={formData.keywords}
                             initialUserSearch={formData.userSearch}
+                            serviceTypeId={selectedServiceTypeId}
                         />
                     )}
-                    {currentStep === 2 && (
+                    {currentStep === 2 && selectedCategory && selectedServiceTypeId && (
                         <ServiceSelection
                             onBack={() => setCurrentStep(1)}
-                            onComplete={handleServiceSelected}
-                            selectedCategory={selectedCategory!}
+                            onComplete={handleServiceSelectionComplete}
+                            selectedCategory={selectedCategory}
+                            selectedServiceTypeId={selectedServiceTypeId}
                         />
                     )}
-                    {currentStep === 3 && (
+                    {currentStep === 3 && selectedServiceId && (
                         <SearchForm
                             parameters={{
                                 ...searchParameters,
-                                serviceId: selectedService
+                                serviceTypeId: selectedServiceTypeId,
                             }}
                             setCurrentStep={setCurrentStep}
                             onComplete={handleSearchComplete}
+                            serviceId={selectedServiceId}
                         />
                     )}
                 </div>

@@ -1,22 +1,24 @@
 ﻿import React, { useState } from 'react';
-import { Clock, ArrowRight, Sparkles, Target, DollarSign, Zap, ArrowLeft, Crown } from 'lucide-react';
+import { Clock, ArrowRight, Sparkles, Target, DollarSign, Zap, ArrowLeft, Crown, Search } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import type { SearchParameters } from '../hooks/useSearch.hooks';
 import { Notification, NotificationType } from './Notification';
 
 export interface SearchFormProps {
-    parameters: SearchParameters & { serviceId?: number };
+    parameters: SearchParameters;
     onComplete: () => void;
     setCurrentStep: (step: number) => void;
-    setShowSubscriptions: (show: boolean) => void;
+    setShowSubscriptions?: (show: boolean) => void;
+    serviceId: number | null; // Added
 }
 
 export default function SearchForm({
     parameters,
     onComplete,
     setCurrentStep,
-    setShowSubscriptions,
+    setShowSubscriptions = () => { },
+    serviceId, // Added
 }: SearchFormProps) {
     const { createSearchWithHire } = useSearch();
     const { maxSearchesReached, maxSearches } = useSubscriptionLimits();
@@ -59,8 +61,11 @@ export default function SearchForm({
 
             const { hireUrl } = await createSearchWithHire.mutateAsync({
                 searchData,
-                parameters,
-                serviceId: parameters.serviceId,
+                parameters: {
+                    ...parameters,
+                    serviceTypeId: parameters.serviceTypeId
+                },
+                serviceId: serviceId || undefined, // Use serviceId from props
             });
 
             if (hireUrl) {
@@ -99,7 +104,7 @@ export default function SearchForm({
 
     const handleBack = (e: React.MouseEvent) => {
         e.preventDefault();
-        setCurrentStep(1);
+        setCurrentStep(2); // Back to ServiceSelection
     };
 
     return (
@@ -130,7 +135,6 @@ export default function SearchForm({
                                 </p>
                             </div>
                         </div>
-
                         <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100">
                             <div className="flex items-start gap-3">
                                 <div className="mt-1">
@@ -148,9 +152,25 @@ export default function SearchForm({
                         </div>
                     </div>
                 </div>
-
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Service Type Card */}
+                        <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
+                            <div className="flex items-center gap-3 mb-4">
+                                <Search className="w-5 h-5 text-blue-600" />
+                                <h3 className="text-sm font-medium text-gray-900">
+                                    Tipo de Servicio
+                                </h3>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Servicio</span>
+                                    <span className="text-gray-900 font-medium">
+                                        {parameters.serviceTypeId === 1 ? 'Web Search' : parameters.serviceTypeId === 2 ? 'In-Person Review' : 'Unknown'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                         {/* Location Card */}
                         <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
@@ -181,7 +201,6 @@ export default function SearchForm({
                                 </div>
                             </div>
                         </div>
-
                         {/* Price Card */}
                         <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
@@ -213,7 +232,6 @@ export default function SearchForm({
                                 </div>
                             </div>
                         </div>
-
                         {/* Update Settings Card */}
                         <div className="col-span-1 lg:col-span-3 bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
@@ -248,7 +266,6 @@ export default function SearchForm({
                             </div>
                         </div>
                     </div>
-
                     <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl p-4 border-t border-gray-100">
                         {maxSearchesReached ? (
                             <button
@@ -267,7 +284,7 @@ export default function SearchForm({
                         ) : (
                             <button
                                 type="submit"
-                                disabled={createSearchWithHire.isPending || isSubmitting}
+                                disabled={createSearchWithHire.isPending || isSubmitting || !serviceId}
                                 className="w-full md:w-auto md:ml-auto flex items-center justify-center gap-2 py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
                             >
                                 {createSearchWithHire.isPending || isSubmitting ? (

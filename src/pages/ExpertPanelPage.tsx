@@ -17,6 +17,7 @@ export function ExpertPanelPage() {
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [formData, setFormData] = useState({
         categoryId: '',
+        serviceTypeId: '', // Added
         price: '',
         conditions: '',
         durationInHours: '24',
@@ -29,6 +30,8 @@ export function ExpertPanelPage() {
         profileError,
         services,
         isLoadingServices,
+        serviceTypes, // Added
+        isLoadingServiceTypes, // Added
         createService,
         isCreatingService,
         startOnboarding,
@@ -69,6 +72,10 @@ export function ExpertPanelPage() {
 
         if (!formData.categoryId) {
             errors.categoryId = 'La categoría es requerida';
+        }
+
+        if (!formData.serviceTypeId) { // Added
+            errors.serviceTypeId = 'El tipo de servicio es requerido';
         }
 
         if (!formData.conditions.trim()) {
@@ -156,6 +163,7 @@ export function ExpertPanelPage() {
             await createService({
                 expertProfileId: profile.id,
                 categoryId: parseInt(formData.categoryId),
+                serviceTypeId: parseInt(formData.serviceTypeId), // Added
                 price: parseFloat(formData.price),
                 conditions: formData.conditions.trim(),
                 durationInHours: parseInt(formData.durationInHours),
@@ -165,6 +173,7 @@ export function ExpertPanelPage() {
             setShowServiceForm(false);
             setFormData({
                 categoryId: '',
+                serviceTypeId: '', // Added
                 price: '',
                 conditions: '',
                 durationInHours: '24',
@@ -421,6 +430,12 @@ export function ExpertPanelPage() {
                                         </div>
                                         <div className="space-y-3">
                                             <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-500">Tipo de Servicio</span>
+                                                <span className="font-medium text-gray-900">
+                                                    {serviceTypes.find(st => st.id === service.serviceTypeId)?.name || 'Desconocido'}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm">
                                                 <span className="text-gray-500">Precio</span>
                                                 <span className="font-medium text-gray-900">
                                                     {new Intl.NumberFormat('es-ES', {
@@ -572,6 +587,32 @@ export function ExpertPanelPage() {
                                     )}
                                 </div>
 
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Tipo de Servicio
+                                    </label>
+                                    <select
+                                        value={formData.serviceTypeId}
+                                        onChange={(e) => setFormData({ ...formData, serviceTypeId: e.target.value })}
+                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.serviceTypeId ? 'border-red-300' : 'border-gray-300'}`}
+                                        required
+                                    >
+                                        <option value="">Seleccionar tipo de servicio</option>
+                                        {isLoadingServiceTypes ? (
+                                            <option disabled>Cargando...</option>
+                                        ) : (
+                                            serviceTypes.map(serviceType => (
+                                                <option key={serviceType.id} value={serviceType.id}>
+                                                    {serviceType.name}
+                                                </option>
+                                            ))
+                                        )}
+                                    </select>
+                                    {formErrors.serviceTypeId && (
+                                        <p className="mt-1 text-xs text-red-500">{formErrors.serviceTypeId}</p>
+                                    )}
+                                </div>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -696,7 +737,7 @@ export function ExpertPanelPage() {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={isCreatingService}
+                                        disabled={isCreatingService || isLoadingServiceTypes}
                                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                                     >
                                         {isCreatingService ? (
