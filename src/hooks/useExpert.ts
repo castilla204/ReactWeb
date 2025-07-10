@@ -1,25 +1,21 @@
-﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from './useApi';
+﻿import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { getAuthToken } from '../lib/auth';
 
 interface ExpertProfile {
     id: number;
     profilePictureUrl: string;
     description: string;
-    createdAt: string;
     stripeAccountId: string | null;
+    createdAt: string;
 }
 
-interface Service {
+interface Search {
     id: number;
+    client: { name: string; email: string };
     categoryId: number;
-    serviceTypeId: number;
-    serviceTypeName: string;
-    price: number;
-    conditions: string;
-    durationInHours: number;
+    status: string;
     createdAt: string;
-    imageUrls: string[];
 }
 
 interface ServiceType {
@@ -27,109 +23,183 @@ interface ServiceType {
     name: string;
 }
 
-interface CreateServicePayload {
-    expertProfileId: number;
-    categoryId: number;
-    serviceTypeId: number;
-    price: number;
-    conditions: string;
-    durationInHours: number;
-    images: File[];
-}
-
 export function useExpert() {
-    const { fetchApi } = useApi();
-    const { user } = useAuth();
-    const queryClient = useQueryClient();
+    const { user, signOut } = useAuth();
+    const [profile, setProfile] = useState<ExpertProfile | null>(null);
+    const [searches, setSearches] = useState<Search[]>([]);
+    const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+    const [isLoadingSearches, setIsLoadingSearches] = useState(false);
+    const [isLoadingServiceTypes, setIsLoadingServiceTypes] = useState(false);
+    const [isStartingOnboarding, setIsStartingOnboarding] = useState(false);
+    const [profileError, setProfileError] = useState<Error | null>(null);
 
-    const profileQuery = useQuery({
-        queryKey: ['expertProfile'],
-        queryFn: async () => {
-            const response = await fetchApi<ExpertProfile>('/api/ExpertProfile/me');
-            console.log('Fetched expert profile:', response);
-            return response;
-        },
-        enabled: !!user && user.role === 'Expert',
-    });
+    const fetchProfile = useCallback(async () => {
+        if (!user) {
+            console.log('No user, cannot fetch profile');
+            return;
+        }
 
-    const servicesQuery = useQuery({
-        queryKey: ['expertServices'],
-        queryFn: async () => {
-            if (!profileQuery.data?.id) {
-                throw new Error('Expert profile not found');
+        setIsLoadingProfile(true);
+        setProfileError(null);
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
             }
-            const response = await fetchApi<Service[]>(`/api/SearchService/expert/${profileQuery.data.id}`);
-            console.log('Fetched expert services:', response);
-            return response;
-        },
-        enabled: !!profileQuery.data?.id,
-    });
 
-    const serviceTypesQuery = useQuery({
-        queryKey: ['serviceTypes'],
-        queryFn: async () => {
-            const response = await fetchApi<ServiceType[]>('/api/ServiceType');
-            console.log('Fetched service types:', response);
-            return response;
-        },
-    });
-
-    const createServiceMutation = useMutation({
-        mutationFn: async (payload: CreateServicePayload) => {
-            const formData = new FormData();
-            formData.append('ExpertProfileId', payload.expertProfileId.toString());
-            formData.append('CategoryId', payload.categoryId.toString());
-            formData.append('ServiceTypeId', payload.serviceTypeId.toString());
-            formData.append('Price', payload.price.toString());
-            formData.append('Conditions', payload.conditions);
-            formData.append('DurationInHours', payload.durationInHours.toString());
-            payload.images.forEach((image) => formData.append('Images', image));
-
-            console.log('Creating service with payload:', {
-                expertProfileId: payload.expertProfileId,
-                categoryId: payload.categoryId,
-                serviceTypeId: payload.serviceTypeId,
-                price: payload.price,
-                conditions: payload.conditions,
-                durationInHours: payload.durationInHours,
-                imageCount: payload.images.length,
+            const response = await fetch('/api/User/expert-profile', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
-            const response = await fetchApi<any>('/api/SearchService', {
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('Request failed with status 401');
+                }
+                throw new Error(`Failed to fetch profile: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('Fetched expert profile:', data);
+            setProfile(data);
+        } catch (error: any) {
+            console.error('Error fetching profile:', error);
+            setProfileError(error);
+        } finally {
+            setIsLoadingProfile(false);
+        }
+    }, [user, signOut]);
+
+    const fetchSearches = useCallback(async () => {
+        if (!user) return;
+
+        setIsLoadingSearches(true);
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch('/api/Searches/expert', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('Request failed with status 401');
+                }
+                throw new Error(`Failed to fetch searches: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setSearches(data);
+        } catch (error) {
+            console.error('Error fetching searches:', error);
+        } finally {
+            setIsLoadingSearches(false);
+        }
+    }, [user, signOut]);
+
+    const fetchServiceTypes = useCallback(async () => {
+        setIsLoadingServiceTypes(true);
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch('/api/ServiceType', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('Request failed with status 401');
+                }
+                throw new Error(`Failed to fetch service types: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setServiceTypes(data);
+        } catch (error) {
+            console.error('Error fetching service types:', error);
+        } finally {
+            setIsLoadingServiceTypes(false);
+        }
+    }, [signOut]);
+
+    const startOnboarding = async () => {
+        setIsStartingOnboarding(true);
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch('/api/Subscription/expert-onboarding', {
                 method: 'POST',
-                body: formData,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
-            return response;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['expertServices'] });
-        },
-    });
 
-    const startOnboardingMutation = useMutation({
-        mutationFn: async () => {
-            const response = await fetchApi<any>('/api/Stripe/onboarding');
-            return response;
-        },
-        onSuccess: (data) => {
-            if (data.url) {
-                window.location.href = data.url;
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('Request failed with status 401');
+                }
+                throw new Error(`Failed to start onboarding: ${response.statusText}`);
             }
-        },
-    });
+
+            const { url } = await response.json();
+            window.location.href = url;
+        } catch (error) {
+            console.error('Error starting onboarding:', error);
+            throw error;
+        } finally {
+            setIsStartingOnboarding(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.role === 'Expert') {
+            fetchProfile();
+            fetchServiceTypes();
+            fetchSearches();
+        }
+    }, [user, fetchProfile, fetchServiceTypes, fetchSearches]);
 
     return {
-        profile: profileQuery.data,
-        isLoadingProfile: profileQuery.isLoading,
-        profileError: profileQuery.error,
-        services: servicesQuery.data || [],
-        isLoadingServices: servicesQuery.isLoading,
-        serviceTypes: serviceTypesQuery.data || [],
-        isLoadingServiceTypes: serviceTypesQuery.isLoading,
-        createService: createServiceMutation.mutateAsync,
-        isCreatingService: createServiceMutation.isPending,
-        startOnboarding: startOnboardingMutation.mutateAsync,
-        isStartingOnboarding: startOnboardingMutation.isPending,
-        fetchProfile: profileQuery.refetch,
+        profile,
+        isLoadingProfile,
+        profileError,
+        searches,
+        isLoadingSearches,
+        serviceTypes,
+        isLoadingServiceTypes,
+        startOnboarding,
+        isStartingOnboarding,
+        fetchProfile,
     };
 }
