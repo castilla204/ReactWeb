@@ -317,7 +317,7 @@ const App: React.FC = React.memo(() => {
                 <Background />
 
                 <main className="relative z-10">
-                    <section className="container mx-auto px-6 min-h-screen flex flex-col pt-20 md:pt-24">
+                    <section className="w-full min-h-screen flex flex-col pt-16">
                         <Routes>
                             <Route path="/verify-phone" element={<PhoneVerificationPage />} />
                             <Route path="/privacy-policy.html" element={<PrivacyPolicy />} />
