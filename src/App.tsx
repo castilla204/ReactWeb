@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Heart, Sparkles, Shield, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase } from 'lucide-react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { GoogleAuth } from './components/GoogleAuth';
 import { NotificationCenter } from './components/NotificationCenter';
@@ -22,6 +22,7 @@ import Background from './components/Background';
 import { BecomeExpertPage } from './pages/BecomeExpertPage';
 import { ExpertPanelPage } from './pages/ExpertPanelPage';
 import { SearchResultsPage } from './pages/SearchResultsPage';
+import SearchDetails from './components/SearchDetails'; // Import SearchDetails
 
 const App: React.FC = React.memo(() => {
     const { user, setUser, isAuthenticated, signOut } = useAuth();
@@ -325,6 +326,7 @@ const App: React.FC = React.memo(() => {
                             <Route path="/cancel" element={<PaymentCancelPage />} />
                             <Route path="/ad/:id" element={<AdDetails onBack={() => window.history.back()} />} />
                             <Route path="/busquedas" element={<ProtectedRoute><SearchesPage /></ProtectedRoute>} />
+                            <Route path="/busquedas/:id" element={<ProtectedRoute><SearchDetails searchId={parseInt(useParams<{ id: string }>().id || '0')} onBack={() => useNavigate()(-1)} isAdmin={user?.email === 'dcastillaa@gmail.com'} /></ProtectedRoute>} />
                             <Route path="/detalles/:id" element={<ProtectedRoute><SearchResultsPage /></ProtectedRoute>} />
                             <Route path="/suscripciones" element={<ProtectedRoute><SubscriptionsPage /></ProtectedRoute>} />
                             <Route path="/admin" element={<ProtectedRoute><AdminPanelPage /></ProtectedRoute>} />
