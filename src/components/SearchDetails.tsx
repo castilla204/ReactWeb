@@ -1,5 +1,4 @@
-﻿// src/components/SearchDetails.tsx
-import { useLayoutEffect, useState, useEffect } from 'react';
+﻿import { useLayoutEffect, useState, useEffect } from 'react';
 import { ArrowLeft, Filter, ChevronDown, Star, AlertTriangle, Check, XCircle, Plus } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useCategories } from '../contexts/CategoryContext';
@@ -10,8 +9,8 @@ import { ReviewModal, DisputeModal, ResolveDisputeModal, AddAdModal, CancelServi
 import { useSearchActions } from '../hooks/useSearchActions';
 import { Notification, NotificationType } from './Notification';
 import Chat from './Chat';
+import { useParams } from 'react-router-dom';
 
-// Define interfaces
 interface SearchHire {
     id: number;
     clientId?: number;
@@ -61,7 +60,9 @@ const categoryBanners = {
     3: '/src/media/house.png',
 };
 
-export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetailsProps) {
+export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsProps, 'searchId'>) {
+    const { id } = useParams<{ id: string }>();
+    const searchId = parseInt(id || '0', 10);
     const [modalState, setModalState] = useState({
         showFinalizeModal: false,
         showCancelConfirm: false,
