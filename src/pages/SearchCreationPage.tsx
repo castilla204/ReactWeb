@@ -23,6 +23,9 @@ const SearchCreationPage = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [showMobileOptions, setShowMobileOptions] = useState(false);
 
+    // Ensure categories is an array to prevent TypeError
+    const safeCategories = Array.isArray(categories) ? categories : [];
+
     const handleParametersComplete = (parameters) => {
         parameters.strictMatchOnly = strictMatchOnly;
         parameters.serviceTypeId = selectedServiceTypeId;
@@ -107,7 +110,7 @@ const SearchCreationPage = () => {
                                         <Search className="w-4 md:w-5 h-4 md:h-5 text-blue-600" /> Categoría
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        {categories?.map((category) => (
+                                        {safeCategories.map((category) => (
                                             <button
                                                 key={category.id}
                                                 onClick={() => setSelectedCategory(category.id)}

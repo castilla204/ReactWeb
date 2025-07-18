@@ -1,3 +1,4 @@
+// src/config/api.ts
 // Development server URL - only used in development
 const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : '';
 
@@ -5,7 +6,7 @@ const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : '';
 const API_PATH = '/api';
 
 export const API_CONFIG = {
-    baseUrl: DEV_SERVER,  // Full URL in dev, empty for production
+    baseUrl: DEV_SERVER, // Full URL in dev, empty for production
     endpoints: {
         auth: {
             googleAuth: `${API_PATH}/User/google-auth`,
@@ -75,12 +76,18 @@ export const API_CONFIG = {
                 listAsClient: `${API_PATH}/SearchHire/client`,
                 listAsExpert: `${API_PATH}/SearchHire/expert`,
                 updateStatus: (hireId: number) => `${API_PATH}/SearchHire/${hireId}/status`,
-            }
+            },
         },
         users: {
             list: `${API_PATH}/User/all`,
             block: (userId: number) => `${API_PATH}/User/${userId}/block`,
             delete: (userId: number) => `${API_PATH}/User/${userId}`,
-        }
-    }
+        },
+        chat: {
+            conversation: `${API_PATH}/chat/conversation`,
+            message: `${API_PATH}/chat/message`,
+            markAsRead: (messageId: number) => `${API_PATH}/chat/message/${messageId}/read`,
+            ws: `${API_PATH}/chat/ws`,
+        },
+    },
 };
