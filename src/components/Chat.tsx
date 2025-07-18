@@ -1,5 +1,4 @@
-// src/components/Chat.tsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
 import { Send, Loader2 } from 'lucide-react';
@@ -15,8 +14,20 @@ interface ChatProps {
 const Chat: React.FC<ChatProps> = ({ searchId, setNotifications }) => {
     const { user } = useAuth();
     const { conversation, loading, error, newMessage, setNewMessage, sendMessage, isSending } = useChat(searchId);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const lastMessageCount = useRef(conversation?.messages.length || 0);
 
-    React.useEffect(() => {
+    // Scroll to the latest message only when a new message is added
+    useEffect(() => {
+        if (conversation?.messages && conversation.messages.length > lastMessageCount.current) {
+            if (messagesEndRef.current) {
+                messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            }
+            lastMessageCount.current = conversation.messages.length;
+        }
+    }, [conversation?.messages]);
+
+    useEffect(() => {
         if (error) {
             setNotifications((prev) => [
                 ...prev.filter((n) => !n.id.startsWith('chat-error-')),
@@ -70,7 +81,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications }) => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Chat con {isClient ? 'Experto' : 'Cliente'}
             </h3>
-            <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+            <div className="flex-1 overflow-y-auto mb-4 space-y-4" style={{ scrollbarWidth: 'thin' }}>
                 {conversation.messages?.map((message) => (
                     <div
                         key={message.id}
@@ -87,6 +98,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications }) => {
                         </div>
                     </div>
                 ))}
+                <div ref={messagesEndRef} />
             </div>
             <div className="flex items-center gap-2">
                 <input
@@ -103,7 +115,11 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications }) => {
                     disabled={isSending}
                 />
                 <button
-                    onClick={() => newMessage.trim() && !isSending && sendMessage(newMessage)}
+                    onClick={() => {
+                        if (newMessage.trim() && !isSending) {
+                            sendMessage(newMessage);
+                        }
+                    }}
                     className={`p-2 rounded-lg transition-colors ${isSending ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                     disabled={isSending}
                 >
