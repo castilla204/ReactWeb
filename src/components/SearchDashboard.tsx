@@ -1,10 +1,28 @@
 ﻿import React, { useState, useMemo } from 'react';
-import { Search, Clock, Power, ChevronRight, AlertCircle, CheckCircle, Calendar, Trash2, Pencil, ArrowLeft, Tag, Filter, X, Car, Home, Bike, LayoutGrid, LayoutList } from 'lucide-react';
-import SearchDetails from './SearchDetails'; // Default import
+import {
+    Search,
+    Clock,
+    Power,
+    ChevronRight,
+    AlertCircle,
+    CheckCircle,
+    Calendar,
+    Trash2,
+    Pencil,
+    ArrowLeft,
+    Tag,
+    X,
+    Car,
+    Home,
+    Bike,
+    LayoutGrid,
+    LayoutList,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useSearch } from '../hooks/useSearch.hooks';
 import type { SearchItem } from '../hooks/useSearch.hooks';
+import { useNavigate } from 'react-router-dom';
 
 interface SearchDashboardProps {
     onBack: () => void;
@@ -25,43 +43,42 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
         deleteSearch: deleteSearchMutation,
         toggleActive: toggleActiveMutation,
         reviseSearch: reviseSearchMutation,
-        updateSearch: updateSearchMutation
+        updateSearch: updateSearchMutation,
     } = useSearch();
+    const navigate = useNavigate();
 
-    const [selectedSearch, setSelectedSearch] = useState<number | null>(null);
-    const isAdmin = user?.email === 'dcastillaa@gmail.com';
     const [editingSearch, setEditingSearch] = useState<number | null>(null);
     const [editForm, setEditForm] = useState({
         title: '',
         description: '',
-        frequency: 0
+        frequency: 0,
     });
-
-    // View mode state
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
-    // Filters state
     const [filters, setFilters] = useState<Filters>({
         search: '',
         category: null,
-        status: 'all'
+        status: 'all',
     });
 
+    const isAdmin = user?.email === 'dcastillaa@gmail.com';
     const searchesData = isAdmin ? adminSearchesQuery : searchesQuery;
     const loading = searchesData.isLoading;
     const error = searchesData.error;
-    const searchesList: SearchItem[] = searchesData.data || [];
+    // Ensure searchesList is an array
+    const searchesList: SearchItem[] = Array.isArray(searchesData.data) ? searchesData.data : [];
 
     // Filter searches
     const filteredSearches = useMemo(() => {
-        return searchesList.filter(search => {
-            const searchMatch = filters.search.toLowerCase().trim() === '' ||
+        return searchesList.filter((search) => {
+            const searchMatch =
+                filters.search.toLowerCase().trim() === '' ||
                 search.title.toLowerCase().includes(filters.search.toLowerCase()) ||
                 search.description.toLowerCase().includes(filters.search.toLowerCase());
 
             const categoryMatch = filters.category === null || search.category === filters.category;
 
-            const statusMatch = filters.status === 'all' ||
+            const statusMatch =
+                filters.status === 'all' ||
                 (filters.status === 'active' && search.isActive) ||
                 (filters.status === 'inactive' && !search.isActive);
 
@@ -73,20 +90,24 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
         e.stopPropagation();
         try {
             await toggleActiveMutation.mutateAsync(searchId);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: `🔄 Búsqueda ${!currentStatus ? 'activada' : 'desactivada'} correctamente`
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'success',
+                        message: `🔄 Búsqueda ${!currentStatus ? 'activada' : 'desactivada'} correctamente`,
+                    },
+                })
+            );
         } catch (error) {
             console.error('Error toggling search status:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: '❌ Error al actualizar el estado de la búsqueda'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Error al actualizar el estado de la búsqueda',
+                    },
+                })
+            );
         }
     };
 
@@ -98,7 +119,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                 console.error('Failed to mark search as revised:', error);
             }
         }
-        setSelectedSearch(searchId);
+        navigate(`/detalles/${searchId}`);
     };
 
     const handleDelete = async (searchId: number, e: React.MouseEvent) => {
@@ -109,20 +130,24 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
 
         try {
             await deleteSearchMutation.mutateAsync(searchId);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: '🗑️ Búsqueda eliminada correctamente'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'success',
+                        message: '🗑️ Búsqueda eliminada correctamente',
+                    },
+                })
+            );
         } catch (error) {
             console.error('Error deleting search:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: '❌ Error al eliminar la búsqueda'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Error al eliminar la búsqueda',
+                    },
+                })
+            );
         }
     };
 
@@ -132,7 +157,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
         setEditForm({
             title: search.title,
             description: search.description,
-            frequency: search.frequency
+            frequency: search.frequency,
         });
     };
 
@@ -143,25 +168,29 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                 searchId,
                 data: {
                     ...editForm,
-                    startDate: new Date().toISOString()
-                }
+                    startDate: new Date().toISOString(),
+                },
             });
 
             setEditingSearch(null);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: '✏️ Búsqueda actualizada correctamente'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'success',
+                        message: '✏️ Búsqueda actualizada correctamente',
+                    },
+                })
+            );
         } catch (error) {
             console.error('Error updating search:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: '❌ Error al actualizar la búsqueda'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'error',
+                        message: '❌ Error al actualizar la búsqueda',
+                    },
+                })
+            );
         }
     };
 
@@ -174,7 +203,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
         setFilters({
             search: '',
             category: null,
-            status: 'all'
+            status: 'all',
         });
     };
 
@@ -195,16 +224,6 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
         );
     }
 
-    if (selectedSearch !== null) {
-        return (
-            <SearchDetails
-                searchId={selectedSearch}
-                onBack={() => setSelectedSearch(null)}
-                isAdmin={isAdmin}
-            />
-        );
-    }
-
     return (
         <div className="max-w-7xl mx-auto px-4 pt-24 pb-8">
             <div className="flex items-center justify-between mb-8">
@@ -217,24 +236,22 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                         <span className="hidden md:inline">Back</span>
                     </button>
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                            {isAdmin ? 'Búsquedas' : 'Mis Búsquedas'}
-                        </h2>
-                        <p className="text-sm text-gray-500">
-                            Gestiona y monitoriza tus búsquedas activas
-                        </p>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-1">{isAdmin ? 'Búsquedas' : 'Mis Búsquedas'}</h2>
+                        <p className="text-sm text-gray-500">Gestiona y monitoriza tus búsquedas activas</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setViewMode('grid')}
-                        className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                        className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'
+                            }`}
                     >
                         <LayoutGrid className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => setViewMode('list')}
-                        className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                        className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'
+                            }`}
                     >
                         <LayoutList className="w-5 h-5" />
                     </button>
@@ -250,7 +267,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                         <input
                             type="text"
                             value={filters.search}
-                            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
                             placeholder="Buscar por título o descripción..."
                             className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
                         />
@@ -260,40 +277,43 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                 {/* Horizontal scrollable filters */}
                 <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 hide-scrollbar">
                     {/* Category filters */}
-                    {categories?.map((category) => (
-                        <button
-                            key={category.id}
-                            onClick={() => setFilters(prev => ({
-                                ...prev,
-                                category: prev.category === category.id ? null : category.id
-                            }))}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.category === category.id
-                                ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
-                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                                }`}
-                        >
-                            {category.id === 1 && <Car className="w-3.5 h-3.5" />}
-                            {category.id === 2 && <Bike className="w-3.5 h-3.5" />}
-                            {category.id === 3 && <Home className="w-3.5 h-3.5" />}
-                            {category.name}
-                        </button>
-                    ))}
+                    {Array.isArray(categories) &&
+                        categories.map((category) => (
+                            <button
+                                key={category.id}
+                                onClick={() =>
+                                    setFilters((prev) => ({
+                                        ...prev,
+                                        category: prev.category === category.id ? null : category.id,
+                                    }))
+                                }
+                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.category === category.id
+                                        ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
+                                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                    }`}
+                            >
+                                {category.id === 1 && <Car className="w-3.5 h-3.5" />}
+                                {category.id === 2 && <Bike className="w-3.5 h-3.5" />}
+                                {category.id === 3 && <Home className="w-3.5 h-3.5" />}
+                                {category.name}
+                            </button>
+                        ))}
 
                     {/* Status filters */}
                     <button
-                        onClick={() => setFilters(prev => ({ ...prev, status: 'active' }))}
+                        onClick={() => setFilters((prev) => ({ ...prev, status: 'active' }))}
                         className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'active'
-                            ? 'bg-green-50 text-green-600 ring-1 ring-green-200'
-                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                ? 'bg-green-50 text-green-600 ring-1 ring-green-200'
+                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         Activas
                     </button>
                     <button
-                        onClick={() => setFilters(prev => ({ ...prev, status: 'inactive' }))}
+                        onClick={() => setFilters((prev) => ({ ...prev, status: 'inactive' }))}
                         className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'inactive'
-                            ? 'bg-red-50 text-red-600 ring-1 ring-red-200'
-                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                ? 'bg-red-50 text-red-600 ring-1 ring-red-200'
+                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         Inactivas
@@ -358,9 +378,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                                         ) : (
                                             <h3 className="text-base md:text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1 flex items-center gap-2">
                                                 {search.title}
-                                                {isAdmin && search.isRevised && (
-                                                    <CheckCircle className="w-4 h-4 text-green-500" />
-                                                )}
+                                                {isAdmin && search.isRevised && <CheckCircle className="w-4 h-4 text-green-500" />}
                                             </h3>
                                         )}
                                     </div>
@@ -398,17 +416,15 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs">
-                                            {categories?.find(c => c.id === search.category) && (
+                                            {categories?.find((c) => c.id === search.category) && (
                                                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
                                                     <Tag className="w-3.5 h-3.5" />
-                                                    {categories.find(c => c.id === search.category)?.name}
+                                                    {categories.find((c) => c.id === search.category)?.name}
                                                 </span>
                                             )}
                                             <button
                                                 onClick={(e) => handleToggleActive(search.id, search.isActive, e)}
-                                                className={`flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors ${search.isActive
-                                                    ? 'bg-green-50 text-green-600 hover:bg-green-100'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                className={`flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors ${search.isActive ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                     }`}
                                             >
                                                 <Power className="w-3 h-3" />
@@ -457,9 +473,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                                     {isAdmin && search.user && (
                                         <div className="mt-4 text-xs md:text-sm text-blue-600 border-t border-gray-100 pt-4 flex items-center gap-2">
                                             <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                                <span className="text-xs font-medium text-blue-600">
-                                                    {search.user.name[0].toUpperCase()}
-                                                </span>
+                                                <span className="text-xs font-medium text-blue-600">{search.user.name[0].toUpperCase()}</span>
                                             </div>
                                             Creado por: {search.user.name} ({search.user.email})
                                         </div>
@@ -484,11 +498,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                             {filteredSearches.map((search) => (
-                                <tr
-                                    key={search.id}
-                                    onClick={() => handleSearchClick(search.id)}
-                                    className="hover:bg-gray-50 cursor-pointer"
-                                >
+                                <tr key={search.id} onClick={() => handleSearchClick(search.id)} className="hover:bg-gray-50 cursor-pointer">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center">
                                             <div>
@@ -499,32 +509,24 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {categories?.find(c => c.id === search.category)?.name}
+                                            {categories?.find((c) => c.id === search.category)?.name}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <span
-                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${search.isActive
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-gray-100 text-gray-800'
+                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${search.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                                                 }`}
                                         >
                                             {search.isActive ? 'Activa' : 'Inactiva'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-500">
-                                        Cada {search.frequency} horas
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-500">
-                                        {new Date(search.lastExecution).toLocaleDateString()}
-                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-500">Cada {search.frequency} horas</td>
+                                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(search.lastExecution).toLocaleDateString()}</td>
                                     <td className="px-6 py-4 text-right text-sm font-medium">
                                         <div className="flex items-center justify-end gap-2">
                                             <button
                                                 onClick={(e) => handleToggleActive(search.id, search.isActive, e)}
-                                                className={`p-2 rounded-lg transition-colors ${search.isActive
-                                                    ? 'text-green-600 hover:bg-green-50'
-                                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                                className={`p-2 rounded-lg transition-colors ${search.isActive ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                                                     }`}
                                             >
                                                 <Power className="w-4 h-4" />

@@ -1,5 +1,6 @@
-﻿import { useLayoutEffect, useState } from 'react';
-import { ArrowLeft, Filter, ChevronDown, Star, AlertTriangle, Check, XCircle, RefreshCw, Plus } from 'lucide-react';
+﻿// src/components/SearchDetails.tsx
+import { useLayoutEffect, useState, useEffect } from 'react';
+import { ArrowLeft, Filter, ChevronDown, Star, AlertTriangle, Check, XCircle, Plus } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,11 +9,24 @@ import { ResultCard } from './ResultCard';
 import { ReviewModal, DisputeModal, ResolveDisputeModal, AddAdModal, CancelServiceModal, FinalizeModal } from './Modals';
 import { useSearchActions } from '../hooks/useSearchActions';
 import { Notification, NotificationType } from './Notification';
+import Chat from './Chat';
 
-interface SearchDetailsProps {
-    searchId: number;
-    onBack: () => void;
-    isAdmin: boolean;
+// Define interfaces
+interface SearchHire {
+    id: number;
+    clientId?: number;
+    expertId: number | null;
+    status: string;
+}
+
+interface Category {
+    id: number;
+    name: string;
+}
+
+interface Review {
+    searchHireId: number;
+    reviewerId: number;
 }
 
 interface NotificationState {
@@ -20,6 +34,25 @@ interface NotificationState {
     type: NotificationType;
     message: string;
     duration?: number;
+}
+
+interface SearchDetailsProps {
+    searchId: number;
+    onBack: () => void;
+    isAdmin: boolean;
+}
+
+interface NewAd {
+    title: string;
+    description: string;
+    price: number;
+    url: string;
+    images: string[];
+    category: string;
+    province: string;
+    city: string;
+    sellerType: string;
+    platformId: number;
 }
 
 const categoryBanners = {
@@ -45,12 +78,12 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
         description: '',
         images: [] as File[],
     });
-    const [newAd, setNewAd] = useState({
+    const [newAd, setNewAd] = useState<NewAd>({
         title: '',
         description: '',
         price: 0,
         url: '',
-        images: [] as string[],
+        images: [],
         category: '',
         province: '',
         city: '',
@@ -63,23 +96,47 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
     const { categories } = useCategories();
     const { user } = useAuth();
     const { getExpertReviews } = useReview();
-    const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit, handleResolveDispute, handleAddAd } = useSearchActions(setNotifications);
+    const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit, handleResolveDispute, handleAddAd } =
+        useSearchActions(setNotifications);
 
     const resultsQuery = getResults(searchId);
     const searchQuery = getSearch(searchId);
     const reviewsQuery = getExpertReviews(searchQuery.data?.searchHire?.expertId || 0);
 
-    const isClient = user?.id === searchQuery.data?.userId && user?.role !== 'Expert' && !isAdmin;
-    const isExpert = user?.role === 'Expert' && searchQuery.data?.searchHire?.expertId === user.id;
-    const hasReviewed = reviewsQuery.data?.some(
-        (review) => review.searchHireId === searchQuery.data?.searchHire?.id && review.reviewerId === user?.id
-    ) || false;
-    const canReview = isClient && searchQuery.data?.searchHire && ['completed', 'dispute-resolved'].includes(searchQuery.data.searchHire.status) && !hasReviewed;
+    // Convert IDs to numbers, handle missing clientId
+    const userId = Number(user?.id) || 0;
+    const clientId = Number(searchQuery.data?.searchHire?.clientId ?? searchQuery.data?.userId ?? 0);
+    const expertId = Number(searchQuery.data?.searchHire?.expertId ?? 0);
+
+    const isClient = userId === clientId;
+    const isExpert = userId === expertId;
+    const hasReviewed =
+        reviewsQuery.data?.some(
+            (review: Review) => review.searchHireId === searchQuery.data?.searchHire?.id && review.reviewerId === userId
+        ) || false;
+    const canReview =
+        isClient && searchQuery.data?.searchHire && ['completed', 'dispute-resolved'].includes(searchQuery.data.searchHire.status) && !hasReviewed;
     const canDispute = isClient && searchQuery.data?.searchHire?.status === 'awaiting_client_decision';
     const canCancel = isExpert && searchQuery.data?.searchHire && !['completed', 'canceled', 'disputed'].includes(searchQuery.data.searchHire.status);
     const isDisputed = (isClient || isExpert) && searchQuery.data?.searchHire?.status === 'disputed';
+    const canViewChat = (isClient || isExpert || isAdmin) && !!searchQuery.data?.searchHire;
 
-    const category = categories?.find((c) => c.id === searchQuery.data?.category);
+    const category = categories?.find((c: Category) => c.id === searchQuery.data?.category);
+
+    // Handle chat access notification
+    useEffect(() => {
+        if (!canViewChat && searchQuery.data?.searchHire && searchQuery.isSuccess) {
+            setNotifications((prev) => [
+                ...prev.filter((n) => !n.id.startsWith('chat-access-denied-')),
+                {
+                    id: `chat-access-denied-${Date.now()}`,
+                    type: 'error' as NotificationType,
+                    message: `Chat not visible: User ID (${userId}) does not match Client ID (${clientId}) or Expert ID (${expertId})`,
+                    duration: 5000,
+                },
+            ]);
+        }
+    }, [canViewChat, searchQuery.data, searchQuery.isSuccess, userId, clientId, expertId]);
 
     useLayoutEffect(() => {
         document.documentElement.scrollTop = 0;
@@ -89,6 +146,30 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
     const removeNotification = (id: string) => {
         setNotifications((prev) => prev.filter((notification) => notification.id !== id));
     };
+
+    // Enhanced debug logging
+    if (process.env.NODE_ENV === 'development') {
+        console.log('Debug Info:', {
+            SearchHireStatus: searchQuery.data?.searchHire?.status || 'No Status',
+            SearchHireID: searchQuery.data?.searchHire?.id || 'No ID',
+            IsClient: isClient,
+            IsExpert: isExpert,
+            CanReview: canReview ?? false,
+            CanDispute: canDispute ?? false,
+            CanCancel: canCancel ?? false,
+            IsDisputed: isDisputed ?? false,
+            HasReviewed: hasReviewed,
+            UserRole: user?.role || 'N/A',
+            UserID: userId,
+            ClientID: clientId,
+            ExpertID: expertId,
+            RawUserId: user?.id,
+            RawClientId: searchQuery.data?.searchHire?.clientId,
+            RawExpertId: searchQuery.data?.searchHire?.expertId,
+            SearchData: searchQuery.data,
+            CanViewChat: canViewChat,
+        });
+    }
 
     const handleAddAdAndClose = async () => {
         await handleAddAd(searchId, newAd, () => {
@@ -142,6 +223,12 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
             searchQuery.refetch();
             setModalState((prev) => ({ ...prev, showFinalizeModal: false }));
         });
+    };
+
+    const handleApproveService = async () => {
+        await handleCompleteService(searchQuery.data?.searchHire?.id);
+        resultsQuery.refetch();
+        searchQuery.refetch();
     };
 
     if (resultsQuery.isLoading || searchQuery.isLoading || reviewsQuery.isLoading) {
@@ -296,19 +383,27 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
 
             {process.env.NODE_ENV === 'development' && (
                 <div className="mb-8 p-4 bg-yellow-100 rounded-xl">
-                    <p><strong>Debug Info:</strong></p>
+                    <p>
+                        <strong>Debug Info:</strong>
+                    </p>
                     <p>SearchHire Status: {searchQuery.data?.searchHire?.status || 'No Status'}</p>
                     <p>SearchHire ID: {searchQuery.data?.searchHire?.id || 'No ID'}</p>
                     <p>IsClient: {isClient.toString()}</p>
                     <p>IsExpert: {isExpert.toString()}</p>
-                    <p>CanReview: {canReview.toString()}</p>
-                    <p>CanDispute: {canDispute.toString()}</p>
-                    <p>CanCancel: {canCancel.toString()}</p>
-                    <p>IsDisputed: {isDisputed.toString()}</p>
+                    <p>CanReview: {(canReview ?? false).toString()}</p>
+                    <p>CanDispute: {(canDispute ?? false).toString()}</p>
+                    <p>CanCancel: {(canCancel ?? false).toString()}</p>
+                    <p>IsDisputed: {(isDisputed ?? false).toString()}</p>
                     <p>HasReviewed: {hasReviewed.toString()}</p>
                     <p>User Role: {user?.role || 'N/A'}</p>
-                    <p>User ID: {user?.id || 'N/A'}</p>
-                    <p>Expert ID: {searchQuery.data?.searchHire?.expertId || 'N/A'}</p>
+                    <p>User ID: {userId || 'N/A'}</p>
+                    <p>Client ID: {clientId || 'N/A'}</p>
+                    <p>Expert ID: {expertId || 'N/A'}</p>
+                    <p>CanViewChat: {canViewChat.toString()}</p>
+                    <p>Raw User ID: {user?.id || 'N/A'}</p>
+                    <p>Raw Client ID: {searchQuery.data?.searchHire?.clientId || 'N/A'}</p>
+                    <p>Raw Expert ID: {searchQuery.data?.searchHire?.expertId || 'N/A'}</p>
+                    <p>Search Data: {JSON.stringify(searchQuery.data, null, 2)}</p>
                 </div>
             )}
 
@@ -360,16 +455,33 @@ export default function SearchDetails({ searchId, onBack, isAdmin }: SearchDetai
                             <span>Disputar Servicio</span>
                         </button>
                         <button
-                            onClick={() => handleCompleteService(searchQuery.data?.searchHire?.id, () => {
-                                resultsQuery.refetch();
-                                searchQuery.refetch();
-                            })}
+                            onClick={handleApproveService}
                             className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-700 rounded-lg transition-colors"
                         >
                             <Check className="w-4 h-4" />
                             <span>Aprobar Servicio</span>
                         </button>
                     </div>
+                </div>
+            )}
+
+            {canViewChat && (
+                <div className="mb-8">
+                    <Chat searchId={searchId} setNotifications={setNotifications} />
+                </div>
+            )}
+
+            {!canViewChat && searchQuery.data?.searchHire && (
+                <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-red-100 shadow-lg">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                            <AlertTriangle className="w-6 h-6 text-red-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">Acceso al Chat Denegado</h3>
+                    </div>
+                    <p className="text-gray-600 mb-6">
+                        No tienes permiso para acceder al chat de esta búsqueda. Solo el cliente, el experto asignado o un administrador pueden ver el chat.
+                    </p>
                 </div>
             )}
 
