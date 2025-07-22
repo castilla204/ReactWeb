@@ -1,5 +1,5 @@
 ﻿import { useLayoutEffect, useState, useEffect } from 'react';
-import { ArrowLeft, Filter, ChevronDown, Star, AlertTriangle, Check, XCircle, Plus } from 'lucide-react';
+import { ArrowLeft, Filter, ChevronDown, Star, AlertTriangle, Check, XCircle, Plus, MessageCircle } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,13 +9,14 @@ import { ReviewModal, DisputeModal, ResolveDisputeModal, AddAdModal, CancelServi
 import { useSearchActions } from '../hooks/useSearchActions';
 import { Notification, NotificationType } from './Notification';
 import Chat from './Chat';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 interface SearchHire {
     id: number;
     clientId?: number;
     expertId: number | null;
     status: string;
+    messages?: any[]; // Temporary type adjustment for unread count
 }
 
 interface Category {
@@ -63,6 +64,7 @@ const categoryBanners = {
 export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsProps, 'searchId'>) {
     const { id } = useParams<{ id: string }>();
     const searchId = parseInt(id || '0', 10);
+    const navigate = useNavigate(); // Agregamos useNavigate
     const [modalState, setModalState] = useState({
         showFinalizeModal: false,
         showCancelConfirm: false,
@@ -92,6 +94,7 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
         platformId: 1,
     });
     const [notifications, setNotifications] = useState<NotificationState[]>([]);
+    const [isChatOpen, setIsChatOpen] = useState(false);
 
     const { getResults, getSearch } = useSearch();
     const { categories } = useCategories();
@@ -104,7 +107,6 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
     const searchQuery = getSearch(searchId);
     const reviewsQuery = getExpertReviews(searchQuery.data?.searchHire?.expertId || 0);
 
-    // Convert IDs to numbers, handle missing clientId
     const userId = Number(user?.id) || 0;
     const clientId = Number(searchQuery.data?.searchHire?.clientId ?? searchQuery.data?.userId ?? 0);
     const expertId = Number(searchQuery.data?.searchHire?.expertId ?? 0);
@@ -123,8 +125,8 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
     const canViewChat = (isClient || isExpert || isAdmin) && !!searchQuery.data?.searchHire;
 
     const category = categories?.find((c: Category) => c.id === searchQuery.data?.category);
+    const unreadMessages = searchQuery.data?.searchHire?.messages?.filter((msg: any) => !msg.isRead && msg.senderId !== userId).length || 0;
 
-    // Handle chat access notification
     useEffect(() => {
         if (!canViewChat && searchQuery.data?.searchHire && searchQuery.isSuccess) {
             setNotifications((prev) => [
@@ -148,28 +150,106 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
         setNotifications((prev) => prev.filter((notification) => notification.id !== id));
     };
 
-    // Enhanced debug logging
-    if (process.env.NODE_ENV === 'development') {
-        console.log('Debug Info:', {
-            SearchHireStatus: searchQuery.data?.searchHire?.status || 'No Status',
-            SearchHireID: searchQuery.data?.searchHire?.id || 'No ID',
-            IsClient: isClient,
-            IsExpert: isExpert,
-            CanReview: canReview ?? false,
-            CanDispute: canDispute ?? false,
-            CanCancel: canCancel ?? false,
-            IsDisputed: isDisputed ?? false,
-            HasReviewed: hasReviewed,
-            UserRole: user?.role || 'N/A',
-            UserID: userId,
-            ClientID: clientId,
-            ExpertID: expertId,
-            RawUserId: user?.id,
-            RawClientId: searchQuery.data?.searchHire?.clientId,
-            RawExpertId: searchQuery.data?.searchHire?.expertId,
-            SearchData: searchQuery.data,
-            CanViewChat: canViewChat,
-        });
+    if (resultsQuery.isLoading || searchQuery.isLoading || reviewsQuery.isLoading) {
+        return (
+            <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen">
+                <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 via-blue-500/95 to-blue-600/90" />
+                    <div className="absolute inset-0">
+                        <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-[0.07]" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent_70%)]" />
+                        <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.08)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.08)_50%,rgba(255,255,255,0.08)_75%,transparent_75%,transparent)] bg-[length:100px_100px]" />
+                    </div>
+                    <div className="relative h-full flex items-center px-8">
+                        <button
+                            onClick={() => navigate('/busquedas')} // Redirige a /busquedas
+                            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                            <span className="font-medium">Back</span>
+                        </button>
+                    </div>
+                </div>
+                <div className="flex items-center justify-center h-[400px] bg-white/90 backdrop-blur-xl rounded-xl border border-gray-100 shadow-lg">
+                    <div className="text-gray-600">Loading results...</div>
+                </div>
+                {notifications.map((notification) => (
+                    <Notification
+                        key={notification.id}
+                        type={notification.type}
+                        message={notification.message}
+                        onClose={() => removeNotification(notification.id)}
+                        duration={notification.duration}
+                    />
+                ))}
+                {/* Floating Chat Button (loading state) */}
+                {canViewChat && (
+                    <button
+                        className="fixed bottom-4 right-4 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-50"
+                        onClick={() => setIsChatOpen(!isChatOpen)}
+                        disabled={resultsQuery.isLoading || searchQuery.isLoading}
+                    >
+                        <MessageCircle className="w-6 h-6" />
+                        {unreadMessages > 0 && (
+                            <span className="absolute -top-1 -right-1 inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-white bg-red-500 rounded-full">
+                                {unreadMessages}
+                            </span>
+                        )}
+                    </button>
+                )}
+            </div>
+        );
+    }
+
+    if (resultsQuery.error || searchQuery.error || reviewsQuery.error) {
+        return (
+            <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen">
+                <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 via-blue-500/95 to-blue-600/90" />
+                    <div className="absolute inset-0">
+                        <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-[0.07]" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent_70%)]" />
+                        <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.08)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.08)_50%,rgba(255,255,255,0.08)_75%,transparent_75%,transparent)] bg-[length:100px_100px]" />
+                    </div>
+                    <div className="relative h-full flex items-center px-8">
+                        <button
+                            onClick={() => navigate('/busquedas')} // Redirige a /busquedas
+                            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                            <span className="font-medium">Back</span>
+                        </button>
+                    </div>
+                </div>
+                <div className="text-center py-12 bg-white/90 backdrop-blur-xl rounded-xl border border-red-100 shadow-lg">
+                    <p className="text-red-600">Error loading results</p>
+                </div>
+                {notifications.map((notification) => (
+                    <Notification
+                        key={notification.id}
+                        type={notification.type}
+                        message={notification.message}
+                        onClose={() => removeNotification(notification.id)}
+                        duration={notification.duration}
+                    />
+                ))}
+                {/* Floating Chat Button (error state) */}
+                {canViewChat && (
+                    <button
+                        className="fixed bottom-4 right-4 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-50"
+                        onClick={() => setIsChatOpen(!isChatOpen)}
+                        disabled={resultsQuery.isLoading || searchQuery.isLoading}
+                    >
+                        <MessageCircle className="w-6 h-6" />
+                        {unreadMessages > 0 && (
+                            <span className="absolute -top-1 -right-1 inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-white bg-red-500 rounded-full">
+                                {unreadMessages}
+                            </span>
+                        )}
+                    </button>
+                )}
+            </div>
+        );
     }
 
     const handleAddAdAndClose = async () => {
@@ -232,78 +312,6 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
         searchQuery.refetch();
     };
 
-    if (resultsQuery.isLoading || searchQuery.isLoading || reviewsQuery.isLoading) {
-        return (
-            <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen">
-                <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 via-blue-500/95 to-blue-600/90" />
-                    <div className="absolute inset-0">
-                        <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-[0.07]" />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent_70%)]" />
-                        <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.08)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.08)_50%,rgba(255,255,255,0.08)_75%,transparent_75%,transparent)] bg-[length:100px_100px]" />
-                    </div>
-                    <div className="relative h-full flex items-center px-8">
-                        <button
-                            onClick={onBack}
-                            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                            <span className="font-medium">Back</span>
-                        </button>
-                    </div>
-                </div>
-                <div className="flex items-center justify-center h-[400px] bg-white/90 backdrop-blur-xl rounded-xl border border-gray-100 shadow-lg">
-                    <div className="text-gray-600">Loading results...</div>
-                </div>
-                {notifications.map((notification) => (
-                    <Notification
-                        key={notification.id}
-                        type={notification.type}
-                        message={notification.message}
-                        onClose={() => removeNotification(notification.id)}
-                        duration={notification.duration}
-                    />
-                ))}
-            </div>
-        );
-    }
-
-    if (resultsQuery.error || searchQuery.error || reviewsQuery.error) {
-        return (
-            <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen">
-                <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 via-blue-500/95 to-blue-600/90" />
-                    <div className="absolute inset-0">
-                        <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-[0.07]" />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent_70%)]" />
-                        <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.08)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.08)_50%,rgba(255,255,255,0.08)_75%,transparent_75%,transparent)] bg-[length:100px_100px]" />
-                    </div>
-                    <div className="relative h-full flex items-center px-8">
-                        <button
-                            onClick={onBack}
-                            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                            <span className="font-medium">Back</span>
-                        </button>
-                    </div>
-                </div>
-                <div className="text-center py-12 bg-white/90 backdrop-blur-xl rounded-xl border border-red-100 shadow-lg">
-                    <p className="text-red-600">Error loading results</p>
-                </div>
-                {notifications.map((notification) => (
-                    <Notification
-                        key={notification.id}
-                        type={notification.type}
-                        message={notification.message}
-                        onClose={() => removeNotification(notification.id)}
-                        duration={notification.duration}
-                    />
-                ))}
-            </div>
-        );
-    }
-
     return (
         <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24">
             <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
@@ -322,7 +330,7 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                     <div>
                         <div className="flex items-center gap-4 mb-2">
                             <button
-                                onClick={onBack}
+                                onClick={() => navigate('/busquedas')} // Redirige a /busquedas
                                 className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
                             >
                                 <ArrowLeft className="w-5 h-5" />
@@ -466,12 +474,6 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                 </div>
             )}
 
-            {canViewChat && (
-                <div className="mb-8">
-                    <Chat searchId={searchId} setNotifications={setNotifications} />
-                </div>
-            )}
-
             {!canViewChat && searchQuery.data?.searchHire && (
                 <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-red-100 shadow-lg">
                     <div className="flex items-center gap-3 mb-4">
@@ -606,6 +608,24 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                     duration={notification.duration}
                 />
             ))}
+            {/* Floating Chat Button */}
+            {canViewChat && (
+                <button
+                    className="fixed bottom-4 right-4 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-50"
+                    onClick={() => setIsChatOpen(!isChatOpen)}
+                >
+                    <MessageCircle className="w-6 h-6" />
+                    {unreadMessages > 0 && (
+                        <span className="absolute -top-1 -right-1 inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-white bg-red-500 rounded-full">
+                            {unreadMessages}
+                        </span>
+                    )}
+                </button>
+            )}
+            {/* Full Chat (Toggleable) */}
+            {canViewChat && isChatOpen && (
+                <Chat searchId={searchId} setNotifications={setNotifications} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+            )}
         </div>
     );
 }

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
-import { HubConnectionBuilder, HubConnection, LogLevel } from '@microsoft/signalr';
+import { HubConnectionBuilder, HubConnection, LogLevel, HttpTransportType } from '@microsoft/signalr';
 
 interface Message {
     id: number;
@@ -14,6 +14,7 @@ interface Message {
     sentAt: string;
     isRead: boolean;
     sender?: { name: string; $id?: string; $ref?: string };
+    senderName?: string;
 }
 
 interface Conversation {
@@ -41,7 +42,7 @@ export const useChat = (searchId: number) => {
         queryFn: async () => {
             try {
                 const response = await fetchApi<Conversation>(`${API_CONFIG.endpoints.chat.conversation}?searchId=${searchId}`);
-                console.log('Fetched conversation:', response);
+                console.log('[13:46 CEST] Fetched conversation:', response);
                 return {
                     ...response,
                     messages: response.messages.map(msg => ({
@@ -50,7 +51,7 @@ export const useChat = (searchId: number) => {
                     }))
                 };
             } catch (err) {
-                console.error('Fetch error:', err);
+                console.error('[13:46 CEST] Fetch error:', err);
                 throw err;
             }
         },
@@ -59,43 +60,105 @@ export const useChat = (searchId: number) => {
     });
 
     const connectSignalR = useCallback(async () => {
-        if (!user || !conversation?.id || connection) return;
-
-        const token = getAuthToken();
-        if (!token) {
-            console.error('No token available for SignalR');
+        if (!user || !conversation?.id || connection?.state === 'Connected' || connection?.state === 'Connecting') {
+            console.log('[13:46 CEST] Skipping SignalR connection:', {
+                userExists: !!user,
+                conversationId: conversation?.id,
+                connectionState: connection?.state
+            });
             return;
         }
 
+        if (connection) {
+            console.log('[13:46 CEST] Stopping existing SignalR connection');
+            await connection.stop();
+            setConnection(null);
+        }
+
+        const token = getAuthToken();
+        if (!token) {
+            console.error('[13:46 CEST] No token available for SignalR');
+            return;
+        }
+
+        const transport = window.WebSocket ? HttpTransportType.WebSockets : HttpTransportType.ServerSentEvents;
+
         const conn = new HubConnectionBuilder()
-            .withUrl(`${API_CONFIG.baseUrl}/chatHub`, {
+            .withUrl(`${API_CONFIG.baseUrl}/chatHub?conversationId=${conversation.id}`, {
                 accessTokenFactory: () => token,
+                transport,
+                withCredentials: true,
             })
-            .configureLogging(LogLevel.Information)
+            .configureLogging(LogLevel.Debug)
             .withAutomaticReconnect({
                 nextRetryDelayInMilliseconds: (retryContext) => {
-                    if (retryContext.previousRetryCount < 3) return 1000 * (retryContext.previousRetryCount + 1);
-                    return null;
+                    const delay = Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 30000);
+                    console.log(`[13:46 CEST] Reconnect attempt ${retryContext.previousRetryCount + 1}, delay: ${delay}ms`);
+                    return delay;
                 },
             })
             .build();
 
-        conn.on('ReceiveMessage', (message: Message) => {
-            console.log('Received SignalR message:', message);
-            // Ensure the message is added to the correct conversation
-            if (message.conversationId === conversation?.id) {
+        // Register handlers before starting
+        conn.onclose((error) => {
+            console.log('[13:46 CEST] SignalR connection closed:', error ? error.message : 'No error, attempting reconnect...');
+            setConnection(null);
+        });
+
+        conn.onreconnected((connectionId) => {
+            console.log('[13:46 CEST] SignalR reconnected, new Connection ID:', connectionId);
+            if (conversation?.id && user?.id) {
+                conn.invoke('JoinConversation', conversation.id, user.id).catch(err =>
+                    console.error('[13:46 CEST] Failed to rejoin conversation:', err)
+                );
+            }
+        });
+
+        conn.on('ReceiveMessage', (message: any) => {
+            console.log('[13:46 CEST] Received SignalR message (raw):', {
+                message,
+                conversationId: conversation?.id,
+                userId: user?.id,
+                connectionId: conn.connectionId
+            });
+            if (message && typeof message === 'object' && message.conversationId === conversation?.id) {
+                const typedMessage: Message = {
+                    id: message.id,
+                    conversationId: message.conversationId,
+                    senderId: message.senderId,
+                    content: message.content,
+                    sentAt: message.sentAt,
+                    isRead: message.isRead,
+                    sender: message.sender,
+                    senderName: message.senderName
+                };
+                console.log('[13:46 CEST] Updating conversation state with new message:', typedMessage);
                 queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
-                    if (!prev) return { ...conversation, messages: [message] } as Conversation;
+                    if (!prev) {
+                        console.log('[13:46 CEST] No previous conversation, creating new with message');
+                        return { ...conversation, messages: [typedMessage] } as Conversation;
+                    }
+                    const updatedMessages = [
+                        ...prev.messages.filter(m => m.id !== typedMessage.id),
+                        { ...typedMessage, conversation: undefined }
+                    ].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
+                    console.log('[13:46 CEST] Updated messages:', updatedMessages);
                     return {
                         ...prev,
-                        messages: [...prev.messages.filter(m => m.id !== message.id), { ...message, conversation: undefined }].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()),
+                        messages: updatedMessages,
                     };
+                });
+                queryClient.invalidateQueries({ queryKey: ['conversation', searchId] });
+            } else {
+                console.log('[13:46 CEST] Message ignored: not for this conversation', {
+                    receivedConversationId: message?.conversationId,
+                    currentConversationId: conversation?.id
                 });
             }
         });
 
         conn.on('MessageRead', (messageId: number) => {
-            console.log(`Message ${messageId} marked as read via SignalR`);
+            console.log(`[13:46 CEST] Message ${messageId} marked as read via SignalR`);
             queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
                 if (!prev) return prev;
                 return {
@@ -107,18 +170,15 @@ export const useChat = (searchId: number) => {
             });
         });
 
-        conn.onclose(() => {
-            console.log('SignalR connection closed, attempting to reconnect...');
-            setConnection(null);
-        });
-
         try {
             await conn.start();
-            console.log(`SignalR connected for conversation ${conversation.id}`);
+            console.log(`[13:46 CEST] SignalR connected for conversation ${conversation.id}, Connection ID: ${conn.connectionId}`);
             await conn.invoke('JoinConversation', conversation.id, user.id);
+            console.log(`[13:46 CEST] Successfully joined conversation ${conversation.id} with user ${user.id}`);
             setConnection(conn);
         } catch (err) {
-            console.error('SignalR connection error:', err);
+            console.error('[13:46 CEST] SignalR connection error:', err);
+            setTimeout(() => connectSignalR(), 1000); // Retry on failure
         }
     }, [user, conversation?.id, connection, searchId, queryClient]);
 
@@ -135,7 +195,7 @@ export const useChat = (searchId: number) => {
             return { ...response, conversation: undefined };
         },
         onSuccess: (message) => {
-            console.log('Message sent successfully:', message);
+            console.log('[13:46 CEST] Message sent successfully:', message);
             queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
                 if (!prev) return { ...conversation, messages: [message] } as Conversation;
                 return {
@@ -143,10 +203,10 @@ export const useChat = (searchId: number) => {
                     messages: [...prev.messages.filter(m => m.id !== message.id), message].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()),
                 };
             });
-            setNewMessage(''); // Ensure state is cleared
+            setNewMessage('');
         },
         onError: (error: any) => {
-            console.error('Failed to send message:', error.message);
+            console.error('[13:46 CEST] Failed to send message:', error.message);
             if (error.message.includes('JsonException')) {
                 refetch();
             }
@@ -170,7 +230,7 @@ export const useChat = (searchId: number) => {
             });
         },
         onError: (error: any) => {
-            console.error('Failed to mark message as read:', error.message);
+            console.error('[13:46 CEST] Failed to mark message as read:', error.message);
         },
     });
 
@@ -178,6 +238,14 @@ export const useChat = (searchId: number) => {
         if (conversation?.id && user && !connection) {
             connectSignalR();
         }
+
+        return () => {
+            if (connection) {
+                console.log('[13:46 CEST] Cleaning up SignalR connection');
+                connection.stop();
+                setConnection(null);
+            }
+        };
     }, [conversation?.id, user, connection, connectSignalR]);
 
     useEffect(() => {
