@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { NotificationType } from './Notification';
 
 interface ChatProps {
@@ -9,23 +9,26 @@ interface ChatProps {
     setNotifications: React.Dispatch<
         React.SetStateAction<{ id: string; type: NotificationType; message: string; duration?: number }[]>
     >;
+    isOpen: boolean;
+    onClose: () => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ searchId, setNotifications }) => {
+const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isOpen, onClose }) => {
     const { user } = useAuth();
     const { conversation, loading, error, newMessage, setNewMessage, sendMessage, isSending } = useChat(searchId);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const lastMessageCount = useRef(conversation?.messages.length || 0);
+    const lastMessageCount = useRef(conversation?.messages?.length || 0);
 
-    // Scroll to the latest message only when a new message is added
     useEffect(() => {
-        if (conversation?.messages && conversation.messages.length > lastMessageCount.current) {
+        console.log('Chat useEffect triggered:', { isOpen, messageCount: conversation?.messages?.length, lastMessageCount: lastMessageCount.current });
+        if (isOpen && conversation?.messages && conversation.messages.length > lastMessageCount.current) {
             if (messagesEndRef.current) {
+                console.log('Scrolling to bottom due to new message');
                 messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
             }
             lastMessageCount.current = conversation.messages.length;
         }
-    }, [conversation?.messages]);
+    }, [isOpen, conversation?.messages?.length]);
 
     useEffect(() => {
         if (error) {
@@ -34,53 +37,39 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications }) => {
                 {
                     id: `chat-error-${Date.now()}`,
                     type: 'error' as NotificationType,
-                    message: error.includes('401') ? 'Sesión expirada. Por favor, inicia sesión de nuevo.' : error,
+                    message: error.includes('401') ? 'SesiÃ³n expirada. Por favor, inicia sesiÃ³n de nuevo.' : error,
                     duration: 5000,
                 },
             ]);
         }
     }, [error, setNotifications]);
 
-    if (!user) {
-        return (
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-                <p className="text-red-500">Debes estar autenticado para ver el chat.</p>
-            </div>
-        );
+    if (!user || loading || !conversation || (user.id !== conversation.clientId && user.id !== conversation.expertId)) {
+        console.log('Chat not rendered:', { user: !!user, loading, conversationExists: !!conversation, isAuthorized: user && conversation ? user.id === conversation.clientId || user.id === conversation.expertId : false });
+        return null;
     }
 
-    if (loading) {
-        return (
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-            </div>
-        );
-    }
-
-    if (!conversation) {
-        return (
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-                <p className="text-red-500">No se encontró una conversación para esta búsqueda.</p>
-            </div>
-        );
+    if (!isOpen) {
+        return null;
     }
 
     const isClient = user.id === conversation.clientId;
-    const isExpert = user.id === conversation.expertId;
-
-    if (!isClient && !isExpert) {
-        return (
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-                <p className="text-red-500">No estás autorizado para ver esta conversación.</p>
-            </div>
-        );
-    }
+    const chatWith = isClient ? 'Cliente' : 'Experto';
 
     return (
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 max-h-[500px] flex flex-col">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Chat con {isClient ? 'Experto' : 'Cliente'}
-            </h3>
+        <div className="fixed bottom-4 right-4 w-[400px] bg-white rounded-xl shadow-lg p-6 border border-gray-200 max-h-[500px] flex flex-col z-50 transition-all duration-300 ease-in-out transform translate-y-0 opacity-100">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                    Chatea con el {chatWith}
+                </h3>
+                <button
+                    onClick={onClose}
+                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                    aria-label="Close chat"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
             <div className="flex-1 overflow-y-auto mb-4 space-y-4" style={{ scrollbarWidth: 'thin' }}>
                 {conversation.messages?.map((message) => (
                     <div
@@ -92,8 +81,8 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications }) => {
                         >
                             <p className="text-sm">{message.content || 'Sin contenido'}</p>
                             <p className="text-xs mt-1 opacity-70">
-                                {message.sentAt ? new Date(message.sentAt).toLocaleString('es-ES', { timeStyle: 'short', dateStyle: 'short' }) : 'Hora desconocida'} •{' '}
-                                {message.isRead ? 'Leído' : 'Enviado'}
+                                {message.sentAt ? new Date(message.sentAt).toLocaleString('es-ES', { timeStyle: 'short', dateStyle: 'short' }) : 'Hora desconocida'} â€¢{' '}
+                                {message.isRead ? 'LeÃ­do' : 'Enviado'}
                             </p>
                         </div>
                     </div>

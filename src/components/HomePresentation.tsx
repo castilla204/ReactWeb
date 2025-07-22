@@ -1,5 +1,6 @@
 import React from 'react';
 import { Shield, Search, CheckCircle } from 'lucide-react';
+import PromoBanner from './PromoBanner'; // Importamos el nuevo componente
 
 const HomePresentation = ({ onScrollToForm }) => {
     return (
