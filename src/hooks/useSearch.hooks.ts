@@ -18,10 +18,15 @@ export interface SearchItem {
         id: number;
         expertId: number;
         status: string;
+        expert?: {
+            name: string;
+            profilePictureUrl: string;
+        };
     };
     user?: {
         email: string;
         name: string;
+        profilePictureUrl?: string;
     };
 }
 

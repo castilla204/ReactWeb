@@ -17,6 +17,10 @@ interface SearchHire {
     expertId: number | null;
     status: string;
     messages?: any[]; // Temporary type adjustment for unread count
+    expert?: {
+        name: string;
+        profilePictureUrl: string;
+    };
 }
 
 interface Category {
@@ -64,7 +68,7 @@ const categoryBanners = {
 export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsProps, 'searchId'>) {
     const { id } = useParams<{ id: string }>();
     const searchId = parseInt(id || '0', 10);
-    const navigate = useNavigate(); // Agregamos useNavigate
+    const navigate = useNavigate();
     const [modalState, setModalState] = useState({
         showFinalizeModal: false,
         showCancelConfirm: false,
@@ -162,7 +166,7 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                     </div>
                     <div className="relative h-full flex items-center px-8">
                         <button
-                            onClick={() => navigate('/busquedas')} // Redirige a /busquedas
+                            onClick={() => navigate('/busquedas')}
                             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
                         >
                             <ArrowLeft className="w-5 h-5" />
@@ -182,7 +186,6 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                         duration={notification.duration}
                     />
                 ))}
-                {/* Floating Chat Button (loading state) */}
                 {canViewChat && (
                     <button
                         className="fixed bottom-4 right-4 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-50"
@@ -213,7 +216,7 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                     </div>
                     <div className="relative h-full flex items-center px-8">
                         <button
-                            onClick={() => navigate('/busquedas')} // Redirige a /busquedas
+                            onClick={() => navigate('/busquedas')}
                             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
                         >
                             <ArrowLeft className="w-5 h-5" />
@@ -233,10 +236,9 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                         duration={notification.duration}
                     />
                 ))}
-                {/* Floating Chat Button (error state) */}
                 {canViewChat && (
                     <button
-                        className="fixed bottom-4 right-4 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-50"
+                        className="fixed bottom-4 right-4 w-2 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-50"
                         onClick={() => setIsChatOpen(!isChatOpen)}
                         disabled={resultsQuery.isLoading || searchQuery.isLoading}
                     >
@@ -330,7 +332,7 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                     <div>
                         <div className="flex items-center gap-4 mb-2">
                             <button
-                                onClick={() => navigate('/busquedas')} // Redirige a /busquedas
+                                onClick={() => navigate('/busquedas')}
                                 className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
                             >
                                 <ArrowLeft className="w-5 h-5" />
@@ -383,6 +385,36 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                             )}
                         </div>
                         <h1 className="text-3xl font-bold text-white mb-2">{searchQuery.data?.title || 'Loading...'}</h1>
+                        {searchQuery.data?.searchHire && (
+                            <div className="flex items-center gap-2 mb-2">
+                                <span
+                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${searchQuery.data.searchHire.status === 'pending'
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : searchQuery.data.searchHire.status === 'awaiting_client_decision'
+                                            ? 'bg-blue-100 text-blue-800'
+                                            : searchQuery.data.searchHire.status === 'disputed'
+                                                ? 'bg-red-100 text-red-800'
+                                                : searchQuery.data.searchHire.status === 'cancelled' || searchQuery.data.searchHire.status === 'transfer_failed'
+                                                    ? 'bg-gray-100 text-gray-800'
+                                                    : searchQuery.data.searchHire.status === 'dispute-resolved' || searchQuery.data.searchHire.status === 'completed'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-gray-100 text-gray-800'
+                                        }`}
+                                >
+                                    {searchQuery.data.searchHire.status.replace(/_/g, ' ')}
+                                </span>
+                                {searchQuery.data.searchHire.expert && (
+                                    <div className="flex items-center gap-2">
+                                        <img
+                                            src={searchQuery.data.searchHire.expert.profilePictureUrl || '/default-avatar.png'}
+                                            alt={`${searchQuery.data.searchHire.expert.name}'s profile`}
+                                            className="w-6 h-6 rounded-full object-cover"
+                                        />
+                                        <span className="text-sm text-white">Encargado: {searchQuery.data.searchHire.expert.name}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         <p className="text-white/80">
                             {resultsQuery.data?.length || 0} {resultsQuery.data?.length === 1 ? 'result' : 'results'} found
                         </p>
@@ -608,7 +640,6 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                     duration={notification.duration}
                 />
             ))}
-            {/* Floating Chat Button */}
             {canViewChat && (
                 <button
                     className="fixed bottom-4 right-4 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-50"
@@ -622,7 +653,6 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                     )}
                 </button>
             )}
-            {/* Full Chat (Toggleable) */}
             {canViewChat && isChatOpen && (
                 <Chat searchId={searchId} setNotifications={setNotifications} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
             )}
