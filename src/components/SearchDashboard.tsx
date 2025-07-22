@@ -2,7 +2,6 @@
 import {
     Search,
     Clock,
-    Power,
     ChevronRight,
     AlertCircle,
     CheckCircle,
@@ -17,6 +16,7 @@ import {
     Bike,
     LayoutGrid,
     LayoutList,
+    MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
@@ -41,7 +41,6 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         searches: searchesQuery,
         adminSearches: adminSearchesQuery,
         deleteSearch: deleteSearchMutation,
-        toggleActive: toggleActiveMutation,
         reviseSearch: reviseSearchMutation,
         updateSearch: updateSearchMutation,
     } = useSearch();
@@ -79,36 +78,17 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
 
             const statusMatch =
                 filters.status === 'all' ||
-                (filters.status === 'active' && search.isActive) ||
-                (filters.status === 'inactive' && !search.isActive);
+                (filters.status === 'active' && (search.isActive || !search.searchHire || ['pending', 'awaiting_client_decision', 'disputed'].includes(search.searchHire.status))) ||
+                (filters.status === 'inactive' && (!search.isActive || ['cancelled', 'transfer_failed', 'dispute-resolved'].includes(search.searchHire?.status)));
 
             return searchMatch && categoryMatch && statusMatch;
         });
     }, [searchesList, filters]);
 
-    const handleToggleActive = async (searchId: number, currentStatus: boolean, e: React.MouseEvent) => {
-        e.stopPropagation();
-        try {
-            await toggleActiveMutation.mutateAsync(searchId);
-            window.dispatchEvent(
-                new CustomEvent('showNotification', {
-                    detail: {
-                        type: 'success',
-                        message: `🔄 Búsqueda ${!currentStatus ? 'activada' : 'desactivada'} correctamente`,
-                    },
-                })
-            );
-        } catch (error) {
-            console.error('Error toggling search status:', error);
-            window.dispatchEvent(
-                new CustomEvent('showNotification', {
-                    detail: {
-                        type: 'error',
-                        message: '❌ Error al actualizar el estado de la búsqueda',
-                    },
-                })
-            );
-        }
+    const getActivityStatus = (search: SearchItem) => {
+        if (!search.searchHire) return search.isActive ? 'Activa' : 'Inactiva';
+        const status = search.searchHire.status;
+        return ['pending', 'awaiting_client_decision', 'disputed'].includes(status) ? 'Activa' : 'Inactiva';
     };
 
     const handleSearchClick = async (searchId: number) => {
@@ -229,7 +209,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3 md:gap-6">
                     <button
-                        onClick={() => navigate('/')} // Redirige a la homepage
+                        onClick={() => navigate('/')}
                         className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5" />
@@ -243,15 +223,13 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setViewMode('grid')}
-                        className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'
-                            }`}
+                        className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
                     >
                         <LayoutGrid className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => setViewMode('list')}
-                        className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'
-                            }`}
+                        className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
                     >
                         <LayoutList className="w-5 h-5" />
                     </button>
@@ -350,138 +328,168 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                 </div>
             ) : viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredSearches.map((search) => (
-                        <div
-                            key={search.id}
-                            onClick={() => handleSearchClick(search.id)}
-                            className={`group bg-white rounded-xl p-6 transition-all shadow-lg ${editingSearch === search.id ? 'cursor-default' : 'cursor-pointer'
-                                } hover:shadow-xl ${isAdmin && !search.isRevised
-                                    ? 'border-2 border-red-500 shadow-red-500/5'
-                                    : 'border-[1.5px] border-blue-200/60 shadow-blue-100/50'
-                                } hover:border-blue-300 hover:border-[1.5px] relative overflow-hidden`}
-                        >
-                            {/* Background gradient effect */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-white opacity-50" />
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.04),transparent_50%)]" />
+                    {filteredSearches.map((search) => {
+                        const hireStatus = search.searchHire?.status;
+                        const hasUnreadMessages = search.searchHire?.Conversations?.some(
+                            (conv) => conv.Messages?.some((msg) => !msg.IsRead)
+                        );
 
-                            <div className="relative">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        {editingSearch === search.id ? (
-                                            <input
-                                                type="text"
-                                                value={editForm.title}
-                                                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                                className="text-base md:text-lg font-semibold bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 w-full focus:border-blue-400 focus:ring-2 focus:ring-blue-400/10 transition-all"
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        ) : (
-                                            <h3 className="text-base md:text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1 flex items-center gap-2">
-                                                {search.title}
-                                                {isAdmin && search.isRevised && <CheckCircle className="w-4 h-4 text-green-500" />}
-                                            </h3>
-                                        )}
-                                    </div>
-                                    {editingSearch === search.id ? (
-                                        <textarea
-                                            value={editForm.description}
-                                            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-700 text-sm mb-4 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/10 transition-all"
-                                            rows={2}
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
-                                    ) : (
-                                        <p className="text-gray-600 text-xs md:text-sm mb-3 md:mb-4 line-clamp-2">{search.description}</p>
-                                    )}
-                                    <div className="grid grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm mb-3 md:mb-4">
-                                        <div className="flex items-center text-gray-600 bg-gray-50/50 rounded-lg p-2 border border-gray-100">
-                                            <Clock className="w-4 h-4 mr-1" />
+                        return (
+                            <div
+                                key={search.id}
+                                onClick={() => handleSearchClick(search.id)}
+                                className={`group bg-white rounded-xl p-6 transition-all shadow-lg ${editingSearch === search.id ? 'cursor-default' : 'cursor-pointer'
+                                    } hover:shadow-xl ${isAdmin && !search.isRevised
+                                        ? 'border-2 border-red-500 shadow-red-500/5'
+                                        : 'border-[1.5px] border-blue-200/60 shadow-blue-100/50'
+                                    } hover:border-blue-300 hover:border-[1.5px] relative overflow-hidden`}
+                            >
+                                {/* Background gradient effect */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-white opacity-50" />
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.04),transparent_50%)]" />
+
+                                <div className="relative">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
                                             {editingSearch === search.id ? (
                                                 <input
-                                                    type="number"
-                                                    value={editForm.frequency}
-                                                    onChange={(e) => setEditForm({ ...editForm, frequency: parseInt(e.target.value) })}
-                                                    className="w-16 bg-white border border-gray-200 rounded-lg px-2 text-gray-900 ml-1 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/10 transition-all"
-                                                    min="1"
+                                                    type="text"
+                                                    value={editForm.title}
+                                                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                                    className="text-base md:text-lg font-semibold bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 w-full focus:border-blue-400 focus:ring-2 focus:ring-blue-400/10 transition-all"
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
                                             ) : (
-                                                `Every ${search.frequency} hours`
+                                                <h3 className="text-base md:text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1 flex items-center gap-2">
+                                                    {search.title}
+                                                    {isAdmin && search.isRevised && <CheckCircle className="w-4 h-4 text-green-500" />}
+                                                    {hasUnreadMessages && (
+                                                        <MessageSquare className="w-4 h-4 text-red-500 animate-pulse" />
+                                                    )}
+                                                </h3>
                                             )}
                                         </div>
-                                        <div className="hidden md:flex items-center text-gray-600 bg-gray-50/50 rounded-lg p-2 border border-gray-100">
-                                            <Calendar className="w-4 h-4 mr-1" />
-                                            {new Date(search.lastExecution).toLocaleDateString()}
+                                        {editingSearch === search.id ? (
+                                            <textarea
+                                                value={editForm.description}
+                                                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-700 text-sm mb-4 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/10 transition-all"
+                                                rows={2}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        ) : (
+                                            <p className="text-gray-600 text-xs md:text-sm mb-3 md:mb-4 line-clamp-2">{search.description}</p>
+                                        )}
+                                        <div className="grid grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm mb-3 md:mb-4">
+                                            <div className="flex items-center text-gray-600 bg-gray-50/50 rounded-lg p-2 border border-gray-100">
+                                                <Clock className="w-4 h-4 mr-1" />
+                                                {editingSearch === search.id ? (
+                                                    <input
+                                                        type="number"
+                                                        value={editForm.frequency}
+                                                        onChange={(e) => setEditForm({ ...editForm, frequency: parseInt(e.target.value) })}
+                                                        className="w-16 bg-white border border-gray-200 rounded-lg px-2 text-gray-900 ml-1 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/10 transition-all"
+                                                        min="1"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                ) : (
+                                                    `Every ${search.frequency} hours`
+                                                )}
+                                            </div>
+                                            <div className="hidden md:flex items-center text-gray-600 bg-gray-50/50 rounded-lg p-2 border border-gray-100">
+                                                <Calendar className="w-4 h-4 mr-1" />
+                                                {new Date(search.lastExecution).toLocaleDateString()}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs">
-                                            {categories?.find((c) => c.id === search.category) && (
-                                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
-                                                    <Tag className="w-3.5 h-3.5" />
-                                                    {categories.find((c) => c.id === search.category)?.name}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs">
+                                                {categories?.find((c) => c.id === search.category) && (
+                                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
+                                                        <Tag className="w-3.5 h-3.5" />
+                                                        {categories.find((c) => c.id === search.category)?.name}
+                                                    </span>
+                                                )}
+                                                <span
+                                                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getActivityStatus(search) === 'Activa'
+                                                        ? 'bg-green-50 text-green-600'
+                                                        : 'bg-gray-100 text-gray-600'
+                                                        }`}
+                                                >
+                                                    {getActivityStatus(search)}
                                                 </span>
-                                            )}
-                                            <button
-                                                onClick={(e) => handleToggleActive(search.id, search.isActive, e)}
-                                                className={`flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors ${search.isActive ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            </div>
+                                        </div>
+                                        {search.searchHire && (
+                                            <span
+                                                className={`mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${search.searchHire.status === 'pending'
+                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                    : search.searchHire.status === 'awaiting_client_decision'
+                                                        ? 'bg-blue-100 text-blue-800'
+                                                        : search.searchHire.status === 'disputed'
+                                                            ? 'bg-red-100 text-red-800'
+                                                            : search.searchHire.status === 'cancelled' || search.searchHire.status === 'transfer_failed'
+                                                                ? 'bg-gray-100 text-gray-800'
+                                                                : search.searchHire.status === 'dispute-resolved'
+                                                                    ? 'bg-green-100 text-green-800'
+                                                                    : 'bg-gray-100 text-gray-800'
                                                     }`}
                                             >
-                                                <Power className="w-3 h-3" />
-                                                <span className="hidden md:inline">{search.isActive ? 'Activa' : 'Inactiva'}</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-3">
-                                        {editingSearch === search.id ? (
-                                            <div className="flex items-center gap-2 w-full justify-end">
-                                                <button
-                                                    onClick={(e) => handleSaveEdit(search.id, e)}
-                                                    className="text-xs md:text-sm px-3 md:px-4 py-1.5 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm shadow-blue-500/10"
-                                                >
-                                                    Guardar
-                                                </button>
-                                                <button
-                                                    onClick={handleCancelEdit}
-                                                    className="text-xs md:text-sm px-3 md:px-4 py-1.5 md:py-2 text-gray-600 hover:text-gray-900 transition-colors"
-                                                >
-                                                    Cancelar
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2 w-full justify-end">
-                                                <button
-                                                    onClick={(e) => handleEdit(search, e)}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                                                    title="Edit search"
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => handleDelete(search.id, e)}
-                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                                    title="Delete search"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 group-hover:bg-blue-100 transition-colors">
-                                                    <ChevronRight className="w-5 h-5 text-blue-600" />
+                                                {search.searchHire.status.replace(/_/g, ' ')}
+                                            </span>
+                                        )}
+                                        <div className="flex items-center justify-between mt-3">
+                                            {editingSearch === search.id ? (
+                                                <div className="flex items-center gap-2 w-full justify-end">
+                                                    <button
+                                                        onClick={(e) => handleSaveEdit(search.id, e)}
+                                                        className="text-xs md:text-sm px-3 md:px-4 py-1.5 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm shadow-blue-500/10"
+                                                    >
+                                                        Guardar
+                                                    </button>
+                                                    <button
+                                                        onClick={handleCancelEdit}
+                                                        className="text-xs md:text-sm px-3 md:px-4 py-1.5 md:py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                                                    >
+                                                        Cancelar
+                                                    </button>
                                                 </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 w-full justify-end">
+                                                    <button
+                                                        onClick={(e) => handleEdit(search, e)}
+                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                        title="Edit search"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => handleDelete(search.id, e)}
+                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                                                        title="Delete search"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 group-hover:bg-blue-100 transition-colors">
+                                                        <ChevronRight className="w-5 h-5 text-blue-600" />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {search.searchHire?.expert && (
+                                            <div className="mt-4 text-xs md:text-sm text-blue-600 border-t border-gray-100 pt-4 flex items-center gap-2">
+                                                <img
+                                                    src={search.searchHire.expert.profilePictureUrl || '/default-avatar.png'}
+                                                    alt={`${search.searchHire.expert.name}'s profile`}
+                                                    className="w-6 h-6 rounded-full object-cover"
+                                                />
+                                                A cargo de: {search.searchHire.expert.name}
                                             </div>
                                         )}
                                     </div>
-                                    {isAdmin && search.user && (
-                                        <div className="mt-4 text-xs md:text-sm text-blue-600 border-t border-gray-100 pt-4 flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                                <span className="text-xs font-medium text-blue-600">{search.user.name[0].toUpperCase()}</span>
-                                            </div>
-                                            Creado por: {search.user.name} ({search.user.email})
-                                        </div>
-                                    )}
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             ) : (
                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
@@ -497,56 +505,91 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {filteredSearches.map((search) => (
-                                <tr key={search.id} onClick={() => handleSearchClick(search.id)} className="hover:bg-gray-50 cursor-pointer">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center">
-                                            <div>
-                                                <div className="text-sm font-medium text-gray-900">{search.title}</div>
-                                                <div className="text-sm text-gray-500 line-clamp-1">{search.description}</div>
+                            {filteredSearches.map((search) => {
+                                const hireStatus = search.searchHire?.status;
+                                const hasUnreadMessages = search.searchHire?.Conversations?.some(
+                                    (conv) => conv.Messages?.some((msg) => !msg.IsRead)
+                                );
+
+                                return (
+                                    <tr key={search.id} onClick={() => handleSearchClick(search.id)} className="hover:bg-gray-50 cursor-pointer">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                {hasUnreadMessages && <MessageSquare className="w-4 h-4 text-red-500 animate-pulse" />}
+                                                <div>
+                                                    <div className="text-sm font-medium text-gray-900">{search.title}</div>
+                                                    <div className="text-sm text-gray-500 line-clamp-1">{search.description}</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {categories?.find((c) => c.id === search.category)?.name}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span
-                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${search.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                                }`}
-                                        >
-                                            {search.isActive ? 'Activa' : 'Inactiva'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-500">Cada {search.frequency} horas</td>
-                                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(search.lastExecution).toLocaleDateString()}</td>
-                                    <td className="px-6 py-4 text-right text-sm font-medium">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={(e) => handleToggleActive(search.id, search.isActive, e)}
-                                                className={`p-2 rounded-lg transition-colors ${search.isActive ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                {categories?.find((c) => c.id === search.category)?.name}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span
+                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActivityStatus(search) === 'Activa'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-gray-100 text-gray-800'
                                                     }`}
                                             >
-                                                <Power className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={(e) => handleEdit(search, e)}
-                                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                                            >
-                                                <Pencil className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={(e) => handleDelete(search.id, e)}
-                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                                {getActivityStatus(search)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-500">Cada {search.frequency} horas</td>
+                                        <td className="px-6 py-4 text-sm text-gray-500">{new Date(search.lastExecution).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4 text-right text-sm font-medium">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={(e) => handleEdit(search, e)}
+                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => handleDelete(search.id, e)}
+                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                        {search.searchHire && (
+                                            <td className="px-6 py-4 text-right text-sm font-medium">
+                                                <span
+                                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${search.searchHire.status === 'pending'
+                                                        ? 'bg-yellow-100 text-yellow-800'
+                                                        : search.searchHire.status === 'awaiting_client_decision'
+                                                            ? 'bg-blue-100 text-blue-800'
+                                                            : search.searchHire.status === 'disputed'
+                                                                ? 'bg-red-100 text-red-800'
+                                                                : search.searchHire.status === 'cancelled' || search.searchHire.status === 'transfer_failed'
+                                                                    ? 'bg-gray-100 text-gray-800'
+                                                                    : search.searchHire.status === 'dispute-resolved'
+                                                                        ? 'bg-green-100 text-green-800'
+                                                                        : 'bg-gray-100 text-gray-800'
+                                                        }`}
+                                                >
+                                                    {search.searchHire.status.replace(/_/g, ' ')}
+                                                </span>
+                                            </td>
+                                        )}
+                                        {search.searchHire?.expert && (
+                                            <td className="px-6 py-4 text-right text-sm font-medium">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <img
+                                                        src={search.searchHire.expert.profilePictureUrl || '/default-avatar.png'}
+                                                        alt={`${search.searchHire.expert.name}'s profile`}
+                                                        className="w-6 h-6 rounded-full object-cover"
+                                                    />
+                                                    <span>A cargo de: {search.searchHire.expert.name}</span>
+                                                </div>
+                                            </td>
+                                        )}
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
