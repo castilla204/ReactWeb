@@ -25,7 +25,7 @@ import type { SearchItem } from '../hooks/useSearch.hooks';
 import { useNavigate } from 'react-router-dom';
 
 interface SearchDashboardProps {
-    onBack: () => void;
+    // onBack: () => void; // Opcional, lo eliminamos si no es necesario
 }
 
 interface Filters {
@@ -34,7 +34,7 @@ interface Filters {
     status: 'all' | 'active' | 'inactive';
 }
 
-const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
+const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     const { user } = useAuth();
     const { categories } = useCategories();
     const {
@@ -229,7 +229,7 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3 md:gap-6">
                     <button
-                        onClick={onBack}
+                        onClick={() => navigate('/')} // Redirige a la homepage
                         className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5" />
@@ -288,8 +288,8 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                                     }))
                                 }
                                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.category === category.id
-                                        ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
-                                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                    ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
+                                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
                                 {category.id === 1 && <Car className="w-3.5 h-3.5" />}
@@ -303,8 +303,8 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                     <button
                         onClick={() => setFilters((prev) => ({ ...prev, status: 'active' }))}
                         className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'active'
-                                ? 'bg-green-50 text-green-600 ring-1 ring-green-200'
-                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                            ? 'bg-green-50 text-green-600 ring-1 ring-green-200'
+                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         Activas
@@ -312,8 +312,8 @@ const SearchDashboard = ({ onBack }: SearchDashboardProps) => {
                     <button
                         onClick={() => setFilters((prev) => ({ ...prev, status: 'inactive' }))}
                         className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'inactive'
-                                ? 'bg-red-50 text-red-600 ring-1 ring-red-200'
-                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                            ? 'bg-red-50 text-red-600 ring-1 ring-red-200'
+                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         Inactivas
