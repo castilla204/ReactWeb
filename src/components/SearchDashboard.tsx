@@ -56,14 +56,13 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     const [filters, setFilters] = useState<Filters>({
         search: '',
         category: null,
-        status: 'all',
+        status: 'active', // Default to active searches
     });
 
     const isAdmin = user?.email === 'dcastillaa@gmail.com';
     const searchesData = isAdmin ? adminSearchesQuery : searchesQuery;
     const loading = searchesData.isLoading;
     const error = searchesData.error;
-    // Ensure searchesList is an array
     const searchesList: SearchItem[] = Array.isArray(searchesData.data) ? searchesData.data : [];
 
     // Filter searches
@@ -76,19 +75,20 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
 
             const categoryMatch = filters.category === null || search.category === filters.category;
 
+            const terminalStatuses = ['dispute-resolved', 'completed', 'cancelled'];
+            const isSearchInactive = !search.isActive || (search.searchHire && terminalStatuses.includes(search.searchHire.status));
             const statusMatch =
                 filters.status === 'all' ||
-                (filters.status === 'active' && (search.isActive || !search.searchHire || ['pending', 'awaiting_client_decision', 'disputed'].includes(search.searchHire.status))) ||
-                (filters.status === 'inactive' && (!search.isActive || ['cancelled', 'transfer_failed', 'dispute-resolved'].includes(search.searchHire?.status)));
+                (filters.status === 'active' && search.isActive && (!search.searchHire || !terminalStatuses.includes(search.searchHire.status))) ||
+                (filters.status === 'inactive' && isSearchInactive);
 
             return searchMatch && categoryMatch && statusMatch;
         });
     }, [searchesList, filters]);
 
     const getActivityStatus = (search: SearchItem) => {
-        if (!search.searchHire) return search.isActive ? 'Activa' : 'Inactiva';
-        const status = search.searchHire.status;
-        return ['pending', 'awaiting_client_decision', 'disputed'].includes(status) ? 'Activa' : 'Inactiva';
+        const terminalStatuses = ['dispute-resolved', 'completed', 'cancelled'];
+        return search.isActive && (!search.searchHire || !terminalStatuses.includes(search.searchHire.status)) ? 'Activa' : 'Inactiva';
     };
 
     const handleSearchClick = async (searchId: number) => {
@@ -183,7 +183,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         setFilters({
             search: '',
             category: null,
-            status: 'all',
+            status: 'active', // Reset to active
         });
     };
 
@@ -280,25 +280,27 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                     {/* Status filters */}
                     <button
                         onClick={() => setFilters((prev) => ({ ...prev, status: 'active' }))}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'active'
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'active'
                             ? 'bg-green-50 text-green-600 ring-1 ring-green-200'
                             : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         Activas
+                        <span className={`w-2 h-2 rounded-full ${filters.status === 'active' ? 'bg-green-500 animate-pulse-scale' : 'bg-gray-300'}`}></span>
                     </button>
                     <button
                         onClick={() => setFilters((prev) => ({ ...prev, status: 'inactive' }))}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'inactive'
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'inactive'
                             ? 'bg-red-50 text-red-600 ring-1 ring-red-200'
                             : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         Inactivas
+                        <span className={`w-2 h-2 rounded-full ${filters.status === 'inactive' ? 'bg-red-500 animate-pulse-scale' : 'bg-gray-300'}`}></span>
                     </button>
 
                     {/* Clear filters */}
-                    {(filters.search || filters.category !== null || filters.status !== 'all') && (
+                    {(filters.search || filters.category !== null || filters.status !== 'active') && (
                         <button
                             onClick={clearFilters}
                             className="px-3 py-2 text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1.5 hover:bg-gray-50 rounded-lg transition-all whitespace-nowrap"
@@ -344,10 +346,8 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                         : 'border-[1.5px] border-blue-200/60 shadow-blue-100/50'
                                     } hover:border-blue-300 hover:border-[1.5px] relative overflow-hidden`}
                             >
-                                {/* Background gradient effect */}
                                 <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-white opacity-50" />
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.04),transparent_50%)]" />
-
                                 <div className="relative">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
@@ -427,11 +427,9 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                         ? 'bg-blue-100 text-blue-800'
                                                         : search.searchHire.status === 'disputed'
                                                             ? 'bg-red-100 text-red-800'
-                                                            : search.searchHire.status === 'cancelled' || search.searchHire.status === 'transfer_failed'
+                                                            : search.searchHire.status === 'cancelled' || search.searchHire.status === 'completed' || search.searchHire.status === 'dispute-resolved'
                                                                 ? 'bg-gray-100 text-gray-800'
-                                                                : search.searchHire.status === 'dispute-resolved'
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : 'bg-gray-100 text-gray-800'
+                                                                : 'bg-gray-100 text-gray-800'
                                                     }`}
                                             >
                                                 {search.searchHire.status.replace(/_/g, ' ')}
@@ -564,11 +562,9 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                             ? 'bg-blue-100 text-blue-800'
                                                             : search.searchHire.status === 'disputed'
                                                                 ? 'bg-red-100 text-red-800'
-                                                                : search.searchHire.status === 'cancelled' || search.searchHire.status === 'transfer_failed'
+                                                                : search.searchHire.status === 'cancelled' || search.searchHire.status === 'completed' || search.searchHire.status === 'dispute-resolved'
                                                                     ? 'bg-gray-100 text-gray-800'
-                                                                    : search.searchHire.status === 'dispute-resolved'
-                                                                        ? 'bg-green-100 text-green-800'
-                                                                        : 'bg-gray-100 text-gray-800'
+                                                                    : 'bg-gray-100 text-gray-800'
                                                         }`}
                                                 >
                                                     {search.searchHire.status.replace(/_/g, ' ')}
