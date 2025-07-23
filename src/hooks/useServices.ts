@@ -5,15 +5,15 @@ import { getAuthToken } from '../lib/auth';
 
 interface Service {
     id: number;
-    expertProfileId: number;
+    expertProfileId?: number;
     categoryId: number;
     serviceTypeId: number;
     serviceTypeName?: string;
     price: number;
     conditions: string;
     durationInHours: number;
-    imageUrls: string[];
     createdAt: string;
+    imageUrls: string[];
     categoryName?: string;
     completedSearches?: number;
     averageRating?: number;
@@ -21,11 +21,19 @@ interface Service {
         id: number;
         profilePictureUrl: string;
         description: string;
+        stripeAccountId?: string;
         createdAt: string;
         user: {
             name: string;
             email: string;
+            profilePictureUrl?: string;
         };
+        reviews?: {
+            id: number;
+            score: number;
+            description: string;
+            createdAt: string;
+        }[];
     } | null;
 }
 
@@ -46,10 +54,7 @@ export function useServices(categoryId?: number, serviceTypeId?: number, expertI
 
             let url: string;
             if (expertId && expertId > 0) {
-                if (categoryId || serviceTypeId) {
-                    console.warn('Ignoring categoryId and serviceTypeId when expertId is provided');
-                }
-                url = `/api/SearchService/expert/${expertId}`;
+                url = `/api/SearchService/expert/${expertId}${serviceTypeId ? `?serviceTypeId=${serviceTypeId}` : ''}`;
                 console.log('Fetching services for expert with URL:', url);
             } else if (categoryId && categoryId > 0 && serviceTypeId && serviceTypeId > 0) {
                 url = `/api/SearchService?categoryId=${categoryId}&serviceTypeId=${serviceTypeId}`;
@@ -106,7 +111,6 @@ export function useServices(categoryId?: number, serviceTypeId?: number, expertI
             formData.append('price', serviceData.price.toString());
             formData.append('conditions', serviceData.conditions);
             formData.append('durationInHours', serviceData.durationInHours.toString());
-            console.log('Images to send:', serviceData.images.map(img => ({ name: img.name, size: img.size, type: img.type })));
             serviceData.images.forEach((image) => {
                 formData.append('Images', image);
             });
@@ -147,7 +151,7 @@ export function useServices(categoryId?: number, serviceTypeId?: number, expertI
 
     return {
         services: servicesQuery.data || [],
-        isLoadingServices: servicesQuery.isLoading,
+        isLoading: servicesQuery.isLoading,
         error: servicesQuery.error,
         createService: createServiceMutation.mutateAsync,
         isCreatingService,
