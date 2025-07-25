@@ -23,6 +23,7 @@ interface Hire {
     amount: number;
 }
 
+// Update Service interface to reflect nullable DurationInHours
 interface Service {
     id: number;
     expertProfileId: number;
@@ -30,7 +31,7 @@ interface Service {
     serviceTypeId: number;
     price: number;
     conditions: string;
-    durationInHours: number;
+    durationInHours: number | null;
     imageUrls: string[];
     createdAt: string;
     updatedAt: string;
@@ -134,8 +135,8 @@ export function ExpertPanelPage() {
             errors.price = 'El precio debe ser mayor que 0';
         }
 
-        const duration = parseInt(formData.durationInHours);
-        if (isNaN(duration) || duration <= 0) {
+        // Only validate duration if it's provided (e.g., for serviceTypeId === 1)
+        if (formData.durationInHours && (parseInt(formData.durationInHours) <= 0 || isNaN(parseInt(formData.durationInHours)))) {
             errors.durationInHours = 'La duración debe ser mayor que 0';
         }
 
@@ -213,7 +214,7 @@ export function ExpertPanelPage() {
                 serviceTypeId: parseInt(formData.serviceTypeId),
                 price: parseFloat(formData.price),
                 conditions: formData.conditions.trim(),
-                durationInHours: parseInt(formData.durationInHours),
+                durationInHours: formData.durationInHours ? parseInt(formData.durationInHours) : null,
                 images: selectedImages,
             });
 

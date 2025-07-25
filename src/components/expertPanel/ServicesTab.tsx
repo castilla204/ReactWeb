@@ -72,7 +72,7 @@ export function ServicesTab({
                         >
                             <div className="h-6 px-4 flex items-center" style={{ backgroundColor: '#4B5563', opacity: 0.7 }}>
                                 <h3 className="font-medium text-white text-xs">
-                                    {categories?.find(c => c.id === service.categoryId)?.name || 'CategorÌa'}
+                                    {categories?.find(c => c.id === service.categoryId)?.name || 'Categor√≠a'}
                                 </h3>
                             </div>
                             {service.imageUrls && Array.isArray(service.imageUrls) && service.imageUrls.length > 0 && (
@@ -103,7 +103,7 @@ export function ServicesTab({
                             )}
                             <div className="p-2 space-y-1">
                                 <h3 className="text-sm font-medium text-gray-900">
-                                    {categories?.find(c => c.id === service.categoryId)?.name || 'Sin categorÌa'}
+                                    {categories?.find(c => c.id === service.categoryId)?.name || 'Sin categor√≠a'}
                                 </h3>
                                 <p className="text-xs text-gray-600 line-clamp-2">{service.conditions}</p>
                                 <div className="flex items-center justify-between text-xs">
@@ -116,7 +116,7 @@ export function ServicesTab({
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="text-gray-500">DuraciÛn</span>
+                                    <span className="text-gray-500">Duraci√≥n</span>
                                     <span className="font-medium text-gray-900">
                                         {service.durationInHours}h
                                     </span>

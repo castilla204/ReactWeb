@@ -18,7 +18,7 @@ interface ExpertHire {
     | 'dispute-resolved';
     amount: number;
     createdAt: string;
-    completedAt: string | null;
+    UpdatedAt: string | null;
     client: {
         name: string;
         email: string;
