@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, ArrowRight, ArrowLeft } from 'lucide-react';
-import { GoogleMap, useLoadScript, Marker, Libraries } from '@react-google-maps/api';
+import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 
-const libraries: Libraries = ['drawing', 'geometry'];
+const libraries = ['drawing', 'geometry'];
 
 const getDrawingManagerOptions = () => ({
     drawingControl: false,
@@ -90,7 +90,7 @@ interface SearchParameterFormProps {
     selectedCategory: number | null;
     initialKeywords: string;
     initialUserSearch: string;
-    serviceTypeId: number | null; // Added: serviceTypeId
+    serviceTypeId: number | null;
 }
 
 export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId }: SearchParameterFormProps) {
@@ -233,7 +233,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             brandId: null,
             modelId: null,
             platformIds: [1, 2],
-            serviceTypeId // Added: Include serviceTypeId
+            serviceTypeId
         };
 
         onComplete(searchParameterData);
