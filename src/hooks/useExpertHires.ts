@@ -1,6 +1,4 @@
-﻿// src/hooks/useExpertHires.ts
-
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 
@@ -10,7 +8,14 @@ interface ExpertHire {
     expertId: number | null;
     searchServiceId: number;
     searchId: number | null;
-    status: string;
+    status:
+    | 'pending'
+    | 'awaiting_client_decision'
+    | 'disputed'
+    | 'completed'
+    | 'cancelled'
+    | 'transfer_failed'
+    | 'dispute-resolved';
     amount: number;
     createdAt: string;
     completedAt: string | null;
@@ -26,6 +31,14 @@ interface ExpertHire {
         durationInHours: number;
         imageUrls: string[];
     };
+    serviceType: {
+        id: number;
+        name: string;
+        description: string;
+        isActive: boolean;
+        createdAt: string;
+        updatedAt: string;
+    } | null;
 }
 
 export const useExpertHires = () => {
@@ -34,7 +47,8 @@ export const useExpertHires = () => {
 
     const hiresQuery = useQuery({
         queryKey: ['expertHires'],
-        queryFn: () => fetchApi<ExpertHire[]>(API_CONFIG.endpoints.expert.hires.listAsExpert),
+        queryFn: () =>
+            fetchApi<ExpertHire[]>(API_CONFIG.endpoints.expert.hires.listAsExpert),
     });
 
     const updateStatusMutation = useMutation({
@@ -45,12 +59,14 @@ export const useExpertHires = () => {
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['expertHires'] });
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: '✅ Estado actualizado correctamente'
-                }
-            }));
+            window.dispatchEvent(
+                new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'success',
+                        message: '✅ Estado actualizado correctamente',
+                    },
+                })
+            );
         },
     });
 
