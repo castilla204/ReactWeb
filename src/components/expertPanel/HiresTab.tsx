@@ -51,7 +51,7 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                     >
                         <option value="">Todos los estados</option>
                         <option value="pending">Pendiente</option>
-                        <option value="awaiting_client_decision">Esperando DecisiÛn</option>
+                        <option value="awaiting_client_decision">Esperando Decisi√≥n</option>
                         <option value="disputed">Disputado</option>
                         <option value="completed">Completado</option>
                         <option value="cancelled">Cancelado</option>
@@ -127,7 +127,7 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                             }`}
                                     >
                                         {hire.status === 'pending' ? 'Pendiente' :
-                                            hire.status === 'awaiting_client_decision' ? 'Esperando DecisiÛn' :
+                                            hire.status === 'awaiting_client_decision' ? 'Esperando Decisi√≥n' :
                                                 hire.status === 'disputed' ? 'Disputado' :
                                                     hire.status === 'completed' ? 'Completado' :
                                                         hire.status === 'cancelled' ? 'Cancelado' :
@@ -140,7 +140,7 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                     <div className="flex items-center justify-between text-sm">
                                         <span className="text-gray-500">Servicio</span>
                                         <span className="font-medium text-gray-900">
-                                            {categories?.find(c => c.id === hire.service.categoryId)?.name || 'Sin categorÌa'}
+                                            {categories?.find(c => c.id === hire.service.categoryId)?.name || 'Sin categor√≠a'}
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between text-sm">
@@ -172,7 +172,7 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                         className="w-full px-2 py-1 bg-blue-600 text-white hover:bg-blue-700 transition-colors text-xs flex items-center justify-center gap-1"
                                     >
                                         <Search className="w-3 h-3" />
-                                        Ver ContrataciÛn
+                                        Ver Contrataci√≥n
                                     </button>
                                 </div>
                             </div>
