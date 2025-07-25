@@ -1,33 +1,48 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Search, Loader2, CheckCircle, XCircle, User, Upload, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, CheckCircle, User } from 'lucide-react';
 import Background from '../components/Background';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
 import { useExpertHires } from '../hooks/useExpertHires';
 import { useServices } from '../hooks/useServices';
+import { ServicesTab } from '../components/expertPanel/ServicesTab';
+import { HiresTab } from '../components/expertPanel/HiresTab';
+import { ServiceForm } from '../components/expertPanel/ServiceForm';
 
+// Definir interfaz Hire con searchId opcional para compatibilidad
 interface Hire {
     id: number;
-    searchId: number;
-    client: {
-        name: string;
-        email: string;
-    };
-    service: {
-        categoryId: number;
-    };
-    status: 'Pending' | 'Accepted' | 'Completed' | 'Cancelled';
+    searchId: number | null;
+    client: { name: string; email: string };
+    service: { categoryId: number };
+    serviceType: { id: number; name: string; description: string; isActive: boolean; createdAt: string; updatedAt: string } | null;
+    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved';
     createdAt: string;
     amount: number;
+}
+
+interface Service {
+    id: number;
+    expertProfileId: number;
+    categoryId: number;
+    serviceTypeId: number;
+    price: number;
+    conditions: string;
+    durationInHours: number;
+    imageUrls: string[];
+    createdAt: string;
+    updatedAt: string;
 }
 
 export function ExpertPanelPage() {
     const navigate = useNavigate();
     const { user, signOut } = useAuth();
     const { categories } = useCategories();
+
     const [activeTab, setActiveTab] = useState<'services' | 'hires'>('services');
+    const [hireTab, setHireTab] = useState<'active' | 'inactive'>('active');
     const [showServiceForm, setShowServiceForm] = useState(false);
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
@@ -38,6 +53,19 @@ export function ExpertPanelPage() {
         conditions: '',
         durationInHours: '24',
     });
+    const [filters, setFilters] = useState<{
+        clientName: string;
+        status: '' | 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved';
+        dateFrom: string;
+        dateTo: string;
+    }>({
+        clientName: '',
+        status: '',
+        dateFrom: '',
+        dateTo: '',
+    });
+    const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: number]: number }>({});
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const {
@@ -51,8 +79,14 @@ export function ExpertPanelPage() {
         fetchProfile,
     } = useExpert();
 
-    const { services, isLoadingServices, error: servicesError, createService, isCreatingService } = useServices(undefined, undefined, profile?.id);
-    const { hires, isLoading: isLoadingHires, error: hiresError, updateStatus } = useExpertHires();
+    const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService } = useServices(undefined, undefined, profile?.id) as {
+        services: Service[];
+        isLoading: boolean;
+        error: Error | null;
+        createService: any;
+        isCreatingService: boolean;
+    };
+    const { hires, isLoading: isLoadingHires, error: hiresError } = useExpertHires();
 
     useEffect(() => {
         console.log('ExpertPanelPage State:', { user, profile, isLoadingProfile, profileError, hires });
@@ -234,6 +268,35 @@ export function ExpertPanelPage() {
         }
     };
 
+    const goToPreviousImage = (serviceId: number) => {
+        setCurrentImageIndex(prev => ({
+            ...prev,
+            [serviceId]: Math.max((prev[serviceId] || 0) - 1, 0)
+        }));
+    };
+
+    const goToNextImage = (serviceId: number) => {
+        setCurrentImageIndex(prev => {
+            const currentIndex = prev[serviceId] || 0;
+            const imageUrls = services.find(s => s.id === serviceId)?.imageUrls || [];
+            return {
+                ...prev,
+                [serviceId]: Math.min(currentIndex + 1, imageUrls.length - 1)
+            };
+        });
+    };
+
+    useEffect(() => {
+        services.forEach(service => {
+            if (!currentImageIndex[service.id]) {
+                setCurrentImageIndex(prev => ({ ...prev, [service.id]: 0 }));
+            }
+        });
+    }, [services]);
+
+    // Calculate activeHires directly in ExpertPanelPage
+    const activeHires = hires ? hires.filter((hire) => ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status)) : [];
+
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -358,7 +421,7 @@ export function ExpertPanelPage() {
                     </div>
                 </div>
 
-                <div className="mb-8 bg-white rounded-xl p-6 border border-gray-200 shadow-lg">
+                <div className="mb-8 bg-white p-6 border border-gray-200 shadow-lg">
                     {profile ? (
                         <div className="flex items-start gap-6">
                             <div className="flex-shrink-0">
@@ -366,10 +429,10 @@ export function ExpertPanelPage() {
                                     <img
                                         src={profile.profilePictureUrl}
                                         alt="Profile"
-                                        className="w-24 h-24 rounded-xl object-cover"
+                                        className="w-24 h-24 rounded object-cover"
                                     />
                                 ) : (
-                                    <div className="w-24 h-24 bg-blue-100 rounded-xl flex items-center justify-center">
+                                    <div className="w-24 h-24 bg-blue-100 rounded flex items-center justify-center">
                                         <User className="w-12 h-12 text-blue-600" />
                                     </div>
                                 )}
@@ -387,7 +450,7 @@ export function ExpertPanelPage() {
                                     <span>•</span>
                                     <span>{services.length} servicios activos</span>
                                     <span>•</span>
-                                    <span>{hires.length} contrataciones activas</span>
+                                    <span>{activeHires.length} contrataciones activas</span>
                                 </div>
                             </div>
                         </div>
@@ -398,387 +461,47 @@ export function ExpertPanelPage() {
                     )}
                 </div>
 
-                {activeTab === 'services' ? (
-                    <div className="space-y-6">
-                        <div className="flex justify-end">
-                            <button
-                                onClick={() => setShowServiceForm(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                <Plus className="w-5 h-5" />
-                                Nuevo Servicio
-                            </button>
-                        </div>
-
-                        {isLoadingServices ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
-                            </div>
-                        ) : servicesError ? (
-                            <div className="text-center py-12 bg-red-50 text-red-600 rounded-xl border border-red-200 shadow-lg">
-                                <p>Error al cargar servicios: {servicesError.message}</p>
-                            </div>
-                        ) : services.length === 0 ? (
-                            <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-lg">
-                                <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                <p className="text-gray-600">No tienes servicios activos</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {services.map((service) => (
-                                    <div
-                                        key={service.id}
-                                        className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg hover:shadow-xl transition-all"
-                                    >
-                                        {service.imageUrls && service.imageUrls.length > 0 && (
-                                            <div className="relative aspect-video mb-4 rounded-lg overflow-hidden">
-                                                <img
-                                                    src={service.imageUrls[0]}
-                                                    alt="Service"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                        )}
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center gap-2">
-                                                <Search className="w-5 h-5 text-blue-600" />
-                                                <h3 className="font-medium text-gray-900">
-                                                    {categories?.find(c => c.id === service.categoryId)?.name || 'Categoría'}
-                                                </h3>
-                                            </div>
-                                            <span className="text-sm text-gray-500">
-                                                {new Date(service.createdAt).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-500">Tipo de Servicio</span>
-                                                <span className="font-medium text-gray-900">
-                                                    {serviceTypes.find(st => st.id === service.serviceTypeId)?.name || 'Desconocido'}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-500">Precio</span>
-                                                <span className="font-medium text-gray-900">
-                                                    {new Intl.NumberFormat('es-ES', {
-                                                        style: 'currency',
-                                                        currency: 'EUR',
-                                                    }).format(service.price)}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-500">Duración</span>
-                                                <span className="font-medium text-gray-900">
-                                                    {service.durationInHours}h
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-gray-600">{service.conditions}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        {isLoadingHires ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
-                            </div>
-                        ) : hiresError ? (
-                            <div className="text-center py-12 bg-red-50 text-red-600 rounded-xl border border-red-200 shadow-lg">
-                                <p>Error al cargar contrataciones: {hiresError.message}</p>
-                            </div>
-                        ) : hires.length === 0 ? (
-                            <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-lg">
-                                <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                <p className="text-gray-600">No tienes contrataciones activas</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {hires.map((hire: Hire) => (
-                                    <div
-                                        key={hire.id}
-                                        className="bg-white rounded-xl p-6 border border-gray-200 shadow-lg hover:shadow-xl transition-all"
-                                    >
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center gap-2">
-                                                <User className="w-5 h-5 text-blue-600" />
-                                                <div>
-                                                    <h3 className="font-medium text-gray-900">{hire.client.name}</h3>
-                                                    <p className="text-xs text-gray-500">{hire.client.email}</p>
-                                                </div>
-                                            </div>
-                                            <span
-                                                className={`px-2 py-1 rounded-full text-xs font-medium ${hire.status === 'Completed'
-                                                        ? 'bg-green-100 text-green-600'
-                                                        : hire.status === 'Pending'
-                                                            ? 'bg-blue-100 text-blue-600'
-                                                            : hire.status === 'Cancelled'
-                                                                ? 'bg-red-100 text-red-600'
-                                                                : 'bg-gray-100 text-gray-600'
-                                                    }`}
-                                            >
-                                                {hire.status || 'Pending'}
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-500">Servicio</span>
-                                                <span className="font-medium text-gray-900">
-                                                    {categories?.find(c => c.id === hire.service.categoryId)?.name || 'Sin categoría'}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-500">Fecha</span>
-                                                <span className="text-gray-900">
-                                                    {new Date(hire.createdAt).toLocaleDateString()}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-500">Monto</span>
-                                                <span className="font-medium text-gray-900">
-                                                    {new Intl.NumberFormat('es-ES', {
-                                                        style: 'currency',
-                                                        currency: 'EUR',
-                                                    }).format(hire.amount)}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-4 space-y-2">
-                                            {hire.status === 'Pending' && (
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => updateStatus({ hireId: hire.id, status: 'Accepted' })}
-                                                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                                                    >
-                                                        Aceptar
-                                                    </button>
-                                                    <button
-                                                        onClick={() => updateStatus({ hireId: hire.id, status: 'Cancelled' })}
-                                                        className="flex-1 px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors text-sm"
-                                                    >
-                                                        Rechazar
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            <button
-                                                onClick={() => handleViewHire(hire.id)}
-                                                className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center gap-2"
-                                            >
-                                                <Search className="w-4 h-4" />
-                                                Ver Contratación
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {showServiceForm && (
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                        <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                                Nuevo Servicio de Búsqueda
-                            </h3>
-                            <form onSubmit={handleCreateService} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Categoría
-                                    </label>
-                                    <select
-                                        value={formData.categoryId}
-                                        onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.categoryId ? 'border-red-300' : 'border-gray-300'}`}
-                                        required
-                                    >
-                                        <option value="">Seleccionar categoría</option>
-                                        {categories?.map(category => (
-                                            <option key={category.id} value={category.id}>
-                                                {category.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {formErrors.categoryId && (
-                                        <p className="mt-1 text-xs text-red-500">{formErrors.categoryId}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Tipo de Servicio
-                                    </label>
-                                    <select
-                                        value={formData.serviceTypeId}
-                                        onChange={(e) => setFormData({ ...formData, serviceTypeId: e.target.value })}
-                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.serviceTypeId ? 'border-red-300' : 'border-gray-300'}`}
-                                        required
-                                    >
-                                        <option value="">Seleccionar tipo de servicio</option>
-                                        {isLoadingServiceTypes ? (
-                                            <option disabled>Cargando...</option>
-                                        ) : (
-                                            serviceTypes.map(serviceType => (
-                                                <option key={serviceType.id} value={serviceType.id}>
-                                                    {serviceType.name}
-                                                </option>
-                                            ))
-                                        )}
-                                    </select>
-                                    {formErrors.serviceTypeId && (
-                                        <p className="mt-1 text-xs text-red-500">{formErrors.serviceTypeId}</p>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Precio
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={formData.price}
-                                            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.price ? 'border-red-300' : 'border-gray-300'}`}
-                                            placeholder="0.00"
-                                            required
-                                        />
-                                        {formErrors.price && <p className="mt-1 text-xs text-red-500">{formErrors.price}</p>}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Duración (horas)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={formData.durationInHours}
-                                            onChange={(e) => setFormData({ ...formData, durationInHours: e.target.value })}
-                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.durationInHours ? 'border-red-300' : 'border-gray-300'}`}
-                                            min="1"
-                                            required
-                                        />
-                                        {formErrors.durationInHours && (
-                                            <p className="mt-1 text-xs text-red-500">{formErrors.durationInHours}</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Condiciones
-                                    </label>
-                                    <textarea
-                                        value={formData.conditions}
-                                        onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
-                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.conditions ? 'border-red-300' : 'border-gray-300'}`}
-                                        rows={3}
-                                        placeholder="Describe las condiciones de tu servicio..."
-                                        required
-                                    />
-                                    {formErrors.conditions && (
-                                        <p className="mt-1 text-xs text-red-500">{formErrors.conditions}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Imágenes (al menos una requerida)
-                                    </label>
-                                    <div className="space-y-2">
-                                        <div
-                                            className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-500 transition-colors cursor-pointer"
-                                            onClick={() => fileInputRef.current?.click()}
-                                        >
-                                            <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                                            <p className="text-sm text-gray-500">
-                                                Haz clic para subir imágenes
-                                            </p>
-                                            <p className="text-xs text-gray-400 mt-1">
-                                                PNG o JPG (máx. 5MB)
-                                            </p>
-                                            <input
-                                                id="image-input"
-                                                type="file"
-                                                accept="image/jpeg,image/png"
-                                                multiple
-                                                onChange={handleImageSelect}
-                                                className="hidden"
-                                                ref={fileInputRef}
-                                            />
-                                        </div>
-                                        {formErrors.images && (
-                                            <p className="mt-1 text-xs text-red-500">{formErrors.images}</p>
-                                        )}
-                                        {selectedImages.length > 0 && (
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {selectedImages.map((image, index) => (
-                                                    <div key={index} className="relative">
-                                                        <img
-                                                            src={URL.createObjectURL(image)}
-                                                            alt={`Preview ${index + 1}`}
-                                                            className="w-full h-20 object-cover rounded-lg"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeImage(index)}
-                                                            className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                                                        >
-                                                            <XCircle className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {formErrors.general && (
-                                    <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm">
-                                        {formErrors.general}
-                                    </div>
-                                )}
-
-                                <div className="flex justify-end gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowServiceForm(false);
-                                            setSelectedImages([]);
-                                            if (fileInputRef.current) {
-                                                fileInputRef.current.value = '';
-                                            }
-                                        }}
-                                        className="px-4 py-2 text-gray-600 hover:text-gray-900"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isCreatingService || isLoadingServiceTypes}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                                    >
-                                        {isCreatingService ? (
-                                            <>
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                Creando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CheckCircle className="w-4 h-4" />
-                                                Crear Servicio
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
+                <ServicesTab
+                    activeTab={activeTab}
+                    services={services}
+                    isLoadingServices={isLoadingServices}
+                    servicesError={servicesError}
+                    showServiceForm={showServiceForm}
+                    setShowServiceForm={setShowServiceForm}
+                    currentImageIndex={currentImageIndex}
+                    goToPreviousImage={goToPreviousImage}
+                    goToNextImage={goToNextImage}
+                    categories={categories}
+                />
+                <HiresTab
+                    activeTab={activeTab}
+                    hireTab={hireTab}
+                    hires={hires}
+                    isLoadingHires={isLoadingHires}
+                    hiresError={hiresError}
+                    filters={filters}
+                    setHireTab={setHireTab}
+                    setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as any })} // Type assertion to match union
+                    handleViewHire={handleViewHire}
+                    categories={categories}
+                />
+                <ServiceForm
+                    showServiceForm={showServiceForm}
+                    setShowServiceForm={setShowServiceForm}
+                    selectedImages={selectedImages}
+                    setSelectedImages={setSelectedImages}
+                    formErrors={formErrors}
+                    setFormErrors={setFormErrors}
+                    formData={formData}
+                    setFormData={setFormData}
+                    handleImageSelect={handleImageSelect as (e: React.ChangeEvent<any>) => void} // Type casting to match broader type
+                    removeImage={removeImage}
+                    handleCreateService={handleCreateService}
+                    serviceTypes={serviceTypes}
+                    isLoadingServiceTypes={isLoadingServiceTypes}
+                    isCreatingService={isCreatingService}
+                    categories={categories}
+                />
             </div>
         </div>
     );
