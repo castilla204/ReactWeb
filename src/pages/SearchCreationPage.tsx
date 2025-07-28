@@ -9,33 +9,63 @@ import { useAuth } from '../contexts/AuthContext';
 import { Notification, NotificationType } from '../components/Notification';
 import HomePresentation from '../components/HomePresentation';
 
-const SearchCreationPage = () => {
+interface SearchParameters {
+    keywords: string;
+    userSearch: string;
+    category: number;
+    frequency: number;
+    latitude?: string;
+    longitude?: string;
+    locationRange?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    serviceTypeId: number;
+    strictMatchOnly?: boolean;
+}
+
+const SearchCreationPage: React.FC = () => {
     const { isAuthenticated } = useAuth();
-    const [notification, setNotification] = useState(null);
-    const [searchParameters, setSearchParameters] = useState(null);
-    const [selectedServiceTypeId, setSelectedServiceTypeId] = useState(1);
-    const [selectedServiceId, setSelectedServiceId] = useState(null);
-    const [formData, setFormData] = useState({ keywords: '', userSearch: '' });
-    const [selectedCategory, setSelectedCategory] = useState(null);
     const { categories } = useCategories();
     const { currentSearchCount, maxSearches } = useSubscriptionLimits();
-    const [strictMatchOnly, setStrictMatchOnly] = useState(false);
+    const [notification, setNotification] = useState<{ type: NotificationType; message: string } | null>(null);
     const [currentStep, setCurrentStep] = useState(0);
-    const [showMobileOptions, setShowMobileOptions] = useState(false);
+    const [searchParameters, setSearchParameters] = useState<Partial<SearchParameters>>({
+        keywords: '',
+        userSearch: '',
+        category: 1,
+        frequency: 24,
+        serviceTypeId: 1,
+        strictMatchOnly: false,
+    });
+    const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
 
-    // Ensure categories is an array to prevent TypeError
     const safeCategories = Array.isArray(categories) ? categories : [];
 
-    const handleParametersComplete = (parameters) => {
-        parameters.strictMatchOnly = strictMatchOnly;
-        parameters.serviceTypeId = selectedServiceTypeId;
+    const handleParametersComplete = (parameters: SearchParameters & { latitude: string; longitude: string; locationRange: number }) => {
+        if (!isAuthenticated) {
+            setNotification({
+                type: 'error',
+                message: '🔒 Por favor, inicia sesión para crear una búsqueda',
+            });
+            return;
+        }
+        if (currentSearchCount >= maxSearches) {
+            setNotification({
+                type: 'error',
+                message: `👑 Has alcanzado el límite de ${maxSearches} búsquedas activas. ¡Mejora tu plan para crear más búsquedas!`,
+            });
+            window.location.href = '/suscripciones';
+            return;
+        }
+        console.log('Parameters received in SearchCreationPage:', parameters); // Debug log
         setSearchParameters(parameters);
-        setCurrentStep(2);
+        setCurrentStep(2); // Move to ServiceSelection
     };
 
-    const handleServiceSelectionComplete = (serviceId) => {
+    const handleServiceSelectionComplete = (serviceId: number) => {
+        console.log('Selected service ID:', serviceId); // Debug log
         setSelectedServiceId(serviceId);
-        setCurrentStep(3);
+        setCurrentStep(3); // Move to SearchForm
     };
 
     const handleSearchComplete = () => {
@@ -44,11 +74,15 @@ const SearchCreationPage = () => {
             message: '🎉 ¡Búsqueda creada con éxito! Te notificaremos cuando encontremos coincidencias.',
         });
         setCurrentStep(0);
-        setSearchParameters(null);
-        setSelectedServiceTypeId(1);
+        setSearchParameters({
+            keywords: '',
+            userSearch: '',
+            category: 1,
+            frequency: 24,
+            serviceTypeId: 1,
+            strictMatchOnly: false,
+        });
         setSelectedServiceId(null);
-        setFormData({ keywords: '', userSearch: '' });
-        setSelectedCategory(null);
     };
 
     const handleStartSearch = () => {
@@ -59,28 +93,29 @@ const SearchCreationPage = () => {
             });
             return;
         }
-        if (!selectedServiceTypeId) {
+        if (!searchParameters.serviceTypeId) {
             setNotification({
                 type: 'error',
                 message: '📍 Por favor, selecciona un tipo de servicio',
             });
             return;
         }
-        if (!selectedCategory) {
+        if (!searchParameters.category) {
             setNotification({
                 type: 'error',
                 message: '📍 Por favor, selecciona una categoría',
             });
             return;
         }
-        if (!formData.keywords || !formData.userSearch) {
+        if (!searchParameters.keywords || !searchParameters.userSearch) {
             setNotification({
                 type: 'error',
                 message: '📍 Por favor, completa los campos de búsqueda',
             });
             return;
         }
-        setCurrentStep(1);
+        console.log('Starting search with parameters:', searchParameters); // Debug log
+        setCurrentStep(1); // Move to SearchParameterForm
     };
 
     const scrollToForm = () => {
@@ -113,8 +148,10 @@ const SearchCreationPage = () => {
                                         {safeCategories.map((category) => (
                                             <button
                                                 key={category.id}
-                                                onClick={() => setSelectedCategory(category.id)}
-                                                className={`px-3 py-2 md:px-4 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-colors flex items-center justify-center gap-2 ${selectedCategory === category.id
+                                                onClick={() =>
+                                                    setSearchParameters((prev) => ({ ...prev, category: category.id }))
+                                                }
+                                                className={`px-3 py-2 md:px-4 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-colors flex items-center justify-center gap-2 ${searchParameters.category === category.id
                                                     ? 'bg-blue-600 text-white shadow-sm'
                                                     : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                                                     }`}
@@ -134,8 +171,10 @@ const SearchCreationPage = () => {
                                     <div className="relative">
                                         <input
                                             type="text"
-                                            value={formData.keywords}
-                                            onChange={(e) => setFormData((prev) => ({ ...prev, keywords: e.target.value }))}
+                                            value={searchParameters.keywords || ''}
+                                            onChange={(e) =>
+                                                setSearchParameters((prev) => ({ ...prev, keywords: e.target.value }))
+                                            }
                                             placeholder="Ej: Tesla Model 3, BMW M4, Piso en Madrid centro..."
                                             className="w-full p-3 md:p-4 rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 pl-9"
                                         />
@@ -148,8 +187,10 @@ const SearchCreationPage = () => {
                                     </h3>
                                     <div className="relative">
                                         <textarea
-                                            value={formData.userSearch}
-                                            onChange={(e) => setFormData((prev) => ({ ...prev, userSearch: e.target.value }))}
+                                            value={searchParameters.userSearch || ''}
+                                            onChange={(e) =>
+                                                setSearchParameters((prev) => ({ ...prev, userSearch: e.target.value }))
+                                            }
                                             placeholder="Detalles como precio máximo, características específicas, etc."
                                             className="w-full p-3 md:p-4 rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 min-h-[100px] focus:border-blue-500 focus:ring-1 focus:ring-blue-100 pl-9"
                                         />
@@ -161,22 +202,30 @@ const SearchCreationPage = () => {
                                         <Shield className="w-4 md:w-5 h-4 md:h-5 text-blue-600" /> Tipo de servicio
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <label className="flex items-center gap-2 p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+                                        <label
+                                            className="flex items-center gap-2 p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                                        >
                                             <input
                                                 type="radio"
                                                 value={1}
-                                                checked={selectedServiceTypeId === 1}
-                                                onChange={() => setSelectedServiceTypeId(1)}
+                                                checked={searchParameters.serviceTypeId === 1}
+                                                onChange={() =>
+                                                    setSearchParameters((prev) => ({ ...prev, serviceTypeId: 1 }))
+                                                }
                                                 className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                                             />
                                             <span className="text-xs md:text-sm text-gray-700">Búsqueda Web</span>
                                         </label>
-                                        <label className="flex items-center gap-2 p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+                                        <label
+                                            className="flex items-center gap-2 p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                                        >
                                             <input
                                                 type="radio"
                                                 value={2}
-                                                checked={selectedServiceTypeId === 2}
-                                                onChange={() => setSelectedServiceTypeId(2)}
+                                                checked={searchParameters.serviceTypeId === 2}
+                                                onChange={() =>
+                                                    setSearchParameters((prev) => ({ ...prev, serviceTypeId: 2 }))
+                                                }
                                                 className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                                             />
                                             <span className="text-xs md:text-sm text-gray-700">Búsqueda Web + Revisión</span>
@@ -186,15 +235,25 @@ const SearchCreationPage = () => {
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="checkbox"
-                                        checked={strictMatchOnly}
-                                        onChange={(e) => setStrictMatchOnly(e.target.checked)}
+                                        checked={searchParameters.strictMatchOnly || false}
+                                        onChange={(e) =>
+                                            setSearchParameters((prev) => ({
+                                                ...prev,
+                                                strictMatchOnly: e.target.checked,
+                                            }))
+                                        }
                                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                     />
                                     <label className="text-xs md:text-sm text-gray-700">Solo coincidencias exactas</label>
                                 </div>
                                 <button
                                     onClick={handleStartSearch}
-                                    disabled={!formData.keywords || !formData.userSearch || !selectedCategory || !selectedServiceTypeId}
+                                    disabled={
+                                        !searchParameters.keywords ||
+                                        !searchParameters.userSearch ||
+                                        !searchParameters.category ||
+                                        !searchParameters.serviceTypeId
+                                    }
                                     className="w-full py-2 md:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 transition-colors shadow-md hover:shadow-lg animate-fade-in-up"
                                 >
                                     Continuar <ArrowRight className="inline w-4 h-4 ml-2" />
@@ -215,21 +274,21 @@ const SearchCreationPage = () => {
                                 <div className="p-4 md:p-6 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
                                     <p className="text-sm md:text-base text-gray-600 mb-3">"Atrapo me ayudó a encontrar el coche perfecto en solo unos días. ¡La revisión presencial fue clave!"</p>
                                     <div className="flex items-center gap-2">
-                                        <img src="path-to-avatar1.jpg" alt="Avatar" className="w-6 md:w-8 h-6 md:h-8 rounded-full" />
+                                        <img src="/images/avatar1.jpg" alt="Avatar" className="w-6 md:w-8 h-6 md:h-8 rounded-full" />
                                         <p className="text-xs md:text-sm font-medium text-gray-800">— Juan P.</p>
                                     </div>
                                 </div>
                                 <div className="p-4 md:p-6 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
                                     <p className="text-sm md:text-base text-gray-600 mb-3">"El proceso fue súper sencillo y confiable. Recomiendo Atrapo a todos mis amigos."</p>
                                     <div className="flex items-center gap-2">
-                                        <img src="path-to-avatar2.jpg" alt="Avatar" className="w-6 md:w-8 h-6 md:h-8 rounded-full" />
+                                        <img src="/images/avatar2.jpg" alt="Avatar" className="w-6 md:w-8 h-6 md:h-8 rounded-full" />
                                         <p className="text-xs md:text-sm font-medium text-gray-800">— María G.</p>
                                     </div>
                                 </div>
                                 <div className="p-4 md:p-6 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
                                     <p className="text-sm md:text-base text-gray-600 mb-3">"Nunca pensé que comprar un coche de segunda mano sería tan fácil. ¡Gran servicio!"</p>
                                     <div className="flex items-center gap-2">
-                                        <img src="path-to-avatar3.jpg" alt="Avatar" className="w-6 md:w-8 h-6 md:h-8 rounded-full" />
+                                        <img src="/images/avatar3.jpg" alt="Avatar" className="w-6 md:w-8 h-6 md:h-8 rounded-full" />
                                         <p className="text-xs md:text-sm font-medium text-gray-800">— Carlos R.</p>
                                     </div>
                                 </div>
@@ -251,36 +310,45 @@ const SearchCreationPage = () => {
                 </>
             ) : (
                 <div className="w-full py-12 md:py-16">
-                    {currentStep === 1 && selectedCategory && selectedServiceTypeId && (
+                    {currentStep === 1 && searchParameters.category && searchParameters.serviceTypeId && (
                         <SearchParameterForm
                             onComplete={handleParametersComplete}
                             setCurrentStep={setCurrentStep}
-                            selectedCategory={selectedCategory}
-                            initialKeywords={formData.keywords}
-                            initialUserSearch={formData.userSearch}
-                            serviceTypeId={selectedServiceTypeId}
+                            selectedCategory={searchParameters.category}
+                            initialKeywords={searchParameters.keywords || ''}
+                            initialUserSearch={searchParameters.userSearch || ''}
+                            serviceTypeId={searchParameters.serviceTypeId}
+                            strictMatchOnly={searchParameters.strictMatchOnly}
                         />
                     )}
-                    {currentStep === 2 && selectedCategory && selectedServiceTypeId && (
+                    {currentStep === 2 && searchParameters.category && searchParameters.serviceTypeId && searchParameters.latitude && searchParameters.longitude && searchParameters.locationRange && (
                         <ServiceSelection
                             onBack={() => setCurrentStep(1)}
                             onComplete={handleServiceSelectionComplete}
-                            selectedCategory={selectedCategory}
-                            selectedServiceTypeId={selectedServiceTypeId}
+                            selectedCategory={searchParameters.category}
+                            selectedServiceTypeId={searchParameters.serviceTypeId}
+                            latitude={searchParameters.latitude}
+                            longitude={searchParameters.longitude}
+                            locationRange={searchParameters.locationRange}
                         />
                     )}
                     {currentStep === 3 && selectedServiceId && (
                         <SearchForm
-                            parameters={{ ...searchParameters, serviceTypeId: selectedServiceTypeId }}
+                            parameters={searchParameters as SearchParameters & { latitude: string; longitude: string; locationRange: number }}
                             setCurrentStep={setCurrentStep}
                             onComplete={handleSearchComplete}
                             serviceId={selectedServiceId}
+                            setShowSubscriptions={() => (window.location.href = '/suscripciones')}
                         />
                     )}
                 </div>
             )}
             {notification && (
-                <Notification type={notification.type} message={notification.message} onClose={() => setNotification(null)} />
+                <Notification
+                    type={notification.type}
+                    message={notification.message}
+                    onClose={() => setNotification(null)}
+                />
             )}
         </div>
     );
