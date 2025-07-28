@@ -37,13 +37,21 @@ interface Service {
     } | null;
 }
 
-export function useServices(categoryId?: number, serviceTypeId?: number, expertId?: number) {
+interface UseServicesProps {
+    categoryId: number;
+    serviceTypeId: number;
+    latitude: string;
+    longitude: string;
+    locationRange: number;
+}
+
+export function useServices({ categoryId, serviceTypeId, latitude, longitude, locationRange }: UseServicesProps) {
     const { signOut } = useAuth();
     const queryClient = useQueryClient();
     const [isCreatingService, setIsCreatingService] = useState(false);
 
     const servicesQuery = useQuery({
-        queryKey: ['services', categoryId, serviceTypeId, expertId],
+        queryKey: ['services', categoryId, serviceTypeId, latitude, longitude, locationRange],
         queryFn: async () => {
             const token = getAuthToken();
             if (!token) {
@@ -52,22 +60,30 @@ export function useServices(categoryId?: number, serviceTypeId?: number, expertI
                 throw new Error('No authentication token found');
             }
 
-            let url: string;
-            if (expertId && expertId > 0) {
-                url = `/api/SearchService/expert/${expertId}${serviceTypeId ? `?serviceTypeId=${serviceTypeId}` : ''}`;
-                console.log('Fetching services for expert with URL:', url);
-            } else if (categoryId && categoryId > 0 && serviceTypeId && serviceTypeId > 0) {
-                url = `/api/SearchService?categoryId=${categoryId}&serviceTypeId=${serviceTypeId}`;
-                console.log('Fetching services with URL:', url);
-            } else {
-                console.warn('Invalid parameters:', { categoryId, serviceTypeId, expertId });
-                throw new Error('Invalid parameters: Provide either expertId or both categoryId and serviceTypeId');
+            if (categoryId <= 0 || serviceTypeId <= 0) {
+                console.warn('Invalid parameters:', { categoryId, serviceTypeId });
+                throw new Error('Invalid parameters: categoryId and serviceTypeId must be greater than 0');
             }
+
+            if (!latitude || !longitude || locationRange <= 0) {
+                console.warn('Invalid location parameters:', { latitude, longitude, locationRange });
+                throw new Error('Invalid parameters: latitude, longitude, and locationRange are required');
+            }
+
+            const params = new URLSearchParams({
+                categoryId: categoryId.toString(),
+                serviceTypeId: serviceTypeId.toString(),
+                latitude,
+                longitude,
+                locationRange: locationRange.toString(),
+            });
+            const url = `/api/SearchService?${params.toString()}`;
+            console.log('Fetching services with URL:', url);
 
             const response = await fetch(url, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                    'Authorization': `Bearer ${token}`,
+                },
             });
 
             if (!response.ok) {
@@ -76,14 +92,23 @@ export function useServices(categoryId?: number, serviceTypeId?: number, expertI
                     signOut();
                     throw new Error('Request failed with status 401');
                 }
-                throw new Error(`Failed to fetch services: ${response.statusText}`);
+                let errorMessage = `Failed to fetch services: ${response.statusText}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch {
+                    // Ignore JSON parsing errors
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
             console.log('Fetched services:', data);
             return data as Service[];
         },
-        enabled: (expertId && expertId > 0) || (categoryId && categoryId > 0 && serviceTypeId && serviceTypeId > 0),
+        enabled: categoryId > 0 && serviceTypeId > 0 && !!latitude && !!longitude && locationRange > 0,
+        retry: 1,
+        staleTime: 5 * 60 * 1000, // 5 minutes
     });
 
     const createServiceMutation = useMutation({
@@ -117,18 +142,18 @@ export function useServices(categoryId?: number, serviceTypeId?: number, expertI
 
             for (const [key, value] of formData.entries()) {
                 if (value instanceof File) {
-                    console.log(`FormData entry: ${key} = ${value.name}, ${value.size} bytes, ${value.type}`);
+                    console.log(`FormData ${key} = ${value.name}, ${value.size} bytes, ${value.type}`);
                 } else {
-                    console.log(`FormData entry: ${key} = ${value}`);
+                    console.log(`FormData ${key} = ${value}`);
                 }
             }
 
             const response = await fetch('/api/SearchService', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
                 },
-                body: formData
+                body: formData,
             });
 
             if (!response.ok) {
@@ -139,14 +164,14 @@ export function useServices(categoryId?: number, serviceTypeId?: number, expertI
             return await response.json();
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['services', undefined, undefined, expertId] });
+            queryClient.invalidateQueries({ queryKey: ['services', categoryId, serviceTypeId] });
         },
         onError: (error) => {
             console.error('Error creating service:', error);
         },
         onSettled: () => {
             setIsCreatingService(false);
-        }
+        },
     });
 
     return {

@@ -4,15 +4,39 @@ import { useCategories } from '../contexts/CategoryContext';
 import { useServices } from '../hooks/useServices';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 
-export function ServiceSelection({ onBack, onComplete, selectedCategory, selectedServiceTypeId }) {
+interface ServiceSelectionProps {
+    onBack: () => void;
+    onComplete: (serviceId: number) => void;
+    selectedCategory: number;
+    selectedServiceTypeId: number;
+    latitude: string;
+    longitude: string;
+    locationRange: number;
+}
+
+export function ServiceSelection({
+    onBack,
+    onComplete,
+    selectedCategory,
+    selectedServiceTypeId,
+    latitude,
+    longitude,
+    locationRange,
+}: ServiceSelectionProps) {
     const { categories } = useCategories();
     const { serviceTypes } = useServiceTypes();
     const [selectedService, setSelectedService] = useState<number | null>(null);
     const [detailServiceId, setDetailServiceId] = useState<number | null>(null);
-    const { services, isLoading, error } = useServices(selectedCategory, selectedServiceTypeId);
+    const { services, isLoading, error } = useServices({
+        categoryId: selectedCategory,
+        serviceTypeId: selectedServiceTypeId,
+        latitude,
+        longitude,
+        locationRange,
+    });
     const [carouselIndices, setCarouselIndices] = useState<{ [key: number]: number }>({});
 
-    // Log services to debug profile picture, rating, and reviews data
+    // Log services to debug
     console.log('Services data:', services.map(s => ({
         id: s.id,
         expertProfilePicture: s.expert?.profilePictureUrl,
@@ -33,9 +57,18 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory, selecte
     }
 
     if (error) {
+        const errorMessage = `Error al cargar los servicios: ${error.message}`;
         return (
-            <div className="text-center py-12 text-red-500">
-                Error al cargar los servicios: {(error as Error).message}
+            <div className="max-w-4xl mx-auto px-6 py-12">
+                <div className="bg-red-50 text-red-600 p-6 rounded-sm shadow-sm text-center">
+                    <p className="text-lg">{errorMessage}</p>
+                    <button
+                        onClick={onBack}
+                        className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
+                    >
+                        Volver
+                    </button>
+                </div>
             </div>
         );
     }
@@ -45,7 +78,7 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory, selecte
         return (
             <div className="max-w-4xl mx-auto px-6 py-12">
                 <div className="bg-red-50 text-red-600 p-6 rounded-sm shadow-sm text-center">
-                    <p className="text-lg">No hay servicios disponibles para {serviceTypeName}.</p>
+                    <p className="text-lg">No hay servicios disponibles para {serviceTypeName} en la ubicación seleccionada.</p>
                     <button
                         onClick={onBack}
                         className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
@@ -76,7 +109,6 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory, selecte
         const fullStars = Math.floor(rating);
         const hasHalfStar = rating % 1 >= 0.5;
         const stars = [];
-
         for (let i = 0; i < 5; i++) {
             if (i < fullStars) {
                 stars.push(<Star key={i} className="w-4 h-4 fill-current text-yellow-500" />);
@@ -86,12 +118,10 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory, selecte
                 stars.push(<Star key={i} className="w-4 h-4 text-gray-300" />);
             }
         }
-
         return stars;
     };
 
     const detailService = services.find((s) => s.id === detailServiceId);
-
     const serviceTypeName = services[0]?.serviceTypeName || serviceTypes.find((st) => st.id === selectedServiceTypeId)?.name || 'Servicios';
 
     return (
@@ -110,7 +140,6 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory, selecte
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {services.map((service) => {
                     const savings = Math.floor(Math.random() * 500) + 300;
-                    const basePrice = service.price + savings;
                     const currentImageIndex = carouselIndices[service.id] || 0;
 
                     return (
@@ -168,7 +197,7 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory, selecte
                                             onError={(e) => {
                                                 console.error(`Failed to load profile picture for service ${service.id}: ${service.expert.profilePictureUrl}`);
                                                 e.currentTarget.style.display = 'none';
-                                                e.currentTarget.nextElementSibling.style.display = 'flex';
+                                                e.currentTarget.nextElementSibling!.style.display = 'flex';
                                             }}
                                         />
                                     ) : (
@@ -296,7 +325,7 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory, selecte
                                             onError={(e) => {
                                                 console.error(`Failed to load profile picture in modal for service ${detailService.id}: ${detailService.expert.profilePictureUrl}`);
                                                 e.currentTarget.style.display = 'none';
-                                                e.currentTarget.nextElementSibling.style.display = 'flex';
+                                                e.currentTarget.nextElementSibling!.style.display = 'flex';
                                             }}
                                         />
                                         <div className="w-20 h-20 bg-gray-200 flex items-center justify-center rounded-full border-2 border-white shadow-md" style={{ display: 'none' }}>
@@ -305,7 +334,6 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory, selecte
                                     </div>
                                 )}
                             </div>
-                            {/* Removed description, keeping only title */}
                         </div>
                         <div className="mb-6">
                             <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
@@ -352,7 +380,7 @@ export function ServiceSelection({ onBack, onComplete, selectedCategory, selecte
                 <button
                     onClick={handleContinue}
                     disabled={selectedService === null}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Continuar
                     <ArrowRight className="w-5 h-5" />
