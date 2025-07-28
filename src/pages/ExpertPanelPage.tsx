@@ -11,7 +11,6 @@ import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
 
-// Definir interfaz Hire con searchId opcional para compatibilidad
 interface Hire {
     id: number;
     searchId: number | null;
@@ -23,7 +22,6 @@ interface Hire {
     amount: number;
 }
 
-// Update Service interface to reflect nullable DurationInHours
 interface Service {
     id: number;
     expertProfileId: number;
@@ -80,13 +78,8 @@ export function ExpertPanelPage() {
         fetchProfile,
     } = useExpert();
 
-    const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService } = useServices(undefined, undefined, profile?.id) as {
-        services: Service[];
-        isLoading: boolean;
-        error: Error | null;
-        createService: any;
-        isCreatingService: boolean;
-    };
+    const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService } = useServices({ expertProfileId: profile?.id });
+
     const { hires, isLoading: isLoadingHires, error: hiresError } = useExpertHires();
 
     useEffect(() => {
@@ -135,7 +128,6 @@ export function ExpertPanelPage() {
             errors.price = 'El precio debe ser mayor que 0';
         }
 
-        // Only validate duration if it's provided (e.g., for serviceTypeId === 1)
         if (formData.durationInHours && (parseInt(formData.durationInHours) <= 0 || isNaN(parseInt(formData.durationInHours)))) {
             errors.durationInHours = 'La duración debe ser mayor que 0';
         }
@@ -295,7 +287,6 @@ export function ExpertPanelPage() {
         });
     }, [services]);
 
-    // Calculate activeHires directly in ExpertPanelPage
     const activeHires = hires ? hires.filter((hire) => ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status)) : [];
 
     if (!user) {
@@ -482,7 +473,7 @@ export function ExpertPanelPage() {
                     hiresError={hiresError}
                     filters={filters}
                     setHireTab={setHireTab}
-                    setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as any })} // Type assertion to match union
+                    setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as any })}
                     handleViewHire={handleViewHire}
                     categories={categories}
                 />
@@ -495,7 +486,7 @@ export function ExpertPanelPage() {
                     setFormErrors={setFormErrors}
                     formData={formData}
                     setFormData={setFormData}
-                    handleImageSelect={handleImageSelect as (e: React.ChangeEvent<any>) => void} // Type casting to match broader type
+                    handleImageSelect={handleImageSelect as (e: React.ChangeEvent<any>) => void}
                     removeImage={removeImage}
                     handleCreateService={handleCreateService}
                     serviceTypes={serviceTypes}
