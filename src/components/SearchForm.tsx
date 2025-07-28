@@ -2,15 +2,27 @@
 import { Clock, ArrowRight, Sparkles, Target, DollarSign, Zap, ArrowLeft, Crown, Search } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
-import type { SearchParameters } from '../hooks/useSearch.hooks';
 import { Notification, NotificationType } from './Notification';
+
+export interface SearchParameters {
+    keywords: string;
+    userSearch: string;
+    category: number;
+    frequency: number;
+    latitude: string;
+    longitude: string;
+    locationRange: number;
+    minPrice?: number;
+    maxPrice?: number;
+    serviceTypeId: number;
+}
 
 export interface SearchFormProps {
     parameters: SearchParameters;
     onComplete: () => void;
     setCurrentStep: (step: number) => void;
     setShowSubscriptions?: (show: boolean) => void;
-    serviceId: number | null; // Added
+    serviceId: number | null;
 }
 
 export default function SearchForm({
@@ -18,7 +30,7 @@ export default function SearchForm({
     onComplete,
     setCurrentStep,
     setShowSubscriptions = () => { },
-    serviceId, // Added
+    serviceId,
 }: SearchFormProps) {
     const { createSearchWithHire } = useSearch();
     const { maxSearchesReached, maxSearches } = useSubscriptionLimits();
@@ -63,9 +75,12 @@ export default function SearchForm({
                 searchData,
                 parameters: {
                     ...parameters,
-                    serviceTypeId: parameters.serviceTypeId
+                    serviceTypeId: parameters.serviceTypeId,
+                    latitude: parameters.latitude,
+                    longitude: parameters.longitude,
+                    locationRange: parameters.locationRange,
                 },
-                serviceId: serviceId || undefined, // Use serviceId from props
+                serviceId: serviceId || undefined,
             });
 
             if (hireUrl) {
@@ -154,7 +169,6 @@ export default function SearchForm({
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Service Type Card */}
                         <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
                                 <Search className="w-5 h-5 text-blue-600" />
@@ -171,7 +185,6 @@ export default function SearchForm({
                                 </div>
                             </div>
                         </div>
-                        {/* Location Card */}
                         <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
                                 <Target className="w-5 h-5 text-blue-600" />
@@ -201,7 +214,6 @@ export default function SearchForm({
                                 </div>
                             </div>
                         </div>
-                        {/* Price Card */}
                         <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
                                 <DollarSign className="w-5 h-5 text-blue-600" title="Precio" />
@@ -232,7 +244,6 @@ export default function SearchForm({
                                 </div>
                             </div>
                         </div>
-                        {/* Update Settings Card */}
                         <div className="col-span-1 lg:col-span-3 bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
                                 <Clock className="w-5 h-5 text-blue-600" />

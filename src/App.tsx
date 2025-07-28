@@ -22,7 +22,7 @@ import Background from './components/Background';
 import { BecomeExpertPage } from './pages/BecomeExpertPage';
 import { ExpertPanelPage } from './pages/ExpertPanelPage';
 import { SearchResultsPage } from './pages/SearchResultsPage';
-import SearchDetails from './components/SearchDetails'; // Import SearchDetails
+import SearchDetails from './components/SearchDetails';
 
 const App: React.FC = React.memo(() => {
     const { user, setUser, isAuthenticated, signOut } = useAuth();
