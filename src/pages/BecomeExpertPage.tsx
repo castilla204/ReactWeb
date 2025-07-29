@@ -69,7 +69,7 @@ const circleOptions = {
     draggable: false
 };
 
-export function BecomeExpertPage() {
+function BecomeExpertPage() {
     const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { formData, previewUrl, isSubmitting, error, handleFileChange, handleMapClick, handleSubmit, setFormData } = useBecomeExpert();
@@ -90,6 +90,33 @@ export function BecomeExpertPage() {
         setCircle(initialCircle);
     };
 
+    const onMapClick = (e: google.maps.MapMouseEvent) => {
+        if (e.latLng) {
+            const newLocation = {
+                lat: e.latLng.lat(),
+                lng: e.latLng.lng()
+            };
+
+            // Actualizar la ubicación seleccionada
+            setSelectedLocation(newLocation);
+
+            // Actualizar el formulario
+            setFormData((prev) => ({
+                ...prev,
+                latitude: newLocation.lat.toString(),
+                longitude: newLocation.lng.toString()
+            }));
+
+            // Actualizar el círculo si existe
+            if (circle) {
+                circle.setCenter(newLocation);
+            }
+
+            // También llamar al handler original del hook
+            handleMapClick(e);
+        }
+    };
+
     const onCircleComplete = (newCircle: google.maps.Circle) => {
         if (circle) {
             circle.setMap(null);
@@ -97,10 +124,11 @@ export function BecomeExpertPage() {
         setCircle(newCircle);
         const center = newCircle.getCenter();
         if (center) {
-            setSelectedLocation({
+            const newLocation = {
                 lat: center.lat(),
                 lng: center.lng()
-            });
+            };
+            setSelectedLocation(newLocation);
             setFormData((prev) => ({
                 ...prev,
                 latitude: center.lat().toString(),
@@ -138,7 +166,7 @@ export function BecomeExpertPage() {
                                 Foto de Perfil <span className="text-red-500">*</span>
                             </label>
                             <div
-                                className="border-2 border-dashed border-gray-300 hover:border-blue-500 transition-colors duration-200 p-6 text-center"
+                                className="border-2 border-dashed border-gray-300 hover:border-blue-500 transition-colors duration-200 p-6 text-center cursor-pointer"
                                 onClick={() => fileInputRef.current?.click()}
                             >
                                 {previewUrl ? (
@@ -166,7 +194,7 @@ export function BecomeExpertPage() {
                                 <input
                                     ref={fileInputRef}
                                     type="file"
-                                    accept="image/jpeg,image/png"
+                                    accept="image/jpeg,image/png,image/jpg"
                                     onChange={handleFileChange}
                                     className="hidden"
                                     required
@@ -186,6 +214,7 @@ export function BecomeExpertPage() {
                                 rows={4}
                                 placeholder="Cuéntanos sobre tu experiencia y especialidad..."
                                 required
+                                minLength={50}
                             />
                             <p className="text-xs text-gray-500 mt-1">Requerido: Describe tu experiencia (mín. 50 caracteres).</p>
                         </div>
@@ -210,10 +239,10 @@ export function BecomeExpertPage() {
                                                 <MapPin className="w-4 h-4 text-blue-700" />
                                                 <span className="text-sm text-gray-700">Haz clic para seleccionar</span>
                                             </div>
-                                            {selectedLocation && (
+                                            {selectedLocation && formData.latitude && formData.longitude && (
                                                 <div className="absolute top-16 left-4 z-10 px-3 py-1.5 bg-white/90 backdrop-blur-sm border border-gray-200 shadow">
                                                     <div className="text-sm text-gray-700">
-                                                        {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}
+                                                        📍 {parseFloat(formData.latitude).toFixed(4)}, {parseFloat(formData.longitude).toFixed(4)}
                                                     </div>
                                                 </div>
                                             )}
@@ -221,7 +250,7 @@ export function BecomeExpertPage() {
                                                 mapContainerStyle={{ width: '100%', height: '100%' }}
                                                 zoom={8}
                                                 center={selectedLocation}
-                                                onClick={handleMapClick}
+                                                onClick={onMapClick}
                                                 onLoad={onLoad}
                                                 options={{
                                                     disableDefaultUI: false,
@@ -265,8 +294,8 @@ export function BecomeExpertPage() {
 
                         <button
                             type="submit"
-                            disabled={isSubmitting || !formData.profilePicture}
-                            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                            disabled={isSubmitting || !formData.profilePicture || formData.description.length < 50}
+                            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
                         >
                             {isSubmitting ? (
                                 <>
@@ -286,3 +315,7 @@ export function BecomeExpertPage() {
         </div>
     );
 }
+
+// Exportación por defecto Y nombrada para máxima compatibilidad
+export default BecomeExpertPage;
+export { BecomeExpertPage };

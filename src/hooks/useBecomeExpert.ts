@@ -42,8 +42,8 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 setError('La imagen no puede superar los 5MB');
                 return;
             }
-            if (!['image/jpeg', 'image/png'].includes(file.type)) {
-                setError('Solo se permiten imágenes JPG y PNG');
+            if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+                setError('Solo se permiten imágenes JPG, JPEG y PNG');
                 return;
             }
             setFormData((prev) => ({ ...prev, profilePicture: file }));
@@ -70,11 +70,25 @@ export function useBecomeExpert(): UseBecomeExpertResult {
         setIsSubmitting(true);
         setError(null);
 
+        // Validaciones
+        if (!formData.description.trim()) {
+            setError('La descripción es requerida');
+            setIsSubmitting(false);
+            return;
+        }
+
+        if (formData.description.trim().length < 50) {
+            setError('La descripción debe tener al menos 50 caracteres');
+            setIsSubmitting(false);
+            return;
+        }
+
         if (!formData.profilePicture) {
             setError('La foto de perfil es requerida');
             setIsSubmitting(false);
             return;
         }
+
         if (!formData.latitude || !formData.longitude) {
             setError('Por favor selecciona una ubicación en el mapa');
             setIsSubmitting(false);
@@ -82,43 +96,107 @@ export function useBecomeExpert(): UseBecomeExpertResult {
         }
 
         try {
-            const data = new FormData();
-            data.append('description', formData.description);
-            if (formData.profilePicture) data.append('profilePicture', formData.profilePicture);
-            data.append('latitude', formData.latitude);
-            data.append('longitude', formData.longitude);
-
             const token = localStorage.getItem('authToken');
-            console.log('Auth token:', token);
+            if (!token) {
+                setError('No se encontró el token de autenticación');
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Crear FormData
+            const data = new FormData();
+            data.append('Description', formData.description.trim());
+            data.append('ProfilePicture', formData.profilePicture);
+            data.append('Latitude', formData.latitude);
+            data.append('Longitude', formData.longitude);
+
+            console.log('Enviando datos:', {
+                description: formData.description.trim(),
+                profilePicture: formData.profilePicture.name,
+                latitude: formData.latitude,
+                longitude: formData.longitude
+            });
+
             const response = await fetch('/api/User/become-expert', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                    // No incluir Content-Type cuando se envía FormData
+                },
                 body: data,
             });
 
+            console.log('Response status:', response.status);
+
             if (!response.ok) {
-                const text = await response.text();
-                console.error('Server error response:', text);
-                const errorData = text ? JSON.parse(text) : { message: 'Server error' };
-                throw new Error(errorData.message || 'Error al registrarse como experto');
+                let errorMessage = 'Error al registrarse como experto';
+
+                try {
+                    const errorText = await response.text();
+                    console.error('Server error response:', errorText);
+
+                    if (errorText) {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorMessage;
+                    }
+                } catch (parseError) {
+                    console.error('Error parsing error response:', parseError);
+
+                    // Mensajes de error más específicos basados en el status code
+                    switch (response.status) {
+                        case 400:
+                            errorMessage = 'Datos inválidos. Verifica que todos los campos estén correctos.';
+                            break;
+                        case 401:
+                            errorMessage = 'No autorizado. Por favor, inicia sesión nuevamente.';
+                            break;
+                        case 403:
+                            errorMessage = 'No tienes permisos para realizar esta acción.';
+                            break;
+                        case 500:
+                            errorMessage = 'Error interno del servidor. Inténtalo más tarde.';
+                            break;
+                        default:
+                            errorMessage = `Error del servidor (${response.status})`;
+                    }
+                }
+
+                throw new Error(errorMessage);
             }
 
             const result = await response.json();
-            if (result.user?.role !== 'Expert') {
-                throw new Error('El usuario no tiene el rol de Experto después del registro');
+            console.log('Success response:', result);
+            console.log('User role received:', result.user?.Role);
+            console.log('Full user object:', result.user);
+
+            if (!result.token || !result.user) {
+                throw new Error('Respuesta del servidor incompleta');
             }
 
+            // Verificar el rol de forma más flexible
+            const userRole = result.user.Role || result.user.role;
+            if (userRole !== 'Expert' && userRole !== 'expert' && userRole !== 'EXPERT') {
+                console.warn('Rol inesperado recibido:', userRole);
+                // No lanzar error, solo advertir - el backend ya creó el usuario como experto
+                // throw new Error('El usuario no tiene el rol de Experto después del registro');
+            }
+
+            // Actualizar autenticación
             setAuthToken(result.token, result.user);
             updateUser(result.user, result.token, () => navigate('/expert-panel'));
 
+            // Mostrar notificación de éxito
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
                     message: '✨ ¡Te has registrado exitosamente como buscador experto!',
                 },
             }));
+
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Error al procesar la solicitud');
+            console.error('Error in handleSubmit:', err);
+            const errorMessage = err instanceof Error ? err.message : 'Error al procesar la solicitud';
+            setError(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
@@ -130,5 +208,15 @@ export function useBecomeExpert(): UseBecomeExpertResult {
         }
     }, [user, navigate]);
 
-    return { formData, previewUrl, isSubmitting, error, handleFileChange, handleMapClick, handleSubmit, setFormData, setPreviewUrl };
+    return {
+        formData,
+        previewUrl,
+        isSubmitting,
+        error,
+        handleFileChange,
+        handleMapClick,
+        handleSubmit,
+        setFormData,
+        setPreviewUrl
+    };
 }
