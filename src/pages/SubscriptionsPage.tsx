@@ -1,3 +1,4 @@
+ï»¿// SubscriptionsPage.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Wallet, Loader2, CreditCard } from 'lucide-react';
@@ -9,10 +10,33 @@ const SubscriptionsPage: React.FC = () => {
     const { loadMoney, isLoading } = useSubscription();
 
     const handleLoadMoney = async (amount: number) => {
+        // Validate amount before calling loadMoney
+        if (typeof amount !== 'number' || isNaN(amount) || amount <= 0 || amount > 1000) {
+            console.error('Invalid amount:', amount);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: 'âŒ El monto debe ser un nÃºmero entre 0.01 y 1000'
+                }
+            }));
+            return;
+        }
+
         try {
-            await loadMoney(amount);
-        } catch (error) {
-            console.error('Error loading money:', error);
+            const response = await loadMoney({ Amount: amount }); // Capture the response
+            if (response?.url) {
+                window.location.href = response.url; // Redirect to Stripe Checkout URL
+            } else {
+                throw new Error('No payment URL returned from the server');
+            }
+        } catch (error: any) {
+            console.error('Error loading money:', error.message);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: `âŒ Error al cargar dinero: ${error.message}`
+                }
+            }));
         }
     };
 
@@ -34,26 +58,26 @@ const SubscriptionsPage: React.FC = () => {
                             Recargar Saldo
                         </h1>
                         <p className="text-gray-500 max-w-2xl mx-auto">
-                            Recarga tu saldo para poder contratar servicios de búsqueda de expertos
+                            Recarga tu saldo para poder contratar servicios de bÃºsqueda de expertos
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                        {/* 10€ Card */}
+                        {/* 10â‚¬ Card */}
                         <div className="bg-white rounded-2xl p-8 transition-all border border-gray-200 hover:border-blue-200 shadow-lg hover:shadow-xl">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
                                     <Wallet className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-semibold text-gray-900">Recarga Básica</h3>
+                                    <h3 className="text-lg font-semibold text-gray-900">Recarga BÃ¡sica</h3>
                                     <p className="text-sm text-gray-500">Ideal para empezar</p>
                                 </div>
                             </div>
 
                             <div className="mb-6">
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-3xl font-bold text-gray-900">10€</span>
+                                    <span className="text-3xl font-bold text-gray-900">10â‚¬</span>
                                 </div>
                             </div>
 
@@ -70,13 +94,13 @@ const SubscriptionsPage: React.FC = () => {
                                 ) : (
                                     <>
                                         <CreditCard className="w-5 h-5" />
-                                        <span>Recargar 10€</span>
+                                        <span>Recargar 10â‚¬</span>
                                     </>
                                 )}
                             </button>
                         </div>
 
-                        {/* 20€ Card */}
+                        {/* 20â‚¬ Card */}
                         <div className="bg-white rounded-2xl p-8 transition-all border border-gray-200 hover:border-blue-200 shadow-lg hover:shadow-xl">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
@@ -84,13 +108,13 @@ const SubscriptionsPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-900">Recarga Plus</h3>
-                                    <p className="text-sm text-gray-500">Para búsquedas regulares</p>
+                                    <p className="text-sm text-gray-500">Para bÃºsquedas regulares</p>
                                 </div>
                             </div>
 
                             <div className="mb-6">
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-3xl font-bold text-gray-900">20€</span>
+                                    <span className="text-3xl font-bold text-gray-900">20â‚¬</span>
                                 </div>
                             </div>
 
@@ -107,13 +131,13 @@ const SubscriptionsPage: React.FC = () => {
                                 ) : (
                                     <>
                                         <CreditCard className="w-5 h-5" />
-                                        <span>Recargar 20€</span>
+                                        <span>Recargar 20â‚¬</span>
                                     </>
                                 )}
                             </button>
                         </div>
 
-                        {/* 50€ Card */}
+                        {/* 50â‚¬ Card */}
                         <div className="bg-white rounded-2xl p-8 transition-all border border-gray-200 hover:border-blue-200 shadow-lg hover:shadow-xl">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
@@ -127,7 +151,7 @@ const SubscriptionsPage: React.FC = () => {
 
                             <div className="mb-6">
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-3xl font-bold text-gray-900">50€</span>
+                                    <span className="text-3xl font-bold text-gray-900">50â‚¬</span>
                                 </div>
                             </div>
 
@@ -144,7 +168,7 @@ const SubscriptionsPage: React.FC = () => {
                                 ) : (
                                     <>
                                         <CreditCard className="w-5 h-5" />
-                                        <span>Recargar 50€</span>
+                                        <span>Recargar 50â‚¬</span>
                                     </>
                                 )}
                             </button>

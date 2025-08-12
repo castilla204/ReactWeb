@@ -1,9 +1,13 @@
-﻿import { useMutation, useQuery } from '@tanstack/react-query';
+﻿// useSubscription.hooks.ts
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useApi } from './useApi';
 
 interface LoadMoneyRequest {
-    amount: number;
-    paymentMethodId: string;
+    Amount: number; // Match backend's LoadMoneyDto property name
+}
+
+interface LoadMoneyResponse {
+    url: string; // Expected response from /api/Subscription/load-money
 }
 
 interface ForceFinalizeRequest {
@@ -39,25 +43,38 @@ interface DisputeDetailsResponse {
 export const useSubscription = () => {
     const { fetchApi } = useApi();
 
-    const loadMoneyMutation = useMutation({
-        mutationFn: (data: LoadMoneyRequest) =>
-            fetchApi('/api/Subscription/load-money', {
+    const loadMoneyMutation = useMutation<LoadMoneyResponse, Error, LoadMoneyRequest>({
+        mutationFn: async (data: LoadMoneyRequest) => {
+            console.log('Received data in loadMoneyMutation:', data); // Debug log
+            // Validate amount before sending the request
+            if (!data || typeof data.Amount !== 'number' || isNaN(data.Amount) || data.Amount <= 0 || data.Amount > 1000) {
+                throw new Error('Amount must be a number between 0.01 and 1000');
+            }
+            console.log('Sending loadMoney payload:', data); // Debug log
+            const response = await fetchApi('/api/Subscription/load-money', {
                 method: 'POST',
                 body: JSON.stringify(data)
-            }),
-        onSuccess: () => {
+            });
+            return response as LoadMoneyResponse; // Return the response with the URL
+        },
+        onSuccess: (data) => {
+            console.log('loadMoneyMutation success:', data); // Debug log
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
-                    message: '✅ Dinero cargado exitosamente'
+                    message: '✅ Redirigiendo a la página de pago'
                 }
             }));
         },
-        onError: () => {
+        onError: (error: any) => {
+            const errorMessage = error.response?.errors
+                ? `Validation errors: ${JSON.stringify(error.response.errors)}`
+                : error.message || 'Unknown error';
+            console.error('Load money error:', errorMessage); // Log detailed error
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'error',
-                    message: '❌ Error al cargar dinero'
+                    message: `❌ Error al cargar dinero: ${errorMessage}`
                 }
             }));
         }
