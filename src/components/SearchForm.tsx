@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { Clock, ArrowRight, Sparkles, Target, DollarSign, Zap, ArrowLeft, Crown, Search, Wallet, User } from 'lucide-react';
+import { ArrowRight, Sparkles, Target, DollarSign, Zap, ArrowLeft, Crown, Search, Wallet, User } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import { useUserSettings } from '../hooks/useUserSettings';
@@ -70,23 +70,24 @@ export default function SearchForm({
         });
     }
 
+    // Validar datos requeridos
+    const isDataComplete = serviceId !== null && expertName && servicePrice !== undefined;
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsSubmitting(true);
 
         console.log('SearchForm - Submitting with:', { serviceId, servicePrice, balance });
 
-        // Validar que serviceId y servicePrice estén definidos
-        if (!serviceId || servicePrice === undefined) {
+        if (!isDataComplete) {
             setNotification({
                 type: 'error',
-                message: '❌ Error: No se ha seleccionado un servicio válido o falta el precio del servicio.',
+                message: '❌ Error: Los datos del servicio están incompletos. Por favor, selecciona un servicio válido.',
             });
             setIsSubmitting(false);
             return;
         }
 
-        // Validar límite de búsquedas
         if (maxSearchesReached) {
             setNotification({
                 type: 'error',
@@ -99,7 +100,6 @@ export default function SearchForm({
             return;
         }
 
-        // Validar que balance esté cargado y no sea null
         if (createSearchWithHire.isPending || isSubmitting || isLoadingBalance || balance === null) {
             setNotification({
                 type: 'error',
@@ -119,8 +119,7 @@ export default function SearchForm({
                 startDate: new Date().toISOString(),
             };
 
-            if (balance >= servicePrice) {
-                // Saldo suficiente, proceder con la contratación
+            if (balance >= servicePrice!) {
                 const { hireUrl } = await createSearchWithHire.mutateAsync({
                     searchData,
                     parameters: {
@@ -130,7 +129,7 @@ export default function SearchForm({
                         longitude: parameters.longitude,
                         locationRange: parameters.locationRange,
                     },
-                    serviceId,
+                    serviceId: serviceId!,
                 });
 
                 if (hireUrl) {
@@ -141,11 +140,10 @@ export default function SearchForm({
 
                 setNotification({
                     type: 'success',
-                    message: `✅ Búsqueda creada exitosamente para el servicio de ${expertName || 'un experto'}.`,
+                    message: `✅ Búsqueda creada exitosamente para el servicio de ${expertName}.`,
                 });
                 onComplete();
             } else {
-                // Saldo insuficiente, iniciar proceso de pago
                 const response = await fetchApi<{ url: string }>('/api/Subscription/load-money-service', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -187,7 +185,7 @@ export default function SearchForm({
 
     const handleBack = (e: React.MouseEvent) => {
         e.preventDefault();
-        setCurrentStep(2); // Volver a ServiceSelection
+        setCurrentStep(2);
     };
 
     return (
@@ -218,6 +216,11 @@ export default function SearchForm({
                                 </p>
                             </div>
                         </div>
+                        {!isDataComplete && (
+                            <div className="mb-4 bg-red-50 text-red-600 p-4 rounded-lg">
+                                <p className="text-sm">❌ Error: Los datos del servicio están incompletos. Por favor, vuelve a seleccionar un servicio.</p>
+                            </div>
+                        )}
                         <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100 mb-4">
                             <div className="flex items-start gap-3">
                                 <div className="mt-1">
@@ -231,41 +234,6 @@ export default function SearchForm({
                                         {parameters.userSearch || 'No se proporcionó descripción.'}
                                     </p>
                                 </div>
-                            </div>
-                        </div>
-                        {/* Sección de detalles del experto y servicio */}
-                        <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100 flex items-start gap-4">
-                            <div className="flex-shrink-0">
-                                {expertProfilePicture ? (
-                                    <img
-                                        src={expertProfilePicture}
-                                        alt={expertName || 'Experto'}
-                                        className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                                        onError={(e) => {
-                                            console.error(`SearchForm - Failed to load expert profile picture: ${expertProfilePicture}`);
-                                            e.currentTarget.style.display = 'none';
-                                            e.currentTarget.nextElementSibling!.style.display = 'flex';
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="w-16 h-16 bg-gray-200 flex items-center justify-center rounded-full">
-                                        <User className="w-8 h-8 text-gray-400" />
-                                    </div>
-                                )}
-                                <div className="w-16 h-16 bg-gray-200 flex items-center justify-center rounded-full" style={{ display: 'none' }}>
-                                    <User className="w-8 h-8 text-gray-400" />
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-900 mb-2">
-                                    {expertName || 'Experto no disponible'}
-                                </h3>
-                                <p className="text-sm text-gray-600 leading-relaxed break-words mb-2">
-                                    {serviceDescription || 'No hay descripción del servicio disponible.'}
-                                </p>
-                                <p className="text-sm font-medium text-gray-900">
-                                    Precio: €{servicePrice !== undefined ? servicePrice.toFixed(2) : 'No disponible'}
-                                </p>
                             </div>
                         </div>
                     </div>
@@ -325,6 +293,51 @@ export default function SearchForm({
                         </div>
                         <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
+                                <User className="w-5 h-5 text-blue-600" />
+                                <h3 className="text-sm font-medium text-gray-900">
+                                    Detalles del Experto
+                                </h3>
+                            </div>
+                            <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0">
+                                    {expertProfilePicture ? (
+                                        <img
+                                            src={expertProfilePicture}
+                                            alt={expertName || 'Experto'}
+                                            className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                                            onError={(e) => {
+                                                console.error(`SearchForm - Failed to load expert profile picture: ${expertProfilePicture}`);
+                                                e.currentTarget.style.display = 'none';
+                                                e.currentTarget.nextElementSibling!.style.display = 'flex';
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded-full">
+                                            <User className="w-6 h-6 text-gray-400" />
+                                        </div>
+                                    )}
+                                    <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded-full" style={{ display: 'none' }}>
+                                        <User className="w-6 h-6 text-gray-400" />
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="flex flex-col text-sm">
+                                        <span className="text-gray-500">Nombre</span>
+                                        <span className="text-gray-900 font-medium ml-2">
+                                            {expertName || 'No disponible'}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col text-sm">
+                                        <span className="text-gray-500">Condiciones del Servicio</span>
+                                        <span className="text-gray-900 font-medium line-clamp-3 ml-2">
+                                            {serviceDescription || 'No hay descripción disponible'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-span-1 lg:col-span-3 bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
+                            <div className="flex items-center gap-3 mb-4">
                                 <DollarSign className="w-5 h-5 text-blue-600" title="Precio" />
                                 <h3 className="text-sm font-medium text-gray-900">
                                     Detalles de Pago
@@ -353,38 +366,6 @@ export default function SearchForm({
                                 </div>
                             </div>
                         </div>
-                        <div className="col-span-1 lg:col-span-3 bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Clock className="w-5 h-5 text-blue-600" />
-                                <h3 className="text-sm font-medium text-gray-900">
-                                    Actualizaciones Automáticas
-                                </h3>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6">
-                                <div className="space-y-3">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Frecuencia</span>
-                                        <span className="text-gray-900 font-medium">
-                                            Cada {parameters.frequency}h
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Actualizaciones por Día</span>
-                                        <span className="text-gray-900 font-medium">
-                                            {(24 / parseInt(parameters.frequency.toString())).toFixed(1)}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Estado</span>
-                                        <span className="text-green-400 font-medium">Activa</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                     <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl p-4 border-t border-gray-100">
                         {maxSearchesReached ? (
@@ -404,7 +385,7 @@ export default function SearchForm({
                         ) : (
                             <button
                                 type="submit"
-                                disabled={createSearchWithHire.isPending || isSubmitting || !serviceId || isLoadingBalance || servicePrice === undefined}
+                                disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete || isLoadingBalance}
                                 className="w-full md:w-auto md:ml-auto flex items-center justify-center gap-2 py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
                             >
                                 {createSearchWithHire.isPending || isSubmitting ? (
