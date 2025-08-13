@@ -6,7 +6,7 @@ import { useServiceTypes } from '../hooks/useServiceTypes';
 
 interface ServiceSelectionProps {
     onBack: () => void;
-    onComplete: (serviceId: number) => void;
+    onComplete: (serviceId: number, expertProfilePicture?: string, expertName?: string, servicePrice?: number, serviceDescription?: string) => void;
     selectedCategory: number;
     selectedServiceTypeId: number;
     latitude: string;
@@ -27,6 +27,7 @@ export function ServiceSelection({
     const { serviceTypes } = useServiceTypes();
     const [selectedService, setSelectedService] = useState<number | null>(null);
     const [detailServiceId, setDetailServiceId] = useState<number | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const { services, isLoading, error } = useServices({
         categoryId: selectedCategory,
         serviceTypeId: selectedServiceTypeId,
@@ -36,14 +37,8 @@ export function ServiceSelection({
     });
     const [carouselIndices, setCarouselIndices] = useState<{ [key: number]: number }>({});
 
-    // Log services to debug
-    console.log('Services data:', services.map(s => ({
-        id: s.id,
-        expertProfilePicture: s.expert?.profilePictureUrl,
-        expertName: s.expert?.user?.name,
-        averageRating: s.averageRating,
-        reviews: s.expert?.reviews?.length || 0
-    })));
+    // Depuración: Mostrar los servicios recibidos
+    console.log('ServiceSelection - Services received:', services);
 
     if (isLoading) {
         return (
@@ -91,7 +86,38 @@ export function ServiceSelection({
     }
 
     const handleContinue = () => {
-        if (selectedService !== null) onComplete(selectedService);
+        if (selectedService === null) {
+            setErrorMessage('Por favor, selecciona un servicio antes de continuar.');
+            return;
+        }
+
+        const selectedServiceData = services.find((s) => s.id === selectedService);
+        if (!selectedServiceData) {
+            console.error('ServiceSelection - No service found for ID:', selectedService);
+            setErrorMessage('Error: No se encontró el servicio seleccionado.');
+            return;
+        }
+
+        const expertProfilePicture = selectedServiceData.expert?.profilePictureUrl ?? '';
+        const expertName = selectedServiceData.expert?.user?.name ?? 'Experto desconocido';
+        const servicePrice = selectedServiceData.price ?? 0;
+        const serviceDescription = selectedServiceData.conditions ?? 'Sin descripción disponible';
+
+        console.log('ServiceSelection - Selected service data:', {
+            serviceId: selectedService,
+            expertProfilePicture,
+            expertName,
+            servicePrice,
+            serviceDescription,
+        });
+
+        if (!expertName || servicePrice === 0) {
+            console.warn('ServiceSelection - Missing critical data:', { expertName, servicePrice });
+            setErrorMessage('Error: Los datos del servicio están incompletos (falta el nombre del experto o el precio).');
+            return;
+        }
+
+        onComplete(selectedService, expertProfilePicture, expertName, servicePrice, serviceDescription);
     };
 
     const handleCarouselChange = (serviceId: number, direction: 'next' | 'prev', isDetail = false) => {
@@ -136,6 +162,12 @@ export function ServiceSelection({
                 </button>
                 <h1 className="text-3xl font-bold text-gray-900">Servicios de {serviceTypeName}</h1>
             </div>
+
+            {errorMessage && (
+                <div className="mb-6 bg-red-50 text-red-600 p-4 rounded-sm shadow-sm text-center">
+                    <p className="text-lg">{errorMessage}</p>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {services.map((service) => {
@@ -212,7 +244,7 @@ export function ServiceSelection({
                             </div>
                             <div className="p-6 pt-10">
                                 <div className="mb-2">
-                                    <h3 className="text-lg font-semibold text-gray-900">{service.expert?.user?.name || 'Experto'}</h3>
+                                    <h3 className="text-lg font-semibold text-gray-900">{service.expert?.user?.name || 'Experto desconocido'}</h3>
                                     {'averageRating' in service && (
                                         <div className="flex items-center gap-2 mt-1">
                                             <div className="flex">{renderStars(service.averageRating)}</div>
@@ -222,9 +254,11 @@ export function ServiceSelection({
                                         </div>
                                     )}
                                 </div>
-                                <p className="text-gray-600 text-sm line-clamp-2 mb-2">{service.conditions}</p>
+                                <p className="text-gray-600 text-sm line-clamp-2 mb-2">{service.conditions || 'Sin descripción'}</p>
                                 <div className="text-2xl font-bold text-gray-900 mb-2">
-                                    {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(service.price)}
+                                    {service.price
+                                        ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(service.price)
+                                        : 'Precio no disponible'}
                                     <span className="text-sm text-gray-500 ml-1">/ servicio</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
