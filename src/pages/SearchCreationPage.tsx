@@ -61,7 +61,7 @@ const SearchCreationPage: React.FC = () => {
             window.location.href = '/suscripciones';
             return;
         }
-        console.log('Parameters received in SearchCreationPage:', parameters);
+        console.log('SearchCreationPage - Parameters received:', parameters);
         setSearchParameters(parameters);
         setCurrentStep(2);
     };
@@ -73,7 +73,20 @@ const SearchCreationPage: React.FC = () => {
         servicePrice?: number,
         serviceDescription?: string
     ) => {
-        console.log('Selected service ID:', serviceId, 'Expert:', expertName, 'Price:', servicePrice, 'Description:', serviceDescription);
+        console.log('SearchCreationPage - Service selection complete:', {
+            serviceId,
+            expertProfilePicture,
+            expertName,
+            servicePrice,
+            serviceDescription,
+        });
+        if (!expertName || servicePrice === undefined) {
+            setNotification({
+                type: 'error',
+                message: '❌ Error: Los datos del servicio están incompletos (falta el nombre del experto o el precio).',
+            });
+            return;
+        }
         setSelectedServiceId(serviceId);
         setExpertProfilePicture(expertProfilePicture);
         setExpertName(expertName);
@@ -132,7 +145,7 @@ const SearchCreationPage: React.FC = () => {
             });
             return;
         }
-        console.log('Starting search with parameters:', searchParameters);
+        console.log('SearchCreationPage - Starting search with parameters:', searchParameters);
         setCurrentStep(1);
     };
 
@@ -351,17 +364,26 @@ const SearchCreationPage: React.FC = () => {
                         />
                     )}
                     {currentStep === 3 && selectedServiceId && (
-                        <SearchForm
-                            parameters={searchParameters as SearchParameters & { latitude: string; longitude: string; locationRange: number }}
-                            setCurrentStep={setCurrentStep}
-                            onComplete={handleSearchComplete}
-                            serviceId={selectedServiceId}
-                            setShowSubscriptions={() => (window.location.href = '/suscripciones')}
-                            expertProfilePicture={expertProfilePicture}
-                            expertName={expertName}
-                            servicePrice={servicePrice}
-                            serviceDescription={serviceDescription}
-                        />
+                        <>
+                            {console.log('SearchCreationPage - Rendering SearchForm with:', {
+                                selectedServiceId,
+                                expertProfilePicture,
+                                expertName,
+                                servicePrice,
+                                serviceDescription,
+                            })}
+                            <SearchForm
+                                parameters={searchParameters as SearchParameters & { latitude: string; longitude: string; locationRange: number }}
+                                setCurrentStep={setCurrentStep}
+                                onComplete={handleSearchComplete}
+                                serviceId={selectedServiceId}
+                                setShowSubscriptions={() => (window.location.href = '/suscripciones')}
+                                expertProfilePicture={expertProfilePicture}
+                                expertName={expertName}
+                                servicePrice={servicePrice}
+                                serviceDescription={serviceDescription}
+                            />
+                        </>
                     )}
                 </div>
             )}
