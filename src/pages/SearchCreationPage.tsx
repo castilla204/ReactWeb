@@ -38,6 +38,10 @@ const SearchCreationPage: React.FC = () => {
         strictMatchOnly: false,
     });
     const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
+    const [expertProfilePicture, setExpertProfilePicture] = useState<string | undefined>(undefined);
+    const [expertName, setExpertName] = useState<string | undefined>(undefined);
+    const [servicePrice, setServicePrice] = useState<number | undefined>(undefined);
+    const [serviceDescription, setServiceDescription] = useState<string | undefined>(undefined);
 
     const safeCategories = Array.isArray(categories) ? categories : [];
 
@@ -57,15 +61,25 @@ const SearchCreationPage: React.FC = () => {
             window.location.href = '/suscripciones';
             return;
         }
-        console.log('Parameters received in SearchCreationPage:', parameters); // Debug log
+        console.log('Parameters received in SearchCreationPage:', parameters);
         setSearchParameters(parameters);
-        setCurrentStep(2); // Move to ServiceSelection
+        setCurrentStep(2);
     };
 
-    const handleServiceSelectionComplete = (serviceId: number) => {
-        console.log('Selected service ID:', serviceId); // Debug log
+    const handleServiceSelectionComplete = (
+        serviceId: number,
+        expertProfilePicture?: string,
+        expertName?: string,
+        servicePrice?: number,
+        serviceDescription?: string
+    ) => {
+        console.log('Selected service ID:', serviceId, 'Expert:', expertName, 'Price:', servicePrice, 'Description:', serviceDescription);
         setSelectedServiceId(serviceId);
-        setCurrentStep(3); // Move to SearchForm
+        setExpertProfilePicture(expertProfilePicture);
+        setExpertName(expertName);
+        setServicePrice(servicePrice);
+        setServiceDescription(serviceDescription);
+        setCurrentStep(3);
     };
 
     const handleSearchComplete = () => {
@@ -83,6 +97,10 @@ const SearchCreationPage: React.FC = () => {
             strictMatchOnly: false,
         });
         setSelectedServiceId(null);
+        setExpertProfilePicture(undefined);
+        setExpertName(undefined);
+        setServicePrice(undefined);
+        setServiceDescription(undefined);
     };
 
     const handleStartSearch = () => {
@@ -114,8 +132,8 @@ const SearchCreationPage: React.FC = () => {
             });
             return;
         }
-        console.log('Starting search with parameters:', searchParameters); // Debug log
-        setCurrentStep(1); // Move to SearchParameterForm
+        console.log('Starting search with parameters:', searchParameters);
+        setCurrentStep(1);
     };
 
     const scrollToForm = () => {
@@ -339,6 +357,10 @@ const SearchCreationPage: React.FC = () => {
                             onComplete={handleSearchComplete}
                             serviceId={selectedServiceId}
                             setShowSubscriptions={() => (window.location.href = '/suscripciones')}
+                            expertProfilePicture={expertProfilePicture}
+                            expertName={expertName}
+                            servicePrice={servicePrice}
+                            serviceDescription={serviceDescription}
                         />
                     )}
                 </div>

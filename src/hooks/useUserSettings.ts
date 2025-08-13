@@ -16,6 +16,12 @@ export const useUserSettings = () => {
         queryFn: () => fetchApi<UserSettings>('/api/UserSettings'),
     });
 
+    const balanceQuery = useQuery({
+        queryKey: ['userBalance'],
+        queryFn: () => fetchApi<{ balance: number }>('/api/User/user-balance'),
+        select: (data) => data.balance,
+    });
+
     const updateSettingsMutation = useMutation({
         mutationFn: (settings: Partial<UserSettings>) =>
             fetchApi('/api/UserSettings', {
@@ -63,7 +69,10 @@ export const useUserSettings = () => {
 
     return {
         settings: settingsQuery.data,
-        isLoading: settingsQuery.isLoading,
+        isLoadingSettings: settingsQuery.isLoading,
+        balance: balanceQuery.data,
+        isLoadingBalance: balanceQuery.isLoading,
+        balanceError: balanceQuery.error,
         toggleWhatsApp,
         toggleEmail,
         updateTheme,
