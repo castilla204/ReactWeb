@@ -1,9 +1,10 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { ArrowRight, Sparkles, Target, DollarSign, Zap, ArrowLeft, Crown, Search, Wallet, User } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { Notification, NotificationType } from './Notification';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface SearchParameters {
     keywords: string;
@@ -16,6 +17,11 @@ export interface SearchParameters {
     minPrice?: number;
     maxPrice?: number;
     serviceTypeId: number;
+    shippingAvailable?: boolean;
+    strictMatchOnly?: boolean;
+    brandId?: number;
+    modelId?: number;
+    platformIds?: number[];
 }
 
 export interface SearchFormProps {
@@ -41,28 +47,17 @@ export default function SearchForm({
     servicePrice,
     serviceDescription,
 }: SearchFormProps) {
-    // Depuración: Mostrar los props recibidos
-    console.log('SearchForm - Received props:', {
-        serviceId,
-        expertProfilePicture,
-        expertName,
-        servicePrice,
-        serviceDescription,
-        parameters,
-    });
-
+    const queryClient = useQueryClient();
     const { createSearchWithHire } = useSearch();
     const { maxSearchesReached, maxSearches } = useSubscriptionLimits();
-    const { fetchApi } = useUserSettings();
+    const { balance, isLoadingBalance, balanceError, refetchBalance } = useUserSettings();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [notification, setNotification] = useState<{
         type: NotificationType;
         message: string;
         action?: () => void;
     } | null>(null);
-    const { balance, isLoadingBalance, balanceError } = useUserSettings();
 
-    // Handle balance fetch error
     if (balanceError) {
         setNotification({
             type: 'error',
@@ -70,7 +65,6 @@ export default function SearchForm({
         });
     }
 
-    // Validar datos requeridos
     const isDataComplete = serviceId !== null && expertName && servicePrice !== undefined;
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -92,9 +86,7 @@ export default function SearchForm({
             setNotification({
                 type: 'error',
                 message: `👑 Has alcanzado el límite de ${maxSearches} búsquedas activas. ¡Mejora tu plan para crear más búsquedas!`,
-                action: () => {
-                    setShowSubscriptions(true);
-                },
+                action: () => setShowSubscriptions(true),
             });
             setIsSubmitting(false);
             return;
@@ -113,57 +105,55 @@ export default function SearchForm({
             const searchData = {
                 title: parameters.keywords,
                 description: parameters.userSearch || 'Descripción por defecto',
-                category: parameters.category || 0,
                 frequency: parseInt(parameters.frequency.toString()),
                 isActive: true,
                 startDate: new Date().toISOString(),
+                serviceId: serviceId!,
             };
 
-            if (balance >= servicePrice!) {
-                const { hireUrl } = await createSearchWithHire.mutateAsync({
+            const parameterData = {
+                keywords: parameters.keywords,
+                userSearch: parameters.userSearch,
+                latitude: parameters.latitude,
+                longitude: parameters.longitude,
+                locationRange: parameters.locationRange,
+                category: parameters.category || 0,
+                minPrice: parameters.minPrice || null,
+                maxPrice: parameters.maxPrice || null,
+                shippingAvailable: parameters.shippingAvailable || false,
+                strictMatchOnly: parameters.strictMatchOnly || false,
+                brandId: parameters.brandId || null,
+                modelId: parameters.modelId || null,
+                serviceTypeId: parameters.serviceTypeId || null,
+                platformIds: parameters.platformIds || [],
+            };
+
+            const response = await createSearchWithHire.mutateAsync({
+                searchData,
+                parameters: parameterData,
+            });
+
+            if (response.url) {
+                console.log('SearchForm - Redirecting to payment URL:', response.url);
+                sessionStorage.setItem('pendingHire', JSON.stringify({
+                    serviceId,
                     searchData,
-                    parameters: {
-                        ...parameters,
-                        serviceTypeId: parameters.serviceTypeId,
-                        latitude: parameters.latitude,
-                        longitude: parameters.longitude,
-                        locationRange: parameters.locationRange,
-                    },
-                    serviceId: serviceId!,
-                });
-
-                if (hireUrl) {
-                    console.log('SearchForm - Redirecting to hire URL:', hireUrl);
-                    window.location.href = hireUrl;
-                    return;
-                }
-
-                setNotification({
-                    type: 'success',
-                    message: `✅ Búsqueda creada exitosamente para el servicio de ${expertName}.`,
-                });
-                onComplete();
-            } else {
-                const response = await fetchApi<{ url: string }>('/api/Subscription/load-money-service', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        serviceId,
-                        amount: servicePrice,
-                    }),
-                });
-
-                if (response.url) {
-                    console.log('SearchForm - Redirecting to payment URL:', response.url);
-                    window.location.href = response.url;
-                } else {
-                    throw new Error('No se recibió la URL de pago');
-                }
+                    parameters: parameterData,
+                }));
+                window.location.href = response.url;
+                return;
             }
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Error al crear la búsqueda';
+
+            setNotification({
+                type: 'success',
+                message: `✅ Búsqueda creada exitosamente para el servicio de ${expertName}.`,
+            });
+            onComplete();
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || 'Error al crear la búsqueda';
             console.error('SearchForm - Error creating search:', err);
 
-            if (errorMessage.includes("You've reached your plan's limit")) {
+            if (err.response?.status === 403 && errorMessage.includes("You've reached your plan's limit")) {
                 setNotification({
                     type: 'error',
                     message: `👑 ${errorMessage}`,
@@ -171,6 +161,12 @@ export default function SearchForm({
                         setCurrentStep(0);
                         setShowSubscriptions(true);
                     },
+                });
+            } else if (err.response?.status === 403 && errorMessage.includes("Phone verification required")) {
+                setNotification({
+                    type: 'error',
+                    message: '📱 Verificación de teléfono requerida para crear búsquedas.',
+                    action: () => setCurrentStep(0),
                 });
             } else {
                 setNotification({
@@ -182,6 +178,32 @@ export default function SearchForm({
             setIsSubmitting(false);
         }
     };
+
+    useEffect(() => {
+        const pendingHire = sessionStorage.getItem('pendingHire');
+        if (pendingHire) {
+            (async () => {
+                setIsSubmitting(true);
+                try {
+                    await refetchBalance();
+                    queryClient.invalidateQueries({ queryKey: ['searches'] });
+                    setNotification({
+                        type: 'success',
+                        message: `✅ Búsqueda y contratación creadas exitosamente para el servicio de ${expertName}.`,
+                    });
+                    onComplete();
+                } catch (err) {
+                    setNotification({
+                        type: 'error',
+                        message: `❌ Error al verificar el saldo: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+                    });
+                } finally {
+                    setIsSubmitting(false);
+                    sessionStorage.removeItem('pendingHire');
+                }
+            })();
+        }
+    }, [expertName, onComplete, refetchBalance, queryClient]);
 
     const handleBack = (e: React.MouseEvent) => {
         e.preventDefault();
