@@ -67,12 +67,16 @@ export const useUserSettings = () => {
         updateSettingsMutation.mutate({ theme });
     };
 
+    const refetchBalance = () => queryClient.refetchQueries({ queryKey: ['userBalance'] });
+
     return {
         settings: settingsQuery.data,
         isLoadingSettings: settingsQuery.isLoading,
         balance: balanceQuery.data,
         isLoadingBalance: balanceQuery.isLoading,
         balanceError: balanceQuery.error,
+        fetchApi, // Expose fetchApi for external use
+        refetchBalance, // Add refetchBalance function
         toggleWhatsApp,
         toggleEmail,
         updateTheme,

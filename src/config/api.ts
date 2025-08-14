@@ -1,12 +1,8 @@
-// src/config/api.ts
-// Development server URL - only used in development
 const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : '';
-
-// Base API path that's always used
 const API_PATH = '/api';
 
 export const API_CONFIG = {
-    baseUrl: DEV_SERVER, // Full URL in dev, empty for production
+    baseUrl: DEV_SERVER,
     endpoints: {
         auth: {
             googleAuth: `${API_PATH}/User/google-auth`,
@@ -18,6 +14,7 @@ export const API_CONFIG = {
         },
         search: {
             create: `${API_PATH}/Search`,
+            createWithHire: `${API_PATH}/Search/create-with-hire`,
             list: `${API_PATH}/Search`,
             listAll: `${API_PATH}/Search/all`,
             get: (id: number) => `${API_PATH}/Search/${id}`,
