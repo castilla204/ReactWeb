@@ -13,10 +13,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 interface SearchHire {
     id: number;
-    clientId?: number;
+    clientId: number;
     expertId: number | null;
     status: string;
-    messages?: any[]; // Temporary type adjustment for unread count
+    messages: { id: number; senderId: number; content: string; sentAt: string; isRead: boolean }[];
     expert?: {
         name: string;
         profilePictureUrl: string;
@@ -33,19 +33,6 @@ interface Review {
     reviewerId: number;
 }
 
-interface NotificationState {
-    id: string;
-    type: NotificationType;
-    message: string;
-    duration?: number;
-}
-
-interface SearchDetailsProps {
-    searchId: number;
-    onBack: () => void;
-    isAdmin: boolean;
-}
-
 interface NewAd {
     title: string;
     description: string;
@@ -59,13 +46,18 @@ interface NewAd {
     platformId: number;
 }
 
+interface SearchDetailsProps {
+    isAdmin: boolean;
+    onBack?: () => void;
+}
+
 const categoryBanners = {
     1: '/src/media/Car.png',
     2: '/src/media/motorcycle.png',
     3: '/src/media/house.png',
 };
 
-export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsProps, 'searchId'>) {
+export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const { id } = useParams<{ id: string }>();
     const searchId = parseInt(id || '0', 10);
     const navigate = useNavigate();
@@ -97,8 +89,7 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
         sellerType: 'particular',
         platformId: 1,
     });
-    const [notifications, setNotifications] = useState<NotificationState[]>([]);
-    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [notifications, setNotifications] = useState<{ id: string; type: NotificationType; message: string; duration?: number }[]>([]);
 
     const { getResults, getSearch } = useSearch();
     const { categories } = useCategories();
@@ -127,9 +118,9 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
     const canCancel = isExpert && searchQuery.data?.searchHire && !['completed', 'canceled', 'disputed'].includes(searchQuery.data.searchHire.status);
     const isDisputed = (isClient || isExpert) && searchQuery.data?.searchHire?.status === 'disputed';
     const canViewChat = (isClient || isExpert || isAdmin) && !!searchQuery.data?.searchHire;
+    const unreadMessages = searchQuery.data?.searchHire?.messages?.filter((msg) => !msg.isRead && msg.senderId !== userId).length || 0;
 
     const category = categories?.find((c: Category) => c.id === searchQuery.data?.category);
-    const unreadMessages = searchQuery.data?.searchHire?.messages?.filter((msg: any) => !msg.isRead && msg.senderId !== userId).length || 0;
 
     useEffect(() => {
         if (!canViewChat && searchQuery.data?.searchHire && searchQuery.isSuccess) {
@@ -137,13 +128,27 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                 ...prev.filter((n) => !n.id.startsWith('chat-access-denied-')),
                 {
                     id: `chat-access-denied-${Date.now()}`,
-                    type: 'error' as NotificationType,
-                    message: `Chat not visible: User ID (${userId}) does not match Client ID (${clientId}) or Expert ID (${expertId})`,
+                    type: 'error',
+                    message: `Chat no visible: El ID de usuario (${userId}) no coincide con el ID del cliente (${clientId}) ni con el del experto (${expertId})`,
                     duration: 5000,
                 },
             ]);
         }
     }, [canViewChat, searchQuery.data, searchQuery.isSuccess, userId, clientId, expertId]);
+
+    useEffect(() => {
+        if (resultsQuery.error || searchQuery.error || reviewsQuery.error) {
+            setNotifications((prev) => [
+                ...prev.filter((n) => !n.id.startsWith('api-error-')),
+                {
+                    id: `api-error-${Date.now()}`,
+                    type: 'error',
+                    message: 'Error al cargar datos. Por favor, verifica tu conexión o inicia sesión nuevamente.',
+                    duration: 5000,
+                },
+            ]);
+        }
+    }, [resultsQuery.error, searchQuery.error, reviewsQuery.error]);
 
     useLayoutEffect(() => {
         document.documentElement.scrollTop = 0;
@@ -153,106 +158,6 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
     const removeNotification = (id: string) => {
         setNotifications((prev) => prev.filter((notification) => notification.id !== id));
     };
-
-    if (resultsQuery.isLoading || searchQuery.isLoading || reviewsQuery.isLoading) {
-        return (
-            <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen">
-                <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 via-blue-500/95 to-blue-600/90" />
-                    <div className="absolute inset-0">
-                        <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-[0.07]" />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent_70%)]" />
-                        <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.08)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.08)_50%,rgba(255,255,255,0.08)_75%,transparent_75%,transparent)] bg-[length:100px_100px]" />
-                    </div>
-                    <div className="relative h-full flex items-center px-8">
-                        <button
-                            onClick={() => navigate('/busquedas')}
-                            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                            <span className="font-medium">Back</span>
-                        </button>
-                    </div>
-                </div>
-                <div className="flex items-center justify-center h-[400px] bg-white/90 backdrop-blur-xl rounded-xl border border-gray-100 shadow-lg">
-                    <div className="text-gray-600">Loading results...</div>
-                </div>
-                {notifications.map((notification) => (
-                    <Notification
-                        key={notification.id}
-                        type={notification.type}
-                        message={notification.message}
-                        onClose={() => removeNotification(notification.id)}
-                        duration={notification.duration}
-                    />
-                ))}
-                {canViewChat && (
-                    <button
-                        className="fixed bottom-4 right-4 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-50"
-                        onClick={() => setIsChatOpen(!isChatOpen)}
-                        disabled={resultsQuery.isLoading || searchQuery.isLoading}
-                    >
-                        <MessageCircle className="w-6 h-6" />
-                        {unreadMessages > 0 && (
-                            <span className="absolute -top-1 -right-1 inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-white bg-red-500 rounded-full">
-                                {unreadMessages}
-                            </span>
-                        )}
-                    </button>
-                )}
-            </div>
-        );
-    }
-
-    if (resultsQuery.error || searchQuery.error || reviewsQuery.error) {
-        return (
-            <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen">
-                <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 via-blue-500/95 to-blue-600/90" />
-                    <div className="absolute inset-0">
-                        <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-[0.07]" />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent_70%)]" />
-                        <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.08)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.08)_50%,rgba(255,255,255,0.08)_75%,transparent_75%,transparent)] bg-[length:100px_100px]" />
-                    </div>
-                    <div className="relative h-full flex items-center px-8">
-                        <button
-                            onClick={() => navigate('/busquedas')}
-                            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                            <span className="font-medium">Back</span>
-                        </button>
-                    </div>
-                </div>
-                <div className="text-center py-12 bg-white/90 backdrop-blur-xl rounded-xl border border-red-100 shadow-lg">
-                    <p className="text-red-600">Error loading results</p>
-                </div>
-                {notifications.map((notification) => (
-                    <Notification
-                        key={notification.id}
-                        type={notification.type}
-                        message={notification.message}
-                        onClose={() => removeNotification(notification.id)}
-                        duration={notification.duration}
-                    />
-                ))}
-                {canViewChat && (
-                    <button
-                        className="fixed bottom-4 right-4 w-2 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-50"
-                        onClick={() => setIsChatOpen(!isChatOpen)}
-                        disabled={resultsQuery.isLoading || searchQuery.isLoading}
-                    >
-                        <MessageCircle className="w-6 h-6" />
-                        {unreadMessages > 0 && (
-                            <span className="absolute -top-1 -right-1 inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-white bg-red-500 rounded-full">
-                                {unreadMessages}
-                            </span>
-                        )}
-                    </button>
-                )}
-            </div>
-        );
-    }
 
     const handleAddAdAndClose = async () => {
         await handleAddAd(searchId, newAd, () => {
@@ -309,48 +214,128 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
     };
 
     const handleApproveService = async () => {
-        await handleCompleteService(searchQuery.data?.searchHire?.id);
-        resultsQuery.refetch();
-        searchQuery.refetch();
+        await handleCompleteService(searchQuery.data?.searchHire?.id, () => {
+            resultsQuery.refetch();
+            searchQuery.refetch();
+        });
     };
 
-    return (
-        <div className="relative w-full max-w-[1280px] mx-auto px-4 md:px-8 pb-8 pt-24">
-            <div className="relative h-48 mb-8 rounded-3xl overflow-hidden shadow-2xl w-full">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/90 via-blue-500/95 to-blue-600/90" />
-                <div className="absolute inset-0">
-                    <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-[0.07]" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent_70%)]" />
-                    <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.08)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.08)_50%,rgba(255,255,255,0.08)_75%,transparent_75%,transparent)] bg-[length:100px_100px]" />
+    if (resultsQuery.isLoading || searchQuery.isLoading || reviewsQuery.isLoading) {
+        return (
+            <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen bg-gray-50">
+                <div className="relative h-56 mb-8 rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-r from-blue-600 to-blue-800 backdrop-blur-md">
+                    <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-10" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                    <div className="relative h-full flex items-center px-8">
+                        <button
+                            onClick={onBack || (() => navigate('/busquedas'))}
+                            className="flex items-center gap-2 text-white hover:text-white/90 transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                            <span className="font-semibold">Volver</span>
+                        </button>
+                        {canViewChat && unreadMessages > 0 && (
+                            <div className="ml-4 inline-flex items-center px-2.5 py-1 text-sm font-semibold text-white bg-red-500 rounded-full animate-pulse">
+                                {unreadMessages} {unreadMessages === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}
+                            </div>
+                        )}
+                    </div>
                 </div>
+                <div className="flex items-center justify-center h-[400px] bg-white rounded-2xl border border-gray-100 shadow-lg">
+                    <div className="text-gray-600 text-lg">Cargando resultados...</div>
+                </div>
+                {notifications.map((notification) => (
+                    <Notification
+                        key={notification.id}
+                        type={notification.type}
+                        message={notification.message}
+                        onClose={() => removeNotification(notification.id)}
+                        duration={notification.duration}
+                    />
+                ))}
+            </div>
+        );
+    }
+
+    if (resultsQuery.error || searchQuery.error || reviewsQuery.error) {
+        return (
+            <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen bg-gray-50">
+                <div className="relative h-56 mb-8 rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-r from-blue-600 to-blue-800 backdrop-blur-md">
+                    <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-10" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                    <div className="relative h-full flex items-center px-8">
+                        <button
+                            onClick={onBack || (() => navigate('/busquedas'))}
+                            className="flex items-center gap-2 text-white hover:text-white/90 transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                            <span className="font-semibold">Volver</span>
+                        </button>
+                        {canViewChat && unreadMessages > 0 && (
+                            <div className="ml-4 inline-flex items-center px-2.5 py-1 text-sm font-semibold text-white bg-red-500 rounded-full animate-pulse">
+                                {unreadMessages} {unreadMessages === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="text-center py-12 bg-white rounded-2xl border border-red-100 shadow-lg">
+                    <p className="text-red-600 text-lg">Error al cargar los resultados</p>
+                    {process.env.NODE_ENV === 'development' && (
+                        <div className="mt-4 text-sm text-gray-600">
+                            <p><strong>Error Details:</strong></p>
+                            <p>Results Query: {resultsQuery.error?.message || 'N/A'}</p>
+                            <p>Search Query: {searchQuery.error?.message || 'N/A'}</p>
+                            <p>Reviews Query: {reviewsQuery.error?.message || 'N/A'}</p>
+                        </div>
+                    )}
+                </div>
+                {notifications.map((notification) => (
+                    <Notification
+                        key={notification.id}
+                        type={notification.type}
+                        message={notification.message}
+                        onClose={() => removeNotification(notification.id)}
+                        duration={notification.duration}
+                    />
+                ))}
+            </div>
+        );
+    }
+
+    return (
+        <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen bg-gray-50">
+            {/* Header Section */}
+            <div className="relative h-64 mb-8 rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-r from-blue-600 to-blue-800 backdrop-blur-md">
+                <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-10" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                 <img
                     src={categoryBanners[searchQuery.data?.category as keyof typeof categoryBanners] || categoryBanners[1]}
                     alt={category?.name || 'Category'}
-                    className="absolute right-8 bottom-0 h-40 object-contain opacity-90"
+                    className="absolute right-8 bottom-0 h-48 object-contain opacity-90"
                 />
                 <div className="relative h-full flex items-center px-8">
-                    <div>
-                        <div className="flex items-center gap-4 mb-2">
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4 flex-wrap">
                             <button
-                                onClick={() => navigate('/busquedas')}
-                                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+                                onClick={onBack || (() => navigate('/busquedas'))}
+                                className="flex items-center gap-2 text-white hover:text-white/90 transition-colors bg-blue-700/20 px-4 py-2 rounded-lg"
                             >
                                 <ArrowLeft className="w-5 h-5" />
-                                <span className="font-medium">Back</span>
+                                <span className="font-semibold">Volver</span>
                             </button>
                             {(isAdmin || isExpert) && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showAddAdForm: true }))}
-                                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    <span>Add Ad</span>
+                                    <span>Añadir Anuncio</span>
                                 </button>
                             )}
                             {canCancel && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showCancelConfirm: true }))}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-white rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-white rounded-lg transition-colors"
                                 >
                                     <XCircle className="w-4 h-4" />
                                     <span>Cancelar Servicio</span>
@@ -359,7 +344,7 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                             {isAdmin && searchQuery.data?.searchHire && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showFinalizeModal: true }))}
-                                    className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-white rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-white rounded-lg transition-colors"
                                 >
                                     <AlertTriangle className="w-4 h-4" />
                                     <span>Finalizar Búsqueda</span>
@@ -368,7 +353,7 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                             {isAdmin && isDisputed && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showResolveDisputeModal: true }))}
-                                    className="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-white rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-white rounded-lg transition-colors"
                                 >
                                     <AlertTriangle className="w-4 h-4" />
                                     <span>Resolver Disputa</span>
@@ -377,28 +362,38 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                             {canReview && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                    className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-white rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 text-white rounded-lg transition-colors"
                                 >
                                     <Star className="w-4 h-4" />
-                                    <span>Submit Review</span>
+                                    <span>Enviar Reseña</span>
                                 </button>
                             )}
+                            {canViewChat && unreadMessages > 0 && (
+                                <div className="inline-flex items-center px-2.5 py-1 text-sm font-semibold text-white bg-red-500 rounded-full animate-pulse">
+                                    {unreadMessages} {unreadMessages === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}
+                                </div>
+                            )}
                         </div>
-                        <h1 className="text-3xl font-bold text-white mb-2">{searchQuery.data?.title || 'Loading...'}</h1>
+                        <h1 className="text-4xl font-bold text-white tracking-tight">{searchQuery.data?.title || 'Cargando...'}</h1>
+                        {searchQuery.data?.description && (
+                            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 max-w-2xl">
+                                <p className="text-white/80 text-base leading-relaxed">{searchQuery.data.description}</p>
+                            </div>
+                        )}
                         {searchQuery.data?.searchHire && (
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-3">
                                 <span
-                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${searchQuery.data.searchHire.status === 'pending'
-                                        ? 'bg-yellow-100 text-yellow-800'
-                                        : searchQuery.data.searchHire.status === 'awaiting_client_decision'
-                                            ? 'bg-blue-100 text-blue-800'
-                                            : searchQuery.data.searchHire.status === 'disputed'
-                                                ? 'bg-red-100 text-red-800'
-                                                : searchQuery.data.searchHire.status === 'cancelled' || searchQuery.data.searchHire.status === 'transfer_failed'
-                                                    ? 'bg-gray-100 text-gray-800'
-                                                    : searchQuery.data.searchHire.status === 'dispute-resolved' || searchQuery.data.searchHire.status === 'completed'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-gray-100 text-gray-800'
+                                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium capitalize ${searchQuery.data.searchHire.status === 'pending'
+                                            ? 'bg-yellow-100 text-yellow-800'
+                                            : searchQuery.data.searchHire.status === 'awaiting_client_decision'
+                                                ? 'bg-blue-100 text-blue-800'
+                                                : searchQuery.data.searchHire.status === 'disputed'
+                                                    ? 'bg-red-100 text-red-800'
+                                                    : ['cancelled', 'transfer_failed'].includes(searchQuery.data.searchHire.status)
+                                                        ? 'bg-gray-100 text-gray-800'
+                                                        : ['dispute-resolved', 'completed'].includes(searchQuery.data.searchHire.status)
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-gray-100 text-gray-800'
                                         }`}
                                 >
                                     {searchQuery.data.searchHire.status.replace(/_/g, ' ')}
@@ -408,96 +403,125 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                                         <img
                                             src={searchQuery.data.searchHire.expert.profilePictureUrl || '/default-avatar.png'}
                                             alt={`${searchQuery.data.searchHire.expert.name}'s profile`}
-                                            className="w-6 h-6 rounded-full object-cover"
+                                            className="w-8 h-8 rounded-full object-cover border border-white/50"
                                         />
-                                        <span className="text-sm text-white">Encargado: {searchQuery.data.searchHire.expert.name}</span>
+                                        <span className="text-sm text-white font-medium">Encargado: {searchQuery.data.searchHire.expert.name}</span>
                                     </div>
                                 )}
                             </div>
                         )}
-                        <p className="text-white/80">
-                            {resultsQuery.data?.length || 0} {resultsQuery.data?.length === 1 ? 'result' : 'results'} found
-                        </p>
+                        <p className="text-white/80 text-sm">{resultsQuery.data?.length || 0} {resultsQuery.data?.length === 1 ? 'resultado' : 'resultados'} encontrados</p>
                     </div>
                 </div>
             </div>
 
-            {process.env.NODE_ENV === 'development' && (
-                <div className="mb-8 p-4 bg-yellow-100 rounded-xl">
-                    <p>
-                        <strong>Debug Info:</strong>
-                    </p>
-                    <p>SearchHire Status: {searchQuery.data?.searchHire?.status || 'No Status'}</p>
-                    <p>SearchHire ID: {searchQuery.data?.searchHire?.id || 'No ID'}</p>
-                    <p>IsClient: {isClient.toString()}</p>
-                    <p>IsExpert: {isExpert.toString()}</p>
-                    <p>CanReview: {(canReview ?? false).toString()}</p>
-                    <p>CanDispute: {(canDispute ?? false).toString()}</p>
-                    <p>CanCancel: {(canCancel ?? false).toString()}</p>
-                    <p>IsDisputed: {(isDisputed ?? false).toString()}</p>
-                    <p>HasReviewed: {hasReviewed.toString()}</p>
-                    <p>User Role: {user?.role || 'N/A'}</p>
-                    <p>User ID: {userId || 'N/A'}</p>
-                    <p>Client ID: {clientId || 'N/A'}</p>
-                    <p>Expert ID: {expertId || 'N/A'}</p>
-                    <p>CanViewChat: {canViewChat.toString()}</p>
-                    <p>Raw User ID: {user?.id || 'N/A'}</p>
-                    <p>Raw Client ID: {searchQuery.data?.searchHire?.clientId || 'N/A'}</p>
-                    <p>Raw Expert ID: {searchQuery.data?.searchHire?.expertId || 'N/A'}</p>
-                    <p>Search Data: {JSON.stringify(searchQuery.data, null, 2)}</p>
-                </div>
-            )}
+            {/* Main Content: Chat and Ads */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+                {/* Chat Section */}
+                {canViewChat && (
+                    <div className="lg:col-span-2">
+                        <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <MessageCircle className="w-6 h-6 text-blue-600" />
+                            Chat
+                        </h2>
+                        <div className="bg-gradient-to-b from-blue-50 to-white rounded-2xl border border-gray-100 shadow-lg p-6 h-[500px] flex flex-col animate-fade-in">
+                            <Chat searchId={searchId} setNotifications={setNotifications} isExpert={isExpert} />
+                        </div>
+                    </div>
+                )}
 
+                {/* Ads Section */}
+                <div className={canViewChat ? 'lg:col-span-3' : 'lg:col-span-5'}>
+                    <h2 className="text-2xl font-semibold text-gray-900 mb-4">Anuncios Encontrados</h2>
+                    {resultsQuery.data?.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-[300px] bg-white rounded-2xl border border-gray-100 shadow-lg animate-fade-in">
+                            <p className="text-gray-500 text-lg">No se encontraron resultados</p>
+                            {(isAdmin || isExpert) && (
+                                <p className="text-sm text-gray-400 mt-2">Intenta añadir un nuevo anuncio o ajustar los criterios de búsqueda</p>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {resultsQuery.data?.map((result) => (
+                                <div key={result.id} className="transform transition-transform hover:scale-105">
+                                    <ResultCard result={result} searchId={searchId} setNotifications={setNotifications} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Filters Section */}
+            <div className="mb-8">
+                <div className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-lg animate-fade-in">
+                    <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                        <Filter className="w-4 h-4" />
+                        <span className="text-sm font-medium">Todos los Filtros</span>
+                        <ChevronDown className="w-4 h-4" />
+                    </button>
+                    <div className="h-6 w-px bg-gray-200" />
+                    <div className="flex gap-2">
+                        <button className="px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                            Precio: Bajo a Alto
+                        </button>
+                        <button className="px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                            Más Reciente
+                        </button>
+                        <button className="px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                            Popular
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Dispute Notification */}
             {isDisputed && (
-                <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-amber-100 shadow-lg">
+                <div className="mb-8 p-6 bg-white rounded-2xl border border-amber-100 shadow-lg animate-fade-in">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
                             <AlertTriangle className="w-6 h-6 text-amber-600" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900">Disputa Abierta</h3>
                     </div>
-                    <p className="text-gray-600 mb-6">
-                        Hay una disputa abierta para esta búsqueda. Será resuelta pronto por un administrador.
-                    </p>
+                    <p className="text-gray-600">Hay una disputa abierta para esta búsqueda. Un administrador la resolverá pronto.</p>
                 </div>
             )}
 
+            {/* Awaiting Client Decision */}
             {isExpert && searchQuery.data?.searchHire?.status === 'awaiting_client_decision' && (
-                <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-blue-100 shadow-lg">
+                <div className="mb-8 p-6 bg-white rounded-2xl border border-blue-100 shadow-lg animate-fade-in">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                             <Check className="w-6 h-6 text-blue-600" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900">Esperando Aprobación del Cliente</h3>
                     </div>
-                    <p className="text-gray-600 mb-6">
-                        La búsqueda está lista para la decisión del cliente. Por favor, espera a que el cliente apruebe o dispute el servicio.
-                    </p>
+                    <p className="text-gray-600">La búsqueda está lista para la decisión del cliente. Por favor, espera a que el cliente apruebe o dispute el servicio.</p>
                 </div>
             )}
 
+            {/* Client Decision Prompt */}
             {canDispute && (
-                <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-blue-100 shadow-lg">
+                <div className="mb-8 p-6 bg-white rounded-2xl border border-blue-100 shadow-lg animate-fade-in">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                             <Check className="w-6 h-6 text-blue-600" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900">¡La búsqueda ha finalizado!</h3>
                     </div>
-                    <p className="text-gray-600 mb-6">
-                        El experto ha completado la búsqueda. Por favor, revisa los resultados y decide si estás satisfecho con el servicio.
-                    </p>
+                    <p className="text-gray-600 mb-6">El experto ha completado la búsqueda. Por favor, revisa los resultados y decide si estás satisfecho con el servicio.</p>
                     <div className="flex justify-end gap-3">
                         <button
                             onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-700 rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
                         >
                             <XCircle className="w-4 h-4" />
                             <span>Disputar Servicio</span>
                         </button>
                         <button
                             onClick={handleApproveService}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-700 rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
                         >
                             <Check className="w-4 h-4" />
                             <span>Aprobar Servicio</span>
@@ -506,59 +530,44 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                 </div>
             )}
 
+            {/* Chat Access Denied */}
             {!canViewChat && searchQuery.data?.searchHire && (
-                <div className="mb-8 p-6 bg-white/90 backdrop-blur-xl rounded-xl border border-red-100 shadow-lg">
+                <div className="mb-8 p-6 bg-white rounded-2xl border border-red-100 shadow-lg animate-fade-in">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                             <AlertTriangle className="w-6 h-6 text-red-600" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900">Acceso al Chat Denegado</h3>
                     </div>
-                    <p className="text-gray-600 mb-6">
-                        No tienes permiso para acceder al chat de esta búsqueda. Solo el cliente, el experto asignado o un administrador pueden ver el chat.
-                    </p>
+                    <p className="text-gray-600">No tienes permiso para acceder al chat de esta búsqueda. Solo el cliente, el experto asignado o un administrador pueden ver el chat.</p>
                 </div>
             )}
 
-            <div className="mb-8">
-                <div className="flex items-center gap-3 p-4 bg-white/90 backdrop-blur-xl rounded-xl border border-blue-100 shadow-lg w-full">
-                    <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 rounded-lg transition-colors">
-                        <Filter className="w-4 h-4" />
-                        <span className="text-sm font-medium">All Filters</span>
-                        <ChevronDown className="w-4 h-4" />
-                    </button>
-                    <div className="h-6 w-px bg-blue-100" />
-                    <div className="flex gap-2">
-                        <button className="px-3 py-1.5 text-sm text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                            Price: Low to High
-                        </button>
-                        <button className="px-3 py-1.5 text-sm text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                            Latest
-                        </button>
-                        <button className="px-3 py-1.5 text-sm text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                            Popular
-                        </button>
+            {/* Debug Info (Development Only) */}
+            {process.env.NODE_ENV === 'development' && (
+                <div className="mb-8 p-6 bg-yellow-50 rounded-2xl border border-yellow-100 shadow-sm animate-fade-in">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Información de Depuración</h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                        <p><strong>Estado SearchHire:</strong> {searchQuery.data?.searchHire?.status || 'Sin Estado'}</p>
+                        <p><strong>ID SearchHire:</strong> {searchQuery.data?.searchHire?.id || 'N/A'}</p>
+                        <p><strong>Es Cliente:</strong> {isClient.toString()}</p>
+                        <p><strong>Es Experto:</strong> {isExpert.toString()}</p>
+                        <p><strong>Puede Reseñar:</strong> {(canReview ?? false).toString()}</p>
+                        <p><strong>Puede Disputar:</strong> {(canDispute ?? false).toString()}</p>
+                        <p><strong>Puede Cancelar:</strong> {(canCancel ?? false).toString()}</p>
+                        <p><strong>En Disputa:</strong> {(isDisputed ?? false).toString()}</p>
+                        <p><strong>Ha Reseñado:</strong> {hasReviewed.toString()}</p>
+                        <p><strong>Rol del Usuario:</strong> {user?.role || 'N/A'}</p>
+                        <p><strong>ID Usuario:</strong> {userId || 'N/A'}</p>
+                        <p><strong>ID Cliente:</strong> {clientId || 'N/A'}</p>
+                        <p><strong>ID Experto:</strong> {expertId || 'N/A'}</p>
+                        <p><strong>Puede Ver Chat:</strong> {canViewChat.toString()}</p>
+                        <p><strong>Mensajes No Leídos:</strong> {unreadMessages}</p>
                     </div>
                 </div>
-            </div>
+            )}
 
-            <div className="min-h-[400px]">
-                {resultsQuery.data?.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-[400px] bg-white/90 backdrop-blur-xl rounded-xl border border-gray-100 shadow-lg">
-                        <p className="text-gray-500">No results found</p>
-                        {(isAdmin || isExpert) && (
-                            <p className="text-sm text-gray-400 mt-2">Try adding a new ad or adjusting your search criteria</p>
-                        )}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr relative">
-                        {resultsQuery.data?.map((result) => (
-                            <ResultCard key={result.id} result={result} searchId={searchId} setNotifications={setNotifications} />
-                        ))}
-                    </div>
-                )}
-            </div>
-
+            {/* Modals */}
             <ReviewModal
                 isOpen={modalState.showReviewModal}
                 onClose={() => {
@@ -640,22 +649,6 @@ export default function SearchDetails({ onBack, isAdmin }: Omit<SearchDetailsPro
                     duration={notification.duration}
                 />
             ))}
-            {canViewChat && (
-                <button
-                    className="fixed bottom-4 right-4 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center z-50"
-                    onClick={() => setIsChatOpen(!isChatOpen)}
-                >
-                    <MessageCircle className="w-6 h-6" />
-                    {unreadMessages > 0 && (
-                        <span className="absolute -top-1 -right-1 inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-white bg-red-500 rounded-full">
-                            {unreadMessages}
-                        </span>
-                    )}
-                </button>
-            )}
-            {canViewChat && isChatOpen && (
-                <Chat searchId={searchId} setNotifications={setNotifications} isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-            )}
         </div>
     );
 }
