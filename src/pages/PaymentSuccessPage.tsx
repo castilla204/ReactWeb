@@ -36,8 +36,11 @@ export function PaymentSuccessPage() {
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">
                         ¡Pago Completado!
                     </h2>
-                    <p className="text-gray-500 text-sm max-w-sm mx-auto mb-8">
+                    <p className="text-gray-500 text-sm max-w-sm mx-auto mb-4">
                         Tu suscripción ha sido activada correctamente. Ya puedes disfrutar de todas las funcionalidades premium.
+                    </p>
+                    <p className="text-gray-500 text-sm max-w-sm mx-auto mb-8">
+                        La contratación ya ha sido procesada.
                     </p>
                     <Link
                         to="/"
