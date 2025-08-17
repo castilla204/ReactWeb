@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
-import { getAuthToken } from '../lib/auth';
 import { HubConnectionBuilder, HubConnection, LogLevel, HttpTransportType } from '@microsoft/signalr';
+import { NotificationType } from '../components/Notification';
+import { v4 as uuidv4 } from 'uuid';
+import { getAuthToken } from '../lib/auth';
 
 interface Message {
     id: number;
@@ -15,6 +17,9 @@ interface Message {
     isRead: boolean;
     sender?: { name: string; $id?: string; $ref?: string };
     senderName?: string;
+    locationLatitude?: string;
+    locationLongitude?: string;
+    attachmentUrls?: string[];
 }
 
 interface Conversation {
@@ -30,54 +35,148 @@ interface Conversation {
     $ref?: string;
 }
 
-export const useChat = (searchId: number) => {
+interface Deliverable {
+    searchHireId: number;
+    deliverableUrls: string[];
+    createdAt: string;
+}
+
+export const useChat = (
+    searchId: number,
+    setNotifications: React.Dispatch<
+        React.SetStateAction<{ id: string; type: NotificationType; message: string; duration?: number }[]>
+    >
+) => {
     const { user } = useAuth();
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
     const [newMessage, setNewMessage] = useState('');
     const [connection, setConnection] = useState<HubConnection | null>(null);
+    const failedMessageIds = useRef<Set<number>>(new Set());
+    const lastDeliverableFetch = useRef<number>(0);
 
+    // Validate API_CONFIG.endpoints.chat.deliverable
+    useEffect(() => {
+        console.log('[10:45 CEST] Validating API_CONFIG.endpoints.chat.deliverable:', API_CONFIG.endpoints.chat.deliverable);
+        if (!API_CONFIG.endpoints.chat.deliverable) {
+            console.error('[10:45 CEST] API_CONFIG.endpoints.chat.deliverable is undefined');
+            setNotifications((prev) => [
+                ...prev,
+                {
+                    id: `config-error-${uuidv4()}`,
+                    type: 'error' as NotificationType,
+                    message: 'Error de configuración: Endpoint de entregables no definido. Contacta al soporte.',
+                    duration: 5000,
+                },
+            ]);
+        }
+    }, [setNotifications]);
+
+    // Fetch conversation
     const { data: conversation, isLoading: loading, error, refetch } = useQuery<Conversation, Error>({
         queryKey: ['conversation', searchId],
         queryFn: async () => {
+            console.log('[10:45 CEST] Fetching conversation for searchId:', searchId);
             try {
-                const response = await fetchApi<Conversation>(`${API_CONFIG.endpoints.chat.conversation}?searchId=${searchId}`);
-                console.log('[13:46 CEST] Fetched conversation:', response);
+                const response = await fetchApi<Conversation>(
+                    `${API_CONFIG.endpoints.chat.conversation}?searchId=${searchId}`
+                );
+                console.log('[10:45 CEST] Fetched conversation:', response);
+                console.log('[10:45 CEST] Conversation searchHireId:', response.searchHireId);
                 return {
                     ...response,
-                    messages: response.messages.map(msg => ({
+                    messages: response.messages.map((msg) => ({
                         ...msg,
-                        conversation: undefined
-                    }))
+                        conversation: undefined,
+                        attachmentUrls: msg.attachmentUrls || [],
+                    })),
                 };
-            } catch (err) {
-                console.error('[13:46 CEST] Fetch error:', err);
+            } catch (err: any) {
+                console.error('[10:45 CEST] Fetch conversation error:', err.message, err.response || err);
+                if (err.message === 'Search hire not found') {
+                    setNotifications((prev) => [
+                        ...prev,
+                        {
+                            id: `conversation-error-${uuidv4()}`,
+                            type: 'error' as NotificationType,
+                            message: 'No se encontró la conversación para este servicio. Verifica el ID del servicio.',
+                            duration: 5000,
+                        },
+                    ]);
+                }
                 throw err;
             }
         },
-        enabled: !!user,
+        enabled: !!user && !!searchId,
+        retry: (failureCount, err) => failureCount < 3 && !err.message.includes('401') && !err.message.includes('Search hire not found'),
+    });
+
+    // Fetch deliverables
+    const { data: deliverables, refetch: refetchDeliverables, isLoading: deliverablesLoading, error: deliverablesError } = useQuery<Deliverable, Error>({
+        queryKey: ['deliverables', conversation?.searchHireId],
+        queryFn: async () => {
+            console.log('[10:45 CEST] Fetching deliverables for searchHireId:', conversation?.searchHireId);
+            if (!conversation?.searchHireId) {
+                console.error('[10:45 CEST] SearchHireId not available for fetching deliverables');
+                throw new Error('SearchHireId not available');
+            }
+            if (!API_CONFIG.endpoints.chat.deliverable) {
+                console.error('[10:45 CEST] Deliverable endpoint is undefined in API_CONFIG');
+                throw new Error('Deliverable endpoint not configured');
+            }
+            const deliverableEndpoint = `${API_CONFIG.endpoints.chat.deliverable}/${conversation.searchHireId}`;
+            console.log('[10:45 CEST] Deliverable endpoint:', deliverableEndpoint);
+            try {
+                const response = await fetchApi<{ message: string; deliverable: Deliverable }>(deliverableEndpoint);
+                console.log('[10:45 CEST] Raw API response for deliverables:', JSON.stringify(response));
+                console.log('[10:45 CEST] Deliverable URLs:', response.deliverable.deliverableUrls);
+                return {
+                    searchHireId: response.deliverable.searchHireId,
+                    deliverableUrls: Array.isArray(response.deliverable.deliverableUrls) ? response.deliverable.deliverableUrls : [],
+                    createdAt: response.deliverable.createdAt,
+                };
+            } catch (err: any) {
+                console.error('[10:45 CEST] Error fetching deliverables:', err.message, err.response || err);
+                if (err.response?.status === 404) {
+                    console.log('[10:45 CEST] No deliverables found (404), returning empty array');
+                    return { searchHireId: conversation.searchHireId, deliverableUrls: [], createdAt: new Date().toISOString() };
+                }
+                throw err;
+            }
+        },
+        enabled: !!conversation?.searchHireId,
         retry: (failureCount, err) => failureCount < 3 && !err.message.includes('401'),
     });
 
+    // SignalR connection
     const connectSignalR = useCallback(async () => {
         if (!user || !conversation?.id || connection?.state === 'Connected' || connection?.state === 'Connecting') {
-            console.log('[13:46 CEST] Skipping SignalR connection:', {
+            console.log('[10:45 CEST] Skipping SignalR connection:', {
                 userExists: !!user,
                 conversationId: conversation?.id,
-                connectionState: connection?.state
+                connectionState: connection?.state,
             });
             return;
         }
 
         if (connection) {
-            console.log('[13:46 CEST] Stopping existing SignalR connection');
+            console.log('[10:45 CEST] Stopping existing SignalR connection');
             await connection.stop();
             setConnection(null);
         }
 
         const token = getAuthToken();
         if (!token) {
-            console.error('[13:46 CEST] No token available for SignalR');
+            console.error('[10:45 CEST] No token available for SignalR');
+            setNotifications((prev) => [
+                ...prev,
+                {
+                    id: `signalr-error-${uuidv4()}`,
+                    type: 'error' as NotificationType,
+                    message: 'No se pudo conectar al chat en tiempo real. Verifica tu sesión.',
+                    duration: 5000,
+                },
+            ]);
             return;
         }
 
@@ -93,56 +192,58 @@ export const useChat = (searchId: number) => {
             .withAutomaticReconnect({
                 nextRetryDelayInMilliseconds: (retryContext) => {
                     const delay = Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 30000);
-                    console.log(`[13:46 CEST] Reconnect attempt ${retryContext.previousRetryCount + 1}, delay: ${delay}ms`);
+                    console.log(`[10:45 CEST] Reconnect attempt ${retryContext.previousRetryCount + 1}, delay: ${delay}ms`);
                     return delay;
                 },
             })
             .build();
 
-        // Register handlers before starting
         conn.onclose((error) => {
-            console.log('[13:46 CEST] SignalR connection closed:', error ? error.message : 'No error, attempting reconnect...');
+            console.log('[10:45 CEST] SignalR connection closed:', error ? error.message : 'No error, attempting reconnect...');
             setConnection(null);
         });
 
         conn.onreconnected((connectionId) => {
-            console.log('[13:46 CEST] SignalR reconnected, new Connection ID:', connectionId);
+            console.log('[10:45 CEST] SignalR reconnected, new Connection ID:', connectionId);
             if (conversation?.id && user?.id) {
-                conn.invoke('JoinConversation', conversation.id, user.id).catch(err =>
-                    console.error('[13:46 CEST] Failed to rejoin conversation:', err)
+                conn.invoke('JoinConversation', conversation.id, user.id).catch((err) =>
+                    console.error('[10:45 CEST] Failed to rejoin conversation:', err)
                 );
             }
         });
 
         conn.on('ReceiveMessage', (message: any) => {
-            console.log('[13:46 CEST] Received SignalR message (raw):', {
+            console.log('[10:45 CEST] Received SignalR message (raw):', {
                 message,
                 conversationId: conversation?.id,
                 userId: user?.id,
-                connectionId: conn.connectionId
+                connectionId: conn.connectionId,
             });
             if (message && typeof message === 'object' && message.conversationId === conversation?.id) {
                 const typedMessage: Message = {
                     id: message.id,
                     conversationId: message.conversationId,
                     senderId: message.senderId,
-                    content: message.content,
+                    content: message.content || '',
                     sentAt: message.sentAt,
                     isRead: message.isRead,
                     sender: message.sender,
-                    senderName: message.senderName
+                    senderName: message.senderName,
+                    locationLatitude: message.locationLatitude,
+                    locationLongitude: message.locationLongitude,
+                    attachmentUrls: Array.isArray(message.attachmentUrls) ? message.attachmentUrls : [],
                 };
-                console.log('[13:46 CEST] Updating conversation state with new message:', typedMessage);
+                console.log('[10:45 CEST] Updating conversation state with new message:', typedMessage);
                 queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
                     if (!prev) {
-                        console.log('[13:46 CEST] No previous conversation, creating new with message');
-                        return { ...conversation, messages: [typedMessage] } as Conversation;
+                        console.log('[10:45 CEST] No previous conversation, creating new with message');
+                        return conversation ? { ...conversation, messages: [typedMessage] } : undefined;
                     }
                     const updatedMessages = [
-                        ...prev.messages.filter(m => m.id !== typedMessage.id),
-                        { ...typedMessage, conversation: undefined }
+                        ...prev.messages.filter((m) => m.id !== typedMessage.id),
+                        { ...typedMessage, conversation: undefined },
                     ].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
-                    console.log('[13:46 CEST] Updated messages:', updatedMessages);
+                    console.log('[10:45 CEST] Updated messages:', updatedMessages);
                     return {
                         ...prev,
                         messages: updatedMessages,
@@ -150,15 +251,15 @@ export const useChat = (searchId: number) => {
                 });
                 queryClient.invalidateQueries({ queryKey: ['conversation', searchId] });
             } else {
-                console.log('[13:46 CEST] Message ignored: not for this conversation', {
+                console.log('[10:45 CEST] Message ignored: not for this conversation', {
                     receivedConversationId: message?.conversationId,
-                    currentConversationId: conversation?.id
+                    currentConversationId: conversation?.id,
                 });
             }
         });
 
         conn.on('MessageRead', (messageId: number) => {
-            console.log(`[13:46 CEST] Message ${messageId} marked as read via SignalR`);
+            console.log(`[10:45 CEST] Message ${messageId} marked as read via SignalR`);
             queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
                 if (!prev) return prev;
                 return {
@@ -170,46 +271,228 @@ export const useChat = (searchId: number) => {
             });
         });
 
+        conn.on('ReceiveDeliverable', (deliverable: Deliverable) => {
+            console.log('[10:45 CEST] Received SignalR deliverable:', deliverable);
+            console.log('[10:45 CEST] Updating deliverables cache for searchHireId:', deliverable.searchHireId);
+            queryClient.setQueryData(['deliverables', deliverable.searchHireId], {
+                ...deliverable,
+                deliverableUrls: Array.isArray(deliverable.deliverableUrls) ? deliverable.deliverableUrls : [],
+            });
+            // Throttle refetch to prevent excessive calls
+            const now = Date.now();
+            if (now - lastDeliverableFetch.current > 5000) { // 5-second throttle
+                console.log('[10:45 CEST] Throttled refetch of deliverables for searchHireId:', deliverable.searchHireId);
+                lastDeliverableFetch.current = now;
+                refetchDeliverables();
+            } else {
+                console.log('[10:45 CEST] Skipping deliverables refetch due to throttle');
+            }
+        });
+
         try {
             await conn.start();
-            console.log(`[13:46 CEST] SignalR connected for conversation ${conversation.id}, Connection ID: ${conn.connectionId}`);
+            console.log(`[10:45 CEST] SignalR connected for conversation ${conversation.id}, Connection ID: ${conn.connectionId}`);
             await conn.invoke('JoinConversation', conversation.id, user.id);
-            console.log(`[13:46 CEST] Successfully joined conversation ${conversation.id} with user ${user.id}`);
+            console.log(`[10:45 CEST] Successfully joined conversation ${conversation.id} with user ${user.id}`);
             setConnection(conn);
         } catch (err) {
-            console.error('[13:46 CEST] SignalR connection error:', err);
-            setTimeout(() => connectSignalR(), 1000); // Retry on failure
+            console.error('[10:45 CEST] SignalR connection error:', err);
+            setNotifications((prev) => [
+                ...prev,
+                {
+                    id: `signalr-error-${uuidv4()}`,
+                    type: 'error' as NotificationType,
+                    message: 'Error al conectar con el chat en tiempo real. Reintentando...',
+                    duration: 5000,
+                },
+            ]);
+            setTimeout(() => connectSignalR(), 1000);
         }
-    }, [user, conversation?.id, connection, searchId, queryClient]);
+    }, [user, conversation?.id, connection, searchId, queryClient, setNotifications, refetchDeliverables]);
 
     const sendMessageMutation = useMutation({
-        mutationFn: async (content: string) => {
-            if (!user || !conversation?.id) throw new Error('User or conversation not available');
-            const response = await fetchApi<Message>(API_CONFIG.endpoints.chat.message, {
-                method: 'POST',
-                body: JSON.stringify({
-                    conversationId: conversation.id,
-                    content,
-                }),
+        mutationFn: async ({
+            content,
+            location,
+            files,
+        }: {
+            content: string;
+            location: { latitude: string; longitude: string } | null;
+            files: File[];
+        }) => {
+            if (!user || !conversation?.id) {
+                console.error('[10:45 CEST] Cannot send message: user or conversation not available', {
+                    user,
+                    conversationId: conversation?.id,
+                });
+                throw new Error('User or conversation not available');
+            }
+            const formData = new FormData();
+            formData.append('ConversationId', conversation.id.toString());
+            if (content.trim()) {
+                formData.append('Content', content.trim());
+            }
+            if (location) {
+                formData.append('LocationLatitude', location.latitude);
+                formData.append('LocationLongitude', location.longitude);
+            }
+            const safeFiles = Array.isArray(files) ? files : [];
+            if (safeFiles.length === 0 && !content.trim() && !location) {
+                throw new Error('No content, files, or location provided');
+            }
+            safeFiles.forEach((file) => {
+                formData.append('Attachments', file, file.name);
             });
-            return { ...response, conversation: undefined };
+            const formDataEntries: { [key: string]: any } = {};
+            formData.forEach((value, key) => {
+                formDataEntries[key] = value instanceof File ? { name: value.name, type: value.type, size: value.size } : value;
+            });
+            console.log('[10:45 CEST] Sending message with FormData:', formDataEntries);
+            try {
+                const response = await fetchApi<Message>(API_CONFIG.endpoints.chat.message, {
+                    method: 'POST',
+                    body: formData,
+                });
+                console.log('[10:45 CEST] Message sent, response:', response);
+                return { ...response, conversation: undefined, attachmentUrls: Array.isArray(response.attachmentUrls) ? response.attachmentUrls : [] };
+            } catch (err: any) {
+                console.error('[10:45 CEST] Message send error:', err.message, err.response || err);
+                let errorMessage = err.message || 'Failed to send message';
+                if (err.response?.status === 400) {
+                    errorMessage = err.response.data?.message || 'Invalid request data';
+                } else if (err.response?.status === 404) {
+                    errorMessage = 'Conversación no encontrada. Verifica el ID del servicio.';
+                }
+                throw new Error(errorMessage);
+            }
         },
         onSuccess: (message) => {
-            console.log('[13:46 CEST] Message sent successfully:', message);
+            console.log('[10:45 CEST] Message sent successfully:', message);
             queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
-                if (!prev) return { ...conversation, messages: [message] } as Conversation;
+                if (!prev && conversation) {
+                    console.log('[10:45 CEST] No previous conversation, using current conversation');
+                    return { ...conversation, messages: [message] };
+                }
+                if (!prev) {
+                    console.warn('[10:45 CEST] No previous or current conversation, cannot update');
+                    refetch();
+                    return undefined;
+                }
                 return {
                     ...prev,
-                    messages: [...prev.messages.filter(m => m.id !== message.id), message].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()),
+                    messages: [...prev.messages.filter((m) => m.id !== message.id), message].sort(
+                        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+                    ),
                 };
             });
             setNewMessage('');
+            setNotifications((prev) => [
+                ...prev,
+                {
+                    id: `message-success-${uuidv4()}`,
+                    type: 'success' as NotificationType,
+                    message: 'Mensaje enviado con éxito.',
+                    duration: 3000,
+                },
+            ]);
         },
-        onError: (error: any) => {
-            console.error('[13:46 CEST] Failed to send message:', error.message);
-            if (error.message.includes('JsonException')) {
+        onError: (error: any, variables, context) => {
+            console.error('[10:45 CEST] Failed to send message:', error.message, error, { variables, context });
+            setNotifications((prev) => [
+                ...prev,
+                {
+                    id: `message-error-${uuidv4()}`,
+                    type: 'error' as NotificationType,
+                    message: `Error al enviar el mensaje: ${error.message || 'Error desconocido'}`,
+                    duration: 5000,
+                },
+            ]);
+            if (error.message.includes('400') || error.message.includes('404')) {
                 refetch();
             }
+        },
+    });
+
+    const uploadDeliverableMutation = useMutation({
+        mutationFn: async (files: File[]) => {
+            console.log('[10:45 CEST] Initiating deliverable upload for searchHireId:', conversation?.searchHireId);
+            if (!conversation?.searchHireId) {
+                console.error('[10:45 CEST] Cannot upload deliverable: searchHireId not available', { conversation });
+                throw new Error('SearchHireId not available');
+            }
+            if (!API_CONFIG.endpoints.chat.deliverable) {
+                console.error('[10:45 CEST] Deliverable endpoint is undefined in API_CONFIG');
+                throw new Error('Deliverable endpoint not configured');
+            }
+            const safeFiles = Array.isArray(files) ? files : [];
+            if (safeFiles.length === 0) {
+                console.error('[10:45 CEST] No files provided for deliverable upload');
+                throw new Error('No files provided');
+            }
+            const formData = new FormData();
+            safeFiles.forEach((file) => {
+                formData.append('Files', file, file.name);
+            });
+            const formDataEntries: { [key: string]: any } = {};
+            formData.forEach((value, key) => {
+                formDataEntries[key] = value instanceof File ? { name: value.name, type: value.type, size: value.size } : value;
+            });
+            const deliverableEndpoint = `${API_CONFIG.endpoints.chat.deliverable}/${conversation.searchHireId}`;
+            console.log(`[10:45 CEST] Uploading deliverable to: ${deliverableEndpoint}`, {
+                SearchHireId: conversation.searchHireId,
+                FormData: formDataEntries,
+            });
+            try {
+                const response = await fetchApi<{ message: string; deliverable: Deliverable }>(deliverableEndpoint, {
+                    method: 'POST',
+                    body: formData,
+                });
+                console.log('[10:45 CEST] Deliverable uploaded, response:', response);
+                console.log('[10:45 CEST] Uploaded deliverable URLs:', response.deliverable.deliverableUrls);
+                return {
+                    searchHireId: response.deliverable.searchHireId,
+                    deliverableUrls: Array.isArray(response.deliverable.deliverableUrls) ? response.deliverable.deliverableUrls : [],
+                    createdAt: response.deliverable.createdAt,
+                };
+            } catch (err: any) {
+                console.error('[10:45 CEST] Deliverable upload error:', err.message, err.response || err);
+                let errorMessage = err.message || 'Failed to upload deliverable';
+                if (err.response?.status === 400) {
+                    errorMessage = err.response.data?.message || 'Invalid request data';
+                } else if (err.response?.status === 404) {
+                    errorMessage = 'SearchHire no encontrado. Verifica el ID del servicio.';
+                }
+                throw new Error(errorMessage);
+            }
+        },
+        onSuccess: (deliverable) => {
+            console.log('[10:45 CEST] Deliverable uploaded successfully:', deliverable);
+            console.log('[10:45 CEST] Updating deliverables cache with URLs:', deliverable.deliverableUrls);
+            queryClient.setQueryData(['deliverables', conversation?.searchHireId], deliverable);
+            queryClient.invalidateQueries({ queryKey: ['deliverables', conversation?.searchHireId] });
+            lastDeliverableFetch.current = Date.now();
+            refetchDeliverables();
+            setNotifications((prev) => [
+                ...prev,
+                {
+                    id: `deliverable-success-${uuidv4()}`,
+                    type: 'success' as NotificationType,
+                    message: 'Entregable subido con éxito.',
+                    duration: 5000,
+                },
+            ]);
+        },
+        onError: (error: any) => {
+            console.error('[10:45 CEST] Failed to upload deliverable:', error.message);
+            setNotifications((prev) => [
+                ...prev,
+                {
+                    id: `deliverable-error-${uuidv4()}`,
+                    type: 'error' as NotificationType,
+                    message: `Error al subir el entregable: ${error.message || 'Error desconocido'}`,
+                    duration: 5000,
+                },
+            ]);
         },
     });
 
@@ -219,6 +502,7 @@ export const useChat = (searchId: number) => {
                 method: 'PUT',
             }),
         onSuccess: (_, messageId) => {
+            console.log('[10:45 CEST] Successfully marked message as read:', messageId);
             queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
                 if (!prev) return prev;
                 return {
@@ -228,42 +512,90 @@ export const useChat = (searchId: number) => {
                     ),
                 };
             });
+            failedMessageIds.current.delete(messageId);
         },
-        onError: (error: any) => {
-            console.error('[13:46 CEST] Failed to mark message as read:', error.message);
+        onError: (error: any, messageId) => {
+            console.error('[10:45 CEST] Failed to mark message as read:', error.message, { messageId });
+            failedMessageIds.current.add(messageId);
+            setNotifications((prev) => {
+                const exists = prev.some((n) => n.id === `mark-read-error-${messageId}`);
+                if (exists) return prev;
+                return [
+                    ...prev,
+                    {
+                        id: `mark-read-error-${messageId}`,
+                        type: 'error' as NotificationType,
+                        message: 'No se pudo marcar algunos mensajes como leídos. Por favor, intenta de nuevo más tarde.',
+                        duration: 5000,
+                    },
+                ];
+            });
         },
     });
 
+    // Trigger SignalR connection
     useEffect(() => {
         if (conversation?.id && user && !connection) {
+            console.log('[10:45 CEST] Initiating SignalR connection for conversation:', conversation.id);
             connectSignalR();
         }
 
         return () => {
             if (connection) {
-                console.log('[13:46 CEST] Cleaning up SignalR connection');
+                console.log('[10:45 CEST] Cleaning up SignalR connection');
                 connection.stop();
                 setConnection(null);
             }
         };
     }, [conversation?.id, user, connection, connectSignalR]);
 
+    // Mark unread messages
     useEffect(() => {
         if (conversation?.messages && user) {
+            console.log('[10:45 CEST] Checking for unread messages:', conversation.messages.length);
             const unreadMessages = conversation.messages.filter(
-                (msg) => !msg.isRead && msg.senderId !== user.id
+                (msg) => !msg.isRead && msg.senderId !== user.id && !failedMessageIds.current.has(msg.id)
             );
-            unreadMessages.forEach((msg) => markAsReadMutation.mutate(msg.id));
+            if (unreadMessages.length > 0) {
+                console.log('[10:45 CEST] Marking unread messages:', unreadMessages.map((msg) => msg.id));
+                unreadMessages.forEach((msg) => {
+                    markAsReadMutation.mutate(msg.id);
+                });
+            }
         }
     }, [conversation?.messages, user, markAsReadMutation]);
 
+    // Refetch deliverables only when searchHireId changes
+    useEffect(() => {
+        if (conversation?.searchHireId) {
+            console.log('[10:45 CEST] searchHireId changed, refetching deliverables for searchHireId:', conversation.searchHireId);
+            lastDeliverableFetch.current = Date.now();
+            refetchDeliverables();
+        }
+    }, [conversation?.searchHireId, refetchDeliverables]);
+
+    // Debug deliverables cache
+    useEffect(() => {
+        console.log('[10:45 CEST] Current deliverables cache state:', {
+            deliverables,
+            searchHireId: conversation?.searchHireId,
+            deliverableUrls: deliverables?.deliverableUrls,
+            isLoading: deliverablesLoading,
+            error: deliverablesError?.message,
+        });
+    }, [deliverables, deliverablesLoading, deliverablesError, conversation?.searchHireId]);
+
     return {
         conversation,
-        loading,
-        error: error?.message || null,
+        loading: loading || deliverablesLoading,
+        error: error?.message || deliverablesError?.message || null,
         newMessage,
         setNewMessage,
         sendMessage: sendMessageMutation.mutate,
         isSending: sendMessageMutation.isPending,
+        deliverables,
+        deliverablesQuery: { isLoading: deliverablesLoading, isError: !!deliverablesError, error: deliverablesError },
+        uploadDeliverable: uploadDeliverableMutation.mutate,
+        refetchDeliverables,
     };
 };

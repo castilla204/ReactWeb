@@ -85,6 +85,7 @@ export const API_CONFIG = {
             message: `${API_PATH}/chat/message`,
             markAsRead: (messageId: number) => `${API_PATH}/chat/message/${messageId}/read`,
             ws: `${API_PATH}/chat/ws`,
+            deliverable: `${API_PATH}/chat/deliverable`, // Added deliverable endpoint
         },
     },
 };
