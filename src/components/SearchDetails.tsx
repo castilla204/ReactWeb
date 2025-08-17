@@ -1,27 +1,17 @@
-﻿import { useLayoutEffect, useState, useEffect } from 'react';
-import { ArrowLeft, Filter, ChevronDown, Star, AlertTriangle, Check, XCircle, Plus, MessageCircle } from 'lucide-react';
+﻿import { useLayoutEffect, useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Filter, ChevronDown, Star, AlertTriangle, Check, XCircle, Plus, MessageCircle, Upload } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useReview } from '../hooks/useReview.hooks';
+import { useChat } from '../hooks/useChat';
 import { ResultCard } from './ResultCard';
+import Chat from './Chat';
 import { ReviewModal, DisputeModal, ResolveDisputeModal, AddAdModal, CancelServiceModal, FinalizeModal } from './Modals';
 import { useSearchActions } from '../hooks/useSearchActions';
 import { Notification, NotificationType } from './Notification';
-import Chat from './Chat';
 import { useParams, useNavigate } from 'react-router-dom';
-
-interface SearchHire {
-    id: number;
-    clientId: number;
-    expertId: number | null;
-    status: string;
-    messages: { id: number; senderId: number; content: string; sentAt: string; isRead: boolean }[];
-    expert?: {
-        name: string;
-        profilePictureUrl: string;
-    };
-}
+import { v4 as uuidv4 } from 'uuid';
 
 interface Category {
     id: number;
@@ -44,6 +34,27 @@ interface NewAd {
     city: string;
     sellerType: string;
     platformId: number;
+}
+
+interface SearchHire {
+    id: number;
+    clientId: number;
+    expertId: number;
+    status: string;
+    expert?: { name: string; profilePictureUrl: string };
+    messages: Array<{
+        id: number;
+        isRead: boolean;
+        senderId: number;
+    }>;
+}
+
+interface Search {
+    title: string;
+    description: string;
+    category: number;
+    userId: number;
+    searchHire?: SearchHire;
 }
 
 interface SearchDetailsProps {
@@ -90,11 +101,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         platformId: 1,
     });
     const [notifications, setNotifications] = useState<{ id: string; type: NotificationType; message: string; duration?: number }[]>([]);
+    const [selectedDeliverableFiles, setSelectedDeliverableFiles] = useState<File[]>([]);
+    const lastSearchHireId = useRef<number | null>(null);
 
     const { getResults, getSearch } = useSearch();
     const { categories } = useCategories();
     const { user } = useAuth();
     const { getExpertReviews } = useReview();
+    const { deliverables, uploadDeliverable, deliverablesQuery, refetchDeliverables } = useChat(searchId, setNotifications);
     const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit, handleResolveDispute, handleAddAd } =
         useSearchActions(setNotifications);
 
@@ -121,6 +135,89 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const unreadMessages = searchQuery.data?.searchHire?.messages?.filter((msg) => !msg.isRead && msg.senderId !== userId).length || 0;
 
     const category = categories?.find((c: Category) => c.id === searchQuery.data?.category);
+
+    // Debug searchId, deliverables, and query state
+    useEffect(() => {
+        console.log('[10:45 CEST] SearchDetails initialized with searchId:', searchId);
+        console.log('[10:45 CEST] Deliverables state:', deliverables);
+        console.log('[10:45 CEST] Deliverables query status:', {
+            isLoading: deliverablesQuery?.isLoading,
+            isError: deliverablesQuery?.isError,
+            error: deliverablesQuery?.error?.message,
+        });
+        console.log('[10:45 CEST] Deliverables URLs:', deliverables?.deliverableUrls);
+        if (deliverables?.deliverableUrls?.length) {
+            console.log('[10:45 CEST] Rendering deliverable URLs:', deliverables.deliverableUrls);
+        } else {
+            console.log('[10:45 CEST] No deliverable URLs to render, deliverables:', JSON.stringify(deliverables));
+        }
+    }, [searchId, deliverables, deliverablesQuery]);
+
+    // Throttled refetch for deliverables
+    useEffect(() => {
+        if (searchQuery.data?.searchHire?.id && searchQuery.data.searchHire.id !== lastSearchHireId.current) {
+            console.log('[10:45 CEST] searchHireId changed, refetching deliverables for searchHireId:', searchQuery.data.searchHire.id);
+            lastSearchHireId.current = searchQuery.data.searchHire.id;
+            refetchDeliverables();
+        }
+    }, [searchQuery.data?.searchHire?.id, refetchDeliverables]);
+
+    // Handle deliverable file selection
+    const handleDeliverableFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files ? Array.from(e.target.files) : [];
+        const maxDeliverableFileSize = 50 * 1024 * 1024; // 50MB
+        const validFiles = files.filter((file) => {
+            const extension = file.name.split('.').pop()?.toLowerCase();
+            const isValidType = ['pdf', 'mp4'].includes(extension || '');
+            const isValidSize = file.size <= maxDeliverableFileSize;
+            return isValidType && isValidSize;
+        });
+        console.log('[10:45 CEST] Selected deliverable files:', validFiles.map((f) => ({ name: f.name, size: f.size })));
+        if (validFiles.length > 0) {
+            setNotifications((prev) => [
+                ...prev,
+                {
+                    id: `deliverable-selected-${uuidv4()}`,
+                    type: 'success' as NotificationType,
+                    message: `Entregables seleccionados: ${validFiles.map((f) => f.name).join(', ')}`,
+                    duration: 3000,
+                },
+            ]);
+        }
+        if (validFiles.length < files.length) {
+            setNotifications((prev) => [
+                ...prev,
+                {
+                    id: `deliverable-file-error-${uuidv4()}`,
+                    type: 'error' as NotificationType,
+                    message: `Solo se permiten archivos PDF, MP4 con un tamaño máximo de ${maxDeliverableFileSize / 1024 / 1024}MB.`,
+                    duration: 5000,
+                },
+            ]);
+        }
+        setSelectedDeliverableFiles(validFiles);
+    };
+
+    // Handle deliverable upload
+    const handleUploadDeliverable = async () => {
+        if (selectedDeliverableFiles.length > 0) {
+            console.log('[10:45 CEST] Uploading deliverables:', selectedDeliverableFiles.map((f) => ({ name: f.name, size: f.size })));
+            await uploadDeliverable(selectedDeliverableFiles);
+            setSelectedDeliverableFiles([]);
+            console.log('[10:45 CEST] Triggered refetchDeliverables after upload');
+            refetchDeliverables();
+        } else {
+            setNotifications((prev) => [
+                ...prev,
+                {
+                    id: `deliverable-empty-error-${uuidv4()}`,
+                    type: 'error' as NotificationType,
+                    message: 'Por favor, selecciona al menos un archivo para subir como entregable.',
+                    duration: 5000,
+                },
+            ]);
+        }
+    };
 
     useEffect(() => {
         if (!canViewChat && searchQuery.data?.searchHire && searchQuery.isSuccess) {
@@ -384,16 +481,16 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             <div className="flex items-center gap-3">
                                 <span
                                     className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium capitalize ${searchQuery.data.searchHire.status === 'pending'
-                                            ? 'bg-yellow-100 text-yellow-800'
-                                            : searchQuery.data.searchHire.status === 'awaiting_client_decision'
-                                                ? 'bg-blue-100 text-blue-800'
-                                                : searchQuery.data.searchHire.status === 'disputed'
-                                                    ? 'bg-red-100 text-red-800'
-                                                    : ['cancelled', 'transfer_failed'].includes(searchQuery.data.searchHire.status)
-                                                        ? 'bg-gray-100 text-gray-800'
-                                                        : ['dispute-resolved', 'completed'].includes(searchQuery.data.searchHire.status)
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-gray-100 text-gray-800'
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : searchQuery.data.searchHire.status === 'awaiting_client_decision'
+                                            ? 'bg-blue-100 text-blue-800'
+                                            : searchQuery.data.searchHire.status === 'disputed'
+                                                ? 'bg-red-100 text-red-800'
+                                                : ['cancelled', 'transfer_failed'].includes(searchQuery.data.searchHire.status)
+                                                    ? 'bg-gray-100 text-gray-800'
+                                                    : ['dispute-resolved', 'completed'].includes(searchQuery.data.searchHire.status)
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-gray-100 text-gray-800'
                                         }`}
                                 >
                                     {searchQuery.data.searchHire.status.replace(/_/g, ' ')}
@@ -415,7 +512,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 </div>
             </div>
 
-            {/* Main Content: Chat and Ads */}
+            {/* Main Content: Chat, Ads, and Deliverables */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
                 {/* Chat Section */}
                 {canViewChat && (
@@ -430,25 +527,80 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     </div>
                 )}
 
-                {/* Ads Section */}
+                {/* Ads and Deliverables Sections */}
                 <div className={canViewChat ? 'lg:col-span-3' : 'lg:col-span-5'}>
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-4">Anuncios Encontrados</h2>
-                    {resultsQuery.data?.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-[300px] bg-white rounded-2xl border border-gray-100 shadow-lg animate-fade-in">
-                            <p className="text-gray-500 text-lg">No se encontraron resultados</p>
-                            {(isAdmin || isExpert) && (
-                                <p className="text-sm text-gray-400 mt-2">Intenta añadir un nuevo anuncio o ajustar los criterios de búsqueda</p>
+                    {/* Ads Section */}
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Anuncios Encontrados</h2>
+                        {resultsQuery.data?.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-[300px] bg-white rounded-2xl border border-gray-100 shadow-lg animate-fade-in">
+                                <p className="text-gray-500 text-lg">No se encontraron resultados</p>
+                                {(isAdmin || isExpert) && (
+                                    <p className="text-sm text-gray-400 mt-2">Intenta añadir un nuevo anuncio o ajustar los criterios de búsqueda</p>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {resultsQuery.data?.map((result) => (
+                                    <div key={result.id} className="transform transition-transform hover:scale-105">
+                                        <ResultCard result={result} searchId={searchId} setNotifications={setNotifications} />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Deliverables Section */}
+                    <div>
+                        <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <Upload className="w-6 h-6 text-blue-600" />
+                            Entregables
+                        </h2>
+                        <div className="bg-gradient-to-b from-blue-50 to-white rounded-2xl border border-gray-100 shadow-lg p-6 animate-fade-in">
+                            {deliverablesQuery.isLoading ? (
+                                <p className="text-sm text-gray-500">Cargando entregables...</p>
+                            ) : deliverablesQuery.isError ? (
+                                <p className="text-sm text-red-500">Error al cargar entregables: {deliverablesQuery.error?.message}</p>
+                            ) : deliverables && deliverables.deliverableUrls.length > 0 ? (
+                                <div className="space-y-3">
+                                    {deliverables.deliverableUrls.map((url, index) => (
+                                        <div key={index} className="flex items-center gap-2">
+                                            {url.endsWith('.mp4') ? (
+                                                <video src={url} controls className="max-w-full rounded-lg" style={{ maxHeight: '200px' }} />
+                                            ) : (
+                                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm hover:text-blue-800">
+                                                    Ver PDF {index + 1}
+                                                </a>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-500">No hay entregables disponibles.</p>
+                            )}
+                            {isExpert && (
+                                <div className="mt-4 flex items-center gap-2">
+                                    <label className="flex-1 p-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm cursor-pointer">
+                                        <span className="text-sm text-gray-600">Subir entregable (PDF, MP4)</span>
+                                        <input
+                                            type="file"
+                                            multiple
+                                            accept=".pdf,.mp4"
+                                            onChange={handleDeliverableFileChange}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                    <button
+                                        onClick={handleUploadDeliverable}
+                                        className={`p-3 rounded-xl transition-colors ${selectedDeliverableFiles.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                                        disabled={selectedDeliverableFiles.length === 0}
+                                    >
+                                        Subir Entregable
+                                    </button>
+                                </div>
                             )}
                         </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {resultsQuery.data?.map((result) => (
-                                <div key={result.id} className="transform transition-transform hover:scale-105">
-                                    <ResultCard result={result} searchId={searchId} setNotifications={setNotifications} />
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    </div>
                 </div>
             </div>
 
@@ -563,6 +715,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         <p><strong>ID Experto:</strong> {expertId || 'N/A'}</p>
                         <p><strong>Puede Ver Chat:</strong> {canViewChat.toString()}</p>
                         <p><strong>Mensajes No Leídos:</strong> {unreadMessages}</p>
+                        <p><strong>Deliverables:</strong> {JSON.stringify(deliverables)}</p>
                     </div>
                 </div>
             )}
