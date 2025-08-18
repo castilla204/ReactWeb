@@ -35,18 +35,7 @@ interface NewAd {
     platformId: number;
 }
 
-interface SearchHire {
-    id: number;
-    clientId: number;
-    expertId: number;
-    status: string;
-    expert?: { name: string; profilePictureUrl: string };
-    messages: Array<{
-        id: number;
-        isRead: boolean;
-        senderId: number;
-    }>;
-}
+
 
 interface SearchDetailsProps {
     isAdmin: boolean;
@@ -116,7 +105,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const reviewsQuery = getExpertReviews(searchQuery.data?.searchHire?.expertId || 0);
 
     const userId = Number(user?.id) || 0;
-    const clientId = Number(searchQuery.data?.searchHire?.clientId ?? searchQuery.data?.userId ?? 0);
+    const clientId = Number(searchQuery.data?.userId ?? 0);
     const expertId = Number(searchQuery.data?.searchHire?.expertId ?? 0);
 
     const isClient = userId === clientId;
@@ -271,16 +260,16 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     };
 
     const handleDisputeSubmitAndClose = async () => {
-        await handleDisputeSubmit({
-            searchHireId: searchQuery.data?.searchHire?.id,
+        await handleDisputeSubmit(
+            searchQuery.data?.searchHire?.id,
             disputeReason,
-            callback: () => {
+            () => {
                 resultsQuery.refetch();
                 searchQuery.refetch();
                 setModalState((prev) => ({ ...prev, showDisputeModal: false }));
                 setDisputeReason('');
-            },
-        });
+            }
+        );
     };
 
     const handleResolveDisputeAndClose = async () => {
@@ -294,11 +283,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     };
 
     const handleCancelServiceAndClose = async () => {
-        await handleCancelService(searchQuery.data?.searchHire?.id, () => {
+        await handleCancelService(searchQuery.data?.searchHire?.id);
             resultsQuery.refetch();
             searchQuery.refetch();
             setModalState((prev) => ({ ...prev, showCancelConfirm: false }));
-        });
     };
 
     const handleForceFinalizeAndClose = async (favorExpert: boolean) => {
@@ -336,10 +324,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     }
 
     return (
-        <div className="bg-white text-black min-h-screen max-w-6xl mx-auto">
+        <div className="bg-gray-50 text-black min-h-screen">
             {/* Header Section - Similar to Fiverr style */}
-            <div className="border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center justify-between">
+            <div className="bg-white border-b border-gray-200 px-8 py-4">
+                <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={onBack || (() => navigate('/busquedas'))}
@@ -376,98 +364,199 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-6 p-6">
+            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-10 xl:gap-12 p-4 md:p-6 lg:p-8">
                 {/* Main Chat Area - Left Side */}
                 {canViewChat && (
-                    <div className="w-full lg:w-2/3 bg-white border border-gray-200 rounded-lg shadow-md">
-                        <div className="p-4 text-center border-b border-gray-100">
-                            <button className="text-blue-600 hover:text-blue-700 text-sm">Cargar más</button>
+                    <div className="w-full lg:w-[65%] xl:w-[68%] space-y-6">
+                        {/* Promotional Banner - Like Fiverr */}
+                        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+                            <div className="flex items-center gap-4">
+                                <div className="flex -space-x-2">
+                                    <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-white">
+                                        D
+                                    </div>
+                                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-white">
+                                        M
+                                    </div>
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-semibold mb-1">¿Te gustaría seguir trabajando juntos?</h3>
+                                    <p className="text-purple-100 text-sm">
+                                        Inicia proyectos a largo plazo con nuestros expertos mediante órdenes por horas que te ofrecen 
+                                        actualizaciones transparentes de progreso y pueden finalizar en cualquier momento.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="mt-4 flex gap-3">
+                                <button className="bg-white text-purple-600 px-4 py-2 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors">
+                                    Solicitar oferta por horas
+                                </button>
+                                <button className="text-white border border-white/30 px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-colors">
+                                    Cómo funciona
+                                </button>
+                            </div>
+                            <p className="text-purple-200 text-xs mt-3">Te informaremos al experto si estás interesado.</p>
                         </div>
-                        <div className="h-[calc(100vh-20rem)] overflow-y-auto px-6 py-4">
+
+                        {/* Expert Network Banner */}
+                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-gray-900 mb-1">El experto ahora forma parte de tu red freelance</h3>
+                                    <p className="text-gray-600 text-sm">
+                                        Accede fácilmente al trabajo que han realizado o contrátalos de nuevo.
+                                    </p>
+                                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-1 underline">
+                                        Ver tus contrataciones
+                                    </button>
+                                </div>
+                                <button className="text-gray-400 hover:text-gray-600">
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Chat Container */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                            <div className="p-6 border-b border-gray-100">
+                                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                    Cargar mensajes anteriores
+                                </button>
+                            </div>
+                            <div className="px-6 py-4">
                             <Chat searchId={searchId} setNotifications={setNotifications} isExpert={isExpert} />
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* Right Sidebar - Fiverr Style */}
-                <div className="w-full lg:w-1/3 border-l border-gray-200 bg-gray-50 rounded-lg shadow-md p-6">
-                    {/* Order Details */}
-                    <div className="border-b border-gray-200 pb-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold">Detalles del Pedido</h2>
-                            <button className="text-gray-400 hover:text-gray-600">•••</button>
+                <div className="w-full lg:w-[35%] xl:w-[32%] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    {/* Order Details Header */}
+                    <div className="p-6 border-b border-gray-100">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-xl font-semibold text-gray-900">Detalles del pedido</h2>
+                            <button className="text-gray-400 hover:text-gray-600 p-1">
+                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
+                            </button>
                         </div>
 
-                        <div className="bg-white rounded-lg p-4 mb-4">
+                        {/* Service Card */}
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 mb-6 border border-gray-200">
+                            <div className="relative">
                             <img
                                 src={searchQuery.data?.category && categoryBanners[searchQuery.data.category] ? categoryBanners[searchQuery.data.category] : '/default-service.png'}
                                 alt="Service"
-                                className="w-full h-20 object-cover rounded-lg mb-3"
+                                    className="w-full h-24 object-cover rounded-lg mb-3 shadow-sm"
                             />
-                            <p className="text-sm text-gray-800 mb-2">{searchQuery.data?.title}</p>
+                                <div className="absolute top-2 left-2">
                             <span
-                                className={`inline-block px-2 py-1 text-xs font-medium rounded-full text-white ${currentStatus === 'completed' ? 'bg-green-500' :
+                                        className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${currentStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                                            currentStatus === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                currentStatus === 'awaiting_client_decision' ? 'bg-purple-100 text-purple-800' : 'bg-yellow-100 text-yellow-800'
+                                            }`}
+                                    >
+                                        <span className={`w-2 h-2 rounded-full mr-1 ${currentStatus === 'completed' ? 'bg-green-500' :
                                     currentStatus === 'in_progress' ? 'bg-blue-500' :
                                         currentStatus === 'awaiting_client_decision' ? 'bg-purple-500' : 'bg-yellow-500'
-                                    }`}
-                            >
+                                            }`}></span>
                                 {currentStatus === 'completed' ? 'COMPLETADO' :
                                     currentStatus === 'in_progress' ? 'EN PROGRESO' :
                                         currentStatus === 'awaiting_client_decision' ? 'EN REVISIÓN' : 'PENDIENTE'}
                             </span>
                         </div>
+                            </div>
+                            <h3 className="font-medium text-gray-900 mb-2 leading-tight">{searchQuery.data?.title}</h3>
+                            <p className="text-sm text-gray-600">Diseño profesional de mascota</p>
+                        </div>
 
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Solicitado por</span>
-                                <span className="font-medium">• {user?.name || 'Usuario'}</span>
+                        {/* Order Information */}
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <p className="text-gray-500 mb-1">Solicitado por</p>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                                            {user?.name?.charAt(0) || 'U'}
+                                        </div>
+                                        <span className="font-medium text-gray-900">{user?.name || 'Usuario'}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-gray-500 mb-1">Proyecto</p>
+                                    <div className="flex items-center gap-1">
+                                        <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                                        </svg>
+                                        <span className="font-medium text-gray-900">Mi proyecto</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Proyecto</span>
-                                <span className="font-medium">📁 Mi proyecto</span>
+                            
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <p className="text-gray-500 mb-1">Categoría</p>
+                                    <span className="font-medium text-gray-900">{categoryName}</span>
+                                </div>
+                                <div>
+                                    <p className="text-gray-500 mb-1">Encargado a</p>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                                            {searchQuery.data?.searchHire?.expert?.name?.charAt(0) || 'E'}
+                                        </div>
+                                        <span className="font-medium text-gray-900">{searchQuery.data?.searchHire?.expert?.name || 'Experto'}</span>
+                                    </div>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Categoría</span>
-                                <span className="font-medium">{categoryName}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Encargado a</span>
-                                <span className="font-medium">{searchQuery.data?.searchHire?.expert?.name || 'Experto'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Fecha de entrega</span>
-                                <span className="font-medium">
+                            
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <p className="text-gray-500 mb-1">Fecha de entrega</p>
+                                    <span className="font-medium text-gray-900">
                                     {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Precio total</span>
-                                <span className="font-medium">€99.00</span>
+                                <div>
+                                    <p className="text-gray-500 mb-1">Precio total</p>
+                                    <span className="font-bold text-lg text-gray-900">€159.26</span>
+                                </div>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Número de pedido</span>
-                                <span className="font-medium">#{searchId.toString().padStart(8, '0')}</span>
+                            
+                            <div className="pt-2 border-t border-gray-100">
+                                <p className="text-gray-500 text-sm mb-1">Número de pedido</p>
+                                <span className="font-mono text-sm text-gray-700">#{searchId.toString().padStart(12, 'FO41A05960584')}</span>
                             </div>
                         </div>
 
                         {(isAdmin || isExpert) && (
                             <button
                                 onClick={() => setModalState((prev) => ({ ...prev, showAddAdForm: true }))}
-                                className="w-full mt-4 bg-black text-white py-3 rounded-lg hover:bg-gray-800"
+                                className="w-full mt-6 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-xl hover:from-gray-800 hover:to-gray-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
                             >
-                                Añadir Anuncio
+                                Order Again
                             </button>
                         )}
                     </div>
 
                     {/* Track Order */}
-                    <div className="border-b border-gray-200 py-6">
+                    <div className="px-6 py-6 border-b border-gray-100">
                         <button
                             onClick={() => setShowTrackOrder(!showTrackOrder)}
-                            className="flex items-center justify-between w-full text-left"
+                            className="flex items-center justify-between w-full text-left group"
                         >
-                            <h3 className="font-semibold">Seguimiento del Pedido</h3>
-                            {showTrackOrder ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            <h3 className="font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">Seguimiento del Pedido</h3>
+                            <div className="p-1 rounded-full group-hover:bg-gray-100 transition-colors">
+                                {showTrackOrder ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                            </div>
                         </button>
 
                         {showTrackOrder && (
@@ -502,62 +591,74 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     </div>
 
                     {/* Support Section */}
-                    <div className="py-6">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-sm">
-                                👤
+                    <div className="px-6 py-6">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                                </svg>
                             </div>
                             <div>
-                                <p className="text-sm font-medium">¿Necesitas ayuda con tu pedido?</p>
-                                <p className="text-xs text-gray-500">Estoy aquí para ti.</p>
+                                <p className="font-medium text-gray-900">¿Necesitas ayuda con tu pedido?</p>
+                                <p className="text-sm text-gray-500">Estoy aquí para ti.</p>
                             </div>
                         </div>
 
-                        <button className="w-full mb-4 bg-white border-2 border-purple-500 text-purple-500 py-3 rounded-lg hover:bg-purple-50 flex items-center justify-center gap-2">
+                        <button className="w-full mb-6 bg-white border-2 border-purple-500 text-purple-600 py-3 rounded-xl hover:bg-purple-50 flex items-center justify-center gap-2 font-medium transition-all duration-200 hover:shadow-md">
                             <MessageCircle className="w-4 h-4" />
-                            Hablemos
+                            Let's Chat
                         </button>
 
-                        <div className="space-y-3">
-                            <h4 className="font-semibold text-sm">Soporte</h4>
+                        <div className="space-y-4">
+                            <h4 className="font-semibold text-gray-900">Soporte</h4>
 
                             {isDisputed && (
-                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
-                                    <p className="text-sm text-amber-700 flex items-center gap-2">
-                                        <AlertTriangle className="w-4 h-4" />
+                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-4">
+                                    <p className="text-sm text-amber-800 flex items-center gap-3 font-medium">
+                                        <div className="w-8 h-8 bg-amber-200 rounded-full flex items-center justify-center">
+                                            <AlertTriangle className="w-4 h-4 text-amber-700" />
+                                        </div>
                                         Disputa abierta. Un administrador la resolverá pronto.
                                     </p>
                                 </div>
                             )}
 
-                            <div className="space-y-2">
-                                <button className="flex items-center justify-between w-full text-left py-2 hover:bg-gray-100 rounded">
-                                    <div className="flex items-center gap-2">
-                                        <span className="w-4 h-4 text-center">❓</span>
+                            <div className="space-y-3">
+                                <button className="flex items-center justify-between w-full text-left p-3 hover:bg-gray-50 rounded-xl border border-gray-100 transition-colors group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
                                         <div>
-                                            <p className="text-sm">FAQs de la Plataforma</p>
+                                            <p className="text-sm font-medium text-gray-900">Fiverr Pro FAQs</p>
                                             <p className="text-xs text-gray-500">Encuentra respuestas necesarias.</p>
                                         </div>
                                     </div>
-                                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                                    <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
                                 </button>
 
-                                <button className="flex items-center justify-between w-full text-left py-2 hover:bg-gray-100 rounded">
-                                    <div className="flex items-center gap-2">
-                                        <span className="w-4 h-4 text-center">🎯</span>
+                                <button className="flex items-center justify-between w-full text-left p-3 hover:bg-gray-50 rounded-xl border border-gray-100 transition-colors group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                            <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
                                         <div>
-                                            <p className="text-sm">Centro de resolución</p>
+                                            <p className="text-sm font-medium text-gray-900">Resolution center</p>
                                             <p className="text-xs text-gray-500">Resuelve problemas del pedido.</p>
                                         </div>
                                     </div>
-                                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                                    <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
                                 </button>
                             </div>
 
                             {canCancel && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showCancelConfirm: true }))}
-                                    className="w-full mt-4 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 text-sm"
+                                    className="w-full mt-4 bg-red-500 text-white py-3 rounded-xl hover:bg-red-600 text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg"
                                 >
                                     Cancelar Servicio
                                 </button>
@@ -566,7 +667,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             {isAdmin && searchQuery.data?.searchHire && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showFinalizeModal: true }))}
-                                    className="w-full mt-2 bg-amber-600 text-white py-2 rounded-lg hover:bg-amber-700 text-sm"
+                                    className="w-full mt-3 bg-amber-500 text-white py-3 rounded-xl hover:bg-amber-600 text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg"
                                 >
                                     Finalizar Búsqueda
                                 </button>
@@ -575,7 +676,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             {canReview && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                    className="w-full mt-2 bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700 text-sm flex items-center justify-center gap-2"
+                                    className="w-full mt-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-3 rounded-xl hover:from-yellow-600 hover:to-orange-600 text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                                 >
                                     <Star className="w-4 h-4" />
                                     Enviar Reseña

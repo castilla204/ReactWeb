@@ -162,43 +162,89 @@ const SearchCreationPage: React.FC = () => {
                     <div className="w-full py-12 md:py-16">
                         <div
                             id="form-section"
-                            className="w-full bg-white rounded-2xl shadow-lg p-6 md:p-8 border border-gray-100 mx-auto max-w-6xl animate-fade-in-up"
+                            className="w-full bg-white rounded-3xl shadow-2xl p-8 md:p-12 border border-gray-100 mx-auto max-w-6xl animate-fade-in-up relative overflow-hidden"
                         >
-                            <h2 className="text-2xl md:text-3xl font-display text-blue-900 mb-5 md:mb-6 text-center leading-tight">
-                                Crea tu búsqueda personalizada
-                            </h2>
-                            <p className="text-sm md:text-base text-gray-600 mb-6 md:mb-8 text-center max-w-xl mx-auto">
-                                Define tus preferencias y déjanos encontrar el coche perfecto para ti.
-                            </p>
-                            <div className="space-y-6 w-full mx-auto max-w-3xl">
-                                <div className="bg-white rounded-xl shadow-md p-4 md:p-5">
-                                    <h3 className="text-base md:text-lg font-semibold mb-3 flex items-center gap-2 text-blue-900">
-                                        <Search className="w-4 md:w-5 h-4 md:h-5 text-blue-600" /> Categoría
-                                    </h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {/* Background decoration */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-50 to-purple-50 rounded-full -translate-y-32 translate-x-32 opacity-50"></div>
+                            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-green-50 to-blue-50 rounded-full translate-y-24 -translate-x-24 opacity-40"></div>
+                            
+                            {/* Header with icon */}
+                            <div className="relative text-center mb-10">
+                                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
+                                    <Search className="w-10 h-10 text-white" />
+                                </div>
+                                <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4 leading-tight">
+                                    Crea tu búsqueda personalizada
+                                </h2>
+                                <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                                    Define tus preferencias con precisión y déjanos encontrar exactamente lo que buscas. 
+                                    <span className="text-blue-600 font-medium">Es rápido y fácil.</span>
+                                </p>
+                            </div>
+                            <div className="relative space-y-8 w-full mx-auto max-w-4xl">
+                                {/* Categories Section */}
+                                <div className="bg-gradient-to-r from-white to-gray-50 rounded-2xl shadow-lg border border-gray-200 p-6 md:p-8 relative">
+                                    <div className="absolute top-4 right-4 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <span className="text-blue-600 font-bold text-sm">1</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                                            <Search className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-gray-900">Selecciona tu categoría</h3>
+                                            <p className="text-gray-600 text-sm">¿Qué tipo de producto o servicio buscas?</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         {safeCategories.map((category) => (
                                             <button
                                                 key={category.id}
                                                 onClick={() =>
                                                     setSearchParameters((prev) => ({ ...prev, category: category.id }))
                                                 }
-                                                className={`px-3 py-2 md:px-4 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-colors flex items-center justify-center gap-2 ${searchParameters.category === category.id
-                                                    ? 'bg-blue-600 text-white shadow-sm'
-                                                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                                                className={`group relative p-6 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${searchParameters.category === category.id
+                                                    ? 'border-blue-500 bg-blue-50 shadow-lg'
+                                                    : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
                                                     }`}
                                             >
-                                                {category.id === 1 && <Car className="w-4 md:w-5 h-4 md:h-5" />}
-                                                {category.id === 2 && <Bike className="w-4 md:w-5 h-4 md:h-5" />}
-                                                {category.id === 3 && <Home className="w-4 md:w-5 h-4 md:h-5" />}
-                                                {category.name}
+                                                <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center transition-colors ${searchParameters.category === category.id
+                                                    ? 'bg-blue-500 text-white'
+                                                    : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                                                    }`}>
+                                                    {category.id === 1 && <Car className="w-8 h-8" />}
+                                                    {category.id === 2 && <Bike className="w-8 h-8" />}
+                                                    {category.id === 3 && <Home className="w-8 h-8" />}
+                                                </div>
+                                                <h4 className="font-semibold text-gray-900 mb-2">{category.name}</h4>
+                                                <p className="text-xs text-gray-500">
+                                                    {category.id === 1 && 'Coches, motos y vehículos'}
+                                                    {category.id === 2 && 'Motocicletas y ciclomotores'}
+                                                    {category.id === 3 && 'Inmuebles y propiedades'}
+                                                </p>
+                                                {searchParameters.category === category.id && (
+                                                    <div className="absolute top-2 right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                                        <span className="text-white text-xs">✓</span>
+                                                    </div>
+                                                )}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-xl shadow-md p-4 md:p-5">
-                                    <h3 className="text-base md:text-lg font-semibold mb-3 flex items-center gap-2 text-blue-900">
-                                        <Search className="w-4 md:w-5 h-4 md:h-5 text-blue-600" /> Palabras clave
-                                    </h3>
+                                {/* Keywords Section */}
+                                <div className="bg-gradient-to-r from-white to-blue-50 rounded-2xl shadow-lg border border-gray-200 p-6 md:p-8 relative">
+                                    <div className="absolute top-4 right-4 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                        <span className="text-green-600 font-bold text-sm">2</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                                            <Search className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-gray-900">Palabras clave</h3>
+                                            <p className="text-gray-600 text-sm">Define qué estás buscando específicamente</p>
+                                        </div>
+                                    </div>
                                     <div className="relative">
                                         <input
                                             type="text"
@@ -207,35 +253,75 @@ const SearchCreationPage: React.FC = () => {
                                                 setSearchParameters((prev) => ({ ...prev, keywords: e.target.value }))
                                             }
                                             placeholder="Ej: Tesla Model 3, BMW M4, Piso en Madrid centro..."
-                                            className="w-full p-3 md:p-4 rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 pl-9"
+                                            className="w-full p-4 md:p-5 rounded-xl border-2 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-100 pl-14 text-lg transition-all duration-300"
                                         />
-                                        <Search className="absolute top-1/2 left-3 transform -translate-y-1/2 w-4 md:w-5 h-4 md:h-5 text-gray-400" />
+                                        <Search className="absolute top-1/2 left-4 transform -translate-y-1/2 w-6 h-6 text-gray-400" />
+                                    </div>
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        <span className="text-xs text-gray-500">Ejemplos populares:</span>
+                                        {['Tesla Model S', 'BMW Serie 3', 'Piso Madrid'].map((example) => (
+                                            <button
+                                                key={example}
+                                                onClick={() => setSearchParameters(prev => ({ ...prev, keywords: example }))}
+                                                className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs hover:bg-gray-200 transition-colors"
+                                            >
+                                                {example}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-xl shadow-md p-4 md:p-5">
-                                    <h3 className="text-base md:text-lg font-semibold mb-3 flex items-center gap-2 text-blue-900">
-                                        <Wand2 className="w-4 md:w-5 h-4 md:h-5 text-blue-600" /> Describe tu búsqueda
-                                    </h3>
+                                {/* Description Section */}
+                                <div className="bg-gradient-to-r from-white to-purple-50 rounded-2xl shadow-lg border border-gray-200 p-6 md:p-8 relative">
+                                    <div className="absolute top-4 right-4 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                        <span className="text-purple-600 font-bold text-sm">3</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                                            <Wand2 className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-gray-900">Describe tu búsqueda</h3>
+                                            <p className="text-gray-600 text-sm">Añade detalles específicos que te ayuden a encontrar exactamente lo que quieres</p>
+                                        </div>
+                                    </div>
                                     <div className="relative">
                                         <textarea
                                             value={searchParameters.userSearch || ''}
                                             onChange={(e) =>
                                                 setSearchParameters((prev) => ({ ...prev, userSearch: e.target.value }))
                                             }
-                                            placeholder="Detalles como precio máximo, características específicas, etc."
-                                            className="w-full p-3 md:p-4 rounded-lg border border-gray-200 text-gray-900 placeholder-gray-400 min-h-[100px] focus:border-blue-500 focus:ring-1 focus:ring-blue-100 pl-9"
+                                            placeholder="Ejemplo: Busco un coche de menos de 15.000€, automático, con pocos kilómetros, preferiblemente de color blanco o negro..."
+                                            className="w-full p-4 md:p-5 rounded-xl border-2 border-gray-200 text-gray-900 placeholder-gray-400 min-h-[120px] focus:border-purple-500 focus:ring-4 focus:ring-purple-100 pl-14 text-lg transition-all duration-300 resize-none"
                                         />
-                                        <Wand2 className="absolute top-3 left-3 w-4 md:w-5 h-4 md:h-5 text-gray-400" />
+                                        <Wand2 className="absolute top-4 left-4 w-6 h-6 text-gray-400" />
+                                    </div>
+                                    <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                                        {['💰 Precio máximo', '📍 Ubicación', '🚗 Características', '⭐ Estado'].map((tip) => (
+                                            <div key={tip} className="flex items-center gap-2 text-xs text-gray-500 bg-white p-2 rounded-lg">
+                                                <span>{tip}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-xl shadow-md p-4 md:p-5">
-                                    <h3 className="text-base md:text-lg font-semibold mb-3 flex items-center gap-2 text-blue-900">
-                                        <Shield className="w-4 md:w-5 h-4 md:h-5 text-blue-600" /> Tipo de servicio
-                                    </h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <label
-                                            className="flex items-center gap-2 p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
-                                        >
+                                {/* Service Type Section */}
+                                <div className="bg-gradient-to-r from-white to-orange-50 rounded-2xl shadow-lg border border-gray-200 p-6 md:p-8 relative">
+                                    <div className="absolute top-4 right-4 w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                                        <span className="text-orange-600 font-bold text-sm">4</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                                            <Shield className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-gray-900">Tipo de servicio</h3>
+                                            <p className="text-gray-600 text-sm">Elige cómo quieres que realicemos tu búsqueda</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <label className={`group relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-105 ${searchParameters.serviceTypeId === 1
+                                            ? 'border-orange-500 bg-orange-50 shadow-lg'
+                                            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                                            }`}>
                                             <input
                                                 type="radio"
                                                 value={1}
@@ -243,13 +329,18 @@ const SearchCreationPage: React.FC = () => {
                                                 onChange={() =>
                                                     setSearchParameters((prev) => ({ ...prev, serviceTypeId: 1 }))
                                                 }
-                                                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                                className="absolute top-4 right-4 w-5 h-5 text-orange-600"
                                             />
-                                            <span className="text-xs md:text-sm text-gray-700">Búsqueda Web</span>
+                                            <div className="mb-3">
+                                                <h4 className="font-semibold text-gray-900 mb-2">🌐 Búsqueda Web</h4>
+                                                <p className="text-sm text-gray-600">Búsqueda automatizada en múltiples plataformas web</p>
+                                            </div>
+                                            <div className="text-xs text-gray-500">Rápido • Automático • 24/7</div>
                                         </label>
-                                        <label
-                                            className="flex items-center gap-2 p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
-                                        >
+                                        <label className={`group relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:scale-105 ${searchParameters.serviceTypeId === 2
+                                            ? 'border-orange-500 bg-orange-50 shadow-lg'
+                                            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                                            }`}>
                                             <input
                                                 type="radio"
                                                 value={2}
@@ -257,38 +348,59 @@ const SearchCreationPage: React.FC = () => {
                                                 onChange={() =>
                                                     setSearchParameters((prev) => ({ ...prev, serviceTypeId: 2 }))
                                                 }
-                                                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                                className="absolute top-4 right-4 w-5 h-5 text-orange-600"
                                             />
-                                            <span className="text-xs md:text-sm text-gray-700">Búsqueda Web + Revisión</span>
+                                            <div className="mb-3">
+                                                <h4 className="font-semibold text-gray-900 mb-2">👨‍💼 Búsqueda Premium</h4>
+                                                <p className="text-sm text-gray-600">Búsqueda web plus revisión manual experta</p>
+                                            </div>
+                                            <div className="text-xs text-gray-500">Personal • Detallado • Premium</div>
                                         </label>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        checked={searchParameters.strictMatchOnly || false}
-                                        onChange={(e) =>
-                                            setSearchParameters((prev) => ({
-                                                ...prev,
-                                                strictMatchOnly: e.target.checked,
-                                            }))
-                                        }
-                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                    />
-                                    <label className="text-xs md:text-sm text-gray-700">Solo coincidencias exactas</label>
+                                {/* Additional Options */}
+                                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={searchParameters.strictMatchOnly || false}
+                                            onChange={(e) =>
+                                                setSearchParameters((prev) => ({
+                                                    ...prev,
+                                                    strictMatchOnly: e.target.checked,
+                                                }))
+                                            }
+                                            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <div>
+                                            <span className="text-sm font-medium text-gray-700">Solo coincidencias exactas</span>
+                                            <p className="text-xs text-gray-500">Buscar únicamente resultados que coincidan exactamente con tus criterios</p>
+                                        </div>
+                                    </label>
                                 </div>
-                                <button
-                                    onClick={handleStartSearch}
-                                    disabled={
-                                        !searchParameters.keywords ||
-                                        !searchParameters.userSearch ||
-                                        !searchParameters.category ||
-                                        !searchParameters.serviceTypeId
-                                    }
-                                    className="w-full py-2 md:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 transition-colors shadow-md hover:shadow-lg animate-fade-in-up"
-                                >
-                                    Continuar <ArrowRight className="inline w-4 h-4 ml-2" />
-                                </button>
+
+                                {/* Submit Button */}
+                                <div className="pt-4">
+                                    <button
+                                        onClick={handleStartSearch}
+                                        disabled={
+                                            !searchParameters.keywords ||
+                                            !searchParameters.userSearch ||
+                                            !searchParameters.category ||
+                                            !searchParameters.serviceTypeId
+                                        }
+                                        className="group w-full px-8 py-6 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 text-white rounded-2xl text-lg font-bold hover:from-blue-700 hover:via-purple-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-3xl relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                        <div className="relative flex items-center justify-center gap-3">
+                                            <span>🚀 Crear mi búsqueda personalizada</span>
+                                            <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
+                                        </div>
+                                    </button>
+                                    <p className="text-center text-sm text-gray-500 mt-4">
+                                        ⚡ Configuración rápida en menos de 2 minutos
+                                    </p>
+                                </div>
                             </div>
                             {isAuthenticated && (
                                 <div className="mt-4 text-xs md:text-sm text-gray-500 flex items-center justify-center gap-2 animate-fade-in-up">

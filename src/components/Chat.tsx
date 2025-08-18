@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
-import { Send, Smile, MessageCircle, Paperclip, MapPin, Download } from 'lucide-react';
+import { Send, Smile, Paperclip, MapPin, Download } from 'lucide-react';
 import { NotificationType } from './Notification';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
@@ -14,7 +14,7 @@ interface ChatProps {
     isExpert: boolean;
 }
 
-const libraries = ['drawing', 'geometry'];
+const libraries: ("drawing" | "geometry")[] = ['drawing', 'geometry'];
 
 const mapStyles = [
     {
@@ -231,9 +231,9 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
 
     const getAvatarColor = (senderId: string) => {
         if (senderId === user?.id) {
-            return 'bg-purple-500';
+            return 'bg-gray-600';
         }
-        return 'bg-green-500';
+        return 'bg-gray-500';
     };
 
     const formatFileSize = (bytes: number) => {
@@ -287,7 +287,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
             {/* Header */}
             <div className="bg-white border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${isClient ? 'bg-green-500' : 'bg-purple-500'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${isClient ? 'bg-gray-500' : 'bg-gray-600'}`}>
                         {isClient ? 'E' : 'C'}
                     </div>
                     <div>
@@ -304,7 +304,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
                 {conversation.messages?.length === 0 && isExpert ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="bg-white rounded-2xl p-6 shadow-sm max-w-md border border-gray-100">
-                            <Smile className="w-12 h-12 text-blue-600 mx-auto mb-3" />
+                            <Smile className="w-12 h-12 text-gray-500 mx-auto mb-3" />
                             <p className="text-gray-700 font-medium mb-2">
                                 ¡Bienvenido al chat!
                             </p>
@@ -343,11 +343,11 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
                                 </div>
 
                                 {/* Messages in group */}
-                                {group.messages.map((message: any, messageIndex: number) => (
+                                {group.messages.map((message: any) => (
                                     <div key={message.id} className="space-y-2">
                                         {/* Text content */}
                                         {message.content && (
-                                            <div className={`p-3 rounded-2xl ${group.isOwn ? 'bg-blue-500 text-white' : 'bg-white border border-gray-200 text-gray-900'} shadow-sm`}>
+                                            <div className={`p-3 rounded-2xl max-w-sm ${group.isOwn ? 'bg-gray-100 text-gray-900 border border-gray-200' : 'bg-white border border-gray-200 text-gray-900'} shadow-sm`}>
                                                 <p className="text-sm leading-relaxed whitespace-pre-wrap">
                                                     {message.content}
                                                 </p>
@@ -389,7 +389,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
                                                                     <a
                                                                         href={url}
                                                                         download
-                                                                        className="text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                                                                        className="text-gray-600 hover:text-gray-800 flex items-center gap-1"
                                                                     >
                                                                         <Download className="w-4 h-4" />
                                                                     </a>
@@ -432,7 +432,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
                                                     href={`https://www.google.com/maps?q=${message.locationLatitude},${message.locationLongitude}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-blue-500 hover:text-blue-600 text-sm mt-2 inline-block"
+                                                    className="text-gray-600 hover:text-gray-800 text-sm mt-2 inline-block"
                                                 >
                                                     Ver en Google Maps
                                                 </a>
@@ -527,8 +527,8 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
                         <button
                             onClick={handleSendMessage}
                             className={`p-3 rounded-xl transition-colors ${isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
-                                    ? 'bg-gray-300 cursor-not-allowed'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                    : 'bg-gray-900 text-white hover:bg-gray-800'
                                 }`}
                             disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
                         >
@@ -600,7 +600,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
                             </button>
                             <button
                                 onClick={handleSelectLocation}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                                className="px-6 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
                             >
                                 Seleccionar
                             </button>
