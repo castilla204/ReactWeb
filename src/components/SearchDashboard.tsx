@@ -205,274 +205,325 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 pt-24 pb-8">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3 md:gap-6">
-                    <button
-                        onClick={() => navigate('/')}
-                        className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                        <span className="hidden md:inline">Back</span>
-                    </button>
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-1">{isAdmin ? 'Búsquedas' : 'Mis Búsquedas'}</h2>
-                        <p className="text-sm text-gray-500">Gestiona y monitoriza tus búsquedas activas</p>
+        <div className="bg-gray-50 min-h-screen">
+            {/* Header Section - Fiverr Style */}
+            <div className="bg-white border-b border-gray-200">
+                <div className="max-w-7xl mx-auto px-8 py-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => navigate('/')}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                            </button>
+                            <div>
+                                <div className="flex items-center gap-3 mb-1">
+                                    <h1 className="text-2xl font-semibold text-gray-900">
+                                        {isAdmin ? 'Todas las Búsquedas' : 'Mis Búsquedas'}
+                                    </h1>
+                                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                                        {filteredSearches.length}
+                                    </span>
+                                </div>
+                                <p className="text-gray-600">Gestiona y monitoriza tus búsquedas activas</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex bg-gray-100 rounded-xl p-1">
+                                <button
+                                    onClick={() => setViewMode('grid')}
+                                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    <LayoutGrid className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    <LayoutList className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setViewMode('grid')}
-                        className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
-                    >
-                        <LayoutGrid className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => setViewMode('list')}
-                        className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
-                    >
-                        <LayoutList className="w-5 h-5" />
-                    </button>
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-col gap-4 mb-6">
+            <div className="max-w-7xl mx-auto px-8 py-8">
+
+            {/* Filters Section */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-8">
                 {/* Search input */}
-                <div className="w-full">
+                <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Buscar búsquedas</label>
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
                             type="text"
                             value={filters.search}
                             onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
                             placeholder="Buscar por título o descripción..."
-                            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                            className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-all placeholder:text-gray-500"
                         />
                     </div>
                 </div>
 
-                {/* Horizontal scrollable filters */}
-                <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 hide-scrollbar">
-                    {/* Category filters */}
-                    {Array.isArray(categories) &&
-                        categories.map((category) => (
-                            <button
-                                key={category.id}
-                                onClick={() =>
-                                    setFilters((prev) => ({
-                                        ...prev,
-                                        category: prev.category === category.id ? null : category.id,
-                                    }))
-                                }
-                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.category === category.id
-                                    ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-200'
-                                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                {category.id === 1 && <Car className="w-3.5 h-3.5" />}
-                                {category.id === 2 && <Bike className="w-3.5 h-3.5" />}
-                                {category.id === 3 && <Home className="w-3.5 h-3.5" />}
-                                {category.name}
-                            </button>
-                        ))}
+                {/* Filter Pills */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Filtros</label>
+                    <div className="flex flex-wrap gap-3">
+                        {/* Category filters */}
+                        {Array.isArray(categories) &&
+                            categories.map((category) => (
+                                <button
+                                    key={category.id}
+                                    onClick={() =>
+                                        setFilters((prev) => ({
+                                            ...prev,
+                                            category: prev.category === category.id ? null : category.id,
+                                        }))
+                                    }
+                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${filters.category === category.id
+                                        ? 'bg-gray-900 text-white shadow-lg'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                                        }`}
+                                >
+                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${filters.category === category.id ? 'bg-white/20' : 'bg-white'}`}>
+                                        {category.id === 1 && <Car className={`w-3 h-3 ${filters.category === category.id ? 'text-white' : 'text-gray-600'}`} />}
+                                        {category.id === 2 && <Bike className={`w-3 h-3 ${filters.category === category.id ? 'text-white' : 'text-gray-600'}`} />}
+                                        {category.id === 3 && <Home className={`w-3 h-3 ${filters.category === category.id ? 'text-white' : 'text-gray-600'}`} />}
+                                    </div>
+                                    {category.name}
+                                </button>
+                            ))}
 
-                    {/* Status filters */}
-                    <button
-                        onClick={() => setFilters((prev) => ({ ...prev, status: 'active' }))}
-                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'active'
-                            ? 'bg-green-50 text-green-600 ring-1 ring-green-200'
-                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        Activas
-                        <span className={`w-2 h-2 rounded-full ${filters.status === 'active' ? 'bg-green-500 animate-pulse-scale' : 'bg-gray-300'}`}></span>
-                    </button>
-                    <button
-                        onClick={() => setFilters((prev) => ({ ...prev, status: 'inactive' }))}
-                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filters.status === 'inactive'
-                            ? 'bg-red-50 text-red-600 ring-1 ring-red-200'
-                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        Inactivas
-                        <span className={`w-2 h-2 rounded-full ${filters.status === 'inactive' ? 'bg-red-500 animate-pulse-scale' : 'bg-gray-300'}`}></span>
-                    </button>
-
-                    {/* Clear filters */}
-                    {(filters.search || filters.category !== null || filters.status !== 'active') && (
+                        {/* Status filters */}
                         <button
-                            onClick={clearFilters}
-                            className="px-3 py-2 text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1.5 hover:bg-gray-50 rounded-lg transition-all whitespace-nowrap"
+                            onClick={() => setFilters((prev) => ({ ...prev, status: 'active' }))}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${filters.status === 'active'
+                                ? 'bg-green-100 text-green-800 border border-green-200'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                                }`}
                         >
-                            <X className="w-3.5 h-3.5" />
-                            Limpiar filtros
+                            <span className={`w-2 h-2 rounded-full ${filters.status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                            Activas
                         </button>
-                    )}
+                        <button
+                            onClick={() => setFilters((prev) => ({ ...prev, status: 'inactive' }))}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${filters.status === 'inactive'
+                                ? 'bg-gray-100 text-gray-800 border border-gray-300'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                                }`}
+                        >
+                            <span className={`w-2 h-2 rounded-full ${filters.status === 'inactive' ? 'bg-gray-500' : 'bg-gray-400'}`}></span>
+                            Inactivas
+                        </button>
+
+                        {/* Clear filters */}
+                        {(filters.search || filters.category !== null || filters.status !== 'active') && (
+                            <button
+                                onClick={clearFilters}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-all"
+                            >
+                                <X className="w-4 h-4" />
+                                Limpiar filtros
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Results count */}
-            <div className="flex items-center gap-2 mb-6 text-sm text-gray-500">
-                <Search className="w-4 h-4" />
-                <span>
-                    {filteredSearches.length} {filteredSearches.length === 1 ? 'búsqueda encontrada' : 'búsquedas encontradas'}
-                </span>
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-sm">
+                        <Search className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm font-medium text-gray-700">
+                            {filteredSearches.length} {filteredSearches.length === 1 ? 'resultado' : 'resultados'}
+                        </span>
+                    </div>
+                </div>
             </div>
 
             {filteredSearches.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-lg">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-center py-20 bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                         <Search className="w-8 h-8 text-gray-400" />
                     </div>
-                    <p className="text-gray-500 font-medium">No se encontraron búsquedas</p>
-                    <p className="text-gray-400 text-sm mt-1">Prueba con otros filtros</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No se encontraron búsquedas</h3>
+                    <p className="text-gray-500 text-sm">Prueba con otros filtros o crea una nueva búsqueda</p>
                 </div>
             ) : viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredSearches.map((search) => {
-                        const hireStatus = search.searchHire?.status;
-                        const hasUnreadMessages = search.searchHire?.Conversations?.some(
-                            (conv) => conv.Messages?.some((msg) => !msg.IsRead)
-                        );
+                        const hasUnreadMessages = false; // TODO: Implementar cuando esté disponible en el tipo
 
                         return (
                             <div
                                 key={search.id}
                                 onClick={() => handleSearchClick(search.id)}
-                                className={`group bg-white rounded-xl p-6 transition-all shadow-lg ${editingSearch === search.id ? 'cursor-default' : 'cursor-pointer'
-                                    } hover:shadow-xl ${isAdmin && !search.isRevised
-                                        ? 'border-2 border-red-500 shadow-red-500/5'
-                                        : 'border-[1.5px] border-blue-200/60 shadow-blue-100/50'
-                                    } hover:border-blue-300 hover:border-[1.5px] relative overflow-hidden`}
+                                className={`group bg-white rounded-xl p-6 transition-all duration-200 ${editingSearch === search.id ? 'cursor-default' : 'cursor-pointer'
+                                    } hover:shadow-lg border border-gray-200 hover:border-gray-300 ${isAdmin && !search.isRevised
+                                        ? 'ring-2 ring-red-100 border-red-200'
+                                        : ''
+                                    } relative`}
                             >
-                                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-white opacity-50" />
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.04),transparent_50%)]" />
+                                {/* Status indicator */}
+                                {isAdmin && !search.isRevised && (
+                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+                                )}
+                                
                                 <div className="relative">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-2">
+                                    {/* Header with title and status */}
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex-1">
                                             {editingSearch === search.id ? (
                                                 <input
                                                     type="text"
                                                     value={editForm.title}
                                                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                                    className="text-base md:text-lg font-semibold bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 w-full focus:border-blue-400 focus:ring-2 focus:ring-blue-400/10 transition-all"
+                                                    className="text-lg font-semibold bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 w-full focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
                                             ) : (
-                                                <h3 className="text-base md:text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1 flex items-center gap-2">
+                                                <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gray-700 transition-colors line-clamp-2 leading-tight">
                                                     {search.title}
-                                                    {isAdmin && search.isRevised && <CheckCircle className="w-4 h-4 text-green-500" />}
-                                                    {hasUnreadMessages && (
-                                                        <MessageSquare className="w-4 h-4 text-red-500 animate-pulse" />
-                                                    )}
                                                 </h3>
                                             )}
                                         </div>
-                                        {editingSearch === search.id ? (
-                                            <textarea
-                                                value={editForm.description}
-                                                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-700 text-sm mb-4 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/10 transition-all"
-                                                rows={2}
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        ) : (
-                                            <p className="text-gray-600 text-xs md:text-sm mb-3 md:mb-4 line-clamp-2">{search.description}</p>
-                                        )}
-                                        <div className="grid grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm mb-3 md:mb-4">
-                                            <div className="flex items-center text-gray-600 bg-gray-50/50 rounded-lg p-2 border border-gray-100">
-                                                <Clock className="w-4 h-4 mr-1" />
-                                                {editingSearch === search.id ? (
-                                                    <input
-                                                        type="number"
-                                                        value={editForm.frequency}
-                                                        onChange={(e) => setEditForm({ ...editForm, frequency: parseInt(e.target.value) })}
-                                                        className="w-16 bg-white border border-gray-200 rounded-lg px-2 text-gray-900 ml-1 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/10 transition-all"
-                                                        min="1"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                ) : (
-                                                    `Every ${search.frequency} hours`
-                                                )}
-                                            </div>
-                                            <div className="hidden md:flex items-center text-gray-600 bg-gray-50/50 rounded-lg p-2 border border-gray-100">
-                                                <Calendar className="w-4 h-4 mr-1" />
-                                                {new Date(search.lastExecution).toLocaleDateString()}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs">
-                                                {categories?.find((c) => c.id === search.category) && (
-                                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
-                                                        <Tag className="w-3.5 h-3.5" />
-                                                        {categories.find((c) => c.id === search.category)?.name}
-                                                    </span>
-                                                )}
-                                                <span
-                                                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getActivityStatus(search) === 'Activa'
-                                                        ? 'bg-green-50 text-green-600'
-                                                        : 'bg-gray-100 text-gray-600'
-                                                        }`}
-                                                >
-                                                    {getActivityStatus(search)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        {search.searchHire && (
-                                            <span
-                                                className={`mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${search.searchHire.status === 'pending'
-                                                    ? 'bg-yellow-100 text-yellow-800'
-                                                    : search.searchHire.status === 'awaiting_client_decision'
-                                                        ? 'bg-blue-100 text-blue-800'
-                                                        : search.searchHire.status === 'disputed'
-                                                            ? 'bg-red-100 text-red-800'
-                                                            : search.searchHire.status === 'cancelled' || search.searchHire.status === 'completed' || search.searchHire.status === 'dispute-resolved'
-                                                                ? 'bg-gray-100 text-gray-800'
-                                                                : 'bg-gray-100 text-gray-800'
-                                                    }`}
-                                            >
-                                                {search.searchHire.status.replace(/_/g, ' ')}
-                                            </span>
-                                        )}
-                                        <div className="flex items-center justify-between mt-3">
-                                            {editingSearch === search.id ? (
-                                                <div className="flex items-center gap-2 w-full justify-end">
-                                                    <button
-                                                        onClick={(e) => handleSaveEdit(search.id, e)}
-                                                        className="text-xs md:text-sm px-3 md:px-4 py-1.5 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm shadow-blue-500/10"
-                                                    >
-                                                        Guardar
-                                                    </button>
-                                                    <button
-                                                        onClick={handleCancelEdit}
-                                                        className="text-xs md:text-sm px-3 md:px-4 py-1.5 md:py-2 text-gray-600 hover:text-gray-900 transition-colors"
-                                                    >
-                                                        Cancelar
-                                                    </button>
+                                        <div className="flex items-center gap-2 ml-3">
+                                            {isAdmin && search.isRevised && (
+                                                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                    <CheckCircle className="w-4 h-4 text-green-600" />
                                                 </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 w-full justify-end">
-                                                    <button
-                                                        onClick={(e) => handleEdit(search, e)}
-                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                                                        title="Edit search"
-                                                    >
-                                                        <Pencil className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => handleDelete(search.id, e)}
-                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                                        title="Delete search"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 group-hover:bg-blue-100 transition-colors">
-                                                        <ChevronRight className="w-5 h-5 text-blue-600" />
-                                                    </div>
+                                            )}
+                                            {hasUnreadMessages && (
+                                                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                                    <MessageSquare className="w-4 h-4 text-red-600" />
                                                 </div>
                                             )}
                                         </div>
+                                    </div>
+                                    {/* Description */}
+                                    {editingSearch === search.id ? (
+                                        <textarea
+                                            value={editForm.description}
+                                            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-700 text-sm mb-4 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
+                                            rows={2}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    ) : (
+                                        <p className="text-gray-600 text-sm mb-6 line-clamp-2 leading-relaxed">{search.description}</p>
+                                    )}
+                                    {/* Info Grid */}
+                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Clock className="w-4 h-4 text-gray-500" />
+                                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Frecuencia</span>
+                                            </div>
+                                            {editingSearch === search.id ? (
+                                                <input
+                                                    type="number"
+                                                    value={editForm.frequency}
+                                                    onChange={(e) => setEditForm({ ...editForm, frequency: parseInt(e.target.value) })}
+                                                    className="w-20 bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm text-gray-900 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
+                                                    min="1"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            ) : (
+                                                <p className="text-sm font-semibold text-gray-900">Cada {search.frequency}h</p>
+                                            )}
+                                        </div>
+                                        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Calendar className="w-4 h-4 text-gray-500" />
+                                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Última vez</span>
+                                            </div>
+                                            <p className="text-sm font-semibold text-gray-900">
+                                                {new Date(search.lastExecution).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {/* Footer with category and status */}
+                                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                                        <div className="flex items-center gap-2">
+                                            {categories?.find((c) => c.id === search.category) && (
+                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg">
+                                                    <div className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center">
+                                                        <Tag className="w-2.5 h-2.5 text-white" />
+                                                    </div>
+                                                    <span className="text-xs font-medium text-gray-700">
+                                                        {categories.find((c) => c.id === search.category)?.name}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${getActivityStatus(search) === 'Activa'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-gray-100 text-gray-600'
+                                                }`}>
+                                                <span className={`w-2 h-2 rounded-full inline-block mr-2 ${getActivityStatus(search) === 'Activa' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                                                {getActivityStatus(search)}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {search.searchHire && (
+                                                <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${search.searchHire.status === 'pending'
+                                                    ? 'bg-yellow-100 text-yellow-700'
+                                                    : search.searchHire.status === 'awaiting_client_decision'
+                                                        ? 'bg-blue-100 text-blue-700'
+                                                        : search.searchHire.status === 'disputed'
+                                                            ? 'bg-red-100 text-red-700'
+                                                            : search.searchHire.status === 'cancelled' || search.searchHire.status === 'completed' || search.searchHire.status === 'dispute-resolved'
+                                                                ? 'bg-gray-100 text-gray-700'
+                                                                : 'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                    {search.searchHire.status.replace(/_/g, ' ')}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Action buttons */}
+                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                                        {editingSearch === search.id ? (
+                                            <div className="flex items-center gap-2 w-full justify-end">
+                                                <button
+                                                    onClick={(e) => handleSaveEdit(search.id, e)}
+                                                    className="text-xs px-3 py-1.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                                                >
+                                                    Guardar
+                                                </button>
+                                                <button
+                                                    onClick={handleCancelEdit}
+                                                    className="text-xs px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 w-full justify-end">
+                                                <button
+                                                    onClick={(e) => handleEdit(search, e)}
+                                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    title="Edit search"
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => handleDelete(search.id, e)}
+                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Delete search"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-gray-200 transition-colors">
+                                                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                         {search.searchHire?.expert && (
                                             <div className="mt-4 text-xs md:text-sm text-blue-600 border-t border-gray-100 pt-4 flex items-center gap-2">
                                                 <img
@@ -483,7 +534,6 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                 A cargo de: {search.searchHire.expert.name}
                                             </div>
                                         )}
-                                    </div>
                                 </div>
                             </div>
                         );
@@ -504,10 +554,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                             {filteredSearches.map((search) => {
-                                const hireStatus = search.searchHire?.status;
-                                const hasUnreadMessages = search.searchHire?.Conversations?.some(
-                                    (conv) => conv.Messages?.some((msg) => !msg.IsRead)
-                                );
+                                const hasUnreadMessages = false; // TODO: Implementar cuando esté disponible en el tipo
 
                                 return (
                                     <tr key={search.id} onClick={() => handleSearchClick(search.id)} className="hover:bg-gray-50 cursor-pointer">
@@ -590,6 +637,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                     </table>
                 </div>
             )}
+            </div>
         </div>
     );
 };
