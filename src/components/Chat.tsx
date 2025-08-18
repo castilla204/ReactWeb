@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
-import { Send, Smile, MessageCircle, Paperclip, MapPin } from 'lucide-react';
+import { Send, Smile, MessageCircle, Paperclip, MapPin, Download } from 'lucide-react';
 import { NotificationType } from './Notification';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
@@ -208,7 +208,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
             });
             setNewMessage('');
             setSelectedFiles([]);
-            setLocation(null); // Reset location after sending
+            setLocation(null);
         } else {
             setNotifications((prev) => [
                 ...prev,
@@ -222,6 +222,32 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
         }
     };
 
+    const getAvatarInitials = (senderId: string) => {
+        if (senderId === user?.id) {
+            return user?.name?.charAt(0)?.toUpperCase() || 'Y';
+        }
+        return isExpert ? 'C' : 'E'; // Client or Expert
+    };
+
+    const getAvatarColor = (senderId: string) => {
+        if (senderId === user?.id) {
+            return 'bg-purple-500';
+        }
+        return 'bg-green-500';
+    };
+
+    const formatFileSize = (bytes: number) => {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    };
+
+    const getFileName = (url: string) => {
+        return url.split('/').pop() || 'archivo';
+    };
+
     if (!user || loading || !conversation || (user.id !== conversation.clientId && user.id !== conversation.expertId)) {
         return (
             <div className="flex items-center justify-center h-full text-gray-500">
@@ -233,21 +259,57 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
     const isClient = user.id === conversation.clientId;
     const chatWith = isClient ? 'Experto' : 'Cliente';
 
+    // Group messages by sender and proximity in time
+    const groupedMessages = conversation.messages?.reduce((groups: any[], message: any, index: number) => {
+        const previousMessage = conversation.messages?.[index - 1];
+        const timeDiff = previousMessage
+            ? new Date(message.sentAt).getTime() - new Date(previousMessage.sentAt).getTime()
+            : 0;
+
+        // Group if same sender and within 5 minutes
+        if (previousMessage &&
+            previousMessage.senderId === message.senderId &&
+            timeDiff < 5 * 60 * 1000) {
+            groups[groups.length - 1].messages.push(message);
+        } else {
+            groups.push({
+                senderId: message.senderId,
+                messages: [message],
+                timestamp: message.sentAt,
+                isOwn: message.senderId === user.id
+            });
+        }
+        return groups;
+    }, []) || [];
+
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <MessageCircle className="w-5 h-5 text-blue-600" />
-                    Chatea con el {chatWith}
-                </h3>
+        <div className="flex flex-col h-full bg-gray-50">
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${isClient ? 'bg-green-500' : 'bg-purple-500'}`}>
+                        {isClient ? 'E' : 'C'}
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            {chatWith}
+                        </h3>
+                        <p className="text-sm text-gray-500">En línea</p>
+                    </div>
+                </div>
             </div>
-            <div className="flex-1 overflow-y-auto mb-4 space-y-3 scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-blue-50 pr-2">
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
                 {conversation.messages?.length === 0 && isExpert ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
-                        <div className="bg-gradient-to-r from-blue-100 to-blue-50 rounded-xl p-4 shadow-sm max-w-md">
-                            <Smile className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                            <p className="text-gray-700 text-sm font-medium">
-                                ¡Bienvenido al chat! Estoy aquí para ayudarte con la búsqueda. Escribe un mensaje para comenzar.
+                        <div className="bg-white rounded-2xl p-6 shadow-sm max-w-md border border-gray-100">
+                            <Smile className="w-12 h-12 text-blue-600 mx-auto mb-3" />
+                            <p className="text-gray-700 font-medium mb-2">
+                                ¡Bienvenido al chat!
+                            </p>
+                            <p className="text-gray-500 text-sm">
+                                Estoy aquí para ayudarte con la búsqueda. Escribe un mensaje para comenzar.
                             </p>
                         </div>
                     </div>
@@ -256,126 +318,236 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
                         <p className="text-sm">Aún no hay mensajes. Escribe algo para comenzar.</p>
                     </div>
                 ) : (
-                    conversation.messages?.map((message) => (
-                        <div
-                            key={message.id}
-                            className={`flex ${message.senderId === user.id ? 'justify-end' : 'justify-start'}`}
-                        >
-                            <div
-                                className={`max-w-[70%] p-3 rounded-xl shadow-sm transition-all ${message.senderId === user.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'}`}
-                            >
-                                <p className="text-sm leading-relaxed">{message.content || 'Sin contenido'}</p>
-                                {message.attachmentUrls && message.attachmentUrls.length > 0 && (
-                                    <div className="mt-2">
-                                        {message.attachmentUrls.map((url, index) => (
-                                            <div key={index} className="mt-1">
-                                                {url.endsWith('.mp4') ? (
-                                                    <video src={url} controls className="max-w-full rounded-lg" style={{ maxHeight: '200px' }} />
-                                                ) : (
-                                                    <img src={url} alt="Attachment" className="max-w-full rounded-lg" style={{ maxHeight: '200px' }} />
-                                                )}
+                    groupedMessages.map((group, groupIndex) => (
+                        <div key={groupIndex} className={`flex gap-3 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                            {/* Avatar */}
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0 ${getAvatarColor(group.senderId)}`}>
+                                {getAvatarInitials(group.senderId)}
+                            </div>
+
+                            {/* Message group */}
+                            <div className={`flex-1 max-w-[70%] space-y-1`}>
+                                {/* Sender name and timestamp */}
+                                <div className={`flex items-center gap-2 mb-2 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                                    <span className="text-sm font-medium text-gray-900">
+                                        {group.isOwn ? 'Tú' : (isClient ? 'Experto' : 'Cliente')}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                        {new Date(group.timestamp).toLocaleDateString('es-ES', {
+                                            day: 'numeric',
+                                            month: 'short',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        })}
+                                    </span>
+                                </div>
+
+                                {/* Messages in group */}
+                                {group.messages.map((message: any, messageIndex: number) => (
+                                    <div key={message.id} className="space-y-2">
+                                        {/* Text content */}
+                                        {message.content && (
+                                            <div className={`p-3 rounded-2xl ${group.isOwn ? 'bg-blue-500 text-white' : 'bg-white border border-gray-200 text-gray-900'} shadow-sm`}>
+                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                                    {message.content}
+                                                </p>
                                             </div>
-                                        ))}
+                                        )}
+
+                                        {/* Attachments */}
+                                        {message.attachmentUrls && message.attachmentUrls.length > 0 && (
+                                            <div className="space-y-2">
+                                                <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                                                    ARCHIVOS ADJUNTOS
+                                                </div>
+                                                {message.attachmentUrls.map((url: string, index: number) => (
+                                                    <div key={index} className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+                                                        {url.endsWith('.mp4') ? (
+                                                            <video
+                                                                src={url}
+                                                                controls
+                                                                className="w-full rounded-lg"
+                                                                style={{ maxHeight: '200px' }}
+                                                            />
+                                                        ) : (
+                                                            <div className="space-y-2">
+                                                                <img
+                                                                    src={url}
+                                                                    alt="Attachment"
+                                                                    className="w-full rounded-lg object-cover"
+                                                                    style={{ maxHeight: '200px' }}
+                                                                />
+                                                                <div className="flex items-center justify-between text-sm">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-gray-600 font-medium">
+                                                                            {getFileName(url)}
+                                                                        </span>
+                                                                        <span className="text-gray-400">
+                                                                            (92 KB)
+                                                                        </span>
+                                                                    </div>
+                                                                    <a
+                                                                        href={url}
+                                                                        download
+                                                                        className="text-blue-500 hover:text-blue-600 flex items-center gap-1"
+                                                                    >
+                                                                        <Download className="w-4 h-4" />
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Location */}
+                                        {(message.locationLatitude || message.locationLongitude) && isLoaded && !loadError && (
+                                            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+                                                <GoogleMap
+                                                    mapContainerStyle={{ width: '100%', height: '150px', borderRadius: '8px' }}
+                                                    zoom={14}
+                                                    center={{
+                                                        lat: parseFloat(message.locationLatitude || defaultCenter.lat.toString()),
+                                                        lng: parseFloat(message.locationLongitude || defaultCenter.lng.toString()),
+                                                    }}
+                                                    options={{
+                                                        disableDefaultUI: true,
+                                                        zoomControl: false,
+                                                        mapTypeControl: false,
+                                                        streetViewControl: false,
+                                                        fullscreenControl: false,
+                                                        styles: mapStyles,
+                                                    }}
+                                                >
+                                                    <Marker
+                                                        position={{
+                                                            lat: parseFloat(message.locationLatitude || defaultCenter.lat.toString()),
+                                                            lng: parseFloat(message.locationLongitude || defaultCenter.lng.toString()),
+                                                        }}
+                                                        icon={markerIcon}
+                                                    />
+                                                </GoogleMap>
+                                                <a
+                                                    href={`https://www.google.com/maps?q=${message.locationLatitude},${message.locationLongitude}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-500 hover:text-blue-600 text-sm mt-2 inline-block"
+                                                >
+                                                    Ver en Google Maps
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                {(message.locationLatitude || message.locationLongitude) && isLoaded && !loadError && (
-                                    <div className="mt-2">
-                                        <GoogleMap
-                                            mapContainerStyle={{ width: '100%', height: '150px', borderRadius: '8px' }}
-                                            zoom={14}
-                                            center={{
-                                                lat: parseFloat(message.locationLatitude || defaultCenter.lat.toString()),
-                                                lng: parseFloat(message.locationLongitude || defaultCenter.lng.toString()),
-                                            }}
-                                            options={{
-                                                disableDefaultUI: true,
-                                                zoomControl: false,
-                                                mapTypeControl: false,
-                                                streetViewControl: false,
-                                                fullscreenControl: false,
-                                                styles: mapStyles,
-                                            }}
-                                        >
-                                            <Marker
-                                                position={{
-                                                    lat: parseFloat(message.locationLatitude || defaultCenter.lat.toString()),
-                                                    lng: parseFloat(message.locationLongitude || defaultCenter.lng.toString()),
-                                                }}
-                                                icon={markerIcon}
-                                            />
-                                        </GoogleMap>
-                                        <a
-                                            href={`https://www.google.com/maps?q=${message.locationLatitude},${message.locationLongitude}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-blue-500 underline text-sm mt-1 inline-block"
-                                        >
-                                            Ver en Google Maps
-                                        </a>
-                                    </div>
-                                )}
-                                <p className="text-xs mt-1 opacity-70">
-                                    {message.sentAt
-                                        ? new Date(message.sentAt).toLocaleString('es-ES', { timeStyle: 'short', dateStyle: 'short' })
-                                        : 'Hora desconocida'}{' '}
-                                    • {message.isRead ? 'Leído' : 'Enviado'}
-                                </p>
+                                ))}
                             </div>
                         </div>
                     ))
                 )}
                 <div ref={messagesEndRef} />
             </div>
-            <div className="sticky bottom-0 bg-gradient-to-t from-white to-transparent pt-2">
-                <div className="flex items-center gap-2 mb-2">
-                    <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Escribe un mensaje..."
-                        className="flex-1 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors bg-white/80 backdrop-blur-sm"
-                        onKeyPress={(e) => {
-                            if (e.key === 'Enter' && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
-                                handleSendMessage();
-                            }
-                        }}
-                        disabled={isSending}
-                    />
-                    <button
-                        onClick={handleOpenMapModal}
-                        className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200"
-                        title="Seleccionar ubicación"
-                    >
-                        <MapPin className="w-5 h-5 text-gray-600" />
-                    </button>
-                    <label className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 cursor-pointer">
-                        <Paperclip className="w-5 h-5 text-gray-600" />
-                        <input
-                            type="file"
-                            multiple
-                            accept=".jpg,.jpeg,.png,.mp4"
-                            onChange={handleFileChange}
-                            className="hidden"
+
+            {/* Selected files preview */}
+            {selectedFiles.length > 0 && (
+                <div className="px-6 py-2 bg-gray-100 border-t border-gray-200">
+                    <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">
+                        ARCHIVOS SELECCIONADOS
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto">
+                        {selectedFiles.map((file, index) => (
+                            <div key={index} className="bg-white rounded-lg p-2 border border-gray-200 min-w-0 flex-shrink-0">
+                                <div className="text-xs font-medium text-gray-700 truncate max-w-[120px]">
+                                    {file.name}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                    {formatFileSize(file.size)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Selected location preview */}
+            {location && (
+                <div className="px-6 py-2 bg-gray-100 border-t border-gray-200">
+                    <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">
+                        UBICACIÓN SELECCIONADA
+                    </div>
+                    <div className="bg-white rounded-lg p-2 border border-gray-200 inline-block">
+                        <div className="text-xs font-medium text-gray-700">
+                            {parseFloat(location.latitude).toFixed(4)}, {parseFloat(location.longitude).toFixed(4)}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Input area */}
+            <div className="bg-white border-t border-gray-200 px-6 py-4">
+                <div className="flex items-end gap-3">
+                    <div className="flex-1 relative">
+                        <textarea
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder="Escribe un mensaje..."
+                            className="w-full p-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors resize-none bg-gray-50 text-sm"
+                            rows={1}
+                            style={{ minHeight: '44px', maxHeight: '120px' }}
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
+                                    e.preventDefault();
+                                    handleSendMessage();
+                                }
+                            }}
                             disabled={isSending}
                         />
-                    </label>
-                    <button
-                        onClick={handleSendMessage}
-                        className={`p-3 rounded-xl transition-colors ${isSending ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-                        disabled={isSending}
-                    >
-                        <Send className="w-5 h-5" />
-                    </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleOpenMapModal}
+                            className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
+                            title="Seleccionar ubicación"
+                        >
+                            <MapPin className="w-5 h-5 text-gray-600" />
+                        </button>
+
+                        <label className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors">
+                            <Paperclip className="w-5 h-5 text-gray-600" />
+                            <input
+                                type="file"
+                                multiple
+                                accept=".jpg,.jpeg,.png,.mp4"
+                                onChange={handleFileChange}
+                                className="hidden"
+                                disabled={isSending}
+                            />
+                        </label>
+
+                        <button
+                            onClick={handleSendMessage}
+                            className={`p-3 rounded-xl transition-colors ${isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
+                                    ? 'bg-gray-300 cursor-not-allowed'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
+                            disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
+                        >
+                            <Send className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Map Modal */}
             {isMapModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-lg">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Seleccionar Ubicación</h3>
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+                        <div className="p-6 border-b border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-900">Seleccionar Ubicación</h3>
+                        </div>
+
                         {isLoaded && !loadError ? (
-                            <div className="relative h-[300px] mb-4">
+                            <div className="relative h-[400px]">
                                 <GoogleMap
                                     mapContainerStyle={{ width: '100%', height: '100%' }}
                                     zoom={14}
@@ -396,38 +568,39 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert }) => 
                                         <Marker position={selectedMapLocation} icon={markerIcon} />
                                     )}
                                 </GoogleMap>
-                                <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm">
-                                    <span className="text-sm text-gray-700">
+                                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
+                                    <span className="text-sm text-gray-700 font-medium">
                                         Haz clic para seleccionar una ubicación
                                     </span>
                                 </div>
                                 {selectedMapLocation && (
-                                    <div className="absolute top-12 left-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm">
-                                        <span className="text-sm text-gray-700 font-medium">
+                                    <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
+                                        <span className="text-sm text-gray-700 font-mono">
                                             {selectedMapLocation.lat.toFixed(4)}, {selectedMapLocation.lng.toFixed(4)}
                                         </span>
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <div className="h-[300px] flex items-center justify-center bg-gray-50">
+                            <div className="h-[400px] flex items-center justify-center bg-gray-50">
                                 {loadError ? (
-                                    <span className="text-red-400">Error al cargar el mapa</span>
+                                    <span className="text-red-500">Error al cargar el mapa</span>
                                 ) : (
                                     <span className="text-gray-500">Cargando mapa...</span>
                                 )}
                             </div>
                         )}
-                        <div className="flex justify-end gap-2">
+
+                        <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
                             <button
                                 onClick={() => setIsMapModalOpen(false)}
-                                className="px-4 py-2 bg-gray-200 rounded-xl text-gray-700 hover:bg-gray-300"
+                                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleSelectLocation}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+                                className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                             >
                                 Seleccionar
                             </button>

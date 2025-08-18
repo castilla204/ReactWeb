@@ -1,11 +1,10 @@
 ﻿import { useLayoutEffect, useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Filter, ChevronDown, Star, AlertTriangle, Check, XCircle, Plus, MessageCircle, Upload } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useReview } from '../hooks/useReview.hooks';
 import { useChat } from '../hooks/useChat';
-import { ResultCard } from './ResultCard';
 import Chat from './Chat';
 import { ReviewModal, DisputeModal, ResolveDisputeModal, AddAdModal, CancelServiceModal, FinalizeModal } from './Modals';
 import { useSearchActions } from '../hooks/useSearchActions';
@@ -49,24 +48,23 @@ interface SearchHire {
     }>;
 }
 
-interface Search {
-    title: string;
-    description: string;
-    category: number;
-    userId: number;
-    searchHire?: SearchHire;
-}
-
 interface SearchDetailsProps {
     isAdmin: boolean;
     onBack?: () => void;
 }
 
-const categoryBanners = {
+const categoryBanners: { [key: number]: string } = {
     1: '/src/media/Car.png',
     2: '/src/media/motorcycle.png',
     3: '/src/media/house.png',
 };
+
+const statusRoadmap = [
+    { label: 'Pendiente', status: 'pending', color: 'bg-yellow-600' },
+    { label: 'En progreso', status: 'in_progress', color: 'bg-blue-600' },
+    { label: 'En revisión', status: 'awaiting_client_decision', color: 'bg-purple-600' },
+    { label: 'Completado', status: 'completed', color: 'bg-green-600' },
+];
 
 export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const { id } = useParams<{ id: string }>();
@@ -102,6 +100,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     });
     const [notifications, setNotifications] = useState<{ id: string; type: NotificationType; message: string; duration?: number }[]>([]);
     const [selectedDeliverableFiles, setSelectedDeliverableFiles] = useState<File[]>([]);
+    const [showTrackOrder, setShowTrackOrder] = useState(false);
     const lastSearchHireId = useRef<number | null>(null);
 
     const { getResults, getSearch } = useSearch();
@@ -132,37 +131,34 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const canCancel = isExpert && searchQuery.data?.searchHire && !['completed', 'canceled', 'disputed'].includes(searchQuery.data.searchHire.status);
     const isDisputed = (isClient || isExpert) && searchQuery.data?.searchHire?.status === 'disputed';
     const canViewChat = (isClient || isExpert || isAdmin) && !!searchQuery.data?.searchHire;
-    const unreadMessages = searchQuery.data?.searchHire?.messages?.filter((msg) => !msg.isRead && msg.senderId !== userId).length || 0;
 
     const category = categories?.find((c: Category) => c.id === searchQuery.data?.category);
+    const categoryName = category?.name || 'Unknown Category';
 
-    // Debug searchId, deliverables, and query state
     useEffect(() => {
-        console.log('[10:45 CEST] SearchDetails initialized with searchId:', searchId);
-        console.log('[10:45 CEST] Deliverables state:', deliverables);
-        console.log('[10:45 CEST] Deliverables query status:', {
+        console.log('[13:42 CEST] SearchDetails initialized with searchId:', searchId);
+        console.log('[13:42 CEST] Deliverables state:', deliverables);
+        console.log('[13:42 CEST] Deliverables query status:', {
             isLoading: deliverablesQuery?.isLoading,
             isError: deliverablesQuery?.isError,
             error: deliverablesQuery?.error?.message,
         });
-        console.log('[10:45 CEST] Deliverables URLs:', deliverables?.deliverableUrls);
+        console.log('[13:42 CEST] Deliverables URLs:', deliverables?.deliverableUrls);
         if (deliverables?.deliverableUrls?.length) {
-            console.log('[10:45 CEST] Rendering deliverable URLs:', deliverables.deliverableUrls);
+            console.log('[13:42 CEST] Rendering deliverable URLs:', deliverables.deliverableUrls);
         } else {
-            console.log('[10:45 CEST] No deliverable URLs to render, deliverables:', JSON.stringify(deliverables));
+            console.log('[13:42 CEST] No deliverable URLs to render, deliverables:', JSON.stringify(deliverables));
         }
     }, [searchId, deliverables, deliverablesQuery]);
 
-    // Throttled refetch for deliverables
     useEffect(() => {
         if (searchQuery.data?.searchHire?.id && searchQuery.data.searchHire.id !== lastSearchHireId.current) {
-            console.log('[10:45 CEST] searchHireId changed, refetching deliverables for searchHireId:', searchQuery.data.searchHire.id);
+            console.log('[13:42 CEST] searchHireId changed, refetching deliverables for searchHireId:', searchQuery.data.searchHire.id);
             lastSearchHireId.current = searchQuery.data.searchHire.id;
             refetchDeliverables();
         }
     }, [searchQuery.data?.searchHire?.id, refetchDeliverables]);
 
-    // Handle deliverable file selection
     const handleDeliverableFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files ? Array.from(e.target.files) : [];
         const maxDeliverableFileSize = 50 * 1024 * 1024; // 50MB
@@ -172,7 +168,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             const isValidSize = file.size <= maxDeliverableFileSize;
             return isValidType && isValidSize;
         });
-        console.log('[10:45 CEST] Selected deliverable files:', validFiles.map((f) => ({ name: f.name, size: f.size })));
+        console.log('[13:42 CEST] Selected deliverable files:', validFiles.map((f) => ({ name: f.name, size: f.size })));
         if (validFiles.length > 0) {
             setNotifications((prev) => [
                 ...prev,
@@ -198,13 +194,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         setSelectedDeliverableFiles(validFiles);
     };
 
-    // Handle deliverable upload
     const handleUploadDeliverable = async () => {
         if (selectedDeliverableFiles.length > 0) {
-            console.log('[10:45 CEST] Uploading deliverables:', selectedDeliverableFiles.map((f) => ({ name: f.name, size: f.size })));
+            console.log('[13:42 CEST] Uploading deliverables:', selectedDeliverableFiles.map((f) => ({ name: f.name, size: f.size })));
             await uploadDeliverable(selectedDeliverableFiles);
             setSelectedDeliverableFiles([]);
-            console.log('[10:45 CEST] Triggered refetchDeliverables after upload');
+            console.log('[13:42 CEST] Triggered refetchDeliverables after upload');
             refetchDeliverables();
         } else {
             setNotifications((prev) => [
@@ -276,11 +271,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     };
 
     const handleDisputeSubmitAndClose = async () => {
-        await handleDisputeSubmit(searchQuery.data?.searchHire?.id, disputeReason, () => {
-            resultsQuery.refetch();
-            searchQuery.refetch();
-            setModalState((prev) => ({ ...prev, showDisputeModal: false }));
-            setDisputeReason('');
+        await handleDisputeSubmit({
+            searchHireId: searchQuery.data?.searchHire?.id,
+            disputeReason,
+            callback: () => {
+                resultsQuery.refetch();
+                searchQuery.refetch();
+                setModalState((prev) => ({ ...prev, showDisputeModal: false }));
+                setDisputeReason('');
+            },
         });
     };
 
@@ -317,259 +316,293 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         });
     };
 
+    const currentStatus = searchQuery.data?.searchHire?.status || 'pending';
+    const currentStepIndex = statusRoadmap.findIndex((step) => step.status === currentStatus);
+
     if (resultsQuery.isLoading || searchQuery.isLoading || reviewsQuery.isLoading) {
         return (
-            <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen bg-gray-50">
-                <div className="relative h-56 mb-8 rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-r from-blue-600 to-blue-800 backdrop-blur-md">
-                    <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-10" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                    <div className="relative h-full flex items-center px-8">
-                        <button
-                            onClick={onBack || (() => navigate('/busquedas'))}
-                            className="flex items-center gap-2 text-white hover:text-white/90 transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                            <span className="font-semibold">Volver</span>
-                        </button>
-                        {canViewChat && unreadMessages > 0 && (
-                            <div className="ml-4 inline-flex items-center px-2.5 py-1 text-sm font-semibold text-white bg-red-500 rounded-full animate-pulse">
-                                {unreadMessages} {unreadMessages === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <div className="flex items-center justify-center h-[400px] bg-white rounded-2xl border border-gray-100 shadow-lg">
-                    <div className="text-gray-600 text-lg">Cargando resultados...</div>
-                </div>
-                {notifications.map((notification) => (
-                    <Notification
-                        key={notification.id}
-                        type={notification.type}
-                        message={notification.message}
-                        onClose={() => removeNotification(notification.id)}
-                        duration={notification.duration}
-                    />
-                ))}
+            <div className="flex items-center justify-center h-screen bg-white text-black">
+                <p className="text-lg">Cargando...</p>
             </div>
         );
     }
 
     if (resultsQuery.error || searchQuery.error || reviewsQuery.error) {
         return (
-            <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen bg-gray-50">
-                <div className="relative h-56 mb-8 rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-r from-blue-600 to-blue-800 backdrop-blur-md">
-                    <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-10" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                    <div className="relative h-full flex items-center px-8">
-                        <button
-                            onClick={onBack || (() => navigate('/busquedas'))}
-                            className="flex items-center gap-2 text-white hover:text-white/90 transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                            <span className="font-semibold">Volver</span>
-                        </button>
-                        {canViewChat && unreadMessages > 0 && (
-                            <div className="ml-4 inline-flex items-center px-2.5 py-1 text-sm font-semibold text-white bg-red-500 rounded-full animate-pulse">
-                                {unreadMessages} {unreadMessages === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <div className="text-center py-12 bg-white rounded-2xl border border-red-100 shadow-lg">
-                    <p className="text-red-600 text-lg">Error al cargar los resultados</p>
-                    {process.env.NODE_ENV === 'development' && (
-                        <div className="mt-4 text-sm text-gray-600">
-                            <p><strong>Error Details:</strong></p>
-                            <p>Results Query: {resultsQuery.error?.message || 'N/A'}</p>
-                            <p>Search Query: {searchQuery.error?.message || 'N/A'}</p>
-                            <p>Reviews Query: {reviewsQuery.error?.message || 'N/A'}</p>
-                        </div>
-                    )}
-                </div>
-                {notifications.map((notification) => (
-                    <Notification
-                        key={notification.id}
-                        type={notification.type}
-                        message={notification.message}
-                        onClose={() => removeNotification(notification.id)}
-                        duration={notification.duration}
-                    />
-                ))}
+            <div className="flex items-center justify-center h-screen bg-white text-black">
+                <p className="text-lg text-red-400">Error al cargar los datos</p>
             </div>
         );
     }
 
     return (
-        <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 pb-8 pt-24 min-h-screen bg-gray-50">
-            {/* Header Section */}
-            <div className="relative h-64 mb-8 rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-r from-blue-600 to-blue-800 backdrop-blur-md">
-                <div className="absolute inset-0 bg-[url('/src/media/Background.png')] bg-cover bg-center opacity-10" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                <img
-                    src={categoryBanners[searchQuery.data?.category as keyof typeof categoryBanners] || categoryBanners[1]}
-                    alt={category?.name || 'Category'}
-                    className="absolute right-8 bottom-0 h-48 object-contain opacity-90"
-                />
-                <div className="relative h-full flex items-center px-8">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-4 flex-wrap">
-                            <button
-                                onClick={onBack || (() => navigate('/busquedas'))}
-                                className="flex items-center gap-2 text-white hover:text-white/90 transition-colors bg-blue-700/20 px-4 py-2 rounded-lg"
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                                <span className="font-semibold">Volver</span>
-                            </button>
-                            {(isAdmin || isExpert) && (
-                                <button
-                                    onClick={() => setModalState((prev) => ({ ...prev, showAddAdForm: true }))}
-                                    className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    <span>Añadir Anuncio</span>
-                                </button>
-                            )}
-                            {canCancel && (
-                                <button
-                                    onClick={() => setModalState((prev) => ({ ...prev, showCancelConfirm: true }))}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-white rounded-lg transition-colors"
-                                >
-                                    <XCircle className="w-4 h-4" />
-                                    <span>Cancelar Servicio</span>
-                                </button>
-                            )}
-                            {isAdmin && searchQuery.data?.searchHire && (
-                                <button
-                                    onClick={() => setModalState((prev) => ({ ...prev, showFinalizeModal: true }))}
-                                    className="flex items-center gap-2 px-4 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-white rounded-lg transition-colors"
-                                >
-                                    <AlertTriangle className="w-4 h-4" />
-                                    <span>Finalizar Búsqueda</span>
-                                </button>
-                            )}
-                            {isAdmin && isDisputed && (
-                                <button
-                                    onClick={() => setModalState((prev) => ({ ...prev, showResolveDisputeModal: true }))}
-                                    className="flex items-center gap-2 px-4 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-white rounded-lg transition-colors"
-                                >
-                                    <AlertTriangle className="w-4 h-4" />
-                                    <span>Resolver Disputa</span>
-                                </button>
-                            )}
-                            {canReview && (
-                                <button
-                                    onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                    className="flex items-center gap-2 px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 text-white rounded-lg transition-colors"
-                                >
-                                    <Star className="w-4 h-4" />
-                                    <span>Enviar Reseña</span>
-                                </button>
-                            )}
-                            {canViewChat && unreadMessages > 0 && (
-                                <div className="inline-flex items-center px-2.5 py-1 text-sm font-semibold text-white bg-red-500 rounded-full animate-pulse">
-                                    {unreadMessages} {unreadMessages === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}
-                                </div>
-                            )}
+        <div className="bg-white text-black min-h-screen max-w-6xl mx-auto">
+            {/* Header Section - Similar to Fiverr style */}
+            <div className="border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={onBack || (() => navigate('/busquedas'))}
+                            className="p-2 hover:bg-gray-100 rounded-lg"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <span className="text-gray-500 text-sm">
+                                {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                            </span>
+                            <h1 className="text-lg font-medium">{searchQuery.data?.title || 'Cargando...'}</h1>
+                            <span className="text-gray-500 text-xs">
+                                {new Date().toLocaleDateString('es-ES', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                })}
+                            </span>
                         </div>
-                        <h1 className="text-4xl font-bold text-white tracking-tight">{searchQuery.data?.title || 'Cargando...'}</h1>
-                        {searchQuery.data?.description && (
-                            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 max-w-2xl">
-                                <p className="text-white/80 text-base leading-relaxed">{searchQuery.data.description}</p>
-                            </div>
-                        )}
-                        {searchQuery.data?.searchHire && (
-                            <div className="flex items-center gap-3">
-                                <span
-                                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium capitalize ${searchQuery.data.searchHire.status === 'pending'
-                                        ? 'bg-yellow-100 text-yellow-800'
-                                        : searchQuery.data.searchHire.status === 'awaiting_client_decision'
-                                            ? 'bg-blue-100 text-blue-800'
-                                            : searchQuery.data.searchHire.status === 'disputed'
-                                                ? 'bg-red-100 text-red-800'
-                                                : ['cancelled', 'transfer_failed'].includes(searchQuery.data.searchHire.status)
-                                                    ? 'bg-gray-100 text-gray-800'
-                                                    : ['dispute-resolved', 'completed'].includes(searchQuery.data.searchHire.status)
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-gray-100 text-gray-800'
-                                        }`}
-                                >
-                                    {searchQuery.data.searchHire.status.replace(/_/g, ' ')}
-                                </span>
-                                {searchQuery.data.searchHire.expert && (
-                                    <div className="flex items-center gap-2">
-                                        <img
-                                            src={searchQuery.data.searchHire.expert.profilePictureUrl || '/default-avatar.png'}
-                                            alt={`${searchQuery.data.searchHire.expert.name}'s profile`}
-                                            className="w-8 h-8 rounded-full object-cover border border-white/50"
-                                        />
-                                        <span className="text-sm text-white font-medium">Encargado: {searchQuery.data.searchHire.expert.name}</span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        <p className="text-white/80 text-sm">{resultsQuery.data?.length || 0} {resultsQuery.data?.length === 1 ? 'resultado' : 'resultados'} encontrados</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                            <Share2 className="w-4 h-4" />
+                            Compartir
+                        </button>
+                        <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                            <MessageCircle className="w-4 h-4" />
+                            Comentarios del Equipo
+                        </button>
                     </div>
                 </div>
             </div>
 
-            {/* Main Content: Chat, Ads, and Deliverables */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
-                {/* Chat Section */}
+            <div className="flex flex-col lg:flex-row gap-6 p-6">
+                {/* Main Chat Area - Left Side */}
                 {canViewChat && (
-                    <div className="lg:col-span-2">
-                        <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                            <MessageCircle className="w-6 h-6 text-blue-600" />
-                            Chat
-                        </h2>
-                        <div className="bg-gradient-to-b from-blue-50 to-white rounded-2xl border border-gray-100 shadow-lg p-6 h-[500px] flex flex-col animate-fade-in">
+                    <div className="w-full lg:w-2/3 bg-white border border-gray-200 rounded-lg shadow-md">
+                        <div className="p-4 text-center border-b border-gray-100">
+                            <button className="text-blue-600 hover:text-blue-700 text-sm">Cargar más</button>
+                        </div>
+                        <div className="h-[calc(100vh-20rem)] overflow-y-auto px-6 py-4">
                             <Chat searchId={searchId} setNotifications={setNotifications} isExpert={isExpert} />
                         </div>
                     </div>
                 )}
 
-                {/* Ads and Deliverables Sections */}
-                <div className={canViewChat ? 'lg:col-span-3' : 'lg:col-span-5'}>
-                    {/* Ads Section */}
-                    <div className="mb-8">
-                        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Anuncios Encontrados</h2>
-                        {resultsQuery.data?.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-[300px] bg-white rounded-2xl border border-gray-100 shadow-lg animate-fade-in">
-                                <p className="text-gray-500 text-lg">No se encontraron resultados</p>
-                                {(isAdmin || isExpert) && (
-                                    <p className="text-sm text-gray-400 mt-2">Intenta añadir un nuevo anuncio o ajustar los criterios de búsqueda</p>
-                                )}
+                {/* Right Sidebar - Fiverr Style */}
+                <div className="w-full lg:w-1/3 border-l border-gray-200 bg-gray-50 rounded-lg shadow-md p-6">
+                    {/* Order Details */}
+                    <div className="border-b border-gray-200 pb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold">Detalles del Pedido</h2>
+                            <button className="text-gray-400 hover:text-gray-600">•••</button>
+                        </div>
+
+                        <div className="bg-white rounded-lg p-4 mb-4">
+                            <img
+                                src={searchQuery.data?.category && categoryBanners[searchQuery.data.category] ? categoryBanners[searchQuery.data.category] : '/default-service.png'}
+                                alt="Service"
+                                className="w-full h-20 object-cover rounded-lg mb-3"
+                            />
+                            <p className="text-sm text-gray-800 mb-2">{searchQuery.data?.title}</p>
+                            <span
+                                className={`inline-block px-2 py-1 text-xs font-medium rounded-full text-white ${currentStatus === 'completed' ? 'bg-green-500' :
+                                    currentStatus === 'in_progress' ? 'bg-blue-500' :
+                                        currentStatus === 'awaiting_client_decision' ? 'bg-purple-500' : 'bg-yellow-500'
+                                    }`}
+                            >
+                                {currentStatus === 'completed' ? 'COMPLETADO' :
+                                    currentStatus === 'in_progress' ? 'EN PROGRESO' :
+                                        currentStatus === 'awaiting_client_decision' ? 'EN REVISIÓN' : 'PENDIENTE'}
+                            </span>
+                        </div>
+
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Solicitado por</span>
+                                <span className="font-medium">• {user?.name || 'Usuario'}</span>
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                                {resultsQuery.data?.map((result) => (
-                                    <div key={result.id} className="transform transition-transform hover:scale-105">
-                                        <ResultCard result={result} searchId={searchId} setNotifications={setNotifications} />
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Proyecto</span>
+                                <span className="font-medium">📁 Mi proyecto</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Categoría</span>
+                                <span className="font-medium">{categoryName}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Encargado a</span>
+                                <span className="font-medium">{searchQuery.data?.searchHire?.expert?.name || 'Experto'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Fecha de entrega</span>
+                                <span className="font-medium">
+                                    {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Precio total</span>
+                                <span className="font-medium">€99.00</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Número de pedido</span>
+                                <span className="font-medium">#{searchId.toString().padStart(8, '0')}</span>
+                            </div>
+                        </div>
+
+                        {(isAdmin || isExpert) && (
+                            <button
+                                onClick={() => setModalState((prev) => ({ ...prev, showAddAdForm: true }))}
+                                className="w-full mt-4 bg-black text-white py-3 rounded-lg hover:bg-gray-800"
+                            >
+                                Añadir Anuncio
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Track Order */}
+                    <div className="border-b border-gray-200 py-6">
+                        <button
+                            onClick={() => setShowTrackOrder(!showTrackOrder)}
+                            className="flex items-center justify-between w-full text-left"
+                        >
+                            <h3 className="font-semibold">Seguimiento del Pedido</h3>
+                            {showTrackOrder ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+
+                        {showTrackOrder && (
+                            <div className="mt-4 space-y-3">
+                                {statusRoadmap.map((step, index) => (
+                                    <div key={step.status} className="flex items-center gap-3">
+                                        <div className={`w-2 h-2 rounded-full ${index <= currentStepIndex ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                        <span className={`text-sm ${index <= currentStepIndex ? 'text-gray-900' : 'text-gray-500'}`}>
+                                            {step.label}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
                         )}
+
+                        {canDispute && (
+                            <div className="mt-4 flex gap-2">
+                                <button
+                                    onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
+                                    className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700"
+                                >
+                                    Disputar
+                                </button>
+                                <button
+                                    onClick={handleApproveService}
+                                    className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                                >
+                                    Aprobar
+                                </button>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Deliverables Section */}
-                    <div>
-                        <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                            <Upload className="w-6 h-6 text-blue-600" />
-                            Entregables
-                        </h2>
-                        <div className="bg-gradient-to-b from-blue-50 to-white rounded-2xl border border-gray-100 shadow-lg p-6 animate-fade-in">
+                    {/* Support Section */}
+                    <div className="py-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-sm">
+                                👤
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium">¿Necesitas ayuda con tu pedido?</p>
+                                <p className="text-xs text-gray-500">Estoy aquí para ti.</p>
+                            </div>
+                        </div>
+
+                        <button className="w-full mb-4 bg-white border-2 border-purple-500 text-purple-500 py-3 rounded-lg hover:bg-purple-50 flex items-center justify-center gap-2">
+                            <MessageCircle className="w-4 h-4" />
+                            Hablemos
+                        </button>
+
+                        <div className="space-y-3">
+                            <h4 className="font-semibold text-sm">Soporte</h4>
+
+                            {isDisputed && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+                                    <p className="text-sm text-amber-700 flex items-center gap-2">
+                                        <AlertTriangle className="w-4 h-4" />
+                                        Disputa abierta. Un administrador la resolverá pronto.
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <button className="flex items-center justify-between w-full text-left py-2 hover:bg-gray-100 rounded">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-4 h-4 text-center">❓</span>
+                                        <div>
+                                            <p className="text-sm">FAQs de la Plataforma</p>
+                                            <p className="text-xs text-gray-500">Encuentra respuestas necesarias.</p>
+                                        </div>
+                                    </div>
+                                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                                </button>
+
+                                <button className="flex items-center justify-between w-full text-left py-2 hover:bg-gray-100 rounded">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-4 h-4 text-center">🎯</span>
+                                        <div>
+                                            <p className="text-sm">Centro de resolución</p>
+                                            <p className="text-xs text-gray-500">Resuelve problemas del pedido.</p>
+                                        </div>
+                                    </div>
+                                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                                </button>
+                            </div>
+
+                            {canCancel && (
+                                <button
+                                    onClick={() => setModalState((prev) => ({ ...prev, showCancelConfirm: true }))}
+                                    className="w-full mt-4 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 text-sm"
+                                >
+                                    Cancelar Servicio
+                                </button>
+                            )}
+
+                            {isAdmin && searchQuery.data?.searchHire && (
+                                <button
+                                    onClick={() => setModalState((prev) => ({ ...prev, showFinalizeModal: true }))}
+                                    className="w-full mt-2 bg-amber-600 text-white py-2 rounded-lg hover:bg-amber-700 text-sm"
+                                >
+                                    Finalizar Búsqueda
+                                </button>
+                            )}
+
+                            {canReview && (
+                                <button
+                                    onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
+                                    className="w-full mt-2 bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700 text-sm flex items-center justify-center gap-2"
+                                >
+                                    <Star className="w-4 h-4" />
+                                    Enviar Reseña
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Deliverables Section */}
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                                <Upload className="w-4 h-4 text-blue-600" />
+                                Entregables
+                            </h4>
+
                             {deliverablesQuery.isLoading ? (
                                 <p className="text-sm text-gray-500">Cargando entregables...</p>
                             ) : deliverablesQuery.isError ? (
-                                <p className="text-sm text-red-500">Error al cargar entregables: {deliverablesQuery.error?.message}</p>
+                                <p className="text-sm text-red-400">Error al cargar entregables</p>
                             ) : deliverables && deliverables.deliverableUrls.length > 0 ? (
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {deliverables.deliverableUrls.map((url, index) => (
                                         <div key={index} className="flex items-center gap-2">
                                             {url.endsWith('.mp4') ? (
-                                                <video src={url} controls className="max-w-full rounded-lg" style={{ maxHeight: '200px' }} />
+                                                <video src={url} controls className="max-w-full rounded-lg" style={{ maxHeight: '120px' }} />
                                             ) : (
-                                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm hover:text-blue-800">
-                                                    Ver PDF {index + 1}
+                                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:text-blue-800 bg-white p-2 rounded border">
+                                                    📄 Ver PDF {index + 1}
                                                 </a>
                                             )}
                                         </div>
@@ -578,10 +611,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             ) : (
                                 <p className="text-sm text-gray-500">No hay entregables disponibles.</p>
                             )}
+
                             {isExpert && (
-                                <div className="mt-4 flex items-center gap-2">
-                                    <label className="flex-1 p-3 border border-gray-200 rounded-xl bg-white/80 backdrop-blur-sm cursor-pointer">
-                                        <span className="text-sm text-gray-600">Subir entregable (PDF, MP4)</span>
+                                <div className="mt-3 space-y-2">
+                                    <label className="block">
                                         <input
                                             type="file"
                                             multiple
@@ -589,13 +622,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             onChange={handleDeliverableFileChange}
                                             className="hidden"
                                         />
+                                        <div className="w-full p-2 border border-gray-300 bg-white text-sm text-gray-600 cursor-pointer rounded-lg hover:bg-gray-50 text-center">
+                                            Subir entregable (PDF, MP4)
+                                        </div>
                                     </label>
                                     <button
                                         onClick={handleUploadDeliverable}
-                                        className={`p-3 rounded-xl transition-colors ${selectedDeliverableFiles.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                                        className={`w-full py-2 text-sm rounded-lg ${selectedDeliverableFiles.length === 0
+                                            ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                                            : 'bg-green-600 hover:bg-green-700 text-white'
+                                            }`}
                                         disabled={selectedDeliverableFiles.length === 0}
                                     >
-                                        Subir Entregable
+                                        Subir Archivo
                                     </button>
                                 </div>
                             )}
@@ -603,122 +642,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     </div>
                 </div>
             </div>
-
-            {/* Filters Section */}
-            <div className="mb-8">
-                <div className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-lg animate-fade-in">
-                    <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                        <Filter className="w-4 h-4" />
-                        <span className="text-sm font-medium">Todos los Filtros</span>
-                        <ChevronDown className="w-4 h-4" />
-                    </button>
-                    <div className="h-6 w-px bg-gray-200" />
-                    <div className="flex gap-2">
-                        <button className="px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                            Precio: Bajo a Alto
-                        </button>
-                        <button className="px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                            Más Reciente
-                        </button>
-                        <button className="px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                            Popular
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Dispute Notification */}
-            {isDisputed && (
-                <div className="mb-8 p-6 bg-white rounded-2xl border border-amber-100 shadow-lg animate-fade-in">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                            <AlertTriangle className="w-6 h-6 text-amber-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900">Disputa Abierta</h3>
-                    </div>
-                    <p className="text-gray-600">Hay una disputa abierta para esta búsqueda. Un administrador la resolverá pronto.</p>
-                </div>
-            )}
-
-            {/* Awaiting Client Decision */}
-            {isExpert && searchQuery.data?.searchHire?.status === 'awaiting_client_decision' && (
-                <div className="mb-8 p-6 bg-white rounded-2xl border border-blue-100 shadow-lg animate-fade-in">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Check className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900">Esperando Aprobación del Cliente</h3>
-                    </div>
-                    <p className="text-gray-600">La búsqueda está lista para la decisión del cliente. Por favor, espera a que el cliente apruebe o dispute el servicio.</p>
-                </div>
-            )}
-
-            {/* Client Decision Prompt */}
-            {canDispute && (
-                <div className="mb-8 p-6 bg-white rounded-2xl border border-blue-100 shadow-lg animate-fade-in">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Check className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900">¡La búsqueda ha finalizado!</h3>
-                    </div>
-                    <p className="text-gray-600 mb-6">El experto ha completado la búsqueda. Por favor, revisa los resultados y decide si estás satisfecho con el servicio.</p>
-                    <div className="flex justify-end gap-3">
-                        <button
-                            onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
-                        >
-                            <XCircle className="w-4 h-4" />
-                            <span>Disputar Servicio</span>
-                        </button>
-                        <button
-                            onClick={handleApproveService}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
-                        >
-                            <Check className="w-4 h-4" />
-                            <span>Aprobar Servicio</span>
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Chat Access Denied */}
-            {!canViewChat && searchQuery.data?.searchHire && (
-                <div className="mb-8 p-6 bg-white rounded-2xl border border-red-100 shadow-lg animate-fade-in">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                            <AlertTriangle className="w-6 h-6 text-red-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900">Acceso al Chat Denegado</h3>
-                    </div>
-                    <p className="text-gray-600">No tienes permiso para acceder al chat de esta búsqueda. Solo el cliente, el experto asignado o un administrador pueden ver el chat.</p>
-                </div>
-            )}
-
-            {/* Debug Info (Development Only) */}
-            {process.env.NODE_ENV === 'development' && (
-                <div className="mb-8 p-6 bg-yellow-50 rounded-2xl border border-yellow-100 shadow-sm animate-fade-in">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Información de Depuración</h3>
-                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
-                        <p><strong>Estado SearchHire:</strong> {searchQuery.data?.searchHire?.status || 'Sin Estado'}</p>
-                        <p><strong>ID SearchHire:</strong> {searchQuery.data?.searchHire?.id || 'N/A'}</p>
-                        <p><strong>Es Cliente:</strong> {isClient.toString()}</p>
-                        <p><strong>Es Experto:</strong> {isExpert.toString()}</p>
-                        <p><strong>Puede Reseñar:</strong> {(canReview ?? false).toString()}</p>
-                        <p><strong>Puede Disputar:</strong> {(canDispute ?? false).toString()}</p>
-                        <p><strong>Puede Cancelar:</strong> {(canCancel ?? false).toString()}</p>
-                        <p><strong>En Disputa:</strong> {(isDisputed ?? false).toString()}</p>
-                        <p><strong>Ha Reseñado:</strong> {hasReviewed.toString()}</p>
-                        <p><strong>Rol del Usuario:</strong> {user?.role || 'N/A'}</p>
-                        <p><strong>ID Usuario:</strong> {userId || 'N/A'}</p>
-                        <p><strong>ID Cliente:</strong> {clientId || 'N/A'}</p>
-                        <p><strong>ID Experto:</strong> {expertId || 'N/A'}</p>
-                        <p><strong>Puede Ver Chat:</strong> {canViewChat.toString()}</p>
-                        <p><strong>Mensajes No Leídos:</strong> {unreadMessages}</p>
-                        <p><strong>Deliverables:</strong> {JSON.stringify(deliverables)}</p>
-                    </div>
-                </div>
-            )}
 
             {/* Modals */}
             <ReviewModal
@@ -790,7 +713,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             />
             <FinalizeModal
                 isOpen={modalState.showFinalizeModal}
-                onClose={() => setModalState((prev) => ({ ...prev, showFinalizeModal: false }))}
+                onClose={() => setModalState((prev) => ({
+                    ...prev,
+                    showFinalizeModal: false
+                }))}
                 onFinalize={handleForceFinalizeAndClose}
             />
             {notifications.map((notification) => (
