@@ -108,7 +108,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         userSearch: initialUserSearch,
         latitude: '',
         longitude: '',
-        locationRange: '600',
+        locationRange: '25',
         frequency: minSearchInterval.toString(),
         minPrice: '',
         maxPrice: '',
@@ -383,25 +383,42 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </div>
 
                 {/* Settings Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-6 space-y-4 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
                         <div>
-                            <h3 className="text-sm font-medium text-gray-900 mb-1">Configuración de Ubicación</h3>
-                            <p className="text-xs text-gray-400">Establece el área y radio de búsqueda</p>
+                            <h3 className="text-sm font-medium text-gray-900 mb-1">
+                                {serviceTypeId === 2 
+                                    ? 'Selecciona el área en el que buscas el coche'
+                                    : 'Configuración de Ubicación'
+                                }
+                            </h3>
+                            <p className="text-xs text-gray-400">
+                                {serviceTypeId === 2 
+                                    ? 'Define la zona de búsqueda para tu vehículo'
+                                    : 'Establece el área y radio de búsqueda'
+                                }
+                            </p>
                         </div>
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-400">Radio de Búsqueda</span>
-                                <div className="flex items-center gap-1">
-                                    <span className="text-lg font-semibold text-gray-900">{formData.locationRange}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg font-semibold text-gray-900">
+                                        {Math.min(parseInt(formData.locationRange), 100)}
+                                    </span>
                                     <span className="text-sm text-gray-500">km</span>
+                                    {parseInt(formData.locationRange) > 100 && (
+                                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">
+                                            Máximo
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             <input
                                 type="range"
                                 min="1"
-                                max="600"
-                                value={formData.locationRange}
+                                max="100"
+                                value={Math.min(parseInt(formData.locationRange), 100)}
                                 onChange={(e) => {
                                     setFormData({ ...formData, locationRange: e.target.value });
                                     if (map) {
@@ -412,21 +429,32 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 }}
                                 className="w-full h-1.5 bg-blue-100 rounded-full appearance-none cursor-pointer focus:outline-none transition-all [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:border-blue-600"
                                 style={{
-                                    background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${(parseInt(formData.locationRange) / 600) * 100}%, rgb(219, 234, 254) ${(parseInt(formData.locationRange) / 600) * 100}%, rgb(219, 234, 254) 100%)`,
+                                    background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${(Math.min(parseInt(formData.locationRange), 100) / 100) * 100}%, rgb(219, 234, 254) ${(Math.min(parseInt(formData.locationRange), 100) / 100) * 100}%, rgb(219, 234, 254) 100%)`,
                                     height: '6px'
                                 }}
                             />
                             <div className="flex justify-between text-xs text-gray-500">
                                 <span>1km</span>
-                                <span>300km</span>
-                                <span>600km</span>
+                                <span>50km</span>
+                                <span>100km</span>
                             </div>
                         </div>
                     </div>
                     <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-6 space-y-4 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
                         <div>
-                            <h3 className="text-sm font-medium text-gray-900 mb-4">Rango de Precio</h3>
-                            <p className="text-xs text-gray-400">Establece los límites de precio mínimo y máximo</p>
+                            <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
+                                Rango de Precio 
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                    {selectedCategory === 1 ? '🚗 Vehículos' : 
+                                     selectedCategory === 2 ? '🏠 Inmuebles' : 
+                                     '📝 General'}
+                                </span>
+                            </h3>
+                            <p className="text-xs text-gray-400">
+                                {selectedCategory === 1 ? 'Rango típico para vehículos de segunda mano' :
+                                 selectedCategory === 2 ? 'Rango típico para inmuebles y viviendas' :
+                                 'Establece los límites de precio mínimo y máximo'}
+                            </p>
                         </div>
                         <div className="space-y-6">
                             <div className="space-y-6">
@@ -447,8 +475,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     <div
                                         className="absolute inset-y-0 bg-blue-500 rounded-full"
                                         style={{
-                                            left: `${(parseInt(formData.minPrice || '0') / 1000000) * 100}%`,
-                                            right: `${100 - ((parseInt(formData.maxPrice || '1000000') / 1000000) * 100)}%`,
+                                            left: `${(parseInt(formData.minPrice || '0') / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 2000000 : 1000000)) * 100}%`,
+                                            right: `${100 - ((parseInt(formData.maxPrice || (selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '2000000' : '1000000')) / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 2000000 : 1000000)) * 100)}%`,
                                             height: '6px'
                                         }}
                                     ></div>
@@ -456,12 +484,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         <input
                                             type="range"
                                             min="0"
-                                            max="1000000"
-                                            step="1000"
+                                            max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '2000000' : '1000000'}
+                                            step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '5000' : '1000'}
                                             value={formData.minPrice || 0}
                                             onChange={(e) => {
                                                 const value = parseInt(e.target.value);
-                                                const max = parseInt(formData.maxPrice || '1000000');
+                                                const maxValue = selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 2000000 : 1000000;
+                                                const max = parseInt(formData.maxPrice || maxValue.toString());
                                                 if (value <= max) {
                                                     setFormData({ ...formData, minPrice: value.toString() });
                                                 }
@@ -471,9 +500,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         <input
                                             type="range"
                                             min="0"
-                                            max="1000000"
-                                            step="1000"
-                                            value={formData.maxPrice || 1000000}
+                                            max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '2000000' : '1000000'}
+                                            step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '5000' : '1000'}
+                                            value={formData.maxPrice || (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 2000000 : 1000000)}
                                             onChange={(e) => {
                                                 const value = parseInt(e.target.value);
                                                 const min = parseInt(formData.minPrice || '0');
@@ -488,45 +517,20 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                             <div className="flex justify-between text-xs text-gray-500">
                                 <span>0€</span>
-                                <span>500.000€</span>
-                                <span>1.000.000€</span>
+                                <span>
+                                    {selectedCategory === 1 ? '50.000€' : 
+                                     selectedCategory === 2 ? '1.000.000€' : 
+                                     '500.000€'}
+                                </span>
+                                <span>
+                                    {selectedCategory === 1 ? '100.000€' : 
+                                     selectedCategory === 2 ? '2.000.000€' : 
+                                     '1.000.000€'}
+                                </span>
                             </div>
                         </div>
                     </div>
-                    <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-6 space-y-4 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
-                        <div>
-                            <h3 className="text-sm font-medium text-gray-900 mb-4">Configuración de Búsqueda</h3>
-                            <p className="text-xs text-gray-400">Establece la frecuencia de actualización</p>
-                        </div>
-                        <div className="space-y-6">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-400">Frecuencia de actualización</span>
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-lg font-semibold text-gray-900">{formData.frequency}</span>
-                                        <span className="text-sm text-gray-500">horas</span>
-                                    </div>
-                                </div>
-                                <input
-                                    type="range"
-                                    min={minSearchInterval}
-                                    max="24"
-                                    value={formData.frequency}
-                                    onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
-                                    className="w-full h-1.5 bg-blue-100 rounded-full appearance-none cursor-pointer focus:outline-none transition-all [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:border-blue-600"
-                                    style={{
-                                        background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${(parseInt(formData.frequency) / 24) * 100}%, rgb(219, 234, 254) ${(parseInt(formData.frequency) / 24) * 100}%, rgb(219, 234, 254) 100%)`,
-                                        height: '6px'
-                                    }}
-                                />
-                                <div className="flex justify-between text-xs text-gray-500">
-                                    <span>{minSearchInterval}h</span>
-                                    <span>12h</span>
-                                    <span>24h</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
 
                 {error && (
@@ -539,10 +543,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 <div className="sticky bottom-8 flex justify-end">
                     <button
                         type="submit"
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/30"
+                        className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold transition-all shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/40 hover:scale-105 transform"
                     >
-                        Continuar
-                        <ArrowRight className="w-4 h-4" />
+                        <span>Continuar con el Servicio</span>
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                 </div>
             </form>
