@@ -221,20 +221,21 @@ export default function SearchForm({
                     Atrás
                 </button>
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden flex-1 flex flex-col">
-                <div className="p-4 md:p-6 lg:p-8 border-b border-gray-100 relative overflow-hidden bg-gradient-to-br from-blue-50 to-white">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent_50%)]" />
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden flex-1 flex flex-col">
+                <div className="p-6 md:p-8 lg:p-10 border-b border-gray-100 relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-white">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15),transparent_60%)]" />
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-100/30 to-transparent rounded-full -translate-y-32 translate-x-32" />
                     <div className="relative z-10">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-100">
-                                <Sparkles className="w-5 h-5 text-blue-600" />
+                        <div className="flex items-center gap-5 mb-8">
+                            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
+                                <Sparkles className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-lg md:text-xl font-semibold text-gray-900">
+                                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">
                                     Confirmación de Contratación
                                 </h2>
-                                <p className="text-sm text-gray-500">
-                                    Revisa y confirma los detalles de tu contratación
+                                <p className="text-sm md:text-base text-gray-600">
+                                    Revisa y confirma los detalles de tu búsqueda personalizada
                                 </p>
                             </div>
                         </div>
@@ -243,81 +244,105 @@ export default function SearchForm({
                                 <p className="text-sm">❌ Error: Los datos del servicio están incompletos. Por favor, vuelve a seleccionar un servicio.</p>
                             </div>
                         )}
-                        <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100 mb-4">
-                            <div className="flex items-start gap-3">
-                                <div className="mt-1">
-                                    <Zap className="w-5 h-5 text-blue-600" />
+                        <div className="p-5 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-blue-200/50 mb-6 shadow-sm">
+                            <div className="flex items-start gap-4">
+                                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500 shadow-md">
+                                    <Zap className="w-4 h-4 text-white" />
                                 </div>
-                                <div>
-                                    <h3 className="text-sm font-medium text-gray-900 mb-2">
+                                <div className="flex-1">
+                                    <h3 className="text-base font-semibold text-gray-900 mb-3">
                                         Descripción de tu Búsqueda
                                     </h3>
-                                    <p className="text-sm text-gray-600 leading-relaxed break-words">
-                                        {parameters.userSearch || 'No se proporcionó descripción.'}
+                                    <p className="text-sm text-gray-700 leading-relaxed break-words bg-white/70 p-3 rounded-lg border border-white/50">
+                                        {parameters.userSearch || 'No se proporcionó descripción específica.'}
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="p-8 space-y-8">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Search className="w-5 h-5 text-blue-600" />
-                                <h3 className="text-sm font-medium text-gray-900">
-                                    Detalles del Servicio
+                        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="p-2 bg-blue-100 rounded-lg">
+                                    <Search className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <h3 className="text-base font-semibold text-gray-900">
+                                    Tipo de Servicio
                                 </h3>
                             </div>
-                            <div className="space-y-3">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Servicio</span>
-                                    <span className="text-gray-900 font-medium">
-                                        {parameters.serviceTypeId === 1 ? 'Búsqueda Web' : parameters.serviceTypeId === 2 ? 'Búsqueda Web + Revisión' : 'Desconocido'}
-                                    </span>
+                            <div className="space-y-4">
+                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
+                                    <span className="text-gray-600 font-medium">Modalidad</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-gray-900 font-semibold">
+                                            {parameters.serviceTypeId === 1 ? 'Solo Revisión' : 
+                                             parameters.serviceTypeId === 2 ? 'Búsqueda + Revisión' : 
+                                             'Desconocido'}
+                                        </span>
+                                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                                            {parameters.serviceTypeId === 1 ? '👨‍💼' : 
+                                             parameters.serviceTypeId === 2 ? '🌐' : 
+                                             '❓'}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Experto</span>
-                                    <span className="text-gray-900 font-medium">
+                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
+                                    <span className="text-gray-600 font-medium">Experto</span>
+                                    <span className="text-gray-900 font-semibold">
                                         {expertName || 'No disponible'}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Target className="w-5 h-5 text-blue-600" />
-                                <h3 className="text-sm font-medium text-gray-900">
-                                    Configuración de Ubicación
+                        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="p-2 bg-blue-100 rounded-lg">
+                                    <Target className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <h3 className="text-base font-semibold text-gray-900">
+                                    {parameters.serviceTypeId === 2 
+                                        ? 'Área de búsqueda del vehículo'
+                                        : 'Configuración de Ubicación'
+                                    }
                                 </h3>
                             </div>
-                            <div className="space-y-3">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Área de Búsqueda</span>
-                                    <span className="text-gray-900 font-medium">
-                                        {parameters.locationRange} km de radio
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center text-sm bg-white/60 p-3 rounded-lg">
+                                    <span className="text-gray-600 font-medium">Radio de búsqueda</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-gray-900 font-semibold">
+                                            {Math.min(parameters.locationRange, 100)} km
+                                        </span>
+                                        {parameters.locationRange > 100 && (
+                                            <span className="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded-full font-medium">
+                                                Máx. 100km
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
+                                    <span className="text-gray-600 font-medium">Coordenadas</span>
+                                    <span className="text-gray-900 font-semibold font-mono text-xs">
+                                        {parameters.latitude.slice(0, 7)}, {parameters.longitude.slice(0, 7)}
                                     </span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Punto Central</span>
-                                    <span className="text-gray-900 font-medium">
-                                        {parameters.latitude.slice(0, 6)},{' '}
-                                        {parameters.longitude.slice(0, 6)}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Cobertura</span>
-                                    <span className="text-gray-900 font-medium">
-                                        {Math.PI * Math.pow(parseInt(parameters.locationRange.toString()), 2).toFixed(2)} km²
+                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
+                                    <span className="text-gray-600 font-medium">Área cubierta</span>
+                                    <span className="text-gray-900 font-semibold">
+                                        ~{(Math.PI * Math.pow(Math.min(parseInt(parameters.locationRange.toString()), 100), 2) / 1000).toFixed(1)}k km²
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <User className="w-5 h-5 text-blue-600" />
-                                <h3 className="text-sm font-medium text-gray-900">
-                                    Detalles del Experto
+                        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="p-2 bg-blue-100 rounded-lg">
+                                    <User className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <h3 className="text-base font-semibold text-gray-900">
+                                    Experto Asignado
                                 </h3>
                             </div>
                             <div className="flex items-start gap-4">
@@ -358,29 +383,81 @@ export default function SearchForm({
                                 </div>
                             </div>
                         </div>
-                        <div className="col-span-1 lg:col-span-3 bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-200 transition-colors group shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <DollarSign className="w-5 h-5 text-blue-600" title="Precio" />
-                                <h3 className="text-sm font-medium text-gray-900">
-                                    Detalles de Pago
+                        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="p-2 bg-green-100 rounded-lg">
+                                    <DollarSign className="w-4 h-4 text-green-600" />
+                                </div>
+                                <h3 className="text-base font-semibold text-gray-900">
+                                    Criterios de Precio
                                 </h3>
                             </div>
-                            <div className="space-y-3">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Precio del Servicio</span>
-                                    <span className="text-gray-900 font-medium">
+                            <div className="space-y-4">
+                                {parameters.minPrice || parameters.maxPrice ? (
+                                    <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
+                                        <span className="text-gray-600 font-medium">Rango de precio</span>
+                                        <span className="text-gray-900 font-semibold">
+                                            {parameters.minPrice ? `€${parameters.minPrice.toLocaleString()}` : '€0'} - {parameters.maxPrice ? `€${parameters.maxPrice.toLocaleString()}` : '∞'}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
+                                        <span className="text-gray-600 font-medium">Rango de precio</span>
+                                        <span className="text-gray-900 font-semibold text-green-600">Sin límite</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
+                                    <span className="text-gray-600 font-medium">Categoría</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-gray-900 font-semibold">
+                                            {parameters.category === 1 ? 'Vehículos' : 
+                                             parameters.category === 2 ? 'Inmuebles' : 
+                                             'General'}
+                                        </span>
+                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                            {parameters.category === 1 ? '🚗' : 
+                                             parameters.category === 2 ? '🏠' : 
+                                             '📝'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-span-1 lg:col-span-2 bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="p-2 bg-emerald-100 rounded-lg">
+                                    <Wallet className="w-4 h-4 text-emerald-600" title="Precio" />
+                                </div>
+                                <h3 className="text-base font-semibold text-gray-900">
+                                    Resumen de Pago
+                                </h3>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
+                                    <span className="text-gray-600 font-medium">Precio del Servicio</span>
+                                    <span className="text-gray-900 font-semibold text-lg">
                                         €{servicePrice !== undefined ? servicePrice.toFixed(2) : 'No disponible'}
                                     </span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Saldo Actual</span>
-                                    <span className="text-gray-900 font-medium">
-                                        {isLoadingBalance ? 'Cargando...' : `€${balance?.toFixed(2) || '0.00'}`}
+                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
+                                    <span className="text-gray-600 font-medium">Saldo Actual</span>
+                                    <span className="text-gray-900 font-semibold">
+                                        {isLoadingBalance ? (
+                                            <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                                        ) : (
+                                            `€${balance?.toFixed(2) || '0.00'}`
+                                        )}
                                     </span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Saldo Restante</span>
-                                    <span className="text-gray-900 font-medium">
+                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
+                                    <span className="text-gray-600 font-medium">Saldo Restante</span>
+                                    <span className={`font-semibold ${
+                                        isLoadingBalance || balance === null || servicePrice === undefined
+                                            ? 'text-gray-500'
+                                            : balance - servicePrice >= 0
+                                                ? 'text-green-600'
+                                                : 'text-red-600'
+                                    }`}>
                                         {isLoadingBalance || balance === null || servicePrice === undefined
                                             ? 'N/A'
                                             : `€${(balance - servicePrice).toFixed(2)}`}
