@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
+import { useApi } from './useApi';
+import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
 
 interface Service {
@@ -55,6 +57,7 @@ export function useServices({
     expertProfileId,
 }: UseServicesProps = {}) {
     const { signOut } = useAuth();
+    const { fetchApi } = useApi();
     const queryClient = useQueryClient();
     const [isCreatingService, setIsCreatingService] = useState(false);
 
@@ -188,11 +191,28 @@ export function useServices({
         },
     });
 
+    // Export the hook directly - can't call useQuery conditionally
+    const useServiceByHireId = (hireId: number | null | undefined) => {
+        console.log('[useServices] useServiceByHireId called with hireId:', hireId);
+        console.log('[useServices] Query will be enabled?', !!hireId && hireId > 0);
+        
+        return useQuery({
+            queryKey: ['service', 'byHireId', hireId],
+            queryFn: () => {
+                const url = API_CONFIG.endpoints.expert.services.getByHireId(hireId!);
+                console.log('[useServices] Executing query function with URL:', url);
+                return fetchApi<Service>(url);
+            },
+            enabled: !!hireId && hireId > 0,
+        });
+    };
+
     return {
         services: servicesQuery.data || [],
         isLoading: servicesQuery.isLoading,
         error: servicesQuery.error,
         createService: createServiceMutation.mutateAsync,
         isCreatingService,
+        useServiceByHireId,
     };
 }

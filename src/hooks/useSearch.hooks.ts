@@ -89,19 +89,22 @@ interface CreateSearchWithHireData {
     parameters: SearchParameters;
 }
 
-export const useSearch = () => {
+export const useSearch = (options: { enableQueries?: boolean } = {}) => {
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
+    const { enableQueries = true } = options;
 
-    // Queries
+    // Queries - only enabled when specifically requested
     const searchesQuery = useQuery({
         queryKey: ['searches'],
         queryFn: () => fetchApi<SearchItem[]>(API_CONFIG.endpoints.search.list),
+        enabled: enableQueries,
     });
 
     const adminSearchesQuery = useQuery({
         queryKey: ['searches', 'admin'],
         queryFn: () => fetchApi<SearchItem[]>(API_CONFIG.endpoints.search.listAll),
+        enabled: enableQueries,
     });
 
     const getSearch = (searchId: number) =>

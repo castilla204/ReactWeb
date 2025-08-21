@@ -1,9 +1,10 @@
 ﻿import { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
+import { useServices } from '../hooks/useServices';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useReview } from '../hooks/useReview.hooks';
+
 import { useChat } from '../hooks/useChat';
 import Chat from './Chat';
 import { ReviewModal, DisputeModal, ResolveDisputeModal, AddAdModal, CancelServiceModal, FinalizeModal } from './Modals';
@@ -17,10 +18,7 @@ interface Category {
     name: string;
 }
 
-interface Review {
-    searchHireId: number;
-    reviewerId: number;
-}
+
 
 interface NewAd {
     title: string;
@@ -92,17 +90,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const [showTrackOrder, setShowTrackOrder] = useState(false);
     const lastSearchHireId = useRef<number | null>(null);
 
-    const { getResults, getSearch } = useSearch();
+    const { getSearch } = useSearch({ enableQueries: false });
+    const { useServiceByHireId } = useServices({});
     const { categories } = useCategories();
     const { user } = useAuth();
-    const { getExpertReviews } = useReview();
-    const { deliverables, uploadDeliverable, deliverablesQuery, refetchDeliverables } = useChat(searchId, setNotifications);
+
+    const { deliverables, uploadDeliverable, deliverablesQuery, refetchDeliverables, isUploadingDeliverable } = useChat(searchId, setNotifications);
     const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit, handleResolveDispute, handleAddAd } =
         useSearchActions(setNotifications);
 
-    const resultsQuery = getResults(searchId);
     const searchQuery = getSearch(searchId);
-    const reviewsQuery = getExpertReviews(searchQuery.data?.searchHire?.expertId || 0);
+    // Only fetch service if we have a valid searchHire ID
+    const hireId = searchQuery.data?.searchHire?.id;
+    console.log('[SearchDetails] HireId extracted:', hireId);
+    
+    // Use the hook directly - it will handle enabled internally
+    const serviceQuery = useServiceByHireId(hireId);
 
     const userId = Number(user?.id) || 0;
     const clientId = Number(searchQuery.data?.userId ?? 0);
@@ -110,10 +113,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     const isClient = userId === clientId;
     const isExpert = userId === expertId;
-    const hasReviewed =
-        reviewsQuery.data?.some(
-            (review: Review) => review.searchHireId === searchQuery.data?.searchHire?.id && review.reviewerId === userId
-        ) || false;
+    const hasReviewed = false; // Simplified since we're not fetching reviews anymore
     const canReview =
         isClient && searchQuery.data?.searchHire && ['completed', 'dispute-resolved'].includes(searchQuery.data.searchHire.status) && !hasReviewed;
     const canDispute = isClient && searchQuery.data?.searchHire?.status === 'awaiting_client_decision';
@@ -125,28 +125,53 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const categoryName = category?.name || 'Unknown Category';
 
     useEffect(() => {
-        console.log('[13:42 CEST] SearchDetails initialized with searchId:', searchId);
-        console.log('[13:42 CEST] Deliverables state:', deliverables);
-        console.log('[13:42 CEST] Deliverables query status:', {
+        console.log('[SearchDetails] SearchDetails initialized with searchId:', searchId);
+        console.log('[SearchDetails] SearchQuery state:', {
+            isLoading: searchQuery.isLoading,
+            isError: searchQuery.isError,
+            error: searchQuery.error?.message,
+            data: searchQuery.data ? 'Present' : 'Missing',
+            searchHireId: searchQuery.data?.searchHire?.id
+        });
+
+        console.log('[SearchDetails] ServiceQuery state:', {
+            isLoading: serviceQuery.isLoading,
+            isError: serviceQuery.isError,
+            error: serviceQuery.error?.message,
+            data: serviceQuery.data ? 'Present' : 'Missing'
+        });
+        console.log('[SearchDetails] Deliverables state:', deliverables);
+        console.log('[SearchDetails] Deliverables query status:', {
             isLoading: deliverablesQuery?.isLoading,
             isError: deliverablesQuery?.isError,
             error: deliverablesQuery?.error?.message,
         });
-        console.log('[13:42 CEST] Deliverables URLs:', deliverables?.deliverableUrls);
+        console.log('[SearchDetails] Deliverables URLs:', deliverables?.deliverableUrls);
         if (deliverables?.deliverableUrls?.length) {
-            console.log('[13:42 CEST] Rendering deliverable URLs:', deliverables.deliverableUrls);
+            console.log('[SearchDetails] Rendering deliverable URLs:', deliverables.deliverableUrls);
         } else {
-            console.log('[13:42 CEST] No deliverable URLs to render, deliverables:', JSON.stringify(deliverables));
+            console.log('[SearchDetails] No deliverable URLs to render, deliverables:', JSON.stringify(deliverables));
         }
-    }, [searchId, deliverables, deliverablesQuery]);
+    }, [
+        searchId, 
+        searchQuery.isLoading, 
+        searchQuery.isError, 
+        searchQuery.data?.searchHire?.id,
+        serviceQuery.isLoading, 
+        serviceQuery.isError, 
+        serviceQuery.data,
+        deliverables?.deliverableUrls,
+        deliverablesQuery?.isLoading,
+        deliverablesQuery?.isError
+    ]);
 
     useEffect(() => {
         if (searchQuery.data?.searchHire?.id && searchQuery.data.searchHire.id !== lastSearchHireId.current) {
             console.log('[13:42 CEST] searchHireId changed, refetching deliverables for searchHireId:', searchQuery.data.searchHire.id);
             lastSearchHireId.current = searchQuery.data.searchHire.id;
-            refetchDeliverables();
+            // No necesitamos refetch manual, el useChat se encarga automáticamente
         }
-    }, [searchQuery.data?.searchHire?.id, refetchDeliverables]);
+    }, [searchQuery.data?.searchHire?.id]);
 
     const handleDeliverableFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files ? Array.from(e.target.files) : [];
@@ -188,8 +213,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             console.log('[13:42 CEST] Uploading deliverables:', selectedDeliverableFiles.map((f) => ({ name: f.name, size: f.size })));
             await uploadDeliverable(selectedDeliverableFiles);
             setSelectedDeliverableFiles([]);
-            console.log('[13:42 CEST] Triggered refetchDeliverables after upload');
-            refetchDeliverables();
+            // No necesitamos refetch manual, uploadDeliverable se encarga automáticamente
         } else {
             setNotifications((prev) => [
                 ...prev,
@@ -218,18 +242,25 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     }, [canViewChat, searchQuery.data, searchQuery.isSuccess, userId, clientId, expertId]);
 
     useEffect(() => {
-        if (resultsQuery.error || searchQuery.error || reviewsQuery.error) {
+        if (searchQuery.error) {
+            console.error('[13:42 CEST] SearchQuery error:', searchQuery.error);
             setNotifications((prev) => [
                 ...prev.filter((n) => !n.id.startsWith('api-error-')),
                 {
                     id: `api-error-${Date.now()}`,
                     type: 'error',
-                    message: 'Error al cargar datos. Por favor, verifica tu conexión o inicia sesión nuevamente.',
+                    message: 'Error al cargar la búsqueda. Por favor, verifica tu conexión o inicia sesión nuevamente.',
                     duration: 5000,
                 },
             ]);
         }
-    }, [resultsQuery.error, searchQuery.error, reviewsQuery.error]);
+        
+        if (serviceQuery.error) {
+            console.error('[13:42 CEST] ServiceQuery error:', serviceQuery.error);
+            // Don't show error notification for service query as it's not critical for page function
+            // The UI will gracefully fall back to showing category banners instead of service images
+        }
+    }, [searchQuery.error, serviceQuery.error]);
 
     useLayoutEffect(() => {
         document.documentElement.scrollTop = 0;
@@ -242,7 +273,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     const handleAddAdAndClose = async () => {
         await handleAddAd(searchId, newAd, () => {
-            resultsQuery.refetch();
+            // No need to refetch results in SearchDetails, just update the state
             setModalState((prev) => ({ ...prev, showAddAdForm: false }));
             setNewAd({
                 title: '',
@@ -264,7 +295,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             searchQuery.data?.searchHire?.id,
             disputeReason,
             () => {
-                resultsQuery.refetch();
                 searchQuery.refetch();
                 setModalState((prev) => ({ ...prev, showDisputeModal: false }));
                 setDisputeReason('');
@@ -274,7 +304,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     const handleResolveDisputeAndClose = async () => {
         await handleResolveDispute(searchQuery.data?.searchHire?.id, resolveInFavorOfClient, resolutionReason, () => {
-            resultsQuery.refetch();
             searchQuery.refetch();
             setModalState((prev) => ({ ...prev, showResolveDisputeModal: false }));
             setResolveInFavorOfClient(null);
@@ -284,14 +313,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     const handleCancelServiceAndClose = async () => {
         await handleCancelService(searchQuery.data?.searchHire?.id);
-            resultsQuery.refetch();
             searchQuery.refetch();
             setModalState((prev) => ({ ...prev, showCancelConfirm: false }));
     };
 
     const handleForceFinalizeAndClose = async (favorExpert: boolean) => {
         await handleForceFinalize(searchQuery.data?.searchHire?.id, favorExpert, () => {
-            resultsQuery.refetch();
             searchQuery.refetch();
             setModalState((prev) => ({ ...prev, showFinalizeModal: false }));
         });
@@ -299,7 +326,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     const handleApproveService = async () => {
         await handleCompleteService(searchQuery.data?.searchHire?.id, () => {
-            resultsQuery.refetch();
             searchQuery.refetch();
         });
     };
@@ -307,7 +333,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const currentStatus = searchQuery.data?.searchHire?.status || 'pending';
     const currentStepIndex = statusRoadmap.findIndex((step) => step.status === currentStatus);
 
-    if (resultsQuery.isLoading || searchQuery.isLoading || reviewsQuery.isLoading) {
+    // Only show loading for critical queries (searchQuery)
+    if (searchQuery.isLoading) {
         return (
             <div className="flex items-center justify-center h-screen bg-white text-black">
                 <p className="text-lg">Cargando...</p>
@@ -315,7 +342,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         );
     }
 
-    if (resultsQuery.error || searchQuery.error || reviewsQuery.error) {
+    // Only show error for critical failures (searchQuery)
+    if (searchQuery.error) {
         return (
             <div className="flex items-center justify-center h-screen bg-white text-black">
                 <p className="text-lg text-red-400">Error al cargar los datos</p>
@@ -431,7 +459,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </button>
                             </div>
                             <div className="px-6 py-4">
-                            <Chat searchId={searchId} setNotifications={setNotifications} isExpert={isExpert} />
+                            <Chat 
+                                searchId={searchId} 
+                                setNotifications={setNotifications} 
+                                isExpert={isExpert} 
+                                expertData={{
+                                    name: serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name,
+                                    profilePictureUrl: serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl
+                                }}
+                            />
                             </div>
                         </div>
                     </div>
@@ -450,33 +486,74 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </button>
                         </div>
 
-                        {/* Service Card */}
-                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 mb-6 border border-gray-200">
+                        {/* Service Card - Professional Design */}
+                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow mb-6">
+                            {/* Service Image */}
                             <div className="relative">
-                            <img
-                                src={searchQuery.data?.category && categoryBanners[searchQuery.data.category] ? categoryBanners[searchQuery.data.category] : '/default-service.png'}
-                                alt="Service"
-                                    className="w-full h-24 object-cover rounded-lg mb-3 shadow-sm"
-                            />
-                                <div className="absolute top-2 left-2">
-                            <span
-                                        className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${currentStatus === 'completed' ? 'bg-green-100 text-green-800' :
-                                            currentStatus === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                                currentStatus === 'awaiting_client_decision' ? 'bg-purple-100 text-purple-800' : 'bg-yellow-100 text-yellow-800'
-                                            }`}
-                                    >
-                                        <span className={`w-2 h-2 rounded-full mr-1 ${currentStatus === 'completed' ? 'bg-green-500' :
-                                    currentStatus === 'in_progress' ? 'bg-blue-500' :
-                                        currentStatus === 'awaiting_client_decision' ? 'bg-purple-500' : 'bg-yellow-500'
-                                            }`}></span>
+                                {serviceQuery.data?.imageUrls && serviceQuery.data.imageUrls.length > 0 ? (
+                                    <div className="relative w-full h-40 overflow-hidden">
+                                        <img
+                                            src={serviceQuery.data.imageUrls[0]}
+                                            alt="Servicio contratado"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback to category banner if service image fails
+                                                e.currentTarget.src = searchQuery.data?.category && categoryBanners[searchQuery.data.category] 
+                                                    ? categoryBanners[searchQuery.data.category] 
+                                                    : '/default-service.png';
+                                            }}
+                                        />
+                                        {serviceQuery.data.imageUrls.length > 1 && (
+                                            <div className="absolute bottom-3 right-3 bg-black/75 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                                                </svg>
+                                                +{serviceQuery.data.imageUrls.length - 1}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="relative w-full h-40 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+                                        {searchQuery.data?.category && categoryBanners[searchQuery.data.category] ? (
+                                            <img
+                                                src={categoryBanners[searchQuery.data.category]}
+                                                alt={categoryName}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <svg className="w-12 h-12 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                                    </svg>
+                                                    <p className="text-sm text-gray-400 font-medium">{categoryName}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                {/* Status Badge - Overlay on image */}
+                                <div className="absolute top-3 left-3">
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold backdrop-blur-sm border
+                                        ${currentStatus === 'completed' ? 'bg-green-500/90 text-white border-green-400/50' :
+                                        currentStatus === 'in_progress' ? 'bg-blue-500/90 text-white border-blue-400/50' :
+                                        currentStatus === 'awaiting_client_decision' ? 'bg-purple-500/90 text-white border-purple-400/50' : 'bg-yellow-500/90 text-white border-yellow-400/50'}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full bg-white`} />
                                 {currentStatus === 'completed' ? 'COMPLETADO' :
                                     currentStatus === 'in_progress' ? 'EN PROGRESO' :
                                         currentStatus === 'awaiting_client_decision' ? 'EN REVISIÓN' : 'PENDIENTE'}
                             </span>
                         </div>
                             </div>
-                            <h3 className="font-medium text-gray-900 mb-2 leading-tight">{searchQuery.data?.title}</h3>
-                            <p className="text-sm text-gray-600">Diseño profesional de mascota</p>
+                            
+                            {/* Service Content */}
+                            <div className="p-4">
+                                <h3 className="font-semibold text-gray-900 mb-2 leading-tight">{searchQuery.data?.title}</h3>
+                                <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
+                                    {serviceQuery.data?.conditions || 'Servicio profesional personalizado'}
+                                </p>
+                            </div>
                         </div>
 
                         {/* Order Information */}
@@ -509,25 +586,56 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </div>
                                 <div>
                                     <p className="text-gray-500 mb-1">Encargado a</p>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                                            {searchQuery.data?.searchHire?.expert?.name?.charAt(0) || 'E'}
+                                    <div className="flex items-center gap-3">
+                                        {(serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl) ? (
+                                            <img 
+                                                src={serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl} 
+                                                alt={serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}
+                                                className="w-10 h-10 bg-green-500 rounded-full object-cover border-2 border-green-100"
+                                                onError={(e) => {
+                                                    // Fallback to initials if image fails to load
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                }}
+                                            />
+                                        ) : null}
+                                        <div className={`w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium border-2 border-green-100 ${(serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl) ? 'hidden' : ''}`}>
+                                            {(serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'E').charAt(0)}
                                         </div>
-                                        <span className="font-medium text-gray-900">{searchQuery.data?.searchHire?.expert?.name || 'Experto'}</span>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-gray-900">{serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}</span>
+                                            {serviceQuery.data?.expert?.description && (
+                                                <span className="text-xs text-gray-500 line-clamp-1">{serviceQuery.data.expert.description}</span>
+                                            )}
+                                        </div>
                                     </div>
                             </div>
                             </div>
                             
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div>
-                                    <p className="text-gray-500 mb-1">Fecha de entrega</p>
+                                    <p className="text-gray-500 mb-1">Fecha de creación</p>
                                     <span className="font-medium text-gray-900">
-                                    {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                        {searchQuery.data?.createdAt 
+                                            ? new Date(searchQuery.data.createdAt).toLocaleDateString('es-ES', { 
+                                                day: 'numeric', 
+                                                month: 'short', 
+                                                year: 'numeric',
+                                                hour: '2-digit', 
+                                                minute: '2-digit' 
+                                            })
+                                            : 'No disponible'
+                                        }
                                 </span>
                             </div>
                                 <div>
-                                    <p className="text-gray-500 mb-1">Precio total</p>
-                                    <span className="font-bold text-lg text-gray-900">€159.26</span>
+                                    <p className="text-gray-500 mb-1">Estado de la contratación</p>
+                                    <span className="font-medium text-gray-900">
+                                        {searchQuery.data?.searchHire?.status 
+                                            ? searchQuery.data.searchHire.status.charAt(0).toUpperCase() + searchQuery.data.searchHire.status.slice(1).replace('_', ' ')
+                                            : 'No disponible'
+                                        }
+                                    </span>
                                 </div>
                             </div>
                             
@@ -692,10 +800,24 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </h4>
 
                             {deliverablesQuery.isLoading ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                                 <p className="text-sm text-gray-500">Cargando entregables...</p>
+                                </div>
                             ) : deliverablesQuery.isError ? (
+                                <div className="space-y-2">
                                 <p className="text-sm text-red-400">Error al cargar entregables</p>
-                            ) : deliverables && deliverables.deliverableUrls.length > 0 ? (
+                                    <button 
+                                        onClick={() => refetchDeliverables()}
+                                        className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
+                                    >
+                                        Reintentar
+                                    </button>
+                                    {deliverablesQuery.error && (
+                                        <p className="text-xs text-gray-400">{deliverablesQuery.error.message}</p>
+                                    )}
+                                </div>
+                            ) : deliverables && deliverables.deliverableUrls && deliverables.deliverableUrls.length > 0 ? (
                                 <div className="space-y-2">
                                     {deliverables.deliverableUrls.map((url, index) => (
                                         <div key={index} className="flex items-center gap-2">
@@ -729,13 +851,20 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </label>
                                     <button
                                         onClick={handleUploadDeliverable}
-                                        className={`w-full py-2 text-sm rounded-lg ${selectedDeliverableFiles.length === 0
+                                        className={`w-full py-2 text-sm rounded-lg flex items-center justify-center gap-2 ${selectedDeliverableFiles.length === 0 || isUploadingDeliverable
                                             ? 'bg-gray-300 cursor-not-allowed text-gray-500'
                                             : 'bg-green-600 hover:bg-green-700 text-white'
                                             }`}
-                                        disabled={selectedDeliverableFiles.length === 0}
+                                        disabled={selectedDeliverableFiles.length === 0 || isUploadingDeliverable}
                                     >
-                                        Subir Archivo
+                                        {isUploadingDeliverable ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                                                Subiendo...
+                                            </>
+                                        ) : (
+                                            'Subir Archivo'
+                                        )}
                                     </button>
                                 </div>
                             )}
@@ -756,7 +885,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 setReviewForm={setReviewForm}
                 onSubmit={() => {
                     searchQuery.refetch();
-                    reviewsQuery.refetch();
                     setModalState((prev) => ({ ...prev, showReviewModal: false }));
                     setReviewForm({ score: 0, description: '', images: [] });
                 }}
