@@ -66,6 +66,7 @@ export const API_CONFIG = {
                 create: `${API_PATH}/SearchService`,
                 get: (id: number) => `${API_PATH}/SearchService/${id}`,
                 getByExpert: (expertId: number) => `${API_PATH}/SearchService/expert/${expertId}`,
+                getByHireId: (hireId: number) => `${API_PATH}/SearchService/GetServiceByHireId/${hireId}`,
             },
             hires: {
                 createCheckout: (serviceId: number) => `${API_PATH}/SearchHire/create-checkout-session/${serviceId}`,

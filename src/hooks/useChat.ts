@@ -54,6 +54,7 @@ export const useChat = (
     const [connection, setConnection] = useState<HubConnection | null>(null);
     const failedMessageIds = useRef<Set<number>>(new Set());
     const lastDeliverableFetch = useRef<number>(0);
+    const lastSearchHireId = useRef<number | null>(null);
 
     // Validate API_CONFIG.endpoints.chat.deliverable
     useEffect(() => {
@@ -65,7 +66,7 @@ export const useChat = (
                 {
                     id: `config-error-${uuidv4()}`,
                     type: 'error' as NotificationType,
-                    message: 'Error de configuración: Endpoint de entregables no definido. Contacta al soporte.',
+                    message: 'Error de configuraciï¿½n: Endpoint de entregables no definido. Contacta al soporte.',
                     duration: 5000,
                 },
             ]);
@@ -99,7 +100,7 @@ export const useChat = (
                         {
                             id: `conversation-error-${uuidv4()}`,
                             type: 'error' as NotificationType,
-                            message: 'No se encontró la conversación para este servicio. Verifica el ID del servicio.',
+                            message: 'No se encontrï¿½ la conversaciï¿½n para este servicio. Verifica el ID del servicio.',
                             duration: 5000,
                         },
                     ]);
@@ -113,7 +114,7 @@ export const useChat = (
 
     // Fetch deliverables
     const { data: deliverables, refetch: refetchDeliverables, isLoading: deliverablesLoading, error: deliverablesError } = useQuery<Deliverable, Error>({
-        queryKey: ['deliverables', conversation?.searchHireId],
+        queryKey: ['deliverables', conversation?.searchHireId, API_CONFIG.endpoints.chat.deliverable],
         queryFn: async () => {
             console.log('[10:45 CEST] Fetching deliverables for searchHireId:', conversation?.searchHireId);
             if (!conversation?.searchHireId) {
@@ -127,25 +128,65 @@ export const useChat = (
             const deliverableEndpoint = `${API_CONFIG.endpoints.chat.deliverable}/${conversation.searchHireId}`;
             console.log('[10:45 CEST] Deliverable endpoint:', deliverableEndpoint);
             try {
-                const response = await fetchApi<{ message: string; deliverable: Deliverable }>(deliverableEndpoint);
+                const response = await fetchApi<{ message: string; deliverable?: Deliverable; deliverables?: any[] }>(deliverableEndpoint);
                 console.log('[10:45 CEST] Raw API response for deliverables:', JSON.stringify(response));
-                console.log('[10:45 CEST] Deliverable URLs:', response.deliverable.deliverableUrls);
+                
+                // Handle case when API returns { message, deliverables: [] } (no deliverables found)
+                if (response.deliverables !== undefined) {
+                    console.log('[10:45 CEST] API returned deliverables array format:', response.deliverables);
+                    return {
+                        searchHireId: conversation!.searchHireId,
+                        deliverableUrls: Array.isArray(response.deliverables) ? 
+                            response.deliverables.map(d => d.deliverableUrls || []).flat() : [],
+                        createdAt: new Date().toISOString(),
+                    };
+                }
+                
+                // Handle case when API returns { message, deliverable: {...} } (deliverables found)
+                if (response.deliverable) {
+                    console.log('[10:45 CEST] API returned deliverable object format:', response.deliverable);
+                    return {
+                        searchHireId: response.deliverable.searchHireId,
+                        deliverableUrls: Array.isArray(response.deliverable.deliverableUrls) ? response.deliverable.deliverableUrls : [],
+                        createdAt: response.deliverable.createdAt,
+                    };
+                }
+                
+                // Fallback - return empty deliverables
+                console.log('[10:45 CEST] Unexpected API response format, returning empty deliverables');
                 return {
-                    searchHireId: response.deliverable.searchHireId,
-                    deliverableUrls: Array.isArray(response.deliverable.deliverableUrls) ? response.deliverable.deliverableUrls : [],
-                    createdAt: response.deliverable.createdAt,
+                    searchHireId: conversation!.searchHireId,
+                    deliverableUrls: [],
+                    createdAt: new Date().toISOString(),
                 };
             } catch (err: any) {
                 console.error('[10:45 CEST] Error fetching deliverables:', err.message, err.response || err);
                 if (err.response?.status === 404) {
                     console.log('[10:45 CEST] No deliverables found (404), returning empty array');
-                    return { searchHireId: conversation.searchHireId, deliverableUrls: [], createdAt: new Date().toISOString() };
+                    return { 
+                        searchHireId: conversation!.searchHireId, 
+                        deliverableUrls: [], 
+                        createdAt: new Date().toISOString() 
+                    };
                 }
                 throw err;
             }
         },
-        enabled: !!conversation?.searchHireId,
-        retry: (failureCount, err) => failureCount < 3 && !err.message.includes('401'),
+        enabled: !!conversation?.searchHireId && !!API_CONFIG.endpoints.chat.deliverable,
+        retry: (failureCount, err) => {
+            console.log(`[10:45 CEST] Deliverables query retry attempt ${failureCount}, error:`, err.message);
+            // Don't retry for specific cases that are not actual errors
+            const noRetryConditions = [
+                '401',
+                'SearchHireId not available',
+                'No deliverables found', 
+                'Deliverable endpoint not configured'
+            ];
+            const shouldNotRetry = noRetryConditions.some(condition => err.message.includes(condition));
+            return failureCount < 3 && !shouldNotRetry;
+        },
+        staleTime: 30000, // 30 seconds
+        gcTime: 5 * 60 * 1000, // 5 minutes
     });
 
     // SignalR connection
@@ -173,7 +214,7 @@ export const useChat = (
                 {
                     id: `signalr-error-${uuidv4()}`,
                     type: 'error' as NotificationType,
-                    message: 'No se pudo conectar al chat en tiempo real. Verifica tu sesión.',
+                    message: 'No se pudo conectar al chat en tiempo real. Verifica tu sesiï¿½n.',
                     duration: 5000,
                 },
             ]);
@@ -274,19 +315,12 @@ export const useChat = (
         conn.on('ReceiveDeliverable', (deliverable: Deliverable) => {
             console.log('[10:45 CEST] Received SignalR deliverable:', deliverable);
             console.log('[10:45 CEST] Updating deliverables cache for searchHireId:', deliverable.searchHireId);
-            queryClient.setQueryData(['deliverables', deliverable.searchHireId], {
+            queryClient.setQueryData(['deliverables', deliverable.searchHireId, API_CONFIG.endpoints.chat.deliverable], {
                 ...deliverable,
                 deliverableUrls: Array.isArray(deliverable.deliverableUrls) ? deliverable.deliverableUrls : [],
             });
-            // Throttle refetch to prevent excessive calls
-            const now = Date.now();
-            if (now - lastDeliverableFetch.current > 5000) { // 5-second throttle
-                console.log('[10:45 CEST] Throttled refetch of deliverables for searchHireId:', deliverable.searchHireId);
-                lastDeliverableFetch.current = now;
-                refetchDeliverables();
-            } else {
-                console.log('[10:45 CEST] Skipping deliverables refetch due to throttle');
-            }
+            // No necesitamos refetch manual, el cache se actualiza automÃ¡ticamente
+            lastDeliverableFetch.current = Date.now();
         });
 
         try {
@@ -308,7 +342,7 @@ export const useChat = (
             ]);
             setTimeout(() => connectSignalR(), 1000);
         }
-    }, [user, conversation?.id, connection, searchId, queryClient, setNotifications, refetchDeliverables]);
+    }, [user, conversation?.id, connection, searchId, queryClient, setNotifications]);
 
     const sendMessageMutation = useMutation({
         mutationFn: async ({
@@ -361,7 +395,7 @@ export const useChat = (
                 if (err.response?.status === 400) {
                     errorMessage = err.response.data?.message || 'Invalid request data';
                 } else if (err.response?.status === 404) {
-                    errorMessage = 'Conversación no encontrada. Verifica el ID del servicio.';
+                    errorMessage = 'Conversaciï¿½n no encontrada. Verifica el ID del servicio.';
                 }
                 throw new Error(errorMessage);
             }
@@ -391,7 +425,7 @@ export const useChat = (
                 {
                     id: `message-success-${uuidv4()}`,
                     type: 'success' as NotificationType,
-                    message: 'Mensaje enviado con éxito.',
+                    message: 'Mensaje enviado con ï¿½xito.',
                     duration: 3000,
                 },
             ]);
@@ -443,17 +477,36 @@ export const useChat = (
                 FormData: formDataEntries,
             });
             try {
-                const response = await fetchApi<{ message: string; deliverable: Deliverable }>(deliverableEndpoint, {
+                const response = await fetchApi<{ message: string; deliverable?: Deliverable; deliverables?: any[] }>(deliverableEndpoint, {
                     method: 'POST',
                     body: formData,
                 });
                 console.log('[10:45 CEST] Deliverable uploaded, response:', response);
-                console.log('[10:45 CEST] Uploaded deliverable URLs:', response.deliverable.deliverableUrls);
-                return {
-                    searchHireId: response.deliverable.searchHireId,
-                    deliverableUrls: Array.isArray(response.deliverable.deliverableUrls) ? response.deliverable.deliverableUrls : [],
-                    createdAt: response.deliverable.createdAt,
-                };
+                
+                // Handle case when API returns { message, deliverable: {...} } (upload successful)
+                if (response.deliverable) {
+                    console.log('[10:45 CEST] Upload successful, deliverable object format:', response.deliverable);
+                    return {
+                        searchHireId: response.deliverable.searchHireId,
+                        deliverableUrls: Array.isArray(response.deliverable.deliverableUrls) ? response.deliverable.deliverableUrls : [],
+                        createdAt: response.deliverable.createdAt,
+                    };
+                }
+                
+                // Handle case when API returns { message, deliverables: [...] } (upload successful, different format)
+                if (response.deliverables !== undefined) {
+                    console.log('[10:45 CEST] Upload successful, deliverables array format:', response.deliverables);
+                    return {
+                        searchHireId: conversation!.searchHireId,
+                        deliverableUrls: Array.isArray(response.deliverables) ? 
+                            response.deliverables.map(d => d.deliverableUrls || []).flat() : [],
+                        createdAt: new Date().toISOString(),
+                    };
+                }
+                
+                // Fallback
+                console.log('[10:45 CEST] Unexpected upload response format');
+                throw new Error('Unexpected response format from upload');
             } catch (err: any) {
                 console.error('[10:45 CEST] Deliverable upload error:', err.message, err.response || err);
                 let errorMessage = err.message || 'Failed to upload deliverable';
@@ -468,16 +521,15 @@ export const useChat = (
         onSuccess: (deliverable) => {
             console.log('[10:45 CEST] Deliverable uploaded successfully:', deliverable);
             console.log('[10:45 CEST] Updating deliverables cache with URLs:', deliverable.deliverableUrls);
-            queryClient.setQueryData(['deliverables', conversation?.searchHireId], deliverable);
+            queryClient.setQueryData(['deliverables', conversation?.searchHireId, API_CONFIG.endpoints.chat.deliverable], deliverable);
             queryClient.invalidateQueries({ queryKey: ['deliverables', conversation?.searchHireId] });
             lastDeliverableFetch.current = Date.now();
-            refetchDeliverables();
             setNotifications((prev) => [
                 ...prev,
                 {
                     id: `deliverable-success-${uuidv4()}`,
                     type: 'success' as NotificationType,
-                    message: 'Entregable subido con éxito.',
+                    message: 'Entregable subido con Ã©xito.',
                     duration: 5000,
                 },
             ]);
@@ -525,7 +577,7 @@ export const useChat = (
                     {
                         id: `mark-read-error-${messageId}`,
                         type: 'error' as NotificationType,
-                        message: 'No se pudo marcar algunos mensajes como leídos. Por favor, intenta de nuevo más tarde.',
+                        message: 'No se pudo marcar algunos mensajes como leï¿½dos. Por favor, intenta de nuevo mï¿½s tarde.',
                         duration: 5000,
                     },
                 ];
@@ -565,14 +617,15 @@ export const useChat = (
         }
     }, [conversation?.messages, user, markAsReadMutation]);
 
-    // Refetch deliverables only when searchHireId changes
+    // Refetch deliverables only when searchHireId changes (but not on every render)
     useEffect(() => {
-        if (conversation?.searchHireId) {
+        if (conversation?.searchHireId && lastSearchHireId.current !== conversation.searchHireId) {
             console.log('[10:45 CEST] searchHireId changed, refetching deliverables for searchHireId:', conversation.searchHireId);
+            lastSearchHireId.current = conversation.searchHireId;
             lastDeliverableFetch.current = Date.now();
-            refetchDeliverables();
+            // La query se refetch automÃ¡ticamente cuando cambia la queryKey
         }
-    }, [conversation?.searchHireId, refetchDeliverables]);
+    }, [conversation?.searchHireId]);
 
     // Debug deliverables cache
     useEffect(() => {
@@ -585,6 +638,12 @@ export const useChat = (
         });
     }, [deliverables, deliverablesLoading, deliverablesError, conversation?.searchHireId]);
 
+    // Memoize refetchDeliverables to prevent unnecessary re-renders
+    const memoizedRefetchDeliverables = useCallback(() => {
+        console.log('[10:45 CEST] Manual refetch of deliverables requested');
+        return refetchDeliverables();
+    }, [refetchDeliverables]);
+
     return {
         conversation,
         loading: loading || deliverablesLoading,
@@ -594,8 +653,14 @@ export const useChat = (
         sendMessage: sendMessageMutation.mutate,
         isSending: sendMessageMutation.isPending,
         deliverables,
-        deliverablesQuery: { isLoading: deliverablesLoading, isError: !!deliverablesError, error: deliverablesError },
+        deliverablesQuery: { 
+            isLoading: deliverablesLoading, 
+            isError: !!deliverablesError, 
+            error: deliverablesError,
+            data: deliverables 
+        },
         uploadDeliverable: uploadDeliverableMutation.mutate,
-        refetchDeliverables,
+        refetchDeliverables: memoizedRefetchDeliverables,
+        isUploadingDeliverable: uploadDeliverableMutation.isPending,
     };
 };
