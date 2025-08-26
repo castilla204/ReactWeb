@@ -78,7 +78,7 @@ export function ExpertPanelPage() {
         fetchProfile,
     } = useExpert();
 
-    const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService } = useServices({ expertProfileId: profile?.id });
+    const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService, deleteService, isDeletingService } = useServices({ expertProfileId: profile?.id });
 
     const { hires, isLoading: isLoadingHires, error: hiresError } = useExpertHires();
 
@@ -383,117 +383,212 @@ export function ExpertPanelPage() {
     }
 
     return (
-        <div className="relative min-h-screen">
+        <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
             <Background />
-            <div className="relative z-10 max-w-7xl mx-auto px-4 py-12">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => navigate('/')}
-                            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                            Volver
-                        </button>
-                        <h1 className="text-2xl font-bold text-gray-900">Panel de Experto</h1>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setActiveTab('services')}
-                            className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'services' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
-                        >
-                            Servicios
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('hires')}
-                            className={`px-4 py-2 rounded-lg transition-colors ${activeTab === 'hires' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
-                        >
-                            Contrataciones
-                        </button>
-                    </div>
-                </div>
-
-                <div className="mb-8 bg-white p-6 border border-gray-200 shadow-lg">
-                    {profile ? (
-                        <div className="flex items-start gap-6">
-                            <div className="flex-shrink-0">
-                                {profile.profilePictureUrl ? (
-                                    <img
-                                        src={profile.profilePictureUrl}
-                                        alt="Profile"
-                                        className="w-24 h-24 rounded object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-24 h-24 bg-blue-100 rounded flex items-center justify-center">
-                                        <User className="w-12 h-12 text-blue-600" />
-                                    </div>
-                                )}
+            <div className="relative z-10">
+                {/* Header mejorado */}
+                <header className="bg-white border-b border-gray-200 shadow-sm">
+                    <div className="max-w-7xl mx-auto px-6 py-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-6">
+                                <button
+                                    onClick={() => navigate('/')}
+                                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                                >
+                                    <ArrowLeft className="w-5 h-5" />
+                                    <span className="hidden sm:inline">Volver</span>
+                                </button>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-900">Panel de Experto</h1>
+                                    <p className="text-sm text-gray-600">Gestiona tus servicios y contrataciones</p>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <h2 className="text-xl font-semibold text-gray-900">{user?.name}</h2>
-                                    <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-full">
-                                        Experto Verificado
+                            
+                            {/* Estadísticas rápidas */}
+                            <div className="hidden lg:flex items-center gap-6">
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-blue-600">{services.length}</div>
+                                    <div className="text-xs text-gray-500">Servicios</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-green-600">{activeHires.length}</div>
+                                    <div className="text-xs text-gray-500">Activos</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-purple-600">{hires.length}</div>
+                                    <div className="text-xs text-gray-500">Total</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="max-w-7xl mx-auto px-6 py-8">
+                    {/* Navegación de pestañas mejorada */}
+                    <div className="mb-8">
+                        <div className="border-b border-gray-200">
+                            <nav className="flex space-x-8">
+                                <button
+                                    onClick={() => setActiveTab('services')}
+                                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                                        activeTab === 'services' 
+                                            ? 'border-blue-600 text-blue-600' 
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                                >
+                                    Mis Servicios
+                                    <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2 rounded-full text-xs">
+                                        {services.length}
                                     </span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('hires')}
+                                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                                        activeTab === 'hires' 
+                                            ? 'border-blue-600 text-blue-600' 
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                                >
+                                    Contrataciones
+                                    <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2 rounded-full text-xs">
+                                        {hires.length}
+                                    </span>
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+
+                    {/* Tarjetas de dashboard */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">Servicios Activos</p>
+                                    <p className="text-3xl font-bold text-gray-900">{services.length}</p>
                                 </div>
-                                <p className="text-gray-600 mb-4">{profile.description}</p>
-                                <div className="flex items-center gap-4 text-sm text-gray-500">
-                                    <span>Miembro desde {new Date(profile.createdAt).toLocaleDateString()}</span>
-                                    <span>•</span>
-                                    <span>{services.length} servicios activos</span>
-                                    <span>•</span>
-                                    <span>{activeHires.length} contrataciones activas</span>
+                                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <CheckCircle className="w-6 h-6 text-blue-600" />
                                 </div>
                             </div>
                         </div>
-                    ) : (
-                        <div className="text-center py-8 text-gray-500">
-                            Error al cargar el perfil
+                        
+                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">Contrataciones Activas</p>
+                                    <p className="text-3xl font-bold text-gray-900">{activeHires.length}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <Loader2 className="w-6 h-6 text-green-600" />
+                                </div>
+                            </div>
                         </div>
-                    )}
-                </div>
+                        
+                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">Total Contrataciones</p>
+                                    <p className="text-3xl font-bold text-gray-900">{hires.length}</p>
+                                </div>
+                                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <User className="w-6 h-6 text-purple-600" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                <ServicesTab
-                    activeTab={activeTab}
-                    services={services}
-                    isLoadingServices={isLoadingServices}
-                    servicesError={servicesError}
-                    showServiceForm={showServiceForm}
-                    setShowServiceForm={setShowServiceForm}
-                    currentImageIndex={currentImageIndex}
-                    goToPreviousImage={goToPreviousImage}
-                    goToNextImage={goToNextImage}
-                    categories={categories}
-                />
-                <HiresTab
-                    activeTab={activeTab}
-                    hireTab={hireTab}
-                    hires={hires}
-                    isLoadingHires={isLoadingHires}
-                    hiresError={hiresError}
-                    filters={filters}
-                    setHireTab={setHireTab}
-                    setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as any })}
-                    handleViewHire={handleViewHire}
-                    categories={categories}
-                />
-                <ServiceForm
-                    showServiceForm={showServiceForm}
-                    setShowServiceForm={setShowServiceForm}
-                    selectedImages={selectedImages}
-                    setSelectedImages={setSelectedImages}
-                    formErrors={formErrors}
-                    setFormErrors={setFormErrors}
-                    formData={formData}
-                    setFormData={setFormData}
-                    handleImageSelect={handleImageSelect as (e: React.ChangeEvent<any>) => void}
-                    removeImage={removeImage}
-                    handleCreateService={handleCreateService}
-                    serviceTypes={serviceTypes}
-                    isLoadingServiceTypes={isLoadingServiceTypes}
-                    isCreatingService={isCreatingService}
-                    categories={categories}
-                />
+                    {/* Perfil del experto minimalista */}
+                    <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm mb-8">
+                        {profile ? (
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-shrink-0">
+                                        {profile.profilePictureUrl ? (
+                                            <img
+                                                src={profile.profilePictureUrl}
+                                                alt="Profile"
+                                                className="w-12 h-12 rounded-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
+                                                <User className="w-6 h-6 text-blue-600" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h2 className="text-lg font-semibold text-gray-900">{user?.name}</h2>
+                                            <span className="inline-flex items-center px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                                                ✓ Verificado
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-600 max-w-md truncate">{profile.description}</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="hidden md:flex items-center gap-6 text-sm text-gray-500">
+                                    <div className="text-center">
+                                        <div className="font-medium text-gray-900">{new Date(profile.createdAt).toLocaleDateString()}</div>
+                                        <div className="text-xs">Miembro desde</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="font-medium text-green-600">Activo</div>
+                                        <div className="text-xs">Estado</div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-gray-500">
+                                <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                                <p className="text-sm">Error al cargar el perfil</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <ServicesTab
+                        activeTab={activeTab}
+                        services={services}
+                        isLoadingServices={isLoadingServices}
+                        servicesError={servicesError}
+                        showServiceForm={showServiceForm}
+                        setShowServiceForm={setShowServiceForm}
+                        currentImageIndex={currentImageIndex}
+                        goToPreviousImage={goToPreviousImage}
+                        goToNextImage={goToNextImage}
+                        categories={categories}
+                        deleteService={deleteService}
+                        isDeletingService={isDeletingService}
+                    />
+                    <HiresTab
+                        activeTab={activeTab}
+                        hireTab={hireTab}
+                        hires={hires}
+                        isLoadingHires={isLoadingHires}
+                        hiresError={hiresError}
+                        filters={filters}
+                        setHireTab={setHireTab}
+                        setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as any })}
+                        handleViewHire={handleViewHire}
+                        categories={categories}
+                    />
+                    <ServiceForm
+                        showServiceForm={showServiceForm}
+                        setShowServiceForm={setShowServiceForm}
+                        selectedImages={selectedImages}
+                        setSelectedImages={setSelectedImages}
+                        formErrors={formErrors}
+                        setFormErrors={setFormErrors}
+                        formData={formData}
+                        setFormData={setFormData}
+                        handleImageSelect={handleImageSelect as (e: React.ChangeEvent<any>) => void}
+                        removeImage={removeImage}
+                        handleCreateService={handleCreateService}
+                        serviceTypes={serviceTypes}
+                        isLoadingServiceTypes={isLoadingServiceTypes}
+                        isCreatingService={isCreatingService}
+                        categories={categories}
+                    />
+                </div>
             </div>
         </div>
     );
