@@ -19,6 +19,7 @@ interface Service {
     categoryName?: string;
     completedSearches?: number;
     averageRating?: number;
+    isActive?: boolean;
     expert?: {
         id: number;
         profilePictureUrl: string;
@@ -60,6 +61,7 @@ export function useServices({
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
     const [isCreatingService, setIsCreatingService] = useState(false);
+    const [isDeletingService, setIsDeletingService] = useState(false);
 
     const servicesQuery = useQuery({
         queryKey: ['services', expertProfileId || categoryId, serviceTypeId, latitude, longitude, locationRange],
@@ -119,7 +121,11 @@ export function useServices({
 
             const data = await response.json();
             console.log('Fetched services:', data);
-            return data as Service[];
+            // Filtrar solo servicios activos para el panel de experto
+            const filteredData = expertProfileId 
+                ? (data as Service[]).filter(service => service.isActive !== false)
+                : data as Service[];
+            return filteredData;
         },
         enabled: expertProfileId ? !!expertProfileId : (categoryId > 0 && serviceTypeId > 0 && !!latitude && !!longitude && locationRange > 0),
         retry: 1,
@@ -191,6 +197,55 @@ export function useServices({
         },
     });
 
+    const deleteServiceMutation = useMutation({
+        mutationFn: async (serviceId: number) => {
+            setIsDeletingService(true);
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch(`/api/SearchService/${serviceId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('No tienes permisos para eliminar este servicio');
+                }
+                if (response.status === 404) {
+                    throw new Error('Servicio no encontrado');
+                }
+                let errorMessage = `Error al eliminar servicio: ${response.statusText}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch {
+                    // Ignore JSON parsing errors
+                }
+                throw new Error(errorMessage);
+            }
+
+            return true;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['services', expertProfileId || categoryId, serviceTypeId] });
+        },
+        onError: (error) => {
+            console.error('Error deleting service:', error);
+        },
+        onSettled: () => {
+            setIsDeletingService(false);
+        },
+    });
+
     // Export the hook directly - can't call useQuery conditionally
     const useServiceByHireId = (hireId: number | null | undefined) => {
         console.log('[useServices] useServiceByHireId called with hireId:', hireId);
@@ -213,6 +268,8 @@ export function useServices({
         error: servicesQuery.error,
         createService: createServiceMutation.mutateAsync,
         isCreatingService,
+        deleteService: deleteServiceMutation.mutateAsync,
+        isDeletingService,
         useServiceByHireId,
     };
 }
