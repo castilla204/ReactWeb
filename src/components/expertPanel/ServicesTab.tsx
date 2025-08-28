@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Plus, Search, Loader2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Plus, Search, Loader2, ChevronLeft, ChevronRight, Trash2, Edit3 } from 'lucide-react';
 import { useCategories } from '../../contexts/CategoryContext';
 
 interface Service {
     id: number;
     categoryId: number;
+    serviceTypeId: number;
     imageUrls: string[];
     conditions: string;
     price: number;
-    durationInHours: number;
+    durationInHours: number | null;
 }
 
 interface ServicesTabProps {
@@ -24,6 +25,7 @@ interface ServicesTabProps {
     categories: { id: number; name: string }[] | undefined;
     deleteService?: (serviceId: number) => Promise<any>;
     isDeletingService?: boolean;
+    onEditService?: (service: Service) => void;
 }
 
 export function ServicesTab({
@@ -39,6 +41,7 @@ export function ServicesTab({
     categories,
     deleteService,
     isDeletingService,
+    onEditService,
 }: ServicesTabProps) {
     const [deletingServiceId, setDeletingServiceId] = useState<number | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
@@ -174,17 +177,23 @@ export function ServicesTab({
                                         </span>
                                     </div>
                                     
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-gray-500">Duración</span>
-                                        <span className="text-xs font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded-full">
-                                            {service.durationInHours}h
-                                        </span>
-                                    </div>
+                                    {service.durationInHours && (
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-gray-500">Duración</span>
+                                            <span className="text-xs font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded-full">
+                                                {service.durationInHours}h
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                                 
                                 {/* Botones de acción */}
                                 <div className="mt-4 flex gap-2">
-                                    <button className="flex-1 bg-black hover:bg-gray-800 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors">
+                                    <button 
+                                        onClick={() => onEditService?.(service)}
+                                        className="flex-1 bg-black hover:bg-gray-800 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-1"
+                                    >
+                                        <Edit3 className="w-3 h-3" />
                                         Editar
                                     </button>
                                     <button 
