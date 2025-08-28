@@ -414,34 +414,7 @@ const SearchCreationPage: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                        <div className="mt-12 md:mt-16 bg-gray-50 py-10 md:py-12">
-                            <h2 className="text-2xl md:text-3xl font-display text-blue-900 mb-6 md:mb-8 text-center leading-tight">
-                                Lo que dicen nuestros clientes
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mx-auto max-w-5xl">
-                                <div className="p-4 md:p-6 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                                    <p className="text-sm md:text-base text-gray-600 mb-3">"Atrapo me ayudó a encontrar el coche perfecto en solo unos días. ¡La revisión presencial fue clave!"</p>
-                                    <div className="flex items-center gap-2">
-                                        <img src="/images/avatar1.jpg" alt="Avatar" className="w-6 md:w-8 h-6 md:h-8 rounded-full" />
-                                        <p className="text-xs md:text-sm font-medium text-gray-800">— Juan P.</p>
-                                    </div>
-                                </div>
-                                <div className="p-4 md:p-6 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                                    <p className="text-sm md:text-base text-gray-600 mb-3">"El proceso fue súper sencillo y confiable. Recomiendo Atrapo a todos mis amigos."</p>
-                                    <div className="flex items-center gap-2">
-                                        <img src="/images/avatar2.jpg" alt="Avatar" className="w-6 md:w-8 h-6 md:h-8 rounded-full" />
-                                        <p className="text-xs md:text-sm font-medium text-gray-800">— María G.</p>
-                                    </div>
-                                </div>
-                                <div className="p-4 md:p-6 bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                                    <p className="text-sm md:text-base text-gray-600 mb-3">"Nunca pensé que comprar un coche de segunda mano sería tan fácil. ¡Gran servicio!"</p>
-                                    <div className="flex items-center gap-2">
-                                        <img src="/images/avatar3.jpg" alt="Avatar" className="w-6 md:w-8 h-6 md:h-8 rounded-full" />
-                                        <p className="text-xs md:text-sm font-medium text-gray-800">— Carlos R.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
                     <footer className="mt-12 py-6 bg-gray-100">
                         <div className="w-full px-4 md:px-6 flex flex-col md:flex-row justify-between items-center mx-auto max-w-7xl">
