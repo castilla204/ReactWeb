@@ -62,6 +62,7 @@ export function useServices({
     const queryClient = useQueryClient();
     const [isCreatingService, setIsCreatingService] = useState(false);
     const [isDeletingService, setIsDeletingService] = useState(false);
+    const [isUpdatingService, setIsUpdatingService] = useState(false);
 
     const servicesQuery = useQuery({
         queryKey: ['services', expertProfileId || categoryId, serviceTypeId, latitude, longitude, locationRange],
@@ -197,6 +198,73 @@ export function useServices({
         },
     });
 
+    const updateServiceMutation = useMutation({
+        mutationFn: async (serviceData: {
+            serviceId: number;
+            categoryId: number;
+            serviceTypeId: number;
+            price: number;
+            conditions: string;
+            durationInHours: number | null;
+            images?: File[];
+        }) => {
+            setIsUpdatingService(true);
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
+            const formData = new FormData();
+            formData.append('serviceId', serviceData.serviceId.toString());
+            formData.append('categoryId', serviceData.categoryId.toString());
+            formData.append('serviceTypeId', serviceData.serviceTypeId.toString());
+            formData.append('price', serviceData.price.toString());
+            formData.append('conditions', serviceData.conditions);
+            if (serviceData.durationInHours !== null) {
+                formData.append('durationInHours', serviceData.durationInHours.toString());
+            }
+            if (serviceData.images && serviceData.images.length > 0) {
+                serviceData.images.forEach((image) => {
+                    formData.append('Images', image);
+                });
+            }
+
+            for (const [key, value] of formData.entries()) {
+                if (value instanceof File) {
+                    console.log(`FormData ${key} = ${value.name}, ${value.size} bytes, ${value.type}`);
+                } else {
+                    console.log(`FormData ${key} = ${value}`);
+                }
+            }
+
+            const response = await fetch('/api/SearchService', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to update service: ${response.statusText}`);
+            }
+
+            return await response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['services', expertProfileId || categoryId, serviceTypeId] });
+        },
+        onError: (error) => {
+            console.error('Error updating service:', error);
+        },
+        onSettled: () => {
+            setIsUpdatingService(false);
+        },
+    });
+
     const deleteServiceMutation = useMutation({
         mutationFn: async (serviceId: number) => {
             setIsDeletingService(true);
@@ -268,6 +336,8 @@ export function useServices({
         error: servicesQuery.error,
         createService: createServiceMutation.mutateAsync,
         isCreatingService,
+        updateService: updateServiceMutation.mutateAsync,
+        isUpdatingService,
         deleteService: deleteServiceMutation.mutateAsync,
         isDeletingService,
         useServiceByHireId,

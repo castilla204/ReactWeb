@@ -10,6 +10,7 @@ import { useServices } from '../hooks/useServices';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
+import { ProfileEditForm } from '../components/expertPanel/ProfileEditForm';
 
 interface Hire {
     id: number;
@@ -24,15 +25,15 @@ interface Hire {
 
 interface Service {
     id: number;
-    expertProfileId: number;
+    expertProfileId?: number;
     categoryId: number;
     serviceTypeId: number;
     price: number;
     conditions: string;
     durationInHours: number | null;
     imageUrls: string[];
-    createdAt: string;
-    updatedAt: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export function ExpertPanelPage() {
@@ -52,6 +53,9 @@ export function ExpertPanelPage() {
         conditions: '',
         durationInHours: '24',
     });
+    const [editingService, setEditingService] = useState<Service | null>(null);
+    const [existingImages, setExistingImages] = useState<string[]>([]);
+    const [showProfileEditForm, setShowProfileEditForm] = useState(false);
     const [filters, setFilters] = useState<{
         clientName: string;
         status: '' | 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved';
@@ -78,7 +82,7 @@ export function ExpertPanelPage() {
         fetchProfile,
     } = useExpert();
 
-    const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService, deleteService, isDeletingService } = useServices({ expertProfileId: profile?.id });
+    const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService, updateService, isUpdatingService, deleteService, isDeletingService } = useServices({ expertProfileId: profile?.id });
 
     const { hires, isLoading: isLoadingHires, error: hiresError } = useExpertHires();
 
@@ -132,8 +136,12 @@ export function ExpertPanelPage() {
             errors.durationInHours = 'La duración debe ser mayor que 0';
         }
 
-        if (selectedImages.length === 0) {
+        // Para creación, se requiere al menos una imagen
+        // Para edición, debe haber al menos una imagen (existente o nueva)
+        if (!editingService && selectedImages.length === 0) {
             errors.images = 'Se requiere al menos una imagen';
+        } else if (editingService && existingImages.length === 0 && selectedImages.length === 0) {
+            errors.images = 'Debe mantener al menos una imagen';
         }
 
         setFormErrors(errors);
@@ -184,6 +192,106 @@ export function ExpertPanelPage() {
         });
     }, []);
 
+    const resetForm = () => {
+        setFormData({
+            categoryId: '',
+            serviceTypeId: '',
+            price: '',
+            conditions: '',
+            durationInHours: '24',
+        });
+        setSelectedImages([]);
+        setExistingImages([]);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+        setFormErrors({});
+        setEditingService(null);
+    };
+
+    const handleEditService = (service: Service) => {
+        setEditingService(service);
+        setFormData({
+            categoryId: service.categoryId.toString(),
+            serviceTypeId: service.serviceTypeId.toString(),
+            price: service.price.toString(),
+            conditions: service.conditions,
+            durationInHours: service.durationInHours?.toString() || '24',
+        });
+        setSelectedImages([]);
+        setExistingImages(service.imageUrls || []);
+        setFormErrors({});
+        setShowServiceForm(true);
+    };
+
+    const handleUpdateService = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!validateForm()) {
+            console.warn('Form validation failed');
+            return;
+        }
+
+        if (!editingService) {
+            console.error('No service being edited');
+            return;
+        }
+
+        console.log('Updating service with images:', selectedImages.map(img => ({ name: img.name, size: img.size, type: img.type })));
+        console.log('Existing images to keep:', existingImages);
+        console.log('Original images:', editingService.imageUrls);
+        
+        try {
+            // Determinar si necesitamos enviar imágenes
+            const originalImages = editingService.imageUrls || [];
+            const hasRemovedImages = existingImages.length !== originalImages.length;
+            const hasNewImages = selectedImages.length > 0;
+            
+            // Si se removieron imágenes existentes O se agregaron nuevas, necesitamos actualizar
+            const needsImageUpdate = hasRemovedImages || hasNewImages;
+            
+            let imagesToSend = undefined;
+            if (needsImageUpdate) {
+                // Necesitamos combinar las imágenes existentes que quiere mantener con las nuevas
+                // Como el backend reemplaza todas las imágenes, necesitamos enviar todas las que queremos mantener
+                
+                if (hasRemovedImages && !hasNewImages) {
+                    // Solo se eliminaron imágenes, no se agregaron nuevas
+                    // En este caso, no podemos mantener las existentes sin enviar algo
+                    // Tendremos que trabajar con las limitaciones del backend actual
+                    imagesToSend = selectedImages; // Esto será un array vacío, efectivamente eliminando todas
+                } else if (hasNewImages) {
+                    // Se agregaron nuevas imágenes
+                    // El backend reemplazará todas las imágenes con las nuevas
+                    imagesToSend = selectedImages;
+                }
+            }
+            
+            await updateService({
+                serviceId: editingService.id,
+                categoryId: parseInt(formData.categoryId),
+                serviceTypeId: parseInt(formData.serviceTypeId),
+                price: parseFloat(formData.price),
+                conditions: formData.conditions.trim(),
+                durationInHours: formData.durationInHours ? parseInt(formData.durationInHours) : null,
+                images: imagesToSend,
+            });
+
+            setShowServiceForm(false);
+            resetForm();
+
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'success',
+                    message: 'Servicio actualizado exitosamente',
+                },
+            }));
+        } catch (error: any) {
+            console.error('Error updating service:', error);
+            setFormErrors({ general: error.message || 'Error al actualizar el servicio' });
+        }
+    };
+
     const handleCreateService = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -211,18 +319,7 @@ export function ExpertPanelPage() {
             });
 
             setShowServiceForm(false);
-            setFormData({
-                categoryId: '',
-                serviceTypeId: '',
-                price: '',
-                conditions: '',
-                durationInHours: '24',
-            });
-            setSelectedImages([]);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-            setFormErrors({});
+            resetForm();
 
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
@@ -526,14 +623,23 @@ export function ExpertPanelPage() {
                                     </div>
                                 </div>
                                 
-                                <div className="hidden md:flex items-center gap-6 text-sm text-gray-500">
-                                    <div className="text-center">
-                                        <div className="font-medium text-gray-900">{new Date(profile.createdAt).toLocaleDateString()}</div>
-                                        <div className="text-xs">Miembro desde</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="font-medium text-green-600">Activo</div>
-                                        <div className="text-xs">Estado</div>
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        onClick={() => setShowProfileEditForm(true)}
+                                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg transition-colors flex items-center gap-1"
+                                    >
+                                        <User className="w-4 h-4" />
+                                        Editar Perfil
+                                    </button>
+                                    <div className="hidden md:flex items-center gap-6 text-sm text-gray-500">
+                                        <div className="text-center">
+                                            <div className="font-medium text-gray-900">{new Date(profile.createdAt).toLocaleDateString()}</div>
+                                            <div className="text-xs">Miembro desde</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="font-medium text-green-600">Activo</div>
+                                            <div className="text-xs">Estado</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -551,13 +657,19 @@ export function ExpertPanelPage() {
                         isLoadingServices={isLoadingServices}
                         servicesError={servicesError}
                         showServiceForm={showServiceForm}
-                        setShowServiceForm={setShowServiceForm}
+                        setShowServiceForm={(value) => {
+                            if (value) {
+                                resetForm(); // Resetear cuando se abre para crear nuevo servicio
+                            }
+                            setShowServiceForm(value);
+                        }}
                         currentImageIndex={currentImageIndex}
                         goToPreviousImage={goToPreviousImage}
                         goToNextImage={goToNextImage}
                         categories={categories}
                         deleteService={deleteService}
                         isDeletingService={isDeletingService}
+                        onEditService={handleEditService}
                     />
                     <HiresTab
                         activeTab={activeTab}
@@ -573,7 +685,12 @@ export function ExpertPanelPage() {
                     />
                     <ServiceForm
                         showServiceForm={showServiceForm}
-                        setShowServiceForm={setShowServiceForm}
+                        setShowServiceForm={(value) => {
+                            if (!value) {
+                                resetForm(); // Resetear cuando se cierra el formulario
+                            }
+                            setShowServiceForm(value);
+                        }}
                         selectedImages={selectedImages}
                         setSelectedImages={setSelectedImages}
                         formErrors={formErrors}
@@ -587,7 +704,20 @@ export function ExpertPanelPage() {
                         isLoadingServiceTypes={isLoadingServiceTypes}
                         isCreatingService={isCreatingService}
                         categories={categories}
+                        editingService={editingService}
+                        handleUpdateService={handleUpdateService}
+                        isUpdatingService={isUpdatingService}
+                        existingImages={existingImages}
+                        setExistingImages={setExistingImages}
                     />
+                    {profile && (
+                        <ProfileEditForm
+                            showEditForm={showProfileEditForm}
+                            setShowEditForm={setShowProfileEditForm}
+                            profile={profile as any}
+                            onProfileUpdated={fetchProfile}
+                        />
+                    )}
                 </div>
             </div>
         </div>
