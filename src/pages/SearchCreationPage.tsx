@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Car, Home, Bike, ArrowRight, Shield } from 'lucide-react';
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
@@ -147,6 +147,10 @@ const SearchCreationPage: React.FC = () => {
         }
         console.log('SearchCreationPage - Starting search with parameters:', searchParameters);
         setCurrentStep(1);
+        // Scroll to top when going to map step
+        setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100);
     };
 
     const scrollToForm = () => {
