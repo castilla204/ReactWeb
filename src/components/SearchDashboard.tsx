@@ -1,19 +1,11 @@
-﻿import React, { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import {
     Search,
-    Clock,
     ChevronRight,
     AlertCircle,
     CheckCircle,
-    Calendar,
-    Trash2,
-    Pencil,
     ArrowLeft,
-    Tag,
     X,
-    Car,
-    Home,
-    Bike,
     LayoutGrid,
     LayoutList,
     MessageSquare,
@@ -28,6 +20,90 @@ interface SearchDashboardProps {
     // onBack: () => void; // Opcional, lo eliminamos si no es necesario
 }
 
+// Componente para iconos animados y coloridos
+const CategoryIcon: React.FC<{ categoryId: number; size?: 'sm' | 'md' | 'lg' }> = ({ categoryId, size = 'md' }) => {
+    const sizeClasses = {
+        sm: 'w-5 h-5',
+        md: 'w-6 h-6',
+        lg: 'w-7 h-7'
+    };
+
+    const iconClass = `${sizeClasses[size]} rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 hover:rotate-3 shadow-md`;
+
+    switch (categoryId) {
+        case 1: // Coches - Diseño de sedan clásico
+            return (
+                <div className={`${iconClass} bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 shadow-blue-500/40`}>
+                    <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5 text-white">
+                        {/* Coche sedan con ventanas y ruedas bien definidas */}
+                        <rect x="4" y="12" width="16" height="4" rx="1" fill="currentColor"/>
+                        <rect x="6" y="8" width="12" height="4" rx="2" fill="rgba(255,255,255,0.9)"/>
+                        <rect x="5" y="9" width="14" height="3" rx="1.5" fill="currentColor"/>
+                        <circle cx="7" cy="17" r="1.8" fill="currentColor"/>
+                        <circle cx="17" cy="17" r="1.8" fill="currentColor"/>
+                        <circle cx="7" cy="17" r="0.8" fill="rgba(255,255,255,0.8)"/>
+                        <circle cx="17" cy="17" r="0.8" fill="rgba(255,255,255,0.8)"/>
+                    </svg>
+                </div>
+            );
+        case 2: // Motos - MOTOCICLETA REAL
+            return (
+                <div className={`${iconClass} bg-gradient-to-br from-orange-400 via-orange-500 to-red-500 shadow-orange-500/40`}>
+                    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-white">
+                        {/* MOTOCICLETA con motor y tanque */}
+                        
+                        {/* Rueda trasera */}
+                        <circle cx="5" cy="17" r="3.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                        <circle cx="5" cy="17" r="1" fill="currentColor"/>
+                        
+                        {/* Rueda delantera */}
+                        <circle cx="19" cy="17" r="3.5" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                        <circle cx="19" cy="17" r="1" fill="currentColor"/>
+                        
+                        {/* MOTOR/BLOQUE - lo que la hace MOTO */}
+                        <rect x="8" y="14" width="5" height="4" rx="1" fill="currentColor"/>
+                        
+                        {/* TANQUE DE GASOLINA - característico de moto */}
+                        <ellipse cx="12" cy="11" rx="3" ry="1.5" fill="currentColor"/>
+                        
+                        {/* Chasis que conecta motor con ruedas */}
+                        <path d="M8 17h8" stroke="currentColor" strokeWidth="2"/>
+                        
+                        {/* Manillar y horquilla delantera */}
+                        <path d="M15.5 17L17 10L19 8" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M17 8h3" stroke="currentColor" strokeWidth="1.5"/>
+                        
+                        {/* Asiento */}
+                        <ellipse cx="14" cy="10" rx="2" ry="0.8" fill="rgba(255,255,255,0.9)"/>
+                    </svg>
+                </div>
+            );
+        case 3: // Casas
+            return (
+                <div className={`${iconClass} bg-gradient-to-br from-emerald-400 via-green-500 to-green-600 shadow-green-500/40`}>
+                    <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-white">
+                        <path
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            fill="none"
+                        />
+                    </svg>
+                </div>
+            );
+        default:
+            return (
+                <div className={`${iconClass} bg-gradient-to-br from-gray-400 to-gray-600 shadow-gray-500/40`}>
+                    <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-white">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="currentColor" strokeWidth="2"/>
+                        <circle cx="12" cy="17" r="1" fill="currentColor"/>
+                    </svg>
+                </div>
+            );
+    }
+};
+
 interface Filters {
     search: string;
     category: number | null;
@@ -40,18 +116,11 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     const {
         searches: searchesQuery,
         adminSearches: adminSearchesQuery,
-        deleteSearch: deleteSearchMutation,
         reviseSearch: reviseSearchMutation,
-        updateSearch: updateSearchMutation,
     } = useSearch();
     const navigate = useNavigate();
 
-    const [editingSearch, setEditingSearch] = useState<number | null>(null);
-    const [editForm, setEditForm] = useState({
-        title: '',
-        description: '',
-        frequency: 0,
-    });
+
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [filters, setFilters] = useState<Filters>({
         search: '',
@@ -102,82 +171,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         navigate(`/detalles/${searchId}`);
     };
 
-    const handleDelete = async (searchId: number, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!window.confirm('Are you sure you want to delete this search? This action cannot be undone.')) {
-            return;
-        }
 
-        try {
-            await deleteSearchMutation.mutateAsync(searchId);
-            window.dispatchEvent(
-                new CustomEvent('showNotification', {
-                    detail: {
-                        type: 'success',
-                        message: '🗑️ Búsqueda eliminada correctamente',
-                    },
-                })
-            );
-        } catch (error) {
-            console.error('Error deleting search:', error);
-            window.dispatchEvent(
-                new CustomEvent('showNotification', {
-                    detail: {
-                        type: 'error',
-                        message: '❌ Error al eliminar la búsqueda',
-                    },
-                })
-            );
-        }
-    };
-
-    const handleEdit = (search: SearchItem, e: React.MouseEvent) => {
-        e.stopPropagation();
-        setEditingSearch(search.id);
-        setEditForm({
-            title: search.title,
-            description: search.description,
-            frequency: search.frequency,
-        });
-    };
-
-    const handleSaveEdit = async (searchId: number, e: React.MouseEvent) => {
-        e.stopPropagation();
-        try {
-            await updateSearchMutation.mutateAsync({
-                searchId,
-                data: {
-                    ...editForm,
-                    startDate: new Date().toISOString(),
-                },
-            });
-
-            setEditingSearch(null);
-            window.dispatchEvent(
-                new CustomEvent('showNotification', {
-                    detail: {
-                        type: 'success',
-                        message: '✏️ Búsqueda actualizada correctamente',
-                    },
-                })
-            );
-        } catch (error) {
-            console.error('Error updating search:', error);
-            window.dispatchEvent(
-                new CustomEvent('showNotification', {
-                    detail: {
-                        type: 'error',
-                        message: '❌ Error al actualizar la búsqueda',
-                    },
-                })
-            );
-        }
-    };
-
-    const handleCancelEdit = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setEditingSearch(null);
-    };
 
     const clearFilters = () => {
         setFilters({
@@ -205,10 +199,10 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     }
 
     return (
-        <div className="bg-gray-50 min-h-screen">
-            {/* Header Section - Fiverr Style */}
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-8 py-6">
+        <div className="min-h-screen bg-white">
+            {/* Clean Header Section */}
+            <div className="border-b border-gray-200 bg-white">
+                <div className="max-w-7xl mx-auto px-6 py-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <button
@@ -218,28 +212,25 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                 <ArrowLeft className="w-5 h-5 text-gray-600" />
                             </button>
                             <div>
-                                <div className="flex items-center gap-3 mb-1">
                                     <h1 className="text-2xl font-semibold text-gray-900">
                                         {isAdmin ? 'Todas las Búsquedas' : 'Mis Búsquedas'}
                                     </h1>
-                                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-                                        {filteredSearches.length}
-                                    </span>
-                                </div>
-                                <p className="text-gray-600">Gestiona y monitoriza tus búsquedas activas</p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    {filteredSearches.length} búsquedas • {searchesList.filter(s => getActivityStatus(s) === 'Activa').length} activas
+                                </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="flex bg-gray-100 rounded-xl p-1">
+                        <div className="flex items-center gap-2">
+                            <div className="flex bg-gray-100 rounded-lg p-1">
                                 <button
                                     onClick={() => setViewMode('grid')}
-                                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     <LayoutGrid className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => setViewMode('list')}
-                                    className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     <LayoutList className="w-4 h-4" />
                                 </button>
@@ -249,29 +240,27 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-8 py-8">
+            <div className="max-w-7xl mx-auto px-6 py-6">
 
-            {/* Filters Section */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-8">
+            {/* Professional Filters Section */}
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 mb-6">
                 {/* Search input */}
-                <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Buscar búsquedas</label>
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                    <div className="flex-1">
                     <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
                             value={filters.search}
                             onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
                             placeholder="Buscar por título o descripción..."
-                            className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-all placeholder:text-gray-500"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50/50 hover:bg-white"
                         />
                     </div>
                 </div>
 
                 {/* Filter Pills */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Filtros</label>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-2">
                         {/* Category filters */}
                         {Array.isArray(categories) &&
                             categories.map((category) => (
@@ -283,16 +272,12 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                             category: prev.category === category.id ? null : category.id,
                                         }))
                                     }
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${filters.category === category.id
-                                        ? 'bg-gray-900 text-white shadow-lg'
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filters.category === category.id
+                                        ? 'bg-blue-600 text-white shadow-sm'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
                                         }`}
                                 >
-                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${filters.category === category.id ? 'bg-white/20' : 'bg-white'}`}>
-                                        {category.id === 1 && <Car className={`w-3 h-3 ${filters.category === category.id ? 'text-white' : 'text-gray-600'}`} />}
-                                        {category.id === 2 && <Bike className={`w-3 h-3 ${filters.category === category.id ? 'text-white' : 'text-gray-600'}`} />}
-                                        {category.id === 3 && <Home className={`w-3 h-3 ${filters.category === category.id ? 'text-white' : 'text-gray-600'}`} />}
-                                    </div>
+                                    <CategoryIcon categoryId={category.id} size="sm" />
                                     {category.name}
                                 </button>
                             ))}
@@ -300,8 +285,8 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                         {/* Status filters */}
                         <button
                             onClick={() => setFilters((prev) => ({ ...prev, status: 'active' }))}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${filters.status === 'active'
-                                ? 'bg-green-100 text-green-800 border border-green-200'
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filters.status === 'active'
+                                ? 'bg-green-600 text-white shadow-sm'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
                                 }`}
                         >
@@ -310,8 +295,8 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                         </button>
                         <button
                             onClick={() => setFilters((prev) => ({ ...prev, status: 'inactive' }))}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${filters.status === 'inactive'
-                                ? 'bg-gray-100 text-gray-800 border border-gray-300'
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filters.status === 'inactive'
+                                ? 'bg-gray-600 text-white shadow-sm'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
                                 }`}
                         >
@@ -362,9 +347,8 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                             <div
                                 key={search.id}
                                 onClick={() => handleSearchClick(search.id)}
-                                className={`group bg-white rounded-xl p-6 transition-all duration-200 ${editingSearch === search.id ? 'cursor-default' : 'cursor-pointer'
-                                    } hover:shadow-lg border border-gray-200 hover:border-gray-300 ${isAdmin && !search.isRevised
-                                        ? 'ring-2 ring-red-100 border-red-200'
+                                className={`group bg-white rounded-xl p-6 transition-all duration-200 cursor-pointer hover:shadow-lg hover:shadow-gray-200/50 border border-gray-200 hover:border-gray-300 ${isAdmin && !search.isRevised
+                                        ? 'border-red-300 bg-red-50/30'
                                         : ''
                                     } relative`}
                             >
@@ -377,19 +361,9 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                     {/* Header with title and status */}
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex-1">
-                                            {editingSearch === search.id ? (
-                                                <input
-                                                    type="text"
-                                                    value={editForm.title}
-                                                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                                    className="text-lg font-semibold bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 w-full focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                            ) : (
                                                 <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gray-700 transition-colors line-clamp-2 leading-tight">
                                                     {search.title}
                                                 </h3>
-                                            )}
                                         </div>
                                         <div className="flex items-center gap-2 ml-3">
                                             {isAdmin && search.isRevised && (
@@ -405,133 +379,58 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                         </div>
                                     </div>
                                     {/* Description */}
-                                    {editingSearch === search.id ? (
-                                        <textarea
-                                            value={editForm.description}
-                                            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-700 text-sm mb-4 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
-                                            rows={2}
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
-                                    ) : (
                                         <p className="text-gray-600 text-sm mb-6 line-clamp-2 leading-relaxed">{search.description}</p>
-                                    )}
                                     {/* Info Grid */}
-                                    <div className="grid grid-cols-2 gap-4 mb-6">
-                                        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Clock className="w-4 h-4 text-gray-500" />
-                                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Frecuencia</span>
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200/50 rounded-lg p-3">
+                                            <div className="text-xs font-medium text-blue-700 mb-1">Fecha de creación</div>
+                                            <div className="font-semibold text-gray-900">
+                                                {new Date(search.createdAt).toLocaleDateString('es-ES', { 
+                                                    day: 'numeric', 
+                                                    month: 'short', 
+                                                    year: 'numeric' 
+                                                })}
                                             </div>
-                                            {editingSearch === search.id ? (
-                                                <input
-                                                    type="number"
-                                                    value={editForm.frequency}
-                                                    onChange={(e) => setEditForm({ ...editForm, frequency: parseInt(e.target.value) })}
-                                                    className="w-20 bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm text-gray-900 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
-                                                    min="1"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                            ) : (
-                                                <p className="text-sm font-semibold text-gray-900">Cada {search.frequency}h</p>
-                                            )}
                                         </div>
-                                        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Calendar className="w-4 h-4 text-gray-500" />
-                                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Última vez</span>
+                                        <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200/50 rounded-lg p-3">
+                                            <div className="text-xs font-medium text-purple-700 mb-1">Categoría</div>
+                                            <div className="font-semibold text-gray-900 flex items-center gap-2">
+                                                <CategoryIcon categoryId={search.category} size="sm" />
+                                                {Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'}
                                             </div>
-                                            <p className="text-sm font-semibold text-gray-900">
-                                                {new Date(search.lastExecution).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                                            </p>
                                         </div>
                                     </div>
-                                    {/* Footer with category and status */}
-                                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                                        <div className="flex items-center gap-2">
-                                            {categories?.find((c) => c.id === search.category) && (
-                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg">
-                                                    <div className="w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center">
-                                                        <Tag className="w-2.5 h-2.5 text-white" />
-                                                    </div>
-                                                    <span className="text-xs font-medium text-gray-700">
-                                                        {categories.find((c) => c.id === search.category)?.name}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${getActivityStatus(search) === 'Activa'
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                <span className={`w-2 h-2 rounded-full inline-block mr-2 ${getActivityStatus(search) === 'Activa' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                                    {/* Footer with key info */}
+                                    <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100">
+                                        <div className="flex items-center gap-3 text-xs text-gray-600">
+                                            <div className="flex items-center gap-1">
+                                                <span className={`w-2 h-2 rounded-full ${getActivityStatus(search) === 'Activa' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                                                 {getActivityStatus(search)}
                                             </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
                                             {search.searchHire && (
-                                                <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${search.searchHire.status === 'pending'
+                                                <span className={`px-2 py-1 rounded text-xs ${search.searchHire.status === 'pending'
                                                     ? 'bg-yellow-100 text-yellow-700'
                                                     : search.searchHire.status === 'awaiting_client_decision'
                                                         ? 'bg-blue-100 text-blue-700'
                                                         : search.searchHire.status === 'disputed'
                                                             ? 'bg-red-100 text-red-700'
-                                                            : search.searchHire.status === 'cancelled' || search.searchHire.status === 'completed' || search.searchHire.status === 'dispute-resolved'
-                                                                ? 'bg-gray-100 text-gray-700'
                                                                 : 'bg-gray-100 text-gray-700'
                                                     }`}>
                                                     {search.searchHire.status.replace(/_/g, ' ')}
-                                                </div>
+                                                </span>
                                             )}
+
                                         </div>
-                                    </div>
-                                    
-                                    {/* Action buttons */}
-                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                                        {editingSearch === search.id ? (
-                                            <div className="flex items-center gap-2 w-full justify-end">
-                                                <button
-                                                    onClick={(e) => handleSaveEdit(search.id, e)}
-                                                    className="text-xs px-3 py-1.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
-                                                >
-                                                    Guardar
-                                                </button>
-                                                <button
-                                                    onClick={handleCancelEdit}
-                                                    className="text-xs px-3 py-1.5 text-gray-600 hover:text-gray-900 transition-colors"
-                                                >
-                                                    Cancelar
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2 w-full justify-end">
-                                                <button
-                                                    onClick={(e) => handleEdit(search, e)}
-                                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                                    title="Edit search"
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => handleDelete(search.id, e)}
-                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Delete search"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-gray-200 transition-colors">
-                                                    <ChevronRight className="w-5 h-5 text-gray-600" />
-                                                </div>
-                                            </div>
-                                        )}
+                                        <ChevronRight className="w-4 h-4 text-gray-400" />
                                     </div>
                                         {search.searchHire?.expert && (
-                                            <div className="mt-4 text-xs md:text-sm text-blue-600 border-t border-gray-100 pt-4 flex items-center gap-2">
+                                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-600">
                                                 <img
                                                     src={search.searchHire.expert.profilePictureUrl || '/default-avatar.png'}
                                                     alt={`${search.searchHire.expert.name}'s profile`}
-                                                    className="w-6 h-6 rounded-full object-cover"
+                                                className="w-5 h-5 rounded-full object-cover"
                                                 />
-                                                A cargo de: {search.searchHire.expert.name}
+                                            <span>Experto: {search.searchHire.expert.name}</span>
                                             </div>
                                         )}
                                 </div>
@@ -540,16 +439,17 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                     })}
                 </div>
             ) : (
-                <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/50 overflow-hidden relative">
+                    {/* Subtle gradient overlay for table */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-indigo-50/30 pointer-events-none"></div>
+                    <div className="relative z-10">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200">
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Título</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frecuencia</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Última Ejecución</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                            <tr className="bg-gradient-to-r from-gray-50 to-blue-50 border-b border-gray-200">
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Búsqueda</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Categoría</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Fecha Creación</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
@@ -557,84 +457,45 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                 const hasUnreadMessages = false; // TODO: Implementar cuando esté disponible en el tipo
 
                                 return (
-                                    <tr key={search.id} onClick={() => handleSearchClick(search.id)} className="hover:bg-gray-50 cursor-pointer">
+                                    <tr key={search.id} onClick={() => handleSearchClick(search.id)} className="hover:bg-blue-50/50 cursor-pointer transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                {hasUnreadMessages && <MessageSquare className="w-4 h-4 text-red-500 animate-pulse" />}
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-semibold text-gray-900 mb-1">{search.title}</div>
+                                                    <div className="text-xs text-gray-600 line-clamp-1">{search.description}</div>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                {hasUnreadMessages && <MessageSquare className="w-4 h-4 text-red-500 animate-pulse" />}
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">{search.title}</div>
-                                                    <div className="text-sm text-gray-500 line-clamp-1">{search.description}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                <CategoryIcon categoryId={search.category} size="sm" />
+                                                <span className="text-sm font-medium text-gray-700">
                                                 {categories?.find((c) => c.id === search.category)?.name}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span
-                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActivityStatus(search) === 'Activa'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-gray-100 text-gray-800'
-                                                    }`}
-                                            >
-                                                {getActivityStatus(search)}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">Cada {search.frequency} horas</td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">{new Date(search.lastExecution).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4 text-right text-sm font-medium">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={(e) => handleEdit(search, e)}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => handleDelete(search.id, e)}
-                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
                                             </div>
                                         </td>
-                                        {search.searchHire && (
-                                            <td className="px-6 py-4 text-right text-sm font-medium">
-                                                <span
-                                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${search.searchHire.status === 'pending'
-                                                        ? 'bg-yellow-100 text-yellow-800'
-                                                        : search.searchHire.status === 'awaiting_client_decision'
-                                                            ? 'bg-blue-100 text-blue-800'
-                                                            : search.searchHire.status === 'disputed'
-                                                                ? 'bg-red-100 text-red-800'
-                                                                : search.searchHire.status === 'cancelled' || search.searchHire.status === 'completed' || search.searchHire.status === 'dispute-resolved'
-                                                                    ? 'bg-gray-100 text-gray-800'
-                                                                    : 'bg-gray-100 text-gray-800'
-                                                        }`}
-                                                >
-                                                    {search.searchHire.status.replace(/_/g, ' ')}
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full ${getActivityStatus(search) === 'Activa' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                                                <span className="text-sm font-medium text-gray-700">{getActivityStatus(search)}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="text-sm text-gray-600">
+                                                {new Date(search.createdAt).toLocaleDateString('es-ES', { 
+                                                    day: 'numeric', 
+                                                    month: 'short', 
+                                                    year: 'numeric' 
+                                                })}
                                                 </span>
                                             </td>
-                                        )}
-                                        {search.searchHire?.expert && (
-                                            <td className="px-6 py-4 text-right text-sm font-medium">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <img
-                                                        src={search.searchHire.expert.profilePictureUrl || '/default-avatar.png'}
-                                                        alt={`${search.searchHire.expert.name}'s profile`}
-                                                        className="w-6 h-6 rounded-full object-cover"
-                                                    />
-                                                    <span>A cargo de: {search.searchHire.expert.name}</span>
-                                                </div>
-                                            </td>
-                                        )}
                                     </tr>
                                 );
                             })}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             )}
             </div>

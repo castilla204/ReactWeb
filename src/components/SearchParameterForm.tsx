@@ -245,8 +245,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto relative min-h-screen pb-32">
-            <div className="flex items-center gap-2 mb-6">
+        <div className="w-full max-w-4xl mx-auto relative pb-16">
+            <div className="flex items-center gap-2 mb-4">
                 <button
                     onClick={handleBack}
                     className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
@@ -256,10 +256,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Map Container */}
                 <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200">
-                    <div className="relative h-[400px]">
+                    <div className="relative h-[280px]">
                         {!isLoaded ? (
                             <div className="h-full flex items-center justify-center bg-gray-50">
                                 <div className="text-gray-500">Cargando mapa...</div>
@@ -383,8 +383,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </div>
 
                 {/* Settings Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-6 space-y-4 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-4 space-y-3 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
                         <div>
                             <h3 className="text-sm font-medium text-gray-900 mb-1">
                                 {serviceTypeId === 2 
@@ -440,7 +440,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                         </div>
                     </div>
-                    <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-6 space-y-4 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
+                    <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-4 space-y-3 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
                         <div>
                             <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
                                 Rango de Precio 
@@ -456,8 +456,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                  'Establece los límites de precio mínimo y máximo'}
                             </p>
                         </div>
-                        <div className="space-y-6">
-                            <div className="space-y-6">
+                        <div className="space-y-4">
+                            <div className="space-y-3">
                                 <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
                                     <span className="text-sm text-gray-600">Precio mínimo</span>
                                     <span className="text-sm font-medium text-gray-900">
@@ -540,7 +540,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     </div>
                 )}
 
-                <div className="sticky bottom-8 flex justify-end">
+                <div className="sticky bottom-6 flex justify-end">
                     <button
                         type="submit"
                         className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold transition-all shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/40 hover:scale-105 transform"

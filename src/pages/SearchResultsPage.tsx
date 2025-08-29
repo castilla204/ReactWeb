@@ -16,7 +16,7 @@ export function SearchResultsPage() {
     return (
         <SearchDetails
             searchId={parseInt(id)}
-            onBack={() => navigate('/searches')}
+            onBack={() => navigate('/busquedas')}
             isAdmin={isAdmin}
         />
     );
