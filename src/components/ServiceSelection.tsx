@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Clock, Star, CheckCircle, ChevronLeft, ChevronRight, User, StarHalf, X, Shield, Crown, Award, MapPin, Filter, DollarSign, Eye, Search } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Star, CheckCircle, User, StarHalf, X, MapPin, DollarSign, Eye, Search } from 'lucide-react';
 import { GoogleMap, useLoadScript, Circle } from '@react-google-maps/api';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServices } from '../hooks/useServices';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 
-const libraries = ['geometry'];
+const libraries: ("geometry" | "places")[] = ['geometry', 'places'];
 
 interface ServiceSelectionProps {
     onBack: () => void;
@@ -31,16 +31,17 @@ export function ServiceSelection({
     const [selectedService, setSelectedService] = useState<number | null>(null);
     const [detailServiceId, setDetailServiceId] = useState<number | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [carouselIndices, setCarouselIndices] = useState<{ [key: number]: number }>({});
     
     // Google Maps configuration
     const { isLoaded } = useLoadScript({
-        googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "__REDACTED_GOOGLE_API_KEY__",
         libraries
     });
 
     const mapCenter = {
-        lat: parseFloat(latitude) || 40.4168,
-        lng: parseFloat(longitude) || -3.7038
+        lat: parseFloat(latitude?.toString() || '40.4168') || 40.4168,
+        lng: parseFloat(longitude?.toString() || '-3.7038') || -3.7038
     };
 
     const getZoomLevel = (range: number) => {
@@ -58,7 +59,7 @@ export function ServiceSelection({
         longitude,
         locationRange,
     });
-    const [carouselIndices, setCarouselIndices] = useState<{ [key: number]: number }>({});
+
 
     // Helper function to truncate text to 600 characters
     const truncateText = (text: string, maxLength: number = 400): string => {
@@ -154,13 +155,21 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
         onComplete(selectedService, expertProfilePicture, expertName, servicePrice, serviceDescription);
     };
 
-    const handleCarouselChange = (serviceId: number, direction: 'next' | 'prev', isDetail = false) => {
-        setCarouselIndices((prev) => {
-            const currentIndex = prev[serviceId] || 0;
-            const totalImages = (isDetail ? detailService?.imageUrls?.length : services.find((s) => s.id === serviceId)?.imageUrls?.length) || 1;
-            let newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
-            if (newIndex >= totalImages) newIndex = 0;
-            if (newIndex < 0) newIndex = totalImages - 1;
+    // Función auxiliar para manejar el carrusel de imágenes
+    const handleCarouselChange = (serviceId: number, direction: 'prev' | 'next', isModal = false) => {
+        const service = services.find(s => s.id === serviceId);
+        if (!service || !service.imageUrls || service.imageUrls.length === 0) return;
+
+        setCarouselIndices(prev => {
+            const current = prev[serviceId] || 0;
+            let newIndex;
+            
+            if (direction === 'prev') {
+                newIndex = current === 0 ? service.imageUrls.length - 1 : current - 1;
+            } else {
+                newIndex = current === service.imageUrls.length - 1 ? 0 : current + 1;
+            }
+            
             return { ...prev, [serviceId]: newIndex };
         });
     };
@@ -182,7 +191,6 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
     };
 
     const detailService = services.find((s) => s.id === detailServiceId);
-    const serviceTypeName = services[0]?.serviceTypeName || serviceTypes.find((st) => st.id === selectedServiceTypeId)?.name || 'Servicios';
     const categoryName = categories.find((c) => c.id === selectedCategory)?.name || 'Categoría';
 
     return (
@@ -297,9 +305,6 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                                     </div>
                                                 </div>
                                             )}
-                                            <div className="absolute bottom-2 left-2 text-xs text-gray-600 font-medium bg-white bg-opacity-90 px-2 py-1 rounded text-center">
-                                                {locationRange}km
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -416,7 +421,7 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                     </p>
 
                                     <div className="flex flex-wrap gap-2 mb-4">
-                                        {['Customización', 'Revisión de vehículos', 'Inspección técnica'].map((tag) => (
+                                        {['Revisión completa', 'Análisis detallado', 'Informe profesional'].map((tag) => (
                                             <span key={tag} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
                                                 {tag}
                                             </span>
@@ -453,25 +458,37 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                         </div>
                                     )}
 
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div>
-                                            <div className="text-sm text-gray-600 mb-1">Desde</div>
-                                            <div className="text-lg font-bold text-gray-900">
-                                                {service.price
-                                                    ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(service.price)
-                                                    : '€72'}/proyecto
+                                    <div className="mb-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div>
+                                                <div className="text-sm text-gray-600 mb-1">Desde</div>
+                                                <div className="text-lg text-gray-900">
+                                                    <span className="font-bold">
+                                                        {service.price
+                                                            ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(service.price)
+                                                            : '€72'}
+                                                    </span>/servicio
+                                                </div>
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={() => setSelectedService(service.id)}
-                                            className={`px-4 py-2 rounded font-medium text-sm transition-all duration-200 ${
-                                                selectedService === service.id
-                                                    ? 'bg-blue-600 text-white shadow-md'
-                                                    : 'bg-gray-900 text-white hover:bg-gray-800'
-                                            }`}
-                                        >
-                                            {selectedService === service.id ? 'Seleccionado' : 'Contactar'}
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setSelectedService(service.id)}
+                                                className={`flex-1 py-2.5 px-4 rounded font-medium text-sm transition-all duration-200 ${
+                                                    selectedService === service.id
+                                                        ? 'bg-blue-600 text-white shadow-md'
+                                                        : 'bg-gray-900 text-white hover:bg-gray-800'
+                                                }`}
+                                            >
+                                                {selectedService === service.id ? 'Seleccionado' : 'Seleccionar'}
+                                            </button>
+                                            <button
+                                                onClick={() => setDetailServiceId(service.id)}
+                                                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 text-sm font-medium"
+                                            >
+                                                Ver servicio
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {selectedService === service.id && (
@@ -559,12 +576,42 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
 
                                     {/* Service Tags */}
                                     <div className="flex flex-wrap gap-2 mb-4">
-                                        {['Customización', 'Revisión de vehículos', 'Inspección técnica', 'PHP', '+17'].map((tag) => (
+                                        {['Revisión completa', 'Análisis detallado', 'Informe profesional', '+4'].map((tag) => (
                                             <span key={tag} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
                                                 {tag}
                                             </span>
                                         ))}
                                     </div>
+
+                                    {/* Portfolio Images - Aligned with description in desktop */}
+                                    {service.imageUrls && service.imageUrls.length > 0 && (
+                                        <div className="flex gap-1 mb-4">
+                                            {service.imageUrls.slice(0, 3).map((url, index) => (
+                                                <div key={index} className="relative rounded overflow-hidden flex-1 h-40">
+                                                    <img
+                                                        src={url}
+                                                        alt={`Portfolio ${index + 1}`}
+                                                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                                    />
+                                                    {service.imageUrls.length > 3 && index === 2 && (
+                                                        <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                                                            <span className="text-white font-semibold text-lg">+{service.imageUrls.length - 3}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            {/* Empty placeholders to maintain 1/3 width for single images */}
+                                            {service.imageUrls.length === 1 && (
+                                                <>
+                                                    <div className="flex-1"></div>
+                                                    <div className="flex-1"></div>
+                                                </>
+                                            )}
+                                            {service.imageUrls.length === 2 && (
+                                                <div className="flex-1"></div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Right Side - Pricing Only */}
@@ -573,10 +620,12 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                     <div className="text-right">
                                         <div className="mb-3">
                                             <div className="text-sm text-gray-600 mb-1">Desde</div>
-                                            <div className="text-lg font-bold text-gray-900">
+                                            <div className="text-lg text-gray-900">
+                                                <span className="font-bold">
                                     {service.price
                                         ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(service.price)
-                                                    : '€72'}/proyecto
+                                                        : '€72'}
+                                                </span>/servicio
                                 </div>
                                             <div className="text-xs text-gray-500">Garantía de satisfacción</div>
                                 </div>
@@ -585,7 +634,7 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setSelectedService(service.id)}
-                                                className={`flex-1 px-3 py-2 rounded font-medium text-sm transition-all duration-200 ${
+                                                className={`flex-1 py-2.5 px-4 rounded font-medium text-sm transition-all duration-200 ${
                                                     selectedService === service.id
                                                         ? 'bg-blue-600 text-white shadow-md'
                                                         : 'bg-gray-900 text-white hover:bg-gray-800'
@@ -595,9 +644,9 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                     </button>
                                     <button
                                         onClick={() => setDetailServiceId(service.id)}
-                                                className="px-3 py-2 border border-gray-300 text-gray-700 rounded hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 text-sm"
+                                                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 text-sm font-medium"
                                     >
-                                                Ver perfil
+                                                Ver servicio
                                     </button>
                                 </div>
 
@@ -612,41 +661,11 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                 </div>
                             </div>
 
-                            {/* Portfolio Images - Below entire card in desktop */}
-                            {service.imageUrls && service.imageUrls.length > 0 && (
-                                <div className="hidden lg:block p-4 border-t border-gray-100">
-                                    <div className="flex gap-1">
-                                        {service.imageUrls.slice(0, 3).map((url, index) => (
-                                            <div key={index} className="relative rounded overflow-hidden flex-1 h-40">
-                                                <img
-                                                    src={url}
-                                                    alt={`Portfolio ${index + 1}`}
-                                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                                />
-                                                {service.imageUrls.length > 3 && index === 2 && (
-                                                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                                                        <span className="text-white font-semibold text-lg">+{service.imageUrls.length - 3}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                        {/* Empty placeholders to maintain 1/3 width for single images */}
-                                        {service.imageUrls.length === 1 && (
-                                            <>
-                                                <div className="flex-1"></div>
-                                                <div className="flex-1"></div>
-                                            </>
-                                        )}
-                                        {service.imageUrls.length === 2 && (
-                                            <div className="flex-1"></div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
+
                         </div>
                     );
                 })}
-                        </div>
+            </div>
 
                         {/* Continue Button */}
                         <div className="sticky bottom-8 flex justify-end mt-8">
@@ -664,244 +683,237 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
             </div>
 
             {detailService && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden shadow-2xl transform transition-all duration-300 ease-in-out">
-                        {/* Header with gradient */}
-                        <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-                            <div className="flex justify-between items-center">
-                                <div className="text-white">
-                                    <h2 className="text-2xl font-bold">{detailService.serviceTypeName || 'Perfil del Experto'}</h2>
-                                    <p className="text-blue-100 text-sm mt-1">Información detallada del servicio</p>
-                                </div>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-20">
+                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-xl">
+                        {/* Scrollable Content - No Header */}
+                        <div className="overflow-y-auto max-h-[85vh]">
+                            {/* Map Section - Absolute top, full width, no margins */}
+                            <div className="relative h-32 bg-gradient-to-r from-gray-600 to-gray-800 overflow-hidden">
+                                {/* Close Button Floating Over Map */}
                                 <button
                                     onClick={() => setDetailServiceId(null)}
-                                    className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-full transition-all duration-200"
+                                    className="absolute top-4 right-4 z-10 text-white hover:text-gray-300 p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
                                 >
-                                    <X className="w-6 h-6" />
+                                    <X className="w-5 h-5" />
                                 </button>
-                            </div>
-                        </div>
-
-                        {/* Scrollable Content */}
-                        <div className="overflow-y-auto max-h-[calc(95vh-80px)]">
-                            <div className="p-6">
-                        {/* Expert Profile Section */}
-                        <div className="flex flex-col lg:flex-row gap-6 mb-8">
-                            {/* Expert Info */}
-                            <div className="lg:w-1/3">
-                                <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-                                    <div className="text-center">
-                                        {detailService.expert && detailService.expert.profilePictureUrl ? (
-                                            <img
-                                                src={detailService.expert.profilePictureUrl}
-                                                alt={detailService.expert.user?.name || 'Experto'}
-                                                className="w-24 h-24 object-cover rounded-full border-4 border-white shadow-lg mx-auto mb-4"
-                                                onError={(e) => {
-                                                    console.error(`Failed to load profile picture in modal for service ${detailService.id}: ${detailService.expert.profilePictureUrl}`);
-                                                    e.currentTarget.style.display = 'none';
-                                                    e.currentTarget.nextElementSibling!.style.display = 'flex';
-                                                }}
-                                            />
-                                        ) : null}
-                                        <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center rounded-full border-4 border-white shadow-lg mx-auto mb-4" style={{ display: detailService.expert?.profilePictureUrl ? 'none' : 'flex' }}>
-                                            <User className="w-12 h-12 text-blue-600" />
-                                        </div>
-                                        
-                                        <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                            {detailService.expert?.user?.name || 'Experto Profesional'}
-                                        </h3>
-                                        
-                                        <div className="flex items-center justify-center gap-2 mb-3">
-                                            <Crown className="w-4 h-4 text-orange-500" />
-                                            <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                                                Vetted Pro
-                                            </span>
-                                        </div>
-
-                                        {'averageRating' in detailService && (
-                                            <div className="flex items-center justify-center gap-2 mb-4">
-                                                <div className="flex">{renderStars(detailService.averageRating)}</div>
-                                                <span className="text-sm font-semibold text-gray-900">
-                                                    {detailService.averageRating.toFixed(1)}
-                                                </span>
-                                                <span className="text-sm text-gray-500">
-                                                    ({detailService.expert?.reviews?.length || 0} reseñas)
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        <div className="space-y-2 text-sm text-gray-600">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <Award className="w-4 h-4 text-blue-500" />
-                                                <span>Experto Verificado</span>
-                                            </div>
-                                            <div className="flex items-center justify-center gap-2">
-                                                <Shield className="w-4 h-4 text-green-500" />
-                                                <span>Garantía de Calidad</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Portfolio Images */}
-                            <div className="lg:w-2/3">
-                                <h4 className="text-lg font-semibold text-gray-900 mb-4">Portfolio</h4>
-                                {detailService.imageUrls && detailService.imageUrls.length > 0 ? (
-                                    <div className="relative">
-                                        <div className="relative h-80 rounded-2xl overflow-hidden shadow-lg">
-                                            <img
-                                                src={detailService.imageUrls[carouselIndices[detailService.id] || 0]}
-                                                alt={`Portfolio ${(carouselIndices[detailService.id] || 0) + 1}`}
-                                                className="w-full h-full object-cover"
-                                            />
-                                            {detailService.imageUrls.length > 1 && (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleCarouselChange(detailService.id, 'prev', true)}
-                                                        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 backdrop-blur-sm text-white p-3 rounded-full hover:bg-black/70 transition-all duration-200"
-                                                    >
-                                                        <ChevronLeft className="w-5 h-5" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleCarouselChange(detailService.id, 'next', true)}
-                                                        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 backdrop-blur-sm text-white p-3 rounded-full hover:bg-black/70 transition-all duration-200"
-                                                    >
-                                                        <ChevronRight className="w-5 h-5" />
-                                                    </button>
-                                                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-                                                        {detailService.imageUrls.map((_, index) => (
-                                                            <button
-                                                                key={index}
-                                                                onClick={() => setCarouselIndices(prev => ({ ...prev, [detailService.id]: index }))}
-                                                                className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                                                                    index === (carouselIndices[detailService.id] || 0) 
-                                                                        ? 'bg-white scale-110' 
-                                                                        : 'bg-white/60 hover:bg-white/80'
-                                                                }`}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                        
-                                        {/* Thumbnail row */}
-                                        {detailService.imageUrls.length > 1 && (
-                                            <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                                                {detailService.imageUrls.map((url, index) => (
-                                                    <button
-                                                        key={index}
-                                                        onClick={() => setCarouselIndices(prev => ({ ...prev, [detailService.id]: index }))}
-                                                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
-                                                            index === (carouselIndices[detailService.id] || 0)
-                                                                ? 'border-blue-500 scale-105'
-                                                                : 'border-gray-200 hover:border-gray-300'
-                                                        }`}
-                                                    >
-                                                        <img
-                                                            src={url}
-                                                            alt={`Thumbnail ${index + 1}`}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
+                                {isLoaded ? (
+                                    <GoogleMap
+                                        mapContainerStyle={{ width: '100%', height: '100%' }}
+                                        zoom={getZoomLevel(locationRange)}
+                                        center={mapCenter}
+                                        options={{
+                                            disableDefaultUI: true,
+                                            gestureHandling: 'none',
+                                            zoomControl: false,
+                                            scrollwheel: false,
+                                            disableDoubleClickZoom: true,
+                                            draggable: false,
+                                            styles: [
+                                                {
+                                                    featureType: 'poi',
+                                                    elementType: 'labels',
+                                                    stylers: [{ visibility: 'off' }]
+                                                }
+                                            ]
+                                        }}
+                                    >
+                                        <Circle
+                                            center={mapCenter}
+                                            radius={locationRange * 1000}
+                                            options={{
+                                                fillColor: '#3B82F6',
+                                                fillOpacity: 0.2,
+                                                strokeColor: '#FFFFFF',
+                                                strokeOpacity: 0.9,
+                                                strokeWeight: 3,
+                                            }}
+                                        />
+                                    </GoogleMap>
                                 ) : (
-                                    <div className="w-full h-80 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300">
-                                        <Star className="w-16 h-16 text-gray-400 mb-3" />
-                                        <p className="text-gray-500 text-lg font-medium">Sin portfolio disponible</p>
-                                        <p className="text-gray-400 text-sm">Este experto aún no ha subido imágenes de muestra</p>
+                                    <div className="h-full bg-gradient-to-br from-gray-500 to-gray-700 flex items-center justify-center">
+                                        <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full border-2 border-white flex items-center justify-center">
+                                            <MapPin className="w-6 h-6 text-white" />
+                                        </div>
+                                    </div>
+                                )}
+                                {/* Overlay Info */}
+                                <div className="absolute bottom-2 left-2 bg-white bg-opacity-95 backdrop-blur-sm rounded px-2 py-1">
+                                    <div className="flex items-center gap-1">
+                                        <MapPin className="w-3 h-3 text-blue-600" />
+                                        <span className="text-xs font-medium text-gray-900">{locationRange}km</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Content with padding and top margin */}
+                            <div className="px-6 pb-6 pt-6">
+                            {/* Service Details - Compact */}
+                            <div className="mb-6">
+                                <h4 className="text-sm font-medium text-gray-600 mb-3 uppercase tracking-wide">Detalles del Servicio</h4>
+                                
+                                {/* Service Type and Category */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                                    <div className="bg-blue-50 rounded p-3 border border-blue-200">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Eye className="w-4 h-4 text-blue-600" />
+                                            <span className="text-sm font-medium text-blue-900">Tipo de Servicio</span>
+                                        </div>
+                                        <p className="text-sm text-blue-700">
+                                            {selectedServiceTypeId === 1 ? 'Solo revisión' : 'Revisión completa'}
+                                        </p>
+                                    </div>
+                                    <div className="bg-green-50 rounded p-3 border border-green-200">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <DollarSign className="w-4 h-4 text-green-600" />
+                                            <span className="text-sm font-medium text-green-900">Categoría</span>
+                                        </div>
+                                        <p className="text-sm text-green-700">
+                                            {selectedCategory === 1 ? '🚗 Vehículos' : selectedCategory === 2 ? '🏍️ Motos' : '🏠 Inmuebles'}
+                                        </p>
+                                    </div>
+                        </div>
+                                
+                                {/* Service Description */}
+                                {detailService.conditions && (
+                                    <div className="bg-white rounded p-4 border border-gray-200">
+                                        <h5 className="font-medium text-gray-900 mb-2 text-sm">Descripción</h5>
+                                        <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                                            {detailService.conditions}
+                                        </p>
+                                        
+                                        {/* Images within description */}
+                                        {detailService.imageUrls && detailService.imageUrls.length > 0 && (
+                                            <div className="mb-3">
+                                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                                    {detailService.imageUrls.map((url, index) => (
+                                                        <div key={index} className="bg-white border border-gray-200 rounded overflow-hidden hover:shadow-sm transition-shadow duration-200">
+                                                            <img
+                                                                src={url}
+                                                                alt={`Imagen ${index + 1}`}
+                                                                className="w-full h-20 object-cover"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {/* Service Features */}
+                                        <div className="pt-2 border-t border-gray-100">
+                                            <div className="flex flex-wrap gap-1">
+                                                {selectedServiceTypeId === 1 ? (
+                                                    <>
+                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Revisión presencial</span>
+                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Informe detallado</span>
+                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Verificación directa</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Revisión completa</span>
+                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Análisis detallado</span>
+                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Informe profesional</span>
+                                                    </>
+                                                )}
+                                    </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
+
+                                                        
+
+                            {/* Contact Information */}
+                            <div className="mb-6">
+                                <h4 className="text-sm font-medium text-gray-600 mb-3 uppercase tracking-wide">Información de Contacto</h4>
+                                <div className="bg-gray-50 rounded p-4 border border-gray-200">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                <div>
+                                            <h5 className="text-sm font-medium text-gray-900 mb-1">Disponibilidad</h5>
+                                            <div className="space-y-1 text-xs text-gray-600">
+                                                <div className="flex items-center gap-1">
+                                                    <Clock className="w-3 h-3 text-green-500" />
+                                                    <span>Respuesta en 2-4h</span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <Clock className="w-3 h-3 text-blue-500" />
+                                                    <span>Lun-Vie: 9:00-18:00</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h5 className="text-sm font-medium text-gray-900 mb-1">Precio</h5>
+                                            <div className="text-lg font-bold text-blue-600">
+                                                {detailService.price ? `${detailService.price}€` : 'Consultar'}
+                                            </div>
+                                            <p className="text-xs text-gray-500">Precio base</p>
                         </div>
-                        {/* Service Description */}
-                        <div className="mb-8">
-                            <h4 className="text-lg font-semibold text-gray-900 mb-4">Descripción del Servicio</h4>
-                            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
-                                <p className="text-gray-700 leading-relaxed">
-                                    {detailService.conditions || 'Servicio profesional personalizado para tus necesidades específicas. Ofrecemos soluciones de alta calidad con garantía de satisfacción.'}
-                                </p>
-                                <div className="flex flex-wrap gap-2 mt-4">
-                                    {['Servicio Premium', 'Garantía incluida', 'Soporte 24/7'].map((tag) => (
-                                        <span key={tag} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
-                                            {tag}
-                                        </span>
-                                    ))}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Reviews Section */}
-                        <div className="mb-8">
-                            <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                                Reseñas y Valoraciones 
-                                {detailService.expert?.reviews?.length > 0 && (
-                                    <span className="text-sm font-normal text-gray-500 ml-2">
-                                        ({detailService.expert.reviews.length} reseña{detailService.expert.reviews.length !== 1 ? 's' : ''})
-                                    </span>
-                                )}
-                            </h4>
+                            {/* Reviews Section */}
+                            <div className="mb-6">
+                                <h4 className="text-sm font-medium text-gray-600 mb-3 uppercase tracking-wide">
+                                    Reseñas
+                                    {detailService.expert?.reviews?.length > 0 && (
+                                        <span className="text-xs font-normal text-gray-500 ml-1">
+                                            ({detailService.expert.reviews.length})
+                                        </span>
+                                    )}
+                                </h4>
                             {detailService.expert?.reviews && detailService.expert.reviews.length > 0 ? (
-                                <div className="space-y-4">
-                                    {detailService.expert.reviews.map((review) => (
-                                        <div key={review.id} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-                                                        <User className="w-5 h-5 text-blue-600" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-gray-900">Cliente verificado</p>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex">{renderStars(review.score)}</div>
-                                                            <span className="text-sm font-semibold text-gray-900">{review.score.toFixed(1)}</span>
+                                <div className="space-y-3">
+                                        {detailService.expert.reviews.slice(0, 2).map((review) => (
+                                            <div key={review.id} className="bg-white border border-gray-200 rounded p-4">
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
+                                                            <User className="w-4 h-4 text-blue-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-medium text-gray-900">Cliente verificado</p>
+                                                            <div className="flex items-center gap-1">
+                                                                <div className="flex scale-75">{renderStars(review.score)}</div>
+                                                                <span className="text-xs font-medium text-gray-900">{review.score.toFixed(1)}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                    <span className="text-xs text-gray-500">
+                                                        {new Date(review.createdAt).toLocaleDateString('es-ES')}
+                                                    </span>
                                                 </div>
-                                                <span className="text-sm text-gray-500">
-                                                    {new Date(review.createdAt).toLocaleDateString('es-ES', {
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric'
-                                                    })}
-                                                </span>
+                                                <p className="text-sm text-gray-700 leading-relaxed">{review.description}</p>
                                             </div>
-                                            <p className="text-gray-700 leading-relaxed">{review.description}</p>
+                                        ))}
+                                        {detailService.expert.reviews.length > 3 && (
+                                            <div className="text-center">
+                                                <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                                                    Ver todas las reseñas ({detailService.expert.reviews.length})
+                                                </button>
                                         </div>
-                                    ))}
+                                        )}
                                 </div>
                             ) : (
-                                <div className="bg-gray-50 rounded-xl p-8 text-center border border-gray-200">
-                                    <Star className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                                    <p className="text-gray-500 font-medium">Sin reseñas aún</p>
-                                    <p className="text-gray-400 text-sm mt-1">Este experto está disponible para recibir su primera valoración</p>
-                                </div>
+                                    <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
+                                        <Star className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                                        <p className="text-gray-500 font-medium">Sin reseñas aún</p>
+                                        <p className="text-gray-400 text-sm mt-1">Este experto está disponible para recibir su primera valoración</p>
+                                    </div>
                             )}
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex gap-3 pt-6 border-t border-gray-200">
-                            <button
-                                onClick={() => setDetailServiceId(null)}
-                                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium"
-                            >
-                                Cerrar
-                            </button>
-                            <button
-                                onClick={() => {
-                                    // TODO: Implement contact functionality
-                                    setDetailServiceId(null);
-                                }}
-                                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
-                            >
-                                Contactar Experto
-                            </button>
-                        </div>
-                        </div>
+                                                                                                            {/* Action Buttons */}
+                            <div className="pt-4 border-t border-gray-200">
+                                <div className="flex justify-center">
+                                    <button
+                                        onClick={() => setDetailServiceId(null)}
+                                        className="px-6 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm font-medium"
+                                    >
+                                        Cerrar
+                                    </button>
+                                </div>
+                            </div>
+                            </div>
                         </div>
                     </div>
                 </div>
