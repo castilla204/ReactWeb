@@ -4,12 +4,10 @@ import { getAuthToken } from '../lib/auth';
 
 interface ExpertProfile {
     id: number;
-    profilePictureUrl?: string;
+    profilePictureUrl: string;
     description: string;
-    stripeAccountId?: string | null;
+    stripeAccountId: string | null;
     createdAt: string;
-    latitude?: number;
-    longitude?: number;
 }
 
 interface Search {
