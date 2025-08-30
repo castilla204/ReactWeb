@@ -446,14 +446,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 Rango de Precio 
                                 <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
                                     {selectedCategory === 1 ? '🚗 Vehículos' : 
-                                     selectedCategory === 2 ? '🏠 Inmuebles' : 
-                                     '📝 General'}
+                                     selectedCategory === 2 ? '🏍️ Motos' : 
+                                     '🏠 Inmuebles'}
                                 </span>
                             </h3>
                             <p className="text-xs text-gray-400">
                                 {selectedCategory === 1 ? 'Rango típico para vehículos de segunda mano' :
-                                 selectedCategory === 2 ? 'Rango típico para inmuebles y viviendas' :
-                                 'Establece los límites de precio mínimo y máximo'}
+                                 selectedCategory === 2 ? 'Rango típico para motocicletas y ciclomotores' :
+                                 'Rango típico para inmuebles y viviendas'}
                             </p>
                         </div>
                         <div className="space-y-4">
@@ -475,8 +475,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     <div
                                         className="absolute inset-y-0 bg-blue-500 rounded-full"
                                         style={{
-                                            left: `${(parseInt(formData.minPrice || '0') / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 2000000 : 1000000)) * 100}%`,
-                                            right: `${100 - ((parseInt(formData.maxPrice || (selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '2000000' : '1000000')) / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 2000000 : 1000000)) * 100)}%`,
+                                            left: `${(parseInt(formData.minPrice || '0') / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)) * 100}%`,
+                                            right: `${100 - ((parseInt(formData.maxPrice || (selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000')) / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)) * 100)}%`,
                                             height: '6px'
                                         }}
                                     ></div>
@@ -484,12 +484,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         <input
                                             type="range"
                                             min="0"
-                                            max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '2000000' : '1000000'}
-                                            step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '5000' : '1000'}
+                                            max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000'}
+                                            step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '250' : '5000'}
                                             value={formData.minPrice || 0}
                                             onChange={(e) => {
                                                 const value = parseInt(e.target.value);
-                                                const maxValue = selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 2000000 : 1000000;
+                                                const maxValue = selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000;
                                                 const max = parseInt(formData.maxPrice || maxValue.toString());
                                                 if (value <= max) {
                                                     setFormData({ ...formData, minPrice: value.toString() });
@@ -500,9 +500,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         <input
                                             type="range"
                                             min="0"
-                                            max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '2000000' : '1000000'}
-                                            step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '5000' : '1000'}
-                                            value={formData.maxPrice || (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 2000000 : 1000000)}
+                                            max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000'}
+                                            step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '250' : '5000'}
+                                            value={formData.maxPrice || (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)}
                                             onChange={(e) => {
                                                 const value = parseInt(e.target.value);
                                                 const min = parseInt(formData.minPrice || '0');
