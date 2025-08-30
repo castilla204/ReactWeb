@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Car, Home, Bike, ArrowRight, Shield } from 'lucide-react';
+import { Car, Home, Bike, ArrowRight, Shield, Eye, Search } from 'lucide-react';
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
@@ -178,51 +178,11 @@ const SearchCreationPage: React.FC = () => {
                                 </p>
                             </div>
                             <div className="space-y-8 w-full">
-                                {/* Categories Section */}
-                                <div className="border-b border-gray-200 pb-8">
-                                    <div className="mb-6">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className="flex items-center justify-center w-7 h-7 bg-gray-900 text-white rounded-full text-sm font-medium">1</span>
-                                            <h3 className="text-xl font-semibold text-gray-900">Selecciona tu categoría</h3>
-                                        </div>
-                                        <p className="text-gray-600 ml-10">¿Qué tipo de producto o servicio buscas?</p>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-10">
-                                        {safeCategories.map((category) => (
-                                            <button
-                                                key={category.id}
-                                                onClick={() =>
-                                                    setSearchParameters((prev) => ({ ...prev, category: category.id }))
-                                                }
-                                                className={`text-left p-6 border rounded-lg transition-all ${searchParameters.category === category.id
-                                                    ? 'border-gray-900 bg-gray-50'
-                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
-                                                    }`}
-                                            >
-                                                <div className={`w-12 h-12 mb-4 rounded-lg flex items-center justify-center ${searchParameters.category === category.id
-                                                    ? 'bg-gray-900 text-white'
-                                                    : 'bg-gray-100 text-gray-600'
-                                                    }`}>
-                                                    {category.id === 1 && <Car className="w-6 h-6" />}
-                                                    {category.id === 2 && <Bike className="w-6 h-6" />}
-                                                    {category.id === 3 && <Home className="w-6 h-6" />}
-                                                </div>
-                                                <h4 className="font-medium text-gray-900 mb-1">{category.name}</h4>
-                                                <p className="text-sm text-gray-500">
-                                                    {category.id === 1 && 'Coches, motos y vehículos'}
-                                                    {category.id === 2 && 'Motocicletas y ciclomotores'}
-                                                    {category.id === 3 && 'Inmuebles y propiedades'}
-                                                </p>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
                                 {/* Service Type Section */}
                                 <div className="border-b border-gray-200 pb-8">
                                     <div className="mb-6">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <span className="flex items-center justify-center w-7 h-7 bg-gray-900 text-white rounded-full text-sm font-medium">2</span>
+                                            <span className="flex items-center justify-center w-7 h-7 bg-gray-900 text-white rounded-full text-sm font-medium">1</span>
                                             <h3 className="text-xl font-semibold text-gray-900">Tipo de servicio</h3>
                                         </div>
                                         <p className="text-gray-600 ml-10">Elige cómo quieres que realicemos tu búsqueda</p>
@@ -255,7 +215,10 @@ const SearchCreationPage: React.FC = () => {
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-medium text-gray-900 mb-1">Solo revisión</h4>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <Eye className="w-4 h-4 text-gray-600" />
+                                                        <h4 className="font-medium text-gray-900">Solo revisión</h4>
+                                                    </div>
                                                     <p className="text-sm text-gray-600 mb-2">Únicamente revisión presencial de un anuncio específico</p>
                                                     <span className="text-xs text-gray-500">Directo • Específico • Presencial</span>
                                                 </div>
@@ -284,12 +247,56 @@ const SearchCreationPage: React.FC = () => {
                                                     )}
                                         </div>
                                         <div>
-                                                    <h4 className="font-medium text-gray-900 mb-1">Búsqueda web + revisión</h4>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <Search className="w-4 h-4 text-gray-600" />
+                                                        <Eye className="w-4 h-4 text-gray-600" />
+                                                        <h4 className="font-medium text-gray-900">Búsqueda web + revisión</h4>
+                                                    </div>
                                                     <p className="text-sm text-gray-600 mb-2">Búsqueda automatizada más revisión manual experta</p>
                                                     <span className="text-xs text-gray-500">Completo • Personal • Premium</span>
                                                 </div>
                                         </div>
                                         </label>
+                                    </div>
+                                </div>
+
+                                {/* Categories Section */}
+                                <div className="border-b border-gray-200 pb-8">
+                                    <div className="mb-6">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <span className="flex items-center justify-center w-7 h-7 bg-gray-900 text-white rounded-full text-sm font-medium">2</span>
+                                            <h3 className="text-xl font-semibold text-gray-900">Selecciona tu categoría</h3>
+                                        </div>
+                                        <p className="text-gray-600 ml-10">¿Qué tipo de producto o servicio buscas?</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-10">
+                                        {safeCategories.map((category) => (
+                                            <button
+                                                key={category.id}
+                                                onClick={() =>
+                                                    setSearchParameters((prev) => ({ ...prev, category: category.id }))
+                                                }
+                                                className={`text-left p-6 border rounded-lg transition-all ${searchParameters.category === category.id
+                                                    ? 'border-gray-900 bg-gray-50'
+                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                    }`}
+                                            >
+                                                <div className={`w-12 h-12 mb-4 rounded-lg flex items-center justify-center ${searchParameters.category === category.id
+                                                    ? 'bg-gray-900 text-white'
+                                                    : 'bg-gray-100 text-gray-600'
+                                                    }`}>
+                                                    {category.id === 1 && <Car className="w-6 h-6" />}
+                                                    {category.id === 2 && <Bike className="w-6 h-6" />}
+                                                    {category.id === 3 && <Home className="w-6 h-6" />}
+                                                </div>
+                                                <h4 className="font-medium text-gray-900 mb-1">{category.name}</h4>
+                                                <p className="text-sm text-gray-500">
+                                                    {category.id === 1 && 'Coches, motos y vehículos'}
+                                                    {category.id === 2 && 'Motocicletas y ciclomotores'}
+                                                    {category.id === 3 && 'Inmuebles y propiedades'}
+                                                </p>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
 
