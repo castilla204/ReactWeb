@@ -9,7 +9,7 @@ export default defineConfig({
         port: 5173,
         proxy: {
             '/api': {
-                target: 'http://localhost:7124', // URL del backend
+                target: 'https://api.atrapo.io', // URL del backend
                 changeOrigin: true,
                 secure: false,
             },
