@@ -521,45 +521,45 @@ export default function SearchForm({
                             <div className="text-sm text-gray-600">
                                 Paso 3 de 3 • Listo para confirmar
                             </div>
-                            {maxSearchesReached ? (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setCurrentStep(0);
-                                        setShowSubscriptions(true);
-                                    }}
+                        {maxSearchesReached ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setCurrentStep(0);
+                                    setShowSubscriptions(true);
+                                }}
                                     className="flex items-center gap-2 px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded transition-colors"
                                 >
                                     <Crown className="w-4 h-4" />
                                     <span>Mejorar Plan</span>
-                                </button>
-                            ) : (
-                                <button
-                                    type="submit"
-                                    disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete || isLoadingBalance}
+                            </button>
+                        ) : (
+                            <button
+                                type="submit"
+                                disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete || isLoadingBalance}
                                     className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors disabled:cursor-not-allowed"
-                                >
-                                    {createSearchWithHire.isPending || isSubmitting ? (
+                            >
+                                {createSearchWithHire.isPending || isSubmitting ? (
                                         <>
                                             <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                                             <span>
                                                 {balance !== null && servicePrice !== undefined && (balance ?? 0) < servicePrice
                                                     ? 'Procesando...'
                                                     : 'Creando...'}
-                                            </span>
+                                        </span>
                                         </>
-                                    ) : (
-                                        <>
+                                ) : (
+                                    <>
                                             <Wallet className="w-4 h-4" />
                                             <span>
                                                 {balance !== null && servicePrice !== undefined && (balance ?? 0) < servicePrice
                                                     ? 'Pagar'
                                                     : 'Confirmar'}
-                                            </span>
-                                        </>
-                                    )}
-                                </button>
-                            )}
+                                        </span>
+                                    </>
+                                )}
+                            </button>
+                        )}
                         </div>
                     </div>
                 </form>
