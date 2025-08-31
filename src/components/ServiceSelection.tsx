@@ -675,15 +675,15 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                 <div className="text-sm text-gray-600">
                                     Paso 3 de 3 • Selecciona un servicio
                                 </div>
-                                <button
+                            <button
                                     onClick={handleContinue}
                                     disabled={selectedService === null}
                                     className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors disabled:cursor-not-allowed"
-                                >
+                            >
                                     <span>Continuar</span>
                                     <ArrowRight className="w-4 h-4" />
-                                </button>
-                            </div>
+                            </button>
+                        </div>
                         </div>
                     </div>
                 </div>
