@@ -1,7 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\src",
+    "\\src\\hooks"
   ],
-  "SelectedNode": "\\Dockerfile",
-  "PreviewInSolutionExplorer": false
+  "PreviewInSolutionExplorer": true
 }
