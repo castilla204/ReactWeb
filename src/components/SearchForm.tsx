@@ -1,10 +1,13 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, Target, DollarSign, Zap, ArrowLeft, Crown, Search, Wallet, User } from 'lucide-react';
+import { ArrowRight, Sparkles, Target, DollarSign, Zap, ArrowLeft, Crown, Search, Wallet, User, MapPin } from 'lucide-react';
+import { GoogleMap, useLoadScript } from '@react-google-maps/api';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { Notification, NotificationType } from './Notification';
 import { useQueryClient } from '@tanstack/react-query';
+
+const libraries: ("geometry" | "places" | "drawing")[] = ['geometry', 'places', 'drawing'];
 
 export interface SearchParameters {
     keywords: string;
@@ -34,6 +37,7 @@ export interface SearchFormProps {
     expertName?: string;
     servicePrice?: number;
     serviceDescription?: string;
+    serviceImageUrls?: string[];
 }
 
 export default function SearchForm({
@@ -46,6 +50,7 @@ export default function SearchForm({
     expertName,
     servicePrice,
     serviceDescription,
+    serviceImageUrls,
 }: SearchFormProps) {
     const queryClient = useQueryClient();
     const { createSearchWithHire } = useSearch();
@@ -57,6 +62,27 @@ export default function SearchForm({
         message: string;
         action?: () => void;
     } | null>(null);
+
+    // Google Maps configuration
+    const { isLoaded } = useLoadScript({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "__REDACTED_GOOGLE_API_KEY__",
+        libraries
+    });
+
+    const mapCenter = {
+        lat: parseFloat(parameters.latitude?.toString() || '40.4168') || 40.4168,
+        lng: parseFloat(parameters.longitude?.toString() || '-3.7038') || -3.7038
+    };
+
+    const getZoomLevel = (range: number) => {
+        // Fixed zoom level to show 100km circle properly (much more zoomed out)
+        return 5; // Zoom level 5 shows approximately 600-800km area to see 100km circle completely
+    };
+
+    // Scroll to top when component loads
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     if (balanceError) {
         setNotification({
@@ -211,147 +237,170 @@ export default function SearchForm({
     };
 
     return (
-        <div className="w-full max-w-7xl mx-auto px-0 lg:px-0 flex flex-col">
-            <div className="flex items-center gap-2 mb-6">
+        <div className="w-full max-w-6xl mx-auto px-4 flex flex-col">
+            <div className="flex items-center gap-2 mb-4">
                 <button
                     onClick={handleBack}
-                    className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
+                    className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors text-sm"
                 >
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="w-4 h-4" />
                     Atrás
                 </button>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden flex-1 flex flex-col">
-                <div className="p-6 md:p-8 lg:p-10 border-b border-gray-100 relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-white">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15),transparent_60%)]" />
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-100/30 to-transparent rounded-full -translate-y-32 translate-x-32" />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-5 mb-8">
-                            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
-                                <Sparkles className="w-6 h-6 text-white" />
+            <div className="bg-white rounded-xl border border-gray-100 shadow-xl overflow-hidden flex-1 flex flex-col">
+                <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
+                                <Sparkles className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">
+                                <h2 className="text-xl font-bold text-gray-900">
                                     Confirmación de Contratación
                                 </h2>
-                                <p className="text-sm md:text-base text-gray-600">
-                                    Revisa y confirma los detalles de tu búsqueda personalizada
+                                <p className="text-sm text-gray-600">
+                                    Revisa los detalles antes de confirmar
                                 </p>
                             </div>
                         </div>
+                        <div className="text-right">
+                            <div className="text-xs text-gray-500 mb-1">Proceso seguro</div>
+                            <div className="flex items-center gap-1 text-xs text-blue-600 font-medium">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                Protegido por atrapo.io
+                            </div>
+                            </div>
+                        </div>
                         {!isDataComplete && (
-                            <div className="mb-4 bg-red-50 text-red-600 p-4 rounded-lg">
-                                <p className="text-sm">❌ Error: Los datos del servicio están incompletos. Por favor, vuelve a seleccionar un servicio.</p>
+                        <div className="mt-3 bg-red-50 text-red-600 p-3 rounded text-sm">
+                            ❌ Los datos del servicio están incompletos. Vuelve a seleccionar un servicio.
                             </div>
                         )}
-                        <div className="p-5 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-blue-200/50 mb-6 shadow-sm">
-                            <div className="flex items-start gap-4">
-                                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500 shadow-md">
-                                    <Zap className="w-4 h-4 text-white" />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-base font-semibold text-gray-900 mb-3">
-                                        Descripción de tu Búsqueda
-                                    </h3>
-                                    <p className="text-sm text-gray-700 leading-relaxed break-words bg-white/70 p-3 rounded-lg border border-white/50">
-                                        {parameters.userSearch || 'No se proporcionó descripción específica.'}
+                    {parameters.userSearch && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-100">
+                            <div className="flex items-start gap-2">
+                                <Zap className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <h4 className="text-sm font-medium text-gray-900 mb-1">Descripción</h4>
+                                    <p className="text-sm text-gray-700 leading-relaxed">
+                                        {parameters.userSearch}
                                     </p>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
-                <form onSubmit={handleSubmit} className="p-8 space-y-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group">
-                            <div className="flex items-center gap-3 mb-5">
-                                <div className="p-2 bg-blue-100 rounded-lg">
-                                    <Search className="w-4 h-4 text-blue-600" />
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    {/* Trust Message */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 flex-shrink-0 mt-0.5">
+                                <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
                                 </div>
-                                <h3 className="text-base font-semibold text-gray-900">
-                                    Tipo de Servicio
-                                </h3>
+                            <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-gray-900 mb-1">Transacción Segura</h4>
+                                <p className="text-sm text-gray-700 leading-relaxed">
+                                    <span className="font-medium text-blue-700">atrapo.io</span> actúa como intermediario seguro entre el revisor y el cliente. 
+                                    Tu pago está protegido y solo se libera una vez completado el servicio satisfactoriamente.
+                                </p>
                             </div>
-                            <div className="space-y-4">
-                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
-                                    <span className="text-gray-600 font-medium">Modalidad</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-gray-900 font-semibold">
+                        </div>
+                    </div>
+                    
+                                        {/* Simple chips for category and service type */}
+                    <div className="flex flex-wrap gap-3 mb-6">
+                        <div className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
+                            <Search className="w-3 h-3" />
                                             {parameters.serviceTypeId === 1 ? 'Solo Revisión' : 
                                              parameters.serviceTypeId === 2 ? 'Búsqueda + Revisión' : 
-                                             'Desconocido'}
-                                        </span>
-                                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
-                                            {parameters.serviceTypeId === 1 ? '👨‍💼' : 
-                                             parameters.serviceTypeId === 2 ? '🌐' : 
-                                             '❓'}
-                                        </span>
+                             'Servicio Personalizado'}
                                     </div>
-                                </div>
-                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
-                                    <span className="text-gray-600 font-medium">Experto</span>
-                                    <span className="text-gray-900 font-semibold">
-                                        {expertName || 'No disponible'}
+                        <div className="bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
+                            <span>
+                                {parameters.category === 1 ? '🚗 Vehículos' : 
+                                 parameters.category === 2 ? '🏍️ Motos' : 
+                                 parameters.category === 3 ? '🏠 Inmuebles' : 
+                                 '📝 General'}
                                     </span>
                                 </div>
+                            </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+                                <Target className="w-3 h-3 text-gray-400" />
+                                <h3 className="text-xs font-medium text-gray-600 uppercase tracking-wide">Área</h3>
+                            </div>
+                            <div className="h-40 relative">
+                                    {isLoaded ? (
+                                        <GoogleMap
+                                            mapContainerStyle={{ width: '100%', height: '100%' }}
+                                            zoom={getZoomLevel(parameters.locationRange)}
+                                            center={mapCenter}
+                                            options={{
+                                                disableDefaultUI: true,
+                                                gestureHandling: 'none',
+                                                zoomControl: false,
+                                                scrollwheel: false,
+                                                disableDoubleClickZoom: true,
+                                                draggable: false,
+                                                mapTypeControl: false,
+                                                streetViewControl: false,
+                                                fullscreenControl: false,
+                                                styles: [
+                                                    {
+                                                        featureType: 'poi',
+                                                        elementType: 'labels',
+                                                        stylers: [{ visibility: 'off' }]
+                                                    },
+                                                    {
+                                                        featureType: 'transit',
+                                                        elementType: 'labels',
+                                                        stylers: [{ visibility: 'off' }]
+                                                    }
+                                                ]
+                                            }}
+                                            onLoad={(map) => {
+                                                // Create circle using native Google Maps API like in SearchParameterForm
+                                                const circle = new google.maps.Circle({
+                                                    map,
+                                                    center: mapCenter,
+                                                    radius: 100 * 1000,
+                                                    fillColor: '#3b82f6',
+                                                    fillOpacity: 0.15,
+                                                    strokeColor: '#3b82f6',
+                                                    strokeOpacity: 0.5,
+                                                    strokeWeight: 2,
+                                                    zIndex: 1,
+                                                    clickable: false,
+                                                    editable: false,
+                                                    draggable: false
+                                                });
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="h-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+                                            <MapPin className="w-4 h-4 text-blue-500" />
+                                        </div>
+                                    )}
                             </div>
                         </div>
-                        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group">
-                            <div className="flex items-center gap-3 mb-5">
-                                <div className="p-2 bg-blue-100 rounded-lg">
-                                    <Target className="w-4 h-4 text-blue-600" />
-                                </div>
-                                <h3 className="text-base font-semibold text-gray-900">
-                                    {parameters.serviceTypeId === 2 
-                                        ? 'Área de búsqueda del vehículo'
-                                        : 'Configuración de Ubicación'
-                                    }
-                                </h3>
+                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                            <div className="flex items-center gap-2 mb-3">
+                                <User className="w-3 h-3 text-gray-400" />
+                                <h3 className="text-xs font-medium text-gray-600 uppercase tracking-wide">Profesional y Servicio</h3>
                             </div>
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center text-sm bg-white/60 p-3 rounded-lg">
-                                    <span className="text-gray-600 font-medium">Radio de búsqueda</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-gray-900 font-semibold">
-                                            {Math.min(parameters.locationRange, 100)} km
-                                        </span>
-                                        {parameters.locationRange > 100 && (
-                                            <span className="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded-full font-medium">
-                                                Máx. 100km
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
-                                    <span className="text-gray-600 font-medium">Coordenadas</span>
-                                    <span className="text-gray-900 font-semibold font-mono text-xs">
-                                        {parameters.latitude.slice(0, 7)}, {parameters.longitude.slice(0, 7)}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
-                                    <span className="text-gray-600 font-medium">Área cubierta</span>
-                                    <span className="text-gray-900 font-semibold">
-                                        ~{(Math.PI * Math.pow(Math.min(parseInt(parameters.locationRange.toString()), 100), 2) / 1000).toFixed(1)}k km²
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group">
-                            <div className="flex items-center gap-3 mb-5">
-                                <div className="p-2 bg-blue-100 rounded-lg">
-                                    <User className="w-4 h-4 text-blue-600" />
-                                </div>
-                                <h3 className="text-base font-semibold text-gray-900">
-                                    Experto Asignado
-                                </h3>
-                            </div>
-                            <div className="flex items-start gap-4">
+                            
+                            {/* Expert Info */}
+                            <div className="flex items-start gap-3 mb-3">
                                 <div className="flex-shrink-0">
                                     {expertProfilePicture ? (
                                         <img
                                             src={expertProfilePicture}
                                             alt={expertName || 'Experto'}
-                                            className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                                            className="w-8 h-8 rounded-full object-cover border border-gray-200"
                                             onError={(e) => {
                                                 console.error(`SearchForm - Failed to load expert profile picture: ${expertProfilePicture}`);
                                                 e.currentTarget.style.display = 'none';
@@ -359,156 +408,159 @@ export default function SearchForm({
                                             }}
                                         />
                                     ) : (
-                                        <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded-full">
-                                            <User className="w-6 h-6 text-gray-400" />
+                                        <div className="w-8 h-8 bg-gray-200 flex items-center justify-center rounded-full">
+                                            <User className="w-4 h-4 text-gray-400" />
                                         </div>
                                     )}
-                                    <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded-full" style={{ display: 'none' }}>
-                                        <User className="w-6 h-6 text-gray-400" />
+                                    <div className="w-8 h-8 bg-gray-200 flex items-center justify-center rounded-full" style={{ display: 'none' }}>
+                                        <User className="w-4 h-4 text-gray-400" />
                                     </div>
                                 </div>
-                                <div className="space-y-3">
-                                    <div className="flex flex-col text-sm">
-                                        <span className="text-gray-500">Nombre</span>
-                                        <span className="text-gray-900 font-medium ml-2">
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-sm font-medium text-gray-900 mb-1">
                                             {expertName || 'No disponible'}
-                                        </span>
                                     </div>
-                                    <div className="flex flex-col text-sm">
-                                        <span className="text-gray-500">Condiciones del Servicio</span>
-                                        <span className="text-gray-900 font-medium line-clamp-3 ml-2">
-                                            {serviceDescription || 'No hay descripción disponible'}
-                                        </span>
+                                    <div className="text-xs text-gray-500 mb-1">
+                                        Servicio: {parameters.serviceTypeId === 1 ? 'Solo Revisión' : 
+                                                 parameters.serviceTypeId === 2 ? 'Búsqueda + Revisión' : 
+                                                 'Servicio Personalizado'}
+                                    </div>
+                                    <div className="text-xs text-gray-600 line-clamp-2">
+                                        {serviceDescription ? serviceDescription.substring(0, 80) + (serviceDescription.length > 80 ? '...' : '') : 'Servicio profesional personalizado'}
                                     </div>
                                 </div>
                             </div>
+                            
+                                                                                    {/* Service Images - Real images from service */}
+                            {serviceImageUrls && serviceImageUrls.length > 0 && (
+                                <div className="border-t border-gray-100 pt-3">
+                                    <div className="text-xs text-gray-500 mb-2">Portfolio del servicio</div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {serviceImageUrls.slice(0, 3).map((imageUrl, index) => (
+                                            <div key={index} className="h-12 rounded border border-gray-200 relative overflow-hidden">
+                                                <img
+                                                    src={imageUrl}
+                                                    alt={`Portfolio ${index + 1}`}
+                                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                                                    onError={(e) => {
+                                                        console.error(`Failed to load service image: ${imageUrl}`);
+                                                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                                        (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                                                    }}
+                                                />
+                                                {/* Fallback when image fails to load */}
+                                                <div className="absolute inset-0 bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center text-white text-xs font-medium" style={{ display: 'none' }}>
+                                                    Imagen {index + 1}
                         </div>
-                        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group">
-                            <div className="flex items-center gap-3 mb-5">
-                                <div className="p-2 bg-green-100 rounded-lg">
-                                    <DollarSign className="w-4 h-4 text-green-600" />
+                                                {/* Show +X indicator on last image if there are more */}
+                                                {serviceImageUrls.length > 3 && index === 2 && (
+                                                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                                                        <span className="text-white font-semibold text-xs">+{serviceImageUrls.length - 3}</span>
                                 </div>
-                                <h3 className="text-base font-semibold text-gray-900">
-                                    Criterios de Precio
-                                </h3>
+                                                )}
                             </div>
-                            <div className="space-y-4">
-                                {parameters.minPrice || parameters.maxPrice ? (
-                                    <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
-                                        <span className="text-gray-600 font-medium">Rango de precio</span>
-                                        <span className="text-gray-900 font-semibold">
-                                            {parameters.minPrice ? `€${parameters.minPrice.toLocaleString()}` : '€0'} - {parameters.maxPrice ? `€${parameters.maxPrice.toLocaleString()}` : '∞'}
-                                        </span>
+                                        ))}
+                                        {/* Empty placeholders for missing images */}
+                                        {Array.from({ length: 3 - serviceImageUrls.length }).map((_, index) => (
+                                            <div key={`empty-${index}`} className="h-12 rounded border border-gray-200 bg-gray-50"></div>
+                                        ))}
                                     </div>
-                                ) : (
-                                    <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
-                                        <span className="text-gray-600 font-medium">Rango de precio</span>
-                                        <span className="text-gray-900 font-semibold text-green-600">Sin límite</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
-                                    <span className="text-gray-600 font-medium">Categoría</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-gray-900 font-semibold">
-                                            {parameters.category === 1 ? 'Vehículos' : 
-                                             parameters.category === 2 ? 'Inmuebles' : 
-                                             'General'}
-                                        </span>
-                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                                            {parameters.category === 1 ? '🚗' : 
-                                             parameters.category === 2 ? '🏠' : 
-                                             '📝'}
+                                    <div className="text-xs text-gray-500 mt-2">
+                                        Precio del servicio: <span className="font-medium text-gray-900">
+                                            €{servicePrice !== undefined ? servicePrice.toFixed(2) : 'Consultar'}
                                         </span>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
-                        <div className="col-span-1 lg:col-span-2 bg-gradient-to-br from-white to-gray-50 rounded-xl p-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group">
-                            <div className="flex items-center gap-3 mb-5">
-                                <div className="p-2 bg-emerald-100 rounded-lg">
-                                    <Wallet className="w-4 h-4 text-emerald-600" title="Precio" />
+                        <div className="col-span-1 md:col-span-2 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                                    <Wallet className="w-4 h-4 text-blue-600" />
                                 </div>
-                                <h3 className="text-base font-semibold text-gray-900">
+                                <h3 className="font-semibold text-gray-900">
                                     Resumen de Pago
                                 </h3>
                             </div>
-                            <div className="space-y-4">
-                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
-                                    <span className="text-gray-600 font-medium">Precio del Servicio</span>
-                                    <span className="text-gray-900 font-semibold text-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
+                                    <div className="text-xs text-blue-600 font-medium mb-1">Precio del Servicio</div>
+                                    <div className="text-lg font-bold text-blue-900">
                                         €{servicePrice !== undefined ? servicePrice.toFixed(2) : 'No disponible'}
-                                    </span>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
-                                    <span className="text-gray-600 font-medium">Saldo Actual</span>
-                                    <span className="text-gray-900 font-semibold">
+                                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-lg">
+                                    <div className="text-xs text-gray-600 font-medium mb-1">Saldo Actual</div>
+                                    <div className="text-lg font-bold text-gray-900">
                                         {isLoadingBalance ? (
-                                            <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                                            <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
                                         ) : (
-                                            `€${balance?.toFixed(2) || '0.00'}`
+                                            `€${(balance ?? 0).toFixed(2)}`
                                         )}
-                                    </span>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between text-sm bg-white/60 p-3 rounded-lg">
-                                    <span className="text-gray-600 font-medium">Saldo Restante</span>
-                                    <span className={`font-semibold ${
+                                <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-4 rounded-lg">
+                                    <div className="text-xs text-emerald-600 font-medium mb-1">Saldo Restante</div>
+                                    <div className={`text-lg font-bold ${
                                         isLoadingBalance || balance === null || servicePrice === undefined
                                             ? 'text-gray-500'
-                                            : balance - servicePrice >= 0
-                                                ? 'text-green-600'
+                                            : (balance ?? 0) - servicePrice >= 0
+                                                ? 'text-emerald-700'
                                                 : 'text-red-600'
                                     }`}>
                                         {isLoadingBalance || balance === null || servicePrice === undefined
                                             ? 'N/A'
-                                            : `€${(balance - servicePrice).toFixed(2)}`}
-                                    </span>
+                                            : `€${((balance ?? 0) - servicePrice).toFixed(2)}`}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl p-4 border-t border-gray-100">
-                        {maxSearchesReached ? (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setCurrentStep(0);
-                                    setShowSubscriptions(true);
-                                }}
-                                className="w-full md:w-auto md:ml-auto flex items-center justify-center gap-3 py-3 px-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-amber-500/20 group relative overflow-hidden"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-transparent" />
-                                <Crown className="w-7 h-7 text-amber-200 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_12px_rgba(245,158,11,0.8)] relative z-10" />
-                                <span className="text-sm">Mejorar Plan</span>
-                                <ArrowRight className="w-5 h-5" />
-                            </button>
-                        ) : (
-                            <button
-                                type="submit"
-                                disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete || isLoadingBalance}
-                                className="w-full md:w-auto md:ml-auto flex items-center justify-center gap-2 py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
-                            >
-                                {createSearchWithHire.isPending || isSubmitting ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                        <span className="text-sm">
-                                            {balance !== null && servicePrice !== undefined && balance < servicePrice
-                                                ? 'Redirigiendo a pago...'
-                                                : 'Creando Búsqueda...'}
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <Wallet className="w-5 h-5" />
-                                        <span className="text-sm">
-                                            {balance !== null && servicePrice !== undefined && balance < servicePrice
-                                                ? 'Pagar Servicio'
-                                                : 'Confirmar Contratación'}
-                                        </span>
-                                        <ArrowRight className="w-5 h-5" />
-                                    </>
-                                )}
-                            </button>
-                        )}
+                    <div className="bg-white border-t border-gray-100 p-6 mt-6">
+                        <div className="flex justify-between items-center">
+                            <div className="text-sm text-gray-600">
+                                Paso 3 de 3 • Listo para confirmar
+                            </div>
+                            {maxSearchesReached ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setCurrentStep(0);
+                                        setShowSubscriptions(true);
+                                    }}
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded transition-colors"
+                                >
+                                    <Crown className="w-4 h-4" />
+                                    <span>Mejorar Plan</span>
+                                </button>
+                            ) : (
+                                <button
+                                    type="submit"
+                                    disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete || isLoadingBalance}
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors disabled:cursor-not-allowed"
+                                >
+                                    {createSearchWithHire.isPending || isSubmitting ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                            <span>
+                                                {balance !== null && servicePrice !== undefined && (balance ?? 0) < servicePrice
+                                                    ? 'Procesando...'
+                                                    : 'Creando...'}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Wallet className="w-4 h-4" />
+                                            <span>
+                                                {balance !== null && servicePrice !== undefined && (balance ?? 0) < servicePrice
+                                                    ? 'Pagar'
+                                                    : 'Confirmar'}
+                                            </span>
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </form>
             </div>
