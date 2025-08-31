@@ -9,7 +9,7 @@ const libraries: ("geometry" | "places")[] = ['geometry', 'places'];
 
 interface ServiceSelectionProps {
     onBack: () => void;
-    onComplete: (serviceId: number, expertProfilePicture?: string, expertName?: string, servicePrice?: number, serviceDescription?: string) => void;
+    onComplete: (serviceId: number, expertProfilePicture?: string, expertName?: string, servicePrice?: number, serviceDescription?: string, serviceImageUrls?: string[]) => void;
     selectedCategory: number;
     selectedServiceTypeId: number;
     latitude: string;
@@ -137,6 +137,7 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
         const expertName = selectedServiceData.expert?.user?.name ?? 'Experto desconocido';
         const servicePrice = selectedServiceData.price ?? 0;
         const serviceDescription = selectedServiceData.conditions ?? 'Sin descripción disponible';
+        const serviceImageUrls = selectedServiceData.imageUrls ?? [];
 
         console.log('ServiceSelection - Selected service data:', {
             serviceId: selectedService,
@@ -144,6 +145,7 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
             expertName,
             servicePrice,
             serviceDescription,
+            serviceImageUrls,
         });
 
         if (!expertName || servicePrice === 0) {
@@ -152,7 +154,7 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
             return;
         }
 
-        onComplete(selectedService, expertProfilePicture, expertName, servicePrice, serviceDescription);
+        onComplete(selectedService, expertProfilePicture, expertName, servicePrice, serviceDescription, serviceImageUrls);
     };
 
     // Función auxiliar para manejar el carrusel de imágenes
@@ -361,7 +363,7 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                         <div
                             key={service.id}
                             className={`bg-white rounded-lg shadow-md overflow-hidden border transition-all duration-300 hover:shadow-lg ${
-                                selectedService === service.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                selectedService === service.id ? 'border-emerald-500 ring-2 ring-emerald-100 shadow-lg bg-gradient-to-r from-emerald-50/30 to-emerald-50/10' : 'border-gray-200 hover:border-gray-300'
                             }`}
                         >
                                                         {/* Mobile Layout */}
@@ -472,27 +474,27 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button
+                                                <button
                                                 onClick={() => setSelectedService(service.id)}
                                                 className={`flex-1 py-2.5 px-4 rounded font-medium text-sm transition-all duration-200 ${
                                                     selectedService === service.id
-                                                        ? 'bg-blue-600 text-white shadow-md'
+                                                        ? 'bg-emerald-600 text-white shadow-md hover:bg-emerald-700'
                                                         : 'bg-gray-900 text-white hover:bg-gray-800'
                                                 }`}
                                             >
                                                 {selectedService === service.id ? 'Seleccionado' : 'Seleccionar'}
-                                            </button>
-                                            <button
+                                                </button>
+                                                <button
                                                 onClick={() => setDetailServiceId(service.id)}
                                                 className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 text-sm font-medium"
-                                            >
+                                                >
                                                 Ver servicio
-                                            </button>
+                                                </button>
                                         </div>
                                     </div>
 
                                     {selectedService === service.id && (
-                                        <div className="flex items-center justify-center gap-1 text-blue-600 text-xs">
+                                        <div className="flex items-center justify-center gap-1 text-emerald-600 text-xs">
                                             <CheckCircle className="w-3 h-3" />
                                             <span>¡Seleccionado!</span>
                                     </div>
@@ -519,8 +521,8 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                     ) : (
                                             <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
                                                 <User className="w-6 h-6 text-gray-500" />
-                                            </div>
-                                        )}
+                                        </div>
+                                    )}
                                         <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center" style={{ display: 'none' }}>
                                             <User className="w-6 h-6 text-gray-500" />
                                         </div>
@@ -557,9 +559,9 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                                 <span className="text-sm text-gray-500">
                                                     ({service.expert?.reviews?.length || 0})
                                                 </span>
-                            </div>
-                                        </div>
                                     </div>
+                                </div>
+                            </div>
 
                                     {/* Service Description */}
                                     <p className="text-gray-900 text-sm mb-3 leading-relaxed">
@@ -636,7 +638,7 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                         onClick={() => setSelectedService(service.id)}
                                                 className={`flex-1 py-2.5 px-4 rounded font-medium text-sm transition-all duration-200 ${
                                                     selectedService === service.id
-                                                        ? 'bg-blue-600 text-white shadow-md'
+                                                        ? 'bg-emerald-600 text-white shadow-md hover:bg-emerald-700'
                                                         : 'bg-gray-900 text-white hover:bg-gray-800'
                                                 }`}
                                             >
@@ -652,12 +654,12 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
 
                                         {/* Selected Indicator */}
                                 {selectedService === service.id && (
-                                            <div className="flex items-center justify-center gap-1 mt-2 text-blue-600 text-xs">
+                                            <div className="flex items-center justify-center gap-1 mt-2 text-emerald-600 text-xs">
                                                 <CheckCircle className="w-3 h-3" />
                                                 <span>¡Seleccionado!</span>
-                                            </div>
-                                        )}
                                     </div>
+                                )}
+                            </div>
                                 </div>
                             </div>
 
@@ -668,15 +670,20 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
             </div>
 
                         {/* Continue Button */}
-                        <div className="sticky bottom-8 flex justify-end mt-8">
-                            <button
-                                onClick={handleContinue}
-                                disabled={selectedService === null}
-                                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Continuar
-                                <ArrowRight className="w-5 h-5" />
-                            </button>
+                        <div className="bg-white border-t border-gray-100 p-6 mt-8">
+                            <div className="flex justify-between items-center">
+                                <div className="text-sm text-gray-600">
+                                    Paso 3 de 3 • Selecciona un servicio
+                                </div>
+                                <button
+                                    onClick={handleContinue}
+                                    disabled={selectedService === null}
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors disabled:cursor-not-allowed"
+                                >
+                                    <span>Continuar</span>
+                                    <ArrowRight className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -690,12 +697,12 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                             {/* Map Section - Absolute top, full width, no margins */}
                             <div className="relative h-32 bg-gradient-to-r from-gray-600 to-gray-800 overflow-hidden">
                                 {/* Close Button Floating Over Map */}
-                                <button
+                                                <button
                                     onClick={() => setDetailServiceId(null)}
                                     className="absolute top-4 right-4 z-10 text-white hover:text-gray-300 p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
-                                >
+                                                >
                                     <X className="w-5 h-5" />
-                                </button>
+                                                </button>
                                 {isLoaded ? (
                                     <GoogleMap
                                         mapContainerStyle={{ width: '100%', height: '100%' }}
@@ -812,8 +819,8 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                                         <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Revisión completa</span>
                                                         <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Análisis detallado</span>
                                                         <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Informe profesional</span>
-                                                    </>
-                                                )}
+                                            </>
+                                        )}
                                     </div>
                                         </div>
                                     </div>
@@ -848,11 +855,11 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                             <p className="text-xs text-gray-500">Precio base</p>
                         </div>
                                     </div>
-                                </div>
                             </div>
+                        </div>
 
                             {/* Reviews Section */}
-                            <div className="mb-6">
+                        <div className="mb-6">
                                 <h4 className="text-sm font-medium text-gray-600 mb-3 uppercase tracking-wide">
                                     Reseñas
                                     {detailService.expert?.reviews?.length > 0 && (
@@ -876,15 +883,15 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                                                 <div className="flex scale-75">{renderStars(review.score)}</div>
                                                                 <span className="text-xs font-medium text-gray-900">{review.score.toFixed(1)}</span>
                                                             </div>
-                                                        </div>
-                                                    </div>
+                                    </div>
+                                            </div>
                                                     <span className="text-xs text-gray-500">
-                                                        {new Date(review.createdAt).toLocaleDateString('es-ES')}
+                                                {new Date(review.createdAt).toLocaleDateString('es-ES')}
                                                     </span>
                                                 </div>
                                                 <p className="text-sm text-gray-700 leading-relaxed">{review.description}</p>
-                                            </div>
-                                        ))}
+                                        </div>
+                                    ))}
                                         {detailService.expert.reviews.length > 3 && (
                                             <div className="text-center">
                                                 <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
@@ -905,17 +912,17 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                                                                                                             {/* Action Buttons */}
                             <div className="pt-4 border-t border-gray-200">
                                 <div className="flex justify-center">
-                                    <button
-                                        onClick={() => setDetailServiceId(null)}
+                        <button
+                            onClick={() => setDetailServiceId(null)}
                                         className="px-6 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm font-medium"
-                                    >
-                                        Cerrar
-                                    </button>
-                                </div>
-                            </div>
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
                             </div>
                         </div>
-                    </div>
+            </div>
                 </div>
             )}
         </div>

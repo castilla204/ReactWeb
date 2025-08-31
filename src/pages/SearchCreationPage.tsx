@@ -42,6 +42,7 @@ const SearchCreationPage: React.FC = () => {
     const [expertName, setExpertName] = useState<string | undefined>(undefined);
     const [servicePrice, setServicePrice] = useState<number | undefined>(undefined);
     const [serviceDescription, setServiceDescription] = useState<string | undefined>(undefined);
+    const [serviceImageUrls, setServiceImageUrls] = useState<string[]>([]);
 
     const safeCategories = Array.isArray(categories) ? categories : [];
 
@@ -71,7 +72,8 @@ const SearchCreationPage: React.FC = () => {
         expertProfilePicture?: string,
         expertName?: string,
         servicePrice?: number,
-        serviceDescription?: string
+        serviceDescription?: string,
+        serviceImageUrls?: string[]
     ) => {
         console.log('SearchCreationPage - Service selection complete:', {
             serviceId,
@@ -79,6 +81,7 @@ const SearchCreationPage: React.FC = () => {
             expertName,
             servicePrice,
             serviceDescription,
+            serviceImageUrls,
         });
         if (!expertName || servicePrice === undefined) {
             setNotification({
@@ -92,6 +95,7 @@ const SearchCreationPage: React.FC = () => {
         setExpertName(expertName);
         setServicePrice(servicePrice);
         setServiceDescription(serviceDescription);
+        setServiceImageUrls(serviceImageUrls || []);
         setCurrentStep(3);
     };
 
@@ -482,6 +486,7 @@ const SearchCreationPage: React.FC = () => {
                                 expertName={expertName}
                                 servicePrice={servicePrice}
                                 serviceDescription={serviceDescription}
+                                serviceImageUrls={serviceImageUrls}
                             />
                         </>
                     )}

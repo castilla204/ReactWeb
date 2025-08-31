@@ -48,34 +48,14 @@ const getZoomLevel = (radius: number) => {
 
 const mapStyles = [
     {
-        featureType: "all",
-        elementType: "labels.text.fill",
-        stylers: [{ color: "#666666" }]
+        featureType: 'poi',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }]
     },
     {
-        featureType: "water",
-        elementType: "geometry",
-        stylers: [{ color: "#e8f4f8" }]
-    },
-    {
-        featureType: "landscape",
-        elementType: "geometry",
-        stylers: [{ color: "#ffffff" }]
-    },
-    {
-        featureType: "road",
-        elementType: "geometry",
-        stylers: [{ color: "#e6e6e6" }]
-    },
-    {
-        featureType: "poi",
-        elementType: "geometry",
-        stylers: [{ color: "#f0f5f7" }]
-    },
-    {
-        featureType: "transit",
-        elementType: "geometry",
-        stylers: [{ color: "#f0f5f7" }]
+        featureType: 'transit',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }]
     }
 ];
 
@@ -245,21 +225,22 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto relative pb-16">
+        <div className="w-full max-w-6xl mx-auto px-4">
             <div className="flex items-center gap-2 mb-4">
                 <button
                     onClick={handleBack}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors text-sm"
                 >
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="w-4 h-4" />
                     Atrás
                 </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Map Container */}
-                <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200">
-                    <div className="relative h-[280px]">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Combined Container - Map + Settings */}
+                <div className="bg-white rounded-none md:rounded-xl overflow-hidden shadow-lg border border-gray-100">
+                    {/* Map Section */}
+                    <div className="relative h-[320px]">
                         {!isLoaded ? (
                             <div className="h-full flex items-center justify-center bg-gray-50">
                                 <div className="text-gray-500">Cargando mapa...</div>
@@ -270,15 +251,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                         ) : (
                             <>
-                                <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200 shadow-sm">
-                                    <MapPin className="w-4 h-4 text-blue-600" />
-                                    <span className="hidden md:inline text-sm text-gray-700">Haz clic para cambiar la ubicación</span>
-                                    <span className="md:hidden text-sm text-gray-700">Toca para cambiar</span>
+                                <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-2 bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-sm">
+                                    <MapPin className="w-3 h-3 text-blue-600" />
+                                    <span className="text-xs text-gray-700">Haz clic para ubicar</span>
                                 </div>
                                 {selectedLocation && (
-                                    <div className="absolute top-16 md:top-4 left-4 md:left-auto md:right-4 z-10 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200 shadow-sm">
-                                        <div className="text-sm text-gray-700 font-medium">
-                                            {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}
+                                    <div className="absolute top-3 right-3 z-10 px-3 py-2 bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-sm">
+                                        <div className="text-xs text-gray-700 font-mono">
+                                            {selectedLocation.lat.toFixed(3)}, {selectedLocation.lng.toFixed(3)}
                                         </div>
                                     </div>
                                 )}
@@ -380,174 +360,164 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </>
                         )}
                     </div>
-                </div>
 
-                {/* Settings Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-4 space-y-3 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
-                        <div>
-                            <h3 className="text-sm font-medium text-gray-900 mb-1">
-                                {serviceTypeId === 2 
-                                    ? 'Selecciona el área en el que buscas el coche'
-                                    : 'Configuración de Ubicación'
-                                }
-                            </h3>
-                            <p className="text-xs text-gray-400">
-                                {serviceTypeId === 2 
-                                    ? 'Define la zona de búsqueda para tu vehículo'
-                                    : 'Establece el área y radio de búsqueda'
-                                }
-                            </p>
-                        </div>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-400">Radio de Búsqueda</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg font-semibold text-gray-900">
-                                        {Math.min(parseInt(formData.locationRange), 100)}
-                                    </span>
-                                    <span className="text-sm text-gray-500">km</span>
-                                    {parseInt(formData.locationRange) > 100 && (
-                                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">
-                                            Máximo
+                    {/* Settings Grid - Connected directly to map */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 border-t border-gray-100">
+                        <div className="p-5 border-r border-gray-100 lg:border-r-gray-100">
+                            <div className="flex items-center gap-2 mb-4">
+                                <MapPin className="w-4 h-4 text-gray-400" />
+                                <h3 className="text-sm font-medium text-gray-900">
+                                    Radio de Búsqueda
+                                </h3>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
+                                    <span className="text-sm text-gray-600">Radio actual</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-semibold text-gray-900">
+                                            {Math.min(parseInt(formData.locationRange), 100)} km
                                         </span>
-                                    )}
+                                        {parseInt(formData.locationRange) > 100 && (
+                                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">
+                                                Máximo
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                            <input
-                                type="range"
-                                min="1"
-                                max="100"
-                                value={Math.min(parseInt(formData.locationRange), 100)}
-                                onChange={(e) => {
-                                    setFormData({ ...formData, locationRange: e.target.value });
-                                    if (map) {
-                                        const radius = parseInt(e.target.value);
-                                        const zoom = getZoomLevel(radius);
-                                        map.setZoom(zoom);
-                                    }
-                                }}
-                                className="w-full h-1.5 bg-blue-100 rounded-full appearance-none cursor-pointer focus:outline-none transition-all [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:hover:border-blue-600"
-                                style={{
-                                    background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${(Math.min(parseInt(formData.locationRange), 100) / 100) * 100}%, rgb(219, 234, 254) ${(Math.min(parseInt(formData.locationRange), 100) / 100) * 100}%, rgb(219, 234, 254) 100%)`,
-                                    height: '6px'
-                                }}
-                            />
-                            <div className="flex justify-between text-xs text-gray-500">
-                                <span>1km</span>
-                                <span>50km</span>
-                                <span>100km</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white backdrop-blur-xl rounded-xl border border-gray-200/60 p-4 space-y-3 shadow-lg hover:shadow-xl transition-all ring-1 ring-gray-100/80 lg:col-span-1">
-                        <div>
-                            <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
-                                Rango de Precio 
-                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                                    {selectedCategory === 1 ? '🚗 Vehículos' : 
-                                     selectedCategory === 2 ? '🏍️ Motos' : 
-                                     '🏠 Inmuebles'}
-                                </span>
-                            </h3>
-                            <p className="text-xs text-gray-400">
-                                {selectedCategory === 1 ? 'Rango típico para vehículos de segunda mano' :
-                                 selectedCategory === 2 ? 'Rango típico para motocicletas y ciclomotores' :
-                                 'Rango típico para inmuebles y viviendas'}
-                            </p>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
-                                    <span className="text-sm text-gray-600">Precio mínimo</span>
-                                    <span className="text-sm font-medium text-gray-900">
-                                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(parseInt(formData.minPrice || '0'))}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
-                                    <span className="text-sm text-gray-600">Precio máximo</span>
-                                    <span className="text-sm font-medium text-gray-900">
-                                        {formData.maxPrice ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(parseInt(formData.maxPrice)) : 'Sin límite'}
-                                    </span>
-                                </div>
-                                <div className="relative h-2 mt-6">
-                                    <div className="absolute inset-0 bg-blue-100 rounded-full"></div>
-                                    <div
-                                        className="absolute inset-y-0 bg-blue-500 rounded-full"
-                                        style={{
-                                            left: `${(parseInt(formData.minPrice || '0') / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)) * 100}%`,
-                                            right: `${100 - ((parseInt(formData.maxPrice || (selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000')) / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)) * 100)}%`,
-                                            height: '6px'
+                                <div className="relative">
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="100"
+                                        value={Math.min(parseInt(formData.locationRange), 100)}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, locationRange: e.target.value });
+                                            if (map) {
+                                                const radius = parseInt(e.target.value);
+                                                const zoom = getZoomLevel(radius);
+                                                map.setZoom(zoom);
+                                            }
                                         }}
-                                    ></div>
-                                    <div className="relative">
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000'}
-                                            step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '250' : '5000'}
-                                            value={formData.minPrice || 0}
-                                            onChange={(e) => {
-                                                const value = parseInt(e.target.value);
-                                                const maxValue = selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000;
-                                                const max = parseInt(formData.maxPrice || maxValue.toString());
-                                                if (value <= max) {
-                                                    setFormData({ ...formData, minPrice: value.toString() });
-                                                }
-                                            }}
-                                            className="absolute top-[-8px] left-0 w-full pointer-events-none appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform"
-                                        />
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000'}
-                                            step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '250' : '5000'}
-                                            value={formData.maxPrice || (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)}
-                                            onChange={(e) => {
-                                                const value = parseInt(e.target.value);
-                                                const min = parseInt(formData.minPrice || '0');
-                                                if (value >= min) {
-                                                    setFormData({ ...formData, maxPrice: value.toString() });
-                                                }
-                                            }}
-                                            className="absolute top-[-8px] left-0 w-full pointer-events-none appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform"
-                                        />
+                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-0 [&::-webkit-slider-thumb]:cursor-pointer"
+                                    />
+                                    <div className="flex justify-between text-xs text-gray-500 mt-2">
+                                        <span>1km</span>
+                                        <span>50km</span>
+                                        <span>100km</span>
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex justify-between text-xs text-gray-500">
-                                <span>0€</span>
-                                <span>
-                                    {selectedCategory === 1 ? '50.000€' : 
-                                     selectedCategory === 2 ? '1.000.000€' : 
-                                     '500.000€'}
-                                </span>
-                                <span>
-                                    {selectedCategory === 1 ? '100.000€' : 
-                                     selectedCategory === 2 ? '2.000.000€' : 
-                                     '1.000.000€'}
-                                </span>
+                        </div>
+                        <div className="p-5">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-medium text-gray-900 mb-2">
+                                    Rango de Precio
+                                </h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                        {selectedCategory === 1 ? '🚗 Vehículos' : 
+                                         selectedCategory === 2 ? '🏍️ Motos' : 
+                                         '🏠 Inmuebles'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
+                                        <span className="text-sm text-gray-600">Precio mínimo</span>
+                                        <span className="text-sm font-medium text-gray-900">
+                                            {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(parseInt(formData.minPrice || '0'))}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
+                                        <span className="text-sm text-gray-600">Precio máximo</span>
+                                        <span className="text-sm font-medium text-gray-900">
+                                            {formData.maxPrice ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(parseInt(formData.maxPrice)) : 'Sin límite'}
+                                        </span>
+                                    </div>
+                                    <div className="relative h-2 mt-6">
+                                        <div className="absolute inset-0 bg-blue-100 rounded-full"></div>
+                                        <div
+                                            className="absolute inset-y-0 bg-blue-500 rounded-full"
+                                            style={{
+                                                left: `${(parseInt(formData.minPrice || '0') / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)) * 100}%`,
+                                                right: `${100 - ((parseInt(formData.maxPrice || (selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000')) / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)) * 100)}%`,
+                                                height: '6px'
+                                            }}
+                                        ></div>
+                                        <div className="relative">
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000'}
+                                                step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '250' : '5000'}
+                                                value={formData.minPrice || 0}
+                                                onChange={(e) => {
+                                                    const value = parseInt(e.target.value);
+                                                    const maxValue = selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000;
+                                                    const max = parseInt(formData.maxPrice || maxValue.toString());
+                                                    if (value <= max) {
+                                                        setFormData({ ...formData, minPrice: value.toString() });
+                                                    }
+                                                }}
+                                                className="absolute top-[-8px] left-0 w-full pointer-events-none appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform"
+                                            />
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000'}
+                                                step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '250' : '5000'}
+                                                value={formData.maxPrice || (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)}
+                                                onChange={(e) => {
+                                                    const value = parseInt(e.target.value);
+                                                    const min = parseInt(formData.minPrice || '0');
+                                                    if (value >= min) {
+                                                        setFormData({ ...formData, maxPrice: value.toString() });
+                                                    }
+                                                }}
+                                                className="absolute top-[-8px] left-0 w-full pointer-events-none appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                                    <span>0€</span>
+                                    <span>
+                                        {selectedCategory === 1 ? '50k€' : 
+                                         selectedCategory === 2 ? '25k€' : 
+                                         '1M€'}
+                                    </span>
+                                    <span>
+                                        {selectedCategory === 1 ? '100k€' : 
+                                         selectedCategory === 2 ? '50k€' : 
+                                         '2M€'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
-
                 </div>
 
                 {error && (
-                    <div className="text-red-600 text-sm bg-red-50 border border-red-100 px-4 py-3 rounded-xl flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                    <div className="text-red-600 text-sm bg-red-50 border border-red-200 px-4 py-3 rounded-lg flex items-center gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                         {error}
                     </div>
                 )}
 
-                <div className="sticky bottom-6 flex justify-end">
-                    <button
-                        type="submit"
-                        className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold transition-all shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/40 hover:scale-105 transform"
-                    >
-                        <span>Continuar con el Servicio</span>
-                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </button>
+                <div className="bg-white border-t border-gray-100 p-6 mt-6">
+                    <div className="flex justify-between items-center">
+                        <div className="text-sm text-gray-600">
+                            Paso 2 de 3 • Configuración completada
+                        </div>
+                        <button
+                            type="submit"
+                            className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded transition-colors"
+                        >
+                            <span>Continuar</span>
+                            <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
