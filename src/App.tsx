@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Heart, Sparkles, Shield, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase } from 'lucide-react';
-import { BrowserRouter as Router, Routes, Route, useParams, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { GoogleAuth } from './components/GoogleAuth';
 import { NotificationCenter } from './components/NotificationCenter';
 import { useNotifications } from './hooks/useNotifications';
 import { FavoritesModal } from './components/FavoritesModal';
@@ -24,8 +23,19 @@ import { ExpertPanelPage } from './pages/ExpertPanelPage';
 import { SearchResultsPage } from './pages/SearchResultsPage';
 import SearchDetails from './components/SearchDetails';
 
+const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
+    const navigate = useNavigate();
+    
+    return (
+        <SearchDetails 
+            onBack={() => navigate(-1)} 
+            isAdmin={isAdmin} 
+        />
+    );
+};
+
 const App: React.FC = React.memo(() => {
-    const { user, setUser, isAuthenticated, signOut } = useAuth();
+    const { user, isAuthenticated, signOut } = useAuth();
     const [showFavorites, setShowFavorites] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const { settings, toggleWhatsApp } = useUserSettings();
@@ -66,143 +76,121 @@ const App: React.FC = React.memo(() => {
         <Router>
             <div className="min-h-screen bg-white text-gray-900 relative overflow-x-hidden">
                 {/* Header */}
-                <header className="fixed top-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-sm border-b border-gray-100/50 z-40">
-                    <div className="container mx-auto h-full px-4 flex items-center justify-between">
-                        <div className="flex items-center gap-6">
-                            <h1 className="text-2xl font-bold text-blue-600">ATRAPO</h1>
+                <header className="h-16 bg-white border-b border-gray-200 shadow-sm relative z-50">
+                    <div className="max-w-7xl mx-auto h-full px-4 lg:px-6 flex items-center justify-between">
+                        {/* Logo profesional */}
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
+                                <span className="text-white font-bold text-sm">A</span>
+                            </div>
+                            <h1 className="text-xl font-bold text-gray-900">ATRAPO</h1>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        {/* Navegación compacta */}
+                        <div className="flex items-center">
                             {isAuthenticated && (
-                                <div className="hidden md:flex items-center gap-4">
-                                    <a href="/busquedas" className="p-2 hover:bg-gray-50 rounded-lg">
-                                        <Search className="w-5 h-5 text-gray-600" />
-                                    </a>
+                                <>
+                                    {/* Navegación principal */}
+                                    <div className="hidden md:flex items-center">
+                                        <a 
+                                            href="/busquedas" 
+                                            className="flex items-center gap-1.5 px-2 py-1 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                                        >
+                                            <Search className="w-4 h-4" />
+                                            <span>Búsquedas</span>
+                                        </a>
+                                        <span className="text-gray-300 mx-2">|</span>
+                                        <button
+                                            onClick={() => setShowFavorites(true)}
+                                            className="flex items-center gap-1.5 px-2 py-1 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                                        >
+                                            <Heart className="w-4 h-4" />
+                                            <span>Favoritos</span>
+                                        </button>
+                                        <span className="text-gray-300 mx-2">|</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNotifications(true)}
+                                            className="relative flex items-center gap-1.5 px-2 py-1 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                                        >
+                                            {unreadCount > 0 && (
+                                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border border-white">
+                                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                                </div>
+                                            )}
+                                            <Bell className="w-4 h-4" />
+                                            <span>Notificaciones</span>
+                                        </button>
+                                        
+                                        {/* Panel de experto integrado */}
+                                        {isExpert && (
+                                            <>
+                                                <span className="text-gray-300 mx-2">|</span>
+                                                <a
+                                                    href="/expert-panel"
+                                                    className="flex items-center gap-1.5 px-2 py-1 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                                                >
+                                                    <Briefcase className="w-4 h-4" />
+                                                    <span>Panel</span>
+                                                </a>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Separador antes del avatar */}
+                                    <span className="text-gray-300 mx-3">|</span>
+
+                                    {/* Botón menú móvil */}
                                     <button
-                                        onClick={() => setShowFavorites(true)}
-                                        className="p-2 hover:bg-gray-50 rounded-lg"
+                                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                                        className="md:hidden p-1 text-gray-600 hover:text-gray-900 rounded transition-colors mr-2"
                                     >
-                                        <Heart className="w-5 h-5 text-gray-600" />
+                                        <Menu className="w-5 h-5" />
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowNotifications(true)}
-                                        className="p-2 hover:bg-gray-50 rounded-lg relative"
-                                    >
-                                        {unreadCount > 0 && (
-                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full">
-                                                {unreadCount}
+
+                                    {/* Avatar compacto */}
+                                    <div className="relative" ref={profileMenuRef}>
+                                        <button
+                                            onClick={() => setShowProfileMenu(!showProfileMenu)}
+                                            className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-sm font-medium hover:bg-blue-200 transition-colors"
+                                        >
+                                            {user?.name?.[0]?.toUpperCase()}
+                                        </button>
+
+                                        {showProfileMenu && (
+                                            <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+                                                <div className="px-4 py-3 border-b border-gray-100">
+                                                    <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
+                                                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                                                    <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                                                        {isExpert ? 'Experto' : 'Usuario'}
+                                                    </span>
+                                                </div>
+                                                <a
+                                                    href="/suscripciones"
+                                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                                    onClick={() => setShowProfileMenu(false)}
+                                                >
+                                                    <Sparkles className="w-4 h-4 text-blue-600" />
+                                                    Suscripción
+                                                </a>
+                                                <button
+                                                    onClick={handleSignOut}
+                                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                                >
+                                                    <LogOut className="w-4 h-4" />
+                                                    Cerrar Sesión
+                                                </button>
                                             </div>
                                         )}
-                                        <Bell className="w-5 h-5 text-gray-600" />
-                                    </button>
-                                    {user?.email === 'dcastillaa@gmail.com' && (
-                                        <a
-                                            href="/admin"
-                                            className="p-2 hover:bg-gray-50 rounded-lg text-gray-600"
-                                            title="Admin Panel"
-                                        >
-                                            <Shield className="w-5 h-5" />
-                                        </a>
-                                    )}
-                                    <button className="p-2 hover:bg-gray-50 rounded-lg">
-                                        <Settings className="w-5 h-5 text-gray-600" />
-                                    </button>
-                                    <button
-                                        onClick={() => toggleWhatsApp()}
-                                        className={`p-2 rounded-lg transition-colors ${settings?.isWhatsAppEnabled
-                                            ? 'bg-green-50 text-green-600 hover:bg-green-100'
-                                            : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
-                                            }`}
-                                        title={`WhatsApp notifications ${settings?.isWhatsAppEnabled ? 'enabled' : 'disabled'}`}
-                                    >
-                                        <svg
-                                            viewBox="0 0 24 24"
-                                            width="20"
-                                            height="20"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            fill="none"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
-                                            <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
-                                        </svg>
-                                    </button>
-                                    {isAuthenticated && (isExpert ? (
-                                        <a
-                                            href="/expert-panel"
-                                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm"
-                                        >
-                                            <Briefcase className="w-4 h-4" />
-                                            <span className="text-sm font-medium">Panel de Experto</span>
-                                        </a>
-                                    ) : (
-                                        <a
-                                            href="/become-expert"
-                                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm"
-                                        >
-                                            <UserPlus className="w-4 h-4" />
-                                            <span className="text-sm font-medium">Hazte Buscador</span>
-                                        </a>
-                                    ))}
-                                </div>
-                            )}
-
-                            {isAuthenticated ? (
-                                <div className="relative" ref={profileMenuRef}>
-                                    <button
-                                        onClick={() => setShowProfileMenu(!showProfileMenu)}
-                                        className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center hover:bg-blue-200 transition-colors mr-12 md:mr-0"
-                                    >
-                                        <span className="text-sm font-medium text-blue-600">
-                                            {user?.name?.[0]?.toUpperCase()}
-                                        </span>
-                                    </button>
-
-                                    {showProfileMenu && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
-                                            <div className="px-4 py-2 border-b border-gray-100">
-                                                <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-                                                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                                            </div>
-                                            <a
-                                                href="/suscripciones"
-                                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                                onClick={() => setShowProfileMenu(false)}
-                                            >
-                                                <Sparkles className="w-4 h-4 text-blue-600" />
-                                                Actualizar Suscripción
-                                            </a>
-                                            <button
-                                                onClick={handleSignOut}
-                                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                                            >
-                                                <LogOut className="w-4 h-4" />
-                                                Cerrar Sesión
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="mr-12 md:mr-0">
-                                    <GoogleAuth />
-                                </div>
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
                 </header>
 
-                {/* Mobile Menu Button - Only show when authenticated */}
-                {isAuthenticated && (
-                    <button
-                        onClick={() => setSidebarOpen(!sidebarOpen)}
-                        className="fixed top-3 right-3 z-50 p-2 bg-white/95 backdrop-blur-sm shadow-sm hover:shadow md:hidden border border-gray-100/50 rounded-full transition-all"
-                    >
-                        <Menu className="w-5 h-5 text-gray-600" />
-                    </button>
-                )}
+
 
                 {/* Sidebar - Only show when authenticated */}
                 {isAuthenticated && (
@@ -315,10 +303,9 @@ const App: React.FC = React.memo(() => {
                     />
                 )}
 
-                <Background />
-
-                <main className="relative z-10">
-                    <section className="w-full min-h-screen flex flex-col pt-16">
+                <main className="relative">
+                    <Background />
+                    <section className="w-full min-h-screen flex flex-col relative z-10">
                         <Routes>
                             <Route path="/verify-phone" element={<PhoneVerificationPage />} />
                             <Route path="/privacy-policy.html" element={<PrivacyPolicy />} />
@@ -326,7 +313,7 @@ const App: React.FC = React.memo(() => {
                             <Route path="/cancel" element={<PaymentCancelPage />} />
                             <Route path="/ad/:id" element={<AdDetails onBack={() => window.history.back()} />} />
                             <Route path="/busquedas" element={<ProtectedRoute><SearchesPage /></ProtectedRoute>} />
-                            <Route path="/busquedas/:id" element={<ProtectedRoute><SearchDetails searchId={parseInt(useParams<{ id: string }>().id || '0')} onBack={() => useNavigate()(-1)} isAdmin={user?.email === 'dcastillaa@gmail.com'} /></ProtectedRoute>} />
+                            <Route path="/busquedas/:id" element={<ProtectedRoute><SearchDetailsWrapper isAdmin={user?.email === 'dcastillaa@gmail.com'} /></ProtectedRoute>} />
                             <Route path="/detalles/:id" element={<ProtectedRoute><SearchResultsPage /></ProtectedRoute>} />
                             <Route path="/suscripciones" element={<ProtectedRoute><SubscriptionsPage /></ProtectedRoute>} />
                             <Route path="/admin" element={<ProtectedRoute><AdminPanelPage /></ProtectedRoute>} />
@@ -336,6 +323,8 @@ const App: React.FC = React.memo(() => {
                         </Routes>
                     </section>
                 </main>
+
+
                 {showFavorites && <FavoritesModal onClose={() => setShowFavorites(false)} />}
                 <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
                 {notification && (

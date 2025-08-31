@@ -57,6 +57,7 @@ export const API_CONFIG = {
             create: `${API_PATH}/Notification`,
             delete: (id: string) => `${API_PATH}/Notification/${id}`,
             markAsRead: (id: string) => `${API_PATH}/Notification/${id}/read`,
+            markAllAsRead: `${API_PATH}/Notification/mark-all-read`,
         },
         expert: {
             profile: `${API_PATH}/User/expert-profile`,

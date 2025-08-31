@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Car, Home, Bike } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { GoogleAuth } from './GoogleAuth';
 
 interface HomePresentationProps {
     onScrollToForm: () => void;
 }
 
 const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
+    const { isAuthenticated } = useAuth();
     const [currentWord, setCurrentWord] = useState('coche');
     const [opacity, setOpacity] = useState(1);
 
@@ -66,19 +69,21 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:24px_24px]"></div>
             </div>
 
-            <div className="relative z-10 w-full px-6 md:px-12 lg:px-16 py-12 md:py-16 lg:py-20">
+            <div className="relative z-10 w-full px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 md:py-16 lg:py-20">
                 <div className="max-w-6xl mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
-                        <div className="space-y-7">
-                            <div className="space-y-5">
-                                {/* Badge/Tag */}
-                                <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium border border-blue-100">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                        <div className="space-y-6 lg:space-y-7 text-center lg:text-left">
+                            <div className="space-y-4 lg:space-y-5">
+                                {/* Badge/Tag optimizado para móvil */}
+                                <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border border-blue-100">
                                     <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                                    Búsqueda inteligente de vehículos
+                                    <span className="hidden sm:inline">Búsqueda inteligente de vehículos</span>
+                                    <span className="sm:hidden">Búsqueda inteligente</span>
                                 </div>
                                 
-                                <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-[1.1] tracking-tight">
-                                    Tu eliges el{' '}
+                                {/* Título optimizado para móvil */}
+                                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-[1.1] tracking-tight">
+                                    <span className="block sm:inline">Tu eliges el{' '}</span>
                                     <span
                                         className="relative inline-block"
                                         style={{ opacity: opacity, transition: 'opacity 0.5s ease-in-out' }}
@@ -87,31 +92,44 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                             {currentWord}
                                         </span>
                                     </span>
-                                    ,{' '}
-                                    nosotros hacemos el{' '}
+                                    <span className="block sm:inline">,{' '}nosotros hacemos el{' '}</span>
                                     <span className="text-gray-900 font-extrabold">resto</span>
                                 </h1>
                                 
-                                <p className="text-lg text-gray-600 max-w-xl leading-relaxed font-light">
-                                    Plataforma profesional de búsqueda y verificación de vehículos de segunda mano con tecnología avanzada y expertos certificados.
+                                {/* Descripción más corta en móvil */}
+                                <p className="text-base sm:text-lg text-gray-600 max-w-xl leading-relaxed font-light mx-auto lg:mx-0">
+                                    <span className="hidden sm:inline">
+                                        Plataforma profesional de búsqueda y verificación de vehículos de segunda mano con tecnología avanzada y expertos certificados.
+                                    </span>
+                                    <span className="sm:hidden">
+                                        Encuentra y verifica vehículos de segunda mano con expertos certificados.
+                                    </span>
                                 </p>
                             </div>
                             
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <button
-                                    onClick={onScrollToForm}
-                                    className="group inline-flex items-center justify-center gap-3 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold text-base hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl"
-                                >
-                                    Comenzar búsqueda
-                                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </button>
-                                <button className="inline-flex items-center justify-center gap-2 text-gray-700 px-5 py-3 rounded-lg font-medium text-base hover:bg-gray-50 transition-all duration-300 border border-gray-200">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {/* Botones optimizados para móvil */}
+                            <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-sm mx-auto lg:max-w-none lg:mx-0 lg:flex-row">
+                                {isAuthenticated ? (
+                                    <button
+                                        onClick={onScrollToForm}
+                                        className="group inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3.5 sm:py-3 rounded-lg font-semibold text-base hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl w-full lg:w-auto"
+                                    >
+                                        <span>Comenzar búsqueda</span>
+                                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                ) : (
+                                    <div className="w-full lg:w-auto">
+                                        <GoogleAuth />
+                                    </div>
+                                )}
+                                
+                                <button className="inline-flex items-center justify-center gap-2 text-gray-700 px-5 py-3.5 sm:py-3 rounded-lg font-medium text-base hover:bg-gray-50 transition-all duration-300 border border-gray-200 w-full lg:w-auto">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v5a2 2 0 002 2z" />
                                     </svg>
-                                    Ver demo
+                                    <span>Ver demo</span>
                                 </button>
                             </div>
                         </div>

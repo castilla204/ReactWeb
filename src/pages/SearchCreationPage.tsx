@@ -440,6 +440,7 @@ const SearchCreationPage: React.FC = () => {
                                 </a>
                                 <a href="/terms.html" className="text-xs md:text-sm text-gray-600 hover:text-blue-800">Términos y Condiciones</a>
                                 <a href="/contact.html" className="text-xs md:text-sm text-gray-600 hover:text-blue-800">Contacto</a>
+                                <a href="/become-expert" className="text-xs md:text-sm text-gray-600 hover:text-blue-800">Hazte Buscador</a>
                             </div>
                         </div>
                     </footer>
