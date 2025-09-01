@@ -31,6 +31,16 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
         widgetContainer.style.width = '100%'; // Ocupa todo el ancho disponible
         widgetContainer.style.height = 'auto'; // Altura automática para adaptarse al contenido
         widgetContainer.style.overflow = 'visible'; // Permitir que muestre más contenido
+        
+        // Escalado uniforme en móvil
+        if (window.innerWidth < 768) {
+            widgetContainer.style.transform = 'scale(0.9)';
+            widgetContainer.style.transformOrigin = 'center top';
+            widgetContainer.style.width = '100%';
+            widgetContainer.style.maxWidth = '100%';
+            widgetContainer.style.overflow = 'hidden';
+            widgetContainer.style.maxHeight = '180px';
+        }
         const script = document.createElement('script');
         script.src = 'https://static.elfsight.com/platform/platform.js';
         script.async = true;
@@ -72,18 +82,77 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
             <div className="relative z-10 w-full px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 md:py-16 lg:py-20">
                 <div className="max-w-6xl mx-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-                        <div className="space-y-6 lg:space-y-7 text-center lg:text-left">
-                            <div className="space-y-4 lg:space-y-5">
-                                {/* Badge/Tag optimizado para móvil */}
-                                <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border border-blue-100">
-                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                                    <span className="hidden sm:inline">Búsqueda inteligente de vehículos</span>
-                                    <span className="sm:hidden">Búsqueda inteligente</span>
+                        <div className="space-y-6 lg:space-y-7 text-left lg:text-left">
+                            {/* Versión móvil - diseño limpio */}
+                            <div className="lg:hidden">
+                                {/* Header con efecto degradado en dos filas */}
+                                <div className="relative w-full h-20 mb-8 overflow-visible">
+                                    {/* FILA 1: Arriba - más visible */}
+                                    <div className="absolute top-0 left-12 animate-fade-float animation-delay-800 z-20">
+                                        <Car className="w-5 h-5 text-blue-500 drop-shadow-lg transform rotate-12" />
+                                    </div>
+                                    <div className="absolute top-0 right-16 animate-fade-float animation-delay-1400 z-20">
+                                        <Bike className="w-5 h-5 text-purple-500 drop-shadow-lg transform -rotate-18" />
+                                    </div>
+                                    <div className="absolute top-1 left-1/2 transform -translate-x-1/2 animate-fade-float animation-delay-2000 z-20">
+                                        <Home className="w-4 h-4 text-violet-500 drop-shadow-md transform rotate-24" />
+                                    </div>
+                                    
+                                    {/* FILA 2: Abajo desordenada - degradado */}
+                                    <div className="absolute top-8 left-6 animate-fade-float animation-delay-2600 z-20" style={{ opacity: 0.6 }}>
+                                        <Car className="w-4 h-4 text-orange-500 drop-shadow-md transform -rotate-21" />
+                                    </div>
+                                    <div className="absolute top-10 right-8 animate-fade-float animation-delay-3200 z-20" style={{ opacity: 0.5 }}>
+                                        <Bike className="w-3 h-3 text-emerald-500 drop-shadow-sm transform rotate-45" />
+                                    </div>
+                                    <div className="absolute top-9 left-1/3 animate-fade-float animation-delay-3800 z-20" style={{ opacity: 0.4 }}>
+                                        <Home className="w-3 h-3 text-cyan-500 drop-shadow-sm transform -rotate-12" />
+                                    </div>
+                                    <div className="absolute top-11 right-1/3 animate-fade-float animation-delay-4400 z-20" style={{ opacity: 0.3 }}>
+                                        <Car className="w-2 h-2 text-pink-500 drop-shadow-sm transform rotate-30" />
+                                    </div>
                                 </div>
                                 
-                                {/* Título optimizado para móvil */}
-                                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-[1.1] tracking-tight">
-                                    <span className="block sm:inline">Tu eliges el{' '}</span>
+                                {/* Contenido principal */}
+                                <div className="space-y-6">
+                                    {/* Título centrado */}
+                                    <div className="text-center">
+                                        <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+                                            <span className="block">Revisa tu{' '}
+                                                <span
+                                                    className="relative inline-block"
+                                                    style={{ opacity: opacity, transition: 'opacity 0.5s ease-in-out' }}
+                                                >
+                                                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-extrabold">
+                                                        {currentWord}
+                                                    </span>
+                                                </span>
+                                            </span>
+                                            <span className="block">antes de comprar</span>
+                                            <span className="block text-gray-900 font-extrabold">con expertos</span>
+                                        </h1>
+                                    </div>
+                                    
+                                    {/* Descripción centrada */}
+                                    <div className="text-center">
+                                        <p className="text-lg text-gray-600 leading-relaxed font-light">
+                                            Plataforma profesional de búsqueda y verificación de vehículos de segunda mano con tecnología avanzada y expertos certificados.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Versión desktop - mantener original */}
+                            <div className="hidden lg:block space-y-4 lg:space-y-5">
+                                {/* Badge/Tag optimizado para desktop */}
+                                <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium border border-blue-100">
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                    <span>Búsqueda inteligente de vehículos</span>
+                                </div>
+                                
+                                {/* Título desktop */}
+                                <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-[1.1] tracking-tight">
+                                    <div className="block">Revisa tu{' '}
                                     <span
                                         className="relative inline-block"
                                         style={{ opacity: opacity, transition: 'opacity 0.5s ease-in-out' }}
@@ -92,27 +161,23 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                             {currentWord}
                                         </span>
                                     </span>
-                                    <span className="block sm:inline">,{' '}nosotros hacemos el{' '}</span>
-                                    <span className="text-gray-900 font-extrabold">resto</span>
+                                    </div>
+                                    <div className="block">antes de comprar</div>
+                                    <div className="block text-gray-900 font-extrabold">con expertos</div>
                                 </h1>
                                 
-                                {/* Descripción más corta en móvil */}
-                                <p className="text-base sm:text-lg text-gray-600 max-w-xl leading-relaxed font-light mx-auto lg:mx-0">
-                                    <span className="hidden sm:inline">
+                                {/* Descripción desktop */}
+                                <p className="text-lg text-gray-600 max-w-xl leading-relaxed font-light">
                                         Plataforma profesional de búsqueda y verificación de vehículos de segunda mano con tecnología avanzada y expertos certificados.
-                                    </span>
-                                    <span className="sm:hidden">
-                                        Encuentra y verifica vehículos de segunda mano con expertos certificados.
-                                    </span>
                                 </p>
                             </div>
                             
-                            {/* Botones optimizados para móvil */}
-                            <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-sm mx-auto lg:max-w-none lg:mx-0 lg:flex-row">
+                            {/* Botones móvil - diseño limpio */}
+                            <div className="lg:hidden space-y-3">
                                 {isAuthenticated ? (
                                     <button
                                         onClick={onScrollToForm}
-                                        className="group inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3.5 sm:py-3 rounded-lg font-semibold text-base hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl w-full lg:w-auto"
+                                        className="group w-full inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-lg font-semibold text-base hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl"
                                     >
                                         <span>Comenzar búsqueda</span>
                                         <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,12 +185,38 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                         </svg>
                                     </button>
                                 ) : (
-                                    <div className="w-full lg:w-auto">
+                                    <div className="w-full">
                                         <GoogleAuth />
                                     </div>
                                 )}
                                 
-                                <button className="inline-flex items-center justify-center gap-2 text-gray-700 px-5 py-3.5 sm:py-3 rounded-lg font-medium text-base hover:bg-gray-50 transition-all duration-300 border border-gray-200 w-full lg:w-auto">
+                                <button className="w-full inline-flex items-center justify-center gap-2 text-gray-700 px-5 py-3.5 rounded-lg font-medium text-base hover:bg-gray-50 transition-all duration-300 border border-gray-200 hover:border-gray-300">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v5a2 2 0 002 2z" />
+                                    </svg>
+                                    <span>Ver demo</span>
+                                </button>
+                            </div>
+                            
+                            {/* Botones desktop - mantener original */}
+                            <div className="hidden lg:flex flex-row gap-4">
+                                {isAuthenticated ? (
+                                    <button
+                                        onClick={onScrollToForm}
+                                        className="group inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-lg font-semibold text-base hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                                    >
+                                        <span>Comenzar búsqueda</span>
+                                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                ) : (
+                                    <div>
+                                        <GoogleAuth />
+                                    </div>
+                                )}
+                                
+                                <button className="inline-flex items-center justify-center gap-2 text-gray-700 px-5 py-3.5 rounded-lg font-medium text-base hover:bg-gray-50 transition-all duration-300 border border-gray-200">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v5a2 2 0 002 2z" />
                                     </svg>
@@ -135,8 +226,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                         </div>
                         
                         <div className="relative flex justify-center lg:justify-end">
-                            {/* Main image container with proper spacing for icons */}
-                            <div className="relative p-10">
+                            {/* Main image container - oculta en móvil, visible en desktop */}
+                            <div className="hidden lg:block relative p-10">
                                 {/* Icons scattered organically - minimal but impactful */}
                                 
                                 {/* LADO IZQUIERDO - solo 2 iconos estratégicos */}
@@ -176,8 +267,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                         </div>
                     </div>
                     
-                    <div className="mt-20 lg:mt-24">
-                        <div id="widget-mount-point" className="w-full">
+                    <div className="mt-4 lg:mt-24">
+                        <div id="widget-mount-point" className="w-full lg:w-full">
                             {/* Widget de reseñas se inyectará aquí dinámicamente */}
                         </div>
                     </div>
@@ -196,19 +287,19 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 @keyframes fadeFloat {
                     0%, 100% { 
                         transform: translateY(0px); 
-                        opacity: 0.05; 
+                        opacity: 0.1; 
                     }
                     25% { 
-                        transform: translateY(-10px); 
-                        opacity: 0.4; 
+                        transform: translateY(-3px); 
+                        opacity: 0.5; 
                     }
                     50% { 
-                        transform: translateY(-20px); 
+                        transform: translateY(-6px); 
                         opacity: 1; 
                     }
                     75% { 
-                        transform: translateY(-10px); 
-                        opacity: 0.4; 
+                        transform: translateY(-3px); 
+                        opacity: 0.5; 
                     }
                 }
                 .animate-fade-float {
