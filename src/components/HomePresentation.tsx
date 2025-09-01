@@ -86,7 +86,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             {/* Versión móvil - diseño limpio */}
                             <div className="lg:hidden">
                                 {/* Header con efecto degradado en dos filas */}
-                                <div className="relative w-full h-20 mb-8 overflow-visible">
+                                <div className="relative w-full h-20 mb-4 overflow-visible">
                                     {/* FILA 1: Arriba - más visible */}
                                     <div className="absolute top-0 left-12 animate-fade-float animation-delay-800 z-20">
                                         <Car className="w-5 h-5 text-blue-500 drop-shadow-lg transform rotate-12" />
