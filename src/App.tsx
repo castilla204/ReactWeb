@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Heart, Sparkles, Shield, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase } from 'lucide-react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { Search, Heart, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { NotificationCenter } from './components/NotificationCenter';
 import { useNotifications } from './hooks/useNotifications';
@@ -12,7 +12,7 @@ import { AdDetails } from './components/AdDetails';
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 import { PaymentCancelPage } from './pages/PaymentCancelPage';
 import { Notification, NotificationType } from './components/Notification';
-import { useUserSettings } from './hooks/useUserSettings';
+
 import SearchesPage from './pages/SearchesPage';
 import SearchCreationPage from './pages/SearchCreationPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
@@ -38,7 +38,7 @@ const App: React.FC = React.memo(() => {
     const { user, isAuthenticated, signOut } = useAuth();
     const [showFavorites, setShowFavorites] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
-    const { settings, toggleWhatsApp } = useUserSettings();
+
     const [notification, setNotification] = useState<{
         type: NotificationType;
         message: string;
@@ -78,13 +78,10 @@ const App: React.FC = React.memo(() => {
                 {/* Header */}
                 <header className="h-16 bg-white border-b border-gray-200 shadow-sm relative z-50">
                     <div className="max-w-7xl mx-auto h-full px-4 lg:px-6 flex items-center justify-between">
-                        {/* Logo profesional */}
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
-                                <span className="text-white font-bold text-sm">A</span>
-                            </div>
-                            <h1 className="text-xl font-bold text-gray-900">ATRAPO</h1>
-                        </div>
+                        {/* Marca YoChequeo */}
+                        <h1 className="text-xl font-bold bg-gradient-to-r from-gray-800 via-blue-700 to-emerald-700 bg-clip-text text-transparent tracking-tight">
+                            YoChequeo
+                        </h1>
 
                         {/* Navegación compacta */}
                         <div className="flex items-center">

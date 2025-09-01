@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Car, Home, Bike, ArrowRight, Shield, Eye, Search } from 'lucide-react';
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
@@ -8,6 +8,7 @@ import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import { useAuth } from '../contexts/AuthContext';
 import { Notification, NotificationType } from '../components/Notification';
 import HomePresentation from '../components/HomePresentation';
+
 
 interface SearchParameters {
     keywords: string;
@@ -32,9 +33,7 @@ const SearchCreationPage: React.FC = () => {
     const [searchParameters, setSearchParameters] = useState<Partial<SearchParameters>>({
         keywords: '',
         userSearch: '',
-        category: 1,
         frequency: 24,
-        serviceTypeId: 1,
         strictMatchOnly: false,
     });
     const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
@@ -63,7 +62,9 @@ const SearchCreationPage: React.FC = () => {
             return;
         }
         console.log('SearchCreationPage - Parameters received:', parameters);
-        setSearchParameters(parameters);
+        // Ensure strictMatchOnly is always false
+        const updatedParameters = { ...parameters, strictMatchOnly: false };
+        setSearchParameters(updatedParameters);
         setCurrentStep(2);
     };
 
@@ -167,33 +168,33 @@ const SearchCreationPage: React.FC = () => {
             {currentStep === 0 ? (
                 <>
                     <HomePresentation onScrollToForm={scrollToForm} />
-                    <div className="w-full py-8 md:py-12">
+                    <div className="w-full py-6 md:py-8">
                         <div
                             id="form-section"
-                            className="w-full mx-auto max-w-7xl px-4 md:px-8"
+                            className="w-full mx-auto max-w-4xl lg:max-w-6xl px-4 md:px-6 lg:px-8"
                         >
                             {/* Header */}
-                            <div className="mb-8">
-                                <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-3">
+                            <div className="mb-6">
+                                <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">
                                     Crea tu búsqueda personalizada
                                 </h2>
-                                <p className="text-gray-600 max-w-3xl">
-                                    Define tus preferencias con precisión y déjanos encontrar exactamente lo que buscas. 
+                                <p className="text-sm md:text-base text-gray-600">
+                                    Define tus preferencias y déjanos encontrar exactamente lo que buscas.
                                 </p>
                             </div>
-                            <div className="space-y-8 w-full">
+                            <div className="space-y-6 w-full">
                                 {/* Service Type Section */}
-                                <div className="border-b border-gray-200 pb-8">
-                                    <div className="mb-6">
+                                <div className="border-b border-gray-200 pb-6">
+                                    <div className="mb-4">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <span className="flex items-center justify-center w-7 h-7 bg-gray-900 text-white rounded-full text-sm font-medium">1</span>
-                                            <h3 className="text-xl font-semibold text-gray-900">Tipo de servicio</h3>
+                                            <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-medium">1</span>
+                                            <h3 className="text-lg font-semibold text-gray-900">Tipo de servicio</h3>
                                         </div>
-                                        <p className="text-gray-600 ml-10">Elige cómo quieres que realicemos tu búsqueda</p>
+                                        <p className="text-sm text-gray-600 ml-9">Elige cómo quieres que realicemos tu búsqueda</p>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-10">
-                                        <label className={`cursor-pointer p-6 border rounded-lg transition-all ${searchParameters.serviceTypeId === 1
-                                            ? 'border-gray-900 bg-gray-50'
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 ml-9">
+                                        <label className={`cursor-pointer p-4 border rounded-lg transition-all ${searchParameters.serviceTypeId === 1
+                                            ? 'border-blue-600 bg-blue-50'
                                             : 'border-gray-200 hover:border-gray-300 bg-white'
                                             }`}>
                                             <input
@@ -209,27 +210,30 @@ const SearchCreationPage: React.FC = () => {
                                                 }}
                                                 className="sr-only"
                                             />
-                                            <div className="flex items-start gap-3">
-                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${searchParameters.serviceTypeId === 1
-                                                    ? 'border-gray-900 bg-gray-900'
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${searchParameters.serviceTypeId === 1
+                                                    ? 'border-blue-600 bg-blue-600'
                                                     : 'border-gray-300'
                                                     }`}>
                                                     {searchParameters.serviceTypeId === 1 && (
-                                                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                                                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                                                     )}
                                                 </div>
-                                                <div>
+                                                <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <Eye className="w-4 h-4 text-gray-600" />
-                                                        <h4 className="font-medium text-gray-900">Solo revisión</h4>
+                                                        <Eye className="w-4 h-4 text-blue-600" />
+                                                        <h4 className="font-semibold text-gray-900">Solo revisión</h4>
                                                     </div>
-                                                    <p className="text-sm text-gray-600 mb-2">Únicamente revisión presencial de un anuncio específico</p>
-                                                    <span className="text-xs text-gray-500">Directo • Específico • Presencial</span>
+                                                    <p className="text-sm text-gray-600 mb-1">Revisión presencial de un anuncio específico</p>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        <span className="px-2 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-full">Directo</span>
+                                                        <span className="px-2 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-full">Presencial</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </label>
-                                        <label className={`cursor-pointer p-6 border rounded-lg transition-all ${searchParameters.serviceTypeId === 2
-                                            ? 'border-gray-900 bg-gray-50'
+                                        <label className={`cursor-pointer p-4 border rounded-lg transition-all ${searchParameters.serviceTypeId === 2
+                                            ? 'border-blue-600 bg-blue-50'
                                             : 'border-gray-200 hover:border-gray-300 bg-white'
                                             }`}>
                                             <input
@@ -241,60 +245,63 @@ const SearchCreationPage: React.FC = () => {
                                                 }
                                                 className="sr-only"
                                             />
-                                            <div className="flex items-start gap-3">
-                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${searchParameters.serviceTypeId === 2
-                                                    ? 'border-gray-900 bg-gray-900'
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${searchParameters.serviceTypeId === 2
+                                                    ? 'border-blue-600 bg-blue-600'
                                                     : 'border-gray-300'
                                                     }`}>
                                                     {searchParameters.serviceTypeId === 2 && (
-                                                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                                                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                                                     )}
-                                        </div>
-                                        <div>
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Search className="w-4 h-4 text-gray-600" />
-                                                        <Eye className="w-4 h-4 text-gray-600" />
-                                                        <h4 className="font-medium text-gray-900">Búsqueda web + revisión</h4>
-                                                    </div>
-                                                    <p className="text-sm text-gray-600 mb-2">Búsqueda automatizada más revisión manual experta</p>
-                                                    <span className="text-xs text-gray-500">Completo • Personal • Premium</span>
                                                 </div>
-                                        </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <Search className="w-4 h-4 text-blue-600" />
+                                                        <Eye className="w-4 h-4 text-blue-600" />
+                                                        <h4 className="font-semibold text-gray-900">Búsqueda web + revisión</h4>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 mb-1">Búsqueda automatizada más revisión manual experta</p>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        <span className="px-2 py-0.5 text-xs bg-green-50 text-green-700 rounded-full">Completo</span>
+                                                        <span className="px-2 py-0.5 text-xs bg-green-50 text-green-700 rounded-full">Premium</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </label>
                                     </div>
                                 </div>
 
                                 {/* Categories Section */}
-                                <div className="border-b border-gray-200 pb-8">
-                                    <div className="mb-6">
+                                <div className="border-b border-gray-200 pb-6">
+                                    <div className="mb-4">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <span className="flex items-center justify-center w-7 h-7 bg-gray-900 text-white rounded-full text-sm font-medium">2</span>
-                                            <h3 className="text-xl font-semibold text-gray-900">Selecciona tu categoría</h3>
+                                            <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-medium">2</span>
+                                            <h3 className="text-lg font-semibold text-gray-900">Selecciona tu categoría</h3>
                                         </div>
-                                        <p className="text-gray-600 ml-10">¿Qué tipo de producto o servicio buscas?</p>
+                                        <p className="text-sm text-gray-600 ml-9">¿Qué tipo de producto o servicio buscas?</p>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-10">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 ml-9">
                                         {safeCategories.map((category) => (
                                             <button
                                                 key={category.id}
                                                 onClick={() =>
                                                     setSearchParameters((prev) => ({ ...prev, category: category.id }))
                                                 }
-                                                className={`text-left p-6 border rounded-lg transition-all ${searchParameters.category === category.id
-                                                    ? 'border-gray-900 bg-gray-50'
+                                                className={`text-left p-4 border rounded-lg transition-all ${searchParameters.category === category.id
+                                                    ? 'border-blue-600 bg-blue-50'
                                                     : 'border-gray-200 hover:border-gray-300 bg-white'
                                                     }`}
                                             >
-                                                <div className={`w-12 h-12 mb-4 rounded-lg flex items-center justify-center ${searchParameters.category === category.id
-                                                    ? 'bg-gray-900 text-white'
+                                                <div className={`w-10 h-10 mb-3 rounded-lg flex items-center justify-center ${searchParameters.category === category.id
+                                                    ? 'bg-blue-600 text-white'
                                                     : 'bg-gray-100 text-gray-600'
                                                     }`}>
-                                                    {category.id === 1 && <Car className="w-6 h-6" />}
-                                                    {category.id === 2 && <Bike className="w-6 h-6" />}
-                                                    {category.id === 3 && <Home className="w-6 h-6" />}
+                                                    {category.id === 1 && <Car className="w-5 h-5" />}
+                                                    {category.id === 2 && <Bike className="w-5 h-5" />}
+                                                    {category.id === 3 && <Home className="w-5 h-5" />}
                                                 </div>
-                                                <h4 className="font-medium text-gray-900 mb-1">{category.name}</h4>
-                                                <p className="text-sm text-gray-500">
+                                                <h4 className="font-semibold text-gray-900 mb-1 text-sm">{category.name}</h4>
+                                                <p className="text-xs text-gray-500">
                                                     {category.id === 1 && 'Coches, motos y vehículos'}
                                                     {category.id === 2 && 'Motocicletas y ciclomotores'}
                                                     {category.id === 3 && 'Inmuebles y propiedades'}
@@ -306,105 +313,85 @@ const SearchCreationPage: React.FC = () => {
 
                                                                 {/* Keywords Section - Only show if serviceTypeId is 2 */}
                                 {searchParameters.serviceTypeId === 2 && (
-                                    <div className="border-b border-gray-200 pb-8">
-                                        <div className="mb-6">
+                                    <div className="border-b border-gray-200 pb-6">
+                                        <div className="mb-4">
                                             <div className="flex items-center gap-3 mb-2">
-                                                <span className="flex items-center justify-center w-7 h-7 bg-gray-900 text-white rounded-full text-sm font-medium">3</span>
-                                                <h3 className="text-xl font-semibold text-gray-900">Palabras clave</h3>
+                                                <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-medium">3</span>
+                                                <h3 className="text-lg font-semibold text-gray-900">Palabras clave</h3>
                                             </div>
-                                            <p className="text-gray-600 ml-10">Define qué estás buscando específicamente</p>
+                                            <p className="text-sm text-gray-600 ml-9">Define qué estás buscando específicamente</p>
                                         </div>
-                                        <div className="ml-10">
-                                        <input
-                                            type="text"
-                                            value={searchParameters.keywords || ''}
-                                            onChange={(e) =>
-                                                setSearchParameters((prev) => ({ ...prev, keywords: e.target.value }))
-                                            }
-                                            placeholder="Ej: Tesla Model 3, BMW M4, Piso en Madrid centro..."
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none transition-all"
+                                        <div className="ml-9">
+                                            <input
+                                                type="text"
+                                                value={searchParameters.keywords || ''}
+                                                onChange={(e) =>
+                                                    setSearchParameters((prev) => ({ ...prev, keywords: e.target.value }))
+                                                }
+                                                placeholder="Ej: Tesla Model 3, BMW M4, Piso en Madrid centro..."
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none transition-all"
                                             />
-                                            <div className="mt-3 flex flex-wrap gap-2">
-                                                <span className="text-sm text-gray-500">Ejemplos:</span>
-                                        {['Tesla Model S', 'BMW Serie 3', 'Piso Madrid'].map((example) => (
-                                            <button
-                                                key={example}
-                                                onClick={() => setSearchParameters(prev => ({ ...prev, keywords: example }))}
-                                                        className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors"
-                                            >
-                                                {example}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
+                                            <div className="mt-2 flex flex-wrap gap-1">
+                                                <span className="text-xs text-gray-500">Ejemplos:</span>
+                                                {['Tesla Model S', 'BMW Serie 3', 'Piso Madrid'].map((example) => (
+                                                    <button
+                                                        key={example}
+                                                        onClick={() => setSearchParameters(prev => ({ ...prev, keywords: example }))}
+                                                        className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs hover:bg-gray-200 transition-colors"
+                                                    >
+                                                        {example}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
-                                                                {/* Description Section */}
-                                <div className="border-b border-gray-200 pb-8">
-                                    <div className="mb-6">
+                                {/* Description Section */}
+                                <div className="border-b border-gray-200 pb-6">
+                                    <div className="mb-4">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <span className="flex items-center justify-center w-7 h-7 bg-gray-900 text-white rounded-full text-sm font-medium">{searchParameters.serviceTypeId === 2 ? '4' : '3'}</span>
-                                            <h3 className="text-xl font-semibold text-gray-900">
+                                            <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-medium">{searchParameters.serviceTypeId === 2 ? '4' : '3'}</span>
+                                            <h3 className="text-lg font-semibold text-gray-900">
                                                 {searchParameters.serviceTypeId === 1 
-                                                    ? 'Introduce la URL del anuncio' 
+                                                    ? 'URL del anuncio' 
                                                     : 'Describe tu búsqueda'
                                                 }
                                             </h3>
                                         </div>
-                                        <p className="text-gray-600 ml-10">
+                                        <p className="text-sm text-gray-600 ml-9">
                                             {searchParameters.serviceTypeId === 1 
-                                                ? 'URL del anuncio encontrado o si no está en ninguna plataforma de segunda mano indícalo'
-                                                : 'Añade detalles específicos que te ayuden a encontrar exactamente lo que quieres'
+                                                ? 'URL del anuncio o descripción si no está online'
+                                                : 'Detalles específicos para encontrar lo que buscas'
                                             }
                                         </p>
                                     </div>
-                                    <div className="ml-10">
+                                    <div className="ml-9">
                                         <textarea
                                             value={searchParameters.userSearch || ''}
                                             onChange={(e) =>
                                                 setSearchParameters((prev) => ({ ...prev, userSearch: e.target.value }))
                                             }
                                             placeholder={searchParameters.serviceTypeId === 1 
-                                                ? "Ejemplo: https://www.milanuncios.com/anuncio-coche-123456 o describe: Coche particular en venta, no está en plataformas online..."
-                                                : "Ejemplo: Busco un coche de menos de 15.000€, automático, con pocos kilómetros, preferiblemente de color blanco o negro..."
+                                                ? "Ej: https://www.milanuncios.com/anuncio-123456 o describe: Coche particular, no está online..."
+                                                : "Ej: Coche <15.000€, automático, pocos km, blanco/negro..."
                                             }
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 min-h-[120px] focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none transition-all resize-none"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 min-h-[80px] focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none transition-all resize-none"
                                         />
                                         {searchParameters.serviceTypeId === 2 && (
-                                            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        {['💰 Precio máximo', '📍 Ubicación', '🚗 Características', '⭐ Estado'].map((tip) => (
-                                                    <div key={tip} className="text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded-md">
+                                            <div className="mt-2 flex flex-wrap gap-1">
+                                                {['💰 Precio', '📍 Ubicación', '🚗 Características', '⭐ Estado'].map((tip) => (
+                                                    <div key={tip} className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
                                                         {tip}
-                                            </div>
-                                        ))}
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
                                     </div>
                                 </div>
-                                {/* Additional Options */}
-                                <div className="border-b border-gray-200 pb-8">
-                                    <label className="flex items-start gap-3 cursor-pointer ml-10">
-                                        <input
-                                            type="checkbox"
-                                            checked={searchParameters.strictMatchOnly || false}
-                                            onChange={(e) =>
-                                                setSearchParameters((prev) => ({
-                                                    ...prev,
-                                                    strictMatchOnly: e.target.checked,
-                                                }))
-                                            }
-                                            className="mt-1 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900 focus:ring-1"
-                                        />
-                                        <div>
-                                            <span className="text-sm font-medium text-gray-900">Solo coincidencias exactas</span>
-                                            <p className="text-sm text-gray-600 mt-1">Buscar únicamente resultados que coincidan exactamente con tus criterios</p>
-                                        </div>
-                                    </label>
-                                </div>
 
                                 {/* Submit Button */}
-                                <div className="pt-8">
+                                <div className="pt-6">
                                     <button
                                         onClick={handleStartSearch}
                                         disabled={
