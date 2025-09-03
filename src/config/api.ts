@@ -1,5 +1,5 @@
-const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : /*'https://api.atrapo.io'*/'http://localhost:7124'; 
-const API_PATH = '/api';
+const DEV_SERVER = import.meta.env.DEV ? 'https://api.atrapo.io' : /*'http://localhost:7124'*/'https://api.atrapo.io'; 
+const API_PATH = '/api'; 
 
 export const API_CONFIG = {
     baseUrl: DEV_SERVER,
