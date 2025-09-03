@@ -158,14 +158,34 @@ export function ExpertPanelPage() {
             return;
         }
 
+        // Limit total number of images
+        const maxImages = 10;
+        const currentImageCount = selectedImages.length;
+        const availableSlots = maxImages - currentImageCount;
+        
+        if (files.length > availableSlots) {
+            setFormErrors(prev => ({ ...prev, images: `Solo puedes subir ${availableSlots} imágenes más (máximo ${maxImages} total)` }));
+            return;
+        }
+
         const validFiles = files.filter(file => {
-            const isValidType = ['image/jpeg', 'image/png'].includes(file.type);
-            const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
+            console.log(`File: ${file.name}, Type: ${file.type}, Size: ${file.size}`);
+            const isValidType = [
+                'image/jpeg',    // JPG files are reported as image/jpeg
+                'image/png', 
+                'image/webp', 
+                'image/gif', 
+                'image/bmp', 
+                'image/svg+xml'
+            ].includes(file.type);
+            const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB - allows very high quality photos
+            
             if (!isValidType) {
-                setFormErrors(prev => ({ ...prev, images: 'Solo se permiten imágenes JPG o PNG' }));
+                console.error(`Invalid file type: ${file.type} for file: ${file.name}`);
+                setFormErrors(prev => ({ ...prev, images: `Tipo de archivo no válido: ${file.type}. Solo se permiten JPG, PNG, WebP, GIF, BMP o SVG` }));
             }
             if (!isValidSize) {
-                setFormErrors(prev => ({ ...prev, images: 'Las imágenes no pueden superar los 5MB' }));
+                setFormErrors(prev => ({ ...prev, images: 'Las imágenes no pueden superar los 10MB' }));
             }
             return isValidType && isValidSize;
         });

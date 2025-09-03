@@ -62,12 +62,12 @@ export function ServiceSelection({
 
 
     // Helper function to truncate text to 600 characters
-    const truncateText = (text: string, maxLength: number = 400): string => {
+    const truncateText = (text: string, maxLength: number = 120): string => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
 };
 
-const truncateTextMobile = (text: string, maxLength: number = 150): string => {
+const truncateTextMobile = (text: string, maxLength: number = 80): string => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
 };
@@ -345,11 +345,39 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
 
                     {/* Right Content - Services */}
                     <div className="flex-1">
-            {errorMessage && (
+                        {/* Instructions Header */}
+                        <div className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4 md:p-5">
+                            <div className="flex items-start gap-4">
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 flex-shrink-0 mt-1">
+                                    <User className="w-3 h-3 text-gray-600" />
+                                </div>
+                                <div className="flex-1">
+                                    <h2 className="text-base font-medium text-gray-900 mb-2">
+                                        {selectedServiceTypeId === 1 ? 'Selección de inspector especializado' : 'Selección de experto en búsquedas'}
+                                    </h2>
+                                    <p className="text-sm text-gray-600 leading-relaxed mb-3">
+                                        {selectedServiceTypeId === 1 
+                                            ? 'Profesionales certificados que realizarán la inspección en la ubicación especificada.'
+                                            : 'Especialistas que ejecutarán búsquedas automatizadas e inspecciones presenciales.'
+                                        }
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 font-normal">
+                                        <span>• Certificados</span>
+                                        <span>• Verificados</span>
+                                        <span>• Pago seguro</span>
+                                    </div>
+                                    <div className="mt-3 text-xs text-gray-400 font-normal">
+                                        {selectedServiceTypeId === 1 ? 'Paso 3 de 3 • Selección de inspector' : 'Paso 3 de 3 • Selección de especialista'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {errorMessage && (
                             <div className="mb-6 bg-red-50 text-red-600 p-4 rounded-lg shadow-sm text-center">
-                    <p className="text-lg">{errorMessage}</p>
-                </div>
-            )}
+                                <p className="text-lg">{errorMessage}</p>
+                            </div>
+                        )}
 
                         <div className="space-y-6">
                 {services.map((service) => {
@@ -418,12 +446,12 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
 
                                 {/* Service Info */}
                                 <div className="p-4">
-                                    <p className="text-gray-900 text-sm mb-3 leading-relaxed">
-                                        {truncateTextMobile(service.conditions || 'Servicio profesional personalizado para tus necesidades específicas.')}
+                                    <p className="text-gray-900 text-sm mb-2 leading-snug">
+                                        {truncateTextMobile(service.conditions || 'Servicio profesional personalizado.')}
                                     </p>
 
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {['Revisión completa', 'Análisis detallado', 'Informe profesional'].map((tag) => (
+                                    <div className="flex flex-wrap gap-1 mb-3">
+                                        {['Revisión completa', 'Análisis detallado'].map((tag) => (
                                             <span key={tag} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
                                                 {tag}
                                             </span>
@@ -432,9 +460,9 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
 
                                                                                                             {/* Portfolio Images - Moved Below Description */}
                                     {service.imageUrls && service.imageUrls.length > 0 && (
-                                        <div className="flex gap-1 mb-4">
+                                        <div className="flex gap-1 mb-3">
                                             {service.imageUrls.slice(0, 3).map((url, index) => (
-                                                <div key={index} className="relative rounded overflow-hidden flex-1 h-28">
+                                                <div key={index} className="relative rounded overflow-hidden flex-1 h-20">
                                                     <img
                                                         src={url}
                                                         alt={`Portfolio ${index + 1}`}
@@ -564,21 +592,21 @@ const truncateTextMobile = (text: string, maxLength: number = 150): string => {
                             </div>
 
                                     {/* Service Description */}
-                                    <p className="text-gray-900 text-sm mb-3 leading-relaxed">
-                                        {truncateText(service.conditions || 'Servicio profesional personalizado para tus necesidades específicas.')}
+                                    <p className="text-gray-900 text-sm mb-2 leading-snug">
+                                        {truncateText(service.conditions || 'Servicio profesional personalizado.')}
                                     </p>
 
                                     {/* Location and Stats */}
-                                    <div className="flex items-center gap-1 text-sm text-gray-600 mb-3">
+                                    <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
                                         <span>🇪🇸 España</span>
                                         <span className="mx-2">•</span>
                                         <Clock className="w-3 h-3" />
-                                        <span>Ofertas tarifas por horas</span>
+                                        <span>Tarifas por horas</span>
                                     </div>
 
                                     {/* Service Tags */}
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {['Revisión completa', 'Análisis detallado', 'Informe profesional', '+4'].map((tag) => (
+                                    <div className="flex flex-wrap gap-1 mb-3">
+                                        {['Revisión completa', 'Análisis detallado'].map((tag) => (
                                             <span key={tag} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
                                                 {tag}
                                             </span>
