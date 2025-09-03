@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, Target, DollarSign, Zap, ArrowLeft, Crown, Search, Wallet, User, MapPin } from 'lucide-react';
+import { Sparkles, Target, Zap, ArrowLeft, Crown, Search, Wallet, User, MapPin } from 'lucide-react';
 import { GoogleMap, useLoadScript } from '@react-google-maps/api';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
@@ -74,7 +74,7 @@ export default function SearchForm({
         lng: parseFloat(parameters.longitude?.toString() || '-3.7038') || -3.7038
     };
 
-    const getZoomLevel = (range: number) => {
+    const getZoomLevel = () => {
         // Fixed zoom level to show 100km circle properly (much more zoomed out)
         return 5; // Zoom level 5 shows approximately 600-800km area to see 100km circle completely
     };
@@ -84,12 +84,15 @@ export default function SearchForm({
         window.scrollTo(0, 0);
     }, []);
 
-    if (balanceError) {
-        setNotification({
-            type: 'error',
-            message: '❌ Error al obtener el saldo de la cuenta',
-        });
-    }
+    // Handle balance error with useEffect to prevent infinite re-renders
+    useEffect(() => {
+        if (balanceError) {
+            setNotification({
+                type: 'error',
+                message: '❌ Error al obtener el saldo de la cuenta',
+            });
+        }
+    }, [balanceError]);
 
     const isDataComplete = serviceId !== null && expertName && servicePrice !== undefined;
 
@@ -143,6 +146,7 @@ export default function SearchForm({
                 latitude: parameters.latitude,
                 longitude: parameters.longitude,
                 locationRange: parameters.locationRange,
+                frequency: parameters.frequency,
                 category: parameters.category || 0,
                 minPrice: parameters.minPrice || null,
                 maxPrice: parameters.maxPrice || null,
@@ -248,29 +252,29 @@ export default function SearchForm({
                 </button>
             </div>
             <div className="bg-white rounded-xl border border-gray-100 shadow-xl overflow-hidden flex-1 flex flex-col">
-                <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                    <div className="flex items-center justify-between">
+                <div className="p-4 md:p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg flex-shrink-0">
                                 <Sparkles className="w-5 h-5 text-white" />
                             </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900">
+                            <div className="min-w-0 flex-1">
+                                <h2 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">
                                     Confirmación de Contratación
                                 </h2>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-gray-600 mt-1">
                                     Revisa los detalles antes de confirmar
                                 </p>
                             </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right flex-shrink-0">
                             <div className="text-xs text-gray-500 mb-1">Proceso seguro</div>
                             <div className="flex items-center gap-1 text-xs text-blue-600 font-medium">
                                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                Protegido por atrapo.io
-                            </div>
+                                <span className="whitespace-nowrap">Protegido por atrapo.io</span>
                             </div>
                         </div>
+                    </div>
                         {!isDataComplete && (
                         <div className="mt-3 bg-red-50 text-red-600 p-3 rounded text-sm">
                             ❌ Los datos del servicio están incompletos. Vuelve a seleccionar un servicio.
@@ -290,7 +294,7 @@ export default function SearchForm({
                         </div>
                     )}
                 </div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4 md:space-y-6">
                     {/* Trust Message */}
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4">
                         <div className="flex items-start gap-3">
@@ -310,34 +314,36 @@ export default function SearchForm({
                     </div>
                     
                                         {/* Simple chips for category and service type */}
-                    <div className="flex flex-wrap gap-3 mb-6">
-                        <div className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
-                            <Search className="w-3 h-3" />
-                                            {parameters.serviceTypeId === 1 ? 'Solo Revisión' : 
-                                             parameters.serviceTypeId === 2 ? 'Búsqueda + Revisión' : 
-                             'Servicio Personalizado'}
-                                    </div>
-                        <div className="bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
-                            <span>
+                    <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 md:mb-6">
+                        <div className="bg-blue-100 text-blue-800 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                            <Search className="w-3 h-3 flex-shrink-0" />
+                            <span className="whitespace-nowrap">
+                                {parameters.serviceTypeId === 1 ? 'Solo Revisión' : 
+                                 parameters.serviceTypeId === 2 ? 'Búsqueda + Revisión' : 
+                                 'Servicio Personalizado'}
+                            </span>
+                        </div>
+                        <div className="bg-emerald-100 text-emerald-800 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                            <span className="whitespace-nowrap">
                                 {parameters.category === 1 ? '🚗 Vehículos' : 
                                  parameters.category === 2 ? '🏍️ Motos' : 
                                  parameters.category === 3 ? '🏠 Inmuebles' : 
                                  '📝 General'}
-                                    </span>
-                                </div>
-                            </div>
+                            </span>
+                        </div>
+                    </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
-                                <Target className="w-3 h-3 text-gray-400" />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <div className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-100">
+                                <Target className="w-3 h-3 text-gray-400 flex-shrink-0" />
                                 <h3 className="text-xs font-medium text-gray-600 uppercase tracking-wide">Área</h3>
                             </div>
                             <div className="h-40 relative">
                                     {isLoaded ? (
                                         <GoogleMap
                                             mapContainerStyle={{ width: '100%', height: '100%' }}
-                                            zoom={getZoomLevel(parameters.locationRange)}
+                                            zoom={getZoomLevel()}
                                             center={mapCenter}
                                             options={{
                                                 disableDefaultUI: true,
@@ -364,7 +370,7 @@ export default function SearchForm({
                                             }}
                                             onLoad={(map) => {
                                                 // Create circle using native Google Maps API like in SearchParameterForm
-                                                const circle = new google.maps.Circle({
+                                                new google.maps.Circle({
                                                     map,
                                                     center: mapCenter,
                                                     radius: 100 * 1000,
@@ -387,14 +393,14 @@ export default function SearchForm({
                                     )}
                             </div>
                         </div>
-                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className="bg-white rounded-lg p-3 sm:p-4 border border-gray-200">
                             <div className="flex items-center gap-2 mb-3">
-                                <User className="w-3 h-3 text-gray-400" />
+                                <User className="w-3 h-3 text-gray-400 flex-shrink-0" />
                                 <h3 className="text-xs font-medium text-gray-600 uppercase tracking-wide">Profesional y Servicio</h3>
                             </div>
                             
                             {/* Expert Info */}
-                            <div className="flex items-start gap-3 mb-3">
+                            <div className="flex items-start gap-2 sm:gap-3 mb-3">
                                 <div className="flex-shrink-0">
                                     {expertProfilePicture ? (
                                         <img
@@ -403,8 +409,10 @@ export default function SearchForm({
                                             className="w-8 h-8 rounded-full object-cover border border-gray-200"
                                             onError={(e) => {
                                                 console.error(`SearchForm - Failed to load expert profile picture: ${expertProfilePicture}`);
-                                                e.currentTarget.style.display = 'none';
-                                                e.currentTarget.nextElementSibling!.style.display = 'flex';
+                                                const currentTarget = e.currentTarget as HTMLImageElement;
+                                                const nextElement = currentTarget.nextElementSibling as HTMLElement;
+                                                currentTarget.style.display = 'none';
+                                                if (nextElement) nextElement.style.display = 'flex';
                                             }}
                                         />
                                     ) : (
@@ -417,16 +425,16 @@ export default function SearchForm({
                                     </div>
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <div className="text-sm font-medium text-gray-900 mb-1">
-                                            {expertName || 'No disponible'}
+                                    <div className="text-sm font-medium text-gray-900 mb-1 leading-tight">
+                                        {expertName || 'No disponible'}
                                     </div>
                                     <div className="text-xs text-gray-500 mb-1">
                                         Servicio: {parameters.serviceTypeId === 1 ? 'Solo Revisión' : 
                                                  parameters.serviceTypeId === 2 ? 'Búsqueda + Revisión' : 
                                                  'Servicio Personalizado'}
                                     </div>
-                                    <div className="text-xs text-gray-600 line-clamp-2">
-                                        {serviceDescription ? serviceDescription.substring(0, 80) + (serviceDescription.length > 80 ? '...' : '') : 'Servicio profesional personalizado'}
+                                    <div className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
+                                        {serviceDescription ? serviceDescription.substring(0, 60) + (serviceDescription.length > 60 ? '...' : '') : 'Servicio profesional personalizado'}
                                     </div>
                                 </div>
                             </div>
@@ -473,52 +481,71 @@ export default function SearchForm({
                                 </div>
                             )}
                         </div>
-                        <div className="col-span-1 md:col-span-2 bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                                    <Wallet className="w-4 h-4 text-blue-600" />
-                                </div>
-                                <h3 className="font-semibold text-gray-900">
-                                    Resumen de Pago
-                                </h3>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
-                                    <div className="text-xs text-blue-600 font-medium mb-1">Precio del Servicio</div>
-                                    <div className="text-lg font-bold text-blue-900">
-                                        €{servicePrice !== undefined ? servicePrice.toFixed(2) : 'No disponible'}
+                        <div className="col-span-1 lg:col-span-2 bg-white border border-gray-200">
+                            {/* Professional Payment Summary */}
+                            <div className="bg-white p-4 sm:p-6">
+                                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                                    <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center flex-shrink-0">
+                                        <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                                     </div>
+                                    <h3 className="text-sm sm:text-base font-medium text-gray-800 uppercase tracking-wide">Resumen de Facturación</h3>
                                 </div>
-                                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-lg">
-                                    <div className="text-xs text-gray-600 font-medium mb-1">Saldo Actual</div>
-                                    <div className="text-lg font-bold text-gray-900">
-                                        {isLoadingBalance ? (
-                                            <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
-                                        ) : (
-                                            `€${(balance ?? 0).toFixed(2)}`
-                                        )}
+                                
+                                <div className="space-y-3 sm:space-y-4">
+                                    {/* Service Price */}
+                                    <div className="flex justify-between items-center py-1">
+                                        <span className="text-gray-600 text-xs sm:text-sm">Precio del servicio</span>
+                                        <span className="font-mono text-gray-900 font-medium text-sm sm:text-base">
+                                            €{servicePrice !== undefined ? servicePrice.toFixed(2) : 'N/A'}
+                                        </span>
                                     </div>
-                                </div>
-                                <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-4 rounded-lg">
-                                    <div className="text-xs text-emerald-600 font-medium mb-1">Saldo Restante</div>
-                                    <div className={`text-lg font-bold ${
-                                        isLoadingBalance || balance === null || servicePrice === undefined
-                                            ? 'text-gray-500'
-                                            : (balance ?? 0) - servicePrice >= 0
-                                                ? 'text-emerald-700'
-                                                : 'text-red-600'
-                                    }`}>
-                                        {isLoadingBalance || balance === null || servicePrice === undefined
-                                            ? 'N/A'
-                                            : `€${((balance ?? 0) - servicePrice).toFixed(2)}`}
+                                    
+                                    {/* Balance Discount (only show if user has balance) */}
+                                    {!isLoadingBalance && balance !== null && balance > 0 && (
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 py-1">
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                                                <span className="text-gray-600 text-xs sm:text-sm">Crédito aplicado</span>
+                                                <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 font-mono self-start">
+                                                    Disponible: €{balance.toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <span className="font-mono text-gray-900 font-medium text-sm sm:text-base self-end sm:self-auto">
+                                                -€{Math.min(balance, servicePrice || 0).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Divider */}
+                                    <div className="border-t border-gray-300 pt-3 sm:pt-4 mt-3 sm:mt-4">
+                                        {/* Total to Pay */}
+                                        <div className="flex justify-between items-center py-1">
+                                            <span className="text-gray-900 font-medium text-sm sm:text-base">Total</span>
+                                            <span className="text-lg sm:text-xl font-mono font-semibold text-gray-900">
+                                                {isLoadingBalance || balance === null || servicePrice === undefined ? (
+                                                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-gray-400 border-t-gray-800 rounded-full animate-spin" />
+                                                ) : (
+                                                    `€${Math.max(0, servicePrice - (balance || 0)).toFixed(2)}`
+                                                )}
+                                            </span>
+                                        </div>
                                     </div>
+                                    
+                                    {/* Payment Status Message */}
+                                    {!isLoadingBalance && balance !== null && servicePrice !== undefined && (
+                                        <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gray-50 border-l-4 border-gray-400 text-xs sm:text-sm text-gray-700">
+                                            {balance >= servicePrice 
+                                                ? 'Pago completo mediante crédito disponible'
+                                                : `Importe a cobrar: €${(servicePrice - balance).toFixed(2)}`
+                                            }
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div className="bg-white border-t border-gray-100 p-6 mt-6">
-                        <div className="flex justify-between items-center">
-                            <div className="text-sm text-gray-600">
+                    <div className="bg-white border-t border-gray-100 p-4 sm:p-6 mt-4 md:mt-6">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+                            <div className="text-sm text-gray-600 text-center sm:text-left">
                                 Paso 3 de 3 • Listo para confirmar
                             </div>
                         {maxSearchesReached ? (
@@ -528,33 +555,33 @@ export default function SearchForm({
                                     setCurrentStep(0);
                                     setShowSubscriptions(true);
                                 }}
-                                    className="flex items-center gap-2 px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded transition-colors"
-                                >
-                                    <Crown className="w-4 h-4" />
-                                    <span>Mejorar Plan</span>
+                                className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+                            >
+                                <Crown className="w-4 h-4 flex-shrink-0" />
+                                <span>Mejorar Plan</span>
                             </button>
                         ) : (
                             <button
                                 type="submit"
                                 disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete || isLoadingBalance}
-                                    className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors disabled:cursor-not-allowed"
+                                className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
                             >
                                 {createSearchWithHire.isPending || isSubmitting ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                            <span>
-                                                {balance !== null && servicePrice !== undefined && (balance ?? 0) < servicePrice
-                                                    ? 'Procesando...'
-                                                    : 'Creando...'}
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin flex-shrink-0" />
+                                        <span>
+                                            {balance !== null && servicePrice !== undefined && (balance ?? 0) < servicePrice
+                                                ? 'Procesando...'
+                                                : 'Creando...'}
                                         </span>
-                                        </>
+                                    </>
                                 ) : (
                                     <>
-                                            <Wallet className="w-4 h-4" />
-                                            <span>
-                                                {balance !== null && servicePrice !== undefined && (balance ?? 0) < servicePrice
-                                                    ? 'Pagar'
-                                                    : 'Confirmar'}
+                                        <Wallet className="w-4 h-4 flex-shrink-0" />
+                                        <span>
+                                            {balance !== null && servicePrice !== undefined && (balance ?? 0) < servicePrice
+                                                ? 'Pagar'
+                                                : 'Confirmar'}
                                         </span>
                                     </>
                                 )}

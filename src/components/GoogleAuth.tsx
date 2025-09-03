@@ -13,7 +13,6 @@ const GoogleIcon = () => (
     </svg>
 );
 
-
 declare global {
     interface Window {
         google?: {
@@ -30,6 +29,8 @@ declare global {
 
 export function GoogleAuth() {
     const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isReady, setIsReady] = useState(false);
     const { setUser } = useAuth();
     const navigate = useNavigate();
 
@@ -64,56 +65,151 @@ export function GoogleAuth() {
             console.error('Error during Google authentication:', message);
             setError('Authentication failed: ' + message);
         }
-    }, [setUser]);
+    }, [setUser, navigate]);
 
     useEffect(() => {
         const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
+        let initializationAttempts = 0;
+        const maxAttempts = 20;
+        let timeoutId: NodeJS.Timeout;
 
         const initializeGoogleAuth = () => {
-            window.google.accounts.id.initialize({
-                client_id: clientId,
-                callback: handleCredentialResponse,
-                auto_select: false,
-                cancel_on_tap_outside: false
-            });
-
-            // El botón nativo está oculto, solo necesitamos la funcionalidad
-            window.google.accounts.id.renderButton(
-                document.getElementById('googleButton')!,
-                {
-                    type: 'standard',
-                    theme: 'outline',
-                    size: 'medium',
-                    text: 'signin_with'
+            try {
+                if (!window.google?.accounts?.id) {
+                    throw new Error('Google SDK not loaded');
                 }
-            );
+
+                console.log('Initializing Google Auth...');
+                
+                window.google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: handleCredentialResponse,
+                    auto_select: false,
+                    cancel_on_tap_outside: false
+                });
+
+                const buttonElement = document.getElementById('googleButton');
+                if (buttonElement) {
+                    // Clear any existing content first
+                    buttonElement.innerHTML = '';
+                    
+                    window.google.accounts.id.renderButton(buttonElement, {
+                        type: 'standard',
+                        theme: 'outline',
+                        size: 'medium',
+                        text: 'signin_with'
+                    });
+
+                    // Wait a bit for the button to render before marking as ready
+                    setTimeout(() => {
+                        const renderedButton = buttonElement.querySelector('div[role="button"]');
+                        if (renderedButton) {
+                            setIsReady(true);
+                            setIsLoading(false);
+                            console.log('Google Auth initialized successfully');
+                        } else {
+                            throw new Error('Button not rendered properly');
+                        }
+                    }, 100);
+                } else {
+                    throw new Error('Button element not found');
+                }
+            } catch (error) {
+                console.error('Failed to initialize Google Auth:', error);
+                setIsReady(false);
+                
+                // Retry initialization with exponential backoff
+                if (initializationAttempts < maxAttempts) {
+                    initializationAttempts++;
+                    const delay = Math.min(200 * initializationAttempts, 2000);
+                    console.log(`Retrying Google Auth initialization in ${delay}ms (attempt ${initializationAttempts}/${maxAttempts})`);
+                    timeoutId = setTimeout(initializeGoogleAuth, delay);
+                } else {
+                    setIsLoading(false);
+                    setError('No se pudo cargar Google Sign-In. Intenta recargar la página.');
+                }
+            }
         };
 
-        // Esperar a que el script de Google se cargue completamente
-        if (window.google?.accounts) {
+        // Start initialization immediately if Google is already loaded
+        if (window.google?.accounts?.id) {
             initializeGoogleAuth();
         } else {
-            // Si el script a�n no est� cargado, esperar a que se cargue
-            const script = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
-            if (script) {
-                script.addEventListener('load', initializeGoogleAuth);
-            }
+            // Otherwise, keep checking periodically
+            const checkGoogleLoaded = () => {
+                if (window.google?.accounts?.id) {
+                    initializeGoogleAuth();
+                } else if (initializationAttempts < maxAttempts) {
+                    initializationAttempts++;
+                    timeoutId = setTimeout(checkGoogleLoaded, 100);
+                } else {
+                    setIsLoading(false);
+                    setError('No se pudo cargar Google Sign-In. Intenta recargar la página.');
+                }
+            };
+            
+            checkGoogleLoaded();
         }
 
         return () => {
-            // Cleanup
-            const script = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
-            if (script) {
-                script.removeEventListener('load', initializeGoogleAuth);
+            if (timeoutId) {
+                clearTimeout(timeoutId);
             }
+            setIsReady(false);
+            setIsLoading(true);
         };
     }, [handleCredentialResponse]);
 
     const handleGoogleSignIn = () => {
-        // Trigger the hidden native Google button click
-        const googleButton = document.getElementById('googleButton')?.querySelector('div[role="button"]') as HTMLElement;
-        if (googleButton) {
-            googleButton.click();
+        if (!isReady) {
+            setError('Google Sign-In aún no está listo. Inténtalo de nuevo en unos segundos.');
+            return;
+        }
+
+        try {
+            // Multiple fallback attempts for mobile compatibility
+            const buttonContainer = document.getElementById('googleButton');
+            if (!buttonContainer) {
+                throw new Error('Button container not found');
+            }
+
+            // Try different selectors for the Google button
+            const selectors = [
+                'div[role="button"]',
+                'button',
+                '[data-idom-class*="VfPpkd"]',
+                'div[jsaction]'
+            ];
+
+            let clicked = false;
+            for (const selector of selectors) {
+                const googleButton = buttonContainer.querySelector(selector) as HTMLElement;
+                if (googleButton) {
+                    console.log('Clicking Google button with selector:', selector);
+                    
+                    // For mobile, try both click and touch events
+                    googleButton.click();
+                    
+                    // Also dispatch touch events for mobile compatibility
+                    if ('ontouchstart' in window) {
+                        const touchEvent = new TouchEvent('touchstart', {
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        googleButton.dispatchEvent(touchEvent);
+                    }
+                    
+                    clicked = true;
+                    break;
+                }
+            }
+
+            if (!clicked) {
+                throw new Error('Google button not found or not clickable');
+            }
+        } catch (error) {
+            console.error('Failed to trigger Google Sign-In:', error);
+            setError('Error al iniciar sesión. Intenta recargar la página.');
         }
     };
 
@@ -125,10 +221,24 @@ export function GoogleAuth() {
             {/* Custom styled button optimized for mobile */}
             <button
                 onClick={handleGoogleSignIn}
-                className="group inline-flex items-center justify-center gap-3 bg-blue-600 text-white px-6 py-3.5 sm:py-3 rounded-lg font-semibold text-base hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl w-full"
+                disabled={isLoading || !isReady}
+                className={`group inline-flex items-center justify-center gap-3 px-6 py-3.5 sm:py-3 rounded-lg font-semibold text-base transition-all duration-300 shadow-lg hover:shadow-xl w-full ${
+                    isLoading || !isReady 
+                        ? 'bg-gray-400 cursor-not-allowed text-white' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
             >
-                <GoogleIcon />
-                <span>Iniciar sesión con Google</span>
+                {isLoading ? (
+                    <>
+                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        <span>Cargando...</span>
+                    </>
+                ) : (
+                    <>
+                        <GoogleIcon />
+                        <span>Iniciar sesión con Google</span>
+                    </>
+                )}
             </button>
             
             {error && (

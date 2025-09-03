@@ -1,5 +1,5 @@
-﻿import React, { useEffect } from 'react';
-import { CheckCircle, XCircle, AlertCircle, X, ArrowRight } from 'lucide-react';
+﻿import React, { useEffect, useState } from 'react';
+import { CheckCircle, XCircle, Info, X, ArrowRight } from 'lucide-react';
 
 export type NotificationType = 'success' | 'error' | 'info';
 
@@ -11,127 +11,142 @@ interface NotificationProps {
     duration?: number;
 }
 
-const slideDown = `
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translate(-50%, -100%);
-    }
-    to {
-      opacity: 1;
-      transform: translate(-50%, 0);
-    }
-  }
-`;
-
 export function Notification({ type, message, action, onClose, duration = 5000 }: NotificationProps) {
+    const [isVisible, setIsVisible] = useState(false);
+    const [isExiting, setIsExiting] = useState(false);
+
     useEffect(() => {
+        // Trigger entrance animation
+        requestAnimationFrame(() => {
+            setIsVisible(true);
+        });
+        
         const timer = setTimeout(() => {
-            onClose();
+            handleClose();
         }, duration);
 
         return () => clearTimeout(timer);
-    }, [duration, onClose]);
+    }, [duration]);
 
-    const icons = {
-        success: <CheckCircle style={{ width: 24, height: 24, color: '#34D399' }} />,
-        error: <XCircle style={{ width: 24, height: 24, color: '#F87171' }} />,
-        info: <AlertCircle style={{ width: 24, height: 24, color: '#60A5FA' }} />
+    const handleClose = () => {
+        setIsExiting(true);
+        setTimeout(() => {
+            onClose();
+        }, 400); // Wait for exit animation
     };
 
-    const styles = {
-        success: {
-            background: 'rgba(59, 130, 246, 0.1)',
-            borderColor: 'rgba(59, 130, 246, 0.2)',
-            color: '#3B82F6',
-            boxShadow: '0 8px 16px rgba(59, 130, 246, 0.2)'
-        },
-        error: {
-            background: 'rgba(248, 113, 113, 0.1)',
-            borderColor: 'rgba(248, 113, 113, 0.2)',
-            color: '#F87171',
-            boxShadow: '0 8px 16px rgba(248, 113, 113, 0.2)'
-        },
-        info: {
-            background: 'rgba(59, 130, 246, 0.1)',
-            borderColor: 'rgba(59, 130, 246, 0.2)',
-            color: '#3B82F6',
-            boxShadow: '0 8px 16px rgba(59, 130, 246, 0.2)'
+    const getNotificationConfig = () => {
+        switch (type) {
+            case 'success':
+                return {
+                    icon: <CheckCircle className="w-4 h-4" />,
+                    bgColor: 'bg-white/95',
+                    borderColor: 'border-gray-200/50',
+                    iconColor: 'text-emerald-600',
+                    textColor: 'text-gray-700',
+                    dotColor: 'bg-emerald-500'
+                };
+            case 'error':
+                return {
+                    icon: <XCircle className="w-4 h-4" />,
+                    bgColor: 'bg-white/95',
+                    borderColor: 'border-gray-200/50',
+                    iconColor: 'text-red-600',
+                    textColor: 'text-gray-700',
+                    dotColor: 'bg-red-500'
+                };
+            case 'info':
+                return {
+                    icon: <Info className="w-4 h-4" />,
+                    bgColor: 'bg-white/95',
+                    borderColor: 'border-gray-200/50',
+                    iconColor: 'text-blue-600',
+                    textColor: 'text-gray-700',
+                    dotColor: 'bg-blue-500'
+                };
         }
     };
 
-    const containerStyle: React.CSSProperties = {
-        position: 'fixed',
-        top: '24px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 50,
-        animation: 'slideDown 0.3s ease-out forwards'
-    };
-
-    const notificationStyle: React.CSSProperties = {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '16px',
-        padding: '16px 24px',
-        borderRadius: '12px',
-        border: '1px solid',
-        backdropFilter: 'blur(8px)',
-        ...styles[type]
-    };
-
-    const messageStyle: React.CSSProperties = {
-        fontSize: '16px',
-        fontWeight: 500
-    };
-
-    const actionStyle: React.CSSProperties = {
-        marginTop: '8px',
-        fontSize: '14px',
-        fontWeight: 500,
-        cursor: 'pointer'
-    };
-
-    const closeButtonStyle: React.CSSProperties = {
-        padding: '8px',
-        borderRadius: '50%',
-        cursor: 'pointer',
-        transition: 'background 0.2s',
-        marginLeft: '8px'
-    };
+    const config = getNotificationConfig();
 
     return (
-        <>
-            <style>{slideDown}</style>
-            <div style={containerStyle}>
-                <div style={notificationStyle}>
-                    {icons[type]}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <p style={messageStyle}>{message}</p>
-                        {action && (
-                            <button
-                                onClick={() => {
-                                    action();
-                                    onClose();
-                                }}
-                                style={actionStyle}
-                                onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-                                onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
-                            >
-                                Mejorar Plan <ArrowRight className="inline-block w-4 h-4 ml-1" />
-                            </button>
-                        )}
+        <div 
+            className={`
+                fixed top-6 right-6 z-50
+                transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]
+                ${isVisible && !isExiting 
+                    ? 'translate-x-0 opacity-100 scale-100' 
+                    : 'translate-x-full opacity-0 scale-95'
+                }
+                w-80 max-w-[calc(100vw-3rem)]
+            `}
+        >
+            <div className={`
+                ${config.bgColor} ${config.borderColor}
+                border rounded-2xl shadow-2xl shadow-black/10
+                backdrop-blur-xl
+                relative overflow-hidden
+                ring-1 ring-black/5
+            `}>
+                {/* Subtle dot indicator */}
+                <div className={`absolute top-4 left-4 w-2 h-2 rounded-full ${config.dotColor}`} />
+                
+                <div className="pl-8 pr-4 py-4">
+                    <div className="flex items-start gap-3">
+                        {/* Icon - more subtle */}
+                        <div className={`flex-shrink-0 ${config.iconColor} mt-0.5`}>
+                            {config.icon}
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                            <p className={`text-sm ${config.textColor} leading-relaxed font-normal`}>
+                                {message}
+                            </p>
+                            
+                            {action && (
+                                <button
+                                    onClick={() => {
+                                        action();
+                                        handleClose();
+                                    }}
+                                    className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                                >
+                                    Mejorar Plan
+                                    <ArrowRight className="w-3 h-3" />
+                                </button>
+                            )}
+                        </div>
+                        
+                        {/* Close button - more discrete */}
+                        <button
+                            onClick={handleClose}
+                            className="flex-shrink-0 p-1.5 rounded-full hover:bg-gray-100/80 transition-all duration-200 group"
+                        >
+                            <X className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600" />
+                        </button>
                     </div>
-                    <button
-                        onClick={onClose}
-                        style={closeButtonStyle}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                        <X style={{ width: 16, height: 16 }} />
-                    </button>
+                </div>
+                
+                {/* Very subtle progress indicator */}
+                <div className="absolute bottom-0 left-0 h-px bg-gray-100">
+                    <div 
+                        className={`h-full ${config.dotColor} opacity-60`}
+                        style={{
+                            width: '100%',
+                            animation: `shrink ${duration}ms linear forwards`
+                        }}
+                    />
                 </div>
             </div>
-        </>
+            
+            {/* Keyframes for progress bar */}
+            <style jsx>{`
+                @keyframes shrink {
+                    from { width: 100%; }
+                    to { width: 0%; }
+                }
+            `}</style>
+        </div>
     );
 }

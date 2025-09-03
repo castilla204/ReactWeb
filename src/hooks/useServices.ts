@@ -172,7 +172,7 @@ export function useServices({
                 }
             }
 
-            const response = await fetch('/api/SearchService', {
+            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.create}`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -239,20 +239,59 @@ export function useServices({
                 }
             }
 
-            const response = await fetch('/api/SearchService', {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: formData,
-            });
+            // Create AbortController for timeout - increased for large files
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout for large uploads
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Failed to update service: ${response.statusText}`);
+            // Retry logic for connection resets
+            let lastError;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.create}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                        body: formData,
+                        signal: controller.signal,
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        let errorMessage = `Failed to update service: ${response.status} ${response.statusText}`;
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.message || errorMessage;
+                        } catch (e) {
+                            console.error('Could not parse error response as JSON:', e);
+                        }
+                        throw new Error(errorMessage);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    lastError = error;
+                    
+                    if (error instanceof Error && error.name === 'AbortError') {
+                        throw new Error('Request timeout after 5 minutes - try reducing image sizes or check connection');
+                    }
+                    
+                    // Retry on connection reset or network errors
+                    if (attempt < 2 && (
+                        error instanceof TypeError && error.message.includes('Failed to fetch')
+                    )) {
+                        console.log(`Connection failed, retrying... (attempt ${attempt + 1}/3)`);
+                        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+                        continue;
+                    }
+                    
+                    throw error;
+                }
             }
-
-            return await response.json();
+            
+            throw lastError;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['services', expertProfileId || categoryId, serviceTypeId] });
@@ -275,7 +314,7 @@ export function useServices({
                 throw new Error('No authentication token found');
             }
 
-            const response = await fetch(`/api/SearchService/${serviceId}`, {
+            const response = await fetch(`${API_CONFIG.baseUrl}/api/SearchService/${serviceId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
