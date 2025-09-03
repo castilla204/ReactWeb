@@ -151,11 +151,16 @@ const SearchCreationPage: React.FC = () => {
             return;
         }
         console.log('SearchCreationPage - Starting search with parameters:', searchParameters);
+        // Hide scroll during transition to make it invisible
+        document.body.style.overflow = 'hidden';
+        // Instant scroll to top
+        window.scrollTo(0, 0);
+        // Change step immediately
         setCurrentStep(1);
-        // Scroll to top when going to map step
+        // Restore scroll after a minimal delay
         setTimeout(() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 100);
+            document.body.style.overflow = '';
+        }, 50);
     };
 
     const scrollToForm = () => {
@@ -164,7 +169,7 @@ const SearchCreationPage: React.FC = () => {
     };
 
     return (
-        <div className="relative w-full bg-white overflow-hidden">
+        <div className="relative w-full bg-white" style={{ transition: 'none', minHeight: '100vh' }}>
             {currentStep === 0 ? (
                 <>
                     <HomePresentation onScrollToForm={scrollToForm} />
@@ -418,22 +423,38 @@ const SearchCreationPage: React.FC = () => {
                         </div>
 
                     </div>
-                    <footer className="mt-12 py-6 bg-gray-100">
-                        <div className="w-full px-4 md:px-6 flex flex-col md:flex-row justify-between items-center mx-auto max-w-7xl">
-                            <p className="text-xs md:text-sm text-gray-600 mb-2 md:mb-0">© 2025 Atrapo. Todos los derechos reservados.</p>
-                            <div className="flex flex-col md:flex-row gap-2 md:gap-4">
-                                <a href="/privacy-policy.html" className="text-xs md:text-sm text-gray-600 hover:text-blue-800 flex items-center gap-1">
-                                    <Shield className="w-4 h-4" /> Política de Privacidad
-                                </a>
-                                <a href="/terms.html" className="text-xs md:text-sm text-gray-600 hover:text-blue-800">Términos y Condiciones</a>
-                                <a href="/contact.html" className="text-xs md:text-sm text-gray-600 hover:text-blue-800">Contacto</a>
-                                <a href="/become-expert" className="text-xs md:text-sm text-gray-600 hover:text-blue-800">Hazte Buscador</a>
+                    <footer className="mt-16 bg-white border-t border-gray-100">
+                        <div className="w-full px-4 sm:px-6 mx-auto max-w-7xl">
+                            <div className="py-6 sm:py-8">
+                                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
+                                    {/* Copyright */}
+                                    <p className="text-sm text-gray-600 text-center sm:text-left">
+                                        © 2025 YoChequeo. Todos los derechos reservados.
+                                    </p>
+                                    
+                                    {/* Links */}
+                                    <div className="flex flex-wrap justify-center sm:justify-end gap-4 sm:gap-6 text-sm">
+                                        <a href="/privacy-policy.html" className="text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1">
+                                            <Shield className="w-3.5 h-3.5" />
+                                            Privacidad
+                                        </a>
+                                        <a href="/terms.html" className="text-gray-500 hover:text-gray-700 transition-colors">
+                                            Términos
+                                        </a>
+                                        <a href="/contact.html" className="text-gray-500 hover:text-gray-700 transition-colors">
+                                            Contacto
+                                        </a>
+                                        <a href="/become-expert" className="text-gray-500 hover:text-blue-600 transition-colors">
+                                            Hazte Experto
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </footer>
                 </>
             ) : (
-                <div className="w-full py-12 md:py-16">
+                <div className="w-full min-h-screen flex flex-col" style={{ paddingTop: '2rem' }}>
                     {currentStep === 1 && searchParameters.category && searchParameters.serviceTypeId && (
                         <SearchParameterForm
                             onComplete={handleParametersComplete}
@@ -456,14 +477,6 @@ const SearchCreationPage: React.FC = () => {
                         />
                     )}
                     {currentStep === 3 && selectedServiceId && (
-                        <>
-                            {console.log('SearchCreationPage - Rendering SearchForm with:', {
-                                selectedServiceId,
-                                expertProfilePicture,
-                                expertName,
-                                servicePrice,
-                                serviceDescription,
-                            })}
                             <SearchForm
                                 parameters={searchParameters as SearchParameters & { latitude: string; longitude: string; locationRange: number }}
                                 setCurrentStep={setCurrentStep}
@@ -476,7 +489,6 @@ const SearchCreationPage: React.FC = () => {
                                 serviceDescription={serviceDescription}
                                 serviceImageUrls={serviceImageUrls}
                             />
-                        </>
                     )}
                 </div>
             )}

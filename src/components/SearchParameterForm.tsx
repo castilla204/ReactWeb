@@ -239,6 +239,31 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Combined Container - Map + Settings */}
                 <div className="bg-white rounded-none md:rounded-xl overflow-hidden shadow-lg border border-gray-100">
+                    {/* Header with instructions */}
+                    <div className="p-4 md:p-6 border-b border-gray-200 bg-gray-50">
+                        <div className="flex items-start gap-4">
+                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 flex-shrink-0 mt-1">
+                                <MapPin className="w-3 h-3 text-gray-600" />
+                            </div>
+                            <div className="flex-1">
+                                <h2 className="text-base font-medium text-gray-900 mb-2">
+                                    {serviceTypeId === 1 ? 'Ubicación del vehículo' : 'Área de búsqueda'}
+                                </h2>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    {serviceTypeId === 1 
+                                        ? 'Seleccione la ubicación del vehículo en el mapa para coordinar la inspección.'
+                                        : 'Defina el área de búsqueda y ajuste el radio según sus preferencias.'
+                                    }
+                                </p>
+                                <div className="mt-3 text-xs text-gray-500 font-normal">
+                                    {serviceTypeId === 1 
+                                        ? 'Paso 2 de 3 • Ubicación del vehículo'
+                                        : 'Paso 2 de 3 • Definir área de búsqueda'
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     {/* Map Section */}
                     <div className="relative h-[320px]">
                         {!isLoaded ? (
@@ -251,9 +276,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                         ) : (
                             <>
-                                <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-2 bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-sm">
-                                    <MapPin className="w-3 h-3 text-blue-600" />
-                                    <span className="text-xs text-gray-700">Haz clic para ubicar</span>
+                                <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-md border border-gray-200/60 shadow-sm">
+                                    <MapPin className="w-3 h-3 text-gray-500" />
+                                    <span className="text-xs text-gray-600">
+                                        {serviceTypeId === 1 ? 'Seleccionar ubicación del vehículo' : 'Definir área de búsqueda'}
+                                    </span>
                                 </div>
                                 {selectedLocation && (
                                     <div className="absolute top-3 right-3 z-10 px-3 py-2 bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-sm">
@@ -367,7 +394,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             <div className="flex items-center gap-2 mb-4">
                                 <MapPin className="w-4 h-4 text-gray-400" />
                                 <h3 className="text-sm font-medium text-gray-900">
-                                    Radio de Búsqueda
+                                    {serviceTypeId === 1 ? 'Radio de Revisión' : 'Radio de Búsqueda'}
                                 </h3>
                             </div>
                             <div className="space-y-4">

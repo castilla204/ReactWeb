@@ -88,7 +88,7 @@ export function useExpert() {
                 throw new Error('No authentication token found');
             }
 
-            const response = await fetch('/api/Searches/expert', {
+            const response = await fetch('/api/SearchHire/expert', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
