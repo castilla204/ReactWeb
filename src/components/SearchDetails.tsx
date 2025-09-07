@@ -1,5 +1,5 @@
 ﻿import { useLayoutEffect, useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp, FileText, MessageSquare } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useServices } from '../hooks/useServices';
 import { useCategories } from '../contexts/CategoryContext';
@@ -89,6 +89,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const [selectedDeliverableFiles, setSelectedDeliverableFiles] = useState<File[]>([]);
     const [showTrackOrder, setShowTrackOrder] = useState(false);
     const lastSearchHireId = useRef<number | null>(null);
+    const [activeTab, setActiveTab] = useState<'chat' | 'details'>('chat');
 
     const { getSearch } = useSearch({ enableQueries: false });
     const { useServiceByHireId } = useServices({});
@@ -352,34 +353,44 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     }
 
     return (
-        <div className="bg-gray-50 text-black min-h-screen">
-            {/* Header Section - Similar to Fiverr style */}
-            <div className="bg-white border-b border-gray-200 px-8 py-4">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+        <div className="bg-gray-50 text-black h-screen lg:min-h-screen flex flex-col">
+            {/* Mobile-First Header */}
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+                <div className="px-4 py-3 sm:px-6 sm:py-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                         <button
                             onClick={onBack || (() => navigate('/busquedas'))}
-                            className="p-2 hover:bg-gray-100 rounded-lg"
+                                className="p-2 hover:bg-gray-100 rounded-lg flex-shrink-0"
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </button>
-                        <div>
-                            <span className="text-gray-500 text-sm">
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-gray-500 text-xs sm:text-sm">
                                 {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                             </span>
-                            <h1 className="text-lg font-medium">{searchQuery.data?.title || 'Cargando...'}</h1>
-                            <span className="text-gray-500 text-xs">
-                                {new Date().toLocaleDateString('es-ES', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
+                                    {/* Mobile Status Badge */}
+                                    <span className={`sm:hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+                                        ${currentStatus === 'completed' ? 'bg-green-100 text-green-700' :
+                                        currentStatus === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                                        currentStatus === 'awaiting_client_decision' ? 'bg-purple-100 text-purple-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${currentStatus === 'completed' ? 'bg-green-500' :
+                                            currentStatus === 'in_progress' ? 'bg-blue-500' :
+                                            currentStatus === 'awaiting_client_decision' ? 'bg-purple-500' : 'bg-yellow-500'}`} />
+                                        {currentStatus === 'completed' ? 'Completado' :
+                                            currentStatus === 'in_progress' ? 'En progreso' :
+                                            currentStatus === 'awaiting_client_decision' ? 'En revisión' : 'Pendiente'}
                             </span>
                         </div>
+                                <h1 className="text-sm sm:text-lg font-medium text-gray-900 truncate">
+                                    {searchQuery.data?.title || 'Cargando...'}
+                                </h1>
                     </div>
-                    <div className="flex items-center gap-2">
+                        </div>
+                        
+                        {/* Desktop Actions - Hidden on mobile */}
+                        <div className="hidden sm:flex items-center gap-2">
                         <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
                             <Share2 className="w-4 h-4" />
                             Compartir
@@ -387,78 +398,149 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
                             <MessageCircle className="w-4 h-4" />
                             Comentarios del Equipo
+                            </button>
+                        </div>
+                        
+                        {/* Mobile Menu Button */}
+                        <button className="sm:hidden p-2 hover:bg-gray-100 rounded-lg">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                            </svg>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-10 xl:gap-12 p-4 md:p-6 lg:p-8">
-                {/* Main Chat Area - Left Side */}
+            {/* Mobile-First Layout */}
+            <div className="flex flex-col lg:flex-row lg:max-w-7xl lg:mx-auto lg:gap-6 xl:gap-8 flex-1 lg:flex-none lg:h-auto">
+                {/* Mobile-First Chat Area */}
                 {canViewChat && (
-                    <div className="w-full lg:w-[65%] xl:w-[68%] space-y-6">
-                        {/* Promotional Banner - Like Fiverr */}
-                        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-                            <div className="flex items-center gap-4">
-                                <div className="flex -space-x-2">
-                                    <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-white">
+                    <div className="flex-1 lg:w-[65%] xl:w-[68%] flex flex-col">
+                        {/* Mobile Tabs Navigation */}
+                        <div className="lg:hidden bg-white border-b border-gray-200">
+                            {/* Expert Info Header */}
+                            <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
+                                <div className="flex items-center gap-3 flex-1">
+                                    {(serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl) ? (
+                                        <img 
+                                            src={serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl} 
+                                            alt={serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}
+                                            className="w-8 h-8 bg-blue-500 rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                                            {(serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'E').charAt(0)}
+                                        </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-medium text-gray-900 truncate text-sm">
+                                            {serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}
+                                        </h3>
+                                        <p className="text-xs text-gray-500">Experto asignado • En línea</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Tabs */}
+                            <div className="flex">
+                                <button
+                                    onClick={() => setActiveTab('chat')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors relative ${
+                                        activeTab === 'chat'
+                                            ? 'text-blue-600 bg-blue-50'
+                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <MessageSquare className="w-4 h-4" />
+                                    Chat
+                                    {activeTab === 'chat' && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('details')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors relative ${
+                                        activeTab === 'details'
+                                            ? 'text-blue-600 bg-blue-50'
+                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    Detalles
+                                    {activeTab === 'details' && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Promotional Banners - Hidden on mobile, compact on desktop */}
+                        <div className="hidden lg:block lg:p-6 space-y-4">
+                            {/* Promotional Banner - Compact */}
+                            <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex -space-x-1">
+                                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white">
                                         D
                                     </div>
-                                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-white">
+                                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white">
                                         M
                                     </div>
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-lg font-semibold mb-1">¿Te gustaría seguir trabajando juntos?</h3>
-                                    <p className="text-purple-100 text-sm">
-                                        Inicia proyectos a largo plazo con nuestros expertos mediante órdenes por horas que te ofrecen 
-                                        actualizaciones transparentes de progreso y pueden finalizar en cualquier momento.
+                                        <h3 className="text-sm font-semibold mb-1">¿Te gustaría seguir trabajando juntos?</h3>
+                                        <p className="text-purple-100 text-xs">
+                                            Inicia proyectos a largo plazo con nuestros expertos.
                                     </p>
                                 </div>
                             </div>
-                            <div className="mt-4 flex gap-3">
-                                <button className="bg-white text-purple-600 px-4 py-2 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors">
-                                    Solicitar oferta por horas
+                                <div className="mt-3 flex gap-2">
+                                    <button className="bg-white text-purple-600 px-3 py-1.5 rounded-lg font-medium text-xs hover:bg-gray-50 transition-colors">
+                                        Solicitar oferta
                                 </button>
-                                <button className="text-white border border-white/30 px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-colors">
-                                    Cómo funciona
+                                    <button className="text-white border border-white/30 px-3 py-1.5 rounded-lg text-xs hover:bg-white/10 transition-colors">
+                                        Más info
                                 </button>
                             </div>
-                            <p className="text-purple-200 text-xs mt-3">Te informaremos al experto si estás interesado.</p>
                         </div>
 
-                        {/* Expert Network Banner */}
-                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            {/* Expert Network Banner - Compact */}
+                            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                                     </svg>
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-semibold text-gray-900 mb-1">El experto ahora forma parte de tu red freelance</h3>
-                                    <p className="text-gray-600 text-sm">
-                                        Accede fácilmente al trabajo que han realizado o contrátalos de nuevo.
-                                    </p>
-                                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-1 underline">
-                                        Ver tus contrataciones
-                                    </button>
+                                        <h3 className="font-medium text-gray-900 mb-0.5 text-sm">El experto ahora forma parte de tu red freelance</h3>
+                                        <p className="text-gray-600 text-xs">
+                                            Accede fácilmente al trabajo realizado o contrátalos de nuevo.
+                                        </p>
                                 </div>
-                                <button className="text-gray-400 hover:text-gray-600">
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <button className="text-gray-400 hover:text-gray-600 p-1">
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                                     </svg>
                                 </button>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Chat Container */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div className="p-6 border-b border-gray-100">
+                        {/* Main Content Container - Mobile Tabs / Desktop Chat */}
+                        <div className="bg-white lg:rounded-xl lg:shadow-sm lg:border lg:border-gray-200 lg:mx-6 flex flex-col flex-1 lg:flex-none lg:h-auto">
+                            {/* Chat Header - Desktop Only */}
+                            <div className="hidden lg:block p-4 border-b border-gray-100">
                                 <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
                                     Cargar mensajes anteriores
                                 </button>
                             </div>
-                            <div className="px-6 py-4">
+                            
+                            {/* Mobile Tab Content */}
+                            <div className="flex-1 lg:px-4 lg:py-2 overflow-hidden">
+                                {/* Chat Tab Content - Mobile */}
+                                {activeTab === 'chat' && (
+                                    <div className="lg:hidden h-full">
                             <Chat 
                                 searchId={searchId} 
                                 setNotifications={setNotifications} 
@@ -469,16 +551,169 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 }}
                             />
                             </div>
+                                )}
+                                
+                                {/* Details Tab Content - Mobile */}
+                                {activeTab === 'details' && (
+                                    <div className="lg:hidden h-full overflow-y-auto">
+                                        {/* Mobile Details Content */}
+                                        <div className="p-4 space-y-6">
+                                            {/* Service Card - Mobile Optimized */}
+                                            <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                                                {/* Service Image */}
+                                                <div className="relative">
+                                                    {serviceQuery.data?.imageUrls && serviceQuery.data.imageUrls.length > 0 ? (
+                                                        <div className="relative w-full h-32 overflow-hidden">
+                                                            <img
+                                                                src={serviceQuery.data.imageUrls[0]}
+                                                                alt="Servicio contratado"
+                                                                className="w-full h-full object-cover"
+                                                                onError={(e) => {
+                                                                    e.currentTarget.src = searchQuery.data?.category && categoryBanners[searchQuery.data.category] 
+                                                                        ? categoryBanners[searchQuery.data.category] 
+                                                                        : '/default-service.png';
+                                                                }}
+                                                            />
+                        </div>
+                                                    ) : (
+                                                        <div className="relative w-full h-32 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+                                                            {searchQuery.data?.category && categoryBanners[searchQuery.data.category] ? (
+                                                                <img
+                                                                    src={categoryBanners[searchQuery.data.category]}
+                                                                    alt={categoryName}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <div className="text-center">
+                                                                        <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                                                        </svg>
+                                                                        <p className="text-xs text-gray-400 font-medium">{categoryName}</p>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                    </div>
+                )}
+
+                                                    {/* Status Badge */}
+                                                    <div className="absolute top-2 left-2">
+                                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-sm border
+                                                            ${currentStatus === 'completed' ? 'bg-green-500/90 text-white border-green-400/50' :
+                                                            currentStatus === 'in_progress' ? 'bg-blue-500/90 text-white border-blue-400/50' :
+                                                            currentStatus === 'awaiting_client_decision' ? 'bg-purple-500/90 text-white border-purple-400/50' : 'bg-yellow-500/90 text-white border-yellow-400/50'}`}>
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                                            {currentStatus === 'completed' ? 'COMPLETADO' :
+                                                                currentStatus === 'in_progress' ? 'EN PROGRESO' :
+                                                                    currentStatus === 'awaiting_client_decision' ? 'EN REVISIÓN' : 'PENDIENTE'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Service Content */}
+                                                <div className="p-4">
+                                                    <h3 className="font-semibold text-gray-900 mb-2 leading-tight">
+                                                        {searchQuery.data?.title}
+                                                    </h3>
+                                                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
+                                                        {serviceQuery.data?.conditions || 'Servicio profesional personalizado'}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Order Information - Mobile */}
+                                            <div className="space-y-4">
+                                                <h4 className="font-semibold text-gray-900">Información del pedido</h4>
+                                                <div className="grid grid-cols-1 gap-4 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">Solicitado por</span>
+                                                        <span className="font-medium text-gray-900">{user?.name || 'Usuario'}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">Categoría</span>
+                                                        <span className="font-medium text-gray-900">{categoryName}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">Estado</span>
+                                                        <span className="font-medium text-gray-900">
+                                                            {searchQuery.data?.searchHire?.status 
+                                                                ? searchQuery.data.searchHire.status.charAt(0).toUpperCase() + searchQuery.data.searchHire.status.slice(1).replace('_', ' ')
+                                                                : 'No disponible'
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">Número de pedido</span>
+                                                        <span className="font-mono text-sm text-gray-700">#{searchId.toString().padStart(6, '0')}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Action Buttons - Mobile */}
+                                            <div className="space-y-3">
+                                                {canDispute && (
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
+                                                            className="flex-1 px-4 py-2.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 font-medium"
+                                                        >
+                                                            Disputar
+                                                        </button>
+                                                        <button
+                                                            onClick={handleApproveService}
+                                                            className="flex-1 px-4 py-2.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 font-medium"
+                                                        >
+                                                            Aprobar
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                
+                                                {canCancel && (
+                                                    <button
+                                                        onClick={() => setModalState((prev) => ({ ...prev, showCancelConfirm: true }))}
+                                                        className="w-full px-4 py-2.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 font-medium"
+                                                    >
+                                                        Cancelar Servicio
+                                                    </button>
+                                                )}
+
+                                                {canReview && (
+                                                    <button
+                                                        onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
+                                                        className="w-full px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm rounded-lg hover:from-yellow-600 hover:to-orange-600 font-medium flex items-center justify-center gap-2"
+                                                    >
+                                                        <Star className="w-4 h-4" />
+                                                        Enviar Reseña
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {/* Desktop Chat - Always Visible */}
+                                <div className="hidden lg:block">
+                                    <Chat 
+                                        searchId={searchId} 
+                                        setNotifications={setNotifications} 
+                                        isExpert={isExpert} 
+                                        expertData={{
+                                            name: serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name,
+                                            profilePictureUrl: serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl
+                                        }}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
 
-                {/* Right Sidebar - Fiverr Style */}
-                <div className="w-full lg:w-[35%] xl:w-[32%] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {/* Right Sidebar - Desktop Only */}
+                <div className="hidden lg:block lg:w-[35%] xl:w-[32%] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     {/* Order Details Header */}
                     <div className="p-6 border-b border-gray-100">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-semibold text-gray-900">Detalles del pedido</h2>
+                        <div className="flex items-center justify-between mb-3 lg:mb-6">
+                            <h2 className="text-lg lg:text-xl font-semibold text-gray-900">Detalles del pedido</h2>
                             <button className="text-gray-400 hover:text-gray-600 p-1">
                                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -486,12 +721,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </button>
                         </div>
 
-                        {/* Service Card - Professional Design */}
-                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow mb-6">
+                        {/* Service Card - Mobile Optimized */}
+                        <div className="bg-gray-50 lg:bg-white rounded-lg lg:rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow mb-4 lg:mb-6">
                             {/* Service Image */}
                             <div className="relative">
                                 {serviceQuery.data?.imageUrls && serviceQuery.data.imageUrls.length > 0 ? (
-                                    <div className="relative w-full h-40 overflow-hidden">
+                                    <div className="relative w-full h-24 lg:h-40 overflow-hidden">
                                         <img
                                             src={serviceQuery.data.imageUrls[0]}
                                             alt="Servicio contratado"
@@ -548,17 +783,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </div>
                             
                             {/* Service Content */}
-                            <div className="p-4">
-                                <h3 className="font-semibold text-gray-900 mb-2 leading-tight">{searchQuery.data?.title}</h3>
-                                <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
+                            <div className="p-3 lg:p-4">
+                                <h3 className="font-semibold text-gray-900 mb-1 lg:mb-2 leading-tight text-sm lg:text-base line-clamp-1 lg:line-clamp-none">
+                                    {searchQuery.data?.title}
+                                </h3>
+                                <p className="text-xs lg:text-sm text-gray-600 leading-relaxed line-clamp-1 lg:line-clamp-2">
                                     {serviceQuery.data?.conditions || 'Servicio profesional personalizado'}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Order Information */}
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4 text-sm">
+                        {/* Order Information - Mobile Optimized */}
+                        <div className="space-y-3 lg:space-y-4">
+                            <div className="grid grid-cols-2 gap-3 lg:gap-4 text-xs lg:text-sm">
                                 <div>
                                     <p className="text-gray-500 mb-1">Solicitado por</p>
                                     <div className="flex items-center gap-2">
@@ -648,15 +885,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         {(isAdmin || isExpert) && (
                             <button
                                 onClick={() => setModalState((prev) => ({ ...prev, showAddAdForm: true }))}
-                                className="w-full mt-6 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-xl hover:from-gray-800 hover:to-gray-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                                className="w-full mt-4 lg:mt-6 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-2.5 lg:py-3 rounded-lg lg:rounded-xl hover:from-gray-800 hover:to-gray-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl text-sm lg:text-base"
                             >
                                 Order Again
                             </button>
                         )}
                     </div>
 
-                    {/* Track Order */}
-                    <div className="px-6 py-6 border-b border-gray-100">
+                    {/* Track Order - Mobile Optimized */}
+                    <div className="px-4 py-4 lg:px-6 lg:py-6 border-b border-gray-100">
                         <button
                             onClick={() => setShowTrackOrder(!showTrackOrder)}
                             className="flex items-center justify-between w-full text-left group"
@@ -698,8 +935,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         )}
                     </div>
 
-                    {/* Support Section */}
-                    <div className="px-6 py-6">
+                    {/* Support Section - Mobile Optimized */}
+                    <div className="px-4 py-4 lg:px-6 lg:py-6">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
                                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">

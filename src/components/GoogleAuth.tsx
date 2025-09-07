@@ -70,8 +70,9 @@ export function GoogleAuth() {
     useEffect(() => {
         const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
         let initializationAttempts = 0;
-        const maxAttempts = 20;
+        const maxAttempts = 30; // Increased attempts
         let timeoutId: NodeJS.Timeout;
+        let intervalId: NodeJS.Timeout;
 
         const initializeGoogleAuth = () => {
             try {
@@ -81,11 +82,19 @@ export function GoogleAuth() {
 
                 console.log('Initializing Google Auth...');
                 
+                // Clear any previous initialization
+                try {
+                    window.google.accounts.id.cancel();
+                } catch (e) {
+                    // Ignore errors from cancel
+                }
+                
                 window.google.accounts.id.initialize({
                     client_id: clientId,
                     callback: handleCredentialResponse,
                     auto_select: false,
-                    cancel_on_tap_outside: false
+                    cancel_on_tap_outside: false,
+                    use_fedcm_for_prompt: false // Disable FedCM for better compatibility
                 });
 
                 const buttonElement = document.getElementById('googleButton');
@@ -97,20 +106,27 @@ export function GoogleAuth() {
                         type: 'standard',
                         theme: 'outline',
                         size: 'medium',
-                        text: 'signin_with'
+                        text: 'signin_with',
+                        width: 250
                     });
 
-                    // Wait a bit for the button to render before marking as ready
+                    // Wait longer for the button to render and verify it's clickable
                     setTimeout(() => {
                         const renderedButton = buttonElement.querySelector('div[role="button"]');
                         if (renderedButton) {
-                            setIsReady(true);
-                            setIsLoading(false);
-                            console.log('Google Auth initialized successfully');
+                            // Additional check to ensure button is truly ready
+                            const isClickable = renderedButton.getAttribute('aria-disabled') !== 'true';
+                            if (isClickable) {
+                                setIsReady(true);
+                                setIsLoading(false);
+                                console.log('Google Auth initialized successfully and ready');
+                            } else {
+                                throw new Error('Button rendered but not clickable');
+                            }
                         } else {
                             throw new Error('Button not rendered properly');
                         }
-                    }, 100);
+                    }, 300); // Increased wait time
                 } else {
                     throw new Error('Button element not found');
                 }
@@ -121,7 +137,7 @@ export function GoogleAuth() {
                 // Retry initialization with exponential backoff
                 if (initializationAttempts < maxAttempts) {
                     initializationAttempts++;
-                    const delay = Math.min(200 * initializationAttempts, 2000);
+                    const delay = Math.min(300 + (initializationAttempts * 200), 3000); // Better backoff
                     console.log(`Retrying Google Auth initialization in ${delay}ms (attempt ${initializationAttempts}/${maxAttempts})`);
                     timeoutId = setTimeout(initializeGoogleAuth, delay);
                 } else {
@@ -131,29 +147,43 @@ export function GoogleAuth() {
             }
         };
 
-        // Start initialization immediately if Google is already loaded
-        if (window.google?.accounts?.id) {
-            initializeGoogleAuth();
-        } else {
-            // Otherwise, keep checking periodically
-            const checkGoogleLoaded = () => {
+        // More robust SDK loading detection
+        const waitForGoogleSDK = () => {
+            const checkSDK = () => {
                 if (window.google?.accounts?.id) {
-                    initializeGoogleAuth();
-                } else if (initializationAttempts < maxAttempts) {
-                    initializationAttempts++;
-                    timeoutId = setTimeout(checkGoogleLoaded, 100);
-                } else {
+                    console.log('Google SDK detected, initializing...');
+                    clearInterval(intervalId);
+                    // Small delay to ensure SDK is fully ready
+                    setTimeout(initializeGoogleAuth, 100);
+                } else if (initializationAttempts >= maxAttempts) {
+                    clearInterval(intervalId);
                     setIsLoading(false);
                     setError('No se pudo cargar Google Sign-In. Intenta recargar la página.');
+                } else {
+                    initializationAttempts++;
+                    console.log(`Waiting for Google SDK... (attempt ${initializationAttempts}/${maxAttempts})`);
                 }
             };
+
+            // Check immediately
+            checkSDK();
             
-            checkGoogleLoaded();
-        }
+            // Then check every 200ms
+            intervalId = setInterval(checkSDK, 200);
+        };
+
+        // Reset attempts counter
+        initializationAttempts = 0;
+        
+        // Start waiting for SDK
+        waitForGoogleSDK();
 
         return () => {
             if (timeoutId) {
                 clearTimeout(timeoutId);
+            }
+            if (intervalId) {
+                clearInterval(intervalId);
             }
             setIsReady(false);
             setIsLoading(true);
@@ -166,6 +196,9 @@ export function GoogleAuth() {
             return;
         }
 
+        // Clear any previous errors
+        setError(null);
+
         try {
             // Multiple fallback attempts for mobile compatibility
             const buttonContainer = document.getElementById('googleButton');
@@ -175,7 +208,9 @@ export function GoogleAuth() {
 
             // Try different selectors for the Google button
             const selectors = [
+                'div[role="button"]:not([aria-disabled="true"])',
                 'div[role="button"]',
+                'button:not([disabled])',
                 'button',
                 '[data-idom-class*="VfPpkd"]',
                 'div[jsaction]'
@@ -184,32 +219,59 @@ export function GoogleAuth() {
             let clicked = false;
             for (const selector of selectors) {
                 const googleButton = buttonContainer.querySelector(selector) as HTMLElement;
-                if (googleButton) {
+                if (googleButton && googleButton.offsetParent !== null) { // Check if element is visible
                     console.log('Clicking Google button with selector:', selector);
                     
-                    // For mobile, try both click and touch events
-                    googleButton.click();
+                    // Ensure the button is not disabled
+                    const isDisabled = googleButton.getAttribute('aria-disabled') === 'true' || 
+                                     (googleButton as HTMLButtonElement).disabled;
                     
-                    // Also dispatch touch events for mobile compatibility
-                    if ('ontouchstart' in window) {
-                        const touchEvent = new TouchEvent('touchstart', {
-                            bubbles: true,
-                            cancelable: true
+                    if (!isDisabled) {
+                        // Create and dispatch multiple event types for maximum compatibility
+                        const events = ['mousedown', 'mouseup', 'click'];
+                        events.forEach(eventType => {
+                            const event = new MouseEvent(eventType, {
+                                bubbles: true,
+                                cancelable: true,
+                                view: window
+                            });
+                            googleButton.dispatchEvent(event);
                         });
-                        googleButton.dispatchEvent(touchEvent);
+                        
+                        // Also try direct click
+                        googleButton.click();
+                        
+                        // For mobile, try touch events
+                        if ('ontouchstart' in window) {
+                            const touchEvents = ['touchstart', 'touchend'];
+                            touchEvents.forEach(eventType => {
+                                const touchEvent = new TouchEvent(eventType, {
+                                    bubbles: true,
+                                    cancelable: true
+                                });
+                                googleButton.dispatchEvent(touchEvent);
+                            });
+                        }
+                        
+                        clicked = true;
+                        break;
                     }
-                    
-                    clicked = true;
-                    break;
                 }
             }
 
             if (!clicked) {
-                throw new Error('Google button not found or not clickable');
+                // Try to trigger Google's prompt directly as fallback
+                if (window.google?.accounts?.id?.prompt) {
+                    console.log('Trying direct Google prompt as fallback');
+                    window.google.accounts.id.prompt();
+                    clicked = true;
+                } else {
+                    throw new Error('Google button not found, not clickable, or not visible');
+                }
             }
         } catch (error) {
             console.error('Failed to trigger Google Sign-In:', error);
-            setError('Error al iniciar sesión. Intenta recargar la página.');
+            setError('Error al iniciar sesión. Por favor, recarga la página e inténtalo de nuevo.');
         }
     };
 
@@ -223,15 +285,23 @@ export function GoogleAuth() {
                 onClick={handleGoogleSignIn}
                 disabled={isLoading || !isReady}
                 className={`group inline-flex items-center justify-center gap-3 px-6 py-3.5 sm:py-3 rounded-lg font-semibold text-base transition-all duration-300 shadow-lg hover:shadow-xl w-full ${
-                    isLoading || !isReady 
+                    isLoading 
                         ? 'bg-gray-400 cursor-not-allowed text-white' 
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                        : !isReady 
+                            ? 'bg-yellow-500 cursor-wait text-white'
+                            : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
                 }`}
+                title={!isReady ? 'Preparando Google Sign-In...' : 'Iniciar sesión con Google'}
             >
                 {isLoading ? (
                     <>
                         <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                         <span>Cargando...</span>
+                    </>
+                ) : !isReady ? (
+                    <>
+                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        <span>Preparando...</span>
                     </>
                 ) : (
                     <>

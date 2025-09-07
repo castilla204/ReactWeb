@@ -53,14 +53,14 @@ export function getAuthToken(): string | null {
     if (!token) return null;
 
     try {
-        // Verificar si el token tiene el formato JWT básico
+        // Verificar si el token tiene el formato JWT bï¿½sico
         const parts = token.split('.');
         if (parts.length !== 3) {
             console.error('Invalid JWT format');
             return null;
         }
 
-        // Decodificar el payload para verificar expiración
+        // Decodificar el payload para verificar expiraciï¿½n
         const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
         if (payload.exp && payload.exp * 1000 < Date.now()) {
             console.log('Token has expired');
@@ -70,7 +70,7 @@ export function getAuthToken(): string | null {
         return token;
     } catch (error) {
         console.error('Error parsing token:', error);
-        return null; // No eliminamos el token automáticamente
+        return null; // No eliminamos el token automï¿½ticamente
     }
 }
 

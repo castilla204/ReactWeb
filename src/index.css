@@ -6,6 +6,61 @@
     h1, h2, h3, h4, h5, h6 {
         @apply font-display tracking-tight;
     }
+
+    /* Professional Scrollbars */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f1f5f9;
+    }
+
+    /* Webkit Scrollbars (Chrome, Safari, Edge) */
+    *::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 8px;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease-out;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #94a3b8, #64748b);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    *::-webkit-scrollbar-corner {
+        background: #f1f5f9;
+    }
+
+    /* Professional focus rings for scrollable areas */
+    *:focus-visible {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+    }
+
+        /* Remove focus outline from range sliders */
+        input[type="range"]:focus,
+        input[type="range"]:focus-visible {
+            outline: none;
+            box-shadow: none;
+        }
+
+        /* Hide scrollbar utility class */
+        .scrollbar-hide {
+            -ms-overflow-style: none;  /* Internet Explorer 10+ */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;  /* Safari and Chrome */
+        }
 }
 
 @keyframes gradient {

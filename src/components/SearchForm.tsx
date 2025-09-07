@@ -327,6 +327,40 @@ export default function SearchForm({
                             </div>
                         </div>
                     </div>
+
+                    {/* Company Supervision & Money-Back Guarantee */}
+                    <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 flex-shrink-0 mt-0.5">
+                                <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-gray-900 mb-2">💯 Garantía Total de Satisfacción</h4>
+                                <div className="space-y-2">
+                                    <div className="flex items-start gap-2">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full flex-shrink-0 mt-2"></div>
+                                        <p className="text-sm text-gray-700 leading-relaxed">
+                                            <span className="font-medium text-emerald-700">Proceso supervisado:</span> Todo el servicio está monitoreado por nuestro equipo para garantizar la calidad y cumplimiento.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full flex-shrink-0 mt-2"></div>
+                                        <p className="text-sm text-gray-700 leading-relaxed">
+                                            <span className="font-medium text-emerald-700">Garantía de devolución:</span> Si el servicio no cumple con lo acordado, se efectuará la devolución completa del dinero.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full flex-shrink-0 mt-2"></div>
+                                        <p className="text-sm text-gray-700 leading-relaxed">
+                                            <span className="font-medium text-emerald-700">Soporte 24/7:</span> Nuestro equipo de atención al cliente está disponible para resolver cualquier incidencia.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     
                                         {/* Simple chips for category and service type */}
                     <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 md:mb-6">
