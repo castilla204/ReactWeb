@@ -308,8 +308,8 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
 
     return (
         <div className="flex flex-col h-full bg-gray-50">
-            {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-4">
+            {/* Header - Hidden on mobile (info shown in parent header) */}
+            <div className="hidden lg:block bg-white border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full overflow-hidden">
                         {getAvatarImage('other') ? (
@@ -424,86 +424,129 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                             </div>
                                         )}
 
-                                        {/* Attachments */}
+                                        {/* Attachments - Redesigned */}
                                         {message.attachmentUrls && message.attachmentUrls.length > 0 && (
-                                            <div className={`flex ${group.isOwn ? 'justify-end' : 'justify-start'} w-full mb-2`}>
-                                                <div className={`${group.isOwn ? 'text-right' : 'text-left'}`}>
-                                                    <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">
-                                                        ARCHIVOS ADJUNTOS
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-2 max-w-xs">
-                                                    {message.attachmentUrls.map((url: string, index: number) => (
-                                                        <div key={index} className="group">
-                                                            {url.endsWith('.mp4') ? (
-                                                                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                                            <div className={`w-full ${group.isOwn ? 'flex justify-end' : 'flex justify-start'} mb-3`}>
+                                                <div className={`relative w-32 ${group.isOwn ? 'ml-auto' : 'mr-auto'}`}>
+                                                    {message.attachmentUrls.length === 1 ? (
+                                                        // Single image - full width
+                                                        <div className="group cursor-pointer" onClick={() => setSelectedImage(message.attachmentUrls[0])}>
+                                                            {message.attachmentUrls[0].endsWith('.mp4') ? (
+                                                                <div className={`relative overflow-hidden shadow-lg ${
+                                                                    group.isOwn 
+                                                                        ? 'bg-blue-500' 
+                                                                        : 'bg-white border border-gray-200'
+                                                                }`}
+                                                                style={{
+                                                                    borderRadius: group.isOwn 
+                                                                        ? '18px 18px 4px 18px' 
+                                                                        : '18px 18px 18px 4px'
+                                                                }}>
                                                                     <video
-                                                                        src={url}
+                                                                        src={message.attachmentUrls[0]}
                                                                         controls
                                                                         className="w-full h-24 object-cover"
+                                                                        style={{
+                                                                            borderRadius: group.isOwn 
+                                                                                ? '18px 18px 4px 18px' 
+                                                                                : '18px 18px 18px 4px'
+                                                                        }}
                                                                     />
-                                                                    <div className="p-1.5">
-                                                                        <div className="flex items-center justify-between text-xs">
-                                                                            <span className="text-gray-600 font-medium truncate text-xs">
-                                                                                {getFileName(url)}
-                                                                            </span>
-                                                                            <a
-                                                                                href={url}
-                                                                                download
-                                                                                className="text-gray-400 hover:text-gray-600 ml-1"
-                                                                            >
-                                                                                <Download className="w-3 h-3" />
-                                                                            </a>
-                                                                        </div>
-                                                                    </div>
                                                                 </div>
                                                             ) : (
-                                                                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                                                                    <div 
-                                                                        className="relative"
-                                                                        onClick={() => setSelectedImage(url)}
-                                                                    >
-                                                                        <img
-                                                                            src={url}
-                                                                            alt="Attachment"
-                                                                            className="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-200"
-                                                                        />
-                                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200 flex items-center justify-center">
-                                                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 rounded-full p-1.5">
-                                                                                <svg className="w-3 h-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                                                                                </svg>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="p-1.5">
-                                                                        <div className="flex items-center justify-between text-xs">
-                                                                            <span className="text-gray-600 font-medium truncate text-xs">
-                                                                                {getFileName(url)}
-                                                                            </span>
-                                                                            <a
-                                                                                href={url}
-                                                                                download
-                                                                                className="text-gray-400 hover:text-gray-600 ml-1"
-                                                                                onClick={(e) => e.stopPropagation()}
-                                                                            >
-                                                                                <Download className="w-3 h-3" />
-                                                                            </a>
+                                                                <div className="relative overflow-hidden shadow-lg"
+                                                                     style={{
+                                                                         borderRadius: group.isOwn 
+                                                                             ? '18px 18px 4px 18px' 
+                                                                             : '18px 18px 18px 4px'
+                                                                     }}>
+                                                                    <img
+                                                                        src={message.attachmentUrls[0]}
+                                                                        alt="Imagen compartida"
+                                                                        className="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                        style={{
+                                                                            borderRadius: group.isOwn 
+                                                                                ? '18px 18px 4px 18px' 
+                                                                                : '18px 18px 18px 4px'
+                                                                        }}
+                                                                    />
+                                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                                                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-full p-3">
+                                                                            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                                                            </svg>
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    ))}
-                                                    </div>
+                                                    ) : (
+                                                        // Multiple images - grid layout
+                                                        <div className={`grid gap-1 ${
+                                                            message.attachmentUrls.length === 2 ? 'grid-cols-2' : 
+                                                            message.attachmentUrls.length === 3 ? 'grid-cols-2' :
+                                                            'grid-cols-2'
+                                                        }`}>
+                                                            {message.attachmentUrls.map((url: string, index: number) => (
+                                                                <div 
+                                                                    key={index} 
+                                                                    className={`group cursor-pointer relative overflow-hidden ${
+                                                                        message.attachmentUrls.length === 3 && index === 0 ? 'row-span-2' : ''
+                                                                    }`}
+                                                                    onClick={() => setSelectedImage(url)}
+                                                                   style={{
+                                                                       borderRadius: '12px',
+                                                                       aspectRatio: '1'
+                                                                   }}
+                                                                >
+                                                                    {url.endsWith('.mp4') ? (
+                                                                        <video
+                                                                            src={url}
+                                                                            className="w-full h-full object-cover"
+                                                                            style={{ borderRadius: '12px' }}
+                                                                        />
+                                                                    ) : (
+                                                                        <>
+                                                                            <img
+                                                                                src={url}
+                                                                                alt={`Imagen ${index + 1}`}
+                                                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                                                                style={{ borderRadius: '12px' }}
+                                                                            />
+                                                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
+                                                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-full p-2">
+                                                                                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                                                                    </svg>
+                                                                                </div>
+                                                                            </div>
+                                                                            {message.attachmentUrls.length > 4 && index === 3 && (
+                                                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center" style={{ borderRadius: '12px' }}>
+                                                                                    <span className="text-white font-bold text-lg">+{message.attachmentUrls.length - 4}</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            )).slice(0, 4)}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
 
                                         {/* Location */}
                                         {(message.locationLatitude || message.locationLongitude) && isLoaded && !loadError && (
-                                            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-                                                <GoogleMap
-                                                    mapContainerStyle={{ width: '100%', height: '150px', borderRadius: '8px' }}
+                                            <div className={`w-full ${group.isOwn ? 'flex justify-end' : 'flex justify-start'} mb-3`}>
+                                                <div className={`relative w-32 ${group.isOwn ? 'ml-auto' : 'mr-auto'}`}>
+                                                    <div className="bg-white border border-gray-200 shadow-lg overflow-hidden"
+                                                         style={{
+                                                             borderRadius: group.isOwn 
+                                                                 ? '18px 18px 4px 18px' 
+                                                                 : '18px 18px 18px 4px'
+                                                         }}>
+                                                        <GoogleMap
+                                                            mapContainerStyle={{ width: '100%', height: '96px' }}
                                                     zoom={14}
                                                     center={{
                                                         lat: parseFloat(message.locationLatitude || defaultCenter.lat.toString()),
@@ -525,15 +568,20 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                                         }}
                                                         icon={markerIcon}
                                                     />
-                                                </GoogleMap>
-                                                <a
-                                                    href={`https://www.google.com/maps?q=${message.locationLatitude},${message.locationLongitude}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-gray-600 hover:text-gray-800 text-sm mt-2 inline-block"
-                                                >
-                                                    Ver en Google Maps
-                                                </a>
+                                                        </GoogleMap>
+                                                        <div className="p-1.5">
+                                                            <a
+                                                                href={`https://www.google.com/maps?q=${message.locationLatitude},${message.locationLongitude}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-gray-600 hover:text-gray-800 text-xs font-medium flex items-center gap-1"
+                                                            >
+                                                                <MapPin className="w-2.5 h-2.5" />
+                                                                Ver
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>

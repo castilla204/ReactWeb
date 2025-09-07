@@ -32,6 +32,11 @@ export function ServiceSelection({
     const [detailServiceId, setDetailServiceId] = useState<number | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [carouselIndices, setCarouselIndices] = useState<{ [key: number]: number }>({});
+    const [filters, setFilters] = useState({
+        priceRange: 'all' as 'all' | 'low' | 'medium' | 'high',
+        rating: 'all' as 'all' | '4+' | '4.5+',
+        experience: 'all' as 'all' | 'new' | 'experienced' | 'pro'
+    });
     
     // Google Maps configuration
     const { isLoaded } = useLoadScript({
@@ -52,12 +57,40 @@ export function ServiceSelection({
         return 9;
     };
 
-    const { services, isLoading, error } = useServices({
+    const { services: allServices, isLoading, error } = useServices({
         categoryId: selectedCategory,
         serviceTypeId: selectedServiceTypeId,
         latitude,
         longitude,
         locationRange,
+    });
+
+    // Aplicar filtros
+    const services = allServices.filter(service => {
+        // Filtro de precio
+        if (filters.priceRange !== 'all') {
+            const price = service.price || 0;
+            if (filters.priceRange === 'low' && price > 50) return false;
+            if (filters.priceRange === 'medium' && (price <= 50 || price > 150)) return false;
+            if (filters.priceRange === 'high' && price <= 150) return false;
+        }
+
+        // Filtro de rating
+        if (filters.rating !== 'all') {
+            const rating = service.averageRating || 0;
+            if (filters.rating === '4+' && rating < 4) return false;
+            if (filters.rating === '4.5+' && rating < 4.5) return false;
+        }
+
+        // Filtro de experiencia
+        if (filters.experience !== 'all') {
+            const completedSearches = service.completedSearches || 0;
+            if (filters.experience === 'new' && completedSearches > 2) return false;
+            if (filters.experience === 'experienced' && (completedSearches <= 2 || completedSearches > 10)) return false;
+            if (filters.experience === 'pro' && completedSearches <= 10) return false;
+        }
+
+        return true;
     });
 
 
@@ -77,10 +110,102 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="flex items-center gap-3 text-gray-500">
-                    <Star className="w-5 h-5 animate-spin" />
-                    <span>Cargando servicios...</span>
+            <div className="min-h-screen bg-gray-50">
+                <div className="max-w-7xl mx-auto px-6 py-8">
+                    {/* Header Skeleton */}
+                    <div className="mb-6 bg-white border border-gray-100/50 rounded-2xl p-3 md:p-6 shadow-lg animate-pulse">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                            <div className="h-6 bg-gray-200 rounded w-64"></div>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+                        {/* Sidebar Skeleton */}
+                        <div className="hidden lg:block w-80 flex-shrink-0">
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-8 overflow-hidden animate-pulse">
+                                <div className="p-4 border-b border-gray-200">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-32"></div>
+                                    </div>
+                                </div>
+                                <div className="p-4 space-y-6">
+                                    {[1, 2, 3, 4].map((i) => (
+                                        <div key={i}>
+                                            <div className="h-3 bg-gray-200 rounded w-20 mb-2"></div>
+                                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                                                    <div className="h-4 bg-gray-200 rounded flex-1"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Services Skeleton */}
+                        <div className="flex-1">
+                            <div className="space-y-6">
+                                {[1, 2, 3].map((i) => (
+                                    <div key={i} className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200/60 animate-pulse">
+                                        {/* Mobile Layout Skeleton */}
+                                        <div className="lg:hidden">
+                                            <div className="flex items-center gap-3 p-4 bg-gray-50 border-b border-gray-100">
+                                                <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
+                                                <div className="flex-1">
+                                                    <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                                                    <div className="h-3 bg-gray-200 rounded w-24"></div>
+                                                </div>
+                                            </div>
+                                            <div className="p-4 space-y-3">
+                                                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                                                <div className="flex gap-2 mt-4">
+                                                    <div className="h-8 bg-gray-200 rounded flex-1"></div>
+                                                    <div className="h-8 bg-gray-200 rounded w-20"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Desktop Layout Skeleton */}
+                                        <div className="hidden lg:flex">
+                                            <div className="w-24 bg-gray-50 flex items-center justify-center p-4">
+                                                <div className="w-16 h-16 bg-gray-200 rounded-xl"></div>
+                                            </div>
+                                            <div className="flex-1 p-6">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="flex-1">
+                                                        <div className="h-5 bg-gray-200 rounded w-48 mb-2"></div>
+                                                        <div className="h-3 bg-gray-200 rounded w-32"></div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="h-6 bg-gray-200 rounded w-20 mb-1"></div>
+                                                        <div className="h-3 bg-gray-200 rounded w-16"></div>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2 mb-4">
+                                                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                                                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                                                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <div className="h-9 bg-gray-200 rounded flex-1"></div>
+                                                    <div className="h-9 bg-gray-200 rounded w-20"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -216,57 +341,66 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                 <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
                     {/* Left Sidebar - Hidden on mobile */}
                     <div className="hidden lg:block w-80 flex-shrink-0">
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-8">
+                        <div className="bg-white rounded-2xl shadow-xl border border-gray-200/60 sticky top-8 overflow-hidden">
                             {/* Sidebar Header */}
-                            <div className="p-4 border-b border-gray-200">
-                                <h3 className="text-sm font-medium text-gray-900 uppercase tracking-wide">
-                                    Filtros aplicados
+                            <div className="p-5 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/30 border-b border-gray-200/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                                        <Search className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-bold text-gray-900">
+                                            Criterios de Búsqueda
                                 </h3>
+                                        <p className="text-xs text-blue-600/70 mt-0.5 font-medium">Configuración aplicada</p>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="p-4 space-y-6">
-                                {/* Service Type */}
+                            <div className="p-5 space-y-5">
+                                {/* Main Info - Clean Layout */}
+                                <div className="space-y-3.5">
+                                    {/* Service Type and Category */}
+                                    <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Tipo de servicio</h4>
-                                    <div className="flex items-center gap-2 text-sm text-gray-900">
-                                        {selectedServiceTypeId === 1 ? (
-                                            <Eye className="w-4 h-4 text-gray-400" />
-                                        ) : (
-                                            <>
-                                                <Search className="w-4 h-4 text-gray-400" />
-                                                <Eye className="w-4 h-4 text-gray-400" />
-                                            </>
-                                        )}
-                                        <span>
+                                            <div className="text-xs text-gray-400 mb-1">Tipo de servicio</div>
+                                            <div className="text-sm font-medium text-gray-700">
                                             {selectedServiceTypeId === 1 ? 'Solo revisión' : 'Búsqueda web + revisión'}
-                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                            <div className="text-xs text-gray-400 mb-1">Categoría</div>
+                                            <div className="text-sm font-medium text-gray-700">
+                                                {categoryName}
+                                            </div>
                                     </div>
                                 </div>
 
-                                {/* Category */}
+                                    {/* Location and Price */}
+                                    <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Categoría</h4>
-                                    <div className="flex items-center gap-2 text-sm text-gray-900">
-                                        <span className="text-lg">
-                                            {selectedCategory === 1 && '🚗'}
-                                            {selectedCategory === 2 && '🏍️'}
-                                            {selectedCategory === 3 && '🏠'}
-                                        </span>
-                                        <span>{categoryName}</span>
+                                            <div className="text-xs text-gray-400 mb-1">Ubicación</div>
+                                            <div className="text-sm font-medium text-gray-700">
+                                                Radio: {locationRange} km
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-400 mb-1">Rango de precios</div>
+                                            <div className="text-sm font-medium text-gray-700">
+                                                {selectedCategory === 1 ? 'Hasta €100.000' : 
+                                                 selectedCategory === 2 ? 'Hasta €50.000' : 
+                                                 'Hasta €2.000.000'}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-
-                                {/* Location and Range */}
-                                <div>
-                                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Ubicación</h4>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-900">
-                                            <MapPin className="w-4 h-4 text-gray-400" />
-                                            <span>Radio: {locationRange} km</span>
                                         </div>
                                         
-                                        {/* Google Map */}
-                                        <div className="h-32 rounded border border-gray-200 relative overflow-hidden">
+                                {/* Map - Full Width */}
+                                <div className="group">
+                                    <div className="text-xs text-gray-400 mb-2">
+                                        Mapa de ubicación
+                                    </div>
+                                    <div className="h-28 rounded-xl border border-indigo-200/60 relative overflow-hidden bg-gradient-to-br from-indigo-50/50 to-slate-50 shadow-sm group-hover:shadow-md transition-all duration-200">
                                             {isLoaded ? (
                                                 <GoogleMap
                                                     mapContainerStyle={{ width: '100%', height: '100%' }}
@@ -292,50 +426,78 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                                         center={mapCenter}
                                                         radius={locationRange * 1000}
                                                         options={{
-                                                            fillColor: '#3B82F6',
-                                                            fillOpacity: 0.1,
-                                                            strokeColor: '#3B82F6',
+                                                        fillColor: '#6366F1',
+                                                        fillOpacity: 0.15,
+                                                        strokeColor: '#6366F1',
                                                             strokeOpacity: 0.8,
                                                             strokeWeight: 2,
+                                                        zIndex: 1,
+                                                        clickable: false,
+                                                        editable: false,
+                                                        draggable: false
                                                         }}
                                                     />
                                                 </GoogleMap>
                                             ) : (
-                                                <div className="h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                                                    <div className="w-16 h-16 bg-blue-500 bg-opacity-30 rounded-full border-2 border-blue-500 flex items-center justify-center">
-                                                        <MapPin className="w-6 h-6 text-blue-600" />
-                                                    </div>
+                                            <div className="h-full bg-gradient-to-br from-indigo-100 to-slate-100 flex items-center justify-center">
+                                                <div className="text-xs font-medium text-indigo-600">Cargando mapa...</div>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
+
+                                {/* Filters */}
+                                <div className="pt-5 border-t border-gray-200/60">
+                                    <div className="text-xs text-gray-400 mb-3">
+                                        Filtros adicionales
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {/* Price Range Filter */}
+                                        <div>
+                                            <label className="text-xs text-gray-400 mb-1.5 block">Precio</label>
+                                            <select 
+                                                value={filters.priceRange}
+                                                onChange={(e) => setFilters(prev => ({ ...prev, priceRange: e.target.value as any }))}
+                                                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white/80 text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-300 hover:border-gray-300 transition-all duration-200"
+                                            >
+                                                <option value="all">Todos</option>
+                                                <option value="low">Hasta €50</option>
+                                                <option value="medium">€50-€150</option>
+                                                <option value="high">+€150</option>
+                                            </select>
                                 </div>
 
-                                {/* Budget Range */}
+                                        {/* Rating Filter */}
                                 <div>
-                                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Rango de precios</h4>
-                                    <div className="flex items-center gap-2 text-sm text-gray-900">
-                                        <DollarSign className="w-4 h-4 text-gray-400" />
-                                        <span>
-                                            {selectedCategory === 1 ? 'Hasta €100.000' : 
-                                             selectedCategory === 2 ? 'Hasta €50.000' : 
-                                             'Hasta €2.000.000'}
-                                        </span>
+                                            <label className="text-xs text-gray-400 mb-1.5 block">Valoración</label>
+                                            <select 
+                                                value={filters.rating}
+                                                onChange={(e) => setFilters(prev => ({ ...prev, rating: e.target.value as any }))}
+                                                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white/80 text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-300 hover:border-gray-300 transition-all duration-200"
+                                            >
+                                                <option value="all">Todas</option>
+                                                <option value="4+">4+ ⭐</option>
+                                                <option value="4.5+">4.5+ ⭐</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Search Stats */}
-                                <div className="pt-6 border-t border-gray-200">
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-xs text-gray-500">Resultados</span>
-                                            <span className="text-sm font-medium text-gray-900">{services.length}</span>
+                                <div className="pt-5 border-t border-gray-200/60">
+                                    <div className="text-xs text-gray-400 mb-3">
+                                        Resumen
                                         </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-xs text-gray-500">Precio medio</span>
-                                            <span className="text-sm font-medium text-gray-900">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="bg-gradient-to-br from-slate-50/80 to-slate-100/50 border border-slate-200/60 rounded-lg p-3 text-center hover:shadow-md transition-all duration-200">
+                                            <div className="text-xl font-bold text-slate-900">{services.length}</div>
+                                            <div className="text-xs font-medium text-slate-600 mt-0.5">Resultados</div>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-slate-50/80 to-slate-100/50 border border-slate-200/60 rounded-lg p-3 text-center hover:shadow-md transition-all duration-200">
+                                            <div className="text-xl font-bold text-slate-900">
                                                 €{Math.round(services.reduce((acc, s) => acc + (s.price || 0), 0) / services.length || 0)}
-                                            </span>
+                                            </div>
+                                            <div className="text-xs font-medium text-slate-600 mt-0.5">Precio medio</div>
                                         </div>
                                     </div>
                                 </div>
@@ -346,28 +508,63 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                     {/* Right Content - Services */}
                     <div className="flex-1">
                         {/* Instructions Header */}
-                        <div className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4 md:p-5">
-                            <div className="flex items-start gap-4">
-                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 flex-shrink-0 mt-1">
-                                    <User className="w-3 h-3 text-gray-600" />
+                        <div className="mb-6 bg-gradient-to-r from-gray-50 to-blue-50/30 border border-gray-100/50 rounded-2xl p-3 md:p-6 shadow-lg">
+                            <div className="flex items-start gap-3 md:gap-4">
+                                <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex-shrink-0 shadow-lg">
+                                    <User className="w-4 h-4 text-white" />
                                 </div>
-                                <div className="flex-1">
-                                    <h2 className="text-base font-medium text-gray-900 mb-2">
+                                <div className="flex-1 min-w-0">
+                                    <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">
                                         {selectedServiceTypeId === 1 ? 'Selección de inspector especializado' : 'Selección de experto en búsquedas'}
                                     </h2>
-                                    <p className="text-sm text-gray-600 leading-relaxed mb-3">
+                                    <p className="text-xs md:text-sm text-gray-600 leading-relaxed mb-2 md:mb-3">
                                         {selectedServiceTypeId === 1 
                                             ? 'Profesionales certificados que realizarán la inspección en la ubicación especificada.'
                                             : 'Especialistas que ejecutarán búsquedas automatizadas e inspecciones presenciales.'
                                         }
                                     </p>
-                                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 font-normal">
-                                        <span>• Certificados</span>
-                                        <span>• Verificados</span>
-                                        <span>• Pago seguro</span>
+                                    <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs text-gray-500 font-medium mb-2">
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                                            <span>Certificados</span>
                                     </div>
-                                    <div className="mt-3 text-xs text-gray-400 font-normal">
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                            <span>Verificados</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                                            <span>Pago seguro</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                        <span className="text-xs text-gray-500 font-medium">
                                         {selectedServiceTypeId === 1 ? 'Paso 3 de 3 • Selección de inspector' : 'Paso 3 de 3 • Selección de especialista'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Auto-Refund Guarantee */}
+                        <div className="mb-6 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200/60 rounded-2xl p-4 md:p-5 shadow-sm">
+                            <div className="flex items-start gap-3">
+                                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 flex-shrink-0">
+                                    <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-sm font-semibold text-emerald-900 mb-1">⚡ Garantía de Respuesta Rápida</h3>
+                                    <p className="text-xs text-emerald-700 leading-relaxed mb-2">
+                                        <span className="font-medium">Devolución automática en 24h:</span> Si el experto seleccionado no responde o acepta tu solicitud en un máximo de 24 horas, tu dinero será devuelto automáticamente a tu cuenta sin necesidad de reclamación.
+                                    </p>
+                                    <div className="flex items-center gap-2 text-xs text-emerald-600">
+                                        <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
+                                        <span className="font-medium">Proceso 100% automático</span>
+                                        <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
+                                        <span className="font-medium">Sin gestiones adicionales</span>
                                     </div>
                                 </div>
                             </div>
@@ -383,40 +580,47 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                 {services.map((service) => {
                     const savings = Math.floor(Math.random() * 500) + 300;
                     const currentImageIndex = carouselIndices[service.id] || 0;
-                    const isTopRated = service.averageRating >= 4.8;
-                    const isChoice = service.completedSearches > 10;
-                    const isPro = service.expert?.isPro || service.completedSearches > 5;
+                    const isTopRated = (service.averageRating || 0) >= 4.8;
+                    const isChoice = (service.completedSearches || 0) > 10;
+                    const isPro = (service.completedSearches || 0) > 5;
 
                     return (
                         <div
                             key={service.id}
-                            className={`bg-white rounded-lg shadow-md overflow-hidden border transition-all duration-300 hover:shadow-lg ${
-                                selectedService === service.id ? 'border-emerald-500 ring-2 ring-emerald-100 shadow-lg bg-gradient-to-r from-emerald-50/30 to-emerald-50/10' : 'border-gray-200 hover:border-gray-300'
+                            className={`bg-white rounded-2xl shadow-xl overflow-hidden border transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${
+                                selectedService === service.id ? 'border-emerald-500 ring-2 ring-emerald-200/50 shadow-2xl bg-gradient-to-br from-emerald-50/50 to-emerald-100/30' : 'border-gray-200/60 hover:border-gray-300'
                             }`}
                         >
                                                         {/* Mobile Layout */}
                             <div className="lg:hidden">
                                 {/* Header with Expert Profile */}
-                                <div className="flex items-center gap-3 p-4 border-b border-gray-100">
+                                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-blue-50/30 border-b border-gray-100">
                                     <div className="flex-shrink-0">
                                         {service.expert && service.expert.profilePictureUrl ? (
+                                            <div className="relative">
                                             <img
                                                 src={service.expert.profilePictureUrl}
                                                 alt={service.expert.user?.name || 'Experto'}
-                                                className="w-10 h-10 rounded-full object-cover"
+                                                    className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-lg"
                                                 onError={(e) => {
-                                                    console.error(`Failed to load profile picture for service ${service.id}: ${service.expert.profilePictureUrl}`);
+                                                        console.error(`Failed to load profile picture for service ${service.id}: ${service.expert?.profilePictureUrl}`);
                                                     e.currentTarget.style.display = 'none';
-                                                    e.currentTarget.nextElementSibling!.style.display = 'flex';
-                                                }}
-                                            />
+                                                        (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'flex';
+                                                    }}
+                                                />
+                                                {isPro && (
+                                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center border-2 border-white">
+                                                        <CheckCircle className="w-3 h-3 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
                                         ) : (
-                                            <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                                                <User className="w-5 h-5 text-gray-500" />
+                                            <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center border-2 border-white shadow-lg">
+                                                <User className="w-6 h-6 text-white" />
                                             </div>
                                         )}
-                                        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center" style={{ display: 'none' }}>
-                                            <User className="w-5 h-5 text-gray-500" />
+                                        <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center border-2 border-white shadow-lg" style={{ display: 'none' }}>
+                                            <User className="w-6 h-6 text-white" />
                                         </div>
                                     </div>
                                     <div className="flex-1">
@@ -425,20 +629,20 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                                 {service.expert?.user?.name || 'Experto desconocido'}
                                             </h3>
                                             {isPro && (
-                                                <span className="bg-orange-500 text-white px-2 py-0.5 rounded text-xs font-medium">
-                                                    Vetted Pro
+                                                <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-sm">
+                                                    Pro
                                                 </span>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <div className="flex">
-                                                {renderStars('averageRating' in service ? service.averageRating : 0)}
+                                                {renderStars(service.averageRating || 0)}
                                             </div>
-                                            <span className="text-xs font-semibold text-gray-900">
-                                                {'averageRating' in service ? service.averageRating.toFixed(1) : '0.0'}
+                                            <span className="text-xs font-bold text-gray-900">
+                                                {(service.averageRating || 0).toFixed(1)}
                                             </span>
-                                            <span className="text-xs text-gray-500">
-                                                ({service.expert?.reviews?.length || 0})
+                                            <span className="text-xs text-gray-500 font-medium">
+                                                ({service.expert?.reviews?.length || 0} reseñas)
                                             </span>
                                         </div>
                                     </div>
@@ -504,19 +708,19 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                         <div className="flex gap-2">
                                                 <button
                                                 onClick={() => setSelectedService(service.id)}
-                                                className={`flex-1 py-2.5 px-4 rounded font-medium text-sm transition-all duration-200 ${
+                                                className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 shadow-lg hover:shadow-xl ${
                                                     selectedService === service.id
-                                                        ? 'bg-emerald-600 text-white shadow-md hover:bg-emerald-700'
-                                                        : 'bg-gray-900 text-white hover:bg-gray-800'
+                                                        ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800'
+                                                        : 'bg-gradient-to-r from-gray-900 to-gray-800 text-white hover:from-gray-800 hover:to-gray-700'
                                                 }`}
                                             >
-                                                {selectedService === service.id ? 'Seleccionado' : 'Seleccionar'}
+                                                {selectedService === service.id ? '✓ Seleccionado' : 'Seleccionar'}
                                                 </button>
                                                 <button
                                                 onClick={() => setDetailServiceId(service.id)}
-                                                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 text-sm font-medium"
+                                                className="px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md"
                                                 >
-                                                Ver servicio
+                                                Ver
                                                 </button>
                                         </div>
                                     </div>
@@ -541,9 +745,9 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                             alt={service.expert.user?.name || 'Experto'}
                                                 className="w-12 h-12 rounded-full object-cover"
                                             onError={(e) => {
-                                                console.error(`Failed to load profile picture for service ${service.id}: ${service.expert.profilePictureUrl}`);
+                                                console.error(`Failed to load profile picture for service ${service.id}: ${service.expert?.profilePictureUrl}`);
                                                 e.currentTarget.style.display = 'none';
-                                                e.currentTarget.nextElementSibling!.style.display = 'flex';
+                                                    (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'flex';
                                             }}
                                         />
                                     ) : (
@@ -579,10 +783,10 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                             </div>
                                             <div className="flex items-center gap-1 mb-2">
                                                 <div className="flex">
-                                                    {renderStars('averageRating' in service ? service.averageRating : 0)}
+                                                    {renderStars(service.averageRating || 0)}
                                                 </div>
                                                 <span className="text-sm font-semibold text-gray-900">
-                                                    {'averageRating' in service ? service.averageRating.toFixed(1) : '0.0'}
+                                                    {(service.averageRating || 0).toFixed(1)}
                                                 </span>
                                                 <span className="text-sm text-gray-500">
                                                     ({service.expert?.reviews?.length || 0})
@@ -698,15 +902,15 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
             </div>
 
                         {/* Continue Button */}
-                        <div className="bg-white border-t border-gray-100 p-6 mt-8">
-                            <div className="flex justify-between items-center">
-                                <div className="text-sm text-gray-600">
+                        <div className="bg-gradient-to-r from-gray-50 to-blue-50/30 border-t border-gray-100 p-3 md:p-6 mt-6 md:mt-8 rounded-b-2xl">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0">
+                                <div className="text-xs md:text-sm text-gray-600 font-medium order-2 md:order-1">
                                     Paso 3 de 3 • Selecciona un servicio
                                 </div>
                             <button
                                     onClick={handleContinue}
                                     disabled={selectedService === null}
-                                    className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white text-sm font-medium rounded transition-colors disabled:cursor-not-allowed"
+                                    className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 md:py-2.5 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-xl md:rounded-lg shadow-lg hover:shadow-xl disabled:shadow-sm transition-all duration-200 disabled:cursor-not-allowed order-1 md:order-2"
                             >
                                     <span>Continuar</span>
                                     <ArrowRight className="w-4 h-4" />
@@ -890,9 +1094,9 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                         <div className="mb-6">
                                 <h4 className="text-sm font-medium text-gray-600 mb-3 uppercase tracking-wide">
                                     Reseñas
-                                    {detailService.expert?.reviews?.length > 0 && (
+                                    {(detailService.expert?.reviews?.length || 0) > 0 && (
                                         <span className="text-xs font-normal text-gray-500 ml-1">
-                                            ({detailService.expert.reviews.length})
+                                            ({detailService.expert?.reviews?.length || 0})
                                         </span>
                                     )}
                                 </h4>
@@ -920,10 +1124,10 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                                 <p className="text-sm text-gray-700 leading-relaxed">{review.description}</p>
                                         </div>
                                     ))}
-                                        {detailService.expert.reviews.length > 3 && (
+                                        {(detailService.expert?.reviews?.length || 0) > 3 && (
                                             <div className="text-center">
                                                 <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                                                    Ver todas las reseñas ({detailService.expert.reviews.length})
+                                                    Ver todas las reseñas ({detailService.expert?.reviews?.length || 0})
                                                 </button>
                                         </div>
                                         )}
