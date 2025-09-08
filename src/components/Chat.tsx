@@ -99,6 +99,18 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
         }
     }, [conversation?.messages?.length]);
 
+    // Scroll to bottom when conversation loads for the first time
+    useEffect(() => {
+        if (conversation?.messages && messagesEndRef.current && !loading) {
+            // Use setTimeout to ensure DOM is fully rendered
+            setTimeout(() => {
+                if (messagesEndRef.current) {
+                    messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+                }
+            }, 100);
+        }
+    }, [conversation?.id, loading]);
+
     useEffect(() => {
         if (error) {
             setNotifications((prev) => [
@@ -307,9 +319,9 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
     }, []) || [];
 
     return (
-        <div className="flex flex-col h-full bg-gray-50">
+        <div className="relative flex flex-col h-full lg:max-h-96 bg-gray-50 lg:rounded-xl">
             {/* Header - Hidden on mobile (info shown in parent header) */}
-            <div className="hidden lg:block bg-white border-b border-gray-200 px-6 py-4">
+            <div className="hidden lg:block bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full overflow-hidden">
                         {getAvatarImage('other') ? (
@@ -337,8 +349,8 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                 </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+            {/* Messages Container - Scrollable area */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 lg:px-6 space-y-6 pb-24 lg:pb-32 min-h-0" data-chat-messages>
                 {conversation.messages?.length === 0 && isExpert ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="bg-white rounded-2xl p-6 shadow-sm max-w-md border border-gray-100">
@@ -593,93 +605,101 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Selected files preview */}
-            {selectedFiles.length > 0 && (
-                <div className="px-6 py-2 bg-gray-100 border-t border-gray-200">
-                    <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">
-                        ARCHIVOS SELECCIONADOS
-                    </div>
-                    <div className="flex gap-2 overflow-x-auto">
-                        {selectedFiles.map((file, index) => (
-                            <div key={index} className="bg-white rounded-lg p-2 border border-gray-200 min-w-0 flex-shrink-0">
-                                <div className="text-xs font-medium text-gray-700 truncate max-w-[120px]">
-                                    {file.name}
+            {/* Fixed Input Area at Bottom */}
+            <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10 lg:rounded-b-xl">
+                {/* Selected files preview */}
+                {selectedFiles.length > 0 && (
+                    <div className="px-4 py-3 lg:px-6 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-100">
+                        <div className="text-xs text-blue-700 font-semibold uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <Paperclip className="w-3 h-3" />
+                            ARCHIVOS SELECCIONADOS
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                            {selectedFiles.map((file, index) => (
+                                <div key={index} className="bg-white rounded-xl p-3 border border-blue-200 min-w-0 flex-shrink-0 shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="text-xs font-semibold text-gray-800 truncate max-w-[120px] mb-1">
+                                        {file.name}
+                                    </div>
+                                    <div className="text-xs text-blue-600 font-medium">
+                                        {formatFileSize(file.size)}
+                                    </div>
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                    {formatFileSize(file.size)}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Selected location preview */}
-            {location && (
-                <div className="px-6 py-2 bg-gray-100 border-t border-gray-200">
-                    <div className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">
-                        UBICACIÓN SELECCIONADA
-                    </div>
-                    <div className="bg-white rounded-lg p-2 border border-gray-200 inline-block">
-                        <div className="text-xs font-medium text-gray-700">
-                            {parseFloat(location.latitude).toFixed(4)}, {parseFloat(location.longitude).toFixed(4)}
+                            ))}
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Input area */}
-            <div className="bg-white border-t border-gray-200 px-6 py-4">
-                <div className="flex items-end gap-3">
-                    <div className="flex-1 relative">
-                        <textarea
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder="Escribe un mensaje..."
-                            className="w-full p-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors resize-none bg-gray-50 text-sm"
-                            rows={1}
-                            style={{ minHeight: '44px', maxHeight: '120px' }}
-                            onKeyPress={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
-                                    e.preventDefault();
-                                    handleSendMessage();
-                                }
-                            }}
-                            disabled={isSending}
-                        />
+                {/* Selected location preview */}
+                {location && (
+                    <div className="px-4 py-3 lg:px-6 bg-gradient-to-r from-green-50 to-blue-50 border-b border-green-100">
+                        <div className="text-xs text-green-700 font-semibold uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <MapPin className="w-3 h-3" />
+                            UBICACIÓN SELECCIONADA
+                        </div>
+                        <div className="bg-white rounded-xl p-3 border border-green-200 inline-block shadow-sm hover:shadow-md transition-shadow">
+                            <div className="text-xs font-semibold text-gray-800 flex items-center gap-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                {parseFloat(location.latitude).toFixed(4)}, {parseFloat(location.longitude).toFixed(4)}
+                            </div>
+                        </div>
                     </div>
+                )}
 
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={handleOpenMapModal}
-                            className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
-                            title="Seleccionar ubicación"
-                        >
-                            <MapPin className="w-5 h-5 text-gray-600" />
-                        </button>
+                {/* Input area */}
+                <div className="px-4 py-3 lg:px-6 lg:py-4 bg-white border-t border-gray-100">
+                    <div className="flex items-end gap-3">
+                        <div className="flex-1 relative">
+                            <div className="relative bg-gray-50 rounded-3xl border border-gray-200 hover:border-gray-300 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 transition-all duration-200">
+                                <textarea
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    placeholder="Escribe un mensaje..."
+                                    className="w-full px-4 py-3 bg-transparent rounded-3xl resize-none text-gray-900 placeholder-gray-500 text-sm leading-5 focus:outline-none"
+                                    rows={1}
+                                    style={{ minHeight: '44px', maxHeight: '120px' }}
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
+                                            e.preventDefault();
+                                            handleSendMessage();
+                                        }
+                                    }}
+                                    disabled={isSending}
+                                />
+                            </div>
+                        </div>
 
-                        <label className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors">
-                            <Paperclip className="w-5 h-5 text-gray-600" />
-                            <input
-                                type="file"
-                                multiple
-                                accept=".jpg,.jpeg,.png,.mp4"
-                                onChange={handleFileChange}
-                                className="hidden"
-                                disabled={isSending}
-                            />
-                        </label>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleOpenMapModal}
+                                className="p-3 rounded-full bg-blue-50 hover:bg-blue-100 transition-all duration-200 group"
+                                title="Seleccionar ubicación"
+                            >
+                                <MapPin className="w-5 h-5 text-blue-600 group-hover:text-blue-700" />
+                            </button>
 
-                        <button
-                            onClick={handleSendMessage}
-                            className={`p-3 rounded-xl transition-colors ${isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'bg-gray-900 text-white hover:bg-gray-800'
-                                }`}
-                            disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
-                        >
-                            <Send className="w-5 h-5" />
-                        </button>
+                            <label className="p-3 rounded-full bg-purple-50 hover:bg-purple-100 cursor-pointer transition-all duration-200 group">
+                                <Paperclip className="w-5 h-5 text-purple-600 group-hover:text-purple-700" />
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept=".jpg,.jpeg,.png,.mp4"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                    disabled={isSending}
+                                />
+                            </label>
+
+                            <button
+                                onClick={handleSendMessage}
+                                className={`p-3 rounded-full transition-all duration-200 transform hover:scale-105 ${isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
+                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed hover:scale-100'
+                                        : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl'
+                                    }`}
+                                disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
+                            >
+                                <Send className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
