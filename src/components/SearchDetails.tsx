@@ -91,6 +91,33 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const lastSearchHireId = useRef<number | null>(null);
     const [activeTab, setActiveTab] = useState<'chat' | 'details'>('chat');
 
+    // Prevent body scroll when chat is active on mobile
+    useEffect(() => {
+        if (activeTab === 'chat') {
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            
+            // Scroll chat to bottom when switching to chat tab
+            setTimeout(() => {
+                const chatContainer = document.querySelector('[data-chat-messages]');
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            }, 150);
+        } else {
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+        }
+
+        return () => {
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+        };
+    }, [activeTab]);
+
     const { getSearch } = useSearch({ enableQueries: false });
     const { useServiceByHireId } = useServices({});
     const { categories } = useCategories();
@@ -118,6 +145,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const canReview =
         isClient && searchQuery.data?.searchHire && ['completed', 'dispute-resolved'].includes(searchQuery.data.searchHire.status) && !hasReviewed;
     const canDispute = isClient && searchQuery.data?.searchHire?.status === 'awaiting_client_decision';
+    const canApprove = isClient && searchQuery.data?.searchHire?.status === 'awaiting_client_decision';
     const canCancel = isExpert && searchQuery.data?.searchHire && !['completed', 'canceled', 'disputed'].includes(searchQuery.data.searchHire.status);
     const isDisputed = (isClient || isExpert) && searchQuery.data?.searchHire?.status === 'disputed';
     const canViewChat = (isClient || isExpert || isAdmin) && !!searchQuery.data?.searchHire;
@@ -353,57 +381,60 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     }
 
     return (
-        <div className="bg-gray-50 text-black h-screen lg:min-h-screen flex flex-col">
+        <div className="bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/50 text-black lg:h-screen lg:min-h-screen flex flex-col">
             {/* Mobile-First Header */}
-            <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-                <div className="px-4 py-3 sm:px-6 sm:py-4">
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+                <div className="px-4 py-4 sm:px-6 sm:py-5">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                         <button
                             onClick={onBack || (() => navigate('/busquedas'))}
-                                className="p-2 hover:bg-gray-100 rounded-lg flex-shrink-0"
+                                className="p-2.5 hover:bg-gray-100 rounded-lg flex-shrink-0 transition-colors duration-200"
                         >
-                            <ArrowLeft className="w-5 h-5" />
+                            <ArrowLeft className="w-5 h-5 text-gray-700" />
                         </button>
                             <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-gray-500 text-xs sm:text-sm">
-                                {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                            </span>
+                                <div className="flex items-center gap-3 mb-1">
+                                    <span className="text-gray-500 text-xs sm:text-sm font-medium flex items-center gap-1.5">
+                                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                                        </svg>
+                                        {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                                    </span>
                                     {/* Mobile Status Badge */}
-                                    <span className={`sm:hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
-                                        ${currentStatus === 'completed' ? 'bg-green-100 text-green-700' :
-                                        currentStatus === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                                        currentStatus === 'awaiting_client_decision' ? 'bg-purple-100 text-purple-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                    <span className={`sm:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border
+                                        ${currentStatus === 'completed' ? 'bg-green-50 text-green-700 border-green-200' :
+                                        currentStatus === 'in_progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                        currentStatus === 'awaiting_client_decision' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>
                                         <span className={`w-1.5 h-1.5 rounded-full ${currentStatus === 'completed' ? 'bg-green-500' :
                                             currentStatus === 'in_progress' ? 'bg-blue-500' :
-                                            currentStatus === 'awaiting_client_decision' ? 'bg-purple-500' : 'bg-yellow-500'}`} />
+                                            currentStatus === 'awaiting_client_decision' ? 'bg-orange-500' : 'bg-gray-400'}`} />
                                         {currentStatus === 'completed' ? 'Completado' :
                                             currentStatus === 'in_progress' ? 'En progreso' :
                                             currentStatus === 'awaiting_client_decision' ? 'En revisión' : 'Pendiente'}
                             </span>
                         </div>
-                                <h1 className="text-sm sm:text-lg font-medium text-gray-900 truncate">
+                                <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate leading-tight">
                                     {searchQuery.data?.title || 'Cargando...'}
                                 </h1>
                     </div>
                         </div>
                         
                         {/* Desktop Actions - Hidden on mobile */}
-                        <div className="hidden sm:flex items-center gap-2">
-                        <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                        <div className="hidden sm:flex items-center gap-3">
+                        <button className="px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-gray-700 font-medium transition-colors duration-200">
                             <Share2 className="w-4 h-4" />
                             Compartir
                         </button>
-                        <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                        <button className="px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-gray-700 font-medium transition-colors duration-200">
                             <MessageCircle className="w-4 h-4" />
-                            Comentarios del Equipo
+                            Comentarios
                             </button>
                         </div>
                         
                         {/* Mobile Menu Button */}
-                        <button className="sm:hidden p-2 hover:bg-gray-100 rounded-lg">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <button className="sm:hidden p-2.5 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                            <svg className="w-5 h-5 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                             </svg>
                         </button>
@@ -412,40 +443,54 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             </div>
 
             {/* Mobile-First Layout */}
-            <div className="flex flex-col lg:flex-row lg:max-w-7xl lg:mx-auto lg:gap-6 xl:gap-8 flex-1 lg:flex-none lg:h-auto">
+            <div className="flex flex-col lg:flex-row lg:max-w-7xl lg:mx-auto lg:gap-6 xl:gap-8 lg:flex-1 lg:flex-none lg:h-auto">
                 {/* Mobile-First Chat Area */}
                 {canViewChat && (
-                    <div className="flex-1 lg:w-[65%] xl:w-[68%] flex flex-col">
+                    <div className="lg:flex-1 lg:w-[70%] xl:w-[72%] flex flex-col">
                         {/* Mobile Tabs Navigation */}
-                        <div className="lg:hidden bg-white border-b border-gray-200">
+                        <div className="lg:hidden bg-white border-b border-gray-200 sticky top-[80px] z-40 shadow-sm">
                             {/* Expert Info Header */}
-                            <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
+                            <div className="px-4 py-4 flex items-center gap-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
                                 <div className="flex items-center gap-3 flex-1">
-                                    {(serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl) ? (
-                                        <img 
-                                            src={serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl} 
-                                            alt={serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}
-                                            className="w-8 h-8 bg-blue-500 rounded-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                                            {(serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'E').charAt(0)}
-                                        </div>
-                                    )}
+                                    <div className="relative">
+                                        {(serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl) ? (
+                                            <img 
+                                                src={serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl} 
+                                                alt={serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}
+                                                className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full object-cover border-2 border-white shadow-md"
+                                            />
+                                        ) : (
+                                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white text-sm font-bold border-2 border-white shadow-md">
+                                                {(serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'E').charAt(0)}
+                                            </div>
+                                        )}
+                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
+                                    </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-medium text-gray-900 truncate text-sm">
-                                            {serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}
-                                        </h3>
-                                        <p className="text-xs text-gray-500">Experto asignado • En línea</p>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-semibold text-gray-900 truncate text-sm">
+                                                {serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}
+                                            </h3>
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                <svg className="w-2.5 h-2.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                </svg>
+                                                Verificado
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                                            En línea • Responde rápido
+                                        </p>
                                     </div>
                                 </div>
                             </div>
                             
                             {/* Tabs */}
-                            <div className="flex">
+                            <div className="flex bg-white">
                                 <button
                                     onClick={() => setActiveTab('chat')}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors relative ${
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors duration-200 relative ${
                                         activeTab === 'chat'
                                             ? 'text-blue-600 bg-blue-50'
                                             : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -459,7 +504,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('details')}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors relative ${
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors duration-200 relative ${
                                         activeTab === 'details'
                                             ? 'text-blue-600 bg-blue-50'
                                             : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -528,7 +573,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         </div>
 
                         {/* Main Content Container - Mobile Tabs / Desktop Chat */}
-                        <div className="bg-white lg:rounded-xl lg:shadow-sm lg:border lg:border-gray-200 lg:mx-6 flex flex-col flex-1 lg:flex-none lg:h-auto">
+                        <div className="lg:bg-white lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-200/50 lg:mx-6 flex flex-col lg:flex-1 lg:flex-none lg:h-auto lg:backdrop-blur-sm">
                             {/* Chat Header - Desktop Only */}
                             <div className="hidden lg:block p-4 border-b border-gray-100">
                                 <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
@@ -537,10 +582,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </div>
                             
                             {/* Mobile Tab Content */}
-                            <div className="flex-1 lg:px-4 lg:py-2 overflow-hidden">
+                            <div className="lg:flex-1 lg:px-4 lg:py-2 lg:overflow-hidden">
                                 {/* Chat Tab Content - Mobile */}
                                 {activeTab === 'chat' && (
-                                    <div className="lg:hidden h-full">
+                                    <div className="lg:hidden fixed inset-0 top-[190px] bg-white z-30">
                             <Chat 
                                 searchId={searchId} 
                                 setNotifications={setNotifications} 
@@ -557,13 +602,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 {activeTab === 'details' && (
                                     <div className="lg:hidden h-full overflow-y-auto">
                                         {/* Mobile Details Content */}
-                                        <div className="p-4 space-y-6">
-                                            {/* Service Card - Mobile Optimized */}
-                                            <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                                                {/* Service Image */}
-                                                <div className="relative">
-                                                    {serviceQuery.data?.imageUrls && serviceQuery.data.imageUrls.length > 0 ? (
-                                                        <div className="relative w-full h-32 overflow-hidden">
+                                        <div className="p-3 space-y-3">
+                                            {/* Service Card - Compact Layout */}
+                                            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
+                                                <div className="flex">
+                                                    {/* Service Image - Side */}
+                                                    <div className="relative w-20 h-16 flex-shrink-0">
+                                                        {serviceQuery.data?.imageUrls && serviceQuery.data.imageUrls.length > 0 ? (
                                                             <img
                                                                 src={serviceQuery.data.imageUrls[0]}
                                                                 alt="Servicio contratado"
@@ -574,57 +619,61 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                         : '/default-service.png';
                                                                 }}
                                                             />
-                        </div>
-                                                    ) : (
-                                                        <div className="relative w-full h-32 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-                                                            {searchQuery.data?.category && categoryBanners[searchQuery.data.category] ? (
-                                                                <img
-                                                                    src={categoryBanners[searchQuery.data.category]}
-                                                                    alt={categoryName}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center">
+                                                        ) : (
+                                                            <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+                                                                {searchQuery.data?.category && categoryBanners[searchQuery.data.category] ? (
+                                                                    <img
+                                                                        src={categoryBanners[searchQuery.data.category]}
+                                                                        alt={categoryName}
+                                                                        className="w-full h-full object-cover"
+                                                                    />
+                                                                ) : (
                                                                     <div className="text-center">
-                                                                        <svg className="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <svg className="w-6 h-6 text-gray-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                                                         </svg>
-                                                                        <p className="text-xs text-gray-400 font-medium">{categoryName}</p>
                                                                     </div>
-                                                                </div>
-                                                            )}
-                    </div>
-                )}
-
-                                                    {/* Status Badge */}
-                                                    <div className="absolute top-2 left-2">
-                                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-sm border
-                                                            ${currentStatus === 'completed' ? 'bg-green-500/90 text-white border-green-400/50' :
-                                                            currentStatus === 'in_progress' ? 'bg-blue-500/90 text-white border-blue-400/50' :
-                                                            currentStatus === 'awaiting_client_decision' ? 'bg-purple-500/90 text-white border-purple-400/50' : 'bg-yellow-500/90 text-white border-yellow-400/50'}`}>
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                                                            {currentStatus === 'completed' ? 'COMPLETADO' :
-                                                                currentStatus === 'in_progress' ? 'EN PROGRESO' :
-                                                                    currentStatus === 'awaiting_client_decision' ? 'EN REVISIÓN' : 'PENDIENTE'}
-                                                        </span>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                </div>
-                                                
-                                                {/* Service Content */}
-                                                <div className="p-4">
-                                                    <h3 className="font-semibold text-gray-900 mb-2 leading-tight">
-                                                        {searchQuery.data?.title}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
-                                                        {serviceQuery.data?.conditions || 'Servicio profesional personalizado'}
-                                                    </p>
+                                                    
+                                                    {/* Service Content - Side */}
+                                                    <div className="flex-1 p-2 relative">
+                                                        {/* Status Badge */}
+                                                        <div className="absolute top-1 right-1">
+                                                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium
+                                                                ${currentStatus === 'completed' ? 'bg-green-50 text-green-700' :
+                                                                currentStatus === 'in_progress' ? 'bg-blue-50 text-blue-700' :
+                                                                currentStatus === 'awaiting_client_decision' ? 'bg-orange-50 text-orange-700' : 'bg-gray-50 text-gray-700'}`}>
+                                                                <span className={`w-1.5 h-1.5 rounded-full ${currentStatus === 'completed' ? 'bg-green-500' :
+                                                                    currentStatus === 'in_progress' ? 'bg-blue-500' :
+                                                                    currentStatus === 'awaiting_client_decision' ? 'bg-orange-500' : 'bg-gray-400'}`} />
+                                                                {currentStatus === 'completed' ? 'Completado' :
+                                                                    currentStatus === 'in_progress' ? 'En progreso' :
+                                                                    currentStatus === 'awaiting_client_decision' ? 'En revisión' : 'Pendiente'}
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        <h3 className="font-semibold text-gray-900 mb-0.5 leading-tight pr-16 text-sm">
+                                                            {searchQuery.data?.title}
+                                                        </h3>
+                                                        <p className="text-xs text-gray-600 leading-tight line-clamp-1">
+                                                            {serviceQuery.data?.conditions || 'Servicio profesional personalizado'}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
 
                                             {/* Order Information - Mobile */}
-                                            <div className="space-y-4">
-                                                <h4 className="font-semibold text-gray-900">Información del pedido</h4>
-                                                <div className="grid grid-cols-1 gap-4 text-sm">
+                                            <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
+                                                <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-1.5 text-sm">
+                                                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    Información del pedido
+                                                </h4>
+                                                <div className="grid grid-cols-1 gap-2 text-sm">
                                                     <div className="flex justify-between">
                                                         <span className="text-gray-500">Solicitado por</span>
                                                         <span className="font-medium text-gray-900">{user?.name || 'Usuario'}</span>
@@ -650,29 +699,40 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             </div>
 
                                             {/* Action Buttons - Mobile */}
-                                            <div className="space-y-3">
-                                                {canDispute && (
+                                            <div className="space-y-2">
+                                                {(canDispute || canApprove) && (
                                                     <div className="flex gap-2">
-                                                        <button
-                                                            onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
-                                                            className="flex-1 px-4 py-2.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 font-medium"
-                                                        >
-                                                            Disputar
-                                                        </button>
-                                                        <button
-                                                            onClick={handleApproveService}
-                                                            className="flex-1 px-4 py-2.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 font-medium"
-                                                        >
-                                                            Aprobar
-                                                        </button>
+                                                        {canDispute && (
+                                                            <button
+                                                                onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
+                                                                className="flex-1 px-3 py-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg hover:bg-red-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
+                                                            >
+                                                                <AlertTriangle className="w-4 h-4" />
+                                                                Disputar
+                                                            </button>
+                                                        )}
+                                                        {canApprove && (
+                                                            <button
+                                                                onClick={handleApproveService}
+                                                                className="flex-1 px-3 py-2 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg hover:bg-green-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                                Aprobar
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
                                                 
                                                 {canCancel && (
                                                     <button
                                                         onClick={() => setModalState((prev) => ({ ...prev, showCancelConfirm: true }))}
-                                                        className="w-full px-4 py-2.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 font-medium"
+                                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
                                                     >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
                                                         Cancelar Servicio
                                                     </button>
                                                 )}
@@ -680,7 +740,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 {canReview && (
                                                     <button
                                                         onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                                        className="w-full px-4 py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm rounded-lg hover:from-yellow-600 hover:to-orange-600 font-medium flex items-center justify-center gap-2"
+                                                        className="w-full px-3 py-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm rounded-lg hover:bg-blue-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
                                                     >
                                                         <Star className="w-4 h-4" />
                                                         Enviar Reseña
@@ -692,7 +752,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 )}
                                 
                                 {/* Desktop Chat - Always Visible */}
-                                <div className="hidden lg:block">
+                                <div className="hidden lg:block lg:h-[500px] xl:h-[550px]">
                                     <Chat 
                                         searchId={searchId} 
                                         setNotifications={setNotifications} 
@@ -709,11 +769,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 )}
 
                 {/* Right Sidebar - Desktop Only */}
-                <div className="hidden lg:block lg:w-[35%] xl:w-[32%] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="hidden lg:block lg:w-[30%] xl:w-[28%] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     {/* Order Details Header */}
-                    <div className="p-6 border-b border-gray-100">
-                        <div className="flex items-center justify-between mb-3 lg:mb-6">
-                            <h2 className="text-lg lg:text-xl font-semibold text-gray-900">Detalles del pedido</h2>
+                    <div className="p-3 border-b border-gray-100">
+                        <div className="flex items-center justify-between mb-3">
+                            <h2 className="text-base font-semibold text-gray-900">Detalles del pedido</h2>
                             <button className="text-gray-400 hover:text-gray-600 p-1">
                                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -721,15 +781,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </button>
                         </div>
 
-                        {/* Service Card - Mobile Optimized */}
-                        <div className="bg-gray-50 lg:bg-white rounded-lg lg:rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow mb-4 lg:mb-6">
-                            {/* Service Image */}
-                            <div className="relative">
+                        {/* Service Card - Compact Side Layout */}
+                        <div className="bg-gray-50 lg:bg-white rounded-lg border border-gray-200 p-3 mb-4 flex gap-3 items-start">
+                            {/* Service Image - Small Side Image */}
+                            <div className="relative flex-shrink-0">
                                 {serviceQuery.data?.imageUrls && serviceQuery.data.imageUrls.length > 0 ? (
-                                    <div className="relative w-full h-24 lg:h-40 overflow-hidden">
+                                    <div className="relative w-12 h-12 overflow-hidden rounded-lg">
                                         <img
                                             src={serviceQuery.data.imageUrls[0]}
-                                            alt="Servicio contratado"
+                                            alt="Servicio"
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
                                                 // Fallback to category banner if service image fails
@@ -739,63 +799,59 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             }}
                                         />
                                         {serviceQuery.data.imageUrls.length > 1 && (
-                                            <div className="absolute bottom-3 right-3 bg-black/75 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
-                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                                                </svg>
+                                            <div className="absolute -bottom-1 -right-1 bg-black/75 text-white text-xs px-1 py-0.5 rounded text-[10px] leading-none">
                                                 +{serviceQuery.data.imageUrls.length - 1}
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="relative w-full h-40 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+                                    // Fallback to category icon if no service images
+                                    <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
                                         {searchQuery.data?.category && categoryBanners[searchQuery.data.category] ? (
                                             <img
                                                 src={categoryBanners[searchQuery.data.category]}
                                                 alt={categoryName}
-                                                className="w-full h-full object-cover"
+                                                className="w-full h-full object-cover rounded-lg"
                                             />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center">
-                                                <div className="text-center">
-                                                    <svg className="w-12 h-12 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                                    </svg>
-                                                    <p className="text-sm text-gray-400 font-medium">{categoryName}</p>
-                                                </div>
-                                            </div>
+                                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                            </svg>
                                         )}
                                     </div>
                                 )}
-                                
-                                {/* Status Badge - Overlay on image */}
-                                <div className="absolute top-3 left-3">
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold backdrop-blur-sm border
-                                        ${currentStatus === 'completed' ? 'bg-green-500/90 text-white border-green-400/50' :
-                                        currentStatus === 'in_progress' ? 'bg-blue-500/90 text-white border-blue-400/50' :
-                                        currentStatus === 'awaiting_client_decision' ? 'bg-purple-500/90 text-white border-purple-400/50' : 'bg-yellow-500/90 text-white border-yellow-400/50'}`}>
-                                        <span className={`w-1.5 h-1.5 rounded-full bg-white`} />
-                                {currentStatus === 'completed' ? 'COMPLETADO' :
-                                    currentStatus === 'in_progress' ? 'EN PROGRESO' :
-                                        currentStatus === 'awaiting_client_decision' ? 'EN REVISIÓN' : 'PENDIENTE'}
-                            </span>
-                        </div>
                             </div>
                             
                             {/* Service Content */}
-                            <div className="p-3 lg:p-4">
-                                <h3 className="font-semibold text-gray-900 mb-1 lg:mb-2 leading-tight text-sm lg:text-base line-clamp-1 lg:line-clamp-none">
-                                    {searchQuery.data?.title}
-                                </h3>
-                                <p className="text-xs lg:text-sm text-gray-600 leading-relaxed line-clamp-1 lg:line-clamp-2">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                    <h3 className="font-medium text-gray-900 text-sm line-clamp-1 leading-tight">
+                                        {searchQuery.data?.title}
+                                    </h3>
+                                    {/* Status Badge - Small */}
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium flex-shrink-0
+                                        ${currentStatus === 'completed' ? 'bg-green-100 text-green-700' :
+                                        currentStatus === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                                        currentStatus === 'awaiting_client_decision' ? 'bg-purple-100 text-purple-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                        <span className={`w-1 h-1 rounded-full ${
+                                            currentStatus === 'completed' ? 'bg-green-500' :
+                                            currentStatus === 'in_progress' ? 'bg-blue-500' :
+                                            currentStatus === 'awaiting_client_decision' ? 'bg-purple-500' : 'bg-yellow-500'
+                                        }`} />
+                                        {currentStatus === 'completed' ? 'Completado' :
+                                         currentStatus === 'in_progress' ? 'En progreso' :
+                                         currentStatus === 'awaiting_client_decision' ? 'En revisión' : 'Pendiente'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 line-clamp-1 leading-tight">
                                     {serviceQuery.data?.conditions || 'Servicio profesional personalizado'}
                                 </p>
                             </div>
                         </div>
 
                         {/* Order Information - Mobile Optimized */}
-                        <div className="space-y-3 lg:space-y-4">
-                            <div className="grid grid-cols-2 gap-3 lg:gap-4 text-xs lg:text-sm">
+                        <div className="space-y-2 lg:space-y-3">
+                            <div className="grid grid-cols-2 gap-2 lg:gap-3 text-xs">
                                 <div>
                                     <p className="text-gray-500 mb-1">Solicitado por</p>
                                     <div className="flex items-center gap-2">
@@ -816,7 +872,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="grid grid-cols-2 gap-2 lg:gap-3 text-xs">
                                 <div>
                                     <p className="text-gray-500 mb-1">Categoría</p>
                                     <span className="font-medium text-gray-900">{categoryName}</span>
@@ -849,7 +905,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="grid grid-cols-2 gap-2 lg:gap-3 text-xs">
                                 <div>
                                     <p className="text-gray-500 mb-1">Fecha de creación</p>
                                     <span className="font-medium text-gray-900">
@@ -893,7 +949,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     </div>
 
                     {/* Track Order - Mobile Optimized */}
-                    <div className="px-4 py-4 lg:px-6 lg:py-6 border-b border-gray-100">
+                    <div className="px-4 py-3 border-b border-gray-100">
                         <button
                             onClick={() => setShowTrackOrder(!showTrackOrder)}
                             className="flex items-center justify-between w-full text-left group"
@@ -917,26 +973,34 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </div>
                         )}
 
-                        {canDispute && (
+                        {(canDispute || canApprove) && (
                             <div className="mt-4 flex gap-2">
-                                <button
-                                    onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
-                                    className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700"
-                                >
-                                    Disputar
-                                </button>
-                                <button
-                                    onClick={handleApproveService}
-                                    className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
-                                >
-                                    Aprobar
-                                </button>
+                                {canDispute && (
+                                    <button
+                                        onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
+                                        className="flex-1 px-3 py-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg hover:bg-red-100 font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                                    >
+                                        <AlertTriangle className="w-4 h-4" />
+                                        Disputar
+                                    </button>
+                                )}
+                                {canApprove && (
+                                    <button
+                                        onClick={handleApproveService}
+                                        className="flex-1 px-3 py-2 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg hover:bg-green-100 font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Aprobar
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
 
                     {/* Support Section - Mobile Optimized */}
-                    <div className="px-4 py-4 lg:px-6 lg:py-6">
+                    <div className="px-4 py-3">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
                                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -1003,8 +1067,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             {canCancel && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showCancelConfirm: true }))}
-                                    className="w-full mt-4 bg-red-500 text-white py-3 rounded-xl hover:bg-red-600 text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg"
+                                    className="w-full mt-4 bg-gray-50 border border-gray-200 text-gray-700 py-3 rounded-xl hover:bg-gray-100 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
                                 >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
                                     Cancelar Servicio
                                 </button>
                             )}

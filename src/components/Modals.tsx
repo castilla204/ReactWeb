@@ -70,78 +70,120 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Submit Your Review</h3>
-                <p className="text-gray-600 mb-4">Please provide your feedback for the service. Images are optional.</p>
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Rating (1–5)</label>
-                    <div className="flex gap-2">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100 animate-in slide-in-from-bottom-4 duration-300">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                            <Star className="w-5 h-5 text-white" fill="currentColor" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900">Enviar Reseña</h3>
+                            <p className="text-sm text-gray-500">Comparte tu experiencia</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+                    >
+                        <XCircle className="w-5 h-5 text-gray-400" />
+                    </button>
+                </div>
+                <div className="mb-6">
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">Calificación</label>
+                    <div className="flex gap-1 justify-center p-4 bg-gray-50 rounded-xl">
                         {[1, 2, 3, 4, 5].map((star) => (
                             <button
                                 key={star}
                                 type="button"
                                 onClick={() => setReviewForm((prev) => ({ ...prev, score: star }))}
-                                className={`p-2 ${reviewForm.score >= star ? 'text-yellow-500' : 'text-gray-300'} hover:text-yellow-600 transition-colors`}
+                                className={`p-2 rounded-full transition-all duration-200 transform hover:scale-110 ${
+                                    reviewForm.score >= star 
+                                        ? 'text-yellow-500 bg-yellow-50 shadow-md' 
+                                        : 'text-gray-300 hover:text-yellow-400 hover:bg-yellow-50'
+                                }`}
                             >
-                                <Star className="w-6 h-6" fill="currentColor" />
+                                <Star className="w-7 h-7" fill="currentColor" />
                             </button>
                         ))}
                     </div>
+                    {reviewForm.score > 0 && (
+                        <p className="text-center text-sm text-gray-600 mt-2">
+                            {reviewForm.score === 5 ? '¡Excelente!' : 
+                             reviewForm.score === 4 ? 'Muy bueno' :
+                             reviewForm.score === 3 ? 'Bueno' :
+                             reviewForm.score === 2 ? 'Regular' : 'Necesita mejorar'}
+                        </p>
+                    )}
                 </div>
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <div className="mb-6">
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">Descripción</label>
                     <textarea
                         value={reviewForm.description}
                         onChange={(e) => setReviewForm((prev) => ({ ...prev, description: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 bg-gray-50 focus:bg-white resize-none"
                         rows={4}
-                        placeholder="Share your experience..."
+                        placeholder="Comparte tu experiencia con este servicio..."
                         required
                     />
                 </div>
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Images (Optional)</label>
-                    <div className="space-y-2">
+                <div className="mb-6">
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">Imágenes (Opcional)</label>
+                    <div className="space-y-3">
                         {reviewForm.images.filter((image) => image instanceof File).map((image, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                                <span className="text-sm text-gray-600 truncate">{image.name}</span>
+                            <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                <div className="flex-1">
+                                    <span className="text-sm font-medium text-gray-700 truncate block">{image.name}</span>
+                                    <span className="text-xs text-gray-500">{(image.size / 1024).toFixed(1)} KB</span>
+                                </div>
                                 <button
                                     type="button"
                                     onClick={() => removeImage(index)}
-                                    className="p-1 text-red-500 hover:text-red-600"
+                                    className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors duration-200"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>
                         ))}
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageChange}
-                            className="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-gray-500"
-                        />
+                        <label className="block">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleImageChange}
+                                className="hidden"
+                            />
+                            <div className="w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-xl text-center hover:border-yellow-400 hover:bg-yellow-50/50 transition-all duration-200 cursor-pointer">
+                                <div className="flex flex-col items-center gap-2">
+                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    <span className="text-sm font-medium text-gray-600">Agregar imágenes</span>
+                                    <span className="text-xs text-gray-500">PNG, JPG hasta 5MB</span>
+                                </div>
+                            </div>
+                        </label>
                     </div>
                 </div>
-                <div className="flex justify-end gap-3 mt-6">
+                <div className="flex gap-3 pt-4 border-t border-gray-100">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                        className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors duration-200"
                     >
-                        Cancel
+                        Cancelar
                     </button>
                     <button
                         type="button"
                         onClick={handleSubmit}
-                        disabled={isCreatingReview}
-                        className={`px-4 py-2 rounded-lg transition-colors ${isCreatingReview
-                            ? 'bg-gray-400 text-white cursor-not-allowed'
-                            : 'bg-yellow-600 text-white hover:bg-yellow-700'
-                            }`}
+                        disabled={isCreatingReview || reviewForm.score === 0}
+                        className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                            isCreatingReview || reviewForm.score === 0
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600 shadow-lg hover:shadow-xl'
+                        }`}
                     >
-                        {isCreatingReview ? 'Submitting...' : 'Submit Review'}
+                        {isCreatingReview ? 'Enviando...' : 'Enviar Reseña'}
                     </button>
                 </div>
             </div>
@@ -161,27 +203,61 @@ export function DisputeModal({ isOpen, onClose, disputeReason, setDisputeReason,
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Iniciar Disputa</h3>
-                <p className="text-gray-600 mb-4">Por favor, indique la razón de la disputa.</p>
-                <textarea
-                    value={disputeReason}
-                    onChange={(e) => setDisputeReason(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    rows={4}
-                    placeholder="Explique por qué desea disputar el servicio..."
-                />
-                <div className="flex justify-end gap-3 mt-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100 animate-in slide-in-from-bottom-4 duration-300">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900">Iniciar Disputa</h3>
+                            <p className="text-sm text-gray-500">Reportar un problema</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+                    >
+                        <XCircle className="w-5 h-5 text-gray-400" />
+                    </button>
+                </div>
+                
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-sm text-red-800">
+                        <strong>Importante:</strong> Una disputa iniciará un proceso de mediación. Por favor, explique claramente el problema para una resolución rápida.
+                    </p>
+                </div>
+                
+                <div className="mb-6">
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">Motivo de la disputa</label>
+                    <textarea
+                        value={disputeReason}
+                        onChange={(e) => setDisputeReason(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all duration-200 bg-gray-50 focus:bg-white resize-none"
+                        rows={5}
+                        placeholder="Describe detalladamente el problema que has experimentado con este servicio..."
+                        required
+                    />
+                </div>
+                
+                <div className="flex gap-3 pt-4 border-t border-gray-100">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                        className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors duration-200"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={onSubmit}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                        disabled={!disputeReason.trim()}
+                        className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                            !disputeReason.trim()
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl'
+                        }`}
                     >
                         Enviar Disputa
                     </button>
@@ -490,27 +566,44 @@ export function CancelServiceModal({ isOpen, onClose, onConfirm }: CancelService
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                        <XCircle className="w-6 h-6 text-red-600" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100 animate-in slide-in-from-bottom-4 duration-300">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center">
+                            <XCircle className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900">Cancelar Servicio</h3>
+                            <p className="text-sm text-gray-500">Acción irreversible</p>
+                        </div>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Cancelar Servicio</h3>
                 </div>
-                <p className="text-gray-600 mb-6">
-                    ¿Estás seguro de que quieres cancelar este servicio? Esta acción no se puede deshacer.
-                </p>
-                <div className="flex justify-end gap-3">
+                
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <div>
+                            <p className="text-sm font-medium text-amber-800 mb-1">¿Estás seguro?</p>
+                            <p className="text-sm text-amber-700">
+                                Esta acción cancelará permanentemente el servicio. No se puede deshacer y puede afectar tu reputación.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="flex gap-3 pt-4 border-t border-gray-100">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                        className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors duration-200"
                     >
-                        Cancelar
+                        Mantener Servicio
                     </button>
                     <button
                         onClick={onConfirm}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white hover:from-gray-600 hover:to-gray-700 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
                     >
                         Confirmar Cancelación
                     </button>
