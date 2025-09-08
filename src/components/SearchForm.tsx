@@ -146,9 +146,15 @@ export default function SearchForm({
         }
 
         try {
+            // Truncate text to prevent metadata size issues (Stripe has 500 char limit)
+            const truncateForMetadata = (text: string, maxLength: number = 200) => {
+                if (text.length <= maxLength) return text;
+                return text.substring(0, maxLength - 3) + '...';
+            };
+
             const searchData = {
-                title: parameters.keywords,
-                description: parameters.userSearch || 'Descripción por defecto',
+                title: truncateForMetadata(parameters.keywords, 100),
+                description: truncateForMetadata(parameters.userSearch || 'Descripción por defecto'),
                 frequency: parseInt(parameters.frequency.toString()),
                 isActive: true,
                 startDate: new Date().toISOString(),
@@ -156,8 +162,8 @@ export default function SearchForm({
             };
 
             const parameterData = {
-                keywords: parameters.keywords,
-                userSearch: parameters.userSearch,
+                keywords: truncateForMetadata(parameters.keywords, 100),
+                userSearch: truncateForMetadata(parameters.userSearch),
                 latitude: parameters.latitude,
                 longitude: parameters.longitude,
                 locationRange: parameters.locationRange,
