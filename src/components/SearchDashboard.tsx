@@ -235,20 +235,20 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         <div className="min-h-screen bg-gray-50">
             {/* Header Section */}
             <div className="bg-white border-b border-gray-200">
-                <div className="max-w-6xl mx-auto px-6 py-8">
+                <div className="max-w-7xl mx-auto px-6 py-8">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
                             <button
                                 onClick={() => navigate('/')}
                                 className="p-2 hover:bg-gray-50 rounded border border-gray-200 transition-colors"
                             >
                                 <ArrowLeft className="w-4 h-4 text-gray-600" />
                             </button>
-                            <div>
-                                <h1 className="text-xl font-medium text-gray-900">
-                                        {isAdmin ? 'Todas las Búsquedas' : 'Mis Búsquedas'}
+                            <div className="flex flex-col justify-center ml-1">
+                                <h1 className="text-xl font-medium text-gray-900 leading-tight">
+                                        {isAdmin ? 'Servicios' : 'Mis Búsquedas'}
                                     </h1>
-                                <p className="text-sm text-gray-600 mt-0.5">
+                                <p className="text-sm text-gray-600 mt-0.5 leading-tight">
                                     {filteredSearches.length} búsquedas • {searchesList.filter(s => getActivityStatus(s) === 'Activa').length} activas
                                 </p>
                             </div>
@@ -312,26 +312,22 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                 </button>
                             ))}
 
-                        {/* Status filters */}
+                        {/* Status filter - single toggle button */}
                         <button
-                            onClick={() => setFilters((prev) => ({ ...prev, status: 'active' }))}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${filters.status === 'active'
-                            ? 'bg-green-500 text-white shadow-sm'
-                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                            onClick={() => setFilters((prev) => ({ 
+                                ...prev, 
+                                status: prev.status === 'active' ? 'inactive' : 'active' 
+                            }))}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                filters.status === 'active'
+                                    ? 'bg-green-500 text-white shadow-sm'
+                                    : 'bg-gray-500 text-white shadow-sm'
                             }`}
-                    >
-                        <span className={`w-1.5 h-1.5 rounded-full ${filters.status === 'active' ? 'bg-white' : 'bg-green-500'}`}></span>
-                            Activas
-                        </button>
-                        <button
-                            onClick={() => setFilters((prev) => ({ ...prev, status: 'inactive' }))}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${filters.status === 'inactive'
-                            ? 'bg-gray-500 text-white shadow-sm'
-                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
-                            }`}
-                    >
-                        <span className={`w-1.5 h-1.5 rounded-full ${filters.status === 'inactive' ? 'bg-white' : 'bg-gray-400'}`}></span>
-                            Inactivas
+                        >
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                                filters.status === 'active' ? 'bg-white' : 'bg-white'
+                            }`}></span>
+                            {filters.status === 'active' ? 'Activas' : 'Inactivas'}
                         </button>
 
                         {/* Clear filters */}

@@ -141,7 +141,7 @@ export function PhoneVerification() {
                                     className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-colors"
                                 />
                                 <label htmlFor="privacy" className="text-sm text-gray-600">
-                                    He leído y acepto la <Link to="/privacy-policy" className="text-blue-600 hover:text-blue-700 underline">Política de Privacidad</Link>
+                                    He leído y acepto la <Link to="/privacy-policy.html" className="text-blue-600 hover:text-blue-700 underline">Política de Privacidad</Link>
                                 </label>
                             </div>
                             <p className="text-xs text-gray-400 pl-7">
