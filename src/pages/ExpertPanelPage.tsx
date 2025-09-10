@@ -79,6 +79,10 @@ export function ExpertPanelPage() {
         isLoadingServiceTypes,
         startOnboarding,
         isStartingOnboarding,
+        checkOnboardingStatus,
+        isCheckingOnboardingStatus,
+        restartOnboarding,
+        isRestartingOnboarding,
         fetchProfile,
     } = useExpert();
 
@@ -453,7 +457,11 @@ export function ExpertPanelPage() {
         );
     }
 
-    if (!profile?.stripeAccountId) {
+    // Verificar si el onboarding está completo - debe tener stripeAccountId Y onboardingCompleted = true
+    const isOnboardingComplete = profile?.stripeAccountId && profile?.onboardingCompleted === true;
+    const hasPendingOnboarding = profile?.pendingStripeAccountId && profile?.onboardingCompleted !== true;
+
+    if (!isOnboardingComplete) {
         return (
             <div className="relative min-h-screen">
                 <Background />
@@ -470,29 +478,100 @@ export function ExpertPanelPage() {
                         <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <AlertTriangle className="w-8 h-8 text-amber-600" />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                            Validación Pendiente
-                        </h2>
-                        <p className="text-gray-600 mb-8">
-                            Para empezar a ofrecer tus servicios como experto, necesitas completar la configuración de tu cuenta de Stripe.
-                        </p>
-                        <button
-                            onClick={handleStartOnboarding}
-                            disabled={isStartingOnboarding}
-                            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-                        >
-                            {isStartingOnboarding ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Cargando...
-                                </>
-                            ) : (
-                                <>
-                                    <CheckCircle className="w-5 h-5" />
-                                    Configurar Cuenta de Stripe
-                                </>
-                            )}
-                        </button>
+                        
+                        {hasPendingOnboarding ? (
+                            <>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                                    Onboarding en Progreso
+                                </h2>
+                                <p className="text-gray-600 mb-6">
+                                    Tienes un proceso de configuración de Stripe en progreso. Puedes continuar donde lo dejaste o reiniciar el proceso.
+                                </p>
+                                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                    <button
+                                        onClick={handleStartOnboarding}
+                                        disabled={isStartingOnboarding}
+                                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                    >
+                                        {isStartingOnboarding ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Continuando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle className="w-5 h-5" />
+                                                Continuar Onboarding
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                await restartOnboarding();
+                                            } catch (error) {
+                                                console.error('Error restarting onboarding:', error);
+                                            }
+                                        }}
+                                        disabled={isRestartingOnboarding}
+                                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-xl font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
+                                    >
+                                        {isRestartingOnboarding ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Reiniciando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <AlertTriangle className="w-5 h-5" />
+                                                Reiniciar Proceso
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                                <div className="mt-6">
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                await checkOnboardingStatus();
+                                            } catch (error) {
+                                                console.error('Error checking status:', error);
+                                            }
+                                        }}
+                                        disabled={isCheckingOnboardingStatus}
+                                        className="text-sm text-blue-600 hover:text-blue-800 underline disabled:opacity-50"
+                                    >
+                                        {isCheckingOnboardingStatus ? 'Verificando...' : 'Verificar Estado'}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                                    Configuración Requerida
+                                </h2>
+                                <p className="text-gray-600 mb-8">
+                                    Para empezar a ofrecer tus servicios como experto, necesitas completar la configuración de tu cuenta de Stripe.
+                                </p>
+                                <button
+                                    onClick={handleStartOnboarding}
+                                    disabled={isStartingOnboarding}
+                                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                >
+                                    {isStartingOnboarding ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            Cargando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle className="w-5 h-5" />
+                                            Configurar Cuenta de Stripe
+                                        </>
+                                    )}
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
