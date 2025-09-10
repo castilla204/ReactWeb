@@ -7,6 +7,8 @@ interface ExpertProfile {
     profilePictureUrl: string;
     description: string;
     stripeAccountId: string | null;
+    pendingStripeAccountId: string | null;
+    onboardingCompleted: boolean;
     createdAt: string;
 }
 
@@ -32,6 +34,8 @@ export function useExpert() {
     const [isLoadingSearches, setIsLoadingSearches] = useState(false);
     const [isLoadingServiceTypes, setIsLoadingServiceTypes] = useState(false);
     const [isStartingOnboarding, setIsStartingOnboarding] = useState(false);
+    const [isRestartingOnboarding, setIsRestartingOnboarding] = useState(false);
+    const [isCheckingOnboardingStatus, setIsCheckingOnboardingStatus] = useState(false);
     const [profileError, setProfileError] = useState<Error | null>(null);
 
     const fetchProfile = useCallback(async () => {
@@ -156,7 +160,11 @@ export function useExpert() {
                 throw new Error('No authentication token found');
             }
 
-            const response = await fetch('/api/Subscription/expert-onboarding', {
+            // Determinar qué endpoint usar basado en el estado actual
+            const hasPendingOnboarding = profile?.pendingStripeAccountId && profile?.onboardingCompleted !== true;
+            const endpoint = hasPendingOnboarding ? '/api/Subscription/restart-onboarding' : '/api/Subscription/expert-onboarding';
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -182,6 +190,79 @@ export function useExpert() {
         }
     };
 
+    const checkOnboardingStatus = async () => {
+        setIsCheckingOnboardingStatus(true);
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch('/api/Subscription/onboarding-status', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('Request failed with status 401');
+                }
+                throw new Error(`Failed to check onboarding status: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            // Actualizar el perfil con la información más reciente
+            setProfile(prev => prev ? { ...prev, ...data } : null);
+            return data;
+        } catch (error) {
+            console.error('Error checking onboarding status:', error);
+            throw error;
+        } finally {
+            setIsCheckingOnboardingStatus(false);
+        }
+    };
+
+    const restartOnboarding = async () => {
+        setIsRestartingOnboarding(true);
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch('/api/Subscription/restart-onboarding', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('Request failed with status 401');
+                }
+                throw new Error(`Failed to restart onboarding: ${response.statusText}`);
+            }
+
+            const { url } = await response.json();
+            window.location.href = url;
+        } catch (error) {
+            console.error('Error restarting onboarding:', error);
+            throw error;
+        } finally {
+            setIsRestartingOnboarding(false);
+        }
+    };
+
     useEffect(() => {
         if (user?.role === 'Expert') {
             fetchProfile();
@@ -200,6 +281,10 @@ export function useExpert() {
         isLoadingServiceTypes,
         startOnboarding,
         isStartingOnboarding,
+        checkOnboardingStatus,
+        isCheckingOnboardingStatus,
+        restartOnboarding,
+        isRestartingOnboarding,
         fetchProfile,
     };
 }

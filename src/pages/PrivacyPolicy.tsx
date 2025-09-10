@@ -6,145 +6,226 @@ export function PrivacyPolicy() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <div className="max-w-4xl mx-auto px-4 py-12">
+            <div className="max-w-6xl mx-auto px-4 py-6">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition-colors"
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors text-sm"
                 >
-                    <ArrowLeft className="w-5 h-5" />
-                    Back
+                    <ArrowLeft className="w-4 h-4" />
+                    <span className="font-medium">Volver</span>
                 </button>
 
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-                    <div className="text-sm text-gray-600 mb-8">
-                        <p>Last Updated On 08-Apr-2025</p>
-                        <p>Effective Date 08-Apr-2025</p>
+                <div className="bg-white p-6">
+                    {/* Header */}
+                    <div className="mb-6">
+                        <h1 className="text-lg font-medium text-gray-800 mb-3">Política de Privacidad</h1>
+                        <div className="text-xs text-gray-500 space-y-1">
+                            <p>Última actualización: 08 de abril de 2025</p>
+                            <p>Fecha efectiva: 08 de abril de 2025</p>
+                        </div>
                     </div>
 
-                    <div className="prose prose-gray max-w-none">
-                        <p className="mb-6">
-                            This Privacy Policy describes the policies of Atrapo, C/pedro i de aragon, 14, Soria 50003, Spain, email: info@atrapo.io, phone: 611962053 on the collection, use and disclosure of your information that we collect when you use our website ( https://atrapo.io ). (the "Service"). By accessing or using the Service, you are consenting to the collection, use and disclosure of your information in accordance with this Privacy Policy. If you do not consent to the same, please do not access or use the Service.
-                        </p>
+                    {/* Información de contacto */}
+                    <div className="mb-6 pb-4 border-b border-gray-100">
+                        <h2 className="text-sm font-medium text-gray-700 mb-3">Información de la Empresa</h2>
+                        <div className="text-xs text-gray-600 space-y-1">
+                            <p><strong>Razón Social:</strong> Atrapo</p>
+                            <p><strong>Dirección:</strong> C/Pedro I de Aragón, 14, Soria 50003, España</p>
+                            <p><strong>Email:</strong> info@atrapo.io</p>
+                            <p><strong>Teléfono:</strong> 611962053</p>
+                            <p><strong>Sitio Web:</strong> https://atrapo.io</p>
+                        </div>
+                    </div>
 
-                        <p className="mb-6">
-                            We may modify this Privacy Policy at any time without any prior notice to you and will post the revised Privacy Policy on the Service. The revised Policy will be effective 180 days from when the revised Policy is posted in the Service and your continued access or use of the Service after such time will constitute your acceptance of the revised Privacy Policy. We therefore recommend that you periodically review this page.
-                        </p>
+                    <div className="space-y-6">
+                        {/* Introducción */}
+                        <section>
+                            <h2 className="text-sm font-medium text-gray-700 mb-3">1. Introducción</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                                Esta Política de Privacidad describe las políticas de <strong>Atrapo</strong> sobre la recopilación, 
+                                uso y divulgación de su información que recopilamos cuando utiliza nuestro sitio web 
+                                (https://atrapo.io) y nuestros servicios (el "Servicio").
+                            </p>
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                                Al acceder o utilizar el Servicio, usted consiente la recopilación, uso y divulgación de su 
+                                información de acuerdo con esta Política de Privacidad. Si no consiente lo mismo, 
+                                por favor no acceda ni utilice el Servicio.
+                            </p>
+                        </section>
 
-                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Information We Collect:</h2>
-                        <p className="mb-4">We will collect and process the following personal information about you:</p>
-                        <ul className="list-disc pl-6 mb-6">
-                            <li>Name</li>
-                            <li>Email</li>
-                            <li>Mobile</li>
-                            <li>Social Media Profile</li>
-                            <li>Date of Birth</li>
-                            <li>Address</li>
-                            <li>Work Address</li>
-                            <li>Payment Info</li>
+                        {/* Modificaciones */}
+                        <section>
+                            <h2 className="text-sm font-medium text-gray-700 mb-3">2. Modificaciones de la Política</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                                Podemos modificar esta Política de Privacidad en cualquier momento sin previo aviso y 
+                                publicaremos la Política de Privacidad revisada en el Servicio. La Política revisada 
+                                será efectiva 180 días después de que se publique en el Servicio y su acceso o uso 
+                                continuado del Servicio después de ese tiempo constituirá su aceptación de la Política 
+                                de Privacidad revisada. Por lo tanto, recomendamos que revise esta página periódicamente.
+                            </p>
+                        </section>
+
+                        {/* Información que recopilamos */}
+                        <section>
+                            <h2 className="text-sm font-medium text-gray-700 mb-3">3. Información que Recopilamos</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                                Recopilaremos y procesaremos la siguiente información personal sobre usted:
+                            </p>
+                            
+                            <h3 className="text-xs font-medium text-gray-600 mb-2">3.1 Información Personal</h3>
+                            <ul className="list-disc pl-5 mb-3 text-sm text-gray-700 space-y-1">
+                                <li>Nombre completo</li>
+                                <li>Dirección de correo electrónico</li>
+                                <li>Número de teléfono móvil</li>
+                                <li>Fecha de nacimiento</li>
+                                <li>Dirección de residencia</li>
                         </ul>
 
-                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">How We Collect Your Information:</h2>
-                        <ul className="list-disc pl-6 mb-6">
-                            <li>When a user fills up the registration form or otherwise submits personal information</li>
-                            <li>Interacts with the website</li>
-                            <li>From public sources</li>
+                            <h3 className="text-xs font-medium text-gray-600 mb-2">3.2 Información Profesional</h3>
+                            <ul className="list-disc pl-5 mb-3 text-sm text-gray-700 space-y-1">
+                                <li>Dirección de trabajo</li>
+                                <li>Información de pago</li>
+                                <li>Perfil de redes sociales</li>
+                                <li>Experiencia profesional</li>
+                                <li>Especialidades</li>
+                        </ul>
+                        </section>
+
+                        {/* Cómo recopilamos la información */}
+                        <section>
+                            <h2 className="text-sm font-medium text-gray-700 mb-3">4. Cómo Recopilamos su Información</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                                Recopilamos su información personal a través de los siguientes métodos:
+                            </p>
+                            <ul className="list-disc pl-5 mb-3 text-sm text-gray-700 space-y-1">
+                                <li>Cuando completa formularios de registro o envía información personal</li>
+                                <li>Cuando interactúa con nuestro sitio web y servicios</li>
+                                <li>De fuentes públicas disponibles y verificables</li>
+                                <li>A través de cookies y tecnologías similares</li>
+                        </ul>
+                        </section>
+
+                        {/* Cómo usamos la información */}
+                        <section>
+                            <h2 className="text-sm font-medium text-gray-700 mb-3">5. Cómo Utilizamos su Información</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                                Utilizamos su información personal para los siguientes propósitos:
+                            </p>
+                            
+                            <h3 className="text-xs font-medium text-gray-600 mb-2">5.1 Servicios Principales</h3>
+                            <ul className="list-disc pl-5 mb-3 text-sm text-gray-700 space-y-1">
+                                <li>Crear y gestionar su cuenta de usuario</li>
+                                <li>Procesar pagos y transacciones</li>
+                                <li>Proporcionar soporte al cliente</li>
+                                <li>Gestionar pedidos y servicios</li>
+                                <li>Resolver disputas</li>
                         </ul>
 
-                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">How We Use Your Information:</h2>
-                        <ul className="list-disc pl-6 mb-6">
-                            <li>Marketing/ Promotional</li>
-                            <li>Creating user account</li>
-                            <li>Testimonials</li>
-                            <li>Customer feedback collection</li>
-                            <li>Enforce T&C</li>
-                            <li>Processing payment</li>
-                            <li>Support</li>
-                            <li>Administration info</li>
-                            <li>Targeted advertising</li>
-                            <li>Manage customer order</li>
-                            <li>Site protection</li>
-                            <li>User to user comments</li>
-                            <li>Dispute resolution</li>
-                            <li>Manage user account</li>
-                        </ul>
+                            <h3 className="text-xs font-medium text-gray-600 mb-2">5.2 Mejoras y Comunicación</h3>
+                            <ul className="list-disc pl-5 mb-3 text-sm text-gray-700 space-y-1">
+                                <li>Recopilar testimonios y feedback</li>
+                                <li>Marketing y promociones (con consentimiento)</li>
+                                <li>Protección del sitio y usuarios</li>
+                                <li>Comentarios entre usuarios</li>
+                                <li>Cumplir términos y condiciones</li>
+                            </ul>
+                        </section>
 
-                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">WhatsApp Notifications</h2>
-                        <p className="mb-6">
-                            If you choose to receive notifications via WhatsApp, we collect and use your phone number solely for the purpose of sending transactional alerts related to products you have actively requested through our service. These include matches for second-hand products you are searching for.
-                        </p>
-                        <p className="mb-6">
-                            Messages are sent only with your explicit consent, obtained through a clearly marked checkbox in our registration form.
-                        </p>
-                        <p className="mb-6">
-                            We do not send promotional or advertising messages via WhatsApp.
-                        </p>
-                        <p className="mb-6">
-                            All messages are sent through the official WhatsApp Business API and use only templates approved by WhatsApp.
-                        </p>
-                        <p className="mb-6">
-                            You can unsubscribe at any time by contacting us at info@atrapo.io or by clicking the WhatsApp icon in your account dashboard once registered.
-                        </p>
-                        <p className="mb-6">
-                            We store a record of the consent given, including the user's phone number, date and time of consent, and the context in which it was granted.
-                        </p>
+                        {/* Notificaciones WhatsApp */}
+                        <section>
+                            <h2 className="text-sm font-medium text-gray-700 mb-3">6. Notificaciones WhatsApp</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                                Si elige recibir notificaciones vía WhatsApp, recopilamos y utilizamos su número de teléfono 
+                                únicamente para enviar alertas transaccionales relacionadas con productos que ha solicitado 
+                                activamente a través de nuestro servicio.
+                            </p>
+                            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                                <strong>Características importantes:</strong>
+                            </p>
+                            <ul className="list-disc pl-5 mb-3 text-sm text-gray-700 space-y-1">
+                                <li>Los mensajes se envían solo con su consentimiento explícito</li>
+                                <li>No enviamos mensajes promocionales o publicitarios</li>
+                                <li>Utilizamos la API oficial de WhatsApp Business</li>
+                                <li>Puede darse de baja en cualquier momento</li>
+                                <li>Almacenamos un registro del consentimiento otorgado</li>
+                            </ul>
+                        </section>
 
-                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">How We Share Your Information:</h2>
-                        <p className="mb-4">
-                            We will not transfer your personal information to any third party without seeking your consent, except in limited circumstances as described below:
-                        </p>
-                        <ul className="list-disc pl-6 mb-6">
-                            <li>Ad service</li>
-                            <li>Analytics</li>
-                            <li>Payment recovery services</li>
-                            <li>Data collection & process</li>
-                        </ul>
+                        {/* Compartir información */}
+                        <section>
+                            <h2 className="text-sm font-medium text-gray-700 mb-3">7. Compartir su Información</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                                No transferiremos su información personal a terceros sin buscar su consentimiento, 
+                                excepto en circunstancias limitadas como se describe a continuación:
+                            </p>
+                            
+                            <h3 className="text-xs font-medium text-gray-600 mb-2">7.1 Servicios de Terceros</h3>
+                            <ul className="list-disc pl-5 mb-3 text-sm text-gray-700 space-y-1">
+                                <li>Servicios de publicidad</li>
+                                <li>Análisis y métricas</li>
+                                <li>Servicios de recuperación de pagos</li>
+                                <li>Procesamiento de datos</li>
+                            </ul>
 
-                        <p className="mb-6">
-                            We require such third party's to use the personal information we transfer to them only for the purpose for which it was transferred and not to retain it for longer than is required for fulfilling the said purpose.
-                        </p>
+                            <h3 className="text-xs font-medium text-gray-600 mb-2">7.2 Cumplimiento Legal</h3>
+                            <ul className="list-disc pl-5 mb-3 text-sm text-gray-700 space-y-1">
+                                <li>Cumplir con leyes aplicables</li>
+                                <li>Hacer cumplir acuerdos</li>
+                                <li>Responder a reclamaciones</li>
+                                <li>Fusiones o adquisiciones</li>
+                            </ul>
+                        </section>
 
-                        <p className="mb-6">
-                            We may also disclose your personal information for the following: (1) to comply with applicable law, regulation, court order or other legal process; (2) to enforce your agreements with us, including this Privacy Policy; or (3) to respond to claims that your use of the Service violates any third-party rights. If the Service or our company is merged or acquired with another company, your information will be one of the assets that is transferred to the new owner.
-                        </p>
+                        {/* Retención de datos */}
+                        <section>
+                            <h2 className="text-sm font-medium text-gray-700 mb-3">8. Retención de su Información</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                                Conservaremos su información personal durante 90 días a 2 años después de que los usuarios 
+                                terminen sus cuentas, o durante el tiempo que necesitemos para cumplir los propósitos para 
+                                los cuales fue recopilada. Podemos necesitar conservar cierta información por períodos más 
+                                largos para el mantenimiento de registros, reportes según la ley aplicable, o por otras 
+                                razones legítimas como la aplicación de derechos legales y prevención de fraudes.
+                            </p>
+                        </section>
 
-                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Retention Of Your Information:</h2>
-                        <p className="mb-6">
-                            We will retain your personal information with us for 90 days to 2 years after users terminate their accounts or for as long as we need it to fulfill the purposes for which it was collected as detailed in this Privacy Policy. We may need to retain certain information for longer periods such as record-keeping / reporting in accordance with applicable law or for other legitimate reasons like enforcement of legal rights, fraud prevention, etc. Residual anonymous information and aggregate information, neither of which identifies you (directly or indirectly), may be stored indefinitely.
-                        </p>
+                        {/* Sus derechos */}
+                        <section>
+                            <h2 className="text-sm font-medium text-gray-700 mb-3">9. Sus Derechos</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                                Dependiendo de la ley que aplique, puede tener derecho a acceder, rectificar o eliminar 
+                                sus datos personales, recibir una copia de sus datos, restringir u oponerse al procesamiento 
+                                activo de sus datos, y otros derechos relevantes según las leyes aplicables.
+                            </p>
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                                <strong>Para ejercer sus derechos:</strong> Puede escribirnos a <strong>info@atrapo.io</strong>. 
+                                Responderemos a su solicitud de acuerdo con la ley aplicable.
+                            </p>
+                        </section>
 
-                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Your Rights:</h2>
-                        <p className="mb-6">
-                            Depending on the law that applies, you may have a right to access and rectify or erase your personal data or receive a copy of your personal data, restrict or object to the active processing of your data, ask us to share (port) your personal information to another entity, withdraw any consent you provided to us to process your data, a right to lodge a complaint with a statutory authority and such other rights as may be relevant under applicable laws. To exercise these rights, you can write to us at info@atrapo.io. We will respond to your request in accordance with applicable law.
-                        </p>
+                        {/* Seguridad */}
+                        <section>
+                            <h2 className="text-sm font-medium text-gray-700 mb-3">10. Seguridad</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                                La seguridad de su información es importante para nosotros y utilizaremos medidas de 
+                                seguridad razonables para prevenir la pérdida, mal uso o alteración no autorizada de 
+                                su información bajo nuestro control. Sin embargo, dados los riesgos inherentes, no 
+                                podemos garantizar una seguridad absoluta.
+                            </p>
+                        </section>
 
-                        <p className="mb-6">
-                            You may opt-out of direct marketing communications or the profiling we carry out for marketing purposes by writing to us at info@atrapo.io.
-                        </p>
-
-                        <p className="mb-6">
-                            Do note that if you do not allow us to collect or process the required personal information or withdraw the consent to process the same for the required purposes, you may not be able to access or use the services for which your information was sought.
-                        </p>
-
-                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Cookies Etc.</h2>
-                        <p className="mb-6">
-                            To learn more about how we use these and your choices in relation to these tracking technologies, please refer to our Cookie Policy.
-                        </p>
-
-                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Security:</h2>
-                        <p className="mb-6">
-                            The security of your information is important to us and we will use reasonable security measures to prevent the loss, misuse or unauthorized alteration of your information under our control. However, given the inherent risks, we cannot guarantee absolute security and consequently, we cannot ensure or warrant the security of any information you transmit to us and you do so at your own risk.
-                        </p>
-
-                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Third Party Links & Use Of Your Information:</h2>
-                        <p className="mb-6">
-                            Our Service may contain links to other websites that are not operated by us. This Privacy Policy does not address the privacy policy and other practices of any third parties, including any third party operating any website or service that may be accessible via a link on the Service. We strongly advise you to review the privacy policy of every site you visit. We have no control over and assume no responsibility for the content, privacy policies or practices of any third party sites or services.
-                        </p>
-
-                        <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Grievance / Data Protection Officer:</h2>
-                        <p className="mb-6">
-                            If you have any queries or concerns about the processing of your information that is available with us, you may email our Grievance Officer at atrapo, C/pedro i de aragon, 14, email: info@atrapo.io. We will address your concerns in accordance with applicable law.
-                        </p>
+                        {/* Contacto */}
+                        <section>
+                            <h2 className="text-sm font-medium text-gray-700 mb-3">11. Contacto y Oficial de Protección de Datos</h2>
+                            <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                                Si tiene alguna consulta o preocupación sobre el procesamiento de su información, 
+                                puede contactar a nuestro Oficial de Protección de Datos:
+                            </p>
+                            <div className="text-xs text-gray-700 space-y-1">
+                                <p><strong>Email:</strong> info@atrapo.io</p>
+                                <p><strong>Dirección:</strong> C/Pedro I de Aragón, 14, Soria 50003, España</p>
+                                <p>Abordaremos sus preocupaciones de acuerdo con la ley aplicable.</p>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>
