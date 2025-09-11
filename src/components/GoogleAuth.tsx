@@ -31,6 +31,7 @@ export function GoogleAuth() {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isReady, setIsReady] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
     const { setUser } = useAuth();
     const navigate = useNavigate();
 
@@ -67,10 +68,38 @@ export function GoogleAuth() {
         }
     }, [setUser, navigate]);
 
+    // Detectar cuando el componente es visible
     useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    setIsVisible(entry.isIntersecting);
+                });
+            },
+            { threshold: 0.1 }
+        );
+
+        const element = document.getElementById('googleButton');
+        if (element) {
+            observer.observe(element);
+        }
+
+        return () => {
+            if (element) {
+                observer.unobserve(element);
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        // Solo inicializar si el componente está montado y visible
+        if (!isVisible) {
+            return;
+        }
+
         const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
         let initializationAttempts = 0;
-        const maxAttempts = 30; // Increased attempts
+        const maxAttempts = 10; // Reducir intentos
         let timeoutId: NodeJS.Timeout;
         let intervalId: NodeJS.Timeout;
 
@@ -188,7 +217,7 @@ export function GoogleAuth() {
             setIsReady(false);
             setIsLoading(true);
         };
-    }, [handleCredentialResponse]);
+    }, [handleCredentialResponse, isVisible]);
 
     const handleGoogleSignIn = () => {
         if (!isReady) {

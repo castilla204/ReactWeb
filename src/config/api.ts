@@ -1,4 +1,4 @@
-const DEV_SERVER = import.meta.env.DEV ? 'https://api.atrapo.io' : /*'http://localhost:7124'*/'https://api.atrapo.io'; 
+const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : 'https://api.atrapo.io'; 
 const API_PATH = '/api'; 
 
 export const API_CONFIG = {
@@ -48,6 +48,11 @@ export const API_CONFIG = {
             cancel: `${API_PATH}/Subscription/cancel`,
             loadMoney: `${API_PATH}/Subscription/load-money`,
             hireService: `${API_PATH}/Subscription/hire-service`,
+            expertOnboarding: `${API_PATH}/Subscription/expert-onboarding`,
+            onboardingStatus: `${API_PATH}/Subscription/onboarding-status`,
+            restartOnboarding: `${API_PATH}/Subscription/restart-onboarding`,
+            syncStripeStatus: `${API_PATH}/Subscription/sync-stripe-status`,
+            expertStatus: `${API_PATH}/Subscription/expert-status`,
         },
         dispute: {
             details: (searchHireId: number) => `${API_PATH}/Dispute/details/${searchHireId}`,
