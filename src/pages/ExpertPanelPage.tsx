@@ -1,10 +1,12 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertTriangle, CheckCircle, User } from 'lucide-react';
-import Background from '../components/Background';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
+import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError } from '../hooks/useExpertStripeStatus';
+import { StripeStatusCard } from '../components/StripeStatusCard';
+import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
 import { useExpertHires } from '../hooks/useExpertHires';
 import { useServices } from '../hooks/useServices';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
@@ -83,12 +85,32 @@ export function ExpertPanelPage() {
         isCheckingOnboardingStatus,
         restartOnboarding,
         isRestartingOnboarding,
+        syncStripeStatus,
         fetchProfile,
+        fetchSearches,
+        fetchServiceTypes,
     } = useExpert();
 
     const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService, updateService, isUpdatingService, deleteService, isDeletingService } = useServices({ expertProfileId: profile?.id });
 
     const { hires, isLoading: isLoadingHires, error: hiresError } = useExpertHires();
+
+    const { status: stripeStatus, statusInfo: stripeStatusInfo } = useExpertStripeStatus();
+    const { modalState, hideModal } = useStripeStatusModal();
+
+    // Limpiar cache cuando el estado cambia a aprobado (solo una vez)
+    const [hasClearedCache, setHasClearedCache] = useState(false);
+    
+    useEffect(() => {
+        if (stripeStatus?.stripeStatus === 'Approved' && stripeStatus?.onboardingCompleted && !hasClearedCache) {
+            console.log('🧹 ExpertPanelPage: Status changed to APPROVED, clearing cache and refreshing data');
+            setHasClearedCache(true);
+            // Limpiar cache y refrescar datos
+            fetchProfile(true);
+            fetchSearches(true);
+            fetchServiceTypes(true);
+        }
+    }, [stripeStatus?.stripeStatus, stripeStatus?.onboardingCompleted, hasClearedCache, fetchProfile, fetchSearches, fetchServiceTypes]);
 
     useEffect(() => {
         console.log('ExpertPanelPage State:', { user, profile, isLoadingProfile, profileError, hires });
@@ -330,6 +352,12 @@ export function ExpertPanelPage() {
             return;
         }
 
+        // Validar estado de Stripe antes de crear el servicio (usar cache si está disponible)
+        const canCreate = await validateBeforeCreatingService(stripeStatus);
+        if (!canCreate) {
+            return;
+        }
+
         console.log('Creating service with images:', selectedImages.map(img => ({ name: img.name, size: img.size, type: img.type })));
         try {
             await createService({
@@ -353,7 +381,13 @@ export function ExpertPanelPage() {
             }));
         } catch (error: any) {
             console.error('Error creating service:', error);
-            setFormErrors({ general: error.message || 'Error al crear el servicio' });
+            
+            // Manejar errores específicos de Stripe
+            if (error.stripeStatus) {
+                handleStripeServiceError(error);
+            } else {
+                setFormErrors({ general: error.message || 'Error al crear el servicio' });
+            }
         }
     };
 
@@ -362,6 +396,43 @@ export function ExpertPanelPage() {
             await startOnboarding();
         } catch (error) {
             console.error('Error in startOnboarding:', error);
+        }
+    };
+
+    const handleStripeOnboarding = async () => {
+        try {
+            // 1. Primero verificar el estado actual
+            const statusResponse = await checkOnboardingStatus();
+            
+            // 2. Si tiene cuenta pero no está completada, sincronizar con Stripe
+            if (statusResponse.HasStripeAccount && !statusResponse.OnboardingCompleted) {
+                console.log('Sincronizando estado con Stripe...');
+                const syncedStatus = await syncStripeStatus();
+                console.log('Estado sincronizado:', syncedStatus);
+                
+                // Si ahora está completado, mostrar mensaje de éxito
+                if (syncedStatus.OnboardingCompleted) {
+                    window.dispatchEvent(new CustomEvent('showNotification', {
+                        detail: {
+                            type: 'success',
+                            message: '¡Cuenta Stripe configurada correctamente!',
+                        },
+                    }));
+                    return;
+                }
+            }
+            
+            // 3. Crear link de onboarding o acceso
+            await startOnboarding();
+            
+        } catch (error) {
+            console.error('Error:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: 'Error al configurar cuenta Stripe',
+                },
+            }));
         }
     };
 
@@ -457,121 +528,70 @@ export function ExpertPanelPage() {
         );
     }
 
-    // Verificar si el onboarding está completo - debe tener stripeAccountId Y onboardingCompleted = true
-    const isOnboardingComplete = profile?.stripeAccountId && profile?.onboardingCompleted === true;
-    const hasPendingOnboarding = profile?.pendingStripeAccountId && profile?.onboardingCompleted !== true;
+    // Verificar si el experto puede acceder al panel (tiene cuenta Stripe aprobada)
+    const canAccessPanel = stripeStatus?.canCreateServices === true;
 
-    if (!isOnboardingComplete) {
+    if (!canAccessPanel) {
         return (
-            <div className="relative min-h-screen">
-                <Background />
-                <div className="relative z-10 max-w-2xl mx-auto px-4 py-12">
-                    <button
-                        onClick={() => navigate('/')}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-8"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                        Volver
-                    </button>
+            <div className="min-h-screen bg-white relative overflow-hidden">
+                {/* Fondo decorativo sutil para PC */}
+                <div className="hidden lg:block absolute inset-0">
+                    {/* Patrón de puntos sutiles */}
+                    <div className="absolute inset-0 opacity-[0.02]" style={{
+                        backgroundImage: `radial-gradient(circle at 1px 1px, #000 1px, transparent 0)`,
+                        backgroundSize: '40px 40px'
+                    }}></div>
+                    
+                    {/* Gradientes sutiles */}
+                    <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-gray-50/30 to-transparent"></div>
+                    <div className="absolute bottom-0 right-0 w-full h-1/3 bg-gradient-to-t from-gray-50/20 to-transparent"></div>
+                    
+                    {/* Elementos decorativos muy sutiles */}
+                    <div className="absolute top-32 left-32 w-96 h-96 bg-gradient-to-br from-blue-50/40 to-transparent rounded-full filter blur-3xl"></div>
+                    <div className="absolute bottom-32 right-32 w-96 h-96 bg-gradient-to-tl from-indigo-50/30 to-transparent rounded-full filter blur-3xl"></div>
+                </div>
+                
+                <div className="relative z-10 px-6 py-8">
+                    <div className="max-w-4xl mx-auto">
+                        <button
+                            onClick={() => navigate('/')}
+                            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span className="text-sm">Volver</span>
+                        </button>
 
-                    <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-lg text-center">
-                        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <AlertTriangle className="w-8 h-8 text-amber-600" />
+                        <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[calc(100vh-300px)]">
+                        <StripeStatusCard
+                        onSetupStripe={async () => {
+                            console.log('ExpertPanelPage: onSetupStripe called, starting Stripe onboarding');
+                            try {
+                                await startOnboarding();
+                            } catch (error) {
+                                console.error('Error starting Stripe onboarding:', error);
+                                window.dispatchEvent(new CustomEvent('showNotification', {
+                                    detail: {
+                                        type: 'error',
+                                        message: 'Error al configurar cuenta Stripe. Inténtalo de nuevo.',
+                                    },
+                                }));
+                            }
+                        }}
+                        onAccessDashboard={() => {
+                            if (stripeStatus?.stripeAccountId) {
+                                window.open(`https://dashboard.stripe.com/connect/accounts/${stripeStatus.stripeAccountId}`, '_blank');
+                            }
+                        }}
+                        onContactSupport={() => {
+                            window.dispatchEvent(new CustomEvent('showNotification', {
+                                detail: {
+                                    type: 'info',
+                                    message: 'Contacta soporte en info@atrapo.io',
+                                },
+                            }));
+                        }}
+                    />
                         </div>
-                        
-                        {hasPendingOnboarding ? (
-                            <>
-                                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                                    Onboarding en Progreso
-                                </h2>
-                                <p className="text-gray-600 mb-6">
-                                    Tienes un proceso de configuración de Stripe en progreso. Puedes continuar donde lo dejaste o reiniciar el proceso.
-                                </p>
-                                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                                    <button
-                                        onClick={handleStartOnboarding}
-                                        disabled={isStartingOnboarding}
-                                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-                                    >
-                                        {isStartingOnboarding ? (
-                                            <>
-                                                <Loader2 className="w-5 h-5 animate-spin" />
-                                                Continuando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CheckCircle className="w-5 h-5" />
-                                                Continuar Onboarding
-                                            </>
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={async () => {
-                                            try {
-                                                await restartOnboarding();
-                                            } catch (error) {
-                                                console.error('Error restarting onboarding:', error);
-                                            }
-                                        }}
-                                        disabled={isRestartingOnboarding}
-                                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-xl font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
-                                    >
-                                        {isRestartingOnboarding ? (
-                                            <>
-                                                <Loader2 className="w-5 h-5 animate-spin" />
-                                                Reiniciando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <AlertTriangle className="w-5 h-5" />
-                                                Reiniciar Proceso
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                                <div className="mt-6">
-                                    <button
-                                        onClick={async () => {
-                                            try {
-                                                await checkOnboardingStatus();
-                                            } catch (error) {
-                                                console.error('Error checking status:', error);
-                                            }
-                                        }}
-                                        disabled={isCheckingOnboardingStatus}
-                                        className="text-sm text-blue-600 hover:text-blue-800 underline disabled:opacity-50"
-                                    >
-                                        {isCheckingOnboardingStatus ? 'Verificando...' : 'Verificar Estado'}
-                                    </button>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                                    Configuración Requerida
-                                </h2>
-                                <p className="text-gray-600 mb-8">
-                                    Para empezar a ofrecer tus servicios como experto, necesitas completar la configuración de tu cuenta de Stripe.
-                                </p>
-                                <button
-                                    onClick={handleStartOnboarding}
-                                    disabled={isStartingOnboarding}
-                                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-                                >
-                                    {isStartingOnboarding ? (
-                                        <>
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            Cargando...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle className="w-5 h-5" />
-                                            Configurar Cuenta de Stripe
-                                        </>
-                                    )}
-                                </button>
-                            </>
-                        )}
                     </div>
                 </div>
             </div>
@@ -579,9 +599,8 @@ export function ExpertPanelPage() {
     }
 
     return (
-        <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
-            <Background />
-            <div className="relative z-10">
+        <div className="min-h-screen bg-gray-50">
+            <div>
                 {/* Header mejorado */}
                 <header className="bg-white border-b border-gray-200 shadow-sm">
                     <div className="max-w-7xl mx-auto px-6 py-4">
@@ -691,6 +710,39 @@ export function ExpertPanelPage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Estado de Stripe */}
+                    <div className="mb-8">
+                        <StripeStatusCard
+                            onSetupStripe={async () => {
+                            console.log('ExpertPanelPage: onSetupStripe called, starting Stripe onboarding');
+                            try {
+                                await startOnboarding();
+                            } catch (error) {
+                                console.error('Error starting Stripe onboarding:', error);
+                                window.dispatchEvent(new CustomEvent('showNotification', {
+                                    detail: {
+                                        type: 'error',
+                                        message: 'Error al configurar cuenta Stripe. Inténtalo de nuevo.',
+                                    },
+                                }));
+                            }
+                        }}
+                            onAccessDashboard={() => {
+                                if (stripeStatus?.stripeAccountId) {
+                                    window.open(`https://dashboard.stripe.com/connect/accounts/${stripeStatus.stripeAccountId}`, '_blank');
+                                }
+                            }}
+                            onContactSupport={() => {
+                                window.dispatchEvent(new CustomEvent('showNotification', {
+                                    detail: {
+                                        type: 'info',
+                                        message: 'Contacta soporte en info@atrapo.io',
+                                    },
+                                }));
+                            }}
+                        />
                     </div>
 
                     {/* Perfil del experto minimalista */}
@@ -819,6 +871,19 @@ export function ExpertPanelPage() {
                     )}
                 </div>
             </div>
+            
+            {/* Modal de estado de Stripe */}
+            <StripeStatusModal
+                isOpen={modalState.isOpen}
+                onClose={hideModal}
+                title={modalState.title}
+                message={modalState.message}
+                action={modalState.action}
+                canRetry={modalState.canRetry}
+                stripeStatus={modalState.stripeStatus}
+                statusInfo={modalState.statusInfo}
+                onAction={modalState.onAction}
+            />
         </div>
     );
 }
