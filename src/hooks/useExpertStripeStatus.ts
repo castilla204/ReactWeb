@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
+import { ExpertStatusResponse, StripeSyncStatusResponse } from '../types/stripe';
+import { handleStripeStatusChange } from '../utils/stripeNotifications';
 
 // Estados de Stripe y sus significados (actualizados según backend)
 export const STRIPE_STATUS = {
@@ -18,6 +20,7 @@ export interface ExpertStatus {
     hasPendingOnboarding: boolean;
     onboardingCompleted: boolean;
     stripeStatus: string; // "NotRequested" | "Pending" | "Approved" | "Rejected" | "Deauthorized"
+    stripeStatusDetails: string | null; // Mensaje detallado del estado
     stripeAccountId: string | null;
     canAccessStripe: boolean;
     canCreateServices: boolean;
@@ -37,7 +40,7 @@ export interface StatusInfo {
     bgColor: string;
 }
 
-const getStatusInfo = (status: string, rejectionReason?: string): StatusInfo => {
+const getStatusInfo = (status: string, rejectionReason?: string, stripeStatusDetails?: string | null): StatusInfo => {
     const getRejectionMessage = (reason: string) => {
         switch (reason) {
             case "rejected.fraud":
@@ -51,12 +54,17 @@ const getStatusInfo = (status: string, rejectionReason?: string): StatusInfo => 
         }
     };
 
+    // Use stripeStatusDetails if available, otherwise fall back to default messages
+    const getMessage = (defaultMessage: string) => {
+        return stripeStatusDetails || defaultMessage;
+    };
+
     switch (status) {
         case STRIPE_STATUS.NOT_REQUESTED:
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: "Para completar tu registro como experto, necesitas configurar tu cuenta de pagos. Este proceso es obligatorio y te permitirá recibir pagos por los servicios que ofrezcas. El proceso es seguro y se completa en pocos minutos.",
+                message: getMessage("Para completar tu registro como experto, necesitas configurar tu cuenta de pagos. Este proceso es obligatorio y te permitirá recibir pagos por los servicios que ofrezcas. El proceso es seguro y se completa en pocos minutos."),
                 action: "setup",
                 buttonText: "Configurar Cuenta de Pagos",
                 color: "#3b82f6",
@@ -67,7 +75,7 @@ const getStatusInfo = (status: string, rejectionReason?: string): StatusInfo => 
             return {
                 canCreateServices: false,
                 canRetry: false,
-                message: "Tu solicitud está siendo revisada por nuestro equipo. Este proceso suele tomar entre 1-3 días hábiles. Te notificaremos cuando esté lista.",
+                message: getMessage("Tu solicitud está siendo revisada por nuestro equipo. Este proceso suele tomar entre 1-3 días hábiles. Te notificaremos cuando esté lista."),
                 action: "wait",
                 buttonText: "Verificar Estado",
                 color: "#f59e0b",
@@ -78,7 +86,7 @@ const getStatusInfo = (status: string, rejectionReason?: string): StatusInfo => 
             return {
                 canCreateServices: true,
                 canRetry: false,
-                message: "¡Excelente! Tu cuenta de pagos está activa y lista para recibir pagos. Ya puedes empezar a ofrecer servicios y generar ingresos.",
+                message: getMessage("¡Excelente! Tu cuenta de pagos está activa y lista para recibir pagos. Ya puedes empezar a ofrecer servicios y generar ingresos."),
                 action: "success",
                 buttonText: "Acceder al Panel",
                 color: "#10b981",
@@ -89,7 +97,7 @@ const getStatusInfo = (status: string, rejectionReason?: string): StatusInfo => 
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: rejectionReason ? getRejectionMessage(rejectionReason) : "Tu solicitud de cuenta de pagos fue rechazada. Por favor, revisa la información proporcionada e intenta nuevamente.",
+                message: getMessage(rejectionReason ? getRejectionMessage(rejectionReason) : "Tu solicitud de cuenta de pagos fue rechazada. Por favor, revisa la información proporcionada e intenta nuevamente."),
                 action: "retry",
                 buttonText: "Reintentar Solicitud",
                 color: "#ef4444",
@@ -100,7 +108,7 @@ const getStatusInfo = (status: string, rejectionReason?: string): StatusInfo => 
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: "Tu cuenta de pagos ha sido desactivada. Por favor, contacta nuestro equipo de soporte para reactivarla o configurar una nueva cuenta.",
+                message: getMessage("Tu cuenta de pagos ha sido desactivada. Por favor, contacta nuestro equipo de soporte para reactivarla o configurar una nueva cuenta."),
                 action: "contact",
                 buttonText: "Contactar Soporte",
                 color: "#8b5cf6",
@@ -111,7 +119,7 @@ const getStatusInfo = (status: string, rejectionReason?: string): StatusInfo => 
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: "Estado de cuenta no reconocido. Por favor, contacta soporte para verificar tu estado.",
+                message: getMessage("Estado de cuenta no reconocido. Por favor, contacta soporte para verificar tu estado."),
                 action: "setup",
                 buttonText: "Verificar Estado",
                 color: "#6b7280",
@@ -120,7 +128,7 @@ const getStatusInfo = (status: string, rejectionReason?: string): StatusInfo => 
     }
 };
 
-export const getExpertStatus = async (): Promise<ExpertStatus> => {
+export const getExpertStatus = async (): Promise<ExpertStatusResponse> => {
     const token = getAuthToken();
     if (!token) {
         throw new Error('No authentication token found');
@@ -145,7 +153,7 @@ export const getExpertStatus = async (): Promise<ExpertStatus> => {
             throw new Error(`Failed to get expert status: ${response.status} ${response.statusText}`);
         }
         
-        const data = await response.json();
+        const data: ExpertStatusResponse = await response.json();
         console.log('✅ expert-status data received:', data);
         return data;
     } catch (error) {
@@ -155,29 +163,62 @@ export const getExpertStatus = async (): Promise<ExpertStatus> => {
     }
 };
 
-export const syncStripeStatus = async (): Promise<ExpertStatus> => {
+// NOTE: This function is currently not being used due to 400 Bad Request errors from the backend
+// The sync-stripe-status endpoint appears to have issues or may have changed its requirements
+// We're using the expert-status endpoint instead for status updates
+export const syncStripeStatus = async (): Promise<StripeSyncStatusResponse> => {
     const token = getAuthToken();
     if (!token) {
         throw new Error('No authentication token found');
     }
 
-    const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.subscription.syncStripeStatus}`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+    console.log('🔄 Calling sync-stripe-status endpoint...');
+    const startTime = Date.now();
+
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.subscription.syncStripeStatus}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const duration = Date.now() - startTime;
+        console.log(`⏱️ sync-stripe-status response time: ${duration}ms`);
+        
+        if (!response.ok) {
+            console.error(`❌ sync-stripe-status failed: ${response.status} ${response.statusText}`);
+            
+            // Try to get the error details from the response
+            let errorMessage = `Failed to sync status: ${response.status} ${response.statusText}`;
+            try {
+                const errorData = await response.json();
+                console.error('Error response data:', errorData);
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                } else if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } catch (parseError) {
+                console.error('Could not parse error response:', parseError);
+            }
+            
+            throw new Error(errorMessage);
         }
-    });
-    
-    if (!response.ok) {
-        throw new Error('Failed to sync status');
+        
+        const data: StripeSyncStatusResponse = await response.json();
+        console.log('✅ sync-stripe-status data received:', data);
+        return data;
+    } catch (error) {
+        const duration = Date.now() - startTime;
+        console.error(`❌ sync-stripe-status error after ${duration}ms:`, error);
+        throw error;
     }
-    
-    return await response.json();
 };
 
 export const useExpertStripeStatus = () => {
-    const [status, setStatus] = useState<ExpertStatus | null>(null);
+    const [status, setStatus] = useState<ExpertStatusResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isPolling, setIsPolling] = useState(false);
@@ -186,10 +227,11 @@ export const useExpertStripeStatus = () => {
     const [hasInitialized, setHasInitialized] = useState(false); // Control de inicialización
     
     // Refs para acceder a valores actuales sin causar re-renders
-    const statusRef = useRef<ExpertStatus | null>(null);
+    const statusRef = useRef<ExpertStatusResponse | null>(null);
     const lastFetchRef = useRef<number>(0);
     const isFetchingRef = useRef<boolean>(false);
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const previousStatusRef = useRef<string | null>(null);
     
     const CACHE_DURATION = 30000; // 30 segundos
 
@@ -215,6 +257,18 @@ export const useExpertStripeStatus = () => {
             setLoading(true);
             setError(null);
             const statusData = await getExpertStatus();
+            
+            // Check if status changed and notify
+            const previousStatus = previousStatusRef.current;
+            if (previousStatus !== statusData.stripeStatus) {
+                handleStripeStatusChange({
+                    stripeStatus: statusData.stripeStatus,
+                    stripeStatusDetails: statusData.stripeStatusDetails,
+                    previousStatus: previousStatus || undefined
+                });
+                previousStatusRef.current = statusData.stripeStatus;
+            }
+            
             setStatus(statusData);
             statusRef.current = statusData;
             setLastFetch(now);
@@ -232,13 +286,31 @@ export const useExpertStripeStatus = () => {
     const syncStatus = async () => {
         try {
             setLoading(true);
-            const syncedData = await syncStripeStatus();
-            setStatus(syncedData);
-            statusRef.current = syncedData;
+            
+            // For now, use expert-status endpoint as the primary method since sync-stripe-status is failing
+            // This gives us the most up-to-date information from the backend
+            console.log('🔄 Syncing status using expert-status endpoint...');
+            const fallbackData = await getExpertStatus();
+            
+            // Check if status changed and notify
+            const previousStatus = previousStatusRef.current;
+            if (previousStatus !== fallbackData.stripeStatus) {
+                handleStripeStatusChange({
+                    stripeStatus: fallbackData.stripeStatus,
+                    stripeStatusDetails: fallbackData.stripeStatusDetails,
+                    previousStatus: previousStatus || undefined
+                });
+                previousStatusRef.current = fallbackData.stripeStatus;
+            }
+            
+            setStatus(fallbackData);
+            statusRef.current = fallbackData;
             const now = Date.now();
             setLastFetch(now);
             lastFetchRef.current = now;
-            return syncedData;
+            
+            console.log('✅ Status synced successfully using expert-status endpoint');
+            return fallbackData;
         } catch (err: any) {
             setError(err.message);
             throw err;
@@ -268,6 +340,10 @@ export const useExpertStripeStatus = () => {
                     setLoading(true);
                     setError(null);
                     const statusData = await getExpertStatus();
+                    
+                    // Set initial previous status
+                    previousStatusRef.current = statusData.stripeStatus;
+                    
                     setStatus(statusData);
                     statusRef.current = statusData;
                     const now = Date.now();
@@ -339,15 +415,15 @@ export const useExpertStripeStatus = () => {
         error,
         refetch: () => fetchStatus(true),
         syncStatus,
-        statusInfo: status ? getStatusInfo(status.stripeStatus, status.rejectionReason) : null,
+        statusInfo: status ? getStatusInfo(status.stripeStatus, status.rejectionReason || undefined, status.stripeStatusDetails) : null,
         isPolling
     };
 };
 
 // Función de validación para usar antes de crear servicios
-export const validateBeforeCreatingService = async (cachedStatus?: ExpertStatus | null): Promise<boolean> => {
+export const validateBeforeCreatingService = async (cachedStatus?: ExpertStatusResponse | null): Promise<boolean> => {
     try {
-        let status: ExpertStatus;
+        let status: ExpertStatusResponse;
         
         // Usar status en cache si está disponible y es reciente (menos de 2 minutos)
         if (cachedStatus) {
@@ -357,7 +433,7 @@ export const validateBeforeCreatingService = async (cachedStatus?: ExpertStatus 
         }
         
         if (!status.canCreateServices) {
-            const statusInfo = getStatusInfo(status.stripeStatus, status.rejectionReason);
+            const statusInfo = getStatusInfo(status.stripeStatus, status.rejectionReason || undefined, status.stripeStatusDetails);
             
             // Disparar evento para mostrar modal de estado
             window.dispatchEvent(new CustomEvent('showStripeStatusModal', {

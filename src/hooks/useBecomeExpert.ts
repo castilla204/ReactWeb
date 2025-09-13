@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { setAuthToken } from '../lib/auth';
+import { BecomeExpertResponse } from '../types/stripe';
 
 interface FormData {
     description: string;
@@ -164,21 +165,29 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 throw new Error(errorMessage);
             }
 
-            const result = await response.json();
+            const result: BecomeExpertResponse = await response.json();
             console.log('Success response:', result);
-            console.log('User role received:', result.user?.Role);
+            console.log('User role received:', result.user?.role);
             console.log('Full user object:', result.user);
+            console.log('Expert profile:', result.user.expertProfile);
 
             if (!result.token || !result.user) {
                 throw new Error('Respuesta del servidor incompleta');
             }
 
             // Verificar el rol de forma más flexible
-            const userRole = result.user.Role || result.user.role;
+            const userRole = result.user.role;
             if (userRole !== 'Expert' && userRole !== 'expert' && userRole !== 'EXPERT') {
                 console.warn('Rol inesperado recibido:', userRole);
                 // No lanzar error, solo advertir - el backend ya creó el usuario como experto
                 // throw new Error('El usuario no tiene el rol de Experto después del registro');
+            }
+
+            // Log the new Stripe status information
+            if (result.user.expertProfile) {
+                console.log('Stripe Status:', result.user.expertProfile.stripeStatus);
+                console.log('Stripe Status Details:', result.user.expertProfile.stripeStatusDetails);
+                console.log('Onboarding Completed:', result.user.expertProfile.onboardingCompleted);
             }
 
             // Actualizar autenticación
