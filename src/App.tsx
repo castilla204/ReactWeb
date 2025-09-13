@@ -60,6 +60,19 @@ const App: React.FC = React.memo(() => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [handleClickOutside]);
 
+    // Listen for notification events
+    useEffect(() => {
+        const handleShowNotification = (event: CustomEvent) => {
+            const { type, message } = event.detail;
+            setNotification({ type, message });
+        };
+
+        window.addEventListener('showNotification', handleShowNotification as EventListener);
+        return () => {
+            window.removeEventListener('showNotification', handleShowNotification as EventListener);
+        };
+    }, []);
+
     const handleSignOut = () => {
         signOut();
         setShowProfileMenu(false);

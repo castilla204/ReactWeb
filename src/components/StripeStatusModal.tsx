@@ -132,6 +132,15 @@ export const StripeStatusModal: React.FC<StripeStatusModalProps> = ({
                             {message}
                         </p>
                         
+                        {/* Display detailed status information if available */}
+                        {stripeStatus && statusInfo?.stripeStatusDetails && statusInfo.stripeStatusDetails !== message && (
+                            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p className="text-sm text-blue-800">
+                                    <span className="font-medium">Información adicional:</span> {statusInfo.stripeStatusDetails}
+                                </p>
+                            </div>
+                        )}
+                        
                         {stripeStatus && (
                             <div className="mb-4">
                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
@@ -236,4 +245,5 @@ export const useStripeStatusModal = () => {
         hideModal
     };
 };
+
 

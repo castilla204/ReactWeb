@@ -7,6 +7,7 @@ import { useExpert } from '../hooks/useExpert';
 import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError } from '../hooks/useExpertStripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
+import { StripeStatusComponent } from '../components/StripeStatusComponent';
 import { useExpertHires } from '../hooks/useExpertHires';
 import { useServices } from '../hooks/useServices';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
@@ -639,6 +640,21 @@ export function ExpertPanelPage() {
                 </header>
 
                 <div className="max-w-7xl mx-auto px-6 py-8">
+                    {/* Example of the new StripeStatusComponent */}
+                    {stripeStatus && (
+                        <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                            <h3 className="text-sm font-medium text-gray-700 mb-3">Estado de Cuenta Stripe</h3>
+                            <StripeStatusComponent
+                                stripeStatus={stripeStatus.stripeStatus}
+                                stripeStatusDetails={stripeStatus.stripeStatusDetails}
+                                size="md"
+                                showIcon={true}
+                                showDetails={true}
+                                className="justify-start"
+                            />
+                        </div>
+                    )}
+                    
                     {/* Navegación de pestañas mejorada */}
                     <div className="mb-8">
                         <div className="border-b border-gray-200">
