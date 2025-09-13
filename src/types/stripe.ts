@@ -78,3 +78,4 @@ export interface StripeSyncStatusResponse {
         detailsSubmitted: boolean;
     };
 }
+

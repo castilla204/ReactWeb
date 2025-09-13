@@ -327,3 +327,4 @@ Enable detailed logging by checking the browser console. The hooks provide compr
 - Status changes
 - Notification triggers
 - Error conditions
+
