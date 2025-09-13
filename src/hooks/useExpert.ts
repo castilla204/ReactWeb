@@ -2,6 +2,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
+import { ExpertProfileResponse, OnboardingStatusResponse } from '../types/stripe';
 
 interface ExpertProfile {
     id: number;
@@ -11,6 +12,8 @@ interface ExpertProfile {
     pendingStripeAccountId: string | null;
     onboardingCompleted: boolean;
     canAccessStripe?: boolean;
+    stripeStatus: "NotRequested" | "Pending" | "Approved" | "Rejected" | "Deauthorized";
+    stripeStatusDetails: string | null; // Mensaje detallado del estado
     createdAt: string;
 }
 
@@ -84,9 +87,24 @@ export function useExpert() {
                 throw new Error(`Failed to fetch profile: ${response.statusText}`);
             }
 
-            const data = await response.json();
+            const data: ExpertProfileResponse = await response.json();
             console.log('Fetched expert profile:', data);
-            setProfile(data);
+            
+            // Map the new response structure to the existing interface
+            const mappedProfile: ExpertProfile = {
+                id: data.id,
+                profilePictureUrl: data.profilePictureUrl,
+                description: data.description,
+                stripeAccountId: data.stripeAccountId,
+                pendingStripeAccountId: null, // This field might not be in the new response
+                onboardingCompleted: data.onboardingCompleted,
+                canAccessStripe: true, // This might need to be determined from other fields
+                stripeStatus: data.stripeStatus,
+                stripeStatusDetails: data.stripeStatusDetails,
+                createdAt: data.createdAt
+            };
+            
+            setProfile(mappedProfile);
             lastFetchRef.current[cacheKey] = now;
         } catch (error: any) {
             console.error('Error fetching profile:', error);
@@ -281,7 +299,7 @@ export function useExpert() {
                 throw new Error(`Failed to check onboarding status: ${response.statusText}`);
             }
 
-            const statusData = await response.json();
+            const statusData: OnboardingStatusResponse = await response.json();
             console.log('Onboarding status received:', statusData);
             
             // Actualizar el perfil con la información más reciente del backend
@@ -290,11 +308,13 @@ export function useExpert() {
                 
                 return {
                     ...prev,
-                    stripeAccountId: statusData.StripeAccountId,
-                    onboardingCompleted: statusData.OnboardingCompleted,
-                    canAccessStripe: statusData.CanAccessStripe,
+                    stripeAccountId: statusData.stripeAccountId,
+                    onboardingCompleted: statusData.onboardingCompleted,
+                    canAccessStripe: statusData.canAccessStripe,
+                    stripeStatus: statusData.stripeStatus,
+                    stripeStatusDetails: statusData.stripeStatusDetails,
                     // Mapear los campos del backend a la estructura del frontend
-                    pendingStripeAccountId: statusData.HasPendingOnboarding ? prev.pendingStripeAccountId : null
+                    pendingStripeAccountId: statusData.hasPendingOnboarding ? prev.pendingStripeAccountId : null
                 };
             });
             
@@ -388,10 +408,12 @@ export function useExpert() {
                 
                 return {
                     ...prev,
-                    stripeAccountId: syncedStatus.StripeAccountId,
-                    onboardingCompleted: syncedStatus.OnboardingCompleted,
-                    canAccessStripe: syncedStatus.CanAccessStripe,
-                    pendingStripeAccountId: syncedStatus.HasPendingOnboarding ? prev.pendingStripeAccountId : null
+                    stripeAccountId: syncedStatus.stripeAccountId,
+                    onboardingCompleted: syncedStatus.onboardingCompleted,
+                    canAccessStripe: syncedStatus.canAccessStripe,
+                    stripeStatus: syncedStatus.stripeStatus,
+                    stripeStatusDetails: syncedStatus.stripeStatusDetails,
+                    pendingStripeAccountId: syncedStatus.hasPendingOnboarding ? prev.pendingStripeAccountId : null
                 };
             });
             
@@ -421,7 +443,7 @@ export function useExpert() {
             const interval = setInterval(async () => {
                 try {
                     const newStatus = await checkOnboardingStatus();
-                    if (newStatus.OnboardingCompleted) {
+                    if (newStatus && newStatus.onboardingCompleted) {
                         console.log('🎉 ¡Cuenta Stripe activada por Stripe!');
                         // Disparar evento para mostrar notificación de éxito
                         window.dispatchEvent(new CustomEvent('showNotification', {
@@ -451,7 +473,7 @@ export function useExpert() {
             const interval = setInterval(async () => {
                 try {
                     const newStatus = await checkOnboardingStatus();
-                    if (newStatus.OnboardingCompleted) {
+                    if (newStatus && newStatus.onboardingCompleted) {
                         console.log('🎉 ¡Cuenta Stripe activada después de revisión!');
                         window.dispatchEvent(new CustomEvent('showNotification', {
                             detail: {

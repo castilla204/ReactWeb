@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getAuthToken } from '../lib/auth';
 import { useAuth } from '../contexts/AuthContext';
+import { UpdateExpertProfileResponse } from '../types/stripe';
 
 interface UpdateExpertProfileData {
     description: string;
@@ -66,8 +67,10 @@ export function useExpertProfile() {
                 throw new Error(errorMessage);
             }
 
-            const updatedProfile = await response.json();
+            const updatedProfile: UpdateExpertProfileResponse = await response.json();
             console.log('Profile updated successfully:', updatedProfile);
+            console.log('Updated Stripe Status:', updatedProfile.expertProfile.stripeStatus);
+            console.log('Updated Stripe Status Details:', updatedProfile.expertProfile.stripeStatusDetails);
             return updatedProfile;
         } catch (error) {
             console.error('Error updating expert profile:', error);

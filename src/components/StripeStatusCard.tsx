@@ -205,6 +205,15 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
             
             <div className="mb-6 lg:mb-8">
                 <p className="text-gray-700 leading-relaxed text-sm lg:text-base">{statusInfo.message}</p>
+                
+                {/* Display detailed status information if available */}
+                {status.stripeStatusDetails && status.stripeStatusDetails !== statusInfo.message && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                            <span className="font-medium">Detalles:</span> {status.stripeStatusDetails}
+                        </p>
+                    </div>
+                )}
             </div>
             
             <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
@@ -224,7 +233,7 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                         className="px-4 lg:px-6 py-2 lg:py-3 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 transition-all duration-300 flex items-center justify-center gap-2 rounded-md shadow-sm hover:shadow-md bg-white/80 backdrop-blur-sm transform hover:-translate-y-0.5"
                     >
                         <RefreshCw className="w-4 h-4" />
-                        Actualizar
+                        Verificar Estado
                     </button>
                 )}
             </div>
