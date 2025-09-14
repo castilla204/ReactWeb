@@ -382,59 +382,59 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     return (
         <div className="bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/50 text-black lg:h-screen lg:min-h-screen flex flex-col">
-            {/* Mobile-First Header */}
+            {/* Mobile-First Header - Compact */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-                <div className="px-4 py-4 sm:px-6 sm:py-5">
+                <div className="px-3 py-2.5 sm:px-6 sm:py-5">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <button
-                            onClick={onBack || (() => navigate('/busquedas'))}
-                                className="p-2.5 hover:bg-gray-100 rounded-lg flex-shrink-0 transition-colors duration-200"
-                        >
-                            <ArrowLeft className="w-5 h-5 text-gray-700" />
-                        </button>
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <button
+                                onClick={onBack || (() => navigate('/busquedas'))}
+                                className="p-1.5 hover:bg-gray-100 rounded-lg flex-shrink-0 transition-colors duration-200"
+                            >
+                                <ArrowLeft className="w-4 h-4 text-gray-700" />
+                            </button>
                             <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <span className="text-gray-500 text-xs sm:text-sm font-medium flex items-center gap-1.5">
-                                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="text-gray-500 text-xs font-medium flex items-center gap-1">
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                                         </svg>
                                         {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                                     </span>
-                                    {/* Mobile Status Badge */}
-                                    <span className={`sm:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border
-                                        ${currentStatus === 'completed' ? 'bg-green-50 text-green-700 border-green-200' :
-                                        currentStatus === 'in_progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                        currentStatus === 'awaiting_client_decision' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>
-                                        <span className={`w-1.5 h-1.5 rounded-full ${currentStatus === 'completed' ? 'bg-green-500' :
+                                    {/* Mobile Status Badge - No Border */}
+                                    <span className={`sm:hidden inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium
+                                        ${currentStatus === 'completed' ? 'bg-green-50 text-green-700' :
+                                        currentStatus === 'in_progress' ? 'bg-blue-50 text-blue-700' :
+                                        currentStatus === 'awaiting_client_decision' ? 'bg-orange-50 text-orange-700' : 'bg-gray-50 text-gray-700'}`}>
+                                        <span className={`w-1 h-1 rounded-full ${currentStatus === 'completed' ? 'bg-green-500' :
                                             currentStatus === 'in_progress' ? 'bg-blue-500' :
                                             currentStatus === 'awaiting_client_decision' ? 'bg-orange-500' : 'bg-gray-400'}`} />
                                         {currentStatus === 'completed' ? 'Completado' :
                                             currentStatus === 'in_progress' ? 'En progreso' :
                                             currentStatus === 'awaiting_client_decision' ? 'En revisión' : 'Pendiente'}
-                            </span>
-                        </div>
-                                <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate leading-tight">
+                                    </span>
+                                </div>
+                                <h1 className="text-sm sm:text-xl font-semibold text-gray-900 truncate leading-tight">
                                     {searchQuery.data?.title || 'Cargando...'}
                                 </h1>
-                    </div>
+                            </div>
                         </div>
                         
                         {/* Desktop Actions - Hidden on mobile */}
                         <div className="hidden sm:flex items-center gap-3">
-                        <button className="px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-gray-700 font-medium transition-colors duration-200">
-                            <Share2 className="w-4 h-4" />
-                            Compartir
-                        </button>
-                        <button className="px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-gray-700 font-medium transition-colors duration-200">
-                            <MessageCircle className="w-4 h-4" />
-                            Comentarios
+                            <button className="px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-gray-700 font-medium transition-colors duration-200">
+                                <Share2 className="w-4 h-4" />
+                                Compartir
+                            </button>
+                            <button className="px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 flex items-center gap-2 text-gray-700 font-medium transition-colors duration-200">
+                                <MessageCircle className="w-4 h-4" />
+                                Comentarios
                             </button>
                         </div>
                         
-                        {/* Mobile Menu Button */}
-                        <button className="sm:hidden p-2.5 hover:bg-gray-100 rounded-lg transition-colors duration-200">
-                            <svg className="w-5 h-5 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                        {/* Mobile Menu Button - Compact */}
+                        <button className="sm:hidden p-1.5 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                            <svg className="w-4 h-4 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                             </svg>
                         </button>
@@ -746,6 +746,150 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         Enviar Reseña
                                                     </button>
                                                 )}
+                                            </div>
+
+                                            {/* Informes del Experto - Sección Móvil */}
+                                            <div className="mt-6 pt-4 border-t border-gray-200">
+                                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                                                            <FileText className="w-4 h-4 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-base font-bold text-slate-900">📋 Informes del Experto</h3>
+                                                            <p className="text-xs text-slate-600">Documentos técnicos y análisis profesional</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {deliverablesQuery.isLoading ? (
+                                                        <div className="flex items-center justify-center gap-3 py-6">
+                                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                                                            <p className="text-slate-600 font-medium text-sm">Cargando informes...</p>
+                                                        </div>
+                                                    ) : deliverablesQuery.isError ? (
+                                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <AlertTriangle className="w-4 h-4 text-red-600" />
+                                                                <p className="text-red-800 font-medium text-sm">Error al cargar informes</p>
+                                                            </div>
+                                                            <p className="text-red-600 text-xs mb-3">No se pudieron cargar los informes del experto</p>
+                                                            <button 
+                                                                onClick={() => refetchDeliverables()}
+                                                                className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors"
+                                                            >
+                                                                Reintentar
+                                                            </button>
+                                                        </div>
+                                                    ) : deliverables && deliverables.deliverableUrls && deliverables.deliverableUrls.length > 0 ? (
+                                                        <div className="space-y-3">
+                                                            <div className="grid gap-3">
+                                                                {deliverables.deliverableUrls.map((url, index) => (
+                                                                    <div key={index} className="bg-white rounded-lg border border-slate-200 p-3 hover:shadow-md transition-shadow">
+                                                                        <div className="flex flex-col gap-3">
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                                                    {url.endsWith('.mp4') ? (
+                                                                                        <video className="w-3 h-3 text-blue-600" />
+                                                                                    ) : (
+                                                                                        <FileText className="w-3 h-3 text-blue-600" />
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="min-w-0 flex-1">
+                                                                                    <h4 className="font-semibold text-slate-900 text-sm">
+                                                                                        {url.endsWith('.mp4') ? `Video del Experto ${index + 1}` : `Informe Técnico ${index + 1}`}
+                                                                                    </h4>
+                                                                                    <p className="text-xs text-slate-500">
+                                                                                        {url.endsWith('.mp4') ? 'Análisis en video' : 'Documento PDF detallado'}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                {url.endsWith('.mp4') ? (
+                                                                                    <video 
+                                                                                        src={url} 
+                                                                                        controls 
+                                                                                        className="w-full h-20 rounded-lg object-cover"
+                                                                                    />
+                                                                                ) : (
+                                                                                    <a 
+                                                                                        href={url} 
+                                                                                        target="_blank" 
+                                                                                        rel="noopener noreferrer" 
+                                                                                        className="w-full px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                                                                                    >
+                                                                                        <FileText className="w-3 h-3" />
+                                                                                        Ver Informe
+                                                                                    </a>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                                    <p className="text-green-800 text-xs font-medium">
+                                                                        ✅ {deliverables.deliverableUrls.length} informe{deliverables.deliverableUrls.length > 1 ? 's' : ''} disponible{deliverables.deliverableUrls.length > 1 ? 's' : ''}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center py-6">
+                                                            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                                <FileText className="w-6 h-6 text-slate-400" />
+                                                            </div>
+                                                            <h4 className="text-slate-900 font-semibold text-sm mb-2">No hay informes disponibles</h4>
+                                                            <p className="text-slate-500 text-xs">El experto aún no ha subido informes técnicos</p>
+                                                        </div>
+                                                    )}
+
+                                                    {isExpert && (
+                                                        <div className="mt-4 pt-3 border-t border-blue-200">
+                                                            <h4 className="font-semibold text-slate-900 text-sm mb-3 flex items-center gap-2">
+                                                                <Upload className="w-4 h-4 text-blue-600" />
+                                                                Subir Nuevo Informe
+                                                            </h4>
+                                                            <div className="space-y-3">
+                                                                <label className="block">
+                                                                    <input
+                                                                        type="file"
+                                                                        multiple
+                                                                        accept=".pdf,.mp4"
+                                                                        onChange={handleDeliverableFileChange}
+                                                                        className="hidden"
+                                                                    />
+                                                                    <div className="w-full p-3 border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 cursor-pointer rounded-lg hover:bg-blue-100 transition-colors text-center">
+                                                                                        <Upload className="w-4 h-4 mx-auto mb-2" />
+                                                                                        <p className="font-medium text-sm">Subir Informe del Experto</p>
+                                                                                        <p className="text-xs">PDF o MP4 (máx. 10MB)</p>
+                                                                    </div>
+                                                                </label>
+                                                                <button
+                                                                    onClick={handleUploadDeliverable}
+                                                                    className={`w-full py-2.5 text-xs rounded-lg flex items-center justify-center gap-2 font-medium ${selectedDeliverableFiles.length === 0 || isUploadingDeliverable
+                                                                        ? 'bg-slate-300 cursor-not-allowed text-slate-500'
+                                                                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                                        }`}
+                                                                    disabled={selectedDeliverableFiles.length === 0 || isUploadingDeliverable}
+                                                                >
+                                                                    {isUploadingDeliverable ? (
+                                                                        <>
+                                                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                                                                            Subiendo...
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <Upload className="w-3 h-3" />
+                                                                            Subir Informe
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1097,81 +1241,154 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         </div>
 
                         {/* Deliverables Section */}
+                        {/* Informes del Experto - Sección Principal */}
                         <div className="mt-6 pt-6 border-t border-gray-200">
-                            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                                <Upload className="w-4 h-4 text-blue-600" />
-                                Entregables
-                            </h4>
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-200">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base sm:text-lg font-bold text-slate-900">📋 Informes del Experto</h3>
+                                        <p className="text-xs sm:text-sm text-slate-600">Documentos técnicos y análisis profesional</p>
+                                    </div>
+                                </div>
 
-                            {deliverablesQuery.isLoading ? (
-                                <div className="flex items-center gap-2">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                                <p className="text-sm text-gray-500">Cargando entregables...</p>
-                                </div>
-                            ) : deliverablesQuery.isError ? (
-                                <div className="space-y-2">
-                                <p className="text-sm text-red-400">Error al cargar entregables</p>
-                                    <button 
-                                        onClick={() => refetchDeliverables()}
-                                        className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
-                                    >
-                                        Reintentar
-                                    </button>
-                                    {deliverablesQuery.error && (
-                                        <p className="text-xs text-gray-400">{deliverablesQuery.error.message}</p>
-                                    )}
-                                </div>
-                            ) : deliverables && deliverables.deliverableUrls && deliverables.deliverableUrls.length > 0 ? (
-                                <div className="space-y-2">
-                                    {deliverables.deliverableUrls.map((url, index) => (
-                                        <div key={index} className="flex items-center gap-2">
-                                            {url.endsWith('.mp4') ? (
-                                                <video src={url} controls className="max-w-full rounded-lg" style={{ maxHeight: '120px' }} />
-                                            ) : (
-                                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:text-blue-800 bg-white p-2 rounded border">
-                                                    📄 Ver PDF {index + 1}
-                                                </a>
-                                            )}
+                                {deliverablesQuery.isLoading ? (
+                                    <div className="flex items-center justify-center gap-3 py-8">
+                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                        <p className="text-slate-600 font-medium">Cargando informes del experto...</p>
+                                    </div>
+                                ) : deliverablesQuery.isError ? (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <AlertTriangle className="w-5 h-5 text-red-600" />
+                                            <p className="text-red-800 font-medium">Error al cargar informes</p>
                                         </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-gray-500">No hay entregables disponibles.</p>
-                            )}
-
-                            {isExpert && (
-                                <div className="mt-3 space-y-2">
-                                    <label className="block">
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept=".pdf,.mp4"
-                                            onChange={handleDeliverableFileChange}
-                                            className="hidden"
-                                        />
-                                        <div className="w-full p-2 border border-gray-300 bg-white text-sm text-gray-600 cursor-pointer rounded-lg hover:bg-gray-50 text-center">
-                                            Subir entregable (PDF, MP4)
-                                        </div>
-                                    </label>
-                                    <button
-                                        onClick={handleUploadDeliverable}
-                                        className={`w-full py-2 text-sm rounded-lg flex items-center justify-center gap-2 ${selectedDeliverableFiles.length === 0 || isUploadingDeliverable
-                                            ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                                            : 'bg-green-600 hover:bg-green-700 text-white'
-                                            }`}
-                                        disabled={selectedDeliverableFiles.length === 0 || isUploadingDeliverable}
-                                    >
-                                        {isUploadingDeliverable ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                                                Subiendo...
-                                            </>
-                                        ) : (
-                                            'Subir Archivo'
+                                        <p className="text-red-600 text-sm mb-3">No se pudieron cargar los informes del experto</p>
+                                        <button 
+                                            onClick={() => refetchDeliverables()}
+                                            className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                                        >
+                                            Reintentar
+                                        </button>
+                                        {deliverablesQuery.error && (
+                                            <p className="text-xs text-red-500 mt-2">{deliverablesQuery.error.message}</p>
                                         )}
-                                    </button>
-                                </div>
-                            )}
+                                    </div>
+                                ) : deliverables && deliverables.deliverableUrls && deliverables.deliverableUrls.length > 0 ? (
+                                    <div className="space-y-3 sm:space-y-4">
+                                        <div className="grid gap-3 sm:gap-4">
+                                            {deliverables.deliverableUrls.map((url, index) => (
+                                                <div key={index} className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 hover:shadow-md transition-shadow">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                                {url.endsWith('.mp4') ? (
+                                                                    <video className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
+                                                                ) : (
+                                                                    <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
+                                                                )}
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <h4 className="font-semibold text-slate-900 text-sm sm:text-base">
+                                                                    {url.endsWith('.mp4') ? `Video del Experto ${index + 1}` : `Informe Técnico ${index + 1}`}
+                                                                </h4>
+                                                                <p className="text-xs sm:text-sm text-slate-500">
+                                                                    {url.endsWith('.mp4') ? 'Análisis en video' : 'Documento PDF detallado'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {url.endsWith('.mp4') ? (
+                                                                <video 
+                                                                    src={url} 
+                                                                    controls 
+                                                                    className="w-full sm:w-32 h-20 rounded-lg object-cover"
+                                                                />
+                                                            ) : (
+                                                                <a 
+                                                                    href={url} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer" 
+                                                                    className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                                                                >
+                                                                    <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+                                                                    <span className="hidden sm:inline">Ver Informe</span>
+                                                                    <span className="sm:hidden">Ver</span>
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                <p className="text-green-800 text-xs sm:text-sm font-medium">
+                                                    ✅ {deliverables.deliverableUrls.length} informe{deliverables.deliverableUrls.length > 1 ? 's' : ''} disponible{deliverables.deliverableUrls.length > 1 ? 's' : ''}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-6 sm:py-8">
+                                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                                            <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400" />
+                                        </div>
+                                        <h4 className="text-slate-900 font-semibold text-sm sm:text-base mb-2">No hay informes disponibles</h4>
+                                        <p className="text-slate-500 text-xs sm:text-sm">El experto aún no ha subido informes técnicos</p>
+                                    </div>
+                                )}
+
+                                {isExpert && (
+                                    <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-blue-200">
+                                        <h4 className="font-semibold text-slate-900 text-sm sm:text-base mb-3 flex items-center gap-2">
+                                            <Upload className="w-4 h-4 text-blue-600" />
+                                            Subir Nuevo Informe
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <label className="block">
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    accept=".pdf,.mp4"
+                                                    onChange={handleDeliverableFileChange}
+                                                    className="hidden"
+                                                />
+                                                <div className="w-full p-3 sm:p-4 border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 cursor-pointer rounded-lg hover:bg-blue-100 transition-colors text-center">
+                                                    <Upload className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-2" />
+                                                    <p className="font-medium text-sm sm:text-base">Subir Informe del Experto</p>
+                                                    <p className="text-xs sm:text-sm">PDF o MP4 (máx. 10MB)</p>
+                                                </div>
+                                            </label>
+                                            <button
+                                                onClick={handleUploadDeliverable}
+                                                className={`w-full py-2.5 sm:py-3 text-xs sm:text-sm rounded-lg flex items-center justify-center gap-2 font-medium ${selectedDeliverableFiles.length === 0 || isUploadingDeliverable
+                                                    ? 'bg-slate-300 cursor-not-allowed text-slate-500'
+                                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                    }`}
+                                                disabled={selectedDeliverableFiles.length === 0 || isUploadingDeliverable}
+                                            >
+                                                {isUploadingDeliverable ? (
+                                                    <>
+                                                        <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-current"></div>
+                                                        <span className="hidden sm:inline">Subiendo Informe...</span>
+                                                        <span className="sm:hidden">Subiendo...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
+                                                        <span className="hidden sm:inline">Subir Informe</span>
+                                                        <span className="sm:hidden">Subir</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
