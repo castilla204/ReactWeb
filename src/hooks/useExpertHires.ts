@@ -19,6 +19,10 @@ interface ExpertHire {
     amount: number;
     createdAt: string;
     UpdatedAt: string | null;
+    // NUEVOS CAMPOS DEL BACKEND
+    searchTitle?: string | null;
+    searchDescription?: string | null;
+    unreadMessagesCount: number;
     client: {
         name: string;
         email: string;

@@ -1,15 +1,15 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertTriangle, CheckCircle, User } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
 import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError } from '../hooks/useExpertStripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
-import { StripeStatusComponent } from '../components/StripeStatusComponent';
 import { useExpertHires } from '../hooks/useExpertHires';
 import { useServices } from '../hooks/useServices';
+import { useStripeAccountLink } from '../hooks/useStripeAccountLink';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
@@ -98,6 +98,7 @@ export function ExpertPanelPage() {
 
     const { status: stripeStatus, statusInfo: stripeStatusInfo } = useExpertStripeStatus();
     const { modalState, hideModal } = useStripeStatusModal();
+    const { openAccountLink, isLoading: isAccountLinkLoading } = useStripeAccountLink();
 
     // Limpiar cache cuando el estado cambia a aprobado (solo una vez)
     const [hasClearedCache, setHasClearedCache] = useState(false);
@@ -107,9 +108,9 @@ export function ExpertPanelPage() {
             console.log('🧹 ExpertPanelPage: Status changed to APPROVED, clearing cache and refreshing data');
             setHasClearedCache(true);
             // Limpiar cache y refrescar datos
-            fetchProfile(true);
-            fetchSearches(true);
-            fetchServiceTypes(true);
+            fetchProfile();
+            fetchSearches();
+            fetchServiceTypes();
         }
     }, [stripeStatus?.stripeStatus, stripeStatus?.onboardingCompleted, hasClearedCache, fetchProfile, fetchSearches, fetchServiceTypes]);
 
@@ -406,13 +407,13 @@ export function ExpertPanelPage() {
             const statusResponse = await checkOnboardingStatus();
             
             // 2. Si tiene cuenta pero no está completada, sincronizar con Stripe
-            if (statusResponse.HasStripeAccount && !statusResponse.OnboardingCompleted) {
+            if (statusResponse?.hasStripeAccount && !statusResponse?.onboardingCompleted) {
                 console.log('Sincronizando estado con Stripe...');
                 const syncedStatus = await syncStripeStatus();
                 console.log('Estado sincronizado:', syncedStatus);
                 
                 // Si ahora está completado, mostrar mensaje de éxito
-                if (syncedStatus.OnboardingCompleted) {
+                if (syncedStatus.onboardingCompleted) {
                     window.dispatchEvent(new CustomEvent('showNotification', {
                         detail: {
                             type: 'success',
@@ -578,9 +579,17 @@ export function ExpertPanelPage() {
                                 }));
                             }
                         }}
-                        onAccessDashboard={() => {
-                            if (stripeStatus?.stripeAccountId) {
-                                window.open(`https://dashboard.stripe.com/connect/accounts/${stripeStatus.stripeAccountId}`, '_blank');
+                        onAccessDashboard={async () => {
+                            try {
+                                await openAccountLink();
+                            } catch (error) {
+                                console.error('Error opening account link:', error);
+                                window.dispatchEvent(new CustomEvent('showNotification', {
+                                    detail: {
+                                        type: 'error',
+                                        message: 'Error al abrir el enlace de actualización. Inténtalo de nuevo.',
+                                    },
+                                }));
                             }
                         }}
                         onContactSupport={() => {
@@ -600,256 +609,288 @@ export function ExpertPanelPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-slate-50">
             <div>
-                {/* Header mejorado */}
-                <header className="bg-white border-b border-gray-200 shadow-sm">
-                    <div className="max-w-7xl mx-auto px-6 py-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-6">
+                {/* Header compacto */}
+                <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-14">
+                            <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => navigate('/')}
-                                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                                    className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition-colors duration-200"
                                 >
-                                    <ArrowLeft className="w-5 h-5" />
-                                    <span className="hidden sm:inline">Volver</span>
+                                    <ArrowLeft className="w-3.5 h-3.5" />
+                                    <span className="text-sm font-medium">Volver</span>
                                 </button>
+                                <div className="h-4 w-px bg-slate-200"></div>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-gray-900">Panel de Experto</h1>
-                                    <p className="text-sm text-gray-600">Gestiona tus servicios y contrataciones</p>
+                                    <h1 className="text-base font-semibold text-slate-900">Panel de Experto</h1>
                                 </div>
                             </div>
                             
-                            {/* Estadísticas rápidas */}
-                            <div className="hidden lg:flex items-center gap-6">
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-blue-600">{services.length}</div>
-                                    <div className="text-xs text-gray-500">Servicios</div>
+                            {/* Estadísticas compactas */}
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="flex items-center gap-1 px-2 py-1 bg-slate-50 rounded-md">
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                                    <span className="text-xs font-medium text-slate-700">{services.length}</span>
+                                    <span className="text-xs text-slate-500 hidden sm:inline">Servicios</span>
                                 </div>
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-green-600">{activeHires.length}</div>
-                                    <div className="text-xs text-gray-500">Activos</div>
+                                <div className="flex items-center gap-1 px-2 py-1 bg-slate-50 rounded-md">
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                    <span className="text-xs font-medium text-slate-700">{activeHires.length}</span>
+                                    <span className="text-xs text-slate-500 hidden sm:inline">Activos</span>
                                 </div>
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-purple-600">{hires.length}</div>
-                                    <div className="text-xs text-gray-500">Total</div>
+                                <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
+                                <div className="flex items-center gap-2">
+                                    {profile?.profilePictureUrl ? (
+                                        <img
+                                            src={profile.profilePictureUrl}
+                                            alt="Profile"
+                                            className="w-6 h-6 rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                                            <User className="w-3 h-3 text-white" />
+                                        </div>
+                                    )}
+                                    <div className="hidden sm:block">
+                                        <p className="text-xs font-medium text-slate-900">{user?.name}</p>
+                                        <p className="text-xs text-slate-500">Experto</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </header>
 
-                <div className="max-w-7xl mx-auto px-6 py-8">
-                    {/* Example of the new StripeStatusComponent */}
-                    {stripeStatus && (
-                        <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                            <h3 className="text-sm font-medium text-gray-700 mb-3">Estado de Cuenta Stripe</h3>
-                            <StripeStatusComponent
-                                stripeStatus={stripeStatus.stripeStatus}
-                                stripeStatusDetails={stripeStatus.stripeStatusDetails}
-                                size="md"
-                                showIcon={true}
-                                showDetails={true}
-                                className="justify-start"
-                            />
-                        </div>
-                    )}
-                    
-                    {/* Navegación de pestañas mejorada */}
-                    <div className="mb-8">
-                        <div className="border-b border-gray-200">
-                            <nav className="flex space-x-8">
-                                <button
-                                    onClick={() => setActiveTab('services')}
-                                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                        activeTab === 'services' 
-                                            ? 'border-blue-600 text-blue-600' 
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                                >
-                                    Mis Servicios
-                                    <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2 rounded-full text-xs">
-                                        {services.length}
-                                    </span>
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('hires')}
-                                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                        activeTab === 'hires' 
-                                            ? 'border-blue-600 text-blue-600' 
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                                >
-                                    Contrataciones
-                                    <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2 rounded-full text-xs">
-                                        {hires.length}
-                                    </span>
-                                </button>
-                            </nav>
-                        </div>
-                    </div>
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+                    {/* Layout principal - móvil optimizado */}
+                    <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-12 lg:gap-4">
+                        
+                        {/* Información móvil - solo visible en móvil */}
+                        <div className="lg:hidden space-y-3">
+                            {/* Estado de pagos y perfil en una fila */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Estado de pagos compacto */}
+                                <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                    <div className="flex items-center gap-1 mb-1">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                                        <span className="text-xs text-emerald-600 font-medium">Activo</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mb-2">Cuenta verificada</p>
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                await openAccountLink();
+                                            } catch (error) {
+                                                console.error('Error opening account link:', error);
+                                                window.dispatchEvent(new CustomEvent('showNotification', {
+                                                    detail: {
+                                                        type: 'error',
+                                                        message: 'Error al abrir el enlace de actualización. Inténtalo de nuevo.',
+                                                    },
+                                                }));
+                                            }
+                                        }}
+                                        className="w-full px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs rounded transition-colors flex items-center justify-center gap-1 border border-emerald-200"
+                                    >
+                                        <CheckCircle className="w-3 h-3" />
+                                        Panel
+                                    </button>
+                                </div>
 
-                    {/* Tarjetas de dashboard */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-600">Servicios Activos</p>
-                                    <p className="text-3xl font-bold text-gray-900">{services.length}</p>
-                                </div>
-                                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                    <CheckCircle className="w-6 h-6 text-blue-600" />
-                                </div>
+                                {/* Perfil compacto */}
+                                {profile && (
+                                    <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            {profile.profilePictureUrl ? (
+                                                <img
+                                                    src={profile.profilePictureUrl}
+                                                    alt="Profile"
+                                                    className="w-5 h-5 rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                                                    <User className="w-2.5 h-2.5 text-white" />
+                                                </div>
+                                            )}
+                                            <span className="text-xs font-semibold text-slate-900">{user?.name}</span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mb-2 line-clamp-1">{profile.description}</p>
+                                        <button
+                                            onClick={() => setShowProfileEditForm(true)}
+                                            className="w-full px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs rounded transition-colors flex items-center justify-center gap-1 border border-slate-200"
+                                        >
+                                            <User className="w-3 h-3" />
+                                            Editar
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         
-                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-600">Contrataciones Activas</p>
-                                    <p className="text-3xl font-bold text-gray-900">{activeHires.length}</p>
+                        {/* Sidebar - solo visible en desktop */}
+                        <div className="hidden lg:block lg:col-span-3 space-y-3">
+                            {/* Estado de cuenta de pagos muy discreto */}
+                            <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-xs font-medium text-slate-700">Estado de Pagos</h3>
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                                        <span className="text-xs text-emerald-600 font-medium">Activo</span>
+                                    </div>
                                 </div>
-                                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                    <Loader2 className="w-6 h-6 text-green-600" />
-                                </div>
+                                <p className="text-xs text-slate-500 mb-3">Cuenta verificada y lista para recibir pagos</p>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            await openAccountLink();
+                                        } catch (error) {
+                                            console.error('Error opening account link:', error);
+                                            window.dispatchEvent(new CustomEvent('showNotification', {
+                                                detail: {
+                                                    type: 'error',
+                                                    message: 'Error al abrir el enlace de actualización. Inténtalo de nuevo.',
+                                                },
+                                            }));
+                                        }
+                                    }}
+                                    className="w-full px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs rounded-md transition-colors flex items-center justify-center gap-1.5 border border-emerald-200"
+                                >
+                                    <CheckCircle className="w-3 h-3" />
+                                    Acceder al Panel
+                                </button>
+                                <p className="text-xs text-slate-400 mt-2 text-center">ID: acct_1RpcTWJCITS8kRex</p>
                             </div>
-                        </div>
-                        
-                        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-600">Total Contrataciones</p>
-                                    <p className="text-3xl font-bold text-gray-900">{hires.length}</p>
-                                </div>
-                                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                                    <User className="w-6 h-6 text-purple-600" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Estado de Stripe */}
-                    <div className="mb-8">
-                        <StripeStatusCard
-                            onSetupStripe={async () => {
-                            console.log('ExpertPanelPage: onSetupStripe called, starting Stripe onboarding');
-                            try {
-                                await startOnboarding();
-                            } catch (error) {
-                                console.error('Error starting Stripe onboarding:', error);
-                                window.dispatchEvent(new CustomEvent('showNotification', {
-                                    detail: {
-                                        type: 'error',
-                                        message: 'Error al configurar cuenta Stripe. Inténtalo de nuevo.',
-                                    },
-                                }));
-                            }
-                        }}
-                            onAccessDashboard={() => {
-                                if (stripeStatus?.stripeAccountId) {
-                                    window.open(`https://dashboard.stripe.com/connect/accounts/${stripeStatus.stripeAccountId}`, '_blank');
-                                }
-                            }}
-                            onContactSupport={() => {
-                                window.dispatchEvent(new CustomEvent('showNotification', {
-                                    detail: {
-                                        type: 'info',
-                                        message: 'Contacta soporte en info@atrapo.io',
-                                    },
-                                }));
-                            }}
-                        />
-                    </div>
-
-                    {/* Perfil del experto minimalista */}
-                    <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm mb-8">
-                        {profile ? (
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="flex-shrink-0">
+                            {/* Perfil muy compacto */}
+                            {profile && (
+                                <div className="bg-white rounded-lg border border-slate-200 p-3">
+                                    <div className="flex items-center gap-2 mb-2">
                                         {profile.profilePictureUrl ? (
                                             <img
                                                 src={profile.profilePictureUrl}
                                                 alt="Profile"
-                                                className="w-12 h-12 rounded-full object-cover"
+                                                className="w-6 h-6 rounded-full object-cover"
                                             />
                                         ) : (
-                                            <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
-                                                <User className="w-6 h-6 text-blue-600" />
+                                            <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                                                <User className="w-3 h-3 text-white" />
                                             </div>
                                         )}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h2 className="text-lg font-semibold text-gray-900">{user?.name}</h2>
-                                            <span className="inline-flex items-center px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                                                ✓ Verificado
+                                        <div>
+                                            <h3 className="text-xs font-semibold text-slate-900">{user?.name}</h3>
+                                            <span className="inline-flex items-center px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded">
+                                                ✓
                                             </span>
                                         </div>
-                                        <p className="text-sm text-gray-600 max-w-md truncate">{profile.description}</p>
                                     </div>
-                                </div>
-                                
-                                <div className="flex items-center gap-4">
+                                    <p className="text-xs text-slate-500 mb-2 line-clamp-2">{profile.description}</p>
                                     <button
                                         onClick={() => setShowProfileEditForm(true)}
-                                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg transition-colors flex items-center gap-1"
+                                        className="w-full px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs rounded transition-colors flex items-center justify-center gap-1 border border-slate-200"
                                     >
-                                        <User className="w-4 h-4" />
-                                        Editar Perfil
+                                        <User className="w-3 h-3" />
+                                        Editar
                                     </button>
-                                    <div className="hidden md:flex items-center gap-6 text-sm text-gray-500">
-                                        <div className="text-center">
-                                            <div className="font-medium text-gray-900">{new Date(profile.createdAt).toLocaleDateString()}</div>
-                                            <div className="text-xs">Miembro desde</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="font-medium text-green-600">Activo</div>
-                                            <div className="text-xs">Estado</div>
-                                        </div>
-                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 text-gray-500">
-                                <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                                <p className="text-sm">Error al cargar el perfil</p>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
 
-                    <ServicesTab
-                        activeTab={activeTab}
-                        services={services}
-                        isLoadingServices={isLoadingServices}
-                        servicesError={servicesError}
-                        showServiceForm={showServiceForm}
-                        setShowServiceForm={(value) => {
-                            if (value) {
-                                resetForm(); // Resetear cuando se abre para crear nuevo servicio
-                            }
-                            setShowServiceForm(value);
-                        }}
-                        currentImageIndex={currentImageIndex}
-                        goToPreviousImage={goToPreviousImage}
-                        goToNextImage={goToNextImage}
-                        categories={categories}
-                        deleteService={deleteService}
-                        isDeletingService={isDeletingService}
-                        onEditService={handleEditService}
-                    />
-                    <HiresTab
-                        activeTab={activeTab}
-                        hireTab={hireTab}
-                        hires={hires}
-                        isLoadingHires={isLoadingHires}
-                        hiresError={hiresError}
-                        filters={filters}
-                        setHireTab={setHireTab}
-                        setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as any })}
-                        handleViewHire={handleViewHire}
-                        categories={categories}
-                    />
+                        {/* Contenido principal */}
+                        <div className="lg:col-span-9">
+                            {/* Navegación de pestañas - móvil optimizada */}
+                            <div className="bg-white rounded-lg border border-slate-200 mb-3">
+                                <nav className="flex">
+                                    <button
+                                        onClick={() => setActiveTab('services')}
+                                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 font-medium text-sm transition-colors ${
+                                            activeTab === 'services' 
+                                                ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' 
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <CheckCircle className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Servicios</span>
+                                        <span className="sm:hidden">Serv.</span>
+                                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                                            activeTab === 'services' 
+                                                ? 'bg-blue-100 text-blue-700' 
+                                                : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                            {services.length}
+                                        </span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('hires')}
+                                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 font-medium text-sm transition-colors ${
+                                            activeTab === 'hires' 
+                                                ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' 
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <User className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Contrataciones</span>
+                                        <span className="sm:hidden">Contr.</span>
+                                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                                            activeTab === 'hires' 
+                                                ? 'bg-blue-100 text-blue-700' 
+                                                : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                            {hires.length}
+                                        </span>
+                                        {(() => {
+                                            const totalUnreadMessages = hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0);
+                                            return totalUnreadMessages > 0 && (
+                                                <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                                                    {totalUnreadMessages}
+                                                </span>
+                                            );
+                                        })()}
+                                    </button>
+                                </nav>
+                            </div>
+
+                            {/* Contenido de pestañas */}
+                            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                                <ServicesTab
+                                    activeTab={activeTab}
+                                    services={services}
+                                    isLoadingServices={isLoadingServices}
+                                    servicesError={servicesError}
+                                    showServiceForm={showServiceForm}
+                                    setShowServiceForm={(value) => {
+                                        if (value) {
+                                            resetForm(); // Resetear cuando se abre para crear nuevo servicio
+                                        }
+                                        setShowServiceForm(value);
+                                    }}
+                                    currentImageIndex={currentImageIndex}
+                                    goToPreviousImage={goToPreviousImage}
+                                    goToNextImage={goToNextImage}
+                                    categories={categories}
+                                    deleteService={deleteService}
+                                    isDeletingService={isDeletingService}
+                                    onEditService={handleEditService}
+                                />
+                                <HiresTab
+                                    activeTab={activeTab}
+                                    hireTab={hireTab}
+                                    hires={hires}
+                                    isLoadingHires={isLoadingHires}
+                                    hiresError={hiresError}
+                                    filters={filters}
+                                    setHireTab={setHireTab}
+                                    setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as any })}
+                                    handleViewHire={handleViewHire}
+                                    categories={categories}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Formularios modales */}
                     <ServiceForm
                         showServiceForm={showServiceForm}
                         setShowServiceForm={(value) => {
