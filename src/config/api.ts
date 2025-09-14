@@ -53,6 +53,7 @@ export const API_CONFIG = {
             restartOnboarding: `${API_PATH}/Subscription/restart-onboarding`,
             syncStripeStatus: `${API_PATH}/Subscription/sync-stripe-status`,
             expertStatus: `${API_PATH}/Subscription/expert-status`,
+            createAccountLink: `${API_PATH}/Subscription/create-account-link`,
         },
         dispute: {
             details: (searchHireId: number) => `${API_PATH}/Dispute/details/${searchHireId}`,
