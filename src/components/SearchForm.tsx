@@ -634,9 +634,6 @@ export default function SearchForm({
                     </div>
                     <div className="bg-white border-t border-gray-100 p-4 sm:p-6 mt-4 md:mt-6">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
-                            <div className="text-sm text-gray-600 text-center sm:text-left">
-                                Paso 3 de 3 • Listo para confirmar
-                            </div>
                         {maxSearchesReached ? (
                             <button
                                 type="button"

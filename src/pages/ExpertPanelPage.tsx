@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, CheckCircle, User } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
@@ -10,6 +10,7 @@ import { StripeStatusModal, useStripeStatusModal } from '../components/StripeSta
 import { useExpertHires } from '../hooks/useExpertHires';
 import { useServices } from '../hooks/useServices';
 import { useStripeAccountLink } from '../hooks/useStripeAccountLink';
+import { useVacationMode } from '../hooks/useVacationMode';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
@@ -99,9 +100,44 @@ export function ExpertPanelPage() {
     const { status: stripeStatus, statusInfo: stripeStatusInfo } = useExpertStripeStatus();
     const { modalState, hideModal } = useStripeStatusModal();
     const { openAccountLink, isLoading: isAccountLinkLoading } = useStripeAccountLink();
+    const { toggleVacationMode, isToggling } = useVacationMode();
+    
+    // Estado para el modal de confirmación de modo vacaciones
+    const [showVacationModal, setShowVacationModal] = useState(false);
 
     // Limpiar cache cuando el estado cambia a aprobado (solo una vez)
     const [hasClearedCache, setHasClearedCache] = useState(false);
+    
+    // Función para manejar el toggle del modo vacaciones
+    const handleVacationModeToggle = async () => {
+        try {
+            const result = await toggleVacationMode();
+            
+            // Actualizar el perfil local
+            if (profile) {
+                // Refrescar el perfil para obtener el estado actualizado
+                fetchProfile();
+            }
+            
+            // Mostrar notificación de éxito
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'success',
+                    message: result.message
+                }
+            }));
+            
+            setShowVacationModal(false);
+        } catch (error: any) {
+            console.error('Error toggling vacation mode:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: error.message || 'Error al cambiar el modo vacaciones'
+                }
+            }));
+        }
+    };
     
     useEffect(() => {
         if (stripeStatus?.stripeStatus === 'Approved' && stripeStatus?.onboardingCompleted && !hasClearedCache) {
@@ -718,13 +754,30 @@ export function ExpertPanelPage() {
                                             <span className="text-xs font-semibold text-slate-900">{user?.name}</span>
                                         </div>
                                         <p className="text-xs text-slate-500 mb-2 line-clamp-1">{profile.description}</p>
-                                        <button
-                                            onClick={() => setShowProfileEditForm(true)}
-                                            className="w-full px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs rounded transition-colors flex items-center justify-center gap-1 border border-slate-200"
-                                        >
-                                            <User className="w-3 h-3" />
-                                            Editar
-                                        </button>
+                                        <div className="space-y-1.5">
+                                            <button
+                                                onClick={() => setShowProfileEditForm(true)}
+                                                className="w-full px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs rounded transition-colors flex items-center justify-center gap-1 border border-slate-200"
+                                            >
+                                                <User className="w-3 h-3" />
+                                                Editar
+                                            </button>
+                                            <button
+                                                onClick={() => setShowVacationModal(true)}
+                                                className={`w-full px-2 py-1.5 text-xs rounded transition-colors flex items-center justify-center gap-1 border ${
+                                                    profile.isOnVacation 
+                                                        ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200' 
+                                                        : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
+                                                }`}
+                                            >
+                                                {profile.isOnVacation ? (
+                                                    <PlaneTakeoff className="w-3 h-3" />
+                                                ) : (
+                                                    <Plane className="w-3 h-3" />
+                                                )}
+                                                {profile.isOnVacation ? 'Activar' : 'Vacaciones'}
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -787,13 +840,30 @@ export function ExpertPanelPage() {
                                         </div>
                                     </div>
                                     <p className="text-xs text-slate-500 mb-2 line-clamp-2">{profile.description}</p>
-                                    <button
-                                        onClick={() => setShowProfileEditForm(true)}
-                                        className="w-full px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs rounded transition-colors flex items-center justify-center gap-1 border border-slate-200"
-                                    >
-                                        <User className="w-3 h-3" />
-                                        Editar
-                                    </button>
+                                    <div className="space-y-1.5">
+                                        <button
+                                            onClick={() => setShowProfileEditForm(true)}
+                                            className="w-full px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs rounded transition-colors flex items-center justify-center gap-1 border border-slate-200"
+                                        >
+                                            <User className="w-3 h-3" />
+                                            Editar
+                                        </button>
+                                        <button
+                                            onClick={() => setShowVacationModal(true)}
+                                            className={`w-full px-2 py-1.5 text-xs rounded transition-colors flex items-center justify-center gap-1 border ${
+                                                profile.isOnVacation 
+                                                    ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200' 
+                                                    : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
+                                            }`}
+                                        >
+                                            {profile.isOnVacation ? (
+                                                <PlaneTakeoff className="w-3 h-3" />
+                                            ) : (
+                                                <Plane className="w-3 h-3" />
+                                            )}
+                                            {profile.isOnVacation ? 'Activar' : 'Vacaciones'}
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -941,6 +1011,82 @@ export function ExpertPanelPage() {
                 statusInfo={modalState.statusInfo}
                 onAction={modalState.onAction}
             />
+            
+            {/* Modal de confirmación de modo vacaciones */}
+            {showVacationModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            {profile?.isOnVacation ? (
+                                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                    <PlaneTakeoff className="w-5 h-5 text-orange-600" />
+                                </div>
+                            ) : (
+                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <Plane className="w-5 h-5 text-blue-600" />
+                                </div>
+                            )}
+                            <div>
+                                <h3 className="text-lg font-semibold text-slate-900">
+                                    {profile?.isOnVacation ? 'Activar cuenta' : 'Modo vacaciones'}
+                                </h3>
+                                <p className="text-sm text-slate-500">
+                                    {profile?.isOnVacation ? 'Volver a recibir contrataciones' : 'Pausar temporalmente'}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="mb-6">
+                            {profile?.isOnVacation ? (
+                                <div className="space-y-2">
+                                    <p className="text-sm text-slate-600">
+                                        Al activar tu cuenta, volverás a aparecer en las búsquedas de clientes y podrás recibir nuevas contrataciones.
+                                    </p>
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                        <p className="text-sm text-green-700 font-medium">✓ Volverás a ser visible para los clientes</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <p className="text-sm text-slate-600">
+                                        Al activar el modo vacaciones, tu perfil no aparecerá en las búsquedas de clientes y no recibirás nuevas contrataciones.
+                                    </p>
+                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                                        <p className="text-sm text-orange-700 font-medium">⚠️ No aparecerás en búsquedas de clientes</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowVacationModal(false)}
+                                className="flex-1 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleVacationModeToggle}
+                                disabled={isToggling}
+                                className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    profile?.isOnVacation 
+                                        ? 'bg-green-600 hover:bg-green-700' 
+                                        : 'bg-orange-600 hover:bg-orange-700'
+                                }`}
+                            >
+                                {isToggling ? (
+                                    <div className="flex items-center justify-center gap-2">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Procesando...
+                                    </div>
+                                ) : (
+                                    profile?.isOnVacation ? 'Activar cuenta' : 'Activar vacaciones'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
