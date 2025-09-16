@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Car, Home, Bike, ArrowRight, Shield, Eye, Search } from 'lucide-react';
+import { Car, Home, Bike, ArrowRight, Shield, Eye, Search, Settings, Users, FileText } from 'lucide-react';
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
 import { ServiceSelection } from '../components/ServiceSelection';
+import { ProgressBar } from '../components/ProgressBar';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import { useAuth } from '../contexts/AuthContext';
 import { Notification, NotificationType } from '../components/Notification';
@@ -44,6 +45,34 @@ const SearchCreationPage: React.FC = () => {
     const [serviceImageUrls, setServiceImageUrls] = useState<string[]>([]);
 
     const safeCategories = Array.isArray(categories) ? categories : [];
+
+    // Definición de los pasos del formulario
+    const formSteps = [
+        {
+            id: 1,
+            title: 'Categoría',
+            description: 'Selecciona el tipo de servicio',
+            icon: <Search className="w-4 h-4" />
+        },
+        {
+            id: 2,
+            title: 'Configuración',
+            description: 'Define los parámetros de tu búsqueda',
+            icon: <Settings className="w-4 h-4" />
+        },
+        {
+            id: 3,
+            title: 'Selección',
+            description: 'Elige el experto ideal',
+            icon: <Users className="w-4 h-4" />
+        },
+        {
+            id: 4,
+            title: 'Contratación',
+            description: 'Finaliza tu solicitud',
+            icon: <FileText className="w-4 h-4" />
+        }
+    ];
 
     const handleParametersComplete = (parameters: SearchParameters & { latitude: string; longitude: string; locationRange: number }) => {
         if (!isAuthenticated) {
@@ -455,6 +484,19 @@ const SearchCreationPage: React.FC = () => {
                 </>
             ) : (
                 <div className="w-full min-h-screen flex flex-col" style={{ paddingTop: '2rem' }}>
+                    {/* Barra de progreso */}
+                    {currentStep >= 0 && (
+                        <div className="w-full bg-white py-3">
+                            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                                <ProgressBar 
+                                    currentStep={currentStep + 1}
+                                    totalSteps={formSteps.length}
+                                    steps={formSteps}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    
                     {currentStep === 1 && searchParameters.category && searchParameters.serviceTypeId && (
                         <SearchParameterForm
                             onComplete={handleParametersComplete}

@@ -325,11 +325,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Combined Container - Map + Settings */}
                 <div className="bg-white rounded-none md:rounded-2xl overflow-hidden shadow-xl border border-gray-100/50">
                     {/* Header with instructions */}
-                    <div className="p-3 md:p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/30">
+                    <div className="p-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/30">
                         <div className="flex items-start gap-3 md:gap-4">
                             <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex-shrink-0 shadow-lg">
                                 <MapPin className="w-4 h-4 text-white" />
@@ -351,21 +351,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         : 'Defina el área donde buscar anuncios. Ajuste el radio según la distancia que esté dispuesto a desplazarse.'
                                     }
                                 </p>
-                                <div className="mt-2 md:mt-3 flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                                    <span className="text-xs text-gray-500 font-medium">
-                                    {serviceTypeId === 1 
-                                        ? 'Paso 2 de 3 • Ubicación del vehículo'
-                                        : 'Paso 2 de 3 • Definir área de búsqueda'
-                                    }
-                                    </span>
-                                </div>
                             </div>
                         </div>
                     </div>
                     
                     {/* Map Section */}
-                    <div className="relative h-[280px] md:h-[380px]">
+                    <div className="relative h-[200px] md:h-[250px]">
                         {!isLoaded ? (
                             <div className="h-full flex items-center justify-center bg-gray-50">
                                 <div className="text-gray-500">Cargando mapa...</div>
@@ -536,16 +527,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
 
                     {/* Settings Grid - Connected directly to map */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 border-t border-gray-100">
-                        <div className="p-3 md:p-5 border-r border-gray-100 lg:border-r-gray-100">
-                            <div className="flex items-center gap-2 mb-3 md:mb-4">
+                        <div className="p-3 border-r border-gray-100 lg:border-r-gray-100">
+                            <div className="flex items-center gap-2 mb-2">
                                 <Radar className="w-4 h-4 text-gray-500" />
-                                <h3 className="text-sm md:text-base font-semibold text-gray-900">
+                                <h3 className="text-sm font-semibold text-gray-900">
                                     {serviceTypeId === 1 ? 'Radio de Revisión' : 'Radio de Búsqueda'}
                                 </h3>
                             </div>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
-                                    <span className="text-sm text-gray-600">Radio actual</span>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
+                                    <span className="text-xs text-gray-600">Radio actual</span>
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-semibold text-gray-900">
                                             {Math.min(parseInt(formData.locationRange), 100)} km
@@ -598,30 +589,30 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 </div>
                             </div>
                         </div>
-                        <div className="p-3 md:p-5">
-                            <div className="mb-3 md:mb-4">
+                        <div className="p-3">
+                            <div className="mb-2">
                                 <div className="flex items-center gap-2 mb-2">
                                     <DollarSign className="w-4 h-4 text-gray-500" />
-                                    <h3 className="text-sm md:text-base font-semibold text-gray-900">
+                                    <h3 className="text-sm font-semibold text-gray-900">
                                     Rango de Precio
                                 </h3>
                                 </div>
                             </div>
-                            <div className="space-y-4">
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
-                                        <span className="text-sm text-gray-600">Precio mínimo</span>
+                            <div className="space-y-3">
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
+                                        <span className="text-xs text-gray-600">Precio mínimo</span>
                                         <span className="text-sm font-medium text-gray-900">
                                             {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(parseInt(formData.minPrice || '0'))}
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
-                                        <span className="text-sm text-gray-600">Precio máximo</span>
+                                    <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
+                                        <span className="text-xs text-gray-600">Precio máximo</span>
                                         <span className="text-sm font-medium text-gray-900">
                                             {formData.maxPrice ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(parseInt(formData.maxPrice)) : 'Sin límite'}
                                         </span>
                                     </div>
-                                    <div className="relative h-2 mt-6">
+                                    <div className="relative h-2 mt-3">
                                         <div className="absolute inset-0 bg-gray-100 rounded-full border border-gray-200/50 shadow-inner"></div>
                                         <div
                                             className="absolute inset-y-0 bg-gradient-to-r from-green-500 via-green-600 to-green-700 rounded-full shadow-sm transition-all duration-300 ease-out"
@@ -697,14 +688,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     </div>
                 )}
 
-                <div className="bg-gradient-to-r from-gray-50 to-blue-50/30 border-t border-gray-100 p-3 md:p-6 mt-4 md:mt-6">
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0">
-                        <div className="text-xs md:text-sm text-gray-600 font-medium order-2 md:order-1">
-                            Paso 2 de 3 • Configuración completada
+                <div className="bg-gradient-to-r from-gray-50 to-blue-50/30 border-t border-gray-100 p-3 mt-3">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-2 md:gap-0">
+                        <div className="text-xs text-gray-600 font-medium order-2 md:order-1">
+                            Configuración completada
                         </div>
                         <button
                             type="submit"
-                            className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 md:py-2.5 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white text-sm font-semibold rounded-xl md:rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 order-1 md:order-2"
+                            className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white text-sm font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 order-1 md:order-2"
                         >
                             <span>Continuar</span>
                             <ArrowRight className="w-4 h-4" />

@@ -537,12 +537,6 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                             <span>Pago seguro</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                                        <span className="text-xs text-gray-500 font-medium">
-                                        {selectedServiceTypeId === 1 ? 'Paso 3 de 3 • Selección de inspector' : 'Paso 3 de 3 • Selección de especialista'}
-                                        </span>
-                                    </div>
                                 </div>
                             </div>
                         </div>
