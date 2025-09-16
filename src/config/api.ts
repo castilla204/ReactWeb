@@ -68,6 +68,7 @@ export const API_CONFIG = {
         expert: {
             profile: `${API_PATH}/User/expert-profile`,
             becomeExpert: `${API_PATH}/User/become-expert`,
+            toggleVacationMode: `${API_PATH}/User/toggle-vacation-mode`,
             services: {
                 list: `${API_PATH}/SearchService`,
                 create: `${API_PATH}/SearchService`,

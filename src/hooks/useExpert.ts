@@ -15,6 +15,7 @@ interface ExpertProfile {
     stripeStatus: "NotRequested" | "Pending" | "Approved" | "Rejected" | "Deauthorized";
     stripeStatusDetails: string | null; // Mensaje detallado del estado
     createdAt: string;
+    isOnVacation: boolean;
 }
 
 interface Search {
@@ -101,7 +102,8 @@ export function useExpert() {
                 canAccessStripe: true, // This might need to be determined from other fields
                 stripeStatus: data.stripeStatus,
                 stripeStatusDetails: data.stripeStatusDetails,
-                createdAt: data.createdAt
+                createdAt: data.createdAt,
+                isOnVacation: data.isOnVacation || false
             };
             
             setProfile(mappedProfile);
