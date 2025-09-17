@@ -263,15 +263,6 @@ export default function SearchForm({
 
     return (
         <div className="w-full max-w-6xl mx-auto px-4 flex flex-col">
-            <div className="flex items-center gap-2 mb-4">
-                <button
-                    onClick={handleBack}
-                    className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors text-sm"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Atrás
-                </button>
-            </div>
             <div className="bg-white rounded-xl border border-gray-100 shadow-xl overflow-hidden flex-1 flex flex-col">
                 <div className="p-4 md:p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

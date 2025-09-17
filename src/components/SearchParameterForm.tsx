@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, ArrowRight, ArrowLeft, Search, X, Radar, DollarSign } from 'lucide-react';
+import { MapPin, ArrowRight, ArrowLeft, Search, X, Radar, DollarSign, Settings } from 'lucide-react';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 
@@ -314,41 +314,25 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     };
 
     return (
-        <div className="w-full max-w-6xl mx-auto px-4">
-            <div className="flex items-center gap-2 mb-4">
-                <button
-                    onClick={handleBack}
-                    className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors text-sm"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Atrás
-                </button>
-            </div>
+        <div className="w-full max-w-6xl mx-auto px-4 pt-2">
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Combined Container - Map + Settings */}
                 <div className="bg-white rounded-none md:rounded-2xl overflow-hidden shadow-xl border border-gray-100/50">
                     {/* Header with instructions */}
-                    <div className="p-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/30">
-                        <div className="flex items-start gap-3 md:gap-4">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex-shrink-0 shadow-lg">
-                                <MapPin className="w-4 h-4 text-white" />
+                    <div className="p-2 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/30">
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex-shrink-0 shadow-md">
+                                <Settings className="w-3 h-3 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">
+                                <h2 className="text-sm md:text-base font-semibold text-gray-900">
                                     {serviceTypeId === 1 ? 'Ubicación del vehículo' : 'Área de búsqueda'}
                                 </h2>
-                                <p className="text-xs md:text-sm text-gray-600 leading-relaxed hidden md:block">
+                                <p className="text-xs text-gray-600 mt-0.5">
                                     {serviceTypeId === 1 
-                                        ? 'Seleccione la ubicación exacta del vehículo en el mapa para coordinar la inspección. Los expertos cercanos recibirán la notificación para ofrecer sus servicios.'
-                                        : 'Defina el área de búsqueda donde desea encontrar anuncios. Ajuste el radio según la distancia que esté dispuesto a desplazarse. Un radio mayor aumentará el número de resultados disponibles, mientras que uno menor se centrará en opciones más cercanas a su ubicación.'
-                                    }
-                                </p>
-                                {/* Versión móvil más compacta */}
-                                <p className="text-xs text-gray-600 leading-relaxed md:hidden">
-                                    {serviceTypeId === 1 
-                                        ? 'Seleccione la ubicación exacta del vehículo para coordinar la inspección.'
-                                        : 'Defina el área donde buscar anuncios. Ajuste el radio según la distancia que esté dispuesto a desplazarse.'
+                                        ? 'Seleccione la ubicación exacta donde se encuentra el coche y el rango de precio del vehículo'
+                                        : 'Especifique el área donde está buscando el vehículo y el rango de precio que está dispuesto a pagar'
                                     }
                                 </p>
                             </div>

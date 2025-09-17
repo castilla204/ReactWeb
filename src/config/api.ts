@@ -12,6 +12,9 @@ export const API_CONFIG = {
         categories: {
             list: `${API_PATH}/Categories`,
         },
+        serviceTypes: {
+            list: `${API_PATH}/ServiceType/public`,
+        },
         search: {
             create: `${API_PATH}/Search`,
             createWithHire: `${API_PATH}/Search/create-with-hire`,
