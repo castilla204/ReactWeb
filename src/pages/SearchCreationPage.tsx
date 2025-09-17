@@ -9,6 +9,7 @@ import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import { useAuth } from '../contexts/AuthContext';
 import { Notification, NotificationType } from '../components/Notification';
 import HomePresentation from '../components/HomePresentation';
+import { useServiceTypes } from '../hooks/useServiceTypes';
 
 
 interface SearchParameters {
@@ -29,6 +30,7 @@ const SearchCreationPage: React.FC = () => {
     const { isAuthenticated } = useAuth();
     const { categories } = useCategories();
     const { currentSearchCount, maxSearches } = useSubscriptionLimits();
+    const { serviceTypes, isLoading: serviceTypesLoading, error: serviceTypesError } = useServiceTypes();
     const [notification, setNotification] = useState<{ type: NotificationType; message: string } | null>(null);
     const [currentStep, setCurrentStep] = useState(0);
     const [searchParameters, setSearchParameters] = useState<Partial<SearchParameters>>({
@@ -172,7 +174,11 @@ const SearchCreationPage: React.FC = () => {
             });
             return;
         }
-        if ((searchParameters.serviceTypeId === 2 && !searchParameters.keywords) || !searchParameters.userSearch) {
+        // Find the selected service type to check if it requires keywords
+        const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
+        const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
+        
+        if ((requiresKeywords && !searchParameters.keywords) || !searchParameters.userSearch) {
             setNotification({
                 type: 'error',
                 message: '📍 Por favor, completa los campos de búsqueda',
@@ -227,81 +233,111 @@ const SearchCreationPage: React.FC = () => {
                                         <p className="text-sm text-gray-600 ml-9">Elige cómo quieres que realicemos tu búsqueda</p>
                                     </div>
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 ml-9">
-                                        <label className={`cursor-pointer p-4 border rounded-lg transition-all ${searchParameters.serviceTypeId === 1
-                                            ? 'border-blue-600 bg-blue-50'
-                                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                                            }`}>
-                                            <input
-                                                type="radio"
-                                                value={1}
-                                                checked={searchParameters.serviceTypeId === 1}
-                                                onChange={() => {
-                                                    setSearchParameters((prev) => ({ 
-                                                        ...prev, 
-                                                        serviceTypeId: 1,
-                                                        keywords: 'revisión presencial'
-                                                    }));
-                                                }}
-                                                className="sr-only"
-                                            />
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${searchParameters.serviceTypeId === 1
-                                                    ? 'border-blue-600 bg-blue-600'
-                                                    : 'border-gray-300'
-                                                    }`}>
-                                                    {searchParameters.serviceTypeId === 1 && (
-                                                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                                                    )}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Eye className="w-4 h-4 text-blue-600" />
-                                                        <h4 className="font-semibold text-gray-900">Solo revisión</h4>
-                                                    </div>
-                                                    <p className="text-sm text-gray-600 mb-1">Revisión presencial de un anuncio específico</p>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        <span className="px-2 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-full">Directo</span>
-                                                        <span className="px-2 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-full">Presencial</span>
+                                        {serviceTypesLoading ? (
+                                            // Loading state
+                                            <>
+                                                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 animate-pulse">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
+                                                        <div className="flex-1">
+                                                            <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                                                            <div className="h-3 bg-gray-300 rounded w-full mb-2"></div>
+                                                            <div className="flex gap-1">
+                                                                <div className="h-5 bg-gray-300 rounded w-16"></div>
+                                                                <div className="h-5 bg-gray-300 rounded w-20"></div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 animate-pulse">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
+                                                        <div className="flex-1">
+                                                            <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                                                            <div className="h-3 bg-gray-300 rounded w-full mb-2"></div>
+                                                            <div className="flex gap-1">
+                                                                <div className="h-5 bg-gray-300 rounded w-16"></div>
+                                                                <div className="h-5 bg-gray-300 rounded w-20"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : serviceTypesError ? (
+                                            // Error state
+                                            <div className="col-span-2 p-4 border border-red-200 rounded-lg bg-red-50">
+                                                <p className="text-red-600 text-sm">
+                                                    Error al cargar los tipos de servicio. Usando configuración por defecto.
+                                                </p>
                                             </div>
-                                        </label>
-                                        <label className={`cursor-pointer p-4 border rounded-lg transition-all ${searchParameters.serviceTypeId === 2
-                                            ? 'border-blue-600 bg-blue-50'
-                                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                                            }`}>
-                                            <input
-                                                type="radio"
-                                                value={2}
-                                                checked={searchParameters.serviceTypeId === 2}
-                                                onChange={() =>
-                                                    setSearchParameters((prev) => ({ ...prev, serviceTypeId: 2 }))
-                                                }
-                                                className="sr-only"
-                                            />
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${searchParameters.serviceTypeId === 2
-                                                    ? 'border-blue-600 bg-blue-600'
-                                                    : 'border-gray-300'
-                                                    }`}>
-                                                    {searchParameters.serviceTypeId === 2 && (
-                                                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                                                    )}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Search className="w-4 h-4 text-blue-600" />
-                                                        <Eye className="w-4 h-4 text-blue-600" />
-                                                        <h4 className="font-semibold text-gray-900">Búsqueda web + revisión</h4>
+                                        ) : (
+                                            // Dynamic service types
+                                            serviceTypes.map((serviceType) => (
+                                                <label 
+                                                    key={serviceType.id}
+                                                    className={`cursor-pointer p-4 border rounded-lg transition-all ${searchParameters.serviceTypeId === serviceType.id
+                                                        ? 'border-blue-600 bg-blue-50'
+                                                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                        }`}
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        value={serviceType.id}
+                                                        checked={searchParameters.serviceTypeId === serviceType.id}
+                                                        onChange={() => {
+                                                            setSearchParameters((prev) => ({ 
+                                                                ...prev, 
+                                                                serviceTypeId: serviceType.id,
+                                                                keywords: serviceType.id === 2 ? '' : 'revisión presencial'
+                                                            }));
+                                                        }}
+                                                        className="sr-only"
+                                                    />
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${searchParameters.serviceTypeId === serviceType.id
+                                                            ? 'border-blue-600 bg-blue-600'
+                                                            : 'border-gray-300'
+                                                            }`}>
+                                                            {searchParameters.serviceTypeId === serviceType.id && (
+                                                                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                {serviceType.id === 1 ? (
+                                                                    <Eye className="w-4 h-4 text-blue-600" />
+                                                                ) : (
+                                                                    <>
+                                                                        <Search className="w-4 h-4 text-blue-600" />
+                                                                        <Eye className="w-4 h-4 text-blue-600" />
+                                                                    </>
+                                                                )}
+                                                                <h4 className="font-semibold text-gray-900">{serviceType.name}</h4>
+                                                            </div>
+                                                            <p className="text-sm text-gray-600 mb-1">{serviceType.description}</p>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {serviceType.serviceTypeCategoryName && (
+                                                                    <span className="px-2 py-0.5 text-xs bg-purple-50 text-purple-700 rounded-full">
+                                                                        {serviceType.serviceTypeCategoryName}
+                                                                    </span>
+                                                                )}
+                                                                {serviceType.id === 1 ? (
+                                                                    <>
+                                                                        <span className="px-2 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-full">Directo</span>
+                                                                        <span className="px-2 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-full">Presencial</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <span className="px-2 py-0.5 text-xs bg-green-50 text-green-700 rounded-full">Completo</span>
+                                                                        <span className="px-2 py-0.5 text-xs bg-green-50 text-green-700 rounded-full">Premium</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <p className="text-sm text-gray-600 mb-1">Búsqueda automatizada más revisión manual experta</p>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        <span className="px-2 py-0.5 text-xs bg-green-50 text-green-700 rounded-full">Completo</span>
-                                                        <span className="px-2 py-0.5 text-xs bg-green-50 text-green-700 rounded-full">Premium</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </label>
+                                                </label>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
 
@@ -345,8 +381,12 @@ const SearchCreationPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                                                {/* Keywords Section - Only show if serviceTypeId is 2 */}
-                                {searchParameters.serviceTypeId === 2 && (
+                                                                {/* Keywords Section - Only show if service type requires keywords */}
+                                {(() => {
+                                    const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
+                                    const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
+                                    return requiresKeywords && searchParameters.serviceTypeId;
+                                })() && (
                                     <div className="border-b border-gray-200 pb-6">
                                         <div className="mb-4">
                                             <div className="flex items-center gap-3 mb-2">
@@ -385,19 +425,27 @@ const SearchCreationPage: React.FC = () => {
                                 <div className="border-b border-gray-200 pb-6">
                                     <div className="mb-4">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-medium">{searchParameters.serviceTypeId === 2 ? '4' : '3'}</span>
+                                            <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-medium">
+                                                {(() => {
+                                                    const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
+                                                    const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
+                                                    return requiresKeywords ? '4' : '3';
+                                                })()}
+                                            </span>
                                             <h3 className="text-lg font-semibold text-gray-900">
-                                                {searchParameters.serviceTypeId === 1 
-                                                    ? 'URL del anuncio' 
-                                                    : 'Describe tu búsqueda'
-                                                }
+                                                {(() => {
+                                                    const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
+                                                    const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
+                                                    return requiresKeywords ? 'Describe tu búsqueda' : 'URL del anuncio';
+                                                })()}
                                             </h3>
                                         </div>
                                         <p className="text-sm text-gray-600 ml-9">
-                                            {searchParameters.serviceTypeId === 1 
-                                                ? 'URL del anuncio o descripción si no está online'
-                                                : 'Detalles específicos para encontrar lo que buscas'
-                                            }
+                                            {(() => {
+                                                const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
+                                                const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
+                                                return requiresKeywords ? 'Detalles específicos para encontrar lo que buscas' : 'URL del anuncio o descripción si no está online';
+                                            })()}
                                         </p>
                                     </div>
                                     <div className="ml-9">
@@ -406,13 +454,20 @@ const SearchCreationPage: React.FC = () => {
                                             onChange={(e) =>
                                                 setSearchParameters((prev) => ({ ...prev, userSearch: e.target.value }))
                                             }
-                                            placeholder={searchParameters.serviceTypeId === 1 
-                                                ? "Ej: https://www.milanuncios.com/anuncio-123456 o describe: Coche particular, no está online..."
-                                                : "Ej: Coche <15.000€, automático, pocos km, blanco/negro..."
-                                            }
+                                            placeholder={(() => {
+                                                const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
+                                                const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
+                                                return requiresKeywords 
+                                                    ? "Ej: Coche <15.000€, automático, pocos km, blanco/negro..."
+                                                    : "Ej: https://www.milanuncios.com/anuncio-123456 o describe: Coche particular, no está online...";
+                                            })()}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 min-h-[80px] focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none transition-all resize-none"
                                         />
-                                        {searchParameters.serviceTypeId === 2 && (
+                                        {(() => {
+                                            const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
+                                            const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
+                                            return requiresKeywords;
+                                        })() && (
                                             <div className="mt-2 flex flex-wrap gap-1">
                                                 {['💰 Precio', '📍 Ubicación', '🚗 Características', '⭐ Estado'].map((tip) => (
                                                     <div key={tip} className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
@@ -429,10 +484,15 @@ const SearchCreationPage: React.FC = () => {
                                     <button
                                         onClick={handleStartSearch}
                                         disabled={
-                                            (searchParameters.serviceTypeId === 2 && !searchParameters.keywords) ||
-                                            !searchParameters.userSearch ||
-                                            !searchParameters.category ||
-                                            !searchParameters.serviceTypeId
+                                            serviceTypesLoading ||
+                                            (() => {
+                                                const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
+                                                const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
+                                                return (requiresKeywords && !searchParameters.keywords) ||
+                                                       !searchParameters.userSearch ||
+                                                       !searchParameters.category ||
+                                                       !searchParameters.serviceTypeId;
+                                            })()
                                         }
                                         className="w-full px-8 py-4 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     >
@@ -483,11 +543,25 @@ const SearchCreationPage: React.FC = () => {
                     </footer>
                 </>
             ) : (
-                <div className="w-full min-h-screen flex flex-col" style={{ paddingTop: '2rem' }}>
-                    {/* Barra de progreso */}
+                <div className="w-full min-h-screen flex flex-col bg-gray-50">
+                    {/* Botón Volver y Barra de progreso integrados */}
                     {currentStep >= 0 && (
-                        <div className="w-full bg-white py-3">
-                            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="w-full bg-gray-50 pt-6 pb-2">
+                            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                                {/* Botón Volver arriba de la barra de progreso */}
+                                {currentStep > 0 && (
+                                    <div className="mb-4">
+                                        <button
+                                            onClick={() => setCurrentStep(currentStep - 1)}
+                                            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-100"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                            Volver
+                                        </button>
+                                    </div>
+                                )}
                                 <ProgressBar 
                                     currentStep={currentStep + 1}
                                     totalSteps={formSteps.length}
