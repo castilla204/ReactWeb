@@ -322,16 +322,9 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="max-w-7xl mx-auto px-6 pt-2 pb-4">
                                 {/* Simplified Header */}
-                <div className="flex items-center justify-between mb-6">
-                <button
-                    onClick={onBack}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">Volver</span>
-                </button>
+                <div className="flex items-center justify-end mb-4">
                     <span className="text-sm text-gray-500">
                         {services.length} resultado{services.length !== 1 ? 's' : ''}
                     </span>
@@ -341,66 +334,66 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                 <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
                     {/* Left Sidebar - Hidden on mobile */}
                     <div className="hidden lg:block w-80 flex-shrink-0">
-                        <div className="bg-white rounded-2xl shadow-xl border border-gray-200/60 sticky top-8 overflow-hidden">
+                        <div className="bg-white rounded-lg shadow-xl border border-gray-200/60 sticky top-8 overflow-hidden">
                             {/* Sidebar Header */}
-                            <div className="p-5 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/30 border-b border-gray-200/50">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
-                                        <Search className="w-5 h-5 text-white" />
+                            <div className="p-6 bg-gradient-to-br from-blue-50 via-indigo-50/50 to-purple-50/30 border-b border-gray-200/50">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-md bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                                        <Search className="w-6 h-6 text-white" />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-gray-900">
+                                        <h3 className="text-lg font-bold text-gray-900">
                                             Criterios de Búsqueda
-                                </h3>
-                                        <p className="text-xs text-blue-600/70 mt-0.5 font-medium">Configuración aplicada</p>
+                                        </h3>
+                                        <p className="text-sm text-blue-600/80 mt-1 font-medium">Configuración aplicada</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="p-5 space-y-5">
+                            <div className="p-6 space-y-6">
                                 {/* Main Info - Clean Layout */}
-                                <div className="space-y-3.5">
+                                <div className="space-y-4">
                                     {/* Service Type and Category */}
-                                    <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                            <div className="text-xs text-gray-400 mb-1">Tipo de servicio</div>
-                                            <div className="text-sm font-medium text-gray-700">
-                                            {selectedServiceTypeId === 1 ? 'Solo revisión' : 'Búsqueda web + revisión'}
-                                    </div>
-                                </div>
-                                <div>
-                                            <div className="text-xs text-gray-400 mb-1">Categoría</div>
-                                            <div className="text-sm font-medium text-gray-700">
+                                    <div className="space-y-3">
+                                        <div>
+                                            <div className="text-xs text-gray-500 mb-1 font-medium">Tipo de servicio</div>
+                                            <div className="text-sm font-semibold text-gray-800">
+                                                {selectedServiceTypeId === 1 ? 'Solo revisión' : 'Búsqueda web + revisión'}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500 mb-1 font-medium">Categoría</div>
+                                            <div className="text-sm font-semibold text-gray-800">
                                                 {categoryName}
                                             </div>
+                                        </div>
                                     </div>
-                                </div>
 
                                     {/* Location and Price */}
-                                    <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                            <div className="text-xs text-gray-400 mb-1">Ubicación</div>
-                                            <div className="text-sm font-medium text-gray-700">
+                                    <div className="space-y-3">
+                                        <div>
+                                            <div className="text-xs text-gray-500 mb-1 font-medium">Ubicación</div>
+                                            <div className="text-sm font-semibold text-gray-800">
                                                 Radio: {locationRange} km
                                             </div>
                                         </div>
                                         <div>
-                                            <div className="text-xs text-gray-400 mb-1">Rango de precios</div>
-                                            <div className="text-sm font-medium text-gray-700">
+                                            <div className="text-xs text-gray-500 mb-1 font-medium">Rango de precios</div>
+                                            <div className="text-sm font-semibold text-gray-800">
                                                 {selectedCategory === 1 ? 'Hasta €100.000' : 
                                                  selectedCategory === 2 ? 'Hasta €50.000' : 
                                                  'Hasta €2.000.000'}
                                             </div>
                                         </div>
                                     </div>
-                                        </div>
+                                </div>
                                         
                                 {/* Map - Full Width */}
                                 <div className="group">
-                                    <div className="text-xs text-gray-400 mb-2">
+                                    <div className="text-sm text-gray-600 mb-3 font-medium">
                                         Mapa de ubicación
                                     </div>
-                                    <div className="h-28 rounded-xl border border-indigo-200/60 relative overflow-hidden bg-gradient-to-br from-indigo-50/50 to-slate-50 shadow-sm group-hover:shadow-md transition-all duration-200">
+                                    <div className="h-32 rounded-md border border-indigo-200/60 relative overflow-hidden bg-gradient-to-br from-indigo-50/50 to-slate-50 shadow-sm group-hover:shadow-md transition-all duration-200">
                                             {isLoaded ? (
                                                 <GoogleMap
                                                     mapContainerStyle={{ width: '100%', height: '100%' }}
@@ -447,33 +440,33 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                     </div>
 
                                 {/* Filters */}
-                                <div className="pt-5 border-t border-gray-200/60">
-                                    <div className="text-xs text-gray-400 mb-3">
+                                <div className="pt-6 border-t border-gray-200/60">
+                                    <div className="text-sm text-gray-600 mb-4 font-medium">
                                         Filtros adicionales
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-3">
                                         {/* Price Range Filter */}
                                         <div>
-                                            <label className="text-xs text-gray-400 mb-1.5 block">Precio</label>
+                                            <label className="text-xs text-gray-500 mb-2 block font-medium">Precio</label>
                                             <select 
                                                 value={filters.priceRange}
                                                 onChange={(e) => setFilters(prev => ({ ...prev, priceRange: e.target.value as any }))}
-                                                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white/80 text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-300 hover:border-gray-300 transition-all duration-200"
+                                                className="w-full text-xs border border-gray-200 rounded-md px-3 py-2.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all duration-200 shadow-sm"
                                             >
                                                 <option value="all">Todos</option>
                                                 <option value="low">Hasta €50</option>
                                                 <option value="medium">€50-€150</option>
                                                 <option value="high">+€150</option>
                                             </select>
-                                </div>
+                                        </div>
 
                                         {/* Rating Filter */}
-                                <div>
-                                            <label className="text-xs text-gray-400 mb-1.5 block">Valoración</label>
+                                        <div>
+                                            <label className="text-xs text-gray-500 mb-2 block font-medium">Valoración</label>
                                             <select 
                                                 value={filters.rating}
                                                 onChange={(e) => setFilters(prev => ({ ...prev, rating: e.target.value as any }))}
-                                                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white/80 text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-300 hover:border-gray-300 transition-all duration-200"
+                                                className="w-full text-xs border border-gray-200 rounded-md px-3 py-2.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all duration-200 shadow-sm"
                                             >
                                                 <option value="all">Todas</option>
                                                 <option value="4+">4+ ⭐</option>
@@ -484,20 +477,20 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                 </div>
 
                                 {/* Search Stats */}
-                                <div className="pt-5 border-t border-gray-200/60">
-                                    <div className="text-xs text-gray-400 mb-3">
+                                <div className="pt-6 border-t border-gray-200/60">
+                                    <div className="text-sm text-gray-600 mb-4 font-medium">
                                         Resumen
-                                        </div>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div className="bg-gradient-to-br from-slate-50/80 to-slate-100/50 border border-slate-200/60 rounded-lg p-3 text-center hover:shadow-md transition-all duration-200">
-                                            <div className="text-xl font-bold text-slate-900">{services.length}</div>
-                                            <div className="text-xs font-medium text-slate-600 mt-0.5">Resultados</div>
+                                        <div className="bg-gradient-to-br from-blue-50/80 to-blue-100/50 border border-blue-200/60 rounded-md p-4 text-center hover:shadow-lg transition-all duration-200">
+                                            <div className="text-2xl font-bold text-blue-900">{services.length}</div>
+                                            <div className="text-xs font-semibold text-blue-700 mt-1">Resultados</div>
                                         </div>
-                                        <div className="bg-gradient-to-br from-slate-50/80 to-slate-100/50 border border-slate-200/60 rounded-lg p-3 text-center hover:shadow-md transition-all duration-200">
-                                            <div className="text-xl font-bold text-slate-900">
+                                        <div className="bg-gradient-to-br from-green-50/80 to-green-100/50 border border-green-200/60 rounded-md p-4 text-center hover:shadow-lg transition-all duration-200">
+                                            <div className="text-2xl font-bold text-green-900">
                                                 €{Math.round(services.reduce((acc, s) => acc + (s.price || 0), 0) / services.length || 0)}
                                             </div>
-                                            <div className="text-xs font-medium text-slate-600 mt-0.5">Precio medio</div>
+                                            <div className="text-xs font-semibold text-green-700 mt-1">Precio medio</div>
                                         </div>
                                     </div>
                                 </div>
@@ -508,32 +501,32 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                     {/* Right Content - Services */}
                     <div className="flex-1">
                         {/* Instructions Header */}
-                        <div className="mb-6 bg-gradient-to-r from-gray-50 to-blue-50/30 border border-gray-100/50 rounded-2xl p-3 md:p-6 shadow-lg">
-                            <div className="flex items-start gap-3 md:gap-4">
-                                <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex-shrink-0 shadow-lg">
-                                    <User className="w-4 h-4 text-white" />
+                        <div className="mb-6 bg-gradient-to-r from-blue-50/50 to-indigo-50/30 border border-blue-200/50 rounded-lg p-4 md:p-6 shadow-lg">
+                            <div className="flex items-start gap-4">
+                                <div className="flex items-center justify-center w-10 h-10 rounded-md bg-gradient-to-br from-blue-500 to-blue-600 flex-shrink-0 shadow-lg">
+                                    <User className="w-5 h-5 text-white" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">
+                                    <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
                                         {selectedServiceTypeId === 1 ? 'Selección de inspector especializado' : 'Selección de experto en búsquedas'}
                                     </h2>
-                                    <p className="text-xs md:text-sm text-gray-600 leading-relaxed mb-2 md:mb-3">
+                                    <p className="text-sm md:text-base text-gray-600 leading-relaxed mb-3">
                                         {selectedServiceTypeId === 1 
                                             ? 'Profesionales certificados que realizarán la inspección en la ubicación especificada.'
                                             : 'Especialistas que ejecutarán búsquedas automatizadas e inspecciones presenciales.'
                                         }
                                     </p>
-                                    <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs text-gray-500 font-medium mb-2">
-                                        <div className="flex items-center gap-1">
-                                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 font-medium">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                             <span>Certificados</span>
-                                    </div>
-                                        <div className="flex items-center gap-1">
-                                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                                             <span>Verificados</span>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                                             <span>Pago seguro</span>
                                         </div>
                                     </div>
@@ -542,24 +535,18 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                         </div>
 
                         {/* Auto-Refund Guarantee */}
-                        <div className="mb-6 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200/60 rounded-2xl p-4 md:p-5 shadow-sm">
-                            <div className="flex items-start gap-3">
-                                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 flex-shrink-0">
-                                    <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="mb-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200/60 rounded-lg p-3 shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-emerald-100 flex-shrink-0">
+                                    <svg className="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                     </svg>
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-sm font-semibold text-emerald-900 mb-1">⚡ Garantía de Respuesta Rápida</h3>
-                                    <p className="text-xs text-emerald-700 leading-relaxed mb-2">
-                                        <span className="font-medium">Devolución automática en 24h:</span> Si el experto seleccionado no responde o acepta tu solicitud en un máximo de 24 horas, tu dinero será devuelto automáticamente a tu cuenta sin necesidad de reclamación.
+                                    <h3 className="text-xs font-semibold text-emerald-900 mb-1">Garantía de Respuesta Rápida</h3>
+                                    <p className="text-xs text-emerald-700 leading-relaxed">
+                                        Devolución automática en 24h si el experto no responde
                                     </p>
-                                    <div className="flex items-center gap-2 text-xs text-emerald-600">
-                                        <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
-                                        <span className="font-medium">Proceso 100% automático</span>
-                                        <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
-                                        <span className="font-medium">Sin gestiones adicionales</span>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -581,7 +568,7 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                     return (
                         <div
                             key={service.id}
-                            className={`bg-white rounded-2xl shadow-xl overflow-hidden border transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${
+                            className={`bg-white rounded-lg shadow-xl overflow-hidden border transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${
                                 selectedService === service.id ? 'border-emerald-500 ring-2 ring-emerald-200/50 shadow-2xl bg-gradient-to-br from-emerald-50/50 to-emerald-100/30' : 'border-gray-200/60 hover:border-gray-300'
                             }`}
                         >
