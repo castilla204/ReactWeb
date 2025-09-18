@@ -1,6 +1,6 @@
 ﻿import { useLayoutEffect, useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp, FileText, MessageSquare } from 'lucide-react';
-import { useSearch } from '../hooks/useSearch.hooks';
+import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp, FileText, MessageSquare, Calendar } from 'lucide-react';
+import { useSearch, SearchHire } from '../hooks/useSearch.hooks';
 import { useServices } from '../hooks/useServices';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,6 +12,12 @@ import { useSearchActions } from '../hooks/useSearchActions';
 import { Notification, NotificationType } from './Notification';
 import { useParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
+
+// Imports para el sistema de citas
+import { useAppointments } from '../hooks/useAppointments';
+import AppointmentForm from './AppointmentForm';
+import AppointmentStatus from './AppointmentStatus';
+import { Appointment, ProposeAppointmentDto, ConfirmAppointmentDto, RejectAppointmentDto, CancelAppointmentDto, MarkCompletedDto } from '../types/appointment';
 
 interface Category {
     id: number;
@@ -91,6 +97,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const lastSearchHireId = useRef<number | null>(null);
     const [activeTab, setActiveTab] = useState<'chat' | 'details'>('chat');
 
+    // Estado para el sistema de citas
+    const [showAppointmentForm, setShowAppointmentForm] = useState(false);
+    const [appointmentData, setAppointmentData] = useState<any>(null);
+    const [timeRemaining, setTimeRemaining] = useState<string>('00:00:00');
+
     // Prevent body scroll when chat is active on mobile
     useEffect(() => {
         if (activeTab === 'chat') {
@@ -127,6 +138,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit, handleResolveDispute, handleAddAd } =
         useSearchActions(setNotifications);
 
+    // Hook para el sistema de citas
+    const { 
+        getAppointmentBySearchHire, 
+        proposeAppointment, 
+        confirmAppointment, 
+        rejectAppointment, 
+        cancelAppointment, 
+        markCompleted,
+        isProposing
+    } = useAppointments();
+
     const searchQuery = getSearch(searchId);
     // Only fetch service if we have a valid searchHire ID
     const hireId = searchQuery.data?.searchHire?.id;
@@ -134,6 +156,96 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     
     // Use the hook directly - it will handle enabled internally
     const serviceQuery = useServiceByHireId(hireId);
+    
+    // Query para obtener la cita si existe
+    const appointmentQuery = getAppointmentBySearchHire(hireId || 0);
+    
+    // Determinar si este servicio necesita citas
+    // Solo si hay un searchHire (servicio contratado)
+    const hasSearchHire = !!searchQuery.data?.searchHire;
+    
+    // Obtener información del servicio directamente desde searchHire (optimizado)
+    const serviceInfo = searchQuery.data?.searchHire?.service;
+    
+    // Opción 1: Verificar por serviceTypeCategoryId (1 o 2)
+    const isAppointmentCategory = serviceInfo?.serviceTypeCategoryId === 1 || serviceInfo?.serviceTypeCategoryId === 2;
+    
+    // Opción 2: Verificar por requiresAppointment (nuevo campo del backend)
+    const requiresAppointment = serviceInfo?.requiresAppointment;
+    
+    // Usar cualquiera de las dos condiciones, pero solo si hay searchHire
+    const needsAppointment = hasSearchHire && (isAppointmentCategory || requiresAppointment);
+    
+    // Función para calcular el tiempo restante para crear cita (24 horas desde la contratación)
+    const calculateTimeRemaining = () => {
+        const searchHire: SearchHire | undefined = searchQuery.data?.searchHire;
+        if (!searchHire?.createdAt) return '00:00:00';
+        
+        // ✅ CORRECTO: Calcular desde la fecha de contratación del servicio
+        const hiredAt = new Date(searchHire.createdAt);
+        const deadline = new Date(hiredAt.getTime() + 24 * 60 * 60 * 1000); // 24 horas después
+        const now = new Date();
+        const diff = deadline.getTime() - now.getTime();
+        
+        if (diff <= 0) return '00:00:00';
+        
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    // Actualizar el temporizador cada segundo
+    useEffect(() => {
+        if (needsAppointment && !appointmentQuery.data) {
+            const updateTimer = () => {
+                setTimeRemaining(calculateTimeRemaining());
+            };
+            
+            updateTimer(); // Actualizar inmediatamente
+            const interval = setInterval(updateTimer, 1000);
+            
+            return () => clearInterval(interval);
+        }
+    }, [needsAppointment, appointmentQuery.data, searchQuery.data?.searchHire?.createdAt]);
+
+    // Debug temporal para verificar los datos del servicio (optimizado)
+    console.log('[SearchDetails] Service data (optimized):', {
+        // Datos desde searchHire.service (optimizado)
+        serviceTypeId: serviceInfo?.serviceTypeId,
+        serviceTypeCategoryId: serviceInfo?.serviceTypeCategoryId,
+        serviceTypeCategoryName: serviceInfo?.serviceTypeCategoryName,
+        requiresAppointment: serviceInfo?.requiresAppointment,
+        servicePrice: serviceInfo?.price,
+        
+        // Lógica de citas
+        isAppointmentCategory,
+        needsAppointment,
+        hasSearchHire,
+        hireId,
+        
+        // Temporizador
+        timeRemaining,
+        
+        // Información completa del servicio
+        fullServiceInfo: serviceInfo,
+        
+        // Estado de las queries
+        searchQueryStatus: searchQuery.status,
+        searchQueryIsLoading: searchQuery.isLoading,
+        searchQueryError: searchQuery.error
+    });
+
+    // Debug adicional para verificar los datos del searchQuery
+    console.log('[SearchDetails] Search data:', {
+        searchData: searchQuery.data,
+        searchHire: searchQuery.data?.searchHire,
+        searchHireId: searchQuery.data?.searchHire?.id,
+        searchStatus: searchQuery.status,
+        searchIsLoading: searchQuery.isLoading,
+        searchError: searchQuery.error
+    });
 
     const userId = Number(user?.id) || 0;
     const clientId = Number(searchQuery.data?.userId ?? 0);
@@ -359,6 +471,111 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         });
     };
 
+    // Funciones para manejar acciones de citas
+    const handleAppointmentAction = async (action: string, appointment: Appointment) => {
+        try {
+            switch (action) {
+                case 'propose':
+                    setAppointmentData(appointment);
+                    setShowAppointmentForm(true);
+                    break;
+                    
+                case 'confirm':
+                    const confirmData: ConfirmAppointmentDto = {
+                        appointmentId: appointment.id,
+                        notes: 'Cita confirmada'
+                    };
+                    await confirmAppointment(confirmData);
+                    setNotifications(prev => [...prev, {
+                        id: uuidv4(),
+                        type: 'success',
+                        message: 'Cita confirmada exitosamente'
+                    }]);
+                    appointmentQuery.refetch();
+                    break;
+                    
+                case 'reject':
+                    const reason = prompt('Razón del rechazo:');
+                    if (reason) {
+                        const rejectData: RejectAppointmentDto = {
+                            appointmentId: appointment.id,
+                            reason: reason
+                        };
+                        await rejectAppointment(rejectData);
+                        setNotifications(prev => [...prev, {
+                            id: uuidv4(),
+                            type: 'success',
+                            message: 'Cita rechazada'
+                        }]);
+                        appointmentQuery.refetch();
+                    }
+                    break;
+                    
+                case 'cancel':
+                    const cancelReason = prompt('Razón de la cancelación:');
+                    if (cancelReason) {
+                        const cancelData: CancelAppointmentDto = {
+                            appointmentId: appointment.id,
+                            reason: cancelReason
+                        };
+                        await cancelAppointment(cancelData);
+                        setNotifications(prev => [...prev, {
+                            id: uuidv4(),
+                            type: 'success',
+                            message: 'Cita cancelada'
+                        }]);
+                        appointmentQuery.refetch();
+                    }
+                    break;
+                    
+                case 'markCompleted':
+                    const notes = prompt('Notas sobre la cita (opcional):');
+                    const completeData: MarkCompletedDto = {
+                        appointmentId: appointment.id,
+                        notes: notes || undefined
+                    };
+                    await markCompleted(completeData);
+                    setNotifications(prev => [...prev, {
+                        id: uuidv4(),
+                        type: 'success',
+                        message: 'Cita marcada como completada'
+                    }]);
+                    appointmentQuery.refetch();
+                    break;
+            }
+        } catch (error) {
+            console.error('Error en acción de cita:', error);
+            setNotifications(prev => [...prev, {
+                id: uuidv4(),
+                type: 'error',
+                message: 'Error al realizar la acción'
+            }]);
+        }
+    };
+
+    const handleProposalSubmit = async (data: ProposeAppointmentDto) => {
+        try {
+            if (appointmentData) {
+                await proposeAppointment(appointmentData.searchHireId, data);
+                setNotifications(prev => [...prev, {
+                    id: uuidv4(),
+                    type: 'success',
+                    message: 'Cita propuesta exitosamente'
+                }]);
+                appointmentQuery.refetch();
+                setShowAppointmentForm(false);
+                setAppointmentData(null);
+            }
+        } catch (error) {
+            console.error('Error al proponer cita:', error);
+            setNotifications(prev => [...prev, {
+                id: uuidv4(),
+                type: 'error',
+                message: 'Error al proponer cita'
+            }]);
+        }
+    };
+
     const currentStatus = searchQuery.data?.searchHire?.status || 'pending';
     const currentStepIndex = statusRoadmap.findIndex((step) => step.status === currentStatus);
 
@@ -442,11 +659,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 </div>
             </div>
 
-            {/* Mobile-First Layout */}
-            <div className="flex flex-col lg:flex-row lg:max-w-7xl lg:mx-auto lg:gap-6 xl:gap-8 lg:flex-1 lg:flex-none lg:h-auto">
-                {/* Mobile-First Chat Area */}
+            {/* Modern Full-Screen Layout */}
+            <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-120px)] lg:max-w-none lg:mx-0 lg:gap-0">
+                {/* Main Chat Area - Takes Most Space */}
                 {canViewChat && (
-                    <div className="lg:flex-1 lg:w-[70%] xl:w-[72%] flex flex-col">
+                    <div className="lg:flex-1 lg:w-[75%] xl:w-[80%] flex flex-col lg:h-full">
                         {/* Mobile Tabs Navigation */}
                         <div className="lg:hidden bg-white border-b border-gray-200 sticky top-[80px] z-40 shadow-sm">
                             {/* Expert Info Header */}
@@ -520,57 +737,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         </div>
 
                         {/* Promotional Banners - Hidden on mobile, compact on desktop */}
-                        <div className="hidden lg:block lg:p-6 space-y-4">
-                            {/* Promotional Banner - Compact */}
-                            <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-4 text-white shadow-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex -space-x-1">
-                                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white">
-                                        D
-                                    </div>
-                                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white">
-                                        M
-                                    </div>
-                                </div>
-                                <div className="flex-1">
-                                        <h3 className="text-sm font-semibold mb-1">¿Te gustaría seguir trabajando juntos?</h3>
-                                        <p className="text-purple-100 text-xs">
-                                            Inicia proyectos a largo plazo con nuestros expertos.
-                                    </p>
-                                </div>
-                            </div>
-                                <div className="mt-3 flex gap-2">
-                                    <button className="bg-white text-purple-600 px-3 py-1.5 rounded-lg font-medium text-xs hover:bg-gray-50 transition-colors">
-                                        Solicitar oferta
-                                </button>
-                                    <button className="text-white border border-white/30 px-3 py-1.5 rounded-lg text-xs hover:bg-white/10 transition-colors">
-                                        Más info
-                                </button>
-                            </div>
-                        </div>
-
-                            {/* Expert Network Banner - Compact */}
-                            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div className="flex-1">
-                                        <h3 className="font-medium text-gray-900 mb-0.5 text-sm">El experto ahora forma parte de tu red freelance</h3>
-                                        <p className="text-gray-600 text-xs">
-                                            Accede fácilmente al trabajo realizado o contrátalos de nuevo.
-                                        </p>
-                                </div>
-                                    <button className="text-gray-400 hover:text-gray-600 p-1">
-                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Main Content Container - Mobile Tabs / Desktop Chat */}
                         <div className="lg:bg-white lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-200/50 lg:mx-6 flex flex-col lg:flex-1 lg:flex-none lg:h-auto lg:backdrop-blur-sm">
@@ -585,7 +751,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             <div className="lg:flex-1 lg:px-4 lg:py-2 lg:overflow-hidden">
                                 {/* Chat Tab Content - Mobile */}
                                 {activeTab === 'chat' && (
-                                    <div className="lg:hidden fixed inset-0 top-[190px] bg-white z-30">
+                                    <div className="lg:hidden fixed inset-0 top-[190px] bottom-[80px] bg-white z-30">
                             <Chat 
                                 searchId={searchId} 
                                 setNotifications={setNotifications} 
@@ -595,6 +761,60 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     profilePictureUrl: serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl
                                 }}
                             />
+                            
+                            {/* Sistema de Citas - Mobile */}
+                            {needsAppointment && appointmentQuery.data && (
+                                <div className="fixed inset-x-0 bottom-0 z-40 p-2 bg-white border-t border-gray-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Calendar className="w-3 h-3 text-gray-600" />
+                                        <h3 className="text-xs font-medium text-gray-900">Cita Programada</h3>
+                                    </div>
+                                    <div className="max-h-32 overflow-y-auto">
+                                        <AppointmentStatus
+                                            appointment={appointmentQuery.data}
+                                            userRole={isClient ? 'client' : 'expert'}
+                                            onAction={handleAppointmentAction}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Botón para proponer cita inicial - Mobile */}
+                            {needsAppointment && !appointmentQuery.data && searchQuery.data?.searchHire && isClient && (
+                                <div className="fixed inset-x-0 bottom-0 z-40 p-2 bg-white border-t border-gray-200">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="w-3 h-3 text-gray-600" />
+                                            <div>
+                                                <h3 className="text-xs font-medium text-gray-900">¿Necesitas programar una cita?</h3>
+                                                <p className="text-xs text-gray-500">Este servicio requiere una cita</p>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Temporizador móvil compacto */}
+                                        <div className="text-right mr-3">
+                                            <div className="text-xs text-gray-500">Restante:</div>
+                                            <div className="text-xs font-semibold text-blue-600">
+                                                {timeRemaining}
+                                            </div>
+                                        </div>
+                                        
+                                        <button
+                                            onClick={() => handleAppointmentAction('propose', { 
+                                                id: 0, 
+                                                searchHireId: searchQuery.data?.searchHire?.id || 0,
+                                                status: 'awaiting_appointment',
+                                                amount: serviceInfo?.price || 0
+                                            } as Appointment)}
+                                            className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-700 transition-colors flex items-center gap-1"
+                                        >
+                                            <Calendar className="w-3 h-3" />
+                                            Cita
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             </div>
                                 )}
                                 
@@ -891,29 +1111,137 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     )}
                                                 </div>
                                             </div>
+
+                                            {/* Sistema de Citas - Mobile */}
+                                            {needsAppointment && (
+                                                <div className="space-y-3">
+                                                    {appointmentQuery.data ? (
+                                                        <AppointmentStatus
+                                                            appointment={appointmentQuery.data}
+                                                            userRole={isClient ? 'client' : 'expert'}
+                                                            onAction={handleAppointmentAction}
+                                                        />
+                                                    ) : searchQuery.data?.searchHire && isClient ? (
+                                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                            <div className="flex items-center space-x-3">
+                                                                <Calendar className="w-6 h-6 text-blue-600" />
+                                                                <div className="flex-1">
+                                                                    <h3 className="text-sm font-medium text-blue-900">Este servicio requiere una cita presencial</h3>
+                                                                    <p className="text-xs text-blue-700 mt-1">Coordina con el experto para programar la revisión</p>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => handleAppointmentAction('propose', { 
+                                                                        id: 0, 
+                                                                        searchHireId: searchQuery.data?.searchHire?.id || 0,
+                                                                        status: 'awaiting_appointment',
+                                                                        amount: serviceInfo?.price || 0
+                                                                    } as Appointment)}
+                                                                    className="bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors text-xs"
+                                                                >
+                                                                    Proponer Cita
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : needsAppointment && !appointmentQuery.data && isExpert ? (
+                                                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                                            <div className="flex items-center space-x-3">
+                                                                <Calendar className="w-6 h-6 text-gray-600" />
+                                                                <div className="flex-1">
+                                                                    <h3 className="text-sm font-medium text-gray-900">Esperando propuesta de cita</h3>
+                                                                    <p className="text-xs text-gray-600 mt-1">El cliente debe proponer una fecha y hora para la revision</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
                                 
-                                {/* Desktop Chat - Always Visible */}
-                                <div className="hidden lg:block lg:h-[500px] xl:h-[550px]">
-                                    <Chat 
-                                        searchId={searchId} 
-                                        setNotifications={setNotifications} 
-                                        isExpert={isExpert} 
-                                        expertData={{
-                                            name: serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name,
-                                            profilePictureUrl: serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl
-                                        }}
-                                    />
+                                {/* Modern Professional Chat */}
+                                <div className="hidden lg:block bg-white h-full flex flex-col shadow-2xl">
+                                    {/* Modern Chat Header */}
+                                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6 border-b border-slate-700">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                                                    <MessageSquare className="w-6 h-6 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-xl font-bold text-white">Conversación</h2>
+                                                    <p className="text-slate-300 text-sm">
+                                                        {searchQuery.data?.searchHire?.expert?.name || 'Experto'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Modern Appointment Status */}
+                                            {needsAppointment && (
+                                                <div className="flex items-center gap-3">
+                                                    {appointmentQuery.data ? (
+                                                        <div className="bg-green-500 text-white px-4 py-2 rounded-full shadow-lg">
+                                                            <span className="text-sm font-semibold">✓ Cita Programada</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full shadow-lg">
+                                                            <span className="text-sm font-semibold">⏰ {timeRemaining}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Full-Height Chat Area */}
+                                    <div className="flex-1 bg-gray-50">
+                                        <Chat 
+                                            searchId={searchId} 
+                                            setNotifications={setNotifications} 
+                                            isExpert={isExpert} 
+                                            expertData={{
+                                                name: serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name,
+                                                profilePictureUrl: serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Modern Appointment Action Bar */}
+                                    {needsAppointment && !appointmentQuery.data && (
+                                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                                                        <Calendar className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold text-white text-lg">¿Necesitas programar una cita?</h4>
+                                                        <p className="text-blue-100 text-sm">Este servicio requiere una cita para coordinar la revisión</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleAppointmentAction('propose', { 
+                                                        id: 0, 
+                                                        searchHireId: searchQuery.data?.searchHire?.id || 0,
+                                                        status: 'awaiting_appointment',
+                                                        amount: serviceInfo?.price || 0
+                                                    } as Appointment)}
+                                                    className="bg-white text-blue-600 px-6 py-3 rounded-xl hover:bg-gray-100 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                                                >
+                                                    Proponer Cita
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
+
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Right Sidebar - Desktop Only */}
-                <div className="hidden lg:block lg:w-[30%] xl:w-[28%] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {/* Modern Right Sidebar - Desktop Only */}
+                <div className="hidden lg:block lg:w-[25%] xl:w-[20%] bg-white shadow-2xl border-l border-gray-200 overflow-y-auto h-full">
                     {/* Order Details Header */}
                     <div className="p-3 border-b border-gray-100">
                         <div className="flex items-center justify-between mb-3">
@@ -1395,6 +1723,53 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             </div>
 
             {/* Modals */}
+            {/* Debug temporal - Información del servicio */}
+            {process.env.NODE_ENV === 'development' && serviceQuery.data && (
+                <div className="fixed top-20 right-4 z-50 bg-blue-100 border border-blue-300 rounded-lg p-3 text-xs max-w-xs">
+                    <h4 className="font-bold text-blue-800 mb-2">Debug Servicio:</h4>
+                    <div className="space-y-1 text-blue-700">
+                        <div className="font-semibold text-blue-800">📊 Datos Optimizados:</div>
+                        <div>ServiceTypeId: {serviceInfo?.serviceTypeId || 'N/A'}</div>
+                        <div>ServiceTypeCategoryId: {serviceInfo?.serviceTypeCategoryId || 'N/A'}</div>
+                        <div>ServiceTypeCategoryName: {serviceInfo?.serviceTypeCategoryName || 'N/A'}</div>
+                        <div>RequiresAppointment: {serviceInfo?.requiresAppointment ? 'SÍ' : 'NO'}</div>
+                        <div>ServicePrice: €{serviceInfo?.price || 'N/A'}</div>
+                        <div className="border-t border-blue-300 pt-1 mt-1">
+                            <div>IsAppointmentCategory: {isAppointmentCategory ? 'SÍ' : 'NO'}</div>
+                            <div>HasSearchHire: {hasSearchHire ? 'SÍ' : 'NO'}</div>
+                            <div>NeedsAppointment: {needsAppointment ? 'SÍ' : 'NO'}</div>
+                        </div>
+                        <div className="border-t border-blue-300 pt-1 mt-1">
+                            <div>HireId: {hireId || 'N/A'}</div>
+                            <div>SearchStatus: {searchQuery.data?.searchHire?.status || 'N/A'}</div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => {
+                            console.log('Refreshing search data (optimized)...');
+                            searchQuery.refetch();
+                        }}
+                        className="mt-2 w-full bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700"
+                    >
+                        Refrescar Datos
+                    </button>
+                </div>
+            )}
+
+
+            {/* Modal para proponer cita */}
+            {showAppointmentForm && appointmentData && (
+                <AppointmentForm
+                    searchHireId={appointmentData.searchHireId}
+                    onSubmit={handleProposalSubmit}
+                    onCancel={() => {
+                        setShowAppointmentForm(false);
+                        setAppointmentData(null);
+                    }}
+                    isLoading={isProposing}
+                />
+            )}
+
             <ReviewModal
                 isOpen={modalState.showReviewModal}
                 onClose={() => {

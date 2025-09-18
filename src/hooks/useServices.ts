@@ -5,12 +5,15 @@ import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
 
-interface Service {
+export interface Service {
     id: number;
     expertProfileId?: number;
     categoryId: number;
     serviceTypeId: number;
     serviceTypeName?: string;
+    serviceTypeCategoryId?: number;
+    serviceTypeCategoryName?: string;
+    requiresAppointment?: boolean;
     price: number;
     conditions: string;
     durationInHours: number | null;
@@ -360,10 +363,37 @@ export function useServices({
         
         return useQuery({
             queryKey: ['service', 'byHireId', hireId],
-            queryFn: () => {
+            queryFn: async () => {
                 const url = API_CONFIG.endpoints.expert.services.getByHireId(hireId!);
                 console.log('[useServices] Executing query function with URL:', url);
-                return fetchApi<Service>(url);
+                const service = await fetchApi<Service>(url);
+                
+                // Si el servicio no tiene la información completa del ServiceType, la obtenemos por separado
+                if (service && service.serviceTypeId && (!service.serviceTypeCategoryId || service.requiresAppointment === undefined)) {
+                    try {
+                        const serviceTypeUrl = `${API_CONFIG.baseUrl}/api/ServiceType/${service.serviceTypeId}`;
+                        console.log('[useServices] Fetching ServiceType details from:', serviceTypeUrl);
+                        const serviceTypeResponse = await fetch(serviceTypeUrl);
+                        if (serviceTypeResponse.ok) {
+                            const serviceTypeData = await serviceTypeResponse.json();
+                            if (serviceTypeData.success && serviceTypeData.data) {
+                                // Enriquecer el servicio con la información del ServiceType
+                                service.serviceTypeCategoryId = serviceTypeData.data.serviceTypeCategoryId;
+                                service.serviceTypeCategoryName = serviceTypeData.data.serviceTypeCategoryName;
+                                service.requiresAppointment = serviceTypeData.data.requiresAppointment;
+                                console.log('[useServices] Service enriched with ServiceType data:', {
+                                    serviceTypeCategoryId: service.serviceTypeCategoryId,
+                                    serviceTypeCategoryName: service.serviceTypeCategoryName,
+                                    requiresAppointment: service.requiresAppointment
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[useServices] Error fetching ServiceType details:', error);
+                    }
+                }
+                
+                return service;
             },
             enabled: !!hireId && hireId > 0,
         });

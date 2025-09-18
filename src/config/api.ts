@@ -99,5 +99,17 @@ export const API_CONFIG = {
             ws: `${API_PATH}/chat/ws`,
             deliverable: `${API_PATH}/chat/deliverable`, // Added deliverable endpoint
         },
+        appointment: {
+            get: (id: number) => `${API_PATH}/appointment/${id}`,
+            getBySearchHire: (searchHireId: number) => `${API_PATH}/appointment/search-hire/${searchHireId}`,
+            myAppointments: `${API_PATH}/appointment/my-appointments`,
+            propose: (searchHireId: number) => `${API_PATH}/appointment/propose/${searchHireId}`,
+            confirm: `${API_PATH}/appointment/confirm`,
+            reject: `${API_PATH}/appointment/reject`,
+            cancel: `${API_PATH}/appointment/cancel`,
+            markCompleted: `${API_PATH}/appointment/mark-completed`,
+            adminMetrics: `${API_PATH}/appointment/admin/metrics`,
+            adminCheckTimers: `${API_PATH}/appointment/admin/check-timers`,
+        },
     },
 };

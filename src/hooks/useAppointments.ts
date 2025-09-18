@@ -1,0 +1,405 @@
+import { useState, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useApi } from './useApi';
+import { API_CONFIG } from '../config/api';
+import {
+  Appointment,
+  AppointmentResponse,
+  AppointmentsResponse,
+  ProposeAppointmentDto,
+  ConfirmAppointmentDto,
+  RejectAppointmentDto,
+  CancelAppointmentDto,
+  MarkCompletedDto,
+  AppointmentActions,
+  MoneyDistribution
+} from '../types/appointment';
+
+/**
+ * Hook para manejar el sistema de citas
+ * Incluye todas las operaciones CRUD y lógica de negocio
+ */
+export const useAppointments = () => {
+  const { fetchApi } = useApi();
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+
+  // Queries
+  const myAppointmentsQuery = useQuery({
+    queryKey: ['appointments', 'my'],
+    queryFn: () => fetchApi<Appointment[]>(API_CONFIG.endpoints.appointment.myAppointments),
+  });
+
+  const getAppointment = (id: number) =>
+    useQuery({
+      queryKey: ['appointment', id],
+      queryFn: () => fetchApi<Appointment>(API_CONFIG.endpoints.appointment.get(id)),
+    });
+
+  const getAppointmentBySearchHire = (searchHireId: number) =>
+    useQuery({
+      queryKey: ['appointment', 'search-hire', searchHireId],
+      queryFn: () => fetchApi<Appointment>(API_CONFIG.endpoints.appointment.getBySearchHire(searchHireId)),
+    });
+
+  // Mutations
+  const proposeAppointmentMutation = useMutation({
+    mutationFn: ({ searchHireId, data }: { searchHireId: number; data: ProposeAppointmentDto }) =>
+      fetchApi<Appointment>(API_CONFIG.endpoints.appointment.propose(searchHireId), {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointment'] });
+    },
+    onError: (error) => {
+      setError(error instanceof Error ? error.message : 'Error al proponer cita');
+    },
+  });
+
+  const confirmAppointmentMutation = useMutation({
+    mutationFn: (data: ConfirmAppointmentDto) =>
+      fetchApi<Appointment>(API_CONFIG.endpoints.appointment.confirm, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointment'] });
+    },
+    onError: (error) => {
+      setError(error instanceof Error ? error.message : 'Error al confirmar cita');
+    },
+  });
+
+  const rejectAppointmentMutation = useMutation({
+    mutationFn: (data: RejectAppointmentDto) =>
+      fetchApi<Appointment>(API_CONFIG.endpoints.appointment.reject, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointment'] });
+    },
+    onError: (error) => {
+      setError(error instanceof Error ? error.message : 'Error al rechazar cita');
+    },
+  });
+
+  const cancelAppointmentMutation = useMutation({
+    mutationFn: (data: CancelAppointmentDto) =>
+      fetchApi<Appointment>(API_CONFIG.endpoints.appointment.cancel, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointment'] });
+    },
+    onError: (error) => {
+      setError(error instanceof Error ? error.message : 'Error al cancelar cita');
+    },
+  });
+
+  const markCompletedMutation = useMutation({
+    mutationFn: (data: MarkCompletedDto) =>
+      fetchApi<Appointment>(API_CONFIG.endpoints.appointment.markCompleted, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointment'] });
+    },
+    onError: (error) => {
+      setError(error instanceof Error ? error.message : 'Error al marcar como completada');
+    },
+  });
+
+  // Funciones de conveniencia
+  const proposeAppointment = async (searchHireId: number, data: ProposeAppointmentDto) => {
+    try {
+      setError(null);
+      return await proposeAppointmentMutation.mutateAsync({ searchHireId, data });
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const confirmAppointment = async (data: ConfirmAppointmentDto) => {
+    try {
+      setError(null);
+      return await confirmAppointmentMutation.mutateAsync(data);
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const rejectAppointment = async (data: RejectAppointmentDto) => {
+    try {
+      setError(null);
+      return await rejectAppointmentMutation.mutateAsync(data);
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const cancelAppointment = async (data: CancelAppointmentDto) => {
+    try {
+      setError(null);
+      return await cancelAppointmentMutation.mutateAsync(data);
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const markCompleted = async (data: MarkCompletedDto) => {
+    try {
+      setError(null);
+      return await markCompletedMutation.mutateAsync(data);
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  return {
+    // Queries
+    myAppointments: myAppointmentsQuery,
+    getAppointment,
+    getAppointmentBySearchHire,
+    
+    // Mutations
+    proposeAppointment,
+    confirmAppointment,
+    rejectAppointment,
+    cancelAppointment,
+    markCompleted,
+    
+    // Estados
+    error,
+    setError,
+    
+    // Estados de loading
+    isProposing: proposeAppointmentMutation.isPending,
+    isConfirming: confirmAppointmentMutation.isPending,
+    isRejecting: rejectAppointmentMutation.isPending,
+    isCancelling: cancelAppointmentMutation.isPending,
+    isMarkingCompleted: markCompletedMutation.isPending,
+  };
+};
+
+/**
+ * Hook para manejar timers de citas
+ */
+export const useAppointmentTimers = (appointment: Appointment | null) => {
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    if (!appointment?.timers) return;
+
+    const activeTimer = appointment.timers.find(t => !t.isExpired && new Date(t.endTime) > new Date());
+    
+    if (activeTimer) {
+      const updateTimeRemaining = () => {
+        const remaining = Math.max(0, new Date(activeTimer.endTime).getTime() - Date.now());
+        setTimeRemaining(remaining);
+        setIsExpired(remaining === 0);
+      };
+      
+      updateTimeRemaining();
+      const interval = setInterval(updateTimeRemaining, 1000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setTimeRemaining(0);
+      setIsExpired(true);
+    }
+  }, [appointment?.timers]);
+
+  const getActiveTimer = () => {
+    if (!appointment?.timers) return null;
+    return appointment.timers.find(t => !t.isExpired && new Date(t.endTime) > new Date());
+  };
+
+  const formatTimeRemaining = (milliseconds: number) => {
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  };
+
+  return {
+    activeTimer: getActiveTimer(),
+    timeRemaining,
+    isExpired,
+    formatTimeRemaining,
+  };
+};
+
+/**
+ * Hook para verificar si una cita está bloqueada
+ */
+export const useAppointmentLock = (appointment: Appointment | null) => {
+  const [isLocked, setIsLocked] = useState(false);
+
+  useEffect(() => {
+    if (!appointment) {
+      setIsLocked(false);
+      return;
+    }
+
+    const checkLockStatus = () => {
+      const appointmentDateTime = new Date(`${appointment.proposedDate}T${appointment.proposedTime}`);
+      const twelveHoursBefore = new Date(appointmentDateTime.getTime() - 12 * 60 * 60 * 1000);
+      
+      setIsLocked(new Date() >= twelveHoursBefore);
+    };
+    
+    checkLockStatus();
+    const interval = setInterval(checkLockStatus, 60000); // Verificar cada minuto
+    
+    return () => clearInterval(interval);
+  }, [appointment?.proposedDate, appointment?.proposedTime]);
+
+  return isLocked;
+};
+
+/**
+ * Utilidad para obtener las acciones disponibles según el estado de la cita
+ */
+export const getAvailableActions = (
+  appointment: Appointment | null, 
+  userRole: 'client' | 'expert', 
+  isLocked: boolean
+): AppointmentActions => {
+  if (!appointment) {
+    return {
+      canPropose: false,
+      canConfirm: false,
+      canReject: false,
+      canCancel: false,
+      canMarkCompleted: false,
+    };
+  }
+
+  if (isLocked) {
+    return {
+      canPropose: false,
+      canConfirm: appointment.status === "appointment_proposed",
+      canReject: false,
+      canCancel: false,
+      canMarkCompleted: appointment.status === "appointment_confirmed",
+    };
+  }
+
+  const baseActions = {
+    canPropose: ["awaiting_appointment", "appointment_rejected", "appointment_cancelled_by_client"].includes(appointment.status),
+    canConfirm: appointment.status === "appointment_proposed",
+    canReject: appointment.status === "appointment_proposed",
+    canCancel: appointment.status === "appointment_confirmed",
+    canMarkCompleted: appointment.status === "appointment_confirmed",
+  };
+
+  // Ajustar según el rol del usuario
+  if (userRole === 'client') {
+    return {
+      ...baseActions,
+      canConfirm: false,
+      canReject: false,
+    };
+  } else if (userRole === 'expert') {
+    return {
+      ...baseActions,
+      canPropose: false,
+    };
+  }
+
+  return baseActions;
+};
+
+/**
+ * Utilidad para calcular la distribución de dinero
+ */
+export const calculateMoneyDistribution = (appointment: Appointment | null): MoneyDistribution => {
+  if (!appointment) {
+    return { client: 0, expert: 0, platform: 0 };
+  }
+
+  const amount = appointment.amount;
+
+  switch (appointment.status) {
+    case "appointment_completed":
+      return { 
+        client: 0, 
+        expert: amount * 0.90, 
+        platform: amount * 0.10 
+      };
+    
+    case "appointment_cancelled_by_client":
+      return { 
+        client: amount, 
+        expert: 0, 
+        platform: 0 
+      };
+    
+    case "appointment_cancelled_by_client_second":
+    case "appointment_cancelled_by_expert":
+    case "appointment_cancelled_by_no_response":
+      return { 
+        client: amount * 0.92, 
+        expert: amount * 0.08, 
+        platform: 0 
+      };
+    
+    default:
+      return { client: 0, expert: 0, platform: 0 };
+  }
+};
+
+/**
+ * Utilidad para obtener el texto del estado de la cita
+ */
+export const getAppointmentStatusText = (status: string): string => {
+  const statusTexts: { [key: string]: string } = {
+    'awaiting_appointment': 'Esperando propuesta del cliente',
+    'appointment_proposed': 'Cita propuesta - Esperando confirmación',
+    'appointment_confirmed': 'Cita confirmada',
+    'appointment_rejected': 'Cita rechazada',
+    'appointment_cancelled_by_client': 'Cancelada por cliente - Puede reprogramar',
+    'appointment_cancelled_by_client_second': 'Cancelada por cliente (2ª vez)',
+    'appointment_cancelled_by_expert': 'Cancelada por experto',
+    'appointment_cancelled_by_no_response': 'Cancelada por falta de respuesta',
+    'appointment_completed': 'Cita completada'
+  };
+  
+  return statusTexts[status] || status;
+};
+
+/**
+ * Utilidad para obtener el color del estado de la cita
+ */
+export const getAppointmentStatusColor = (status: string): string => {
+  const statusColors: { [key: string]: string } = {
+    'awaiting_appointment': 'yellow',
+    'appointment_proposed': 'blue',
+    'appointment_confirmed': 'green',
+    'appointment_rejected': 'red',
+    'appointment_cancelled_by_client': 'orange',
+    'appointment_cancelled_by_client_second': 'red',
+    'appointment_cancelled_by_expert': 'red',
+    'appointment_cancelled_by_no_response': 'gray',
+    'appointment_completed': 'green'
+  };
+  
+  return statusColors[status] || 'gray';
+};
