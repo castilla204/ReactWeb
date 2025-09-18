@@ -2,6 +2,27 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 
+// Interfaz específica para SearchHire
+export interface SearchHire {
+    id: number;
+    expertId: number;
+    status: string;
+    createdAt: string;
+    expert?: {
+        name: string;
+        profilePictureUrl: string;
+    };
+    service?: {
+        id: number;
+        serviceTypeId: number;
+        serviceTypeName: string;
+        serviceTypeCategoryId?: number;
+        serviceTypeCategoryName?: string;
+        requiresAppointment: boolean;
+        price: number;
+    };
+}
+
 export interface SearchItem {
     id: number;
     title: string;
@@ -14,15 +35,7 @@ export interface SearchItem {
     createdAt: string;
     startDate: string;
     userId: number;
-    searchHire?: {
-        id: number;
-        expertId: number;
-        status: string;
-        expert?: {
-            name: string;
-            profilePictureUrl: string;
-        };
-    };
+    searchHire?: SearchHire;
     user?: {
         email: string;
         name: string;

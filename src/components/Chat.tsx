@@ -319,7 +319,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
     }, []) || [];
 
     return (
-        <div className="relative flex flex-col h-full lg:max-h-96 bg-gray-50 lg:rounded-xl">
+        <div className="relative flex flex-col h-full bg-gray-50">
             {/* Header - Hidden on mobile (info shown in parent header) */}
             <div className="hidden lg:block bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
@@ -349,8 +349,8 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                 </div>
             </div>
 
-            {/* Messages Container - Scrollable area */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 lg:px-6 space-y-6 pb-24 lg:pb-32 min-h-0" data-chat-messages>
+            {/* Messages Container - Fixed height with internal scroll */}
+            <div className="h-[calc(100vh-400px)] lg:h-[calc(100vh-350px)] overflow-y-auto px-4 py-4 lg:px-6 space-y-6 pb-24 lg:pb-32" data-chat-messages>
                 {conversation.messages?.length === 0 && isExpert ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="bg-white rounded-2xl p-6 shadow-sm max-w-md border border-gray-100">
@@ -647,7 +647,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
 
                 {/* Input area */}
                 <div className="px-4 py-3 lg:px-6 lg:py-4 bg-white border-t border-gray-100">
-                    <div className="flex items-end gap-3">
+                    <div className="flex items-center gap-3 max-w-4xl mx-auto">
                         <div className="flex-1 relative">
                             <div className="relative bg-gray-50 rounded-3xl border border-gray-200 hover:border-gray-300 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 transition-all duration-200">
                                 <textarea
