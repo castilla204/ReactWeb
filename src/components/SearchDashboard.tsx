@@ -5,10 +5,13 @@ import {
     AlertCircle,
     CheckCircle,
     ArrowLeft,
-    X,
     LayoutGrid,
     LayoutList,
     MessageSquare,
+    Settings,
+    MapPin,
+    Calendar,
+    CalendarX,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
@@ -82,7 +85,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         return () => window.removeEventListener('resize', checkIsMobile);
     }, []);
 
-    const isAdmin = user?.email === 'dcastillaa@gmail.com';
+    const isAdmin = user?.email?.trim().toLowerCase() === 'dcastillaa@gmail.com'.toLowerCase();
     const searchesData = isAdmin ? adminSearchesQuery : searchesQuery;
     const loading = searchesData.isLoading;
     const error = searchesData.error;
@@ -114,6 +117,19 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         return search.isActive && (!search.searchHire || !terminalStatuses.includes(search.searchHire.status)) ? 'Activa' : 'Inactiva';
     };
 
+    const getAppointmentStatusText = (status?: string) => {
+        switch (status) {
+            case 'awaiting_appointment':
+                return 'Esperando propuesta de cita';
+            case 'appointment_proposed':
+                return 'Cita propuesta - Pendiente de confirmación';
+            case 'appointment_confirmed':
+                return 'Cita confirmada';
+            default:
+                return 'Cita pendiente';
+        }
+    };
+
     const handleSearchClick = async (searchId: number) => {
         if (isAdmin) {
             try {
@@ -127,13 +143,6 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
 
 
 
-    const clearFilters = () => {
-        setFilters({
-            search: '',
-            category: null,
-            status: 'active', // Reset to active
-        });
-    };
 
     if (loading) {
         return (
@@ -234,26 +243,39 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header Section */}
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="bg-white border-b border-slate-200">
+                <div className="max-w-7xl mx-auto px-8 py-12">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-4">
                             <button
                                 onClick={() => navigate('/')}
-                                className="p-2 hover:bg-gray-50 rounded border border-gray-200 transition-colors"
+                                className="p-3 hover:bg-slate-50 rounded-lg border border-slate-200 transition-all duration-200 hover:border-slate-300"
                             >
-                                <ArrowLeft className="w-4 h-4 text-gray-600" />
+                                <ArrowLeft className="w-5 h-5 text-slate-600" />
                             </button>
-                            <div className="flex flex-col justify-center ml-1">
-                                <h1 className="text-xl font-medium text-gray-900 leading-tight">
-                                        {isAdmin ? 'Servicios' : 'Mis Búsquedas'}
-                                    </h1>
-                                <p className="text-sm text-gray-600 mt-0.5 leading-tight">
+                            <div className="flex flex-col">
+                                <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+                                    {isAdmin ? 'Servicios' : 'Mis Búsquedas'}
+                                </h1>
+                                <p className="text-slate-600 mt-2 leading-relaxed">
                                     {filteredSearches.length} búsquedas • {searchesList.filter(s => getActivityStatus(s) === 'Activa').length} activas
                                 </p>
                             </div>
                         </div>
-                        <div className="hidden sm:flex items-center gap-2 bg-gray-100 p-1 rounded border">
+                        <div className="flex items-center gap-3">
+                            {/* Admin Panel Button */}
+                            {isAdmin && (
+                                <button
+                                    onClick={() => navigate('/admin')}
+                                    className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                                >
+                                    <Settings className="w-4 h-4 mr-2" />
+                                    <span className="hidden sm:inline">Panel Admin</span>
+                                </button>
+                            )}
+                            
+                            {/* View Mode Toggle */}
+                            <div className="hidden sm:flex items-center gap-2 bg-gray-100 p-1 rounded border">
                                 <button
                                     onClick={() => setViewMode('grid')}
                                 className={`p-1.5 rounded text-xs transition-colors ${viewMode === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
@@ -266,25 +288,26 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                 >
                                     <LayoutList className="w-4 h-4" />
                                 </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="max-w-7xl mx-auto px-8 py-10">
 
             {/* Compact Filters Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-6">
                 {/* Search - Hidden on mobile */}
                 <div className="hidden sm:block flex-1 max-w-md">
                     <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                             type="text"
                             value={filters.search}
                             onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
                             placeholder="Buscar búsquedas..."
-                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 transition-all duration-200 hover:border-slate-300"
                         />
                     </div>
                 </div>
@@ -302,67 +325,52 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                             category: prev.category === category.id ? null : category.id,
                                         }))
                                     }
-                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${filters.category === category.id
-                                    ? 'bg-blue-500 text-white shadow-sm'
-                                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                                className={`px-4 py-2.5 text-sm font-semibold transition-all duration-200 border ${filters.category === category.id
+                                    ? 'bg-slate-800 text-white border-slate-800 shadow-lg'
+                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                                         }`}
                                 >
-                                    <CategoryIcon categoryId={category.id} size="sm" />
                                     {category.name}
                                 </button>
                             ))}
 
-                        {/* Status filter - single toggle button */}
+                        {/* Status filter - professional toggle */}
                         <button
                             onClick={() => setFilters((prev) => ({ 
                                 ...prev, 
                                 status: prev.status === 'active' ? 'inactive' : 'active' 
                             }))}
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                            className={`px-4 py-2.5 text-sm font-semibold transition-all duration-200 border ${
                                 filters.status === 'active'
-                                    ? 'bg-green-500 text-white shadow-sm'
-                                    : 'bg-gray-500 text-white shadow-sm'
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg'
+                                    : 'bg-slate-600 text-white border-slate-600 shadow-lg'
                             }`}
                         >
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                                filters.status === 'active' ? 'bg-white' : 'bg-white'
-                            }`}></span>
                             {filters.status === 'active' ? 'Activas' : 'Inactivas'}
                         </button>
-
-                        {/* Clear filters */}
-                        {(filters.search || filters.category !== null || filters.status !== 'active') && (
-                            <button
-                                onClick={clearFilters}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-all"
-                            >
-                            <X className="w-3 h-3" />
-                            Limpiar
-                            </button>
-                        )}
                 </div>
             </div>
 
             {/* Results count */}
-            <div className="flex items-center justify-between mb-4">
-                <div className="text-sm font-medium text-gray-900">
+            <div className="flex items-center justify-between mb-6">
+                <div className="text-sm font-semibold text-slate-700">
                     {filteredSearches.length} {filteredSearches.length === 1 ? 'búsqueda' : 'búsquedas'}
-                    <span className="text-gray-500 ml-1">• {searchesList.filter(s => getActivityStatus(s) === 'Activa').length} activas</span>
+                    <span className="text-slate-500 ml-2 font-normal">• {searchesList.filter(s => getActivityStatus(s) === 'Activa').length} activas</span>
                 </div>
             </div>
 
             {filteredSearches.length === 0 ? (
-                <div className="text-center py-16 bg-white border border-gray-200 rounded">
-                    <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center mx-auto mb-4">
-                        <Search className="w-6 h-6 text-gray-400" />
+                <div className="text-center py-16 bg-white border border-slate-200">
+                    <div className="w-12 h-12 bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                        <Search className="w-6 h-6 text-slate-400" />
                     </div>
-                    <h3 className="text-base font-medium text-gray-900 mb-1">No se encontraron búsquedas</h3>
-                    <p className="text-gray-500 text-sm">Prueba con otros filtros o crea una nueva búsqueda</p>
+                    <h3 className="text-base font-semibold text-slate-900 mb-1">No se encontraron búsquedas</h3>
+                    <p className="text-slate-500 text-sm">Prueba con otros filtros o crea una nueva búsqueda</p>
                 </div>
             ) : (viewMode === 'grid' || isMobile) ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                     {filteredSearches.map((search) => {
-                        const hasUnreadMessages = false; // TODO: Implementar cuando esté disponible en el tipo
+                        const hasUnreadMessages = search.unreadMessagesCount > 0;
 
                         return (
                             <div
@@ -394,9 +402,31 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                 <CheckCircle className="w-3 h-3 text-green-600" />
                                                 </div>
                                             )}
-                                            {hasUnreadMessages && (
-                                            <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
-                                                <MessageSquare className="w-3 h-3 text-red-600" />
+                                            <div className="relative">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                                    hasUnreadMessages 
+                                                        ? 'bg-red-100' 
+                                                        : 'bg-gray-100'
+                                                }`}>
+                                                    <MessageSquare className={`w-3 h-3 ${
+                                                        hasUnreadMessages 
+                                                            ? 'text-red-600' 
+                                                            : 'text-gray-400'
+                                                    }`} />
+                                                </div>
+                                                {search.unreadMessagesCount > 0 && (
+                                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                                                        {search.unreadMessagesCount > 9 ? '9+' : search.unreadMessagesCount}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {search.hasPendingAppointment ? (
+                                            <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center" title={getAppointmentStatusText(search.pendingAppointmentStatus)}>
+                                                <Calendar className="w-3 h-3 text-orange-600" />
+                                                </div>
+                                            ) : (
+                                            <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center" title="Sin cita contratada">
+                                                <CalendarX className="w-3 h-3 text-gray-500" />
                                                 </div>
                                             )}
                                         </div>
@@ -408,13 +438,24 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                         <CategoryIcon categoryId={search.category} size="sm" />
                                         <span>{Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'}</span>
                                     </div>
-                                    <div className="text-gray-500">
-                                                {new Date(search.createdAt).toLocaleDateString('es-ES', { 
-                                                    day: 'numeric', 
-                                            month: 'short' 
-                                                })}
+                                    
+                                    {/* Location and Date - Right Side */}
+                                    <div className="flex flex-col items-end gap-2 text-sm text-gray-600">
+                                        {search.locationName && (
+                                            <div className="flex items-center gap-2">
+                                                <MapPin className="w-4 h-4 text-gray-500" />
+                                                <span className="truncate max-w-32">{search.locationName}</span>
                                             </div>
+                                        )}
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="w-4 h-4 text-gray-500" />
+                                            <span>{new Date(search.createdAt).toLocaleDateString('es-ES', { 
+                                                day: 'numeric', 
+                                                month: 'short' 
+                                            })}</span>
                                         </div>
+                                    </div>
+                                </div>
                                 
                                 {/* Status and Expert */}
                                 <div className="flex items-center justify-between">
@@ -476,13 +517,35 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filteredSearches.map((search) => {
-                                const hasUnreadMessages = false; // TODO: Implementar cuando esté disponible en el tipo
+                                const hasUnreadMessages = search.unreadMessagesCount > 0;
 
                                 return (
                                     <tr key={search.id} onClick={() => handleSearchClick(search.id)} className="hover:bg-blue-50/30 cursor-pointer transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                {hasUnreadMessages && <MessageSquare className="w-4 h-4 text-red-500" />}
+                                                <div className="flex items-center gap-1">
+                                                    <div className="relative">
+                                                        <MessageSquare className={`w-4 h-4 ${
+                                                            hasUnreadMessages 
+                                                                ? 'text-red-500' 
+                                                                : 'text-gray-400'
+                                                        }`} />
+                                                        {search.unreadMessagesCount > 0 && (
+                                                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                                                                {search.unreadMessagesCount > 9 ? '9+' : search.unreadMessagesCount}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {search.hasPendingAppointment ? (
+                                                        <div title={getAppointmentStatusText(search.pendingAppointmentStatus)}>
+                                                            <Calendar className="w-4 h-4 text-orange-500" />
+                                                        </div>
+                                                    ) : (
+                                                        <div title="Sin cita contratada">
+                                                            <CalendarX className="w-4 h-4 text-gray-400" />
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="text-sm font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
                                                         {search.title}
@@ -510,14 +573,22 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-sm text-gray-600">
-                                                {new Date(search.createdAt).toLocaleDateString('es-ES', { 
-                                                    day: 'numeric', 
-                                                    month: 'short', 
-                                                    year: 'numeric' 
-                                                })}
-                                                </span>
-                                            </td>
+                                            <div className="flex flex-col items-end gap-2">
+                                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                    <Calendar className="w-4 h-4 text-gray-500" />
+                                                    <span>{new Date(search.createdAt).toLocaleDateString('es-ES', { 
+                                                        day: 'numeric', 
+                                                        month: 'short' 
+                                                    })}</span>
+                                                </div>
+                                                {search.locationName && (
+                                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                        <MapPin className="w-4 h-4 text-gray-500" />
+                                                        <span className="truncate max-w-28">{search.locationName}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4">
                                             {search.searchHire?.expert ? (
                                                 <div className="flex items-center gap-2">

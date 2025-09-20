@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, ArrowRight, ArrowLeft, Search, X, Radar, DollarSign, Settings } from 'lucide-react';
+import { ArrowRight, Search, X, Radar, DollarSign, Settings } from 'lucide-react';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 
@@ -98,6 +98,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         minPrice: '',
         maxPrice: '',
         address: '',
+        locationName: '', // ✅ NUEVO: Nombre de la ubicación
     };
 
     const [formData, setFormData] = useState(initialFormState);
@@ -105,20 +106,80 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [circle, setCircle] = useState<google.maps.Circle | null>(null);
     const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager | null>(null);
     
+    // Función para extraer ciudad y código postal de la dirección
+    const extractCityAndPostalCode = (address: string): string => {
+        try {
+            // Dividir la dirección por comas
+            const parts = address.split(',').map(part => part.trim());
+            
+            let city = '';
+            let postalCode = '';
+            
+            // Buscar la ciudad y código postal
+            for (let i = parts.length - 1; i >= 0; i--) {
+                const part = parts[i];
+                
+                // Si contiene código postal, extraer ambos
+                if (part.match(/\d{5}/)) {
+                    // Ejemplo: "42001 Soria" -> postalCode: "42001", city: "Soria"
+                    const postalMatch = part.match(/(\d{5})\s+(.+)/);
+                    if (postalMatch) {
+                        postalCode = postalMatch[1].trim();
+                        city = postalMatch[2].trim();
+                        break;
+                    }
+                }
+                
+                // Si es una parte que parece ciudad (no contiene palabras de calle)
+                if (part.length > 3 && part.length < 30 && 
+                    !part.match(/^\d/) && 
+                    !part.match(/(Calle|Avenida|Plaza|Paseo|Carrera|Boulevard|Ronda|Camino|Vía|España)/i)) {
+                    city = part;
+                }
+            }
+            
+            // Si no encontramos ciudad específica, usar la penúltima parte (antes de "España")
+            if (!city && parts.length >= 2) {
+                const beforeLast = parts[parts.length - 2];
+                if (beforeLast && !beforeLast.match(/(España|Spain)/i)) {
+                    city = beforeLast;
+                }
+            }
+            
+            // Formatear: "Ciudad, Código Postal" o solo "Ciudad" si no hay código postal
+            if (city && postalCode) {
+                return `${city}, ${postalCode}`;
+            } else if (city) {
+                return city;
+            } else {
+                return 'Ubicación'; // Fallback a "Ubicación" si no se encuentra ciudad
+            }
+        } catch (error) {
+            console.error('Error extracting city and postal code:', error);
+            return 'Ubicación'; // Fallback a "Ubicación"
+        }
+    };
+
     // Función para actualizar la ubicación y sincronizar todos los elementos del mapa
     const updateLocationAndMap = (newLocation: { lat: number; lng: number }, address?: string) => {
         setSelectedLocation(newLocation);
         
+        let locationName = '';
+        
         if (address) {
             setSelectedAddress(address);
             setSearchAddress(address);
+            // ✅ NUEVO: Extraer ciudad y código postal automáticamente
+            locationName = extractCityAndPostalCode(address);
+            console.log('📍 Location extracted:', { address, locationName }); // Debug log
         }
         
         setFormData(prev => ({
             ...prev,
             latitude: newLocation.lat.toString(),
             longitude: newLocation.lng.toString(),
-            ...(address && { address })
+            ...(address && { address }),
+            locationName // ✅ NUEVO: Rellenar automáticamente el nombre de ubicación
         }));
 
         // Actualizar mapa
@@ -302,8 +363,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             brandId: null,
             modelId: null,
             platformIds: [1, 2],
-            serviceTypeId
+            serviceTypeId,
+            locationName: formData.locationName || selectedAddress // ✅ NUEVO: Incluir nombre de ubicación
         };
+
+        console.log('🚀 Sending search data:', { 
+            locationName: searchParameterData.locationName,
+            formDataLocationName: formData.locationName,
+            selectedAddress 
+        }); // Debug log
 
         onComplete(searchParameterData);
     };
@@ -664,6 +732,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         </div>
                     </div>
                 </div>
+
 
                 {error && (
                     <div className="text-red-600 text-sm bg-red-50 border border-red-200 px-4 py-3 rounded-lg flex items-center gap-2">

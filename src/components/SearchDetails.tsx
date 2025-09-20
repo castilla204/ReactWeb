@@ -17,7 +17,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAppointments } from '../hooks/useAppointments';
 import AppointmentForm from './AppointmentForm';
 import AppointmentStatus from './AppointmentStatus';
-import { Appointment, ProposeAppointmentDto, ConfirmAppointmentDto, RejectAppointmentDto, CancelAppointmentDto, MarkCompletedDto } from '../types/appointment';
+import RejectAppointmentModal from './RejectAppointmentModal';
+import { Appointment, ProposeAppointmentDto, ConfirmAppointmentDto, RejectAppointmentDto, CancelAppointmentDto } from '../types/appointment';
+
+// Imports para distribución de dinero
+import { useMoneyDistribution } from '../hooks/useMoneyDistribution';
+import MoneyDistributionInfo from './MoneyDistributionInfo';
 
 interface Category {
     id: number;
@@ -101,6 +106,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const [showAppointmentForm, setShowAppointmentForm] = useState(false);
     const [appointmentData, setAppointmentData] = useState<any>(null);
     const [timeRemaining, setTimeRemaining] = useState<string>('00:00:00');
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [appointmentToReject, setAppointmentToReject] = useState<Appointment | null>(null);
+    
+    // Estado para mostrar información de porcentajes
+    const [showMoneyDistribution, setShowMoneyDistribution] = useState(false);
+    const [selectedDistributionStatus, setSelectedDistributionStatus] = useState<string>('');
 
     // Prevent body scroll when chat is active on mobile
     useEffect(() => {
@@ -145,10 +156,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         confirmAppointment, 
         rejectAppointment, 
         cancelAppointment, 
-        markCompleted,
-        isProposing
+        isProposing,
+        isRejecting
     } = useAppointments();
-
+    
     const searchQuery = getSearch(searchId);
     // Only fetch service if we have a valid searchHire ID
     const hireId = searchQuery.data?.searchHire?.id;
@@ -166,6 +177,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     
     // Obtener información del servicio directamente desde searchHire (optimizado)
     const serviceInfo = searchQuery.data?.searchHire?.service;
+    
+    // Hook para obtener configuración de distribución de dinero (después de serviceInfo)
+    const { config: moneyDistributionConfig, isLoading: isLoadingMoneyConfig, error: moneyConfigError } = useMoneyDistribution(
+        selectedDistributionStatus,
+        searchQuery.data?.category, // categoryId
+        serviceInfo?.serviceTypeCategoryId
+    );
     
     // Opción 1: Verificar por serviceTypeCategoryId (1 o 2)
     const isAppointmentCategory = serviceInfo?.serviceTypeCategoryId === 1 || serviceInfo?.serviceTypeCategoryId === 2;
@@ -471,6 +489,97 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         });
     };
 
+    // Función para verificar si se puede proponer una cita
+    const canProposeAppointment = () => {
+        // Si ya existe una cita, verificar su estado
+        if (appointmentQuery.data) {
+            const validAppointmentStatuses = ['awaiting_appointment', 'appointment_rejected', 'appointment_cancelled_by_client'];
+            const canPropose = validAppointmentStatuses.includes(appointmentQuery.data.status);
+            console.log('[SearchDetails] Can propose appointment (existing appointment):', {
+                appointmentStatus: appointmentQuery.data.status,
+                validStatuses: validAppointmentStatuses,
+                canPropose
+            });
+            return canPropose;
+        }
+        
+        // Si no existe cita, verificar que el SearchHire esté en un estado válido para crear citas
+        const validHireStatuses = ['pending']; // Estado donde se puede proponer cita inicial
+        const currentHireStatus = searchQuery.data?.searchHire?.status;
+        const canPropose = currentHireStatus ? validHireStatuses.includes(currentHireStatus) : false;
+        console.log('[SearchDetails] Can propose appointment (no appointment):', {
+            hireStatus: currentHireStatus,
+            validStatuses: validHireStatuses,
+            canPropose,
+            hasSearchHire: !!searchQuery.data?.searchHire,
+            needsAppointment,
+            isClient
+        });
+        return canPropose;
+    };
+
+    // Función para manejar la confirmación del rechazo desde el modal
+    const handleRejectConfirm = async (reason: string) => {
+        if (!appointmentToReject) return;
+        
+        try {
+            const rejectData: RejectAppointmentDto = {
+                appointmentId: appointmentToReject.id,
+                reason: reason
+            };
+            
+            await rejectAppointment(rejectData);
+            
+            setNotifications(prev => [...prev, {
+                id: uuidv4(),
+                type: 'success',
+                message: 'Cita rechazada exitosamente'
+            }]);
+            
+            // Cerrar modal y limpiar estado
+            setShowRejectModal(false);
+            setAppointmentToReject(null);
+            
+            // Recargar datos
+            appointmentQuery.refetch();
+            searchQuery.refetch();
+            
+        } catch (error) {
+            console.error('Error al rechazar cita:', error);
+            setNotifications(prev => [...prev, {
+                id: uuidv4(),
+                type: 'error',
+                message: 'Error al rechazar la cita'
+            }]);
+        }
+    };
+
+    // Función para mostrar información de porcentajes antes de rechazar
+    const showRejectionInfo = (appointment: Appointment) => {
+        if (appointment.rejectionCount >= 1) {
+            // Si es el segundo rechazo, mostrar configuración de cancelación
+            setSelectedDistributionStatus('appointment_cancelled_by_expert_rejection');
+        } else {
+            // Si es el primer rechazo, no hay reembolso
+            setSelectedDistributionStatus('appointment_rejected');
+        }
+        setShowMoneyDistribution(true);
+        setAppointmentToReject(appointment);
+    };
+
+    // Función para mostrar información de porcentajes antes de cancelar
+    const showCancellationInfo = (appointment: Appointment) => {
+        if (appointment.cancellationCount >= 1) {
+            // Si es la segunda cancelación del cliente
+            setSelectedDistributionStatus('appointment_cancelled_by_client_second');
+        } else {
+            // Si es la primera cancelación, no hay reembolso
+            setSelectedDistributionStatus('appointment_cancelled_by_client');
+        }
+        setShowMoneyDistribution(true);
+        setAppointmentToReject(appointment);
+    };
+
     // Funciones para manejar acciones de citas
     const handleAppointmentAction = async (action: string, appointment: Appointment) => {
         try {
@@ -478,6 +587,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 case 'propose':
                     setAppointmentData(appointment);
                     setShowAppointmentForm(true);
+                    break;
+                    
+                case 'chat':
+                    // Abrir el chat con el experto
+                    setModalState(prev => ({ ...prev, showChatModal: true }));
                     break;
                     
                 case 'confirm':
@@ -495,53 +609,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     break;
                     
                 case 'reject':
-                    const reason = prompt('Razón del rechazo:');
-                    if (reason) {
-                        const rejectData: RejectAppointmentDto = {
-                            appointmentId: appointment.id,
-                            reason: reason
-                        };
-                        await rejectAppointment(rejectData);
-                        setNotifications(prev => [...prev, {
-                            id: uuidv4(),
-                            type: 'success',
-                            message: 'Cita rechazada'
-                        }]);
-                        appointmentQuery.refetch();
-                    }
+                    // Mostrar información de porcentajes antes de rechazar
+                    showRejectionInfo(appointment);
                     break;
                     
                 case 'cancel':
-                    const cancelReason = prompt('Razón de la cancelación:');
-                    if (cancelReason) {
-                        const cancelData: CancelAppointmentDto = {
-                            appointmentId: appointment.id,
-                            reason: cancelReason
-                        };
-                        await cancelAppointment(cancelData);
-                        setNotifications(prev => [...prev, {
-                            id: uuidv4(),
-                            type: 'success',
-                            message: 'Cita cancelada'
-                        }]);
-                        appointmentQuery.refetch();
-                    }
+                    // Mostrar información de porcentajes antes de cancelar
+                    showCancellationInfo(appointment);
                     break;
                     
-                case 'markCompleted':
-                    const notes = prompt('Notas sobre la cita (opcional):');
-                    const completeData: MarkCompletedDto = {
-                        appointmentId: appointment.id,
-                        notes: notes || undefined
-                    };
-                    await markCompleted(completeData);
-                    setNotifications(prev => [...prev, {
-                        id: uuidv4(),
-                        type: 'success',
-                        message: 'Cita marcada como completada'
-                    }]);
-                    appointmentQuery.refetch();
-                    break;
             }
         } catch (error) {
             console.error('Error en acción de cita:', error);
@@ -556,6 +632,34 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const handleProposalSubmit = async (data: ProposeAppointmentDto) => {
         try {
             if (appointmentData) {
+                console.log('[SearchDetails] Proposing appointment with data:', {
+                    searchHireId: appointmentData.searchHireId,
+                    appointmentData: data,
+                    searchHireStatus: searchQuery.data?.searchHire?.status,
+                    appointmentStatus: appointmentQuery.data?.status,
+                    hasExistingAppointment: !!appointmentQuery.data
+                });
+                
+                // Verificar si se puede proponer una cita
+                if (!canProposeAppointment()) {
+                    const currentHireStatus = searchQuery.data?.searchHire?.status;
+                    const currentAppointmentStatus = appointmentQuery.data?.status;
+                    
+                    let errorMessage = 'No se puede proponer cita.';
+                    if (appointmentQuery.data) {
+                        errorMessage += ` Estado de cita actual: ${currentAppointmentStatus}. Estados válidos: awaiting_appointment, appointment_rejected, appointment_cancelled_by_client`;
+                    } else {
+                        errorMessage += ` Estado de contratación actual: ${currentHireStatus}. Estados válidos: pending`;
+                    }
+                    
+                    setNotifications(prev => [...prev, {
+                        id: uuidv4(),
+                        type: 'error',
+                        message: errorMessage
+                    }]);
+                    return;
+                }
+                
                 await proposeAppointment(appointmentData.searchHireId, data);
                 setNotifications(prev => [...prev, {
                     id: uuidv4(),
@@ -780,7 +884,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             )}
 
                             {/* Botón para proponer cita inicial - Mobile */}
-                            {needsAppointment && !appointmentQuery.data && searchQuery.data?.searchHire && isClient && (
+                            {needsAppointment && !appointmentQuery.data && searchQuery.data?.searchHire && isClient && canProposeAppointment() && (
                                 <div className="fixed inset-x-0 bottom-0 z-40 p-2 bg-white border-t border-gray-200">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
@@ -1121,7 +1225,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             userRole={isClient ? 'client' : 'expert'}
                                                             onAction={handleAppointmentAction}
                                                         />
-                                                    ) : searchQuery.data?.searchHire && isClient ? (
+                                                    ) : searchQuery.data?.searchHire && isClient && canProposeAppointment() ? (
                                                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                                             <div className="flex items-center space-x-3">
                                                                 <Calendar className="w-6 h-6 text-blue-600" />
@@ -1207,7 +1311,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
 
                                     {/* Modern Appointment Action Bar */}
-                                    {needsAppointment && !appointmentQuery.data && (
+                                    {needsAppointment && !appointmentQuery.data && isClient && canProposeAppointment() && (
                                         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
@@ -1768,6 +1872,111 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     }}
                     isLoading={isProposing}
                 />
+            )}
+
+            {/* Modal para rechazar cita */}
+            <RejectAppointmentModal
+                isOpen={showRejectModal}
+                onClose={() => {
+                    setShowRejectModal(false);
+                    setAppointmentToReject(null);
+                }}
+                onConfirm={handleRejectConfirm}
+                appointment={appointmentToReject}
+                isLoading={isRejecting}
+            />
+
+            {/* Modal para mostrar información de distribución de dinero */}
+            {showMoneyDistribution && appointmentToReject && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto p-6 relative">
+                        <button 
+                            onClick={() => {
+                                setShowMoneyDistribution(false);
+                                setAppointmentToReject(null);
+                                setSelectedDistributionStatus('');
+                            }} 
+                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                        
+                        <h3 className="text-xl font-semibold text-gray-900 mb-6">
+                            Información de Distribución de Dinero
+                        </h3>
+
+                        <MoneyDistributionInfo
+                            config={moneyDistributionConfig}
+                            status={selectedDistributionStatus}
+                            isLoading={isLoadingMoneyConfig}
+                            error={moneyConfigError}
+                            className="mb-6"
+                        />
+
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => {
+                                    setShowMoneyDistribution(false);
+                                    setAppointmentToReject(null);
+                                    setSelectedDistributionStatus('');
+                                }}
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors text-sm font-medium"
+                            >
+                                Cerrar
+                            </button>
+                            
+                            {selectedDistributionStatus === 'appointment_cancelled_by_expert_rejection' && (
+                                <button
+                                    onClick={() => {
+                                        setShowMoneyDistribution(false);
+                                        setShowRejectModal(true);
+                                    }}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
+                                >
+                                    Continuar con Rechazo
+                                </button>
+                            )}
+                            
+                            {selectedDistributionStatus === 'appointment_cancelled_by_client_second' && (
+                                <button
+                                    onClick={async () => {
+                                        const cancelReason = prompt('Razón de la cancelación:');
+                                        if (cancelReason) {
+                                            try {
+                                                const cancelData: CancelAppointmentDto = {
+                                                    appointmentId: appointmentToReject.id,
+                                                    reason: cancelReason
+                                                };
+                                                await cancelAppointment(cancelData);
+                                                setNotifications(prev => [...prev, {
+                                                    id: uuidv4(),
+                                                    type: 'success',
+                                                    message: 'Cita cancelada exitosamente'
+                                                }]);
+                                                appointmentQuery.refetch();
+                                                setShowMoneyDistribution(false);
+                                                setAppointmentToReject(null);
+                                                setSelectedDistributionStatus('');
+                                            } catch (error) {
+                                                console.error('Error al cancelar cita:', error);
+                                                setNotifications(prev => [...prev, {
+                                                    id: uuidv4(),
+                                                    type: 'error',
+                                                    message: 'Error al cancelar la cita'
+                                                }]);
+                                            }
+                                        }
+                                    }}
+                                    className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors text-sm font-medium"
+                                >
+                                    Continuar con Cancelación
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
 
             <ReviewModal
