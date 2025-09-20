@@ -24,6 +24,7 @@ export interface SearchParameters {
     strictMatchOnly?: boolean;
     brandId?: number;
     modelId?: number;
+    locationName?: string; // ✅ NUEVO: Nombre de la ubicación
     platformIds?: number[];
 }
 
@@ -177,6 +178,7 @@ export default function SearchForm({
                 modelId: parameters.modelId || null,
                 serviceTypeId: parameters.serviceTypeId || null,
                 platformIds: parameters.platformIds || [],
+                locationName: parameters.locationName, // ✅ NUEVO: Incluir nombre de ubicación
             };
 
             const response = await createSearchWithHire.mutateAsync({

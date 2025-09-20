@@ -35,12 +35,17 @@ export interface SearchItem {
     createdAt: string;
     startDate: string;
     userId: number;
+    locationName?: string; // ✅ NUEVO: Nombre de la ubicación
     searchHire?: SearchHire;
     user?: {
         email: string;
         name: string;
         profilePictureUrl?: string;
     };
+    // ✅ NUEVOS: Indicadores de notificaciones
+    unreadMessagesCount: number; // Número de mensajes sin leer
+    hasPendingAppointment: boolean; // Si hay cita pendiente
+    pendingAppointmentStatus?: string; // Estado de la cita pendiente
 }
 
 export interface SearchParameters {
@@ -59,6 +64,7 @@ export interface SearchParameters {
     serviceTypeId: number | null;
     brandId: number | null;
     modelId: number | null;
+    locationName?: string; // ✅ NUEVO: Nombre de la ubicación
 }
 
 export interface SearchResult {

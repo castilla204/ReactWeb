@@ -8,6 +8,7 @@ export type AppointmentStatus =
   | "appointment_cancelled_by_client"         // Primera cancelación del cliente
   | "appointment_cancelled_by_client_second"  // Segunda cancelación del cliente
   | "appointment_cancelled_by_expert"         // Experto cancela voluntariamente
+  | "appointment_cancelled_by_expert_rejection" // Experto rechazó 2 veces (cancelación por rechazos)
   | "appointment_cancelled_by_no_response"    // Cliente no propuso en tiempo
   | "appointment_completed";                  // Cita realizada exitosamente
 
@@ -43,6 +44,9 @@ export interface Appointment {
   location: string;            // "Calle Mayor 123, Madrid"
   latitude?: number;           // 40.4168
   longitude?: number;          // -3.7038
+  doorNumber?: string;         // "Portal A, 2ºB"
+  ownerPhone?: string;         // "+34 666 123 456"
+  siteDetails?: string;        // "Entrada por el garaje, timbre roto"
   
   // Información de disputas
   disputeReason?: string;      // Razón de la disputa
@@ -81,8 +85,11 @@ export interface ProposeAppointmentDto {
   proposedDate: string;    // "2024-01-15" (YYYY-MM-DD)
   proposedTime: string;    // "14:30:00" (HH:mm:ss)
   location: string;        // "Calle Mayor 123, Madrid"
-  latitude?: number;       // 40.4168
-  longitude?: number;      // -3.7038
+  latitude?: number | null;       // 40.4168
+  longitude?: number | null;      // -3.7038
+  doorNumber?: string | null;     // "Portal A, 2ºB"
+  ownerPhone?: string | null;     // "+34 666 123 456"
+  siteDetails?: string | null;    // "Entrada por el garaje, timbre roto"
 }
 
 export interface ConfirmAppointmentDto {
@@ -100,10 +107,6 @@ export interface CancelAppointmentDto {
   reason: string;          // Razón obligatoria de la cancelación
 }
 
-export interface MarkCompletedDto {
-  appointmentId: number;
-  notes?: string;          // Notas opcionales sobre la cita
-}
 
 // Respuestas de la API
 export interface AppointmentResponse {
@@ -132,3 +135,4 @@ export interface MoneyDistribution {
   expert: number;
   platform: number;
 }
+

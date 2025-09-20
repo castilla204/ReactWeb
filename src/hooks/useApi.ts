@@ -50,6 +50,17 @@ export const useApi = () => {
                 });
             }
 
+            // Log response for debugging appointment proposal calls
+            if (endpoint.includes('appointment/propose')) {
+                console.log('[useApi] Appointment Proposal Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    responseText: responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''),
+                    requestBody: config.body
+                });
+            }
+
             // Handle 204 No Content responses
             if (response.status === 204) {
                 return null as T;
@@ -74,6 +85,8 @@ export const useApi = () => {
         } catch (error) {
             console.error('API Error:', {
                 url,
+                method: fetchConfig.method,
+                body: config.body,
                 response: responseText,
                 error
             });
