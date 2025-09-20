@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, MapPin, AlertTriangle, CheckCircle, XCircle, Timer } from 'lucide-react';
+import { Calendar, Clock, MapPin, AlertTriangle, CheckCircle, XCircle, Timer, Home, Phone, FileText, MessageCircle, RefreshCw } from 'lucide-react';
 import { Appointment } from '../types/appointment';
 import { 
   useAppointmentTimers, 
@@ -37,7 +37,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       case 'appointment_cancelled_by_no_response':
         return <XCircle className="w-5 h-5 text-red-600" />;
       case 'appointment_rejected':
-        return <XCircle className="w-5 h-5 text-red-600" />;
+        return <XCircle className="w-5 h-5 text-orange-600" />;
       default:
         return <Clock className="w-5 h-5 text-blue-600" />;
     }
@@ -46,8 +46,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
   const getActionButtons = () => {
     const buttons = [];
 
-    // Botón para proponer cita (solo clientes)
-    if (userRole === 'client' && ['awaiting_appointment', 'appointment_rejected', 'appointment_cancelled_by_client'].includes(appointment.status) && !isLocked) {
+    // Botón para proponer cita (solo clientes) - NO mostrar si ya hay sección específica para rechazada
+    if (userRole === 'client' && ['awaiting_appointment', 'appointment_cancelled_by_client'].includes(appointment.status) && !isLocked) {
       buttons.push(
         <button
           key="propose"
@@ -85,28 +85,61 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       );
     }
 
-    // Botón para cancelar
-    if (appointment.status === 'appointment_confirmed' && !isLocked) {
+    // Botón para cancelar (clientes)
+    if (appointment.status === 'appointment_confirmed' && !isLocked && userRole === 'client') {
+      buttons.push(
+        <div key="cancel-section" className="flex flex-col space-y-3">
+          <button
+            onClick={() => onAction('cancel', appointment)}
+            className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors text-sm font-medium"
+          >
+            Cancelar Cita
+          </button>
+          <div className="bg-orange-50 border border-orange-200 rounded-md p-3 max-w-sm">
+            <div className="flex items-start space-x-2">
+              <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></div>
+              <div className="text-xs text-orange-800">
+                <p className="font-medium mb-2">Política de cancelación:</p>
+                <div className="space-y-1">
+                  <p>
+                    <span className="font-medium">1ª cancelación:</span> Dinero retenido (puedes reprogramar)
+                  </p>
+                  <p>
+                    <span className="font-medium">2ª cancelación:</span> 90% reembolso, 8% experto, 2% plataforma
+                  </p>
+                </div>
+                {appointment.cancellationCount > 0 && (
+                  <div className="mt-2 p-2 bg-orange-100 rounded border border-orange-300">
+                    <p className="font-medium text-orange-900">
+                      Cancelaciones realizadas: {appointment.cancellationCount} de 2 máximo
+                    </p>
+                    {appointment.cancellationCount === 1 ? (
+                      <p className="text-orange-800">
+                        ⚠️ Próxima cancelación: Recibirás 90% de reembolso
+                      </p>
+                    ) : (
+                      <p className="text-orange-800">
+                        ✅ Has usado tu cancelación gratuita
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Botón para cancelar (expertos)
+    if (appointment.status === 'appointment_confirmed' && !isLocked && userRole === 'expert') {
       buttons.push(
         <button
           key="cancel"
           onClick={() => onAction('cancel', appointment)}
-          className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors text-sm"
+          className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors text-sm font-medium"
         >
-          Cancelar
-        </button>
-      );
-    }
-
-    // Botón para marcar como completada
-    if (appointment.status === 'appointment_confirmed') {
-      buttons.push(
-        <button
-          key="markCompleted"
-          onClick={() => onAction('markCompleted', appointment)}
-          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
-        >
-          Marcar Completada
+          Cancelar Cita
         </button>
       );
     }
@@ -136,6 +169,200 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
         )}
       </div>
 
+      {/* Mensaje específico para cita rechazada por el experto - VISTA CLIENTE */}
+      {appointment.status === 'appointment_rejected' && userRole === 'client' && (
+        <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <XCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-orange-800 mb-2">
+                Cita rechazada por el experto
+              </h4>
+              <p className="text-sm text-orange-700 mb-3">
+                El experto no pudo aceptar esta cita. Puedes proponer una nueva fecha y hora, o comunicarte con él para coordinar mejor.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => onAction('propose', appointment)}
+                  className="inline-flex items-center px-3 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Proponer Nueva Cita
+                </button>
+                <button
+                  onClick={() => onAction('chat', appointment)}
+                  className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Contactar por Chat
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mensaje específico para servicio cancelado por rechazos del experto */}
+      {appointment.status === 'appointment_cancelled_by_expert_rejection' && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <XCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-red-800 mb-2">
+                {userRole === 'expert' ? 'Servicio cancelado por rechazos' : 'Servicio cancelado - Experto rechazó 2 veces'}
+              </h4>
+              <div className="space-y-2 text-sm text-red-700">
+                <p>
+                  <strong>Rechazos realizados:</strong> {appointment.rejectionCount} de 2 máximo
+                </p>
+                <p>
+                  <strong>Estado:</strong> El servicio ha sido cancelado automáticamente
+                </p>
+                {userRole === 'client' && (
+                  <p>
+                    <strong>Reembolso:</strong> Recibirás el 100% del dinero de vuelta
+                  </p>
+                )}
+                {appointment.lastRejectionAt && (
+                  <p className="text-xs text-red-600">
+                    Último rechazo: {new Date(appointment.lastRejectionAt).toLocaleString('es-ES')}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Información para el experto sobre cancelaciones del cliente */}
+      {appointment.status === 'appointment_confirmed' && userRole === 'expert' && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-blue-800 mb-2">
+                Información sobre cancelaciones del cliente
+              </h4>
+              <div className="text-sm text-blue-700 space-y-2">
+                <p>
+                  <strong>El cliente puede cancelar esta cita:</strong>
+                </p>
+                <div className="ml-4 space-y-1">
+                  <p>
+                    • <strong>1ª cancelación:</strong> Dinero retenido (puede reprogramar en 24h) - Tú recibes 0%
+                  </p>
+                  <p>
+                    • <strong>2ª cancelación:</strong> Cliente recibe 90%, tú recibes 8%, plataforma 2%
+                  </p>
+                </div>
+                <p className="text-xs text-blue-600 mt-2">
+                  ⚠️ <strong>Restricción:</strong> El cliente NO puede cancelar menos de 12 horas antes de la cita
+                </p>
+                {appointment.cancellationCount > 0 && (
+                  <div className="mt-3 p-2 bg-blue-100 rounded border border-blue-300">
+                    <p className="font-medium text-blue-900 text-xs">
+                      Cancelaciones del cliente: {appointment.cancellationCount} de 2 máximo
+                    </p>
+                    {appointment.cancellationCount === 1 ? (
+                      <div className="space-y-1">
+                        <p className="text-blue-800 text-xs">
+                          ⚠️ Si cancela otra vez: Recibirás 8% del dinero
+                        </p>
+                        <p className="text-blue-800 text-xs">
+                          ⏰ Cliente tiene 24h para reprogramar la cita
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-blue-800 text-xs">
+                        ✅ Cliente ha usado su cancelación gratuita
+                      </p>
+                    )}
+                  </div>
+                )}
+                <div className="mt-3 p-3 bg-blue-100 rounded border border-blue-300">
+                  <p className="font-medium text-blue-900 text-xs mb-2">
+                    <strong>Si tú cancelas la cita:</strong>
+                  </p>
+                  <p className="text-blue-800 text-xs">
+                    • Cliente recibe 90% de reembolso
+                  </p>
+                  <p className="text-blue-800 text-xs">
+                    • Tú recibes 8% del dinero
+                  </p>
+                  <p className="text-blue-800 text-xs">
+                    • Plataforma recibe 2%
+                  </p>
+                </div>
+                <div className="mt-3 p-2 bg-blue-100 rounded border border-blue-300">
+                  <p className="font-medium text-blue-900 text-xs mb-1">
+                    <strong>Si el cliente no reprograma en 24h:</strong>
+                  </p>
+                  <p className="text-blue-800 text-xs">
+                    • Servicio cancelado automáticamente
+                  </p>
+                  <p className="text-blue-800 text-xs">
+                    • Cliente recibe 90%, tú recibes 8%, plataforma 2%
+                  </p>
+                </div>
+                <p className="text-xs text-blue-600 mt-2">
+                  💡 El cliente tiene 2 oportunidades de cancelación. Después de la segunda, el servicio se cancela definitivamente.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mensaje específico para cita rechazada por el experto - VISTA EXPERTO */}
+      {appointment.status === 'appointment_rejected' && userRole === 'expert' && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <XCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-red-800 mb-2">
+                Has rechazado esta cita
+              </h4>
+              <div className="space-y-2 text-sm text-red-700">
+                <p>
+                  <strong>Rechazos realizados:</strong> {appointment.rejectionCount} de 2 máximo
+                </p>
+                <p>
+                  <strong>Rechazos restantes:</strong> {Math.max(0, 2 - appointment.rejectionCount)}
+                </p>
+                {appointment.rejectionCount >= 2 ? (
+                  <div className="p-2 bg-red-100 rounded border border-red-300">
+                    <p className="font-medium text-red-800">
+                      ⚠️ Has alcanzado el límite de rechazos. El servicio se ha cancelado automáticamente.
+                    </p>
+                  </div>
+                ) : (
+                  <p>
+                    <strong>Próximo rechazo:</strong> Cancelará automáticamente el servicio
+                  </p>
+                )}
+                <p>
+                  <strong>Tiempo del cliente:</strong> Tiene 48 horas para proponer una nueva cita
+                </p>
+                {appointment.lastRejectionAt && (
+                  <p className="text-xs text-red-600">
+                    Rechazado el: {new Date(appointment.lastRejectionAt).toLocaleString('es-ES')}
+                  </p>
+                )}
+              </div>
+              <div className="mt-3">
+                <button
+                  onClick={() => onAction('chat', appointment)}
+                  className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Contactar al Cliente
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Información de la cita */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-3">
@@ -162,6 +389,27 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
             <MapPin className="w-4 h-4 mt-0.5" />
             <span className="text-sm">{appointment.location}</span>
           </div>
+          
+          {appointment.doorNumber && (
+            <div className="flex items-start space-x-2 text-gray-600">
+              <Home className="w-4 h-4 mt-0.5" />
+              <span className="text-sm">{appointment.doorNumber}</span>
+            </div>
+          )}
+          
+          {appointment.ownerPhone && (
+            <div className="flex items-start space-x-2 text-gray-600">
+              <Phone className="w-4 h-4 mt-0.5" />
+              <span className="text-sm">{appointment.ownerPhone}</span>
+            </div>
+          )}
+          
+          {appointment.siteDetails && (
+            <div className="flex items-start space-x-2 text-gray-600">
+              <FileText className="w-4 h-4 mt-0.5" />
+              <span className="text-sm">{appointment.siteDetails}</span>
+            </div>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -201,22 +449,59 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       )}
 
       {/* Distribución de dinero */}
-      {appointment.status !== 'awaiting_appointment' && (
-        <div className="bg-gray-50 rounded-md p-3">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Distribución del Dinero</h4>
-          <div className="grid grid-cols-3 gap-4 text-sm">
-            <div className="text-center">
-              <div className="text-gray-500">Cliente</div>
-              <div className="font-medium">€{moneyDistribution.client.toFixed(2)}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-gray-500">Experto</div>
-              <div className="font-medium">€{moneyDistribution.expert.toFixed(2)}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-gray-500">Plataforma</div>
-              <div className="font-medium">€{moneyDistribution.platform.toFixed(2)}</div>
-            </div>
+      {(moneyDistribution.client > 0 || moneyDistribution.expert > 0 || moneyDistribution.platform > 0) && (
+        <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
+            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+            Distribución del Dinero
+          </h4>
+          <div className="space-y-3">
+            {moneyDistribution.client > 0 && (
+              <div className="flex justify-between items-center p-3 bg-green-50 rounded-md border border-green-200">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span className="text-sm font-medium text-green-800">Cliente (reembolso)</span>
+                </div>
+                <span className="text-sm font-bold text-green-700">
+                  €{moneyDistribution.client.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {moneyDistribution.expert > 0 && (
+              <div className="flex justify-between items-center p-3 bg-blue-50 rounded-md border border-blue-200">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  <span className="text-sm font-medium text-blue-800">Experto</span>
+                </div>
+                <span className="text-sm font-bold text-blue-700">
+                  €{moneyDistribution.expert.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {moneyDistribution.platform > 0 && (
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md border border-gray-200">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-gray-500 rounded-full"></span>
+                  <span className="text-sm font-medium text-gray-800">Plataforma</span>
+                </div>
+                <span className="text-sm font-bold text-gray-700">
+                  €{moneyDistribution.platform.toFixed(2)}
+                </span>
+              </div>
+            )}
+          </div>
+          
+          {/* Información contextual */}
+          <div className="mt-4 p-3 bg-white rounded-md border border-gray-200">
+            <p className="text-xs text-gray-600">
+              {appointment.status === 'appointment_completed' ? (
+                <>✅ Servicio completado exitosamente</>
+              ) : appointment.status === 'appointment_cancelled_by_expert_rejection' ? (
+                <>⚠️ Cancelación por rechazos del experto - Cliente recibe reembolso completo</>
+              ) : (
+                <>ℹ️ Cancelación del servicio - Distribución según términos y condiciones</>
+              )}
+            </p>
           </div>
         </div>
       )}
@@ -244,3 +529,4 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
 };
 
 export default AppointmentStatus;
+

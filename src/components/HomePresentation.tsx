@@ -10,19 +10,34 @@ interface HomePresentationProps {
 const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     const { isAuthenticated } = useAuth();
     const [currentWord, setCurrentWord] = useState('coche');
-    const [opacity, setOpacity] = useState(1);
+    const [isGlitching, setIsGlitching] = useState(false);
+    const [glitchText, setGlitchText] = useState('coche');
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setOpacity(0); // Inicia el fundido
+            // Iniciar efecto glitch
+            setIsGlitching(true);
+            
+            // Generar texto glitch aleatorio
+            const glitchChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const glitchInterval = setInterval(() => {
+                const randomText = Array.from({ length: currentWord.length }, () => 
+                    glitchChars[Math.floor(Math.random() * glitchChars.length)]
+                ).join('');
+                setGlitchText(randomText);
+            }, 50);
+
+            // Después de 300ms, cambiar a la palabra real
             setTimeout(() => {
+                clearInterval(glitchInterval);
                 setCurrentWord((prev) => {
                     if (prev === 'coche') return 'casa';
                     if (prev === 'casa') return 'moto';
                     return 'coche';
                 });
-                setOpacity(1); // Finaliza el fundido
-            }, 500); // Duración del fundido
+                setGlitchText(currentWord);
+                setIsGlitching(false);
+            }, 300);
         }, 3000); // Cambia cada 3 segundos
 
         // Inyectar el widget de Elfsight dinámicamente
@@ -119,12 +134,13 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     <div className="text-center">
                                         <h1 className="text-2xl font-bold text-gray-900 leading-tight">
                                             <span className="block">Revisa tu{' '}
-                                                <span
-                                                    className="relative inline-block"
-                                                    style={{ opacity: opacity, transition: 'opacity 0.5s ease-in-out' }}
-                                                >
-                                                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-extrabold">
-                                                        {currentWord}
+                                                <span className="relative inline-block">
+                                                    <span 
+                                                        className={`bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-extrabold transition-all duration-300 ${
+                                                            isGlitching ? 'glitch-effect' : ''
+                                                        }`}
+                                                    >
+                                                        {isGlitching ? glitchText : currentWord}
                                                     </span>
                                                 </span>
                                             </span>
@@ -153,12 +169,13 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 {/* Título desktop */}
                                 <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-[1.1] tracking-tight">
                                     <div className="block">Revisa tu{' '}
-                                    <span
-                                        className="relative inline-block"
-                                        style={{ opacity: opacity, transition: 'opacity 0.5s ease-in-out' }}
-                                    >
-                                        <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-extrabold">
-                                            {currentWord}
+                                    <span className="relative inline-block">
+                                        <span 
+                                            className={`bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-extrabold transition-all duration-300 ${
+                                                isGlitching ? 'glitch-effect' : ''
+                                            }`}
+                                        >
+                                            {isGlitching ? glitchText : currentWord}
                                         </span>
                                     </span>
                                     </div>
@@ -276,6 +293,62 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
             </div>
 
             <style>{`
+                @keyframes glitch {
+                    0% { 
+                        transform: translate(0);
+                        filter: hue-rotate(0deg);
+                    }
+                    10% { 
+                        transform: translate(-2px, 2px);
+                        filter: hue-rotate(90deg);
+                    }
+                    20% { 
+                        transform: translate(2px, -2px);
+                        filter: hue-rotate(180deg);
+                    }
+                    30% { 
+                        transform: translate(-2px, -2px);
+                        filter: hue-rotate(270deg);
+                    }
+                    40% { 
+                        transform: translate(2px, 2px);
+                        filter: hue-rotate(360deg);
+                    }
+                    50% { 
+                        transform: translate(-2px, 2px);
+                        filter: hue-rotate(45deg);
+                    }
+                    60% { 
+                        transform: translate(2px, -2px);
+                        filter: hue-rotate(135deg);
+                    }
+                    70% { 
+                        transform: translate(-2px, -2px);
+                        filter: hue-rotate(225deg);
+                    }
+                    80% { 
+                        transform: translate(2px, 2px);
+                        filter: hue-rotate(315deg);
+                    }
+                    90% { 
+                        transform: translate(-2px, 2px);
+                        filter: hue-rotate(45deg);
+                    }
+                    100% { 
+                        transform: translate(0);
+                        filter: hue-rotate(0deg);
+                    }
+                }
+                
+                .glitch-effect {
+                    animation: glitch 0.3s ease-in-out;
+                    text-shadow: 
+                        2px 0 #ff0000,
+                        -2px 0 #00ff00,
+                        0 2px #0000ff,
+                        0 -2px #ffff00;
+                }
+                
                 @keyframes float {
                     0%, 100% { transform: translateY(0px); }
                     50% { transform: translateY(-20px); }

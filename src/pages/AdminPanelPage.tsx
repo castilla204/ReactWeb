@@ -1,13 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { UserManagement } from '../components/UserManagement';
-import { ArrowLeft } from 'lucide-react';
+import AdminPanel from '../components/AdminPanel';
+import NotificationManagement from '../components/NotificationManagement';
+import { ArrowLeft, Users, Settings, Bell } from 'lucide-react';
 import Background from '../components/Background';
 import { useAuth } from '../contexts/AuthContext';
 
 const AdminPanelPage: React.FC = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated, isLoading } = useAuth();
+    const [activeTab, setActiveTab] = useState<'users' | 'config' | 'notifications'>('users');
 
     useEffect(() => {
         console.log('AdminPanelPage - User:', user);
@@ -40,14 +43,77 @@ const AdminPanelPage: React.FC = () => {
         <div className="relative min-h-screen">
             <Background />
             <div className="relative z-10">
-                <button
-                    onClick={() => navigate('/')}
-                    className="ml-4 mt-4 flex items-center text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5 mr-2" />
-                    Volver
-                </button>
-                <UserManagement onBack={() => navigate('/')} />
+                {/* Header */}
+                <div className="bg-white border-b border-gray-200">
+                    <div className="max-w-7xl mx-auto px-6 py-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => navigate('/')}
+                                    className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+                                >
+                                    <ArrowLeft className="w-5 h-5 mr-2" />
+                                    Volver
+                                </button>
+                                <h1 className="text-2xl font-bold text-gray-900">Panel de Administración</h1>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabs */}
+                <div className="bg-white border-b border-gray-200">
+                    <div className="max-w-7xl mx-auto px-6">
+                        <nav className="-mb-px flex space-x-8">
+                            <button
+                                onClick={() => setActiveTab('users')}
+                                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                                    activeTab === 'users'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <Users className="w-4 h-4" />
+                                    <span>Gestión de Usuarios</span>
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('config')}
+                                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                                    activeTab === 'config'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <Settings className="w-4 h-4" />
+                                    <span>Configuración de Porcentajes</span>
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('notifications')}
+                                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                                    activeTab === 'notifications'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <Bell className="w-4 h-4" />
+                                    <span>Gestión de Notificaciones</span>
+                                </div>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="max-w-7xl mx-auto">
+                    {activeTab === 'users' && <UserManagement onBack={() => navigate('/')} />}
+                    {activeTab === 'config' && <AdminPanel />}
+                    {activeTab === 'notifications' && <NotificationManagement />}
+                </div>
             </div>
         </div>
     );

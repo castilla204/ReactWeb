@@ -42,13 +42,45 @@ export const useAppointments = () => {
       queryFn: () => fetchApi<Appointment>(API_CONFIG.endpoints.appointment.getBySearchHire(searchHireId)),
     });
 
+  // Función para limpiar los datos antes de enviar
+  const cleanAppointmentData = (data: ProposeAppointmentDto) => {
+    const cleaned: any = {
+      proposedDate: data.proposedDate,
+      proposedTime: data.proposedTime,
+      location: data.location
+    };
+    
+    // Solo incluir campos opcionales si tienen valores válidos
+    if (data.latitude !== undefined && data.latitude !== null) {
+      cleaned.latitude = data.latitude;
+    }
+    if (data.longitude !== undefined && data.longitude !== null) {
+      cleaned.longitude = data.longitude;
+    }
+    if (data.doorNumber !== undefined && data.doorNumber !== null && data.doorNumber.trim() !== '') {
+      cleaned.doorNumber = data.doorNumber.trim();
+    }
+    if (data.ownerPhone !== undefined && data.ownerPhone !== null && data.ownerPhone.trim() !== '') {
+      cleaned.ownerPhone = data.ownerPhone.trim();
+    }
+    if (data.siteDetails !== undefined && data.siteDetails !== null && data.siteDetails.trim() !== '') {
+      cleaned.siteDetails = data.siteDetails.trim();
+    }
+    
+    return cleaned;
+  };
+
   // Mutations
   const proposeAppointmentMutation = useMutation({
-    mutationFn: ({ searchHireId, data }: { searchHireId: number; data: ProposeAppointmentDto }) =>
-      fetchApi<Appointment>(API_CONFIG.endpoints.appointment.propose(searchHireId), {
+    mutationFn: ({ searchHireId, data }: { searchHireId: number; data: ProposeAppointmentDto }) => {
+      const cleanedData = cleanAppointmentData(data);
+      console.log('[useAppointments] Sending cleaned appointment data:', cleanedData);
+      
+      return fetchApi<Appointment>(API_CONFIG.endpoints.appointment.propose(searchHireId), {
         method: 'POST',
-        body: JSON.stringify(data),
-      }),
+        body: JSON.stringify(cleanedData),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointment'] });
@@ -103,20 +135,6 @@ export const useAppointments = () => {
     },
   });
 
-  const markCompletedMutation = useMutation({
-    mutationFn: (data: MarkCompletedDto) =>
-      fetchApi<Appointment>(API_CONFIG.endpoints.appointment.markCompleted, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['appointment'] });
-    },
-    onError: (error) => {
-      setError(error instanceof Error ? error.message : 'Error al marcar como completada');
-    },
-  });
 
   // Funciones de conveniencia
   const proposeAppointment = async (searchHireId: number, data: ProposeAppointmentDto) => {
@@ -155,14 +173,6 @@ export const useAppointments = () => {
     }
   };
 
-  const markCompleted = async (data: MarkCompletedDto) => {
-    try {
-      setError(null);
-      return await markCompletedMutation.mutateAsync(data);
-    } catch (err) {
-      throw err;
-    }
-  };
 
   return {
     // Queries
@@ -175,7 +185,6 @@ export const useAppointments = () => {
     confirmAppointment,
     rejectAppointment,
     cancelAppointment,
-    markCompleted,
     
     // Estados
     error,
@@ -186,7 +195,6 @@ export const useAppointments = () => {
     isConfirming: confirmAppointmentMutation.isPending,
     isRejecting: rejectAppointmentMutation.isPending,
     isCancelling: cancelAppointmentMutation.isPending,
-    isMarkingCompleted: markCompletedMutation.isPending,
   };
 };
 
@@ -341,8 +349,8 @@ export const calculateMoneyDistribution = (appointment: Appointment | null): Mon
     case "appointment_completed":
       return { 
         client: 0, 
-        expert: amount * 0.90, 
-        platform: amount * 0.10 
+        expert: amount * 0.95, 
+        platform: amount * 0.05 
       };
     
     case "appointment_cancelled_by_client":
@@ -356,9 +364,16 @@ export const calculateMoneyDistribution = (appointment: Appointment | null): Mon
     case "appointment_cancelled_by_expert":
     case "appointment_cancelled_by_no_response":
       return { 
-        client: amount * 0.92, 
+        client: amount * 0.90, 
         expert: amount * 0.08, 
-        platform: 0 
+        platform: amount * 0.02 
+      };
+    
+    case "appointment_cancelled_by_expert_rejection":
+      return { 
+        client: amount * 0.98, 
+        expert: 0, 
+        platform: amount * 0.02 
       };
     
     default:
@@ -372,12 +387,13 @@ export const calculateMoneyDistribution = (appointment: Appointment | null): Mon
 export const getAppointmentStatusText = (status: string): string => {
   const statusTexts: { [key: string]: string } = {
     'awaiting_appointment': 'Esperando propuesta del cliente',
-    'appointment_proposed': 'Cita propuesta - Esperando confirmación',
+    'appointment_proposed': 'Cita propuesta - Esperando confirmación del experto',
     'appointment_confirmed': 'Cita confirmada',
-    'appointment_rejected': 'Cita rechazada',
+    'appointment_rejected': 'Cita rechazada por el experto',
     'appointment_cancelled_by_client': 'Cancelada por cliente - Puede reprogramar',
     'appointment_cancelled_by_client_second': 'Cancelada por cliente (2ª vez)',
     'appointment_cancelled_by_expert': 'Cancelada por experto',
+    'appointment_cancelled_by_expert_rejection': 'Cancelada - Experto rechazó 2 veces',
     'appointment_cancelled_by_no_response': 'Cancelada por falta de respuesta',
     'appointment_completed': 'Cita completada'
   };
@@ -393,13 +409,15 @@ export const getAppointmentStatusColor = (status: string): string => {
     'awaiting_appointment': 'yellow',
     'appointment_proposed': 'blue',
     'appointment_confirmed': 'green',
-    'appointment_rejected': 'red',
+    'appointment_rejected': 'orange',
     'appointment_cancelled_by_client': 'orange',
     'appointment_cancelled_by_client_second': 'red',
     'appointment_cancelled_by_expert': 'red',
+    'appointment_cancelled_by_expert_rejection': 'red',
     'appointment_cancelled_by_no_response': 'gray',
     'appointment_completed': 'green'
   };
   
   return statusColors[status] || 'gray';
 };
+
