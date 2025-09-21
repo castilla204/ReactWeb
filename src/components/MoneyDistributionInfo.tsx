@@ -156,3 +156,4 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
 };
 
 export default MoneyDistributionInfo;
+

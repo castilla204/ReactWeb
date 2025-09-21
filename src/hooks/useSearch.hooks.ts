@@ -7,6 +7,7 @@ export interface SearchHire {
     id: number;
     expertId: number;
     status: string;
+    statusTranslated?: string; // ✅ NUEVO: Estado traducido del backend
     createdAt: string;
     expert?: {
         name: string;
@@ -46,6 +47,52 @@ export interface SearchItem {
     unreadMessagesCount: number; // Número de mensajes sin leer
     hasPendingAppointment: boolean; // Si hay cita pendiente
     pendingAppointmentStatus?: string; // Estado de la cita pendiente
+}
+
+// ✅ NUEVO: Interfaz para metadatos de paginación
+export interface PaginationMetadata {
+    currentPage: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasPrevious: boolean;
+    hasNext: boolean;
+}
+
+// ✅ NUEVO: Interfaz para estadísticas de usuario
+export interface UserStats {
+    activeSearches: number;
+    inactiveSearches: number;
+    searchesWithHire: number;
+    searchesWithoutHire: number;
+    unreadMessages: number;
+    pendingAppointments: number;
+}
+
+// ✅ NUEVO: Interfaz para la respuesta de admin (sin stats)
+export interface AdminSearchListResponse {
+    searches: SearchItem[];
+    pagination: PaginationMetadata;
+}
+
+// ✅ NUEVO: Interfaz para la respuesta de usuario (con stats)
+export interface UserSearchListResponse {
+    searches: SearchItem[];
+    pagination: PaginationMetadata;
+    stats: UserStats;
+}
+
+// ✅ COMPLETO: Interfaz para filtros de búsqueda (5 filtros principales)
+export interface SearchFilters {
+    page?: number;
+    pageSize?: number;
+    searchTerm?: string;        // ✅ Búsqueda por texto
+    category?: number;          // ✅ Filtro por categoría
+    isActive?: boolean;         // ✅ Filtrar por estado activo/inactivo
+    isRevised?: boolean;        // ✅ Filtrar por estado revisado/no revisado
+    searchHireStatus?: string;  // ✅ Filtrar por estado de contratación
+    sortBy?: string;
+    sortDirection?: 'asc' | 'desc';
 }
 
 export interface SearchParameters {
@@ -269,9 +316,37 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
         },
     });
 
+    // ✅ NUEVO: Hook para búsquedas con filtros y paginación (para admin y usuarios)
+    const useSearchesWithFilters = (filters: SearchFilters = {}, isAdmin: boolean = false, enabled: boolean = true) => {
+        return useQuery({
+            queryKey: ['searches', 'filtered', filters, isAdmin],
+            queryFn: async () => {
+                const params = new URLSearchParams();
+                Object.entries(filters).forEach(([key, value]) => {
+                    if (value !== null && value !== undefined && value !== '') {
+                        params.append(key, value.toString());
+                    }
+                });
+
+                // ✅ Usar endpoint correcto según el tipo de usuario
+                const endpoint = isAdmin ? API_CONFIG.endpoints.search.listAll : API_CONFIG.endpoints.search.list;
+                const url = `${endpoint}${params.toString() ? `?${params.toString()}` : ''}`;
+                
+                // ✅ Usar tipo correcto según el endpoint
+                if (isAdmin) {
+                    return fetchApi<AdminSearchListResponse>(url);
+                } else {
+                    return fetchApi<UserSearchListResponse>(url);
+                }
+            },
+            enabled: enableQueries && enabled,
+        });
+    };
+
     return {
         searches: searchesQuery,
         adminSearches: adminSearchesQuery,
+        searchesWithFilters: useSearchesWithFilters, // ✅ NUEVO: Hook unificado para admin y usuarios
         getSearch,
         getParameters,
         getResults,

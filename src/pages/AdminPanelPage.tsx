@@ -3,14 +3,15 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { UserManagement } from '../components/UserManagement';
 import AdminPanel from '../components/AdminPanel';
 import NotificationManagement from '../components/NotificationManagement';
-import { ArrowLeft, Users, Settings, Bell } from 'lucide-react';
+import { DisputePanel } from '../components/DisputePanel';
+import { ArrowLeft, Users, Settings, Bell, AlertTriangle } from 'lucide-react';
 import Background from '../components/Background';
 import { useAuth } from '../contexts/AuthContext';
 
 const AdminPanelPage: React.FC = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated, isLoading } = useAuth();
-    const [activeTab, setActiveTab] = useState<'users' | 'config' | 'notifications'>('users');
+    const [activeTab, setActiveTab] = useState<'users' | 'config' | 'notifications' | 'disputes'>('users');
 
     useEffect(() => {
         console.log('AdminPanelPage - User:', user);
@@ -104,6 +105,19 @@ const AdminPanelPage: React.FC = () => {
                                     <span>Gestión de Notificaciones</span>
                                 </div>
                             </button>
+                            <button
+                                onClick={() => setActiveTab('disputes')}
+                                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                                    activeTab === 'disputes'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <AlertTriangle className="w-4 h-4" />
+                                    <span>Panel de Disputas</span>
+                                </div>
+                            </button>
                         </nav>
                     </div>
                 </div>
@@ -113,6 +127,7 @@ const AdminPanelPage: React.FC = () => {
                     {activeTab === 'users' && <UserManagement onBack={() => navigate('/')} />}
                     {activeTab === 'config' && <AdminPanel />}
                     {activeTab === 'notifications' && <NotificationManagement />}
+                    {activeTab === 'disputes' && <DisputePanel />}
                 </div>
             </div>
         </div>
