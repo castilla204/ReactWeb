@@ -56,3 +56,4 @@ const PriorityBadge: React.FC<PriorityBadgeProps> = ({ type, className = '' }) =
 };
 
 export default PriorityBadge;
+

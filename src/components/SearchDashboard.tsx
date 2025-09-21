@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
     Search,
     ChevronRight,
@@ -16,8 +16,9 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useSearch } from '../hooks/useSearch.hooks';
-import type { SearchItem } from '../hooks/useSearch.hooks';
+import type { SearchItem, SearchFilters, PaginationMetadata } from '../hooks/useSearch.hooks';
 import { useNavigate } from 'react-router-dom';
+
 
 interface SearchDashboardProps {
     // onBack: () => void; // Opcional, lo eliminamos si no es necesario
@@ -52,26 +53,33 @@ const CategoryIcon: React.FC<{ categoryId: number; size?: 'sm' | 'md' | 'lg' }> 
 interface Filters {
     search: string;
     category: number | null;
-    status: 'all' | 'active' | 'inactive';
+    isActive: boolean | null;      // ✅ NUEVO: Estado activo/inactivo
+    isRevised: boolean | null;     // ✅ NUEVO: Estado revisado/no revisado
+    searchHireStatus: string;      // ✅ NUEVO: Estado de contratación
+    sortBy: string;
+    sortDirection: 'asc' | 'desc';
 }
 
 const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     const { user } = useAuth();
     const { categories } = useCategories();
     const {
-        searches: searchesQuery,
-        adminSearches: adminSearchesQuery,
+        searchesWithFilters, // ✅ NUEVO: Hook unificado con filtros
         reviseSearch: reviseSearchMutation,
     } = useSearch();
     const navigate = useNavigate();
-
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [filters, setFilters] = useState<Filters>({
         search: '',
         category: null,
-        status: 'active', // Default to active searches
+        isActive: null,           // ✅ NUEVO: null = todos, true = activas, false = inactivas
+        isRevised: null,          // ✅ NUEVO: null = todos, true = revisadas, false = no revisadas
+        searchHireStatus: '',     // ✅ NUEVO: Estado de contratación
+        sortBy: 'createdAt',
+        sortDirection: 'desc',
     });
+    const [pagination, setPagination] = useState<PaginationMetadata | null>(null); // ✅ NUEVO
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
@@ -85,32 +93,43 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         return () => window.removeEventListener('resize', checkIsMobile);
     }, []);
 
+
     const isAdmin = user?.email?.trim().toLowerCase() === 'dcastillaa@gmail.com'.toLowerCase();
-    const searchesData = isAdmin ? adminSearchesQuery : searchesQuery;
-    const loading = searchesData.isLoading;
-    const error = searchesData.error;
-    const searchesList: SearchItem[] = Array.isArray(searchesData.data) ? searchesData.data : [];
+    
+    // ✅ COMPLETO: Preparar filtros para la API (5 filtros principales)
+    const apiFilters: SearchFilters = {
+        page: 1,
+        pageSize: 20,
+        searchTerm: filters.search || undefined,
+        category: filters.category || undefined,
+        isActive: filters.isActive !== null ? filters.isActive : undefined,
+        isRevised: filters.isRevised !== null ? filters.isRevised : undefined,
+        searchHireStatus: filters.searchHireStatus || undefined,
+        sortBy: filters.sortBy,
+        sortDirection: filters.sortDirection,
+    };
 
-    // Filter searches
-    const filteredSearches = useMemo(() => {
-        return searchesList.filter((search) => {
-            const searchMatch =
-                filters.search.toLowerCase().trim() === '' ||
-                search.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-                search.description.toLowerCase().includes(filters.search.toLowerCase());
+    // ✅ CORREGIDO: Todos los usuarios usan la nueva API con filtros
+    const searchesWithFiltersQuery = searchesWithFilters(apiFilters, isAdmin, true); // Siempre habilitado
+    const searchesData = searchesWithFiltersQuery; // Todos usan la misma query
+    
+    const loading = searchesData?.isLoading || false;
+    const error = searchesData?.error;
+    
+    // ✅ NUEVO: Manejar la nueva estructura de respuesta (ambos endpoints tienen 'searches')
+    const searchesList: SearchItem[] = searchesData?.data && 'searches' in searchesData.data 
+        ? searchesData.data.searches 
+        : [];
+    
+    // ✅ NUEVO: Actualizar paginación cuando cambien los datos
+    useEffect(() => {
+        if (searchesData?.data && 'pagination' in searchesData.data) {
+            setPagination(searchesData.data.pagination);
+        }
+    }, [searchesData?.data]);
 
-            const categoryMatch = filters.category === null || search.category === filters.category;
-
-            const terminalStatuses = ['dispute-resolved', 'completed', 'cancelled'];
-            const isSearchInactive = !search.isActive || (search.searchHire && terminalStatuses.includes(search.searchHire.status));
-            const statusMatch =
-                filters.status === 'all' ||
-                (filters.status === 'active' && search.isActive && (!search.searchHire || !terminalStatuses.includes(search.searchHire.status))) ||
-                (filters.status === 'inactive' && isSearchInactive);
-
-            return searchMatch && categoryMatch && statusMatch;
-        });
-    }, [searchesList, filters]);
+    // ✅ SIMPLIFICADO: El backend ya filtra, solo usamos los datos tal como vienen
+    const filteredSearches = searchesList;
 
     const getActivityStatus = (search: SearchItem) => {
         const terminalStatuses = ['dispute-resolved', 'completed', 'cancelled'];
@@ -296,6 +315,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
 
             <div className="max-w-7xl mx-auto px-8 py-10">
 
+
             {/* Compact Filters Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-6">
                 {/* Search - Hidden on mobile */}
@@ -305,7 +325,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                         <input
                             type="text"
                             value={filters.search}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+                            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                             placeholder="Buscar búsquedas..."
                             className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500 transition-all duration-200 hover:border-slate-300"
                         />
@@ -334,28 +354,78 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                 </button>
                             ))}
 
-                        {/* Status filter - professional toggle */}
+                        {/* ✅ NUEVO: Filtro de estado activo/inactivo */}
                         <button
                             onClick={() => setFilters((prev) => ({ 
                                 ...prev, 
-                                status: prev.status === 'active' ? 'inactive' : 'active' 
+                                isActive: prev.isActive === null ? true : prev.isActive === true ? false : null
                             }))}
                             className={`px-4 py-2.5 text-sm font-semibold transition-all duration-200 border ${
-                                filters.status === 'active'
+                                filters.isActive === true
                                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg'
-                                    : 'bg-slate-600 text-white border-slate-600 shadow-lg'
+                                    : filters.isActive === false
+                                        ? 'bg-slate-600 text-white border-slate-600 shadow-lg'
+                                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                             }`}
                         >
-                            {filters.status === 'active' ? 'Activas' : 'Inactivas'}
+                            {filters.isActive === true ? 'Activas' : filters.isActive === false ? 'Inactivas' : 'Todas las búsquedas'}
                         </button>
+
+                        {/* ✅ NUEVO: Filtro de estado revisado (solo admin) */}
+                        {isAdmin && (
+                            <button
+                                onClick={() => setFilters((prev) => ({ 
+                                    ...prev, 
+                                    isRevised: prev.isRevised === null ? false : prev.isRevised === false ? true : null
+                                }))}
+                                className={`px-4 py-2.5 text-sm font-semibold transition-all duration-200 border ${
+                                    filters.isRevised === true
+                                        ? 'bg-green-600 text-white border-green-600 shadow-lg'
+                                        : filters.isRevised === false
+                                            ? 'bg-orange-600 text-white border-orange-600 shadow-lg'
+                                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                                }`}
+                            >
+                                {filters.isRevised === true ? 'Revisadas' : filters.isRevised === false ? 'Sin revisar' : 'Todas las revisiones'}
+                            </button>
+                        )}
+
+                        {/* ✅ NUEVO: Filtro de estado de contratación */}
+                        <select
+                            value={filters.searchHireStatus}
+                            onChange={(e) => setFilters((prev) => ({ 
+                                ...prev, 
+                                searchHireStatus: e.target.value 
+                            }))}
+                            className="px-4 py-2.5 text-sm font-semibold transition-all duration-200 border bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                        >
+                            <option value="">Todos los estados</option>
+                            <option value="pending">Pendiente</option>
+                            <option value="awaiting_client_decision">Esperando decisión</option>
+                            <option value="disputed">En disputa</option>
+                            <option value="completed">Completado</option>
+                            <option value="cancelled">Cancelado</option>
+                            <option value="transfer_failed">Transferencia fallida</option>
+                            <option value="dispute-resolved">Disputa resuelta</option>
+                        </select>
                 </div>
             </div>
 
             {/* Results count */}
             <div className="flex items-center justify-between mb-6">
                 <div className="text-sm font-semibold text-slate-700">
+                    {isAdmin && pagination ? (
+                        <>
+                            {pagination.totalCount} {pagination.totalCount === 1 ? 'búsqueda' : 'búsquedas'} total
+                            <span className="text-slate-500 ml-2 font-normal">
+                                • Página {pagination.currentPage} de {pagination.totalPages}
+                            </span>
+                        </>
+                    ) : (
+                        <>
                     {filteredSearches.length} {filteredSearches.length === 1 ? 'búsqueda' : 'búsquedas'}
-                    <span className="text-slate-500 ml-2 font-normal">• {searchesList.filter(s => getActivityStatus(s) === 'Activa').length} activas</span>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -447,12 +517,15 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                 <span className="truncate max-w-32">{search.locationName}</span>
                                             </div>
                                         )}
+                                        <div className="flex flex-col items-end gap-1">
                                         <div className="flex items-center gap-2">
                                             <Calendar className="w-4 h-4 text-gray-500" />
                                             <span>{new Date(search.createdAt).toLocaleDateString('es-ES', { 
                                                 day: 'numeric', 
                                                 month: 'short' 
                                             })}</span>
+                                            </div>
+                                            <span className="text-xs text-gray-400">Fecha de creación</span>
                                         </div>
                                     </div>
                                 </div>
@@ -475,7 +548,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                             ? 'bg-red-100 text-red-700'
                                                         : 'bg-gray-100 text-gray-600'
                                                     }`}>
-                                                    {search.searchHire.status.replace(/_/g, ' ')}
+                                                    {search.searchHire.statusTranslated || search.searchHire.status.replace(/_/g, ' ')}
                                                 </span>
                                             )}
                                     </div>
@@ -573,7 +646,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex flex-col items-end gap-2">
+                                            <div className="flex flex-col gap-2">
                                                 <div className="flex items-center gap-2 text-sm text-gray-600">
                                                     <Calendar className="w-4 h-4 text-gray-500" />
                                                     <span>{new Date(search.createdAt).toLocaleDateString('es-ES', { 
@@ -581,6 +654,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                         month: 'short' 
                                                     })}</span>
                                                 </div>
+                                                <span className="text-xs text-gray-400">Fecha de creación</span>
                                                 {search.locationName && (
                                                     <div className="flex items-center gap-2 text-sm text-gray-600">
                                                         <MapPin className="w-4 h-4 text-gray-500" />
@@ -613,6 +687,47 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                             })}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* ✅ NUEVO: Controles de paginación */}
+            {isAdmin && pagination && pagination.totalPages > 1 && (
+                <div className="mt-8 flex items-center justify-center gap-4">
+                    <button
+                        onClick={() => {
+                            // TODO: Implementar cambio de página
+                            console.log('Cambiar a página anterior');
+                        }}
+                        disabled={!pagination.hasPrevious}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                            pagination.hasPrevious
+                                ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                        }`}
+                    >
+                        Anterior
+                    </button>
+                    
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-600">
+                            Página {pagination.currentPage} de {pagination.totalPages}
+                        </span>
+                    </div>
+                    
+                    <button
+                        onClick={() => {
+                            // TODO: Implementar cambio de página
+                            console.log('Cambiar a página siguiente');
+                        }}
+                        disabled={!pagination.hasNext}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                            pagination.hasNext
+                                ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                        }`}
+                    >
+                        Siguiente
+                    </button>
                 </div>
             )}
             </div>

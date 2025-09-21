@@ -21,6 +21,7 @@ import Background from './components/Background';
 import { BecomeExpertPage } from './pages/BecomeExpertPage';
 import { ExpertPanelPage } from './pages/ExpertPanelPage';
 import { SearchResultsPage } from './pages/SearchResultsPage';
+import { DisputePanelPage } from './pages/DisputePanelPage';
 import SearchDetails from './components/SearchDetails';
 import { GoogleAuth } from './components/GoogleAuth';
 
@@ -403,6 +404,7 @@ const App: React.FC = React.memo(() => {
                             <Route path="/detalles/:id" element={<ProtectedRoute><SearchResultsPage /></ProtectedRoute>} />
                             <Route path="/suscripciones" element={<ProtectedRoute><SubscriptionsPage /></ProtectedRoute>} />
                             <Route path="/admin" element={<ProtectedRoute><AdminPanelPage /></ProtectedRoute>} />
+                            <Route path="/admin/disputes" element={<ProtectedRoute><DisputePanelPage /></ProtectedRoute>} />
                             <Route path="/become-expert" element={<ProtectedRoute><BecomeExpertPage /></ProtectedRoute>} />
                             <Route path="/expert-panel" element={<ProtectedRoute><ExpertPanelPage /></ProtectedRoute>} />
                             <Route path="/" element={<SearchCreationPage />} />
