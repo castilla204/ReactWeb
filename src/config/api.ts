@@ -58,9 +58,6 @@ export const API_CONFIG = {
             expertStatus: `${API_PATH}/Subscription/expert-status`,
             createAccountLink: `${API_PATH}/Subscription/create-account-link`,
         },
-        dispute: {
-            details: (searchHireId: number) => `${API_PATH}/Dispute/details/${searchHireId}`,
-        },
         notifications: {
             list: `${API_PATH}/Notification`,
             create: `${API_PATH}/Notification`,
@@ -122,6 +119,17 @@ export const API_CONFIG = {
             categoryServiceTypeByServiceType: (serviceTypeCategoryId: number) => `${API_PATH}/CategoryServiceTypeConfig/service-type/${serviceTypeCategoryId}`,
             moneyDistribution: `${API_PATH}/AppointmentConfig/money-distribution`,
             moneyDistributionPublic: `${API_PATH}/AppointmentConfig/money-distribution/public`,
+        },
+        dispute: {
+            create: `${API_PATH}/Dispute/dispute-service`,
+            list: `${API_PATH}/dispute/all`,
+            myDisputes: `${API_PATH}/dispute/my-disputes`,
+            get: (id: number) => `${API_PATH}/dispute/${id}`,
+            getDetails: (id: number) => `${API_PATH}/dispute/${id}/details`,
+            getSearch: (id: number) => `${API_PATH}/dispute/${id}/search`,
+            resolve: (id: number) => `${API_PATH}/dispute/${id}/resolve`,
+            expertResponse: (id: number) => `${API_PATH}/dispute/${id}/expert-response`,
+            details: (searchHireId: number) => `${API_PATH}/Dispute/details/${searchHireId}`,
         },
     },
 };

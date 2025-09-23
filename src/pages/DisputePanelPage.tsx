@@ -10,3 +10,4 @@ export const DisputePanelPage: React.FC = () => {
 
   return <DisputePanel onBack={handleBack} />;
 };
+
