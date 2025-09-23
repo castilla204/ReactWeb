@@ -18,9 +18,23 @@ export const useDisputes = () => {
   // Hook para crear una disputa (usuarios normales)
   const createDispute = useMutation({
     mutationFn: async (data: CreateDisputeDto): Promise<CreateDisputeResponse> => {
-      return fetchApi<CreateDisputeResponse>('/api/dispute', {
+      const formData = new FormData();
+      
+      // Agregar campos obligatorios
+      formData.append('SearchHireId', data.searchHireId.toString());
+      formData.append('Reason', data.reason);
+      
+      // Agregar archivos si existen
+      if (data.files && data.files.length > 0) {
+        data.files.forEach((file, index) => {
+          formData.append('Files', file);
+        });
+      }
+      
+      return fetchApi<CreateDisputeResponse>(API_CONFIG.endpoints.dispute.create, {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: formData,
+        requiresAuth: true,
       });
     },
     onSuccess: () => {
@@ -42,7 +56,7 @@ export const useDisputes = () => {
           }
         });
 
-        const url = `/api/dispute/all${params.toString() ? `?${params.toString()}` : ''}`;
+        const url = `${API_CONFIG.endpoints.dispute.list}${params.toString() ? `?${params.toString()}` : ''}`;
         
         // Debug logging
         console.log('[useDisputes] Making dispute list request:', {
@@ -62,7 +76,7 @@ export const useDisputes = () => {
     return useQuery({
       queryKey: ['disputes', 'details', disputeId],
       queryFn: async (): Promise<DisputeDto> => {
-        return fetchApi<DisputeDto>(`/api/dispute/${disputeId}`);
+        return fetchApi<DisputeDto>(API_CONFIG.endpoints.dispute.get(disputeId));
       },
       enabled: !!disputeId,
     });
@@ -73,11 +87,76 @@ export const useDisputes = () => {
     return useQuery({
       queryKey: ['disputes', 'search', disputeId],
       queryFn: async () => {
-        return fetchApi(`/api/dispute/${disputeId}/search`);
+        return fetchApi(API_CONFIG.endpoints.dispute.getSearch(disputeId));
       },
       enabled: !!disputeId,
     });
   };
+
+  // Hook para obtener disputas del usuario (unificado - cliente, experto, admin)
+  const useMyDisputes = (filters: DisputeFilters = {}) => {
+    return useQuery({
+      queryKey: ['disputes', 'my', filters],
+      queryFn: async (): Promise<DisputeListResponseDto> => {
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== '') {
+            params.append(key, value.toString());
+          }
+        });
+
+        const url = `${API_CONFIG.endpoints.dispute.myDisputes}${params.toString() ? `?${params.toString()}` : ''}`;
+        
+        return fetchApi<DisputeListResponseDto>(url);
+      },
+      enabled: true,
+    });
+  };
+
+  // Hook para obtener información de disputa por searchHireId (usando el endpoint unificado)
+  const useDisputeBySearchHire = (searchHireId: number) => {
+    return useQuery({
+      queryKey: ['disputes', 'by-search-hire', searchHireId],
+      queryFn: async (): Promise<DisputeDto | null> => {
+        const response = await fetchApi<DisputeListResponseDto>(`${API_CONFIG.endpoints.dispute.myDisputes}?searchHireId=${searchHireId}&pageSize=1`);
+        return response.disputes?.[0] || null;
+      },
+      enabled: !!searchHireId,
+    });
+  };
+
+  // Hook para que el experto responda a una disputa
+  const expertResponse = useMutation({
+    mutationFn: async ({ 
+      disputeId, 
+      data 
+    }: { 
+      disputeId: number; 
+      data: { response: string; files?: File[] }
+    }): Promise<{ message: string }> => {
+      const formData = new FormData();
+      formData.append('Response', data.response);
+      
+      // Agregar archivos si existen
+      if (data.files && data.files.length > 0) {
+        data.files.forEach((file) => {
+          formData.append('Files', file);
+        });
+      }
+      
+      return fetchApi<{ message: string }>(API_CONFIG.endpoints.dispute.expertResponse(disputeId), {
+        method: 'POST',
+        body: formData,
+        requiresAuth: true,
+      });
+    },
+    onSuccess: (_, variables) => {
+      // Invalidar queries relacionadas
+      queryClient.invalidateQueries({ queryKey: ['disputes'] });
+      queryClient.invalidateQueries({ queryKey: ['disputes', 'by-search-hire'] });
+      queryClient.invalidateQueries({ queryKey: ['searches'] });
+    },
+  });
 
   // Hook para resolver una disputa (solo admin)
   const resolveDispute = useMutation({
@@ -88,7 +167,7 @@ export const useDisputes = () => {
       disputeId: number; 
       data: ResolveDisputeDto 
     }): Promise<ResolveDisputeResponse> => {
-      return fetchApi<ResolveDisputeResponse>(`/api/dispute/${disputeId}/resolve`, {
+      return fetchApi<ResolveDisputeResponse>(API_CONFIG.endpoints.dispute.resolve(disputeId), {
         method: 'PUT',
         body: JSON.stringify(data),
       });
@@ -104,11 +183,14 @@ export const useDisputes = () => {
   return {
     // Mutations
     createDispute,
+    expertResponse,
     resolveDispute,
     
     // Queries
     useDisputesList,
+    useMyDisputes,
     useDisputeDetails,
     useDisputeSearch,
+    useDisputeBySearchHire,
   };
 };

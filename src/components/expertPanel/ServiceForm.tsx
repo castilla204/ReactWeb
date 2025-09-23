@@ -149,7 +149,7 @@ export function ServiceForm({
                             <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2">
                                 {isLoadingServiceTypes ? (
                                     <span className="text-sm text-gray-500">Cargando...</span>
-                                ) : (
+                                ) : Array.isArray(serviceTypes) ? (
                                     serviceTypes.map(serviceType => (
                                         <button
                                             key={serviceType.id}
@@ -163,6 +163,8 @@ export function ServiceForm({
                                             {serviceType.name}
                                         </button>
                                     ))
+                                ) : (
+                                    <span className="text-sm text-red-500">Error al cargar tipos de servicio</span>
                                 )}
                             </div>
                             {formErrors.serviceTypeId && (

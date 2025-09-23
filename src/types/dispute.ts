@@ -3,6 +3,7 @@
 export interface CreateDisputeDto {
   searchHireId: number;
   reason: string;
+  files?: File[];
 }
 
 export interface UserDto {
@@ -41,6 +42,23 @@ export interface DisputeDto {
   client: UserDto;
   expert?: UserDto;
   search: SearchInfoDto;
+  
+  // Nuevos campos del sistema bidireccional
+  expertResponse?: string;
+  expertResponseDeadline?: string;
+  expertResponseAt?: string;
+  canExpertRespond?: boolean;
+  files?: DisputeFileDto[];
+  expertResponseFiles?: DisputeFileDto[];
+}
+
+export interface DisputeFileDto {
+  id: number;
+  fileName: string;
+  fileUrl: string;
+  fileSize: number;
+  uploadedAt: string;
+  uploadedBy: 'client' | 'expert';
 }
 
 export interface DisputeStats {
@@ -69,10 +87,11 @@ export interface PaginationMetadata {
 
 export interface ResolveDisputeDto {
   resolutionComments: string;
-  action: 'refund_client' | 'pay_expert' | 'no_action';
+  action: 'refund_client' | 'pay_expert';
 }
 
 export interface DisputeFilters {
+  searchHireId?: number;
   page?: number;
   pageSize?: number;
   searchTerm?: string;
@@ -86,6 +105,14 @@ export interface DisputeFilters {
   sortDirection?: 'asc' | 'desc';
 }
 
+export interface DisputeListResponseDto {
+  disputes: DisputeDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export interface CreateDisputeResponse {
   message: string;
   disputeId: number;
@@ -94,3 +121,4 @@ export interface CreateDisputeResponse {
 export interface ResolveDisputeResponse {
   message: string;
 }
+

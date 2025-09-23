@@ -1,4 +1,5 @@
-﻿import { Star, Trash2, XCircle } from 'lucide-react';
+﻿import { useState, useRef } from 'react';
+import { Star, Trash2, XCircle } from 'lucide-react';
 import { useReview } from '../hooks/useReview.hooks';
 import { NotificationType } from './Notification';
 
@@ -196,15 +197,100 @@ interface DisputeModalProps {
     onClose: () => void;
     disputeReason: string;
     setDisputeReason: (value: string) => void;
+    files: File[];
+    setFiles: (files: File[]) => void;
     onSubmit: () => void;
+    isSubmitting?: boolean;
 }
 
-export function DisputeModal({ isOpen, onClose, disputeReason, setDisputeReason, onSubmit }: DisputeModalProps) {
+export function DisputeModal({ 
+    isOpen, 
+    onClose, 
+    disputeReason, 
+    setDisputeReason, 
+    files, 
+    setFiles, 
+    onSubmit, 
+    isSubmitting = false 
+}: DisputeModalProps) {
+    const [dragActive, setDragActive] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Validar archivos
+    const validateFile = (file: File): string | null => {
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const allowedTypes = [
+            'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
+            'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'video/mp4', 'video/avi', 'video/quicktime'
+        ];
+
+        if (file.size > maxSize) {
+            return `El archivo ${file.name} es demasiado grande. Máximo 10MB.`;
+        }
+
+        if (!allowedTypes.includes(file.type)) {
+            return `El archivo ${file.name} no es de un tipo permitido.`;
+        }
+
+        return null;
+    };
+
+    const handleFileSelect = (selectedFiles: FileList | null) => {
+        if (!selectedFiles) return;
+
+        const newFiles: File[] = [];
+        const errors: string[] = [];
+
+        Array.from(selectedFiles).forEach(file => {
+            const error = validateFile(file);
+            if (error) {
+                errors.push(error);
+            } else {
+                newFiles.push(file);
+            }
+        });
+
+        if (errors.length > 0) {
+            alert(errors.join('\n'));
+        }
+
+        if (newFiles.length > 0) {
+            setFiles([...files, ...newFiles]);
+        }
+    };
+
+    const removeFile = (index: number) => {
+        setFiles(files.filter((_, i) => i !== index));
+    };
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const getFileIcon = (file: File) => {
+        if (file.type.startsWith('image/')) {
+            return '🖼️';
+        } else if (file.type.startsWith('video/')) {
+            return '🎥';
+        } else if (file.type === 'application/pdf') {
+            return '📄';
+        } else if (file.type.includes('word')) {
+            return '📝';
+        } else {
+            return '📎';
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100 animate-in slide-in-from-bottom-4 duration-300">
+            <div className="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-gray-100 animate-in slide-in-from-bottom-4 duration-300 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
@@ -214,12 +300,13 @@ export function DisputeModal({ isOpen, onClose, disputeReason, setDisputeReason,
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-gray-900">Iniciar Disputa</h3>
-                            <p className="text-sm text-gray-500">Reportar un problema</p>
+                            <p className="text-sm text-gray-500">Reportar un problema con evidencia</p>
                         </div>
                     </div>
                     <button 
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+                        disabled={isSubmitting}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200 disabled:opacity-50"
                     >
                         <XCircle className="w-5 h-5 text-gray-400" />
                     </button>
@@ -227,39 +314,148 @@ export function DisputeModal({ isOpen, onClose, disputeReason, setDisputeReason,
                 
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
                     <p className="text-sm text-red-800">
-                        <strong>Importante:</strong> Una disputa iniciará un proceso de mediación. Por favor, explique claramente el problema para una resolución rápida.
+                        <strong>Importante:</strong> Una disputa iniciará un proceso de mediación. Por favor, explique claramente el problema y adjunte evidencia para una resolución rápida.
                     </p>
                 </div>
                 
                 <div className="mb-6">
-                    <label className="block text-sm font-semibold text-gray-900 mb-3">Motivo de la disputa</label>
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">
+                        Motivo de la disputa <span className="text-red-500">*</span>
+                    </label>
                     <textarea
                         value={disputeReason}
                         onChange={(e) => setDisputeReason(e.target.value)}
                         className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all duration-200 bg-gray-50 focus:bg-white resize-none"
-                        rows={5}
+                        rows={4}
                         placeholder="Describe detalladamente el problema que has experimentado con este servicio..."
                         required
+                        disabled={isSubmitting}
+                        maxLength={1000}
                     />
+                    <div className="text-right text-xs text-gray-500 mt-1">
+                        {disputeReason.length}/1000 caracteres
+                    </div>
+                </div>
+
+                {/* File Upload Section */}
+                <div className="mb-6">
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">
+                        Archivos de evidencia (opcional)
+                    </label>
+                    
+                    {/* Drop Zone */}
+                    <div
+                        className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors duration-200 ${
+                            dragActive 
+                                ? 'border-red-400 bg-red-50' 
+                                : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                        onDragEnter={(e) => {
+                            e.preventDefault();
+                            setDragActive(true);
+                        }}
+                        onDragLeave={(e) => {
+                            e.preventDefault();
+                            setDragActive(false);
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            setDragActive(false);
+                            handleFileSelect(e.dataTransfer.files);
+                        }}
+                    >
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                    Arrastra archivos aquí o{' '}
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isSubmitting}
+                                        className="text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
+                                    >
+                                        selecciona archivos
+                                    </button>
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    JPG, PNG, GIF, PDF, DOC, DOCX, MP4, AVI, MOV • Máximo 10MB por archivo
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.mp4,.avi,.mov"
+                        onChange={(e) => handleFileSelect(e.target.files)}
+                        className="hidden"
+                        disabled={isSubmitting}
+                    />
+
+                    {/* File List */}
+                    {files.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                            <h4 className="text-sm font-medium text-gray-900">Archivos seleccionados:</h4>
+                            {files.map((file, index) => (
+                                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-lg">{getFileIcon(file)}</span>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900 truncate max-w-48">
+                                                {file.name}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                {formatFileSize(file.size)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFile(index)}
+                                        disabled={isSubmitting}
+                                        className="p-1 hover:bg-gray-200 rounded-full transition-colors duration-200 disabled:opacity-50"
+                                    >
+                                        <XCircle className="w-4 h-4 text-gray-400" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
                 
                 <div className="flex gap-3 pt-4 border-t border-gray-100">
                     <button
                         onClick={onClose}
-                        className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors duration-200"
+                        disabled={isSubmitting}
+                        className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors duration-200 disabled:opacity-50"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={onSubmit}
-                        disabled={!disputeReason.trim()}
-                        className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                            !disputeReason.trim()
+                        disabled={!disputeReason.trim() || isSubmitting}
+                        className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                            !disputeReason.trim() || isSubmitting
                                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                 : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl'
                         }`}
                     >
-                        Enviar Disputa
+                        {isSubmitting ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Enviando...
+                            </>
+                        ) : (
+                            'Enviar Disputa'
+                        )}
                     </button>
                 </div>
             </div>

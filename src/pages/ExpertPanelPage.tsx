@@ -9,6 +9,7 @@ import { StripeStatusCard } from '../components/StripeStatusCard';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
 import { useExpertHires } from '../hooks/useExpertHires';
 import { useServices } from '../hooks/useServices';
+import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useStripeAccountLink } from '../hooks/useStripeAccountLink';
 import { useVacationMode } from '../hooks/useVacationMode';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
@@ -44,6 +45,7 @@ export function ExpertPanelPage() {
     const navigate = useNavigate();
     const { user, signOut } = useAuth();
     const { categories } = useCategories();
+    const { serviceTypes, isLoading: isLoadingServiceTypes } = useServiceTypes();
 
     const [activeTab, setActiveTab] = useState<'services' | 'hires'>('services');
     const [hireTab, setHireTab] = useState<'active' | 'inactive'>('active');
@@ -79,8 +81,6 @@ export function ExpertPanelPage() {
         profile,
         isLoadingProfile,
         profileError,
-        serviceTypes,
-        isLoadingServiceTypes,
         startOnboarding,
         isStartingOnboarding,
         checkOnboardingStatus,

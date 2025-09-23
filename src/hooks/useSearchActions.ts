@@ -1,10 +1,12 @@
 ﻿import { useSubscription } from './useSubscription.hooks';
+import { useDisputes } from './useDisputes';
 import { useApi } from './useApi';
 import { useNavigate } from 'react-router-dom';
 import { NotificationType } from './Notification';
 
 export function useSearchActions(setNotifications: React.Dispatch<React.SetStateAction<{ id: string; type: NotificationType; message: string; duration?: number }[]>>) {
-    const { forceFinalize, completeService, disputeService, resolveDispute } = useSubscription();
+    const { forceFinalize, completeService, disputeService } = useSubscription();
+    const { createDispute, resolveDispute } = useDisputes();
     const { fetchApi } = useApi();
     const navigate = useNavigate();
 
@@ -71,6 +73,7 @@ export function useSearchActions(setNotifications: React.Dispatch<React.SetState
     const handleDisputeSubmit = async (
         searchHireId: number | undefined,
         reason: string,
+        files: File[] = [],
         onSuccess: () => void
     ) => {
         try {
@@ -81,10 +84,14 @@ export function useSearchActions(setNotifications: React.Dispatch<React.SetState
                 addNotification('error', '❌ Por favor, ingrese una razón para la disputa');
                 return;
             }
-            await disputeService({
-                SearchHireId: searchHireId,
-                Reason: reason,
+            
+            // Use the new dispute creation hook with file support
+            await createDispute.mutateAsync({
+                searchHireId,
+                reason: reason.trim(),
+                files: files.length > 0 ? files : undefined,
             });
+            
             addNotification('success', '✅ Disputa iniciada exitosamente');
             onSuccess();
         } catch (error) {
@@ -111,11 +118,26 @@ export function useSearchActions(setNotifications: React.Dispatch<React.SetState
                 addNotification('error', '❌ Por favor, seleccione a quién dar la razón');
                 return;
             }
-            await resolveDispute({
-                SearchHireId: searchHireId,
-                ResolveInFavorOfClient: resolveInFavorOfClient,
-                Resolution: resolution,
+
+            // First, get the dispute details to obtain the disputeId
+            const disputeDetails = await fetchApi(API_CONFIG.endpoints.dispute.details(searchHireId));
+            
+            if (!disputeDetails || !disputeDetails.id) {
+                throw new Error('Dispute not found for this service');
+            }
+
+            // Map the boolean to the correct action
+            const action = resolveInFavorOfClient ? 'refund_client' : 'pay_expert';
+
+            // Use the new dispute resolution endpoint
+            await resolveDispute.mutateAsync({
+                disputeId: disputeDetails.id,
+                data: {
+                    resolutionComments: resolution.trim(),
+                    action: action
+                }
             });
+
             addNotification('success', '✅ Disputa resuelta exitosamente');
             onSuccess();
         } catch (error) {

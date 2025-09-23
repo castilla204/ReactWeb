@@ -1,5 +1,5 @@
 ﻿import { useLayoutEffect, useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp, FileText, MessageSquare, Calendar } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp, FileText, MessageSquare, Calendar, CheckCircle, DollarSign, User, XCircle } from 'lucide-react';
 import { useSearch, SearchHire } from '../hooks/useSearch.hooks';
 import { useServices } from '../hooks/useServices';
 import { useCategories } from '../contexts/CategoryContext';
@@ -9,6 +9,7 @@ import { useChat } from '../hooks/useChat';
 import Chat from './Chat';
 import { ReviewModal, DisputeModal, ResolveDisputeModal, AddAdModal, CancelServiceModal, FinalizeModal } from './Modals';
 import { useSearchActions } from '../hooks/useSearchActions';
+import { useDisputes } from '../hooks/useDisputes';
 import { Notification, NotificationType } from './Notification';
 import { useParams, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -77,8 +78,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         showReviewModal: false,
     });
     const [disputeReason, setDisputeReason] = useState('');
+    const [disputeFiles, setDisputeFiles] = useState<File[]>([]);
     const [resolveInFavorOfClient, setResolveInFavorOfClient] = useState<boolean | null>(null);
     const [resolutionReason, setResolutionReason] = useState('');
+    
+    // Estados para respuesta del experto
+    const [expertResponseText, setExpertResponseText] = useState('');
+    const [expertResponseFiles, setExpertResponseFiles] = useState<File[]>([]);
+    const [showExpertResponseModal, setShowExpertResponseModal] = useState(false);
     const [reviewForm, setReviewForm] = useState({
         score: 0,
         description: '',
@@ -148,7 +155,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const { deliverables, uploadDeliverable, deliverablesQuery, refetchDeliverables, isUploadingDeliverable } = useChat(searchId, setNotifications);
     const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit, handleResolveDispute, handleAddAd } =
         useSearchActions(setNotifications);
-
+    
+    // Hook para obtener información de disputa (solución integrada)
+    const { useDisputeBySearchHire, expertResponse } = useDisputes();
+    
     // Hook para el sistema de citas
     const { 
         getAppointmentBySearchHire, 
@@ -161,6 +171,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     } = useAppointments();
     
     const searchQuery = getSearch(searchId);
+    // Hook para obtener información de disputa usando el endpoint unificado
+    const disputeQuery = useDisputeBySearchHire(searchQuery.data?.searchHire?.id || 0);
     // Only fetch service if we have a valid searchHire ID
     const hireId = searchQuery.data?.searchHire?.id;
     console.log('[SearchDetails] HireId extracted:', hireId);
@@ -278,6 +290,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const canApprove = isClient && searchQuery.data?.searchHire?.status === 'awaiting_client_decision';
     const canCancel = isExpert && searchQuery.data?.searchHire && !['completed', 'canceled', 'disputed'].includes(searchQuery.data.searchHire.status);
     const isDisputed = (isClient || isExpert) && searchQuery.data?.searchHire?.status === 'disputed';
+    const isDisputeResolved = (isClient || isExpert) && searchQuery.data?.searchHire?.status === 'dispute-resolved';
+    
+    // Determinar si el experto puede responder a la disputa
+    const canExpertRespond = isExpert && 
+                            disputeQuery.data?.canExpertRespond && 
+                            !disputeQuery.data?.expertResponse &&
+                            searchQuery.data?.searchHire?.status === 'disputed';
     const canViewChat = (isClient || isExpert || isAdmin) && !!searchQuery.data?.searchHire;
 
     const category = categories?.find((c: Category) => c.id === searchQuery.data?.category);
@@ -430,6 +449,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         setNotifications((prev) => prev.filter((notification) => notification.id !== id));
     };
 
+    const addNotification = (type: NotificationType, message: string, duration?: number) => {
+        const id = uuidv4();
+        setNotifications((prev) => [...prev, { id, type, message, duration }]);
+    };
+
     const handleAddAdAndClose = async () => {
         await handleAddAd(searchId, newAd, () => {
             // No need to refetch results in SearchDetails, just update the state
@@ -453,10 +477,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         await handleDisputeSubmit(
             searchQuery.data?.searchHire?.id,
             disputeReason,
+            disputeFiles,
             () => {
                 searchQuery.refetch();
                 setModalState((prev) => ({ ...prev, showDisputeModal: false }));
                 setDisputeReason('');
+                setDisputeFiles([]);
             }
         );
     };
@@ -468,6 +494,33 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             setResolveInFavorOfClient(null);
             setResolutionReason('');
         });
+    };
+
+    // Función para manejar la respuesta del experto
+    const handleExpertResponseSubmit = async () => {
+        if (!disputeQuery.data?.id || !expertResponseText.trim()) {
+            addNotification('error', 'Por favor, proporciona una respuesta');
+            return;
+        }
+
+        try {
+            await expertResponse.mutateAsync({
+                disputeId: disputeQuery.data.id,
+                data: {
+                    response: expertResponseText.trim(),
+                    files: expertResponseFiles.length > 0 ? expertResponseFiles : undefined,
+                }
+            });
+            
+            addNotification('success', '✅ Respuesta enviada exitosamente');
+            setShowExpertResponseModal(false);
+            setExpertResponseText('');
+            setExpertResponseFiles([]);
+            disputeQuery.refetch();
+        } catch (error) {
+            console.error('Error al enviar respuesta del experto:', error);
+            addNotification('error', 'Error al enviar la respuesta');
+        }
     };
 
     const handleCancelServiceAndClose = async () => {
@@ -682,6 +735,166 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     const currentStatus = searchQuery.data?.searchHire?.status || 'pending';
     const currentStepIndex = statusRoadmap.findIndex((step) => step.status === currentStatus);
+
+    // Componente para mostrar la resolución de la disputa
+    const DisputeResolutionCard = () => {
+        if (!isDisputeResolved || !disputeQuery.data) return null;
+
+        const dispute = disputeQuery.data;
+        const formatDate = (dateString: string) => {
+            return new Date(dateString).toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        };
+
+        const formatCurrency = (amount: number) => {
+            return new Intl.NumberFormat('es-ES', {
+                style: 'currency',
+                currency: 'EUR',
+            }).format(amount);
+        };
+
+        const getResolutionIcon = () => {
+            if (dispute.resolutionComments) {
+                return <CheckCircle className="w-6 h-6 text-green-600" />;
+            }
+            return <AlertTriangle className="w-6 h-6 text-orange-500" />;
+        };
+
+        const getResolutionTitle = () => {
+            if (dispute.resolutionComments) {
+                return 'Disputa Resuelta';
+            }
+            return 'Disputa en Proceso';
+        };
+
+        const getResolutionColor = () => {
+            if (dispute.resolutionComments) {
+                return 'border-green-200 bg-green-50';
+            }
+            return 'border-orange-200 bg-orange-50';
+        };
+
+        return (
+            <div className={`border rounded-lg p-6 ${getResolutionColor()}`}>
+                <div className="flex items-center gap-3 mb-4">
+                    {getResolutionIcon()}
+                    <h3 className="text-lg font-semibold text-gray-900">{getResolutionTitle()}</h3>
+                </div>
+
+                <div className="space-y-4">
+                    {/* Disputa del cliente */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Disputa del Cliente</label>
+                        <p className="text-gray-900 bg-white p-3 rounded-lg border">{dispute.reason}</p>
+                        {dispute.files && dispute.files.length > 0 && (
+                            <div className="mt-2">
+                                <p className="text-xs text-gray-500 mb-1">Archivos del cliente:</p>
+                                <div className="flex flex-wrap gap-1">
+                                    {dispute.files.map((file) => (
+                                        <span key={file.id} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                            {file.fileName}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Respuesta del experto */}
+                    {dispute.expertResponse && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Respuesta del Experto</label>
+                            <p className="text-gray-900 bg-white p-3 rounded-lg border">{dispute.expertResponse}</p>
+                            {dispute.expertResponseFiles && dispute.expertResponseFiles.length > 0 && (
+                                <div className="mt-2">
+                                    <p className="text-xs text-gray-500 mb-1">Archivos del experto:</p>
+                                    <div className="flex flex-wrap gap-1">
+                                        {dispute.expertResponseFiles.map((file) => (
+                                            <span key={file.id} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                                {file.fileName}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {dispute.expertResponseAt && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Respondido el {new Date(dispute.expertResponseAt).toLocaleDateString('es-ES')}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Información de resolución */}
+                    {dispute.resolutionComments && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Resolución del Administrador</label>
+                            <p className="text-gray-900 bg-white p-3 rounded-lg border">{dispute.resolutionComments}</p>
+                        </div>
+                    )}
+
+                    {/* Información financiera */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-4 rounded-lg border">
+                            <div className="flex items-center gap-2 mb-2">
+                                <DollarSign className="w-5 h-5 text-gray-500" />
+                                <span className="text-sm font-medium text-gray-700">Monto del Servicio</span>
+                            </div>
+                            <p className="text-lg font-semibold text-gray-900">{formatCurrency(dispute.searchHire.amount)}</p>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-lg border">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Calendar className="w-5 h-5 text-gray-500" />
+                                <span className="text-sm font-medium text-gray-700">Fecha de Resolución</span>
+                            </div>
+                            <p className="text-sm text-gray-900">{formatDate(dispute.createdAt)}</p>
+                        </div>
+                    </div>
+
+                    {/* Información de las partes */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-4 rounded-lg border">
+                            <div className="flex items-center gap-2 mb-2">
+                                <User className="w-5 h-5 text-blue-500" />
+                                <span className="text-sm font-medium text-gray-700">Cliente</span>
+                            </div>
+                            <p className="text-sm text-gray-900">{dispute.client.name}</p>
+                        </div>
+
+                        {dispute.expert && (
+                            <div className="bg-white p-4 rounded-lg border">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <User className="w-5 h-5 text-green-500" />
+                                    <span className="text-sm font-medium text-gray-700">Experto</span>
+                                </div>
+                                <p className="text-sm text-gray-900">{dispute.expert.name}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mensaje informativo */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-blue-600 mt-0.5" />
+                            <div>
+                                <h4 className="text-sm font-medium text-blue-900 mb-1">Disputa Resuelta</h4>
+                                <p className="text-sm text-blue-800">
+                                    Esta disputa ha sido resuelta por nuestro equipo de administración. 
+                                    Si tienes alguna pregunta sobre la resolución, puedes contactar con nuestro soporte.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     // Only show loading for critical queries (searchQuery)
     if (searchQuery.isLoading) {
@@ -989,6 +1202,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 </div>
                                             </div>
 
+                                            {/* Dispute Resolution Card - Mobile */}
+                                            <DisputeResolutionCard />
+
                                             {/* Order Information - Mobile */}
                                             <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
                                                 <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-1.5 text-sm">
@@ -1024,7 +1240,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                                             {/* Action Buttons - Mobile */}
                                             <div className="space-y-2">
-                                                {(canDispute || canApprove) && (
+                                                {(canDispute || canApprove || canExpertRespond) && (
                                                     <div className="flex gap-2">
                                                         {canDispute && (
                                                             <button
@@ -1033,6 +1249,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             >
                                                                 <AlertTriangle className="w-4 h-4" />
                                                                 Disputar
+                                                            </button>
+                                                        )}
+                                                        {canExpertRespond && (
+                                                            <button
+                                                                onClick={() => setShowExpertResponseModal(true)}
+                                                                className="flex-1 px-3 py-2 bg-orange-50 border border-orange-200 text-orange-700 text-sm rounded-lg hover:bg-orange-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
+                                                            >
+                                                                <MessageCircle className="w-4 h-4" />
+                                                                Responder Disputa
                                                             </button>
                                                         )}
                                                         {canApprove && (
@@ -1357,6 +1582,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </button>
                         </div>
 
+                        {/* Dispute Resolution Card */}
+                        <DisputeResolutionCard />
+
                         {/* Service Card - Compact Side Layout */}
                         <div className="bg-gray-50 lg:bg-white rounded-lg border border-gray-200 p-3 mb-4 flex gap-3 items-start">
                             {/* Service Image - Small Side Image */}
@@ -1549,7 +1777,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </div>
                         )}
 
-                        {(canDispute || canApprove) && (
+                        {(canDispute || canApprove || canExpertRespond) && (
                             <div className="mt-4 flex gap-2">
                                 {canDispute && (
                                     <button
@@ -1558,6 +1786,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     >
                                         <AlertTriangle className="w-4 h-4" />
                                         Disputar
+                                    </button>
+                                )}
+                                {canExpertRespond && (
+                                    <button
+                                        onClick={() => setShowExpertResponseModal(true)}
+                                        className="flex-1 px-3 py-2 bg-orange-50 border border-orange-200 text-orange-700 text-sm rounded-lg hover:bg-orange-100 font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                                    >
+                                        <MessageCircle className="w-4 h-4" />
+                                        Responder Disputa
                                     </button>
                                 )}
                                 {canApprove && (
@@ -2000,10 +2237,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 onClose={() => {
                     setModalState((prev) => ({ ...prev, showDisputeModal: false }));
                     setDisputeReason('');
+                    setDisputeFiles([]);
                 }}
                 disputeReason={disputeReason}
                 setDisputeReason={setDisputeReason}
+                files={disputeFiles}
+                setFiles={setDisputeFiles}
                 onSubmit={handleDisputeSubmitAndClose}
+                isSubmitting={false}
             />
             <ResolveDisputeModal
                 isOpen={modalState.showResolveDisputeModal}
@@ -2053,6 +2294,264 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 }))}
                 onFinalize={handleForceFinalizeAndClose}
             />
+            {/* Modal profesional para respuesta del experto */}
+            {showExpertResponseModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 pt-20">
+                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-xl">
+                        {/* Header */}
+                        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-100 rounded-lg">
+                                        <MessageCircle className="w-6 h-6 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-semibold text-gray-900">Responder a la Disputa</h2>
+                                        <p className="text-sm text-gray-600">Proporciona tu versión de los hechos</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setShowExpertResponseModal(false);
+                                        setExpertResponseText('');
+                                        setExpertResponseFiles([]);
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <XCircle className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col lg:flex-row max-h-[calc(80vh-120px)]">
+                            {/* Panel izquierdo - Disputa del cliente */}
+                            <div className="lg:w-1/2 p-6 border-r border-gray-200 overflow-y-auto">
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                                            Disputa del Cliente
+                                        </h3>
+                                        
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                            <p className="text-gray-800 leading-relaxed">
+                                                {disputeQuery.data?.reason || 'No se pudo cargar la razón de la disputa'}
+                                            </p>
+                                        </div>
+
+                                        {/* Archivos del cliente */}
+                                        {disputeQuery.data?.files && disputeQuery.data.files.length > 0 && (
+                                            <div className="mt-4">
+                                                <h4 className="text-sm font-medium text-gray-700 mb-2">Archivos del cliente:</h4>
+                                                <div className="space-y-2">
+                                                    {disputeQuery.data.files.map((file, index) => (
+                                                        <a
+                                                            key={index}
+                                                            href={file.fileUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                                                        >
+                                                            <FileText className="w-4 h-4 text-blue-600" />
+                                                            <span className="text-sm text-blue-800">{file.fileName}</span>
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Información de la disputa */}
+                                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                    <span className="text-gray-500">Fecha de disputa:</span>
+                                                    <p className="font-medium text-gray-900">
+                                                        {disputeQuery.data?.createdAt ? new Date(disputeQuery.data.createdAt).toLocaleDateString('es-ES') : 'N/A'}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-500">Estado:</span>
+                                                    <p className="font-medium text-orange-600">Pendiente de respuesta</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Panel derecho - Formulario de respuesta */}
+                            <div className="lg:w-1/2 p-6 overflow-y-auto">
+                                <div className="space-y-4">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            <MessageCircle className="w-5 h-5 text-green-500" />
+                                            Tu Respuesta
+                                        </h3>
+                                        
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Explica tu versión de los hechos
+                                                </label>
+                                                <textarea
+                                                    value={expertResponseText}
+                                                    onChange={(e) => setExpertResponseText(e.target.value)}
+                                                    placeholder="Describe detalladamente tu versión de los hechos, incluyendo cualquier información relevante que pueda ayudar a resolver la disputa..."
+                                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
+                                                    rows={6}
+                                                    maxLength={1000}
+                                                />
+                                                <div className="flex justify-between items-center mt-1">
+                                                    <p className="text-xs text-gray-500">
+                                                        Sé específico y proporciona detalles relevantes
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {expertResponseText.length}/1000 caracteres
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Archivos de evidencia (opcional)
+                                                </label>
+                                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+                                                    <input
+                                                        type="file"
+                                                        multiple
+                                                        accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.mp4,.avi,.mov"
+                                                        onChange={(e) => {
+                                                            const files = Array.from(e.target.files || []);
+                                                            setExpertResponseFiles(files);
+                                                        }}
+                                                        className="hidden"
+                                                        id="expert-response-files"
+                                                    />
+                                                    <label
+                                                        htmlFor="expert-response-files"
+                                                        className="cursor-pointer flex flex-col items-center gap-3"
+                                                    >
+                                                        <div className="p-3 bg-orange-100 rounded-full">
+                                                            <Upload className="w-6 h-6 text-orange-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-medium text-gray-700">
+                                                                Haz clic para subir archivos
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                JPG, PNG, GIF, PDF, DOC, DOCX, MP4, AVI, MOV
+                                                            </p>
+                                                            <p className="text-xs text-gray-400">
+                                                                Máximo 10MB por archivo
+                                                            </p>
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                                
+                                                {expertResponseFiles.length > 0 && (
+                                                    <div className="mt-4">
+                                                        <p className="text-sm font-medium text-gray-700 mb-3">Archivos seleccionados:</p>
+                                                        <div className="space-y-2">
+                                                            {expertResponseFiles.map((file, index) => (
+                                                                <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <FileText className="w-4 h-4 text-gray-500" />
+                                                                        <span className="text-sm text-gray-700">{file.name}</span>
+                                                                        <span className="text-xs text-gray-500">
+                                                                            ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                                                                        </span>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const newFiles = expertResponseFiles.filter((_, i) => i !== index);
+                                                                            setExpertResponseFiles(newFiles);
+                                                                        }}
+                                                                        className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                                                    >
+                                                                        <XCircle className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Información importante */}
+                                    {disputeQuery.data?.expertResponseDeadline && (
+                                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                            <div className="flex items-start gap-3">
+                                                <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5" />
+                                                <div>
+                                                    <h4 className="text-sm font-medium text-orange-800 mb-1">Tiempo límite</h4>
+                                                    <p className="text-sm text-orange-700">
+                                                        Tienes hasta el <strong>{new Date(disputeQuery.data.expertResponseDeadline).toLocaleDateString('es-ES', {
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}</strong> para responder a esta disputa.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <div className="flex items-start gap-3">
+                                            <MessageCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                                            <div>
+                                                <h4 className="text-sm font-medium text-blue-800 mb-1">Información importante</h4>
+                                                <p className="text-sm text-blue-700">
+                                                    Tu respuesta será revisada por nuestro equipo de administración. 
+                                                    Proporciona información clara y evidencia relevante para ayudar en la resolución.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer con botones */}
+                        <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    onClick={() => {
+                                        setShowExpertResponseModal(false);
+                                        setExpertResponseText('');
+                                        setExpertResponseFiles([]);
+                                    }}
+                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleExpertResponseSubmit}
+                                    disabled={!expertResponseText.trim() || expertResponse.isPending}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center gap-2"
+                                >
+                                    {expertResponse.isPending ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            Enviando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <MessageCircle className="w-4 h-4" />
+                                            Enviar Respuesta
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {notifications.map((notification) => (
                 <Notification
                     key={notification.id}
