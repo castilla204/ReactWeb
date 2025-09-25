@@ -180,6 +180,21 @@ export const useDisputes = () => {
     },
   });
 
+  // Función de debug para entender el error 403
+  const debugDispute = async (disputeId: number) => {
+    try {
+      const response = await fetchApi(`${API_CONFIG.endpoints.dispute.debug(disputeId)}`, {
+        method: 'GET',
+        requiresAuth: true,
+      });
+      console.log('[useDisputes] Debug response:', response);
+      return response;
+    } catch (error) {
+      console.error('[useDisputes] Debug error:', error);
+      throw error;
+    }
+  };
+
   return {
     // Mutations
     createDispute,
@@ -192,5 +207,8 @@ export const useDisputes = () => {
     useDisputeDetails,
     useDisputeSearch,
     useDisputeBySearchHire,
+    
+    // Debug
+    debugDispute,
   };
 };
