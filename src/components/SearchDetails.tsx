@@ -157,7 +157,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         useSearchActions(setNotifications);
     
     // Hook para obtener información de disputa (solución integrada)
-    const { useDisputeBySearchHire, expertResponse } = useDisputes();
+    const { useDisputeBySearchHire, expertResponse, debugDispute } = useDisputes();
     
     // Hook para el sistema de citas
     const { 
@@ -280,9 +280,24 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const userId = Number(user?.id) || 0;
     const clientId = Number(searchQuery.data?.userId ?? 0);
     const expertId = Number(searchQuery.data?.searchHire?.expertId ?? 0);
+    
+    // Obtener el expertId de la disputa (puede ser diferente al de la búsqueda)
+    const disputeExpertId = Number(disputeQuery.data?.expert?.id ?? 0);
+
+    // Debug: Log user and role information
+    console.log('[SearchDetails] User and role debug:', {
+        userId,
+        clientId,
+        expertId,
+        disputeExpertId,
+        userData: user,
+        searchData: searchQuery.data,
+        disputeData: disputeQuery.data
+    });
 
     const isClient = userId === clientId;
     const isExpert = userId === expertId;
+    const isDisputeExpert = userId === disputeExpertId;
     const hasReviewed = false; // Simplified since we're not fetching reviews anymore
     const canReview =
         isClient && searchQuery.data?.searchHire && ['completed', 'dispute-resolved'].includes(searchQuery.data.searchHire.status) && !hasReviewed;
@@ -293,7 +308,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const isDisputeResolved = (isClient || isExpert) && searchQuery.data?.searchHire?.status === 'dispute-resolved';
     
     // Determinar si el experto puede responder a la disputa
-    const canExpertRespond = isExpert && 
+    const canExpertRespond = isDisputeExpert && 
                             disputeQuery.data?.canExpertRespond && 
                             !disputeQuery.data?.expertResponse &&
                             searchQuery.data?.searchHire?.status === 'disputed';
@@ -496,12 +511,43 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         });
     };
 
+    // Función de debug para entender el error 403
+    const handleDebugDispute = async () => {
+        if (!disputeQuery.data?.id) {
+            addNotification('error', 'No hay disputa para debuggear');
+            return;
+        }
+
+        try {
+            console.log('[SearchDetails] Iniciando debug de disputa...');
+            const debugData = await debugDispute(disputeQuery.data.id);
+            console.log('[SearchDetails] Debug data recibida:', debugData);
+            addNotification('success', 'Debug completado - revisa la consola');
+        } catch (error) {
+            console.error('[SearchDetails] Error en debug:', error);
+            addNotification('error', 'Error en debug - revisa la consola');
+        }
+    };
+
     // Función para manejar la respuesta del experto
     const handleExpertResponseSubmit = async () => {
         if (!disputeQuery.data?.id || !expertResponseText.trim()) {
             addNotification('error', 'Por favor, proporciona una respuesta');
             return;
         }
+
+        // Debug: Log expert response attempt
+        console.log('[SearchDetails] Expert response attempt:', {
+            disputeId: disputeQuery.data.id,
+            userId,
+            expertId,
+            disputeExpertId,
+            isExpert,
+            isDisputeExpert,
+            canExpertRespond,
+            disputeData: disputeQuery.data,
+            userData: user
+        });
 
         try {
             await expertResponse.mutateAsync({
@@ -1252,13 +1298,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             </button>
                                                         )}
                                                         {canExpertRespond && (
-                                                            <button
-                                                                onClick={() => setShowExpertResponseModal(true)}
-                                                                className="flex-1 px-3 py-2 bg-orange-50 border border-orange-200 text-orange-700 text-sm rounded-lg hover:bg-orange-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
-                                                            >
-                                                                <MessageCircle className="w-4 h-4" />
-                                                                Responder Disputa
-                                                            </button>
+                                                            <>
+                                                                <button
+                                                                    onClick={() => setShowExpertResponseModal(true)}
+                                                                    className="flex-1 px-3 py-2 bg-orange-50 border border-orange-200 text-orange-700 text-sm rounded-lg hover:bg-orange-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
+                                                                >
+                                                                    <MessageCircle className="w-4 h-4" />
+                                                                    Responder Disputa
+                                                                </button>
+                                                                <button
+                                                                    onClick={handleDebugDispute}
+                                                                    className="px-3 py-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg hover:bg-red-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
+                                                                    title="Debug: Entender error 403"
+                                                                >
+                                                                    🐛 Debug
+                                                                </button>
+                                                            </>
                                                         )}
                                                         {canApprove && (
                                                             <button

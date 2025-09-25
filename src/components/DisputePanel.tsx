@@ -14,6 +14,12 @@ import {
   Eye,
   ArrowLeft,
   ExternalLink,
+  FileText,
+  Image,
+  File,
+  FileVideo,
+  FileAudio,
+  Archive,
 } from 'lucide-react';
 import { useDisputes } from '../hooks/useDisputes';
 import { useAuth } from '../contexts/AuthContext';
@@ -112,6 +118,7 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
     });
   };
 
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-ES', {
       style: 'currency',
@@ -131,8 +138,8 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-full mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -544,6 +551,41 @@ const DisputeDetails: React.FC<{
     });
   };
 
+  // Función helper para obtener el icono según el tipo de archivo
+  const getFileIcon = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    
+    switch (extension) {
+      case 'pdf':
+        return <FileText className="w-4 h-4 text-red-500" />;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+        return <Image className="w-4 h-4 text-blue-500" />;
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+      case 'wmv':
+        return <FileVideo className="w-4 h-4 text-purple-500" />;
+      case 'mp3':
+      case 'wav':
+      case 'flac':
+        return <FileAudio className="w-4 h-4 text-green-500" />;
+      case 'zip':
+      case 'rar':
+      case '7z':
+        return <Archive className="w-4 h-4 text-orange-500" />;
+      case 'doc':
+      case 'docx':
+      case 'txt':
+        return <FileText className="w-4 h-4 text-blue-600" />;
+      default:
+        return <File className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-ES', {
       style: 'currency',
@@ -588,13 +630,13 @@ const DisputeDetails: React.FC<{
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="xl:col-span-3 space-y-4">
             {/* Dispute Info */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Información de la Disputa</h2>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-gray-900">Información de la Disputa</h2>
                 <span className={`px-3 py-1 text-sm font-medium rounded-full ${
                   dispute.status === 'Pending' 
                     ? 'bg-orange-100 text-orange-800' 
@@ -606,25 +648,52 @@ const DisputeDetails: React.FC<{
               
               <div className="space-y-4">
                 {/* Disputa del Cliente */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Disputa del Cliente</label>
-                  <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{dispute.reason}</p>
+                <div className="bg-white border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                    <h3 className="text-base font-semibold text-gray-900">Disputa del Cliente</h3>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-gray-900 leading-relaxed">{dispute.reason}</p>
+                  </div>
                   
                   {/* Archivos del cliente */}
                   {dispute.files && dispute.files.length > 0 && (
                     <div className="mt-2">
-                      <p className="text-xs text-gray-500 mb-1">Archivos adjuntos:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {dispute.files.map((file) => (
-                          <a
-                            key={file.id}
-                            href={file.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
-                          >
-                            📎 {file.fileName}
-                          </a>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        <p className="text-xs font-medium text-gray-700">Archivos del Cliente</p>
+                        <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                          {dispute.files.filter(file => file.fileCategory === 'client' || !file.fileCategory).length}
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {dispute.files
+                          .filter(file => file.fileCategory === 'client' || !file.fileCategory)
+                          .map((file) => (
+                          <div key={file.id} className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                            {getFileIcon(file.fileName)}
+                            <div className="flex-1 min-w-0">
+                              <a
+                                href={file.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download=""
+                                className="text-xs text-blue-600 hover:text-blue-800 font-medium truncate block"
+                                title={file.fileName}
+                              >
+                                {file.fileName}
+                              </a>
+                              {file.uploadedByUserName && (
+                                <p className="text-xs text-gray-500">
+                                  por {file.uploadedByUserName}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">
+                              Cliente
+                            </span>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -633,41 +702,80 @@ const DisputeDetails: React.FC<{
 
                 {/* Respuesta del Experto */}
                 {dispute.expertResponse && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Respuesta del Experto</label>
-                    <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{dispute.expertResponse}</p>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      <h3 className="text-base font-semibold text-gray-900">Respuesta del Experto</h3>
+                    </div>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <p className="text-sm text-gray-900 leading-relaxed">{dispute.expertResponse}</p>
+                    </div>
                     
                     {/* Archivos del experto */}
                     {(dispute.expertResponseFiles && dispute.expertResponseFiles.length > 0) || 
-                     (dispute.files && dispute.files.length > 2) ? (
+                     (dispute.files && dispute.files.some(f => f.fileCategory === 'expert')) ? (
                       <div className="mt-2">
-                        <p className="text-xs text-gray-500 mb-1">Archivos del experto:</p>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          <p className="text-xs font-medium text-gray-700">Archivos del Experto</p>
+                          <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">
+                            {(dispute.expertResponseFiles?.length || 0) + (dispute.files?.filter(f => f.fileCategory === 'expert').length || 0)}
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
                           {/* Mostrar archivos específicos del experto si existen */}
                           {dispute.expertResponseFiles && dispute.expertResponseFiles.map((file) => (
-                            <a
-                              key={file.id}
-                              href={file.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition-colors"
-                            >
-                              📎 {file.fileName}
-                            </a>
+                            <div key={file.id} className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded hover:bg-green-100 transition-colors">
+                              {getFileIcon(file.fileName)}
+                              <div className="flex-1 min-w-0">
+                                <a
+                                  href={file.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download=""
+                                  className="text-xs text-green-600 hover:text-green-800 font-medium truncate block"
+                                  title={file.fileName}
+                                >
+                                  {file.fileName}
+                                </a>
+                                {file.uploadedByUserName && (
+                                  <p className="text-xs text-gray-500">
+                                    por {file.uploadedByUserName}
+                                  </p>
+                                )}
+                              </div>
+                              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                                Experto
+                              </span>
+                            </div>
                           ))}
-                          {/* Si no hay archivos específicos del experto, mostrar los archivos adicionales */}
-                          {(!dispute.expertResponseFiles || dispute.expertResponseFiles.length === 0) && 
-                           dispute.files && dispute.files.length > 2 && 
-                           dispute.files.slice(2).map((file, index) => (
-                            <a
-                              key={`expert-${index}`}
-                              href={file.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition-colors"
-                            >
-                              📎 {file.fileName}
-                            </a>
+                          {/* Mostrar archivos del experto desde el array principal */}
+                          {dispute.files
+                            ?.filter(file => file.fileCategory === 'expert')
+                            .map((file) => (
+                            <div key={file.id} className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded hover:bg-green-100 transition-colors">
+                              {getFileIcon(file.fileName)}
+                              <div className="flex-1 min-w-0">
+                                <a
+                                  href={file.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download=""
+                                  className="text-xs text-green-600 hover:text-green-800 font-medium truncate block"
+                                  title={file.fileName}
+                                >
+                                  {file.fileName}
+                                </a>
+                                {file.uploadedByUserName && (
+                                  <p className="text-xs text-gray-500">
+                                    por {file.uploadedByUserName}
+                                  </p>
+                                )}
+                              </div>
+                              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                                Experto
+                              </span>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -701,15 +809,35 @@ const DisputeDetails: React.FC<{
                   </div>
                 )}
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Creación</label>
-                  <p className="text-gray-900">{formatDate(dispute.createdAt)}</p>
+                <div className="bg-white border border-gray-200 rounded-lg p-3">
+                  <h3 className="text-base font-semibold text-gray-900 mb-3">Información de la Disputa</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="bg-gray-50 border border-gray-200 rounded p-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Fecha de Creación</label>
+                      <p className="text-sm text-gray-900">{formatDate(dispute.createdAt)}</p>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded p-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Estado</label>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        dispute.status === 'Pending' 
+                          ? 'bg-orange-100 text-orange-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {dispute.statusTranslated}
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 
                 {dispute.resolutionComments && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Comentarios de Resolución</label>
-                    <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{dispute.resolutionComments}</p>
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                      <h3 className="text-base font-semibold text-gray-900">Comentarios de Resolución</h3>
+                    </div>
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                      <p className="text-sm text-gray-900 leading-relaxed">{dispute.resolutionComments}</p>
+                    </div>
                   </div>
                 )}
 
@@ -720,29 +848,29 @@ const DisputeDetails: React.FC<{
                     {dispute.files && dispute.files.length > 0 && (
                       <div className="mb-2">
                         <p className="text-xs text-yellow-700">Archivos principales ({dispute.files.length}):</p>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="space-y-1">
                           {dispute.files.map((file, index) => (
-                            <span key={index} className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                            <div key={index} className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                               {index + 1}. {file.fileName || `Archivo ${index + 1}`}
-                              {file.uploadedBy && ` (${file.uploadedBy})`}
-                            </span>
+                              {file.fileCategory && ` [${file.fileCategory}]`}
+                              {file.uploadedByUserName && ` por ${file.uploadedByUserName}`}
+                              {file.fileCategoryLabel && ` (${file.fileCategoryLabel})`}
+                            </div>
                           ))}
                         </div>
-                        {dispute.files.length > 2 && (
-                          <p className="text-xs text-yellow-600 mt-1">
-                            💡 Los archivos 3+ podrían ser del experto
-                          </p>
-                        )}
                       </div>
                     )}
                     {dispute.expertResponseFiles && dispute.expertResponseFiles.length > 0 && (
                       <div>
                         <p className="text-xs text-yellow-700">Archivos específicos del experto ({dispute.expertResponseFiles.length}):</p>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="space-y-1">
                           {dispute.expertResponseFiles.map((file, index) => (
-                            <span key={index} className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                            <div key={index} className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                               {file.fileName || `Archivo experto ${index + 1}`}
-                            </span>
+                              {file.fileCategory && ` [${file.fileCategory}]`}
+                              {file.uploadedByUserName && ` por ${file.uploadedByUserName}`}
+                              {file.fileCategoryLabel && ` (${file.fileCategoryLabel})`}
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -751,7 +879,9 @@ const DisputeDetails: React.FC<{
                       <strong>Estructura de datos:</strong><br/>
                       • dispute.files: {dispute.files ? dispute.files.length : 0} archivos<br/>
                       • dispute.expertResponseFiles: {dispute.expertResponseFiles ? dispute.expertResponseFiles.length : 0} archivos<br/>
-                      • dispute.expertResponse: {dispute.expertResponse ? 'Sí' : 'No'}
+                      • dispute.expertResponse: {dispute.expertResponse ? 'Sí' : 'No'}<br/>
+                      • Archivos del cliente: {dispute.files ? dispute.files.filter(f => f.fileCategory === 'client' || !f.fileCategory).length : 0}<br/>
+                      • Archivos del experto: {dispute.files ? dispute.files.filter(f => f.fileCategory === 'expert').length : 0}
                     </div>
                   </div>
                 ) : (
@@ -795,15 +925,15 @@ const DisputeDetails: React.FC<{
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Users Info */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Usuarios Involucrados</h2>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <h2 className="text-base font-semibold text-gray-900 mb-3">Usuarios Involucrados</h2>
               
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-                  <div className="flex items-center gap-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Cliente</label>
+                  <div className="flex items-center gap-2">
                     {dispute.client.profilePictureUrl && (
                       <img
                         src={dispute.client.profilePictureUrl}
@@ -812,16 +942,16 @@ const DisputeDetails: React.FC<{
                       />
                     )}
                     <div>
-                      <p className="font-medium text-gray-900">{dispute.client.name}</p>
-                      <p className="text-sm text-gray-500">{dispute.client.email}</p>
+                      <p className="text-sm font-medium text-gray-900">{dispute.client.name}</p>
+                      <p className="text-xs text-gray-500">{dispute.client.email}</p>
                     </div>
                   </div>
                 </div>
                 
                 {dispute.expert && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Experto</label>
-                    <div className="flex items-center gap-3">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Experto</label>
+                    <div className="flex items-center gap-2">
                       {dispute.expert.profilePictureUrl && (
                         <img
                           src={dispute.expert.profilePictureUrl}
@@ -830,8 +960,8 @@ const DisputeDetails: React.FC<{
                         />
                       )}
                       <div>
-                        <p className="font-medium text-gray-900">{dispute.expert.name}</p>
-                        <p className="text-sm text-gray-500">{dispute.expert.email}</p>
+                        <p className="text-sm font-medium text-gray-900">{dispute.expert.name}</p>
+                        <p className="text-xs text-gray-500">{dispute.expert.email}</p>
                       </div>
                     </div>
                   </div>
@@ -840,57 +970,57 @@ const DisputeDetails: React.FC<{
             </div>
 
             {/* Financial Info */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Información Financiera</h2>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <h2 className="text-base font-semibold text-gray-900 mb-3">Información Financiera</h2>
               
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Monto</label>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(dispute.searchHire.amount)}</p>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Monto</label>
+                  <p className="text-xl font-bold text-gray-900">{formatCurrency(dispute.searchHire.amount)}</p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Estado del Pago</label>
-                  <p className="text-gray-900">{dispute.searchHire.statusTranslated}</p>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Estado del Pago</label>
+                  <p className="text-sm text-gray-900">{dispute.searchHire.statusTranslated}</p>
                 </div>
               </div>
             </div>
 
             {/* Actions */}
             {dispute.status === 'Pending' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Acciones</h2>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <h2 className="text-base font-semibold text-gray-900 mb-3">Acciones</h2>
                 
                 {!showResolveForm ? (
                   <button
                     onClick={() => setShowResolveForm(true)}
-                    className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+                    className="w-full bg-blue-500 text-white py-2 px-3 rounded text-sm hover:bg-blue-600 transition-colors"
                   >
                     Resolver Disputa
                   </button>
                 ) : (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
                         Comentarios de Resolución
                       </label>
                       <textarea
                         value={resolutionComments}
                         onChange={(e) => setResolutionComments(e.target.value)}
                         placeholder="Explica la resolución de la disputa..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        rows={4}
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        rows={2}
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
                         Acción Financiera
                       </label>
                       <select
                         value={resolutionAction}
                         onChange={(e) => setResolutionAction(e.target.value as any)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="refund_client">Reembolsar al cliente</option>
                         <option value="pay_expert">Pagar al experto</option>
@@ -901,13 +1031,13 @@ const DisputeDetails: React.FC<{
                       <button
                         onClick={handleResolve}
                         disabled={!resolutionComments.trim() || isResolving}
-                        className="flex-1 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex-1 bg-green-500 text-white py-1.5 px-3 rounded text-xs hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {isResolving ? 'Resolviendo...' : 'Confirmar Resolución'}
                       </button>
                       <button
                         onClick={() => setShowResolveForm(false)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="px-3 py-1.5 border border-gray-300 rounded text-xs hover:bg-gray-50 transition-colors"
                       >
                         Cancelar
                       </button>
