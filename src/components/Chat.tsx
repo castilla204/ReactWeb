@@ -285,7 +285,42 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
         return url.split('/').pop() || 'archivo';
     };
 
-    if (!user || loading || !conversation || (user.id !== conversation.clientId && user.id !== conversation.expertId)) {
+    // Debug: Log access control information
+    console.log('[Chat] Access control debug:', {
+        user: user ? { id: user.id, email: user.email } : null,
+        loading,
+        conversation: conversation ? {
+            id: conversation.id,
+            clientId: conversation.clientId,
+            expertId: conversation.expertId,
+            searchHireId: conversation.searchHireId
+        } : null,
+        userId: user?.id,
+        clientId: conversation?.clientId,
+        expertId: conversation?.expertId,
+        isClient: user?.id === conversation?.clientId,
+        isExpert: user?.id === conversation?.expertId,
+        hasAccess: user?.id === conversation?.clientId || user?.id === conversation?.expertId
+    });
+
+    // Convert IDs to numbers for comparison to handle string/number type mismatches
+    const userId = Number(user?.id);
+    const clientId = Number(conversation?.clientId);
+    const expertId = Number(conversation?.expertId);
+    
+    const hasAccess = userId === clientId || userId === expertId;
+    
+    console.log('[Chat] ID comparison debug:', {
+        userId,
+        clientId,
+        expertId,
+        hasAccess,
+        userIdType: typeof user?.id,
+        clientIdType: typeof conversation?.clientId,
+        expertIdType: typeof conversation?.expertId
+    });
+
+    if (!user || loading || !conversation || !hasAccess) {
         return (
             <div className="flex items-center justify-center h-full text-gray-500">
                 {loading ? 'Cargando chat...' : 'No tienes acceso a este chat.'}
@@ -293,7 +328,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
         );
     }
 
-    const isClient = user.id === conversation.clientId;
+    const isClient = userId === clientId;
 
     // Group messages by sender and proximity in time
     const groupedMessages = conversation.messages?.reduce((groups: any[], message: any, index: number) => {

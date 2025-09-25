@@ -198,3 +198,4 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
 export default RejectAppointmentModal;
 
 
+

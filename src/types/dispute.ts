@@ -59,6 +59,12 @@ export interface DisputeFileDto {
   fileSize: number;
   uploadedAt: string;
   uploadedBy: 'client' | 'expert';
+  // Nuevos campos para diferenciación
+  uploadedByUserId?: number;
+  uploadedByUserName?: string;
+  uploadedByUserEmail?: string;
+  fileCategory?: 'client' | 'expert';
+  fileCategoryLabel?: string;
 }
 
 export interface DisputeStats {

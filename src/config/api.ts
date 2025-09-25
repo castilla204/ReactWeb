@@ -130,6 +130,7 @@ export const API_CONFIG = {
             resolve: (id: number) => `${API_PATH}/dispute/${id}/resolve`,
             expertResponse: (id: number) => `${API_PATH}/dispute/${id}/expert-response`,
             details: (searchHireId: number) => `${API_PATH}/Dispute/details/${searchHireId}`,
+            debug: (id: number) => `${API_PATH}/dispute/${id}/debug`,
         },
     },
 };
