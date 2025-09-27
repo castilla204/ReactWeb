@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useDisputes } from '../hooks/useDisputes';
 import { useAuth } from '../contexts/AuthContext';
+import { isAdmin } from '../utils/admin';
 import type { DisputeFilters, DisputeDto } from '../types/dispute';
 
 interface DisputePanelProps {
@@ -41,7 +42,7 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
   const [showFilters, setShowFilters] = useState(false);
 
   // Verificar si el usuario es admin
-  const isAdmin = user?.email?.trim().toLowerCase() === 'dcastillaa@gmail.com'.toLowerCase();
+  const userIsAdmin = isAdmin(user?.email);
   
   const { useDisputesList, resolveDispute } = useDisputes();
   const disputesQuery = useDisputesList(filters);
@@ -49,7 +50,7 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
   // Debug logging
   console.log('[DisputePanel] User info:', {
     user: user?.email,
-    isAdmin,
+    isAdmin: userIsAdmin,
     hasToken: !!localStorage.getItem('authToken')
   });
 
@@ -58,7 +59,7 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
   const error = disputesQuery.error;
 
   // Si no es admin, mostrar mensaje de acceso denegado
-  if (!isAdmin) {
+  if (!userIsAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
