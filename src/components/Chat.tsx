@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
+import { isAdmin } from '../utils/admin';
 import { Send, Smile, Paperclip, MapPin, Download } from 'lucide-react';
 import { NotificationType } from './Notification';
 import { v4 as uuidv4 } from 'uuid';
@@ -285,9 +286,20 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
         return url.split('/').pop() || 'archivo';
     };
 
+    // Convert IDs to numbers for comparison to handle string/number type mismatches
+    const userId = Number(user?.id);
+    const clientId = Number(conversation?.clientId);
+    const expertId = Number(conversation?.expertId);
+    
+    // Check if user is admin
+    const userIsAdmin = isAdmin(user?.email);
+    
+    // User has access if they are the client, expert, or admin
+    const hasAccess = userId === clientId || userId === expertId || userIsAdmin;
+    
     // Debug: Log access control information
     console.log('[Chat] Access control debug:', {
-        user: user ? { id: user.id, email: user.email } : null,
+        user: user ? { id: user.id, email: user.email, role: user.role } : null,
         loading,
         conversation: conversation ? {
             id: conversation.id,
@@ -295,29 +307,15 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
             expertId: conversation.expertId,
             searchHireId: conversation.searchHireId
         } : null,
-        userId: user?.id,
-        clientId: conversation?.clientId,
-        expertId: conversation?.expertId,
-        isClient: user?.id === conversation?.clientId,
-        isExpert: user?.id === conversation?.expertId,
-        hasAccess: user?.id === conversation?.clientId || user?.id === conversation?.expertId
-    });
-
-    // Convert IDs to numbers for comparison to handle string/number type mismatches
-    const userId = Number(user?.id);
-    const clientId = Number(conversation?.clientId);
-    const expertId = Number(conversation?.expertId);
-    
-    const hasAccess = userId === clientId || userId === expertId;
-    
-    console.log('[Chat] ID comparison debug:', {
         userId,
         clientId,
         expertId,
+        isAdmin: userIsAdmin,
         hasAccess,
         userIdType: typeof user?.id,
         clientIdType: typeof conversation?.clientId,
-        expertIdType: typeof conversation?.expertId
+        expertIdType: typeof conversation?.expertId,
+        userEmail: user?.email
     });
 
     if (!user || loading || !conversation || !hasAccess) {
