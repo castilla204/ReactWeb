@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { CheckCircle, Loader2, XCircle, Upload } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Upload, FileText, Video } from 'lucide-react';
+import { useDeliverableTypes } from '../../hooks/useDeliverableTypes';
+import { DeliverableType } from '../../types/deliverable';
 
 interface ServiceFormProps {
     showServiceForm: boolean;
@@ -8,8 +10,8 @@ interface ServiceFormProps {
     setSelectedImages: (value: File[]) => void;
     formErrors: { [key: string]: string };
     setFormErrors: (value: { [key: string]: string }) => void;
-    formData: { categoryId: string; serviceTypeId: string; price: string; conditions: string; durationInHours: string };
-    setFormData: (value: { categoryId: string; serviceTypeId: string; price: string; conditions: string; durationInHours: string }) => void;
+    formData: { categoryId: string; serviceTypeId: string; price: string; conditions: string; durationInHours: string; selectedDeliverableTypes: number[] };
+    setFormData: (value: { categoryId: string; serviceTypeId: string; price: string; conditions: string; durationInHours: string; selectedDeliverableTypes: number[] }) => void;
     handleImageSelect: (e: React.ChangeEvent) => void;
     removeImage: (index: number) => void;
     handleCreateService: (e: React.FormEvent) => void;
@@ -47,10 +49,17 @@ export function ServiceForm({
     setExistingImages: propSetExistingImages,
 }: ServiceFormProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { deliverableTypes, isLoading: isLoadingDeliverableTypes, error: deliverableTypesError } = useDeliverableTypes();
+    
+    // Log adicional para debuggear
+    console.log('🔍 ServiceForm render - deliverableTypes:', deliverableTypes);
+    console.log('🔍 ServiceForm render - isLoadingDeliverableTypes:', isLoadingDeliverableTypes);
+    console.log('🔍 ServiceForm render - deliverableTypesError:', deliverableTypesError);
 
     const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(formData.categoryId ? [formData.categoryId] : []);
     const [selectedServiceTypeIds, setSelectedServiceTypeIds] = useState<string[]>(formData.serviceTypeId ? [formData.serviceTypeId] : []);
     const [existingImages, setExistingImages] = useState<string[]>([]);
+    const [hasInitializedDeliverableTypes, setHasInitializedDeliverableTypes] = useState(false);
 
     // Actualizar las selecciones cuando cambie formData o editingService
     useEffect(() => {
@@ -78,6 +87,40 @@ export function ServiceForm({
         }
     }, [editingService]);
 
+    // Inicializar tipos de entregables seleccionados (PDF obligatorio)
+    useEffect(() => {
+        console.log('🔍 ServiceForm useEffect - deliverableTypes:', deliverableTypes);
+        console.log('🔍 ServiceForm useEffect - formData.selectedDeliverableTypes:', formData.selectedDeliverableTypes);
+        console.log('🔍 ServiceForm useEffect - editingService:', editingService);
+        console.log('🔍 ServiceForm useEffect - deliverableTypes.length:', deliverableTypes.length);
+        console.log('🔍 ServiceForm useEffect - formData.selectedDeliverableTypes.length:', formData.selectedDeliverableTypes.length);
+        
+        if (deliverableTypes.length > 0 && formData.selectedDeliverableTypes.length === 0 && !editingService && !isLoadingDeliverableTypes && !hasInitializedDeliverableTypes) {
+            const pdfType = deliverableTypes.find(dt => dt.name === 'PDF');
+            console.log('🔍 ServiceForm useEffect - pdfType found:', pdfType);
+            if (pdfType) {
+                console.log('🔍 ServiceForm useEffect - Setting PDF as default selected with ID:', pdfType.id);
+                setFormData(prev => {
+                    console.log('🔍 ServiceForm useEffect - Previous formData:', prev);
+                    const newFormData = {
+                        ...prev,
+                        selectedDeliverableTypes: [pdfType.id]
+                    };
+                    console.log('🔍 ServiceForm useEffect - New formData:', newFormData);
+                    return newFormData;
+                });
+                setHasInitializedDeliverableTypes(true);
+            }
+        }
+    }, [deliverableTypes, editingService, isLoadingDeliverableTypes, hasInitializedDeliverableTypes]);
+
+    // Resetear el flag cuando se abre el formulario para crear un nuevo servicio
+    useEffect(() => {
+        if (showServiceForm && !editingService) {
+            setHasInitializedDeliverableTypes(false);
+        }
+    }, [showServiceForm, editingService]);
+
     if (!showServiceForm) return null;
 
     const handleCategorySelect = (id: string) => {
@@ -104,6 +147,29 @@ export function ServiceForm({
         } else {
             setExistingImages(newImages);
         }
+    };
+
+    const handleDeliverableTypeSelect = (deliverableTypeId: number) => {
+        console.log('🔍 handleDeliverableTypeSelect called with:', deliverableTypeId);
+        console.log('🔍 Current formData.selectedDeliverableTypes:', formData.selectedDeliverableTypes);
+        
+        const deliverableType = deliverableTypes.find(dt => dt.id === deliverableTypeId);
+        console.log('🔍 Found deliverableType:', deliverableType);
+        
+        if (!deliverableType) return;
+
+        // Si es PDF (obligatorio), no permitir deseleccionar
+        if (deliverableType.name === 'PDF' && deliverableType.isRequired) {
+            console.log('🔍 PDF is required, cannot deselect');
+            return;
+        }
+
+        const newSelected = formData.selectedDeliverableTypes.includes(deliverableTypeId)
+            ? formData.selectedDeliverableTypes.filter(id => id !== deliverableTypeId)
+            : [...formData.selectedDeliverableTypes, deliverableTypeId];
+
+        console.log('🔍 New selected deliverable types:', newSelected);
+        setFormData({ ...formData, selectedDeliverableTypes: newSelected });
     };
 
     const getCurrentExistingImages = () => {
@@ -320,6 +386,94 @@ export function ServiceForm({
                                     ))}
                                 </div>
                             </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Sección de Tipos de Entregables */}
+                <div className="col-span-1 lg:col-span-2">
+                    <div>
+                        <label className="block text-xs font-normal text-gray-500 mb-2">
+                            Tipos de Informes a Entregar
+                        </label>
+                        {isLoadingDeliverableTypes ? (
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Cargando tipos de entregables...
+                            </div>
+                        ) : deliverableTypesError ? (
+                            <div className="text-sm text-red-500">
+                                Error cargando tipos de entregables: {deliverableTypesError.message}
+                            </div>
+                        ) : deliverableTypes && deliverableTypes.length > 0 ? (
+                            <div className="space-y-3">
+                                {deliverableTypes.map((deliverableType) => {
+                                    const isSelected = formData.selectedDeliverableTypes.includes(deliverableType.id);
+                                    const isRequired = deliverableType.isRequired;
+                                    
+                                    console.log(`🔍 Rendering deliverableType ${deliverableType.id} (${deliverableType.name}):`, {
+                                        isSelected,
+                                        isRequired,
+                                        selectedDeliverableTypes: formData.selectedDeliverableTypes
+                                    });
+                                    
+                                    return (
+                                        <div
+                                            key={deliverableType.id}
+                                            className={`p-3 rounded-lg border transition-all duration-200 ${
+                                                isSelected
+                                                    ? 'border-blue-200 bg-blue-50'
+                                                    : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
+                                            } ${isRequired ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
+                                            onClick={() => handleDeliverableTypeSelect(deliverableType.id)}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                                                    isSelected
+                                                        ? 'border-blue-500 bg-blue-500'
+                                                        : 'border-gray-300'
+                                                }`}>
+                                                    {isSelected && (
+                                                        <CheckCircle className="w-3 h-3 text-white" />
+                                                    )}
+                                                </div>
+                                                
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        {deliverableType.name === 'PDF' ? (
+                                                            <FileText className="w-4 h-4 text-red-500" />
+                                                        ) : (
+                                                            <Video className="w-4 h-4 text-blue-500" />
+                                                        )}
+                                                        <span className={`text-sm font-medium ${
+                                                            isSelected ? 'text-blue-900' : 'text-gray-900'
+                                                        }`}>
+                                                            {deliverableType.displayName}
+                                                        </span>
+                                                        {isRequired && (
+                                                            <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                                                                Obligatorio
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className={`text-xs ${
+                                                        isSelected ? 'text-blue-700' : 'text-gray-600'
+                                                    }`}>
+                                                        {deliverableType.description}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-sm text-yellow-600">
+                                No se encontraron tipos de entregables disponibles
+                            </div>
+                        )}
+                        {formErrors.selectedDeliverableTypes && (
+                            <p className="mt-1 text-xs text-red-500">{formErrors.selectedDeliverableTypes}</p>
                         )}
                     </div>
                 </div>

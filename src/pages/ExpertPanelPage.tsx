@@ -58,6 +58,7 @@ export function ExpertPanelPage() {
         price: '',
         conditions: '',
         durationInHours: '24',
+        selectedDeliverableTypes: [] as number[],
     });
     const [editingService, setEditingService] = useState<Service | null>(null);
     const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -283,6 +284,7 @@ export function ExpertPanelPage() {
             price: '',
             conditions: '',
             durationInHours: '24',
+            selectedDeliverableTypes: [],
         });
         setSelectedImages([]);
         setExistingImages([]);
@@ -294,6 +296,14 @@ export function ExpertPanelPage() {
     };
 
     const handleEditService = (service: Service) => {
+        console.log('🔍 handleEditService called with service:', service);
+        console.log('🔍 Service object keys:', Object.keys(service));
+        console.log('🔍 Service selectedDeliverableTypes:', (service as any).selectedDeliverableTypes);
+        
+        // Extraer los IDs de los tipos de entregables seleccionados
+        const selectedDeliverableTypeIds = (service as any).selectedDeliverableTypes?.map((dt: any) => dt.id) || [];
+        console.log('🔍 Extracted selectedDeliverableTypeIds:', selectedDeliverableTypeIds);
+        
         setEditingService(service);
         setFormData({
             categoryId: service.categoryId.toString(),
@@ -301,6 +311,7 @@ export function ExpertPanelPage() {
             price: service.price.toString(),
             conditions: service.conditions,
             durationInHours: service.durationInHours?.toString() || '24',
+            selectedDeliverableTypes: selectedDeliverableTypeIds,
         });
         setSelectedImages([]);
         setExistingImages(service.imageUrls || []);
@@ -321,9 +332,10 @@ export function ExpertPanelPage() {
             return;
         }
 
-        console.log('Updating service with images:', selectedImages.map(img => ({ name: img.name, size: img.size, type: img.type })));
-        console.log('Existing images to keep:', existingImages);
-        console.log('Original images:', editingService.imageUrls);
+        console.log('🔍 Updating service with images:', selectedImages.map(img => ({ name: img.name, size: img.size, type: img.type })));
+        console.log('🔍 Updating service with selectedDeliverableTypes:', formData.selectedDeliverableTypes);
+        console.log('🔍 Existing images to keep:', existingImages);
+        console.log('🔍 Original images:', editingService.imageUrls);
         
         try {
             // Determinar si necesitamos enviar imágenes
@@ -359,6 +371,7 @@ export function ExpertPanelPage() {
                 conditions: formData.conditions.trim(),
                 durationInHours: formData.durationInHours ? parseInt(formData.durationInHours) : null,
                 images: imagesToSend,
+                selectedDeliverableTypes: formData.selectedDeliverableTypes,
             });
 
             setShowServiceForm(false);
@@ -396,7 +409,9 @@ export function ExpertPanelPage() {
             return;
         }
 
-        console.log('Creating service with images:', selectedImages.map(img => ({ name: img.name, size: img.size, type: img.type })));
+        console.log('🔍 Creating service with images:', selectedImages.map(img => ({ name: img.name, size: img.size, type: img.type })));
+        console.log('🔍 Creating service with selectedDeliverableTypes:', formData.selectedDeliverableTypes);
+        console.log('🔍 Full formData before creating service:', formData);
         try {
             await createService({
                 expertProfileId: profile.id,
@@ -406,6 +421,7 @@ export function ExpertPanelPage() {
                 conditions: formData.conditions.trim(),
                 durationInHours: formData.durationInHours ? parseInt(formData.durationInHours) : null,
                 images: selectedImages,
+                selectedDeliverableTypes: formData.selectedDeliverableTypes,
             });
 
             setShowServiceForm(false);
