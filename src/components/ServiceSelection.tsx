@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Clock, Star, CheckCircle, User, StarHalf, X, MapPin, DollarSign, Eye, Search } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Star, CheckCircle, User, StarHalf, X, MapPin, DollarSign, Eye, Search, FileText, Video, XCircle } from 'lucide-react';
 import { GoogleMap, useLoadScript, Circle } from '@react-google-maps/api';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServices } from '../hooks/useServices';
@@ -107,6 +107,14 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
 
     // Depuración: Mostrar los servicios recibidos
     console.log('ServiceSelection - Services received:', services);
+    services.forEach((service, index) => {
+        console.log(`ServiceSelection - Service ${index} (${service.id}):`, {
+            id: service.id,
+            selectedDeliverableTypes: service.selectedDeliverableTypes,
+            hasSelectedDeliverableTypes: !!service.selectedDeliverableTypes,
+            selectedDeliverableTypesLength: service.selectedDeliverableTypes?.length || 0
+        });
+    });
 
     if (isLoading) {
         return (
@@ -315,6 +323,45 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
             }
         }
         return stars;
+    };
+
+    const renderDeliverableTypes = (service: any) => {
+        const deliverableTypes = service.selectedDeliverableTypes || [];
+        const hasPdf = deliverableTypes.some((dt: any) => dt.name === 'PDF');
+        const hasVideo = deliverableTypes.some((dt: any) => dt.name === 'Video');
+        
+        console.log(`🔍 renderDeliverableTypes for service ${service.id}:`, {
+            deliverableTypes,
+            hasPdf,
+            hasVideo,
+            deliverableTypesLength: deliverableTypes.length
+        });
+        
+        return (
+            <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs text-gray-500 font-medium">Incluye:</span>
+                <div className="flex items-center gap-1">
+                    {/* PDF - Siempre incluido */}
+                    <div className="flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-200">
+                        <FileText className="w-3 h-3" />
+                        <span className="text-xs font-medium">PDF</span>
+                    </div>
+                    
+                    {/* Video - Condicional */}
+                    {hasVideo ? (
+                        <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full border border-blue-200">
+                            <Video className="w-3 h-3" />
+                            <span className="text-xs font-medium">Video</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1 bg-gray-50 text-gray-500 px-2 py-1 rounded-full border border-gray-200">
+                            <XCircle className="w-3 h-3" />
+                            <span className="text-xs font-medium">Sin Video</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
     };
 
     const detailService = services.find((s) => s.id === detailServiceId);
@@ -635,6 +682,9 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                         {truncateTextMobile(service.conditions || 'Servicio profesional personalizado.')}
                                     </p>
 
+                                    {/* Deliverable Types */}
+                                    {console.log(`🔍 About to render deliverable types for service ${service.id}`) || renderDeliverableTypes(service)}
+
                                     <div className="flex flex-wrap gap-1 mb-3">
                                         {['Revisión completa', 'Análisis detallado'].map((tag) => (
                                             <span key={tag} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
@@ -780,6 +830,9 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                     <p className="text-gray-900 text-sm mb-2 leading-snug">
                                         {truncateText(service.conditions || 'Servicio profesional personalizado.')}
                                     </p>
+
+                                    {/* Deliverable Types */}
+                                    {console.log(`🔍 About to render deliverable types for service ${service.id} (desktop)`) || renderDeliverableTypes(service)}
 
                                     {/* Location and Stats */}
                                     <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
@@ -1018,6 +1071,12 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                             </div>
                                         )}
                                         
+                                        {/* Deliverable Types */}
+                                        <div className="pt-2 border-t border-gray-100 mb-3">
+                                            <h5 className="font-medium text-gray-900 mb-2 text-sm">Entregables incluidos</h5>
+                                            {renderDeliverableTypes(detailService)}
+                                        </div>
+
                                         {/* Service Features */}
                                         <div className="pt-2 border-t border-gray-100">
                                             <div className="flex flex-wrap gap-1">

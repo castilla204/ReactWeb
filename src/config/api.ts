@@ -109,6 +109,7 @@ export const API_CONFIG = {
         },
         appointmentConfig: {
             appointmentStatus: `${API_PATH}/AppointmentConfig/appointment-status`,
+            appointmentStatusConfigs: `${API_PATH}/AppointmentConfig/appointment-status-configs`,
             appointmentStatusById: (id: number) => `${API_PATH}/AppointmentConfig/appointment-status/${id}`,
             serviceTypeCategory: `${API_PATH}/AppointmentConfig/service-type-category`,
             serviceTypeCategoryById: (id: number) => `${API_PATH}/AppointmentConfig/service-type-category/${id}`,
@@ -131,6 +132,10 @@ export const API_CONFIG = {
             expertResponse: (id: number) => `${API_PATH}/dispute/${id}/expert-response`,
             details: (searchHireId: number) => `${API_PATH}/Dispute/details/${searchHireId}`,
             debug: (id: number) => `${API_PATH}/dispute/${id}/debug`,
+        },
+        deliverableTypes: {
+            getAll: `${API_PATH}/DeliverableType`,
+            select: `${API_PATH}/DeliverableType/select`,
         },
     },
 };

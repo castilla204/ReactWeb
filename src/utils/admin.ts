@@ -16,3 +16,4 @@ export function isAdmin(email: string | undefined | null): boolean {
  * Admin email constant
  */
 export const ADMIN_EMAIL = 'dcastillaa@gmail.com';
+

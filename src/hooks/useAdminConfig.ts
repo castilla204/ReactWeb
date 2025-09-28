@@ -12,6 +12,40 @@ import {
   ConfigFormData
 } from '../types/admin';
 
+// Hook para obtener estados de citas disponibles
+export const useAppointmentStatuses = () => {
+  const [statuses, setStatuses] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { fetchApi } = useApi();
+
+  const fetchStatuses = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetchApi<any[]>(API_CONFIG.endpoints.appointmentConfig.appointmentStatus);
+      setStatuses(response);
+    } catch (err) {
+      console.error('Error fetching appointment statuses:', err);
+      setError('Error al obtener estados de citas');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatuses();
+  }, []);
+
+  return {
+    statuses,
+    isLoading,
+    error,
+    fetchStatuses
+  };
+};
+
 // Hook para configuraciones por estado de cita
 export const useAppointmentStatusConfigs = () => {
   const [configs, setConfigs] = useState<AppointmentStatusConfigDto[]>([]);
@@ -24,7 +58,7 @@ export const useAppointmentStatusConfigs = () => {
     setError(null);
     
     try {
-      const response = await fetchApi<AppointmentStatusConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.appointmentStatus);
+      const response = await fetchApi<AppointmentStatusConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs);
       setConfigs(response);
     } catch (err) {
       console.error('Error fetching appointment status configs:', err);
@@ -35,28 +69,117 @@ export const useAppointmentStatusConfigs = () => {
   };
 
   const createConfig = async (config: CreateAppointmentStatusConfigDto): Promise<AppointmentStatusConfigDto> => {
-    const response = await fetchApi<AppointmentStatusConfigDto>(API_CONFIG.endpoints.appointmentConfig.appointmentStatus, {
-      method: 'POST',
-      body: JSON.stringify(config)
-    });
-    await fetchConfigs(); // Refrescar la lista
-    return response;
+    try {
+      console.log('➕ Creando nueva configuración:', config);
+
+      // Validar que los porcentajes sumen 100%
+      const total = config.clientPercentage + config.expertPercentage + config.platformPercentage;
+      if (total !== 100) {
+        throw new Error(`Los porcentajes deben sumar 100%. Actual: ${total}%`);
+      }
+
+      // Preparar datos para enviar con action: "create"
+      const submitData = {
+        action: "create",
+        statusId: config.statusId,
+        categoryId: config.categoryId || null,
+        serviceTypeCategoryId: config.serviceTypeCategoryId || null,
+        clientPercentage: config.clientPercentage,
+        expertPercentage: config.expertPercentage,
+        platformPercentage: config.platformPercentage,
+        isActive: config.isActive
+      };
+
+      console.log('📤 Enviando datos de creación:', submitData);
+
+      const response = await fetchApi<AppointmentStatusConfigDto>(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs, {
+        method: 'POST',
+        body: JSON.stringify(submitData)
+      });
+      
+      console.log('✅ Configuración creada:', response);
+      await fetchConfigs(); // Refrescar la lista
+      return response;
+    } catch (error) {
+      console.error('❌ Error creating config:', error);
+      throw error;
+    }
   };
 
-  const updateConfig = async (id: number, config: CreateAppointmentStatusConfigDto): Promise<AppointmentStatusConfigDto> => {
-    const response = await fetchApi<AppointmentStatusConfigDto>(API_CONFIG.endpoints.appointmentConfig.appointmentStatusById(id), {
-      method: 'PUT',
-      body: JSON.stringify(config)
-    });
-    await fetchConfigs(); // Refrescar la lista
-    return response;
+  const updateConfig = async (configId: number, config: CreateAppointmentStatusConfigDto): Promise<AppointmentStatusConfigDto> => {
+    try {
+      console.log('🔄 Actualizando configuración ID:', configId);
+      console.log('📊 Datos a actualizar:', config);
+
+      // Validar que los porcentajes sumen 100%
+      const total = config.clientPercentage + config.expertPercentage + config.platformPercentage;
+      if (total !== 100) {
+        throw new Error(`Los porcentajes deben sumar 100%. Actual: ${total}%`);
+      }
+
+      // Preparar datos para enviar con action: "update"
+      const submitData = {
+        action: "update",
+        configId: configId,
+        statusId: config.statusId,
+        categoryId: config.categoryId || null,
+        serviceTypeCategoryId: config.serviceTypeCategoryId || null,
+        clientPercentage: config.clientPercentage,
+        expertPercentage: config.expertPercentage,
+        platformPercentage: config.platformPercentage,
+        isActive: config.isActive
+      };
+
+      console.log('📤 Enviando datos de actualización:', submitData);
+
+      // Usar POST con action: "update"
+      const response = await fetchApi<AppointmentStatusConfigDto>(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs, {
+        method: 'POST',
+        body: JSON.stringify(submitData)
+      });
+      
+      console.log('✅ Configuración actualizada:', response);
+      await fetchConfigs(); // Refrescar la lista
+      return response;
+
+    } catch (error) {
+      console.error('❌ Error updating config:', error);
+      throw error;
+    }
   };
 
   const deleteConfig = async (id: number): Promise<void> => {
-    await fetchApi(API_CONFIG.endpoints.appointmentConfig.appointmentStatusById(id), {
-      method: 'DELETE'
-    });
-    await fetchConfigs(); // Refrescar la lista
+    try {
+      console.log('🗑️ Eliminando configuración ID:', id);
+      
+      // Preparar datos para eliminar con action: "delete"
+      const submitData = {
+        action: "delete",
+        configId: id,
+        statusId: 1, // Valor temporal requerido
+        categoryId: null,
+        serviceTypeCategoryId: null,
+        clientPercentage: 0, // Valores temporales requeridos
+        expertPercentage: 0,
+        platformPercentage: 0,
+        isActive: true
+      };
+
+      console.log('📤 Enviando datos de eliminación:', submitData);
+
+      // Usar POST con action: "delete"
+      const response = await fetchApi(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs, {
+        method: 'POST',
+        body: JSON.stringify(submitData)
+      });
+      
+      console.log('✅ Configuración eliminada:', response);
+      await fetchConfigs(); // Refrescar la lista
+      
+    } catch (error) {
+      console.error('❌ Error deleting config:', error);
+      throw error;
+    }
   };
 
   useEffect(() => {
@@ -72,6 +195,108 @@ export const useAppointmentStatusConfigs = () => {
     updateConfig,
     deleteConfig
   };
+};
+
+// Función para cargar configuraciones por tipo
+export const loadConfigsByType = async (type: string, categoryId?: number, serviceTypeId?: number) => {
+  try {
+    let endpoint = '';
+    
+    switch (type) {
+      case 'status':
+        // Nivel 4 - Configuraciones generales (sin categoría ni tipo de servicio)
+        endpoint = API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs;
+        break;
+      case 'category':
+        // Nivel 3 - Configuraciones por categoría
+        if (categoryId) {
+          endpoint = `${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/configurations-by-category/${categoryId}`;
+        } else {
+          endpoint = `${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/configurations-by-category`;
+        }
+        break;
+      case 'granular':
+        // Nivel 1 - Configuraciones granulares
+        if (categoryId && serviceTypeId) {
+          endpoint = `${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/granular-configurations/${categoryId}/${serviceTypeId}`;
+        } else {
+          endpoint = `${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/granular-configurations`;
+        }
+        break;
+      default:
+        endpoint = API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs;
+    }
+    
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log(`✅ Configuraciones ${type} cargadas:`, data);
+    return data;
+    
+  } catch (error) {
+    console.error(`❌ Error loading ${type} configs:`, error);
+    throw error;
+  }
+};
+
+// Función para cargar categorías
+export const loadCategories = async () => {
+  try {
+    const response = await fetch(`${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/categories`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('✅ Categorías cargadas:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error loading categories:', error);
+    throw error;
+  }
+};
+
+// Función para cargar tipos de servicio
+export const loadServiceTypes = async () => {
+  try {
+    const response = await fetch(`${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/service-types`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('✅ Tipos de servicio cargados:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error loading service types:', error);
+    throw error;
+  }
+};
+
+// Función para obtener distribución de dinero
+export const getMoneyDistribution = async (statusValue: string, categoryId?: number, serviceTypeId?: number) => {
+  try {
+    let endpoint = `${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/money-distribution?statusValue=${statusValue}`;
+    
+    if (categoryId) {
+      endpoint += `&categoryId=${categoryId}`;
+    }
+    
+    if (serviceTypeId) {
+      endpoint += `&serviceTypeCategoryId=${serviceTypeId}`;
+    }
+    
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('✅ Distribución de dinero obtenida:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error getting money distribution:', error);
+    throw error;
+  }
 };
 
 // Hook para configuraciones por categoría de servicio
@@ -97,28 +322,115 @@ export const useServiceTypeCategoryConfigs = () => {
   };
 
   const createConfig = async (config: CreateServiceTypeCategoryConfigDto): Promise<ServiceTypeCategoryConfigDto> => {
-    const response = await fetchApi<ServiceTypeCategoryConfigDto>(API_CONFIG.endpoints.appointmentConfig.serviceTypeCategory, {
-      method: 'POST',
-      body: JSON.stringify(config)
-    });
-    await fetchConfigs(); // Refrescar la lista
-    return response;
+    try {
+      console.log('➕ Creando configuración por categoría:', config);
+
+      // Validar que los porcentajes sumen 100%
+      const total = config.clientPercentage + config.expertPercentage + config.platformPercentage;
+      if (total !== 100) {
+        throw new Error(`Los porcentajes deben sumar 100%. Actual: ${total}%`);
+      }
+
+      // Preparar datos en el formato correcto para el backend
+      const submitData = {
+        action: "create",
+        statusId: parseInt(config.status), // Convertir string a número
+        categoryId: null, // Para configuraciones por categoría, no se especifica categoría específica
+        serviceTypeCategoryId: config.serviceTypeCategoryId,
+        clientPercentage: config.clientPercentage,
+        expertPercentage: config.expertPercentage,
+        platformPercentage: config.platformPercentage,
+        isActive: config.isActive
+      };
+
+      console.log('📤 Enviando datos de creación por categoría:', submitData);
+
+      // Usar el endpoint correcto
+      const response = await fetchApi<ServiceTypeCategoryConfigDto>(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs, {
+        method: 'POST',
+        body: JSON.stringify(submitData)
+      });
+      
+      console.log('✅ Configuración por categoría creada:', response);
+      await fetchConfigs(); // Refrescar la lista
+      return response;
+    } catch (error) {
+      console.error('❌ Error creating category config:', error);
+      throw error;
+    }
   };
 
   const updateConfig = async (id: number, config: CreateServiceTypeCategoryConfigDto): Promise<ServiceTypeCategoryConfigDto> => {
-    const response = await fetchApi<ServiceTypeCategoryConfigDto>(API_CONFIG.endpoints.appointmentConfig.serviceTypeCategoryById(id), {
-      method: 'PUT',
-      body: JSON.stringify(config)
-    });
-    await fetchConfigs(); // Refrescar la lista
-    return response;
+    try {
+      console.log('🔄 Actualizando configuración por categoría ID:', id);
+
+      // Validar que los porcentajes sumen 100%
+      const total = config.clientPercentage + config.expertPercentage + config.platformPercentage;
+      if (total !== 100) {
+        throw new Error(`Los porcentajes deben sumar 100%. Actual: ${total}%`);
+      }
+
+      // Preparar datos en el formato correcto para el backend
+      const submitData = {
+        action: "update",
+        configId: id,
+        statusId: parseInt(config.status), // Convertir string a número
+        categoryId: null, // Para configuraciones por categoría, no se especifica categoría específica
+        serviceTypeCategoryId: config.serviceTypeCategoryId,
+        clientPercentage: config.clientPercentage,
+        expertPercentage: config.expertPercentage,
+        platformPercentage: config.platformPercentage,
+        isActive: config.isActive
+      };
+
+      console.log('📤 Enviando datos de actualización por categoría:', submitData);
+
+      // Usar el endpoint correcto
+      const response = await fetchApi<ServiceTypeCategoryConfigDto>(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs, {
+        method: 'POST',
+        body: JSON.stringify(submitData)
+      });
+      
+      console.log('✅ Configuración por categoría actualizada:', response);
+      await fetchConfigs(); // Refrescar la lista
+      return response;
+    } catch (error) {
+      console.error('❌ Error updating category config:', error);
+      throw error;
+    }
   };
 
   const deleteConfig = async (id: number): Promise<void> => {
-    await fetchApi(API_CONFIG.endpoints.appointmentConfig.serviceTypeCategoryById(id), {
-      method: 'DELETE'
-    });
-    await fetchConfigs(); // Refrescar la lista
+    try {
+      console.log('🗑️ Eliminando configuración por categoría ID:', id);
+      
+      // Preparar datos en el formato correcto para el backend
+      const submitData = {
+        action: "delete",
+        configId: id,
+        statusId: 1, // Valor temporal requerido
+        categoryId: null,
+        serviceTypeCategoryId: null,
+        clientPercentage: 0, // Valores temporales requeridos
+        expertPercentage: 0,
+        platformPercentage: 0,
+        isActive: true
+      };
+
+      console.log('📤 Enviando datos de eliminación por categoría:', submitData);
+
+      // Usar el endpoint correcto
+      await fetchApi(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs, {
+        method: 'POST',
+        body: JSON.stringify(submitData)
+      });
+      
+      console.log('✅ Configuración por categoría eliminada');
+      await fetchConfigs(); // Refrescar la lista
+    } catch (error) {
+      console.error('❌ Error deleting category config:', error);
+      throw error;
+    }
   };
 
   const getConfigsByCategory = (categoryId: number) => {
@@ -181,7 +493,7 @@ export const useMoneyDistributionQuery = () => {
 
 // Hook para validar formularios
 export const useConfigValidation = () => {
-  const validateForm = (data: ConfigFormData): string[] => {
+  const validateForm = (data: ConfigFormData, configType: 'status' | 'category' | 'granular' | 'query' = 'status'): string[] => {
     const errors: string[] = [];
     
     if (data.clientPercentage + data.expertPercentage + data.platformPercentage !== 100) {
@@ -200,16 +512,21 @@ export const useConfigValidation = () => {
       errors.push('El porcentaje de la plataforma debe estar entre 0 y 100');
     }
     
-    if (!data.status) {
+    if (!data.statusId || data.statusId <= 0) {
       errors.push('Debe seleccionar un estado de cita');
     }
     
-    if (data.categoryId !== undefined && data.categoryId <= 0) {
-      errors.push('Debe seleccionar una categoría válida');
+    // Validaciones condicionales según el tipo de configuración
+    if (configType === 'granular') {
+      if (data.categoryId !== undefined && data.categoryId <= 0) {
+        errors.push('Debe seleccionar una categoría válida');
+      }
     }
     
-    if (data.serviceTypeCategoryId !== undefined && data.serviceTypeCategoryId <= 0) {
-      errors.push('Debe seleccionar una categoría de servicio válida');
+    if (configType === 'category' || configType === 'granular') {
+      if (data.serviceTypeCategoryId !== undefined && data.serviceTypeCategoryId <= 0) {
+        errors.push('Debe seleccionar una categoría de servicio válida');
+      }
     }
     
     return errors;
@@ -279,40 +596,112 @@ export const useCategoryServiceTypeConfigs = () => {
 
   const createConfig = async (config: CreateCategoryServiceTypeConfigDto) => {
     try {
-      const response = await fetchApi<CategoryServiceTypeConfigDto>(API_CONFIG.endpoints.appointmentConfig.categoryServiceType, {
+      console.log('➕ Creando configuración granular:', config);
+
+      // Validar que los porcentajes sumen 100%
+      const total = config.clientPercentage + config.expertPercentage + config.platformPercentage;
+      if (total !== 100) {
+        throw new Error(`Los porcentajes deben sumar 100%. Actual: ${total}%`);
+      }
+
+      // Preparar datos en el formato correcto para el backend
+      const submitData = {
+        action: "create",
+        statusId: parseInt(config.status), // Convertir string a número
+        categoryId: config.categoryId,
+        serviceTypeCategoryId: config.serviceTypeCategoryId,
+        clientPercentage: config.clientPercentage,
+        expertPercentage: config.expertPercentage,
+        platformPercentage: config.platformPercentage,
+        isActive: config.isActive
+      };
+
+      console.log('📤 Enviando datos de creación granular:', submitData);
+
+      // Usar el endpoint correcto
+      const response = await fetchApi<CategoryServiceTypeConfigDto>(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs, {
         method: 'POST',
-        body: JSON.stringify(config),
+        body: JSON.stringify(submitData),
       });
+      
+      console.log('✅ Configuración granular creada:', response);
       setConfigs(prev => [...prev, response]);
       return response;
     } catch (err) {
-      console.error('Error creating category service type config:', err);
+      console.error('❌ Error creating granular config:', err);
       throw err;
     }
   };
 
   const updateConfig = async (id: number, config: CreateCategoryServiceTypeConfigDto) => {
     try {
-      const response = await fetchApi<CategoryServiceTypeConfigDto>(API_CONFIG.endpoints.appointmentConfig.categoryServiceTypeById(id), {
-        method: 'PUT',
-        body: JSON.stringify(config),
+      console.log('🔄 Actualizando configuración granular ID:', id);
+
+      // Validar que los porcentajes sumen 100%
+      const total = config.clientPercentage + config.expertPercentage + config.platformPercentage;
+      if (total !== 100) {
+        throw new Error(`Los porcentajes deben sumar 100%. Actual: ${total}%`);
+      }
+
+      // Preparar datos en el formato correcto para el backend
+      const submitData = {
+        action: "update",
+        configId: id,
+        statusId: parseInt(config.status), // Convertir string a número
+        categoryId: config.categoryId,
+        serviceTypeCategoryId: config.serviceTypeCategoryId,
+        clientPercentage: config.clientPercentage,
+        expertPercentage: config.expertPercentage,
+        platformPercentage: config.platformPercentage,
+        isActive: config.isActive
+      };
+
+      console.log('📤 Enviando datos de actualización granular:', submitData);
+
+      // Usar el endpoint correcto
+      const response = await fetchApi<CategoryServiceTypeConfigDto>(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs, {
+        method: 'POST',
+        body: JSON.stringify(submitData),
       });
+      
+      console.log('✅ Configuración granular actualizada:', response);
       setConfigs(prev => prev.map(c => c.id === id ? response : c));
       return response;
     } catch (err) {
-      console.error('Error updating category service type config:', err);
+      console.error('❌ Error updating granular config:', err);
       throw err;
     }
   };
 
   const deleteConfig = async (id: number) => {
     try {
-      await fetchApi(API_CONFIG.endpoints.appointmentConfig.categoryServiceTypeById(id), {
-        method: 'DELETE',
+      console.log('🗑️ Eliminando configuración granular ID:', id);
+      
+      // Preparar datos en el formato correcto para el backend
+      const submitData = {
+        action: "delete",
+        configId: id,
+        statusId: 1, // Valor temporal requerido
+        categoryId: null,
+        serviceTypeCategoryId: null,
+        clientPercentage: 0, // Valores temporales requeridos
+        expertPercentage: 0,
+        platformPercentage: 0,
+        isActive: true
+      };
+
+      console.log('📤 Enviando datos de eliminación granular:', submitData);
+
+      // Usar el endpoint correcto
+      await fetchApi(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs, {
+        method: 'POST',
+        body: JSON.stringify(submitData),
       });
+      
+      console.log('✅ Configuración granular eliminada');
       setConfigs(prev => prev.filter(c => c.id !== id));
     } catch (err) {
-      console.error('Error deleting category service type config:', err);
+      console.error('❌ Error deleting granular config:', err);
       throw err;
     }
   };
@@ -328,4 +717,54 @@ export const useCategoryServiceTypeConfigs = () => {
     updateConfig,
     deleteConfig
   };
+};
+
+// Función para cargar configuraciones según el tab activo
+export const loadConfigurationsByTab = async (activeTab: string) => {
+  try {
+    console.log('🔄 Cargando configuraciones para tab:', activeTab);
+    
+    let endpoint = '';
+    
+    switch (activeTab) {
+      case 'status':
+        // Nivel 4 - Por Defecto (configuraciones base)
+        endpoint = API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs;
+        break;
+      case 'category':
+        // Nivel 3 - Granularidad Básica (configuraciones por categoría)
+        endpoint = '/api/AppointmentConfig/configurations-by-category';
+        break;
+      case 'granular':
+        // Nivel 1 - Máxima Granularidad (configuraciones granulares)
+        endpoint = '/api/AppointmentConfig/granular-configurations';
+        break;
+      default:
+        throw new Error(`Tab no válido: ${activeTab}`);
+    }
+    
+    console.log('📡 Llamando endpoint:', endpoint);
+    
+    // Usar fetch directamente para evitar problemas con fetchApi
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error cargando configuraciones: ${response.status}`);
+    }
+    
+    const configs = await response.json();
+    console.log(`✅ Configuraciones cargadas para ${activeTab}:`, configs);
+    
+    return configs;
+    
+  } catch (error) {
+    console.error('❌ Error cargando configuraciones:', error);
+    throw error;
+  }
 };
