@@ -61,6 +61,17 @@ export const useApi = () => {
                 });
             }
 
+            // Log response for debugging appointment config calls
+            if (endpoint.includes('appointment-status-configs')) {
+                console.log('[useApi] Appointment Config Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    responseText: responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''),
+                    requestBody: config.body
+                });
+            }
+
             // Handle 204 No Content responses
             if (response.status === 204) {
                 return null as T;
@@ -76,6 +87,10 @@ export const useApi = () => {
                 
                 if (endpoint.includes('GetServiceByHireId')) {
                     console.error('[useApi] GetServiceByHireId error:', error);
+                }
+                
+                if (endpoint.includes('appointment-status-configs')) {
+                    console.error('[useApi] Appointment Config error:', error);
                 }
                 throw error;
             }

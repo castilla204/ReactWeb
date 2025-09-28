@@ -23,6 +23,15 @@ export interface Service {
     completedSearches?: number;
     averageRating?: number;
     isActive?: boolean;
+    selectedDeliverableTypes?: {
+        id: number;
+        name: string;
+        displayName: string;
+        description?: string;
+        isRequired: boolean;
+        isActive: boolean;
+        sortOrder: number;
+    }[];
     expert?: {
         id: number;
         profilePictureUrl: string;
@@ -124,11 +133,28 @@ export function useServices({
             }
 
             const data = await response.json();
-            console.log('Fetched services:', data);
+            console.log('🔍 useServices: Fetched services:', data);
+            console.log('🔍 useServices: Data type:', typeof data, 'Array?', Array.isArray(data));
+            
+            if (Array.isArray(data)) {
+                console.log('🔍 useServices: Services count:', data.length);
+                data.forEach((service, index) => {
+                    console.log(`🔍 useServices: Service ${index}:`, {
+                        id: service.id,
+                        selectedDeliverableTypes: (service as any).selectedDeliverableTypes,
+                        selectedDeliverableTypesLength: (service as any).selectedDeliverableTypes?.length || 0,
+                        allKeys: Object.keys(service)
+                    });
+                    if ((service as any).selectedDeliverableTypes) {
+                        console.log(`🔍 useServices: Service ${index} selectedDeliverableTypes details:`, (service as any).selectedDeliverableTypes);
+                    }
+                });
+            }
+            
             // Filtrar solo servicios activos para el panel de experto
             const filteredData = expertProfileId 
                 ? (data as Service[]).filter(service => service.isActive !== false)
-                : data as Service[];
+                : data as Service[]; // Temporalmente incluir servicios inactivos para debuggear
             return filteredData;
         },
         enabled: expertProfileId ? !!expertProfileId : (categoryId > 0 && serviceTypeId > 0 && !!latitude && !!longitude && locationRange > 0),
@@ -145,6 +171,7 @@ export function useServices({
             conditions: string;
             durationInHours: number | null;
             images: File[];
+            selectedDeliverableTypes?: number[];
         }) => {
             setIsCreatingService(true);
             const token = getAuthToken();
@@ -163,15 +190,19 @@ export function useServices({
             if (serviceData.durationInHours !== null) {
                 formData.append('durationInHours', serviceData.durationInHours.toString());
             }
+            if (serviceData.selectedDeliverableTypes && serviceData.selectedDeliverableTypes.length > 0) {
+                formData.append('selectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));
+            }
             serviceData.images.forEach((image) => {
                 formData.append('Images', image);
             });
 
+            console.log('🔍 useServices: FormData contents (createService):');
             for (const [key, value] of formData.entries()) {
                 if (value instanceof File) {
-                    console.log(`FormData ${key} = ${value.name}, ${value.size} bytes, ${value.type}`);
+                    console.log(`🔍 FormData ${key} = ${value.name}, ${value.size} bytes, ${value.type}`);
                 } else {
-                    console.log(`FormData ${key} = ${value}`);
+                    console.log(`🔍 FormData ${key} = ${value}`);
                 }
             }
 
@@ -210,6 +241,7 @@ export function useServices({
             conditions: string;
             durationInHours: number | null;
             images?: File[];
+            selectedDeliverableTypes?: number[];
         }) => {
             setIsUpdatingService(true);
             const token = getAuthToken();
@@ -228,17 +260,21 @@ export function useServices({
             if (serviceData.durationInHours !== null) {
                 formData.append('durationInHours', serviceData.durationInHours.toString());
             }
+            if (serviceData.selectedDeliverableTypes && serviceData.selectedDeliverableTypes.length > 0) {
+                formData.append('selectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));
+            }
             if (serviceData.images && serviceData.images.length > 0) {
                 serviceData.images.forEach((image) => {
                     formData.append('Images', image);
                 });
             }
 
+            console.log('🔍 useServices: FormData contents (updateService):');
             for (const [key, value] of formData.entries()) {
                 if (value instanceof File) {
-                    console.log(`FormData ${key} = ${value.name}, ${value.size} bytes, ${value.type}`);
+                    console.log(`🔍 FormData ${key} = ${value.name}, ${value.size} bytes, ${value.type}`);
                 } else {
-                    console.log(`FormData ${key} = ${value}`);
+                    console.log(`🔍 FormData ${key} = ${value}`);
                 }
             }
 

@@ -1,6 +1,8 @@
 // DTOs de Entrada (Para crear/actualizar)
 export interface CreateAppointmentStatusConfigDto {
-  status: string;                    // "appointment_completed", "appointment_cancelled_by_client_second", etc.
+  statusId: number;                  // ID del estado (1, 2, 3, etc.)
+  categoryId?: number | null;        // ID de categoría (null = todas)
+  serviceTypeCategoryId?: number | null; // ID de tipo de servicio (null = todos)
   clientPercentage: number;          // 0-100
   expertPercentage: number;          // 0-100
   platformPercentage: number;        // 0-100
@@ -30,13 +32,19 @@ export interface CreateCategoryServiceTypeConfigDto {
 // DTOs de Respuesta (Lo que devuelve el backend)
 export interface AppointmentStatusConfigDto {
   id: number;
-  status: string;
-  clientPercentage: number;
-  expertPercentage: number;
-  platformPercentage: number;
-  isActive: boolean;
-  createdAt: string;                 // ISO date string
-  updatedAt: string;                 // ISO date string
+  estado: string;                    // Nombre legible del estado
+  statusId: number;                  // ID del estado
+  statusValue: string;               // Valor del estado (appointment_completed, etc.)
+  statusName: string;                // Nombre del estado (AppointmentCompleted, etc.)
+  cliente: number;                   // Porcentaje del cliente
+  experto: number;                   // Porcentaje del experto
+  plataforma: number;                // Porcentaje de la plataforma
+  prioridad: string;                 // Prioridad de la configuración
+  activo: string;                    // Estado activo/inactivo
+  categoryName: string;              // Nombre de la categoría
+  serviceTypeCategoryName: string;   // Nombre del tipo de servicio
+  createdAt?: string;                // ISO date string
+  updatedAt?: string;                // ISO date string
 }
 
 export interface ServiceTypeCategoryConfigDto {
@@ -82,7 +90,7 @@ export interface MoneyDistributionConfigDto {
 export interface ConfigFormData {
   categoryId?: number;               // Solo para configuraciones granulares
   serviceTypeCategoryId?: number;    // Solo para configuraciones por categoría
-  status: string;
+  statusId: number;                  // ID del estado de cita
   clientPercentage: number;
   expertPercentage: number;
   platformPercentage: number;
