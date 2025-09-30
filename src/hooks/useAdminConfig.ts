@@ -276,7 +276,7 @@ export const loadServiceTypes = async () => {
 // Función para obtener distribución de dinero
 export const getMoneyDistribution = async (statusValue: string, categoryId?: number, serviceTypeId?: number) => {
   try {
-    let endpoint = `${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/money-distribution?statusValue=${statusValue}`;
+    let endpoint = `${API_CONFIG.endpoints.appointmentConfig.moneyDistribution}?statusValue=${statusValue}`;
     
     if (categoryId) {
       endpoint += `&categoryId=${categoryId}`;
@@ -465,7 +465,7 @@ export const useMoneyDistributionQuery = () => {
     setError(null);
     
     try {
-      const params = new URLSearchParams({ status });
+      const params = new URLSearchParams({ statusValue: status });
       if (categoryId) {
         params.append('categoryId', categoryId.toString());
       }
@@ -720,7 +720,7 @@ export const useCategoryServiceTypeConfigs = () => {
 };
 
 // Función para cargar configuraciones según el tab activo
-export const loadConfigurationsByTab = async (activeTab: string) => {
+export const loadConfigurationsByTab = async (activeTab: 'status' | 'category' | 'granular' | 'query' | 'mappings') => {
   try {
     console.log('🔄 Cargando configuraciones para tab:', activeTab);
     
@@ -739,6 +739,9 @@ export const loadConfigurationsByTab = async (activeTab: string) => {
         // Nivel 1 - Máxima Granularidad (configuraciones granulares)
         endpoint = '/api/AppointmentConfig/granular-configurations';
         break;
+      case 'mappings':
+        // Para mapeos, no necesitamos cargar configuraciones aquí
+        return [];
       default:
         throw new Error(`Tab no válido: ${activeTab}`);
     }

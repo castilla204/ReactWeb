@@ -137,5 +137,15 @@ export const API_CONFIG = {
             getAll: `${API_PATH}/DeliverableType`,
             select: `${API_PATH}/DeliverableType/select`,
         },
+        systemStatus: {
+            // Estados del sistema
+            statuses: `${API_PATH}/SystemStatus/statuses`,
+            statusesById: (id: number) => `${API_PATH}/SystemStatus/statuses/${id}`,
+            statusesByType: (statusType: string) => `${API_PATH}/SystemStatus/statuses?statusType=${statusType}`,
+            
+            // Mapeos de estado
+            mappings: `${API_PATH}/SystemStatus/mappings`,
+            mappingsById: (id: number) => `${API_PATH}/SystemStatus/mappings/${id}`,
+        },
     },
 };

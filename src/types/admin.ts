@@ -128,3 +128,38 @@ export const CATEGORIES = [
   { id: 3, name: 'Inmuebles' },
   { id: 4, name: 'Servicios' }
 ] as const;
+
+// Tipos para Mapeos de Estado
+export interface SystemStatus {
+  id: number;
+  statusType: 'AppointmentStatus' | 'SearchHireStatus';
+  statusValue: string;
+  statusName: string;
+  description: string;
+  displayName: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StatusMapping {
+  id: number;
+  sourceStatus: SystemStatus;
+  targetStatus: SystemStatus;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateStatusMappingDto {
+  sourceStatusId: number;
+  targetStatusId: number;
+  isActive: boolean;
+}
+
+export interface UpdateStatusMappingDto {
+  sourceStatusId?: number;
+  targetStatusId?: number;
+  isActive?: boolean;
+}

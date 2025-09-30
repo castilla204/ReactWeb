@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 
@@ -13,39 +13,50 @@ export const useMoneyDistribution = (status: string, categoryId?: number, servic
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { fetchApi } = useApi();
+  
+  // Usar ref para mantener una referencia estable a fetchApi
+  const fetchApiRef = useRef(fetchApi);
+  fetchApiRef.current = fetchApi;
+
+  // Memoizar los parámetros para evitar re-renders innecesarios
+  const memoizedParams = useMemo(() => ({
+    status,
+    categoryId,
+    serviceTypeCategoryId
+  }), [status, categoryId, serviceTypeCategoryId]);
+
+  const fetchConfig = useCallback(async () => {
+    if (!memoizedParams.status) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const params = new URLSearchParams({
+        statusValue: memoizedParams.status
+      });
+      
+      if (memoizedParams.categoryId) {
+        params.append('categoryId', memoizedParams.categoryId.toString());
+      }
+      
+      if (memoizedParams.serviceTypeCategoryId) {
+        params.append('serviceTypeCategoryId', memoizedParams.serviceTypeCategoryId.toString());
+      }
+      
+      const response = await fetchApiRef.current<MoneyDistributionConfig>(`${API_CONFIG.endpoints.appointmentConfig.moneyDistribution}?${params.toString()}`);
+      setConfig(response);
+    } catch (err) {
+      console.error('Error fetching money distribution config:', err);
+      setError('Error al obtener configuración de porcentajes');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [memoizedParams]);
 
   useEffect(() => {
-    const fetchConfig = async () => {
-      if (!status) return;
-      
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const params = new URLSearchParams({
-          status: status
-        });
-        
-        if (categoryId) {
-          params.append('categoryId', categoryId.toString());
-        }
-        
-        if (serviceTypeCategoryId) {
-          params.append('serviceTypeCategoryId', serviceTypeCategoryId.toString());
-        }
-        
-        const response = await fetchApi<MoneyDistributionConfig>(`${API_CONFIG.endpoints.appointmentConfig.moneyDistributionPublic}?${params.toString()}`);
-        setConfig(response);
-      } catch (err) {
-        console.error('Error fetching money distribution config:', err);
-        setError('Error al obtener configuración de porcentajes');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchConfig();
-  }, [status, categoryId, serviceTypeCategoryId, fetchApi]);
+  }, [fetchConfig]);
 
   return { config, isLoading, error };
 };
@@ -55,47 +66,54 @@ export const useMultipleMoneyDistributions = (scenarios: Array<{ status: string;
   const [configs, setConfigs] = useState<Array<{ status: string; config: MoneyDistributionConfig | null; error?: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { fetchApi } = useApi();
+  
+  // Usar ref para mantener una referencia estable a fetchApi
+  const fetchApiRef = useRef(fetchApi);
+  fetchApiRef.current = fetchApi;
+
+  // Memoizar los escenarios para evitar re-renders innecesarios
+  const memoizedScenarios = useMemo(() => scenarios, [scenarios]);
+
+  const fetchConfigs = useCallback(async () => {
+    if (memoizedScenarios.length === 0) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const configPromises = memoizedScenarios.map(async (scenario) => {
+        try {
+          const params = new URLSearchParams({
+            statusValue: scenario.status
+          });
+          
+          if (scenario.categoryId) {
+            params.append('categoryId', scenario.categoryId.toString());
+          }
+          
+          if (scenario.serviceTypeCategoryId) {
+            params.append('serviceTypeCategoryId', scenario.serviceTypeCategoryId.toString());
+          }
+          
+          const response = await fetchApiRef.current<MoneyDistributionConfig>(`${API_CONFIG.endpoints.appointmentConfig.moneyDistribution}?${params.toString()}`);
+          return { status: scenario.status, config: response, error: undefined };
+        } catch (err) {
+          console.error(`Error fetching config for ${scenario.status}:`, err);
+          return { status: scenario.status, config: null, error: 'Error al obtener configuración' };
+        }
+      });
+
+      const results = await Promise.all(configPromises);
+      setConfigs(results);
+    } catch (err) {
+      console.error('Error fetching multiple configs:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [memoizedScenarios]);
 
   useEffect(() => {
-    const fetchConfigs = async () => {
-      setIsLoading(true);
-      
-      try {
-        const configPromises = scenarios.map(async (scenario) => {
-          try {
-            const params = new URLSearchParams({
-              status: scenario.status
-            });
-            
-            if (scenario.categoryId) {
-              params.append('categoryId', scenario.categoryId.toString());
-            }
-            
-            if (scenario.serviceTypeCategoryId) {
-              params.append('serviceTypeCategoryId', scenario.serviceTypeCategoryId.toString());
-            }
-            
-            const response = await fetchApi<MoneyDistributionConfig>(`${API_CONFIG.endpoints.appointmentConfig.moneyDistributionPublic}?${params.toString()}`);
-            return { status: scenario.status, config: response, error: undefined };
-          } catch (err) {
-            console.error(`Error fetching config for ${scenario.status}:`, err);
-            return { status: scenario.status, config: null, error: 'Error al obtener configuración' };
-          }
-        });
-
-        const results = await Promise.all(configPromises);
-        setConfigs(results);
-      } catch (err) {
-        console.error('Error fetching multiple configs:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (scenarios.length > 0) {
-      fetchConfigs();
-    }
-  }, [scenarios, fetchApi]);
+    fetchConfigs();
+  }, [fetchConfigs]);
 
   return { configs, isLoading };
 };
