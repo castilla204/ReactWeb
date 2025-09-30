@@ -653,28 +653,18 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         }
     };
 
-    // Función para mostrar información de porcentajes antes de rechazar
+    // Función para mostrar información de porcentajes antes del segundo rechazo
     const showRejectionInfo = (appointment: Appointment) => {
-        if (appointment.rejectionCount >= 1) {
-            // Si es el segundo rechazo, mostrar configuración de cancelación
-            setSelectedDistributionStatus('appointment_cancelled_by_expert_rejection');
-        } else {
-            // Si es el primer rechazo, no hay reembolso
-            setSelectedDistributionStatus('appointment_rejected');
-        }
+        // Solo se llama en el segundo rechazo, mostrar configuración de cancelación
+        setSelectedDistributionStatus('appointment_cancelled_by_expert_rejection');
         setShowMoneyDistribution(true);
         setAppointmentToReject(appointment);
     };
 
-    // Función para mostrar información de porcentajes antes de cancelar
+    // Función para mostrar información de porcentajes antes de la segunda cancelación
     const showCancellationInfo = (appointment: Appointment) => {
-        if (appointment.cancellationCount >= 1) {
-            // Si es la segunda cancelación del cliente
-            setSelectedDistributionStatus('appointment_cancelled_by_client_second');
-        } else {
-            // Si es la primera cancelación, no hay reembolso
-            setSelectedDistributionStatus('appointment_cancelled_by_client');
-        }
+        // Solo se llama en la segunda cancelación, mostrar configuración de cancelación
+        setSelectedDistributionStatus('appointment_cancelled_by_client_second');
         setShowMoneyDistribution(true);
         setAppointmentToReject(appointment);
     };
@@ -708,13 +698,43 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     break;
                     
                 case 'reject':
-                    // Mostrar información de porcentajes antes de rechazar
-                    showRejectionInfo(appointment);
+                    // Si es el primer rechazo, rechazar directamente
+                    if (appointment.rejectionCount === 0) {
+                        const rejectData: RejectAppointmentDto = {
+                            appointmentId: appointment.id,
+                            reason: 'Rechazado por el experto'
+                        };
+                        await rejectAppointment(rejectData);
+                        setNotifications(prev => [...prev, {
+                            id: uuidv4(),
+                            type: 'success',
+                            message: 'Cita rechazada exitosamente'
+                        }]);
+                        appointmentQuery.refetch();
+                    } else {
+                        // Si es el segundo rechazo, mostrar información de porcentajes
+                        showRejectionInfo(appointment);
+                    }
                     break;
                     
                 case 'cancel':
-                    // Mostrar información de porcentajes antes de cancelar
-                    showCancellationInfo(appointment);
+                    // Si es la primera cancelación del cliente, cancelar directamente
+                    if (appointment.cancellationCount === 0) {
+                        const cancelData: CancelAppointmentDto = {
+                            appointmentId: appointment.id,
+                            reason: 'Cancelado por el cliente'
+                        };
+                        await cancelAppointment(cancelData);
+                        setNotifications(prev => [...prev, {
+                            id: uuidv4(),
+                            type: 'success',
+                            message: 'Cita cancelada exitosamente'
+                        }]);
+                        appointmentQuery.refetch();
+                    } else {
+                        // Si es la segunda cancelación, mostrar información de porcentajes
+                        showCancellationInfo(appointment);
+                    }
                     break;
                     
             }
