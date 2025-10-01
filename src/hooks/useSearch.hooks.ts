@@ -10,6 +10,7 @@ export interface SearchHire {
     statusTranslated?: string; // ✅ NUEVO: Estado traducido del backend
     createdAt: string;
     expert?: {
+        id: number;
         name: string;
         profilePictureUrl: string;
     };
