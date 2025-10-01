@@ -17,6 +17,7 @@ interface ChatProps {
         name?: string;
         profilePictureUrl?: string;
     };
+    hideHeader?: boolean; // Nueva prop para ocultar el header
 }
 
 const libraries: ("drawing" | "geometry")[] = ['drawing', 'geometry'];
@@ -69,7 +70,7 @@ const defaultCenter = {
     lng: -3.7038,
 };
 
-const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, expertData }) => {
+const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, expertData, hideHeader = false }) => {
     const { user } = useAuth();
     const { conversation, loading, error, newMessage, setNewMessage, sendMessage, isSending } = useChat(
         searchId,
@@ -354,7 +355,8 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
     return (
         <div className="relative flex flex-col h-full bg-gray-50">
             {/* Header - Hidden on mobile (info shown in parent header) */}
-            <div className="hidden lg:block bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
+            {!hideHeader && (
+                <div className="hidden lg:block bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full overflow-hidden">
                         {getAvatarImage('other') ? (
@@ -381,6 +383,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                     </div>
                 </div>
             </div>
+            )}
 
             {/* Messages Container - Fixed height with internal scroll */}
             <div className="h-[calc(100vh-400px)] lg:h-[calc(100vh-350px)] overflow-y-auto px-4 py-4 lg:px-6 space-y-6 pb-24 lg:pb-32" data-chat-messages>

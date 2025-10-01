@@ -48,6 +48,14 @@ export interface Service {
             score: number;
             description: string;
             createdAt: string;
+            // ✅ Campos opcionales para compatibilidad con backend actual y futuro
+            reviewer?: {
+                id: number;
+                name: string;
+                email: string;
+                profilePictureUrl?: string;
+            };
+            imageUrls?: string[];
         }[];
     } | null;
 }
