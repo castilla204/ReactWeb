@@ -10,13 +10,16 @@ export type AppointmentStatus =
   | "appointment_cancelled_by_expert"         // Experto cancela voluntariamente
   | "appointment_cancelled_by_expert_rejection" // Experto rechazó 2 veces (cancelación por rechazos)
   | "appointment_cancelled_by_no_response"    // Cliente no propuso en tiempo
-  | "appointment_completed";                  // Cita realizada exitosamente
+  | "appointment_awaiting_report"             // Esperando reporte del experto (24h timer)
+  | "appointment_completed"                   // Cita completada por el experto
+  | "appointment_cancelled_by_no_report";     // Cancelado por no enviar reporte en 24h
 
 export type TimerType = 
   | "proposal"                           // 48h para proponer cita
   | "response"                           // 48h para responder
   | "auto_awaiting_client_decision"      // 3h después de la cita
-  | "reprogram";                         // 24h para reprogramar
+  | "reprogram"                          // 24h para reprogramar
+  | "expert_report";                     // 24h para enviar reporte del experto
 
 export interface AppointmentTimer {
   id: number;
@@ -105,6 +108,10 @@ export interface RejectAppointmentDto {
 export interface CancelAppointmentDto {
   appointmentId: number;
   reason: string;          // Razón obligatoria de la cancelación
+}
+
+export interface SubmitExpertReportDto {
+  notes: string;           // Notas del reporte del experto
 }
 
 

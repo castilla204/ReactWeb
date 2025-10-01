@@ -141,7 +141,7 @@ export function Notification({ type, message, action, onClose, duration = 5000 }
             </div>
             
             {/* Keyframes for progress bar */}
-            <style jsx>{`
+            <style>{`
                 @keyframes shrink {
                     from { width: 100%; }
                     to { width: 0%; }

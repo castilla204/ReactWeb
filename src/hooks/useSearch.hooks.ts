@@ -17,8 +17,8 @@ export interface SearchHire {
         id: number;
         serviceTypeId: number;
         serviceTypeName: string;
-        serviceTypeCategoryId?: number;
-        serviceTypeCategoryName?: string;
+        serviceTypeCategoryId: number;
+        serviceTypeCategoryName: string;
         requiresAppointment: boolean;
         price: number;
     };
