@@ -1060,15 +1060,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 </div>
             </div>
 
-            {/* Modern Compact Layout */}
-            <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-100px)] lg:max-w-none lg:mx-0 lg:gap-4 lg:p-4">
+            {/* Clean Professional Layout */}
+            <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-100px)] lg:max-w-none lg:mx-0 lg:gap-6 lg:p-6">
                 {/* Main Chat Area - Compact Modern Design */}
                 {canViewChat && (
-                    <div className="lg:flex-1 lg:w-[70%] xl:w-[75%] flex flex-col lg:h-full bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="lg:flex-1 lg:w-[70%] xl:w-[75%] flex flex-col lg:h-full bg-white border border-gray-200 overflow-hidden">
                         {/* Modern Mobile Tabs Navigation */}
                         <div className="lg:hidden bg-white border-b border-gray-200 sticky top-[80px] z-40 shadow-lg">
                             {/* Expert Info Header */}
-                            <div className="px-4 py-3 flex items-center gap-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
+                            <div className="px-4 py-3 flex items-center gap-4 border-b border-gray-100 bg-gray-50">
                                 <div className="flex items-center gap-3 flex-1">
                                     <div className="relative">
                                         {(expertInfo?.profilePictureUrl) ? ( 
@@ -1078,7 +1078,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full object-cover border-2 border-white shadow-md"
                                             />
                                         ) : (
-                                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold border-2 border-white shadow-lg">
+                                            <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
                                                 {(expertInfo?.name || 'E').charAt(0)} 
                                             </div>
                                         )}
@@ -1089,7 +1089,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             <h3 className="font-semibold text-gray-900 truncate text-sm">
                                                 {expertInfo?.name || 'Experto'} 
                                             </h3>
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200 shadow-sm">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
                                                 <svg className="w-2.5 h-2.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                                 </svg>
