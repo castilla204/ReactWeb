@@ -25,6 +25,9 @@ export const API_CONFIG = {
             update: (id: number) => `${API_PATH}/Search/${id}`,
             toggleActive: (id: number) => `${API_PATH}/Search/${id}/toggle-active`,
             revise: (id: number) => `${API_PATH}/Search/${id}/revise`,
+            // ✅ NUEVOS ENDPOINTS OPTIMIZADOS
+            detailsComplete: (id: number) => `${API_PATH}/Search/${id}/details-complete`,
+            detailsAdditional: (id: number) => `${API_PATH}/Search/${id}/details-additional`,
         },
         searchParameters: {
             create: (searchId: number) => `${API_PATH}/SearchParameter/${searchId}`,
@@ -104,6 +107,7 @@ export const API_CONFIG = {
             confirm: `${API_PATH}/appointment/confirm`,
             reject: `${API_PATH}/appointment/reject`,
             cancel: `${API_PATH}/appointment/cancel`,
+            submitReport: (appointmentId: number) => `${API_PATH}/Appointment/submit-report/${appointmentId}`,
             adminMetrics: `${API_PATH}/appointment/admin/metrics`,
             adminCheckTimers: `${API_PATH}/appointment/admin/check-timers`,
         },

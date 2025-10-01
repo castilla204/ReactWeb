@@ -4,13 +4,11 @@ import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 import {
   Appointment,
-  AppointmentResponse,
-  AppointmentsResponse,
   ProposeAppointmentDto,
   ConfirmAppointmentDto,
   RejectAppointmentDto,
   CancelAppointmentDto,
-  MarkCompletedDto,
+  SubmitExpertReportDto,
   AppointmentActions,
   MoneyDistribution
 } from '../types/appointment';
@@ -25,10 +23,11 @@ export const useAppointments = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Queries
-  const myAppointmentsQuery = useQuery({
-    queryKey: ['appointments', 'my'],
-    queryFn: () => fetchApi<Appointment[]>(API_CONFIG.endpoints.appointment.myAppointments),
-  });
+  // ❌ ELIMINADO: myAppointmentsQuery - No se usa, los datos vienen del endpoint optimizado
+  // const myAppointmentsQuery = useQuery({
+  //   queryKey: ['appointments', 'my'],
+  //   queryFn: () => fetchApi<Appointment[]>(API_CONFIG.endpoints.appointment.myAppointments),
+  // });
 
   const getAppointment = (id: number) =>
     useQuery({
@@ -135,6 +134,21 @@ export const useAppointments = () => {
     },
   });
 
+  const submitExpertReportMutation = useMutation({
+    mutationFn: ({ appointmentId, data }: { appointmentId: number; data: SubmitExpertReportDto }) =>
+      fetchApi<Appointment>(API_CONFIG.endpoints.appointment.submitReport(appointmentId), {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointment'] });
+    },
+    onError: (error) => {
+      setError(error instanceof Error ? error.message : 'Error al enviar reporte');
+    },
+  });
+
 
   // Funciones de conveniencia
   const proposeAppointment = async (searchHireId: number, data: ProposeAppointmentDto) => {
@@ -173,10 +187,20 @@ export const useAppointments = () => {
     }
   };
 
+  const submitExpertReport = async (appointmentId: number, data: SubmitExpertReportDto) => {
+    try {
+      setError(null);
+      return await submitExpertReportMutation.mutateAsync({ appointmentId, data });
+    } catch (err) {
+      throw err;
+    }
+  };
+
 
   return {
     // Queries
-    myAppointments: myAppointmentsQuery,
+    // ❌ ELIMINADO: myAppointments - No se usa, los datos vienen del endpoint optimizado
+    // myAppointments: myAppointmentsQuery,
     getAppointment,
     getAppointmentBySearchHire,
     
@@ -185,6 +209,7 @@ export const useAppointments = () => {
     confirmAppointment,
     rejectAppointment,
     cancelAppointment,
+    submitExpertReport,
     
     // Estados
     error,
@@ -195,6 +220,7 @@ export const useAppointments = () => {
     isConfirming: confirmAppointmentMutation.isPending,
     isRejecting: rejectAppointmentMutation.isPending,
     isCancelling: cancelAppointmentMutation.isPending,
+    isSubmittingReport: submitExpertReportMutation.isPending,
   };
 };
 
@@ -395,7 +421,9 @@ export const getAppointmentStatusText = (status: string): string => {
     'appointment_cancelled_by_expert': 'Cancelada por experto',
     'appointment_cancelled_by_expert_rejection': 'Cancelada - Experto rechazó 2 veces',
     'appointment_cancelled_by_no_response': 'Cancelada por falta de respuesta',
-    'appointment_completed': 'Cita completada'
+    'appointment_awaiting_report': 'Esperando reporte del experto',
+    'appointment_completed': 'Cita completada',
+    'appointment_cancelled_by_no_report': 'Cancelada - Experto no envió reporte'
   };
   
   return statusTexts[status] || status;
@@ -415,7 +443,9 @@ export const getAppointmentStatusColor = (status: string): string => {
     'appointment_cancelled_by_expert': 'red',
     'appointment_cancelled_by_expert_rejection': 'red',
     'appointment_cancelled_by_no_response': 'gray',
-    'appointment_completed': 'green'
+    'appointment_awaiting_report': 'purple',
+    'appointment_completed': 'green',
+    'appointment_cancelled_by_no_report': 'red'
   };
   
   return statusColors[status] || 'gray';

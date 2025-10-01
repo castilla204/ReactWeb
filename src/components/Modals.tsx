@@ -1,7 +1,9 @@
 ﻿import { useState, useRef } from 'react';
-import { Star, Trash2, XCircle } from 'lucide-react';
+import { Star, Trash2, XCircle, Send } from 'lucide-react';
 import { useReview } from '../hooks/useReview.hooks';
+import { useExpertReport } from '../hooks/useExpertReport';
 import { NotificationType } from './Notification';
+import { Appointment } from '../types/appointment';
 
 interface ReviewModalProps {
     isOpen: boolean;
@@ -844,6 +846,114 @@ export function FinalizeModal({ isOpen, onClose, onFinalize }: FinalizeModalProp
                     >
                         Cancelar
                     </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Modal para enviar reporte del experto
+interface ReportModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    appointment: Appointment | null;
+    onSuccess: () => void;
+    setNotifications: React.Dispatch<React.SetStateAction<{ id: string; type: NotificationType; message: string; duration?: number }[]>>;
+}
+
+export function ReportModal({ isOpen, onClose, appointment, onSuccess, setNotifications }: ReportModalProps) {
+    const { submitExpertReport, isSubmitting } = useExpertReport();
+
+    const handleSubmit = async () => {
+        if (!appointment) {
+            setNotifications(prev => [...prev, {
+                id: Math.random().toString(36).substring(2, 9),
+                type: 'error',
+                message: 'No se encontró la cita'
+            }]);
+            return;
+        }
+
+        try {
+            await submitExpertReport(appointment.id, '');
+            setNotifications(prev => [...prev, {
+                id: Math.random().toString(36).substring(2, 9),
+                type: 'success',
+                message: 'Reporte enviado exitosamente'
+            }]);
+            onSuccess();
+            onClose();
+        } catch (error: any) {
+            setNotifications(prev => [...prev, {
+                id: Math.random().toString(36).substring(2, 9),
+                type: 'error',
+                message: error.message || 'Error al enviar el reporte'
+            }]);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            Enviar Reporte del Experto
+                        </h3>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-gray-600"
+                        >
+                            <XCircle className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-start space-x-3">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                                <div>
+                                    <h4 className="text-sm font-medium text-blue-800 mb-2">
+                                        Confirmar envío del reporte
+                                    </h4>
+                                    <p className="text-sm text-blue-700 mb-2">
+                                        Al enviar el reporte, confirmas que has completado el trabajo y que todos los archivos requeridos están subidos.
+                                    </p>
+                                    <p className="text-xs text-blue-600">
+                                        💡 Una vez enviado, el cliente tendrá 24 horas para aprobar o rechazar el trabajo.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                        <button
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className="flex-1 flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-3 rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    <span>Enviando...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Send className="w-4 h-4" />
+                                    <span>Enviar Reporte</span>
+                                </>
+                            )}
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-3 text-gray-600 hover:text-gray-900 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

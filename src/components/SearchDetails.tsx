@@ -1,13 +1,12 @@
-﻿import { useLayoutEffect, useState, useEffect, useRef } from 'react';
+import { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp, FileText, MessageSquare, Calendar, CheckCircle, DollarSign, User, XCircle } from 'lucide-react';
-import { useSearch, SearchHire } from '../hooks/useSearch.hooks';
-import { useServices } from '../hooks/useServices';
+import { SearchHire } from '../hooks/useSearch.hooks';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 
 import { useChat } from '../hooks/useChat';
 import Chat from './Chat';
-import { ReviewModal, DisputeModal, ResolveDisputeModal, AddAdModal, CancelServiceModal, FinalizeModal } from './Modals';
+import { ReviewModal, DisputeModal, ResolveDisputeModal, AddAdModal, CancelServiceModal, FinalizeModal, ReportModal } from './Modals';
 import { useSearchActions } from '../hooks/useSearchActions';
 import { useDisputes } from '../hooks/useDisputes';
 import { Notification, NotificationType } from './Notification';
@@ -21,9 +20,11 @@ import AppointmentStatus from './AppointmentStatus';
 import RejectAppointmentModal from './RejectAppointmentModal';
 import { Appointment, ProposeAppointmentDto, ConfirmAppointmentDto, RejectAppointmentDto, CancelAppointmentDto } from '../types/appointment';
 
-// Imports para distribución de dinero
-import { useMoneyDistribution } from '../hooks/useMoneyDistribution';
+// Imports para distribuci�n de dinero
 import MoneyDistributionInfo from './MoneyDistributionInfo';
+
+// ? NUEVOS HOOKS OPTIMIZADOS
+import { useSearchDetailsOptimized } from '../hooks/useSearchDetailsOptimized';
 
 interface Category {
     id: number;
@@ -61,7 +62,7 @@ const categoryBanners: { [key: number]: string } = {
 const statusRoadmap = [
     { label: 'Pendiente', status: 'pending', color: 'bg-yellow-600' },
     { label: 'En progreso', status: 'in_progress', color: 'bg-blue-600' },
-    { label: 'En revisión', status: 'awaiting_client_decision', color: 'bg-purple-600' },
+    { label: 'En revisi�n', status: 'awaiting_client_decision', color: 'bg-purple-600' },
     { label: 'Completado', status: 'completed', color: 'bg-green-600' },
 ];
 
@@ -76,11 +77,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         showDisputeModal: false,
         showResolveDisputeModal: false,
         showReviewModal: false,
+        showReportModal: false,
     });
     const [disputeReason, setDisputeReason] = useState('');
     const [disputeFiles, setDisputeFiles] = useState<File[]>([]);
     const [resolveInFavorOfClient, setResolveInFavorOfClient] = useState<boolean | null>(null);
     const [resolutionReason, setResolutionReason] = useState('');
+    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
     
     // Estados para respuesta del experto
     const [expertResponseText, setExpertResponseText] = useState('');
@@ -116,7 +119,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [appointmentToReject, setAppointmentToReject] = useState<Appointment | null>(null);
     
-    // Estado para mostrar información de porcentajes
+    // Estado para mostrar informaci�n de porcentajes
     const [showMoneyDistribution, setShowMoneyDistribution] = useState(false);
     const [selectedDistributionStatus, setSelectedDistributionStatus] = useState<string>('');
 
@@ -147,21 +150,41 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         };
     }, [activeTab]);
 
-    const { getSearch } = useSearch({ enableQueries: false });
-    const { useServiceByHireId } = useServices({});
     const { categories } = useCategories();
     const { user } = useAuth();
 
-    const { deliverables, uploadDeliverable, deliverablesQuery, refetchDeliverables, isUploadingDeliverable } = useChat(searchId, setNotifications);
+    // ? HOOK OPTIMIZADO - Reemplaza m�ltiples queries
+    const {
+        search,
+        moneyDistribution,
+        conversations,
+        appointment,
+        deliverables,
+        disputes,
+        isLoading,
+        isError,
+        error,
+        invalidateAll
+    } = useSearchDetailsOptimized(searchId);
+
+    // ? DATOS DERIVADOS
+    const hireId = search?.searchHire?.id;
+    const hasSearchHire = !!search?.searchHire;
+    const serviceInfo = search?.searchHire?.service;
+    
+    // ? DATOS DE EXPERTO DESDE SEARCHHIRE (ya viene en el hook optimizado)
+    const expertInfo = search?.searchHire?.expert;
+
+    // ? HOOKS PARA ACCIONES (se mantienen)
+    const { deliverables: chatDeliverables, uploadDeliverable, deliverablesQuery, refetchDeliverables, isUploadingDeliverable } = useChat(searchId, setNotifications);
     const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit, handleResolveDispute, handleAddAd } =
         useSearchActions(setNotifications);
     
-    // Hook para obtener información de disputa (solución integrada)
-    const { useDisputeBySearchHire, expertResponse, debugDispute } = useDisputes();
+    // Hook para obtener informaci�n de disputa (soluci�n integrada)
+    const { expertResponse, debugDispute } = useDisputes();
     
     // Hook para el sistema de citas
     const { 
-        getAppointmentBySearchHire, 
         proposeAppointment, 
         confirmAppointment, 
         rejectAppointment, 
@@ -170,50 +193,39 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         isRejecting
     } = useAppointments();
     
-    const searchQuery = getSearch(searchId);
-    // Hook para obtener información de disputa usando el endpoint unificado
-    const disputeQuery = useDisputeBySearchHire(searchQuery.data?.searchHire?.id || 0);
-    // Only fetch service if we have a valid searchHire ID
-    const hireId = searchQuery.data?.searchHire?.id;
-    console.log('[SearchDetails] HireId extracted:', hireId);
+    // ? QUERIES LEGACY ELIMINADAS - Ahora se usan los datos del hook optimizado
+    // const { getSearch } = useSearch({ enableQueries: false });
+    // const searchQuery = getSearch(searchId);
+    // const disputeQuery = useDisputeBySearchHire(hireId || 0);
+    // const { useServiceByHireId } = useServices({});
+    // const serviceQuery = useServiceByHireId(hireId);
+    // const appointmentQuery = getAppointmentBySearchHire(hireId || 0);
     
-    // Use the hook directly - it will handle enabled internally
-    const serviceQuery = useServiceByHireId(hireId);
+    // ? DATOS YA OBTENIDOS DEL HOOK OPTIMIZADO
+    // hasSearchHire y serviceInfo ya est�n definidos arriba
     
-    // Query para obtener la cita si existe
-    const appointmentQuery = getAppointmentBySearchHire(hireId || 0);
+    // ? USAR DATOS OPTIMIZADOS PARA DISTRIBUCI�N DE DINERO
+    const moneyDistributionConfig = moneyDistribution || null;
+    const isLoadingMoneyConfig = false; // Ya viene del hook optimizado
+    const moneyConfigError = null; // Ya viene del hook optimizado
     
-    // Determinar si este servicio necesita citas
-    // Solo si hay un searchHire (servicio contratado)
-    const hasSearchHire = !!searchQuery.data?.searchHire;
-    
-    // Obtener información del servicio directamente desde searchHire (optimizado)
-    const serviceInfo = searchQuery.data?.searchHire?.service;
-    
-    // Hook para obtener configuración de distribución de dinero (después de serviceInfo)
-    const { config: moneyDistributionConfig, isLoading: isLoadingMoneyConfig, error: moneyConfigError } = useMoneyDistribution(
-        selectedDistributionStatus,
-        searchQuery.data?.category, // categoryId
-        serviceInfo?.serviceTypeCategoryId
-    );
-    
-    // Opción 1: Verificar por serviceTypeCategoryId (1 o 2)
+    // Opci�n 1: Verificar por serviceTypeCategoryId (1 o 2)
     const isAppointmentCategory = serviceInfo?.serviceTypeCategoryId === 1 || serviceInfo?.serviceTypeCategoryId === 2;
     
-    // Opción 2: Verificar por requiresAppointment (nuevo campo del backend)
+    // Opci�n 2: Verificar por requiresAppointment (nuevo campo del backend)
     const requiresAppointment = serviceInfo?.requiresAppointment;
     
     // Usar cualquiera de las dos condiciones, pero solo si hay searchHire
     const needsAppointment = hasSearchHire && (isAppointmentCategory || requiresAppointment);
     
-    // Función para calcular el tiempo restante para crear cita (24 horas desde la contratación)
+    // Funci�n para calcular el tiempo restante para crear cita (24 horas desde la contrataci�n)
     const calculateTimeRemaining = () => {
-        const searchHire: SearchHire | undefined = searchQuery.data?.searchHire;
+        const searchHire: SearchHire | undefined = search?.searchHire;
         if (!searchHire?.createdAt) return '00:00:00';
         
-        // ✅ CORRECTO: Calcular desde la fecha de contratación del servicio
+        // ? CORRECTO: Calcular desde la fecha de contrataci�n del servicio
         const hiredAt = new Date(searchHire.createdAt);
-        const deadline = new Date(hiredAt.getTime() + 24 * 60 * 60 * 1000); // 24 horas después
+        const deadline = new Date(hiredAt.getTime() + 24 * 60 * 60 * 1000); // 24 horas despu�s
         const now = new Date();
         const diff = deadline.getTime() - now.getTime();
         
@@ -228,7 +240,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     // Actualizar el temporizador cada segundo
     useEffect(() => {
-        if (needsAppointment && !appointmentQuery.data) {
+        if (needsAppointment && !appointment) {
             const updateTimer = () => {
                 setTimeRemaining(calculateTimeRemaining());
             };
@@ -238,7 +250,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             
             return () => clearInterval(interval);
         }
-    }, [needsAppointment, appointmentQuery.data, searchQuery.data?.searchHire?.createdAt]);
+    }, [needsAppointment, appointment, search?.searchHire?.createdAt]);
 
     // Debug temporal para verificar los datos del servicio (optimizado)
     console.log('[SearchDetails] Service data (optimized):', {
@@ -249,7 +261,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         requiresAppointment: serviceInfo?.requiresAppointment,
         servicePrice: serviceInfo?.price,
         
-        // Lógica de citas
+        // L�gica de citas
         isAppointmentCategory,
         needsAppointment,
         hasSearchHire,
@@ -258,31 +270,31 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         // Temporizador
         timeRemaining,
         
-        // Información completa del servicio
+        // Informaci�n completa del servicio
         fullServiceInfo: serviceInfo,
         
         // Estado de las queries
-        searchQueryStatus: searchQuery.status,
-        searchQueryIsLoading: searchQuery.isLoading,
-        searchQueryError: searchQuery.error
+        searchQueryStatus: 'success', // Datos del hook optimizado
+        searchQueryIsLoading: isLoading,
+        searchQueryError: error
     });
 
     // Debug adicional para verificar los datos del searchQuery
     console.log('[SearchDetails] Search data:', {
-        searchData: searchQuery.data,
-        searchHire: searchQuery.data?.searchHire,
-        searchHireId: searchQuery.data?.searchHire?.id,
-        searchStatus: searchQuery.status,
-        searchIsLoading: searchQuery.isLoading,
-        searchError: searchQuery.error
+        searchData: search,
+        searchHire: search?.searchHire,
+        searchHireId: search?.searchHire?.id,
+        searchStatus: 'success', // Datos del hook optimizado
+        searchIsLoading: isLoading,
+        searchError: error
     });
 
     const userId = Number(user?.id) || 0;
-    const clientId = Number(searchQuery.data?.userId ?? 0);
-    const expertId = Number(searchQuery.data?.searchHire?.expertId ?? 0);
+    const clientId = Number(search?.userId ?? 0);
+    const expertId = Number(search?.searchHire?.expertId ?? 0);
     
-    // Obtener el expertId de la disputa (puede ser diferente al de la búsqueda)
-    const disputeExpertId = Number(disputeQuery.data?.expert?.id ?? 0);
+    // Obtener el expertId de la disputa (puede ser diferente al de la b�squeda)
+    const disputeExpertId = Number(disputes[0]?.id ?? 0); // Usar datos optimizados
 
     // Debug: Log user and role information
     console.log('[SearchDetails] User and role debug:', {
@@ -291,8 +303,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         expertId,
         disputeExpertId,
         userData: user,
-        searchData: searchQuery.data,
-        disputeData: disputeQuery.data
+        searchData: search,
+        disputeData: disputes
     });
 
     const isClient = userId === clientId;
@@ -300,38 +312,38 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const isDisputeExpert = userId === disputeExpertId;
     const hasReviewed = false; // Simplified since we're not fetching reviews anymore
     const canReview =
-        isClient && searchQuery.data?.searchHire && ['completed', 'dispute-resolved'].includes(searchQuery.data.searchHire.status) && !hasReviewed;
-    const canDispute = isClient && searchQuery.data?.searchHire?.status === 'awaiting_client_decision';
-    const canApprove = isClient && searchQuery.data?.searchHire?.status === 'awaiting_client_decision';
-    const canCancel = isExpert && searchQuery.data?.searchHire && !['completed', 'canceled', 'disputed'].includes(searchQuery.data.searchHire.status);
-    const isDisputed = (isClient || isExpert) && searchQuery.data?.searchHire?.status === 'disputed';
-    const isDisputeResolved = (isClient || isExpert) && searchQuery.data?.searchHire?.status === 'dispute-resolved';
+        isClient && search?.searchHire && ['completed', 'dispute-resolved'].includes(search.searchHire.status) && !hasReviewed;
+    const canDispute = isClient && search?.searchHire?.status === 'awaiting_client_decision';
+    const canApprove = isClient && search?.searchHire?.status === 'awaiting_client_decision';
+    const canCancel = isExpert && search?.searchHire && !['completed', 'canceled', 'disputed'].includes(search.searchHire.status);
+    const isDisputed = (isClient || isExpert) && search?.searchHire?.status === 'disputed';
+    const isDisputeResolved = (isClient || isExpert) && search?.searchHire?.status === 'dispute-resolved';
     
     // Determinar si el experto puede responder a la disputa
     const canExpertRespond = isDisputeExpert && 
-                            disputeQuery.data?.canExpertRespond && 
-                            !disputeQuery.data?.expertResponse &&
-                            searchQuery.data?.searchHire?.status === 'disputed';
-    const canViewChat = (isClient || isExpert || isAdmin) && !!searchQuery.data?.searchHire;
+                            disputes[0]?.status === 'pending' && 
+                            !disputes[0]?.expertResponseText &&
+                            search?.searchHire?.status === 'disputed';
+    const canViewChat = (isClient || isExpert || isAdmin) && !!search?.searchHire;
 
-    const category = categories?.find((c: Category) => c.id === searchQuery.data?.category);
+    const category = categories?.find((c: Category) => c.id === search?.category);
     const categoryName = category?.name || 'Unknown Category';
 
     useEffect(() => {
         console.log('[SearchDetails] SearchDetails initialized with searchId:', searchId);
         console.log('[SearchDetails] SearchQuery state:', {
-            isLoading: searchQuery.isLoading,
-            isError: searchQuery.isError,
-            error: searchQuery.error?.message,
-            data: searchQuery.data ? 'Present' : 'Missing',
-            searchHireId: searchQuery.data?.searchHire?.id
+            isLoading: isLoading,
+            isError: isError,
+            error: error?.message,
+            data: search ? 'Present' : 'Missing',
+            searchHireId: search?.searchHire?.id
         });
 
         console.log('[SearchDetails] ServiceQuery state:', {
-            isLoading: serviceQuery.isLoading,
-            isError: serviceQuery.isError,
-            error: serviceQuery.error?.message,
-            data: serviceQuery.data ? 'Present' : 'Missing'
+            isLoading: false, // Datos del hook optimizado
+            isError: false,
+            error: null,
+            data: serviceInfo ? 'Present' : 'Missing'
         });
         console.log('[SearchDetails] Deliverables state:', deliverables);
         console.log('[SearchDetails] Deliverables query status:', {
@@ -339,32 +351,32 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             isError: deliverablesQuery?.isError,
             error: deliverablesQuery?.error?.message,
         });
-        console.log('[SearchDetails] Deliverables URLs:', deliverables?.deliverableUrls);
-        if (deliverables?.deliverableUrls?.length) {
-            console.log('[SearchDetails] Rendering deliverable URLs:', deliverables.deliverableUrls);
+        console.log('[SearchDetails] Deliverables:', deliverables);
+        if (deliverables?.length) {
+            console.log('[SearchDetails] Rendering deliverables:', deliverables);
         } else {
             console.log('[SearchDetails] No deliverable URLs to render, deliverables:', JSON.stringify(deliverables));
         }
     }, [
         searchId, 
-        searchQuery.isLoading, 
-        searchQuery.isError, 
-        searchQuery.data?.searchHire?.id,
-        serviceQuery.isLoading, 
-        serviceQuery.isError, 
-        serviceQuery.data,
-        deliverables?.deliverableUrls,
+        isLoading, 
+        isError, 
+        search?.searchHire?.id,
+        false, // serviceQuery.isLoading - datos del hook optimizado
+        false, // serviceQuery.isError - datos del hook optimizado 
+        serviceInfo, // serviceInfo - datos del hook optimizado
+        deliverables,
         deliverablesQuery?.isLoading,
         deliverablesQuery?.isError
     ]);
 
     useEffect(() => {
-        if (searchQuery.data?.searchHire?.id && searchQuery.data.searchHire.id !== lastSearchHireId.current) {
-            console.log('[13:42 CEST] searchHireId changed, refetching deliverables for searchHireId:', searchQuery.data.searchHire.id);
-            lastSearchHireId.current = searchQuery.data.searchHire.id;
-            // No necesitamos refetch manual, el useChat se encarga automáticamente
+        if (search?.searchHire?.id && search.searchHire.id !== lastSearchHireId.current) {
+            console.log('[13:42 CEST] searchHireId changed, refetching deliverables for searchHireId:', search.searchHire.id);
+            lastSearchHireId.current = search.searchHire.id;
+            // No necesitamos refetch manual, el useChat se encarga autom�ticamente
         }
-    }, [searchQuery.data?.searchHire?.id]);
+    }, [search?.searchHire?.id]);
 
     const handleDeliverableFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files ? Array.from(e.target.files) : [];
@@ -393,7 +405,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 {
                     id: `deliverable-file-error-${uuidv4()}`,
                     type: 'error' as NotificationType,
-                    message: `Solo se permiten archivos PDF, MP4 con un tamaño máximo de ${maxDeliverableFileSize / 1024 / 1024}MB.`,
+                    message: `Solo se permiten archivos PDF, MP4 con un tama�o m�ximo de ${maxDeliverableFileSize / 1024 / 1024}MB.`,
                     duration: 5000,
                 },
             ]);
@@ -406,7 +418,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             console.log('[13:42 CEST] Uploading deliverables:', selectedDeliverableFiles.map((f) => ({ name: f.name, size: f.size })));
             await uploadDeliverable(selectedDeliverableFiles);
             setSelectedDeliverableFiles([]);
-            // No necesitamos refetch manual, uploadDeliverable se encarga automáticamente
+            // No necesitamos refetch manual, uploadDeliverable se encarga autom�ticamente
         } else {
             setNotifications((prev) => [
                 ...prev,
@@ -421,7 +433,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     };
 
     useEffect(() => {
-        if (!canViewChat && searchQuery.data?.searchHire && searchQuery.isSuccess) {
+        if (!canViewChat && search?.searchHire) {
             setNotifications((prev) => [
                 ...prev.filter((n) => !n.id.startsWith('chat-access-denied-')),
                 {
@@ -432,28 +444,28 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 },
             ]);
         }
-    }, [canViewChat, searchQuery.data, searchQuery.isSuccess, userId, clientId, expertId]);
+    }, [canViewChat, search, true, userId, clientId, expertId]); // search, searchQuery.isSuccess - datos del hook optimizado
 
     useEffect(() => {
-        if (searchQuery.error) {
-            console.error('[13:42 CEST] SearchQuery error:', searchQuery.error);
+        if (isError) {
+            console.error('[13:42 CEST] SearchQuery error:', error);
             setNotifications((prev) => [
                 ...prev.filter((n) => !n.id.startsWith('api-error-')),
                 {
                     id: `api-error-${Date.now()}`,
                     type: 'error',
-                    message: 'Error al cargar la búsqueda. Por favor, verifica tu conexión o inicia sesión nuevamente.',
+                    message: 'Error al cargar la b�squeda. Por favor, verifica tu conexi�n o inicia sesi�n nuevamente.',
                     duration: 5000,
                 },
             ]);
         }
         
-        if (serviceQuery.error) {
-            console.error('[13:42 CEST] ServiceQuery error:', serviceQuery.error);
+        if (isError) { // serviceQuery.error - datos del hook optimizado
+            console.error('[13:42 CEST] ServiceQuery error:', error);
             // Don't show error notification for service query as it's not critical for page function
             // The UI will gracefully fall back to showing category banners instead of service images
         }
-    }, [searchQuery.error, serviceQuery.error]);
+    }, [error, error]); // searchQuery.error, serviceQuery.error - datos del hook optimizado
 
     useLayoutEffect(() => {
         document.documentElement.scrollTop = 0;
@@ -490,11 +502,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     const handleDisputeSubmitAndClose = async () => {
         await handleDisputeSubmit(
-            searchQuery.data?.searchHire?.id,
+            search?.searchHire?.id,
             disputeReason,
             disputeFiles,
             () => {
-                searchQuery.refetch();
+                invalidateAll();
                 setModalState((prev) => ({ ...prev, showDisputeModal: false }));
                 setDisputeReason('');
                 setDisputeFiles([]);
@@ -503,24 +515,24 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     };
 
     const handleResolveDisputeAndClose = async () => {
-        await handleResolveDispute(searchQuery.data?.searchHire?.id, resolveInFavorOfClient, resolutionReason, () => {
-            searchQuery.refetch();
+        await handleResolveDispute(search?.searchHire?.id, resolveInFavorOfClient, resolutionReason, () => {
+            invalidateAll();
             setModalState((prev) => ({ ...prev, showResolveDisputeModal: false }));
             setResolveInFavorOfClient(null);
             setResolutionReason('');
         });
     };
 
-    // Función de debug para entender el error 403
+    // Funci�n de debug para entender el error 403
     const handleDebugDispute = async () => {
-        if (!disputeQuery.data?.id) {
+        if (!disputes[0]?.id) {
             addNotification('error', 'No hay disputa para debuggear');
             return;
         }
 
         try {
             console.log('[SearchDetails] Iniciando debug de disputa...');
-            const debugData = await debugDispute(disputeQuery.data.id);
+            const debugData = await debugDispute(disputes[0].id);
             console.log('[SearchDetails] Debug data recibida:', debugData);
             addNotification('success', 'Debug completado - revisa la consola');
         } catch (error) {
@@ -529,40 +541,40 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         }
     };
 
-    // Función para manejar la respuesta del experto
+    // Funci�n para manejar la respuesta del experto
     const handleExpertResponseSubmit = async () => {
-        if (!disputeQuery.data?.id || !expertResponseText.trim()) {
+        if (!disputes[0]?.id || !expertResponseText.trim()) {
             addNotification('error', 'Por favor, proporciona una respuesta');
             return;
         }
 
         // Debug: Log expert response attempt
         console.log('[SearchDetails] Expert response attempt:', {
-            disputeId: disputeQuery.data.id,
+            disputeId: disputes[0].id,
             userId,
             expertId,
             disputeExpertId,
             isExpert,
             isDisputeExpert,
             canExpertRespond,
-            disputeData: disputeQuery.data,
+            disputeData: disputes,
             userData: user
         });
 
         try {
             await expertResponse.mutateAsync({
-                disputeId: disputeQuery.data.id,
+                disputeId: disputes[0].id,
                 data: {
                     response: expertResponseText.trim(),
                     files: expertResponseFiles.length > 0 ? expertResponseFiles : undefined,
                 }
             });
             
-            addNotification('success', '✅ Respuesta enviada exitosamente');
+            addNotification('success', '? Respuesta enviada exitosamente');
             setShowExpertResponseModal(false);
             setExpertResponseText('');
             setExpertResponseFiles([]);
-            disputeQuery.refetch();
+            invalidateAll(); // disputeQuery.refetch() - usar invalidaci�n unificada
         } catch (error) {
             console.error('Error al enviar respuesta del experto:', error);
             addNotification('error', 'Error al enviar la respuesta');
@@ -570,54 +582,54 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     };
 
     const handleCancelServiceAndClose = async () => {
-        await handleCancelService(searchQuery.data?.searchHire?.id);
-            searchQuery.refetch();
+        await handleCancelService(search?.searchHire?.id);
+            invalidateAll();
             setModalState((prev) => ({ ...prev, showCancelConfirm: false }));
     };
 
     const handleForceFinalizeAndClose = async (favorExpert: boolean) => {
-        await handleForceFinalize(searchQuery.data?.searchHire?.id, favorExpert, () => {
-            searchQuery.refetch();
+        await handleForceFinalize(search?.searchHire?.id, favorExpert, () => {
+            invalidateAll();
             setModalState((prev) => ({ ...prev, showFinalizeModal: false }));
         });
     };
 
     const handleApproveService = async () => {
-        await handleCompleteService(searchQuery.data?.searchHire?.id, () => {
-            searchQuery.refetch();
+        await handleCompleteService(search?.searchHire?.id, () => {
+            invalidateAll();
         });
     };
 
-    // Función para verificar si se puede proponer una cita
+    // Funci�n para verificar si se puede proponer una cita
     const canProposeAppointment = () => {
         // Si ya existe una cita, verificar su estado
-        if (appointmentQuery.data) {
+        if (appointment) { // appointmentQuery.data - datos del hook optimizado
             const validAppointmentStatuses = ['awaiting_appointment', 'appointment_rejected', 'appointment_cancelled_by_client'];
-            const canPropose = validAppointmentStatuses.includes(appointmentQuery.data.status);
+            const canPropose = validAppointmentStatuses.includes(appointment.status);
             console.log('[SearchDetails] Can propose appointment (existing appointment):', {
-                appointmentStatus: appointmentQuery.data.status,
+                appointmentStatus: appointment.status,
                 validStatuses: validAppointmentStatuses,
                 canPropose
             });
             return canPropose;
         }
         
-        // Si no existe cita, verificar que el SearchHire esté en un estado válido para crear citas
+        // Si no existe cita, verificar que el SearchHire est� en un estado v�lido para crear citas
         const validHireStatuses = ['pending']; // Estado donde se puede proponer cita inicial
-        const currentHireStatus = searchQuery.data?.searchHire?.status;
+        const currentHireStatus = search?.searchHire?.status;
         const canPropose = currentHireStatus ? validHireStatuses.includes(currentHireStatus) : false;
         console.log('[SearchDetails] Can propose appointment (no appointment):', {
             hireStatus: currentHireStatus,
             validStatuses: validHireStatuses,
             canPropose,
-            hasSearchHire: !!searchQuery.data?.searchHire,
+            hasSearchHire: !!search?.searchHire,
             needsAppointment,
             isClient
         });
         return canPropose;
     };
 
-    // Función para manejar la confirmación del rechazo desde el modal
+    // Funci�n para manejar la confirmaci�n del rechazo desde el modal
     const handleRejectConfirm = async (reason: string) => {
         if (!appointmentToReject) return;
         
@@ -640,8 +652,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             setAppointmentToReject(null);
             
             // Recargar datos
-            appointmentQuery.refetch();
-            searchQuery.refetch();
+            invalidateAll(); // appointmentQuery.refetch() - usar invalidaci�n unificada
+            invalidateAll();
             
         } catch (error) {
             console.error('Error al rechazar cita:', error);
@@ -653,17 +665,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         }
     };
 
-    // Función para mostrar información de porcentajes antes del segundo rechazo
+    // Funci�n para mostrar informaci�n de porcentajes antes del segundo rechazo
     const showRejectionInfo = (appointment: Appointment) => {
-        // Solo se llama en el segundo rechazo, mostrar configuración de cancelación
+        // Solo se llama en el segundo rechazo, mostrar configuraci�n de cancelaci�n
         setSelectedDistributionStatus('appointment_cancelled_by_expert_rejection');
         setShowMoneyDistribution(true);
         setAppointmentToReject(appointment);
     };
 
-    // Función para mostrar información de porcentajes antes de la segunda cancelación
+    // Funci�n para mostrar informaci�n de porcentajes antes de la segunda cancelaci�n
     const showCancellationInfo = (appointment: Appointment) => {
-        // Solo se llama en la segunda cancelación, mostrar configuración de cancelación
+        // Solo se llama en la segunda cancelaci�n, mostrar configuraci�n de cancelaci�n
         setSelectedDistributionStatus('appointment_cancelled_by_client_second');
         setShowMoneyDistribution(true);
         setAppointmentToReject(appointment);
@@ -694,7 +706,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         type: 'success',
                         message: 'Cita confirmada exitosamente'
                     }]);
-                    appointmentQuery.refetch();
+                    invalidateAll(); // appointmentQuery.refetch() - usar invalidaci�n unificada
+                    break;
+                    
+                case 'submit-report':
+                    // Mostrar modal para ingresar notas del reporte
+                    setModalState(prev => ({ ...prev, showReportModal: true }));
+                    setSelectedAppointment(appointment);
                     break;
                     
                 case 'reject':
@@ -710,15 +728,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             type: 'success',
                             message: 'Cita rechazada exitosamente'
                         }]);
-                        appointmentQuery.refetch();
+                        invalidateAll(); // appointmentQuery.refetch() - usar invalidaci�n unificada
                     } else {
-                        // Si es el segundo rechazo, mostrar información de porcentajes
+                        // Si es el segundo rechazo, mostrar informaci�n de porcentajes
                         showRejectionInfo(appointment);
                     }
                     break;
                     
                 case 'cancel':
-                    // Si es la primera cancelación del cliente, cancelar directamente
+                    // Si es la primera cancelaci�n del cliente, cancelar directamente
                     if (appointment.cancellationCount === 0) {
                         const cancelData: CancelAppointmentDto = {
                             appointmentId: appointment.id,
@@ -730,20 +748,20 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             type: 'success',
                             message: 'Cita cancelada exitosamente'
                         }]);
-                        appointmentQuery.refetch();
+                        invalidateAll(); // appointmentQuery.refetch() - usar invalidaci�n unificada
                     } else {
-                        // Si es la segunda cancelación, mostrar información de porcentajes
+                        // Si es la segunda cancelaci�n, mostrar informaci�n de porcentajes
                         showCancellationInfo(appointment);
                     }
                     break;
                     
             }
         } catch (error) {
-            console.error('Error en acción de cita:', error);
+            console.error('Error en acci�n de cita:', error);
             setNotifications(prev => [...prev, {
                 id: uuidv4(),
                 type: 'error',
-                message: 'Error al realizar la acción'
+                message: 'Error al realizar la acci�n'
             }]);
         }
     };
@@ -754,21 +772,21 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 console.log('[SearchDetails] Proposing appointment with data:', {
                     searchHireId: appointmentData.searchHireId,
                     appointmentData: data,
-                    searchHireStatus: searchQuery.data?.searchHire?.status,
-                    appointmentStatus: appointmentQuery.data?.status,
-                    hasExistingAppointment: !!appointmentQuery.data
+                    searchHireStatus: search?.searchHire?.status,
+                    appointmentStatus: appointment?.status,
+                    hasExistingAppointment: !!appointment
                 });
                 
                 // Verificar si se puede proponer una cita
                 if (!canProposeAppointment()) {
-                    const currentHireStatus = searchQuery.data?.searchHire?.status;
-                    const currentAppointmentStatus = appointmentQuery.data?.status;
+                    const currentHireStatus = search?.searchHire?.status;
+                    const currentAppointmentStatus = appointment?.status; // appointmentQuery.data - datos del hook optimizado
                     
                     let errorMessage = 'No se puede proponer cita.';
-                    if (appointmentQuery.data) {
-                        errorMessage += ` Estado de cita actual: ${currentAppointmentStatus}. Estados válidos: awaiting_appointment, appointment_rejected, appointment_cancelled_by_client`;
+                    if (appointment) { // appointmentQuery.data - datos del hook optimizado
+                        errorMessage += ` Estado de cita actual: ${currentAppointmentStatus}. Estados v�lidos: awaiting_appointment, appointment_rejected, appointment_cancelled_by_client`;
                     } else {
-                        errorMessage += ` Estado de contratación actual: ${currentHireStatus}. Estados válidos: pending`;
+                        errorMessage += ` Estado de contrataci�n actual: ${currentHireStatus}. Estados v�lidos: pending`;
                     }
                     
                     setNotifications(prev => [...prev, {
@@ -785,7 +803,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     type: 'success',
                     message: 'Cita propuesta exitosamente'
                 }]);
-                appointmentQuery.refetch();
+                invalidateAll(); // appointmentQuery.refetch() - usar invalidaci�n unificada
                 setShowAppointmentForm(false);
                 setAppointmentData(null);
             }
@@ -799,14 +817,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         }
     };
 
-    const currentStatus = searchQuery.data?.searchHire?.status || 'pending';
+    const currentStatus = search?.searchHire?.status || 'pending';
     const currentStepIndex = statusRoadmap.findIndex((step) => step.status === currentStatus);
 
-    // Componente para mostrar la resolución de la disputa
+    // Componente para mostrar la resoluci�n de la disputa
     const DisputeResolutionCard = () => {
-        if (!isDisputeResolved || !disputeQuery.data) return null;
+        if (!isDisputeResolved || !disputes[0]) return null; // disputes[0] - datos del hook optimizado
 
-        const dispute = disputeQuery.data;
+        const dispute = disputes[0]; // disputes[0] - datos del hook optimizado
         const formatDate = (dateString: string) => {
             return new Date(dateString).toLocaleDateString('es-ES', {
                 year: 'numeric',
@@ -896,15 +914,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         </div>
                     )}
 
-                    {/* Información de resolución */}
+                    {/* Informaci�n de resoluci�n */}
                     {dispute.resolutionComments && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Resolución del Administrador</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Resoluci�n del Administrador</label>
                             <p className="text-gray-900 bg-white p-3 rounded-lg border">{dispute.resolutionComments}</p>
                         </div>
                     )}
 
-                    {/* Información financiera */}
+                    {/* Informaci�n financiera */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="bg-white p-4 rounded-lg border">
                             <div className="flex items-center gap-2 mb-2">
@@ -917,13 +935,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         <div className="bg-white p-4 rounded-lg border">
                             <div className="flex items-center gap-2 mb-2">
                                 <Calendar className="w-5 h-5 text-gray-500" />
-                                <span className="text-sm font-medium text-gray-700">Fecha de Resolución</span>
+                                <span className="text-sm font-medium text-gray-700">Fecha de Resoluci�n</span>
                             </div>
                             <p className="text-sm text-gray-900">{formatDate(dispute.createdAt)}</p>
                         </div>
                     </div>
 
-                    {/* Información de las partes */}
+                    {/* Informaci�n de las partes */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="bg-white p-4 rounded-lg border">
                             <div className="flex items-center gap-2 mb-2">
@@ -951,8 +969,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             <div>
                                 <h4 className="text-sm font-medium text-blue-900 mb-1">Disputa Resuelta</h4>
                                 <p className="text-sm text-blue-800">
-                                    Esta disputa ha sido resuelta por nuestro equipo de administración. 
-                                    Si tienes alguna pregunta sobre la resolución, puedes contactar con nuestro soporte.
+                                    Esta disputa ha sido resuelta por nuestro equipo de administraci�n. 
+                                    Si tienes alguna pregunta sobre la resoluci�n, puedes contactar con nuestro soporte.
                                 </p>
                             </div>
                         </div>
@@ -963,7 +981,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     };
 
     // Only show loading for critical queries (searchQuery)
-    if (searchQuery.isLoading) {
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center h-screen bg-white text-black">
                 <p className="text-lg">Cargando...</p>
@@ -972,7 +990,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     }
 
     // Only show error for critical failures (searchQuery)
-    if (searchQuery.error) {
+    if (isError) { // searchQuery.error - datos del hook optimizado
         return (
             <div className="flex items-center justify-center h-screen bg-white text-black">
                 <p className="text-lg text-red-400">Error al cargar los datos</p>
@@ -1011,11 +1029,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             currentStatus === 'awaiting_client_decision' ? 'bg-orange-500' : 'bg-gray-400'}`} />
                                         {currentStatus === 'completed' ? 'Completado' :
                                             currentStatus === 'in_progress' ? 'En progreso' :
-                                            currentStatus === 'awaiting_client_decision' ? 'En revisión' : 'Pendiente'}
+                                            currentStatus === 'awaiting_client_decision' ? 'En revisi�n' : 'Pendiente'}
                                     </span>
                                 </div>
                                 <h1 className="text-sm sm:text-xl font-semibold text-gray-900 truncate leading-tight">
-                                    {searchQuery.data?.title || 'Cargando...'}
+                                    {search?.title || 'Cargando...'}
                                 </h1>
                             </div>
                         </div>
@@ -1042,26 +1060,26 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 </div>
             </div>
 
-            {/* Modern Full-Screen Layout */}
-            <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-120px)] lg:max-w-none lg:mx-0 lg:gap-0">
-                {/* Main Chat Area - Takes Most Space */}
+            {/* Modern Compact Layout */}
+            <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-100px)] lg:max-w-none lg:mx-0 lg:gap-4 lg:p-4">
+                {/* Main Chat Area - Compact Modern Design */}
                 {canViewChat && (
-                    <div className="lg:flex-1 lg:w-[75%] xl:w-[80%] flex flex-col lg:h-full">
-                        {/* Mobile Tabs Navigation */}
-                        <div className="lg:hidden bg-white border-b border-gray-200 sticky top-[80px] z-40 shadow-sm">
+                    <div className="lg:flex-1 lg:w-[70%] xl:w-[75%] flex flex-col lg:h-full bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                        {/* Modern Mobile Tabs Navigation */}
+                        <div className="lg:hidden bg-white border-b border-gray-200 sticky top-[80px] z-40 shadow-lg">
                             {/* Expert Info Header */}
-                            <div className="px-4 py-4 flex items-center gap-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <div className="px-4 py-3 flex items-center gap-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
                                 <div className="flex items-center gap-3 flex-1">
                                     <div className="relative">
-                                        {(serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl) ? (
+                                        {(expertInfo?.profilePictureUrl) ? ( 
                                             <img 
-                                                src={serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl} 
-                                                alt={serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}
+                                                src={expertInfo?.profilePictureUrl}  
+                                                alt={expertInfo?.name || 'Experto'} 
                                                 className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full object-cover border-2 border-white shadow-md"
                                             />
                                         ) : (
-                                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white text-sm font-bold border-2 border-white shadow-md">
-                                                {(serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'E').charAt(0)}
+                                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold border-2 border-white shadow-lg">
+                                                {(expertInfo?.name || 'E').charAt(0)} 
                                             </div>
                                         )}
                                         <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
@@ -1069,9 +1087,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             <h3 className="font-semibold text-gray-900 truncate text-sm">
-                                                {serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}
+                                                {expertInfo?.name || 'Experto'} 
                                             </h3>
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200 shadow-sm">
                                                 <svg className="w-2.5 h-2.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                                 </svg>
@@ -1079,21 +1097,21 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             </span>
                                         </div>
                                         <p className="text-xs text-green-600 font-medium flex items-center gap-1">
-                                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                                            En línea • Responde rápido
+                                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-sm"></div>
+                                            En l�nea � Responde r�pido
                                         </p>
                                     </div>
                                 </div>
                             </div>
                             
-                            {/* Tabs */}
-                            <div className="flex bg-white">
+                            {/* Modern Tabs */}
+                            <div className="flex bg-white shadow-sm">
                                 <button
                                     onClick={() => setActiveTab('chat')}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors duration-200 relative ${
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all duration-200 relative ${
                                         activeTab === 'chat'
-                                            ? 'text-blue-600 bg-blue-50'
-                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                            ? 'text-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50'
                                     }`}
                                 >
                                     <MessageSquare className="w-4 h-4" />
@@ -1104,10 +1122,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('details')}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors duration-200 relative ${
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all duration-200 relative ${
                                         activeTab === 'details'
-                                            ? 'text-blue-600 bg-blue-50'
-                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                            ? 'text-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50'
                                     }`}
                                 >
                                     <FileText className="w-4 h-4" />
@@ -1140,13 +1158,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 setNotifications={setNotifications} 
                                 isExpert={isExpert} 
                                 expertData={{
-                                    name: serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name,
-                                    profilePictureUrl: serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl
+                                    name: expertInfo?.name, 
+                                    profilePictureUrl: expertInfo?.profilePictureUrl 
                                 }}
                             />
                             
                             {/* Sistema de Citas - Mobile */}
-                            {needsAppointment && appointmentQuery.data && (
+                            {needsAppointment && appointment && ( // appointmentQuery.data - datos del hook optimizado
                                 <div className="fixed inset-x-0 bottom-0 z-40 p-2 bg-white border-t border-gray-200">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Calendar className="w-3 h-3 text-gray-600" />
@@ -1154,7 +1172,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
                                     <div className="max-h-32 overflow-y-auto">
                                         <AppointmentStatus
-                                            appointment={appointmentQuery.data}
+                                            appointment={appointment} // appointmentQuery.data - datos del hook optimizado
                                             userRole={isClient ? 'client' : 'expert'}
                                             onAction={handleAppointmentAction}
                                         />
@@ -1162,19 +1180,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </div>
                             )}
 
-                            {/* Botón para proponer cita inicial - Mobile */}
-                            {needsAppointment && !appointmentQuery.data && searchQuery.data?.searchHire && isClient && canProposeAppointment() && (
+                            {/* Bot�n para proponer cita inicial - Mobile */}
+                            {needsAppointment && !appointment && search?.searchHire && isClient && canProposeAppointment() && ( // appointmentQuery.data, search - datos del hook optimizado
                                 <div className="fixed inset-x-0 bottom-0 z-40 p-2 bg-white border-t border-gray-200">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Calendar className="w-3 h-3 text-gray-600" />
                                             <div>
-                                                <h3 className="text-xs font-medium text-gray-900">¿Necesitas programar una cita?</h3>
+                                                <h3 className="text-xs font-medium text-gray-900">�Necesitas programar una cita?</h3>
                                                 <p className="text-xs text-gray-500">Este servicio requiere una cita</p>
                                             </div>
                                         </div>
                                         
-                                        {/* Temporizador móvil compacto */}
+                                        {/* Temporizador m�vil compacto */}
                                         <div className="text-right mr-3">
                                             <div className="text-xs text-gray-500">Restante:</div>
                                             <div className="text-xs font-semibold text-blue-600">
@@ -1185,7 +1203,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         <button
                                             onClick={() => handleAppointmentAction('propose', { 
                                                 id: 0, 
-                                                searchHireId: searchQuery.data?.searchHire?.id || 0,
+                                                searchHireId: search?.searchHire?.id || 0,
                                                 status: 'awaiting_appointment',
                                                 amount: serviceInfo?.price || 0
                                             } as Appointment)}
@@ -1211,22 +1229,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 <div className="flex">
                                                     {/* Service Image - Side */}
                                                     <div className="relative w-20 h-16 flex-shrink-0">
-                                                        {serviceQuery.data?.imageUrls && serviceQuery.data.imageUrls.length > 0 ? (
+                                                        {false ? ( // serviceInfo - datos del hook optimizado (no incluye imageUrls)
                                                             <img
-                                                                src={serviceQuery.data.imageUrls[0]}
+                                                                src={''} // No hay imageUrls en el DTO optimizado
                                                                 alt="Servicio contratado"
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
-                                                                    e.currentTarget.src = searchQuery.data?.category && categoryBanners[searchQuery.data.category] 
-                                                                        ? categoryBanners[searchQuery.data.category] 
+                                                                    e.currentTarget.src = search?.category && categoryBanners[search.category] // search - datos del hook optimizado 
+                                                                        ? categoryBanners[search.category] // search - datos del hook optimizado 
                                                                         : '/default-service.png';
                                                                 }}
                                                             />
                                                         ) : (
                                                             <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-                                                                {searchQuery.data?.category && categoryBanners[searchQuery.data.category] ? (
+                                                                {search?.category && categoryBanners[search.category] ? ( // search - datos del hook optimizado
                                                                     <img
-                                                                        src={categoryBanners[searchQuery.data.category]}
+                                                                        src={categoryBanners[search.category]} // search - datos del hook optimizado
                                                                         alt={categoryName}
                                                                         className="w-full h-full object-cover"
                                                                     />
@@ -1254,15 +1272,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                     currentStatus === 'awaiting_client_decision' ? 'bg-orange-500' : 'bg-gray-400'}`} />
                                                                 {currentStatus === 'completed' ? 'Completado' :
                                                                     currentStatus === 'in_progress' ? 'En progreso' :
-                                                                    currentStatus === 'awaiting_client_decision' ? 'En revisión' : 'Pendiente'}
+                                                                    currentStatus === 'awaiting_client_decision' ? 'En revisi�n' : 'Pendiente'}
                                                             </span>
                                                         </div>
                                                         
                                                         <h3 className="font-semibold text-gray-900 mb-0.5 leading-tight pr-16 text-sm">
-                                                            {searchQuery.data?.title}
+                                                            {search?.title}
                                                         </h3>
                                                         <p className="text-xs text-gray-600 leading-tight line-clamp-1">
-                                                            {serviceQuery.data?.conditions || 'Servicio profesional personalizado'}
+                                                            {serviceInfo?.serviceTypeName || 'Servicio profesional personalizado'}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1277,7 +1295,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                     </svg>
-                                                    Información del pedido
+                                                    Informaci�n del pedido
                                                 </h4>
                                                 <div className="grid grid-cols-1 gap-2 text-sm">
                                                     <div className="flex justify-between">
@@ -1285,20 +1303,20 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         <span className="font-medium text-gray-900">{user?.name || 'Usuario'}</span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">Categoría</span>
+                                                        <span className="text-gray-500">Categor�a</span>
                                                         <span className="font-medium text-gray-900">{categoryName}</span>
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span className="text-gray-500">Estado</span>
                                                         <span className="font-medium text-gray-900">
-                                                            {searchQuery.data?.searchHire?.status 
-                                                                ? searchQuery.data.searchHire.status.charAt(0).toUpperCase() + searchQuery.data.searchHire.status.slice(1).replace('_', ' ')
+                                                            {search?.searchHire?.status 
+                                                                ? search.searchHire.status.charAt(0).toUpperCase() + search.searchHire.status.slice(1).replace('_', ' ') // search - datos del hook optimizado
                                                                 : 'No disponible'
                                                             }
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-500">Número de pedido</span>
+                                                        <span className="text-gray-500">N�mero de pedido</span>
                                                         <span className="font-mono text-sm text-gray-700">#{searchId.toString().padStart(6, '0')}</span>
                                                     </div>
                                                 </div>
@@ -1331,7 +1349,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                     className="px-3 py-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg hover:bg-red-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
                                                                     title="Debug: Entender error 403"
                                                                 >
-                                                                    🐛 Debug
+                                                                    ?? Debug
                                                                 </button>
                                                             </>
                                                         )}
@@ -1367,12 +1385,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         className="w-full px-3 py-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm rounded-lg hover:bg-blue-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
                                                     >
                                                         <Star className="w-4 h-4" />
-                                                        Enviar Reseña
+                                                        Enviar Rese�a
                                                     </button>
                                                 )}
                                             </div>
 
-                                            {/* Informes del Experto - Sección Móvil */}
+                                            {/* Informes del Experto - Secci�n M�vil */}
                                             <div className="mt-6 pt-4 border-t border-gray-200">
                                                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
                                                     <div className="flex items-center gap-3 mb-4">
@@ -1380,17 +1398,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             <FileText className="w-4 h-4 text-white" />
                                                         </div>
                                                         <div>
-                                                            <h3 className="text-base font-bold text-slate-900">📋 Informes del Experto</h3>
-                                                            <p className="text-xs text-slate-600">Documentos técnicos y análisis profesional</p>
+                                                            <h3 className="text-base font-bold text-slate-900">?? Informes del Experto</h3>
+                                                            <p className="text-xs text-slate-600">Documentos t�cnicos y an�lisis profesional</p>
                                                         </div>
                                                     </div>
 
-                                                    {deliverablesQuery.isLoading ? (
+                                                    {false ? ( // deliverablesQuery.isLoading - datos del hook optimizado
                                                         <div className="flex items-center justify-center gap-3 py-6">
                                                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                                                             <p className="text-slate-600 font-medium text-sm">Cargando informes...</p>
                                                         </div>
-                                                    ) : deliverablesQuery.isError ? (
+                                                    ) : false ? ( // deliverablesQuery.isError - datos del hook optimizado
                                                         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <AlertTriangle className="w-4 h-4 text-red-600" />
@@ -1404,15 +1422,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                 Reintentar
                                                             </button>
                                                         </div>
-                                                    ) : deliverables && deliverables.deliverableUrls && deliverables.deliverableUrls.length > 0 ? (
+                                                    ) : deliverables && deliverables.length > 0 ? (
                                                         <div className="space-y-3">
                                                             <div className="grid gap-3">
-                                                                {deliverables.deliverableUrls.map((url, index) => (
+                                                                {deliverables.map((deliverable, index) => (
                                                                     <div key={index} className="bg-white rounded-lg border border-slate-200 p-3 hover:shadow-md transition-shadow">
                                                                         <div className="flex flex-col gap-3">
                                                                             <div className="flex items-center gap-3">
                                                                                 <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                                                    {url.endsWith('.mp4') ? (
+                                                                                    {deliverable.url.endsWith('.mp4') ? (
                                                                                         <video className="w-3 h-3 text-blue-600" />
                                                                                     ) : (
                                                                                         <FileText className="w-3 h-3 text-blue-600" />
@@ -1420,23 +1438,23 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                                 </div>
                                                                                 <div className="min-w-0 flex-1">
                                                                                     <h4 className="font-semibold text-slate-900 text-sm">
-                                                                                        {url.endsWith('.mp4') ? `Video del Experto ${index + 1}` : `Informe Técnico ${index + 1}`}
+                                                                                        {deliverable.url.endsWith('.mp4') ? `Video del Experto ${index + 1}` : `Informe T�cnico ${index + 1}`}
                                                                                     </h4>
                                                                                     <p className="text-xs text-slate-500">
-                                                                                        {url.endsWith('.mp4') ? 'Análisis en video' : 'Documento PDF detallado'}
+                                                                                        {deliverable.url.endsWith('.mp4') ? 'An�lisis en video' : 'Documento PDF detallado'}
                                                                                     </p>
                                                                                 </div>
                                                                             </div>
                                                                             <div className="flex items-center gap-2">
-                                                                                {url.endsWith('.mp4') ? (
+                                                                                {deliverable.url.endsWith('.mp4') ? (
                                                                                     <video 
-                                                                                        src={url} 
+                                                                                        src={deliverable.url} 
                                                                                         controls 
                                                                                         className="w-full h-20 rounded-lg object-cover"
                                                                                     />
                                                                                 ) : (
                                                                                     <a 
-                                                                                        href={url} 
+                                                                                        href={deliverable.url} 
                                                                                         target="_blank" 
                                                                                         rel="noopener noreferrer" 
                                                                                         className="w-full px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
@@ -1454,7 +1472,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                                                     <p className="text-green-800 text-xs font-medium">
-                                                                        ✅ {deliverables.deliverableUrls.length} informe{deliverables.deliverableUrls.length > 1 ? 's' : ''} disponible{deliverables.deliverableUrls.length > 1 ? 's' : ''}
+                                                                        ? {deliverables.length} informe{deliverables.length > 1 ? 's' : ''} disponible{deliverables.length > 1 ? 's' : ''}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -1465,7 +1483,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                 <FileText className="w-6 h-6 text-slate-400" />
                                                             </div>
                                                             <h4 className="text-slate-900 font-semibold text-sm mb-2">No hay informes disponibles</h4>
-                                                            <p className="text-slate-500 text-xs">El experto aún no ha subido informes técnicos</p>
+                                                            <p className="text-slate-500 text-xs">El experto a�n no ha subido informes t�cnicos</p>
                                                         </div>
                                                     )}
 
@@ -1487,7 +1505,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                     <div className="w-full p-3 border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 cursor-pointer rounded-lg hover:bg-blue-100 transition-colors text-center">
                                                                                         <Upload className="w-4 h-4 mx-auto mb-2" />
                                                                                         <p className="font-medium text-sm">Subir Informe del Experto</p>
-                                                                                        <p className="text-xs">PDF o MP4 (máx. 10MB)</p>
+                                                                                        <p className="text-xs">PDF o MP4 (m�x. 10MB)</p>
                                                                     </div>
                                                                 </label>
                                                                 <button
@@ -1519,24 +1537,24 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             {/* Sistema de Citas - Mobile */}
                                             {needsAppointment && (
                                                 <div className="space-y-3">
-                                                    {appointmentQuery.data ? (
+                                                    {appointment ? ( // appointmentQuery.data - datos del hook optimizado
                                                         <AppointmentStatus
-                                                            appointment={appointmentQuery.data}
+                                                            appointment={appointment} // appointmentQuery.data - datos del hook optimizado
                                                             userRole={isClient ? 'client' : 'expert'}
                                                             onAction={handleAppointmentAction}
                                                         />
-                                                    ) : searchQuery.data?.searchHire && isClient && canProposeAppointment() ? (
+                                                    ) : search?.searchHire && isClient && canProposeAppointment() ? ( // search - datos del hook optimizado
                                                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                                             <div className="flex items-center space-x-3">
                                                                 <Calendar className="w-6 h-6 text-blue-600" />
                                                                 <div className="flex-1">
                                                                     <h3 className="text-sm font-medium text-blue-900">Este servicio requiere una cita presencial</h3>
-                                                                    <p className="text-xs text-blue-700 mt-1">Coordina con el experto para programar la revisión</p>
+                                                                    <p className="text-xs text-blue-700 mt-1">Coordina con el experto para programar la revisi�n</p>
                                                                 </div>
                                                                 <button
                                                                     onClick={() => handleAppointmentAction('propose', { 
                                                                         id: 0, 
-                                                                        searchHireId: searchQuery.data?.searchHire?.id || 0,
+                                                                        searchHireId: search?.searchHire?.id || 0,
                                                                         status: 'awaiting_appointment',
                                                                         amount: serviceInfo?.price || 0
                                                                     } as Appointment)}
@@ -1546,7 +1564,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                 </button>
                                                             </div>
                                                         </div>
-                                                    ) : needsAppointment && !appointmentQuery.data && isExpert ? (
+                                                    ) : needsAppointment && !appointment && isExpert ? ( // appointmentQuery.data - datos del hook optimizado
                                                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                                                             <div className="flex items-center space-x-3">
                                                                 <Calendar className="w-6 h-6 text-gray-600" />
@@ -1563,19 +1581,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
                                 )}
                                 
-                                {/* Modern Professional Chat */}
-                                <div className="hidden lg:block bg-white h-full flex flex-col shadow-2xl">
-                                    {/* Modern Chat Header */}
-                                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6 border-b border-slate-700">
+                                {/* Modern Compact Chat */}
+                                <div className="hidden lg:block bg-white h-full flex flex-col shadow-xl rounded-2xl overflow-hidden">
+                                    {/* Compact Chat Header */}
+                                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 border-b border-blue-200">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                                                    <MessageSquare className="w-6 h-6 text-white" />
+                                                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                                    <MessageSquare className="w-4 h-4 text-white" />
                                                 </div>
                                                 <div>
-                                                    <h2 className="text-xl font-bold text-white">Conversación</h2>
+                                                    <h2 className="text-xl font-bold text-white">Conversaci�n</h2>
                                                     <p className="text-slate-300 text-sm">
-                                                        {searchQuery.data?.searchHire?.expert?.name || 'Experto'}
+                                                        {expertInfo?.name || 'Experto'} // search - datos del hook optimizado
                                                     </p>
                                                 </div>
                                             </div>
@@ -1583,13 +1601,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             {/* Modern Appointment Status */}
                                             {needsAppointment && (
                                                 <div className="flex items-center gap-3">
-                                                    {appointmentQuery.data ? (
+                                                    {appointment ? ( // appointmentQuery.data - datos del hook optimizado
                                                         <div className="bg-green-500 text-white px-4 py-2 rounded-full shadow-lg">
-                                                            <span className="text-sm font-semibold">✓ Cita Programada</span>
+                                                            <span className="text-sm font-semibold">? Cita Programada</span>
                                                         </div>
                                                     ) : (
                                                         <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full shadow-lg">
-                                                            <span className="text-sm font-semibold">⏰ {timeRemaining}</span>
+                                                            <span className="text-sm font-semibold">? {timeRemaining}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1604,14 +1622,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             setNotifications={setNotifications} 
                                             isExpert={isExpert} 
                                             expertData={{
-                                                name: serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name,
-                                                profilePictureUrl: serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl
+                                                name: expertInfo?.name, 
+                                                profilePictureUrl: expertInfo?.profilePictureUrl 
                                             }}
                                         />
                                     </div>
 
                                     {/* Modern Appointment Action Bar */}
-                                    {needsAppointment && !appointmentQuery.data && isClient && canProposeAppointment() && (
+                                    {needsAppointment && !appointment && isClient && canProposeAppointment() && ( // appointmentQuery.data - datos del hook optimizado
                                         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
@@ -1619,14 +1637,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         <Calendar className="w-5 h-5 text-white" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-semibold text-white text-lg">¿Necesitas programar una cita?</h4>
-                                                        <p className="text-blue-100 text-sm">Este servicio requiere una cita para coordinar la revisión</p>
+                                                        <h4 className="font-semibold text-white text-lg">�Necesitas programar una cita?</h4>
+                                                        <p className="text-blue-100 text-sm">Este servicio requiere una cita para coordinar la revisi�n</p>
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={() => handleAppointmentAction('propose', { 
                                                         id: 0, 
-                                                        searchHireId: searchQuery.data?.searchHire?.id || 0,
+                                                        searchHireId: search?.searchHire?.id || 0,
                                                         status: 'awaiting_appointment',
                                                         amount: serviceInfo?.price || 0
                                                     } as Appointment)}
@@ -1644,57 +1662,53 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     </div>
                 )}
 
-                {/* Modern Right Sidebar - Desktop Only */}
-                <div className="hidden lg:block lg:w-[25%] xl:w-[20%] bg-white shadow-2xl border-l border-gray-200 overflow-y-auto h-full">
-                    {/* Order Details Header */}
-                    <div className="p-3 border-b border-gray-100">
-                        <div className="flex items-center justify-between mb-3">
-                            <h2 className="text-base font-semibold text-gray-900">Detalles del pedido</h2>
-                            <button className="text-gray-400 hover:text-gray-600 p-1">
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                </svg>
-                            </button>
+                {/* Modern Compact Sidebar - Desktop Only */}
+                <div className="hidden lg:block lg:w-[30%] xl:w-[25%] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-y-auto h-full">
+                    {/* Compact Order Details Header */}
+                    <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-sm font-semibold text-gray-800">Detalles</h2>
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                         </div>
 
                         {/* Dispute Resolution Card */}
                         <DisputeResolutionCard />
 
-                        {/* Service Card - Compact Side Layout */}
-                        <div className="bg-gray-50 lg:bg-white rounded-lg border border-gray-200 p-3 mb-4 flex gap-3 items-start">
+                        {/* Modern Service Card */}
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4 mb-4 flex gap-3 items-start shadow-sm">
                             {/* Service Image - Small Side Image */}
                             <div className="relative flex-shrink-0">
-                                {serviceQuery.data?.imageUrls && serviceQuery.data.imageUrls.length > 0 ? (
+                                {false ? ( // serviceInfo - datos del hook optimizado (no incluye imageUrls)
                                     <div className="relative w-12 h-12 overflow-hidden rounded-lg">
                                         <img
-                                            src={serviceQuery.data.imageUrls[0]}
+                                            src={''} // No hay imageUrls en el DTO optimizado
                                             alt="Servicio"
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
                                                 // Fallback to category banner if service image fails
-                                                e.currentTarget.src = searchQuery.data?.category && categoryBanners[searchQuery.data.category] 
-                                                    ? categoryBanners[searchQuery.data.category] 
+                                                e.currentTarget.src = search?.category && categoryBanners[search.category] 
+                                                    ? categoryBanners[search.category] 
                                                     : '/default-service.png';
                                             }}
                                         />
-                                        {serviceQuery.data.imageUrls.length > 1 && (
+                                        {false && ( // No hay múltiples imágenes en el DTO optimizado
                                             <div className="absolute -bottom-1 -right-1 bg-black/75 text-white text-xs px-1 py-0.5 rounded text-[10px] leading-none">
-                                                +{serviceQuery.data.imageUrls.length - 1}
+                                                +0
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    // Fallback to category icon if no service images
-                                    <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-                                        {searchQuery.data?.category && categoryBanners[searchQuery.data.category] ? (
+                                    // Modern category icon fallback
+                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                                        {search?.category && categoryBanners[search.category] ? (
                                             <img
-                                                src={categoryBanners[searchQuery.data.category]}
+                                                src={categoryBanners[search.category]}
                                                 alt={categoryName}
                                                 className="w-full h-full object-cover rounded-lg"
                                             />
                                         ) : (
-                                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                             </svg>
                                         )}
                                     </div>
@@ -1704,37 +1718,37 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             {/* Service Content */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2 mb-1">
-                                    <h3 className="font-medium text-gray-900 text-sm line-clamp-1 leading-tight">
-                                        {searchQuery.data?.title}
+                                    <h3 className="font-semibold text-gray-800 text-sm line-clamp-1 leading-tight">
+                                        {search?.title}
                                     </h3>
                                     {/* Status Badge - Small */}
-                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium flex-shrink-0
-                                        ${currentStatus === 'completed' ? 'bg-green-100 text-green-700' :
-                                        currentStatus === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                                        currentStatus === 'awaiting_client_decision' ? 'bg-purple-100 text-purple-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                        <span className={`w-1 h-1 rounded-full ${
+                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 shadow-sm
+                                        ${currentStatus === 'completed' ? 'bg-green-100 text-green-700 border border-green-200' :
+                                        currentStatus === 'in_progress' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                                        currentStatus === 'awaiting_client_decision' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-yellow-100 text-yellow-700 border border-yellow-200'}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${
                                             currentStatus === 'completed' ? 'bg-green-500' :
                                             currentStatus === 'in_progress' ? 'bg-blue-500' :
                                             currentStatus === 'awaiting_client_decision' ? 'bg-purple-500' : 'bg-yellow-500'
                                         }`} />
                                         {currentStatus === 'completed' ? 'Completado' :
                                          currentStatus === 'in_progress' ? 'En progreso' :
-                                         currentStatus === 'awaiting_client_decision' ? 'En revisión' : 'Pendiente'}
+                                         currentStatus === 'awaiting_client_decision' ? 'En revisi�n' : 'Pendiente'}
                                     </span>
                                 </div>
-                                <p className="text-xs text-gray-500 line-clamp-1 leading-tight">
-                                    {serviceQuery.data?.conditions || 'Servicio profesional personalizado'}
+                                <p className="text-xs text-gray-600 line-clamp-1 leading-tight font-medium">
+                                    {serviceInfo?.serviceTypeName || 'Servicio profesional personalizado'}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Order Information - Mobile Optimized */}
-                        <div className="space-y-2 lg:space-y-3">
+                        {/* Modern Order Information */}
+                        <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
                             <div className="grid grid-cols-2 gap-2 lg:gap-3 text-xs">
                                 <div>
                                     <p className="text-gray-500 mb-1">Solicitado por</p>
                                     <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                                        <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-medium shadow-sm">
                                             {user?.name?.charAt(0) || 'U'}
                                         </div>
                                         <span className="font-medium text-gray-900">{user?.name || 'Usuario'}</span>
@@ -1743,7 +1757,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 <div>
                                     <p className="text-gray-500 mb-1">Proyecto</p>
                                     <div className="flex items-center gap-1">
-                                        <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                                         </svg>
                                         <span className="font-medium text-gray-900">Mi proyecto</span>
@@ -1753,16 +1767,16 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             
                             <div className="grid grid-cols-2 gap-2 lg:gap-3 text-xs">
                                 <div>
-                                    <p className="text-gray-500 mb-1">Categoría</p>
+                                    <p className="text-gray-500 mb-1">Categor�a</p>
                                     <span className="font-medium text-gray-900">{categoryName}</span>
                                 </div>
                                 <div>
                                     <p className="text-gray-500 mb-1">Encargado a</p>
                                     <div className="flex items-center gap-3">
-                                        {(serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl) ? (
+                                        {(expertInfo?.profilePictureUrl) ? ( 
                                             <img 
-                                                src={serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl} 
-                                                alt={serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}
+                                                src={expertInfo?.profilePictureUrl}  
+                                                alt={expertInfo?.name || 'Experto'} 
                                                 className="w-10 h-10 bg-green-500 rounded-full object-cover border-2 border-green-100"
                                                 onError={(e) => {
                                                     // Fallback to initials if image fails to load
@@ -1771,14 +1785,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 }}
                                             />
                                         ) : null}
-                                        <div className={`w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium border-2 border-green-100 ${(serviceQuery.data?.expert?.profilePictureUrl || searchQuery.data?.searchHire?.expert?.profilePictureUrl) ? 'hidden' : ''}`}>
-                                            {(serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'E').charAt(0)}
+                                        <div className={`w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-sm font-medium border-2 border-green-100 shadow-sm ${(search?.searchHire?.expert?.profilePictureUrl) ? 'hidden' : ''}`}>
+                                            {(search?.searchHire?.expert?.name || 'E').charAt(0)}
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="font-medium text-gray-900">{serviceQuery.data?.expert?.user?.name || searchQuery.data?.searchHire?.expert?.name || 'Experto'}</span>
-                                            {serviceQuery.data?.expert?.description && (
-                                                <span className="text-xs text-gray-500 line-clamp-1">{serviceQuery.data.expert.description}</span>
-                                            )}
+                                            <span className="font-medium text-gray-900">{search?.searchHire?.expert?.name || 'Experto'}</span>
                                         </div>
                                     </div>
                             </div>
@@ -1786,10 +1797,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             
                             <div className="grid grid-cols-2 gap-2 lg:gap-3 text-xs">
                                 <div>
-                                    <p className="text-gray-500 mb-1">Fecha de creación</p>
+                                    <p className="text-gray-500 mb-1">Fecha de creaci�n</p>
                                     <span className="font-medium text-gray-900">
-                                        {searchQuery.data?.createdAt 
-                                            ? new Date(searchQuery.data.createdAt).toLocaleDateString('es-ES', { 
+                                        {search?.createdAt 
+                                            ? new Date(search.createdAt).toLocaleDateString('es-ES', { 
                                                 day: 'numeric', 
                                                 month: 'short', 
                                                 year: 'numeric',
@@ -1801,10 +1812,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </span>
                             </div>
                                 <div>
-                                    <p className="text-gray-500 mb-1">Estado de la contratación</p>
+                                    <p className="text-gray-500 mb-1">Estado de la contrataci�n</p>
                                     <span className="font-medium text-gray-900">
-                                        {searchQuery.data?.searchHire?.status 
-                                            ? searchQuery.data.searchHire.status.charAt(0).toUpperCase() + searchQuery.data.searchHire.status.slice(1).replace('_', ' ')
+                                        {search?.searchHire?.status 
+                                            ? search.searchHire.status.charAt(0).toUpperCase() + search.searchHire.status.slice(1).replace('_', ' ')
                                             : 'No disponible'
                                         }
                                     </span>
@@ -1812,7 +1823,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </div>
                             
                             <div className="pt-2 border-t border-gray-100">
-                                <p className="text-gray-500 text-sm mb-1">Número de pedido</p>
+                                <p className="text-gray-500 text-sm mb-1">N�mero de pedido</p>
                                 <span className="font-mono text-sm text-gray-700">#{searchId.toString().padStart(12, 'FO41A05960584')}</span>
                             </div>
                         </div>
@@ -1827,8 +1838,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         )}
                     </div>
 
-                    {/* Track Order - Mobile Optimized */}
-                    <div className="px-4 py-3 border-b border-gray-100">
+                    {/* Modern Track Order */}
+                    <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50">
                         <button
                             onClick={() => setShowTrackOrder(!showTrackOrder)}
                             className="flex items-center justify-between w-full text-left group"
@@ -1887,8 +1898,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         )}
                     </div>
 
-                    {/* Support Section - Mobile Optimized */}
-                    <div className="px-4 py-3">
+                    {/* Modern Support Section */}
+                    <div className="p-4">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
                                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -1896,12 +1907,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </svg>
                             </div>
                             <div>
-                                <p className="font-medium text-gray-900">¿Necesitas ayuda con tu pedido?</p>
-                                <p className="text-sm text-gray-500">Estoy aquí para ti.</p>
+                                <p className="font-medium text-gray-900">�Necesitas ayuda con tu pedido?</p>
+                                <p className="text-sm text-gray-500">Estoy aqu� para ti.</p>
                             </div>
                         </div>
 
-                        <button className="w-full mb-6 bg-white border-2 border-purple-500 text-purple-600 py-3 rounded-xl hover:bg-purple-50 flex items-center justify-center gap-2 font-medium transition-all duration-200 hover:shadow-md">
+                        <button className="w-full mb-6 bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 rounded-xl hover:from-purple-600 hover:to-blue-600 flex items-center justify-center gap-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
                             <MessageCircle className="w-4 h-4" />
                             Let's Chat
                         </button>
@@ -1915,13 +1926,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         <div className="w-8 h-8 bg-amber-200 rounded-full flex items-center justify-center">
                                             <AlertTriangle className="w-4 h-4 text-amber-700" />
                                         </div>
-                                        Disputa abierta. Un administrador la resolverá pronto.
+                                        Disputa abierta. Un administrador la resolver� pronto.
                                     </p>
                                 </div>
                             )}
 
                             <div className="space-y-3">
-                                <button className="flex items-center justify-between w-full text-left p-3 hover:bg-gray-50 rounded-xl border border-gray-100 transition-colors group">
+                                <button className="flex items-center justify-between w-full text-left p-3 hover:bg-blue-50 rounded-xl border border-gray-100 transition-colors group">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                                             <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -1936,7 +1947,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
                                 </button>
 
-                                <button className="flex items-center justify-between w-full text-left p-3 hover:bg-gray-50 rounded-xl border border-gray-100 transition-colors group">
+                                <button className="flex items-center justify-between w-full text-left p-3 hover:bg-green-50 rounded-xl border border-gray-100 transition-colors group">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                                             <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -1955,7 +1966,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             {canCancel && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showCancelConfirm: true }))}
-                                    className="w-full mt-4 bg-gray-50 border border-gray-200 text-gray-700 py-3 rounded-xl hover:bg-gray-100 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                                    className="w-full mt-4 bg-gradient-to-r from-gray-100 to-gray-200 border border-gray-300 text-gray-700 py-3 rounded-xl hover:from-gray-200 hover:to-gray-300 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1964,46 +1975,46 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </button>
                             )}
 
-                            {isAdmin && searchQuery.data?.searchHire && (
+                            {isAdmin && search?.searchHire && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showFinalizeModal: true }))}
-                                    className="w-full mt-3 bg-amber-500 text-white py-3 rounded-xl hover:bg-amber-600 text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg"
+                                    className="w-full mt-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-xl hover:from-amber-600 hover:to-orange-600 text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                                 >
-                                    Finalizar Búsqueda
+                                    Finalizar B�squeda
                                 </button>
                             )}
 
                             {canReview && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                    className="w-full mt-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-3 rounded-xl hover:from-yellow-600 hover:to-orange-600 text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                                    className="w-full mt-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-3 rounded-xl hover:from-yellow-600 hover:to-orange-600 text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
                                 >
                                     <Star className="w-4 h-4" />
-                                    Enviar Reseña
+                                    Enviar Rese�a
                                 </button>
                             )}
                         </div>
 
                         {/* Deliverables Section */}
-                        {/* Informes del Experto - Sección Principal */}
+                        {/* Informes del Experto - Secci�n Principal */}
                         <div className="mt-6 pt-6 border-t border-gray-200">
-                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-200">
+                            <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-4 sm:p-6 border border-blue-200 shadow-sm">
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
                                         <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                     </div>
                                     <div>
-                                        <h3 className="text-base sm:text-lg font-bold text-slate-900">📋 Informes del Experto</h3>
-                                        <p className="text-xs sm:text-sm text-slate-600">Documentos técnicos y análisis profesional</p>
+                                        <h3 className="text-base sm:text-lg font-bold text-slate-900">?? Informes del Experto</h3>
+                                        <p className="text-xs sm:text-sm text-slate-600">Documentos t�cnicos y an�lisis profesional</p>
                                     </div>
                                 </div>
 
-                                {deliverablesQuery.isLoading ? (
+                                {false ? ( // deliverablesQuery.isLoading - datos del hook optimizado
                                     <div className="flex items-center justify-center gap-3 py-8">
                                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                                         <p className="text-slate-600 font-medium">Cargando informes del experto...</p>
                                     </div>
-                                ) : deliverablesQuery.isError ? (
+                                ) : false ? ( // deliverablesQuery.isError - datos del hook optimizado
                                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                                         <div className="flex items-center gap-2 mb-2">
                                             <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -2016,19 +2027,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         >
                                             Reintentar
                                         </button>
-                                        {deliverablesQuery.error && (
-                                            <p className="text-xs text-red-500 mt-2">{deliverablesQuery.error.message}</p>
+                                        {false && ( // deliverablesQuery.error - datos del hook optimizado
+                                            <p className="text-xs text-red-500 mt-2">Error</p>
                                         )}
                                     </div>
-                                ) : deliverables && deliverables.deliverableUrls && deliverables.deliverableUrls.length > 0 ? (
+                                ) : deliverables && deliverables.length > 0 ? (
                                     <div className="space-y-3 sm:space-y-4">
                                         <div className="grid gap-3 sm:gap-4">
-                                            {deliverables.deliverableUrls.map((url, index) => (
+                                            {deliverables.map((deliverable, index) => (
                                                 <div key={index} className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 hover:shadow-md transition-shadow">
                                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                                {url.endsWith('.mp4') ? (
+                                                                {deliverable.url.endsWith('.mp4') ? (
                                                                     <video className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                                                                 ) : (
                                                                     <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
@@ -2036,23 +2047,23 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             </div>
                                                             <div className="min-w-0 flex-1">
                                                                 <h4 className="font-semibold text-slate-900 text-sm sm:text-base">
-                                                                    {url.endsWith('.mp4') ? `Video del Experto ${index + 1}` : `Informe Técnico ${index + 1}`}
+                                                                    {deliverable.url.endsWith('.mp4') ? `Video del Experto ${index + 1}` : `Informe T�cnico ${index + 1}`}
                                                                 </h4>
                                                                 <p className="text-xs sm:text-sm text-slate-500">
-                                                                    {url.endsWith('.mp4') ? 'Análisis en video' : 'Documento PDF detallado'}
+                                                                    {deliverable.url.endsWith('.mp4') ? 'An�lisis en video' : 'Documento PDF detallado'}
                                                                 </p>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
-                                                            {url.endsWith('.mp4') ? (
+                                                            {deliverable.url.endsWith('.mp4') ? (
                                                                 <video 
-                                                                    src={url} 
+                                                                    src={deliverable.url} 
                                                                     controls 
                                                                     className="w-full sm:w-32 h-20 rounded-lg object-cover"
                                                                 />
                                                             ) : (
                                                                 <a 
-                                                                    href={url} 
+                                                                    href={deliverable.url} 
                                                                     target="_blank" 
                                                                     rel="noopener noreferrer" 
                                                                     className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
@@ -2071,7 +2082,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             <div className="flex items-center gap-2">
                                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                                 <p className="text-green-800 text-xs sm:text-sm font-medium">
-                                                    ✅ {deliverables.deliverableUrls.length} informe{deliverables.deliverableUrls.length > 1 ? 's' : ''} disponible{deliverables.deliverableUrls.length > 1 ? 's' : ''}
+                                                    ? {deliverables.length} informe{deliverables.length > 1 ? 's' : ''} disponible{deliverables.length > 1 ? 's' : ''}
                                                 </p>
                                             </div>
                                         </div>
@@ -2082,7 +2093,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400" />
                                         </div>
                                         <h4 className="text-slate-900 font-semibold text-sm sm:text-base mb-2">No hay informes disponibles</h4>
-                                        <p className="text-slate-500 text-xs sm:text-sm">El experto aún no ha subido informes técnicos</p>
+                                        <p className="text-slate-500 text-xs sm:text-sm">El experto a�n no ha subido informes t�cnicos</p>
                                     </div>
                                 )}
 
@@ -2101,17 +2112,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     onChange={handleDeliverableFileChange}
                                                     className="hidden"
                                                 />
-                                                <div className="w-full p-3 sm:p-4 border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 cursor-pointer rounded-lg hover:bg-blue-100 transition-colors text-center">
+                                                <div className="w-full p-3 sm:p-4 border-2 border-dashed border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-700 cursor-pointer rounded-xl hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 text-center shadow-sm hover:shadow-md">
                                                     <Upload className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-2" />
                                                     <p className="font-medium text-sm sm:text-base">Subir Informe del Experto</p>
-                                                    <p className="text-xs sm:text-sm">PDF o MP4 (máx. 10MB)</p>
+                                                    <p className="text-xs sm:text-sm">PDF o MP4 (m�x. 10MB)</p>
                                                 </div>
                                             </label>
                                             <button
                                                 onClick={handleUploadDeliverable}
-                                                className={`w-full py-2.5 sm:py-3 text-xs sm:text-sm rounded-lg flex items-center justify-center gap-2 font-medium ${selectedDeliverableFiles.length === 0 || isUploadingDeliverable
+                                                className={`w-full py-2.5 sm:py-3 text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 font-medium transition-all duration-200 ${selectedDeliverableFiles.length === 0 || isUploadingDeliverable
                                                     ? 'bg-slate-300 cursor-not-allowed text-slate-500'
-                                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
                                                     }`}
                                                 disabled={selectedDeliverableFiles.length === 0 || isUploadingDeliverable}
                                             >
@@ -2139,31 +2150,31 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             </div>
 
             {/* Modals */}
-            {/* Debug temporal - Información del servicio */}
-            {process.env.NODE_ENV === 'development' && serviceQuery.data && (
+            {/* Debug temporal - Informaci�n del servicio */}
+            {process.env.NODE_ENV === 'development' && serviceInfo && (
                 <div className="fixed top-20 right-4 z-50 bg-blue-100 border border-blue-300 rounded-lg p-3 text-xs max-w-xs">
                     <h4 className="font-bold text-blue-800 mb-2">Debug Servicio:</h4>
                     <div className="space-y-1 text-blue-700">
-                        <div className="font-semibold text-blue-800">📊 Datos Optimizados:</div>
+                        <div className="font-semibold text-blue-800">?? Datos Optimizados:</div>
                         <div>ServiceTypeId: {serviceInfo?.serviceTypeId || 'N/A'}</div>
                         <div>ServiceTypeCategoryId: {serviceInfo?.serviceTypeCategoryId || 'N/A'}</div>
                         <div>ServiceTypeCategoryName: {serviceInfo?.serviceTypeCategoryName || 'N/A'}</div>
-                        <div>RequiresAppointment: {serviceInfo?.requiresAppointment ? 'SÍ' : 'NO'}</div>
-                        <div>ServicePrice: €{serviceInfo?.price || 'N/A'}</div>
+                        <div>RequiresAppointment: {serviceInfo?.requiresAppointment ? 'S�' : 'NO'}</div>
+                        <div>ServicePrice: �{serviceInfo?.price || 'N/A'}</div>
                         <div className="border-t border-blue-300 pt-1 mt-1">
-                            <div>IsAppointmentCategory: {isAppointmentCategory ? 'SÍ' : 'NO'}</div>
-                            <div>HasSearchHire: {hasSearchHire ? 'SÍ' : 'NO'}</div>
-                            <div>NeedsAppointment: {needsAppointment ? 'SÍ' : 'NO'}</div>
+                            <div>IsAppointmentCategory: {isAppointmentCategory ? 'S�' : 'NO'}</div>
+                            <div>HasSearchHire: {hasSearchHire ? 'S�' : 'NO'}</div>
+                            <div>NeedsAppointment: {needsAppointment ? 'S�' : 'NO'}</div>
                         </div>
                         <div className="border-t border-blue-300 pt-1 mt-1">
                             <div>HireId: {hireId || 'N/A'}</div>
-                            <div>SearchStatus: {searchQuery.data?.searchHire?.status || 'N/A'}</div>
+                            <div>SearchStatus: {search?.searchHire?.status || 'N/A'}</div>
                         </div>
                     </div>
                     <button
                         onClick={() => {
                             console.log('Refreshing search data (optimized)...');
-                            searchQuery.refetch();
+                            invalidateAll();
                         }}
                         className="mt-2 w-full bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700"
                     >
@@ -2198,7 +2209,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 isLoading={isRejecting}
             />
 
-            {/* Modal para mostrar información de distribución de dinero */}
+            {/* Modal para mostrar informaci�n de distribuci�n de dinero */}
             {showMoneyDistribution && appointmentToReject && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto p-6 relative">
@@ -2216,11 +2227,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         </button>
                         
                         <h3 className="text-xl font-semibold text-gray-900 mb-6">
-                            Información de Distribución de Dinero
+                            Informaci�n de Distribuci�n de Dinero
                         </h3>
 
                         <MoneyDistributionInfo
-                            config={moneyDistributionConfig}
+                            config={moneyDistributionConfig as any}
                             status={selectedDistributionStatus}
                             isLoading={isLoadingMoneyConfig}
                             error={moneyConfigError}
@@ -2254,7 +2265,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             {selectedDistributionStatus === 'appointment_cancelled_by_client_second' && (
                                 <button
                                     onClick={async () => {
-                                        const cancelReason = prompt('Razón de la cancelación:');
+                                        const cancelReason = prompt('Raz�n de la cancelaci�n:');
                                         if (cancelReason) {
                                             try {
                                                 const cancelData: CancelAppointmentDto = {
@@ -2267,7 +2278,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     type: 'success',
                                                     message: 'Cita cancelada exitosamente'
                                                 }]);
-                                                appointmentQuery.refetch();
+                                                invalidateAll(); // appointmentQuery.refetch() - usar invalidaci�n unificada
                                                 setShowMoneyDistribution(false);
                                                 setAppointmentToReject(null);
                                                 setSelectedDistributionStatus('');
@@ -2283,7 +2294,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     }}
                                     className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors text-sm font-medium"
                                 >
-                                    Continuar con Cancelación
+                                    Continuar con Cancelaci�n
                                 </button>
                             )}
                         </div>
@@ -2297,11 +2308,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     setModalState((prev) => ({ ...prev, showReviewModal: false }));
                     setReviewForm({ score: 0, description: '', images: [] });
                 }}
-                searchHireId={searchQuery.data?.searchHire?.id}
+                searchHireId={search?.searchHire?.id}
                 reviewForm={reviewForm}
                 setReviewForm={setReviewForm}
                 onSubmit={() => {
-                    searchQuery.refetch();
+                    invalidateAll();
                     setModalState((prev) => ({ ...prev, showReviewModal: false }));
                     setReviewForm({ score: 0, description: '', images: [] });
                 }}
@@ -2382,7 +2393,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
                                     <div>
                                         <h2 className="text-xl font-semibold text-gray-900">Responder a la Disputa</h2>
-                                        <p className="text-sm text-gray-600">Proporciona tu versión de los hechos</p>
+                                        <p className="text-sm text-gray-600">Proporciona tu versi�n de los hechos</p>
                                     </div>
                                 </div>
                                 <button
@@ -2410,16 +2421,16 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         
                                         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                                             <p className="text-gray-800 leading-relaxed">
-                                                {disputeQuery.data?.reason || 'No se pudo cargar la razón de la disputa'}
+                                                {disputes[0]?.reason || 'No se pudo cargar la raz�n de la disputa'}
                                             </p>
                                         </div>
 
                                         {/* Archivos del cliente */}
-                                        {disputeQuery.data?.files && disputeQuery.data.files.length > 0 && (
+                                        {disputes[0]?.files && disputes[0].files.length > 0 && (
                                             <div className="mt-4">
                                                 <h4 className="text-sm font-medium text-gray-700 mb-2">Archivos del cliente:</h4>
                                                 <div className="space-y-2">
-                                                    {disputeQuery.data.files.map((file, index) => (
+                                                    {disputes[0].files.map((file, index) => (
                                                         <a
                                                             key={index}
                                                             href={file.fileUrl}
@@ -2435,13 +2446,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             </div>
                                         )}
 
-                                        {/* Información de la disputa */}
+                                        {/* Informaci�n de la disputa */}
                                         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                                             <div className="grid grid-cols-2 gap-4 text-sm">
                                                 <div>
                                                     <span className="text-gray-500">Fecha de disputa:</span>
                                                     <p className="font-medium text-gray-900">
-                                                        {disputeQuery.data?.createdAt ? new Date(disputeQuery.data.createdAt).toLocaleDateString('es-ES') : 'N/A'}
+                                                        {disputes[0]?.createdAt ? new Date(disputes[0].createdAt).toLocaleDateString('es-ES') : 'N/A'}
                                                     </p>
                                                 </div>
                                                 <div>
@@ -2466,19 +2477,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         <div className="space-y-3">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Explica tu versión de los hechos
+                                                    Explica tu versi�n de los hechos
                                                 </label>
                                                 <textarea
                                                     value={expertResponseText}
                                                     onChange={(e) => setExpertResponseText(e.target.value)}
-                                                    placeholder="Describe detalladamente tu versión de los hechos, incluyendo cualquier información relevante que pueda ayudar a resolver la disputa..."
+                                                    placeholder="Describe detalladamente tu versi�n de los hechos, incluyendo cualquier informaci�n relevante que pueda ayudar a resolver la disputa..."
                                                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
                                                     rows={6}
                                                     maxLength={1000}
                                                 />
                                                 <div className="flex justify-between items-center mt-1">
                                                     <p className="text-xs text-gray-500">
-                                                        Sé específico y proporciona detalles relevantes
+                                                        S� espec�fico y proporciona detalles relevantes
                                                     </p>
                                                     <p className="text-xs text-gray-500">
                                                         {expertResponseText.length}/1000 caracteres
@@ -2517,7 +2528,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                 JPG, PNG, GIF, PDF, DOC, DOCX, MP4, AVI, MOV
                                                             </p>
                                                             <p className="text-xs text-gray-400">
-                                                                Máximo 10MB por archivo
+                                                                M�ximo 10MB por archivo
                                                             </p>
                                                         </div>
                                                     </label>
@@ -2554,15 +2565,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         </div>
                                     </div>
 
-                                    {/* Información importante */}
-                                    {disputeQuery.data?.expertResponseDeadline && (
+                                    {/* Informaci�n importante */}
+                                    {disputes[0]?.expertResponseDeadline && (
                                         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                                             <div className="flex items-start gap-3">
                                                 <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5" />
                                                 <div>
-                                                    <h4 className="text-sm font-medium text-orange-800 mb-1">Tiempo límite</h4>
+                                                    <h4 className="text-sm font-medium text-orange-800 mb-1">Tiempo l�mite</h4>
                                                     <p className="text-sm text-orange-700">
-                                                        Tienes hasta el <strong>{new Date(disputeQuery.data.expertResponseDeadline).toLocaleDateString('es-ES', {
+                                                        Tienes hasta el <strong>{new Date(disputes[0].expertResponseDeadline).toLocaleDateString('es-ES', {
                                                             year: 'numeric',
                                                             month: 'long',
                                                             day: 'numeric',
@@ -2579,10 +2590,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         <div className="flex items-start gap-3">
                                             <MessageCircle className="w-5 h-5 text-blue-600 mt-0.5" />
                                             <div>
-                                                <h4 className="text-sm font-medium text-blue-800 mb-1">Información importante</h4>
+                                                <h4 className="text-sm font-medium text-blue-800 mb-1">Informaci�n importante</h4>
                                                 <p className="text-sm text-blue-700">
-                                                    Tu respuesta será revisada por nuestro equipo de administración. 
-                                                    Proporciona información clara y evidencia relevante para ayudar en la resolución.
+                                                    Tu respuesta ser� revisada por nuestro equipo de administraci�n. 
+                                                    Proporciona informaci�n clara y evidencia relevante para ayudar en la resoluci�n.
                                                 </p>
                                             </div>
                                         </div>
@@ -2626,6 +2637,20 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     </div>
                 </div>
             )}
+
+            <ReportModal
+                isOpen={modalState.showReportModal}
+                onClose={() => {
+                    setModalState((prev) => ({ ...prev, showReportModal: false }));
+                    setSelectedAppointment(null);
+                }}
+                appointment={selectedAppointment}
+                onSuccess={() => {
+                    invalidateAll(); // appointmentQuery.refetch() - usar invalidaci�n unificada
+                    invalidateAll();
+                }}
+                setNotifications={setNotifications}
+            />
 
             {notifications.map((notification) => (
                 <Notification
