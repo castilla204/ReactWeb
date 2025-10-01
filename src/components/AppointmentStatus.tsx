@@ -8,6 +8,7 @@ import {
   getAppointmentStatusColor,
   calculateMoneyDistribution 
 } from '../hooks/useAppointments';
+import { useExpertReport } from '../hooks/useExpertReport';
 
 interface AppointmentStatusProps {
   appointment: Appointment;
@@ -18,7 +19,7 @@ interface AppointmentStatusProps {
 const AppointmentStatus: React.FC<AppointmentStatusProps> = ({ 
   appointment, 
   userRole, 
-  onAction 
+  onAction
 }) => {
   const isLocked = useAppointmentLock(appointment);
   const { activeTimer, timeRemaining, formatTimeRemaining } = useAppointmentTimers(appointment);
@@ -35,9 +36,12 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       case 'appointment_cancelled_by_client_second':
       case 'appointment_cancelled_by_expert':
       case 'appointment_cancelled_by_no_response':
+      case 'appointment_cancelled_by_no_report':
         return <XCircle className="w-5 h-5 text-red-600" />;
       case 'appointment_rejected':
         return <XCircle className="w-5 h-5 text-orange-600" />;
+      case 'appointment_awaiting_report':
+        return <FileText className="w-5 h-5 text-purple-600" />;
       default:
         return <Clock className="w-5 h-5 text-blue-600" />;
     }
@@ -144,8 +148,25 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       );
     }
 
+    // Botón para enviar reporte (expertos)
+    if (appointment.status === 'appointment_awaiting_report' && userRole === 'expert') {
+      buttons.push(
+        <button
+          key="submit-report"
+          onClick={() => onAction('submit-report', appointment)}
+          disabled={isSubmitting}
+          className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
+        >
+          {isSubmitting ? 'Enviando...' : 'Enviar Reporte'}
+        </button>
+      );
+    }
+
     return buttons;
   };
+
+  // Hook para manejar el envío de reportes
+  const { isSubmitting } = useExpertReport();
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
@@ -168,6 +189,106 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
           </div>
         )}
       </div>
+
+      {/* Mensaje específico para esperando reporte del experto - VISTA EXPERTO */}
+      {appointment.status === 'appointment_awaiting_report' && userRole === 'expert' && (
+        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <FileText className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-purple-800 mb-2">
+                Envía el reporte del trabajo realizado
+              </h4>
+              <p className="text-sm text-purple-700 mb-3">
+                Tienes 24 horas para subir los archivos requeridos y enviar el reporte. Una vez enviado, el cliente tendrá 24 horas para aprobar o rechazar el trabajo.
+              </p>
+              <div className="text-xs text-purple-600">
+                💡 Asegúrate de subir todos los archivos requeridos antes de enviar el reporte.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mensaje específico para esperando reporte del experto - VISTA CLIENTE */}
+      {appointment.status === 'appointment_awaiting_report' && userRole === 'client' && (
+        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <FileText className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-purple-800 mb-2">
+                Esperando reporte del experto
+              </h4>
+              <p className="text-sm text-purple-700 mb-3">
+                El experto tiene 24 horas para enviar el reporte del trabajo realizado. Una vez enviado, tendrás 24 horas para aprobar o rechazar el trabajo.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => onAction('chat', appointment)}
+                  className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Contactar por Chat
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mensaje específico para cita completada - VISTA EXPERTO */}
+      {appointment.status === 'appointment_completed' && userRole === 'expert' && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-green-800 mb-2">
+                ¡Cita completada exitosamente!
+              </h4>
+              <p className="text-sm text-green-700 mb-3">
+                Has completado tu trabajo y enviado el reporte. Ahora el cliente tiene 24 horas para revisar y aprobar o rechazar el trabajo.
+              </p>
+              <div className="text-xs text-green-600">
+                💡 El cliente puede aprobar el trabajo, rechazarlo, o iniciar una disputa si no está conforme.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mensaje específico para cita completada - VISTA CLIENTE */}
+      {appointment.status === 'appointment_completed' && userRole === 'client' && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-green-800 mb-2">
+                ¡El experto completó su trabajo!
+              </h4>
+              <p className="text-sm text-green-700 mb-3">
+                El experto ha enviado el reporte del trabajo realizado. Tienes 24 horas para revisar y aprobar o rechazar el trabajo.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => onAction('approve', appointment)}
+                  className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Aprobar Trabajo
+                </button>
+                <button
+                  onClick={() => onAction('reject', appointment)}
+                  className="inline-flex items-center px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Rechazar Trabajo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Mensaje específico para cita rechazada por el experto - VISTA CLIENTE */}
       {appointment.status === 'appointment_rejected' && userRole === 'client' && (
@@ -196,6 +317,35 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                   <MessageCircle className="w-4 h-4 mr-2" />
                   Contactar por Chat
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mensaje específico para cancelado por no enviar reporte */}
+      {appointment.status === 'appointment_cancelled_by_no_report' && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <XCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-red-800 mb-2">
+                {userRole === 'expert' ? 'Servicio cancelado - No enviaste el reporte' : 'Servicio cancelado - Experto no envió reporte'}
+              </h4>
+              <div className="space-y-2 text-sm text-red-700">
+                <p>
+                  <strong>Razón:</strong> El experto no envió el reporte en el tiempo establecido (24 horas)
+                </p>
+                {userRole === 'client' && (
+                  <p>
+                    <strong>Reembolso:</strong> Recibirás el 100% del dinero de vuelta
+                  </p>
+                )}
+                {userRole === 'expert' && (
+                  <p>
+                    <strong>Consecuencia:</strong> No recibirás pago por este servicio
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -312,6 +462,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
           </div>
         </div>
       )}
+
 
       {/* Mensaje específico para cita rechazada por el experto - VISTA EXPERTO */}
       {appointment.status === 'appointment_rejected' && userRole === 'expert' && (
@@ -440,6 +591,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
               {activeTimer.timerType === 'response' && 'Tiempo para responder:'}
               {activeTimer.timerType === 'reprogram' && 'Tiempo para reprogramar:'}
               {activeTimer.timerType === 'auto_awaiting_client_decision' && 'Tiempo hasta cambio automático:'}
+              {activeTimer.timerType === 'expert_report' && 'Tiempo para enviar reporte:'}
             </span>
             <span className="text-sm font-bold text-blue-900">
               {formatTimeRemaining(timeRemaining)}
