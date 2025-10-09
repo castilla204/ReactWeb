@@ -1,5 +1,4 @@
 import { useLayoutEffect, useState, useEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp, FileText, MessageSquare, Calendar, CheckCircle, DollarSign, User, XCircle } from 'lucide-react';
 import { SearchHire } from '../hooks/useSearch.hooks';
 // import { useCategories } from '../contexts/CategoryContext'; // ❌ YA NO NECESARIO - viene en details-complete
@@ -10,6 +9,7 @@ import Chat from './Chat';
 import { ReviewModal, DisputeModal, ResolveDisputeModal, AddAdModal, CancelServiceModal, FinalizeModal, ReportModal } from './Modals';
 import ExistingReviewCard from './ExistingReviewCard';
 import ProfessionalReviewCard from './ProfessionalReviewCard';
+import DebugOverlay from './DebugOverlay';
 import { useSearchActions } from '../hooks/useSearchActions';
 import { useDisputes } from '../hooks/useDisputes';
 import { Notification, NotificationType } from './Notification';
@@ -70,7 +70,6 @@ const statusRoadmap = [
 ];
 
 export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
-    const queryClient = useQueryClient();
     const { id } = useParams<{ id: string }>();
     const searchId = parseInt(id || '0', 10);
     const navigate = useNavigate();
@@ -93,6 +92,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const [expertResponseText, setExpertResponseText] = useState('');
     const [expertResponseFiles, setExpertResponseFiles] = useState<File[]>([]);
     const [showExpertResponseModal, setShowExpertResponseModal] = useState(false);
+    const [showDebugOverlay, setShowDebugOverlay] = useState(true); // ✅ Estado para controlar debug
     const [reviewForm, setReviewForm] = useState({
         score: 0,
         description: '',
@@ -299,10 +299,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const clientId = Number(search?.userId ?? 0);
     const expertId = Number(search?.searchHire?.expertId ?? search?.searchHire?.expert?.id ?? 0);
     
-    // Debug temporal para verificar los datos del experto - MOVIDO DESPUÉS DE isExpert
+    // Debug temporal para verificar los datos del experto
+    console.log('[SearchDetails] Expert data debug:', {
+        userId,
+        clientId,
+        expertId,
+        searchHire: search?.searchHire,
+        expertInfo: search?.searchHire?.expert,
+        expertIdFromHire: search?.searchHire?.expertId,
+        expertIdFromExpert: search?.searchHire?.expert?.id
+    });
     
     // Obtener el expertId de la disputa (puede ser diferente al de la b�squeda)
-    const disputeExpertId = Number(disputes[0]?.expert?.id ?? search?.searchHire?.expert?.id ?? 0); // Usar datos optimizados
+    const disputeExpertId = Number(disputes[0]?.id ?? 0); // Usar datos optimizados
 
     // Debug: Log user and role information
     console.log('[SearchDetails] User and role debug:', {
@@ -318,36 +327,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const isClient = userId === clientId;
     // Validación más robusta para isExpert - verificar tanto expertId como expert.id
     const isExpert = userId === expertId || (search?.searchHire?.expert?.id && userId === Number(search.searchHire.expert.id));
-    
-    // Debug específico para isExpert
-    console.log('[SearchDetails] isExpert debug:', {
-        userId,
-        expertId,
-        expertIdFromExpert: search?.searchHire?.expert?.id,
-        isExpertFromExpertId: userId === expertId,
-        isExpertFromExpertObject: search?.searchHire?.expert?.id && userId === Number(search.searchHire.expert.id),
-        finalIsExpert: isExpert
-    });
-    
-    // Debug completo para verificar los datos del experto
-    console.log('[SearchDetails] Expert data debug:', {
-        userId,
-        clientId,
-        expertId,
-        searchHire: search?.searchHire,
-        expertInfo: search?.searchHire?.expert,
-        expertIdFromHire: search?.searchHire?.expertId,
-        expertIdFromExpert: search?.searchHire?.expert?.id,
-        isExpert,
-        isClient,
-        appointment: appointment,
-        appointmentStatus: appointment?.status,
-        // Debug específico para el caso actual
-        isExpertFromExpertId: userId === expertId,
-        isExpertFromExpertObject: search?.searchHire?.expert?.id && userId === Number(search.searchHire.expert.id),
-        expertIdNumber: Number(search?.searchHire?.expert?.id),
-        userIdNumber: Number(userId)
-    });
     const isDisputeExpert = userId === disputeExpertId;
     // ✅ Usar la información de review del endpoint details-complete
     const hasReviewed = !!review; // Si existe review, ya se ha puesto una reseña
@@ -375,26 +354,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const isDisputeResolved = (isClient || isExpert) && search?.searchHire?.status === 'dispute-resolved';
     
     // Determinar si el experto puede responder a la disputa
-    // Usar el valor del backend si está disponible, sino calcularlo
-    const canExpertRespond = disputes[0]?.canExpertRespond !== undefined 
-        ? disputes[0].canExpertRespond 
-        : (isDisputeExpert && 
-           disputes[0]?.status === 'pending' && 
-           !disputes[0]?.expertResponse &&
-           search?.searchHire?.status === 'disputed');
-    
-    // Debug para entender por qué canExpertRespond es false
-    console.log('[SearchDetails] canExpertRespond debug:', {
-        canExpertRespond,
-        isDisputeExpert,
-        userId,
-        disputeExpertId,
-        disputeStatus: disputes[0]?.status,
-        hasExpertResponse: !!disputes[0]?.expertResponse,
-        searchHireStatus: search?.searchHire?.status,
-        disputeData: disputes[0],
-        canExpertRespondFromBackend: disputes[0]?.canExpertRespond
-    });
+    const canExpertRespond = isDisputeExpert && 
+                            disputes[0]?.status === 'pending' && 
+                            !disputes[0]?.expertResponse &&
+                            search?.searchHire?.status === 'disputed';
     // Validación más robusta para el chat
     const canViewChat = (isClient || isExpert || isAdmin) && !!search?.searchHire && !!search?.searchHire?.id;
     
@@ -817,9 +780,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         invalidateAll(); // appointmentQuery.refetch() - usar invalidaci�n unificada
                     } else {
                         // Si es el segundo rechazo, mostrar informaci�n de porcentajes
-                        // Rechazar directamente sin mostrar porcentajes
-                        setAppointmentToReject(appointment);
-                        setShowRejectModal(true);
+                        showRejectionInfo(appointment);
                     }
                     break;
                     
@@ -839,9 +800,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         invalidateAll(); // appointmentQuery.refetch() - usar invalidaci�n unificada
                     } else {
                         // Si es la segunda cancelaci�n, mostrar informaci�n de porcentajes
-                        // Cancelar directamente sin mostrar porcentajes
-                        setAppointmentToReject(appointment);
-                        setShowRejectModal(true);
+                        showCancellationInfo(appointment);
                     }
                     break;
                     
@@ -899,30 +858,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             }
         } catch (error) {
             console.error('Error al proponer cita:', error);
-            
-            // Manejar errores específicos del servidor
-            let errorMessage = 'Error al proponer cita';
-            
-            if (error instanceof Error) {
-                // Si el error contiene información específica del servidor
-                if (error.message.includes('24 horas') || error.message.includes('12 horas')) {
-                    errorMessage = 'La cita debe ser al menos 24 horas en el futuro';
-                } else if (error.message.includes('fecha')) {
-                    errorMessage = 'La fecha seleccionada no es válida';
-                } else if (error.message.includes('ubicación')) {
-                    errorMessage = 'Debes seleccionar una ubicación válida';
-                } else if (error.message.includes('tiempo')) {
-                    errorMessage = 'El tiempo seleccionado no es válido';
-                } else {
-                    // Usar el mensaje del servidor si está disponible
-                    errorMessage = error.message;
-                }
-            }
-            
             setNotifications(prev => [...prev, {
                 id: uuidv4(),
                 type: 'error',
-                message: errorMessage
+                message: 'Error al proponer cita'
             }]);
         }
     };
@@ -977,14 +916,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             <div className={`border rounded-lg p-6 ${getResolutionColor()}`}>
                 <div className="flex items-center gap-3 mb-4">
                     {getResolutionIcon()}
-                    <h3 className="text-lg font-semibold text-gray-800">{getResolutionTitle()}</h3>
+                    <h3 className="text-lg font-semibold text-white">{getResolutionTitle()}</h3>
                 </div>
 
                 <div className="space-y-4">
                     {/* Disputa del cliente */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Disputa del Cliente</label>
-                        <p className="text-gray-800 bg-white p-3 rounded-lg border">{dispute.reason}</p>
+                        <p className="text-white bg-white p-3 rounded-lg border">{dispute.reason}</p>
                         {dispute.files && dispute.files.length > 0 && (
                             <div className="mt-2">
                                 <p className="text-xs text-gray-500 mb-1">Archivos del cliente:</p>
@@ -1003,7 +942,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     {dispute.expertResponse && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Respuesta del Experto</label>
-                            <p className="text-gray-800 bg-white p-3 rounded-lg border">{dispute.expertResponse}</p>
+                            <p className="text-white bg-white p-3 rounded-lg border">{dispute.expertResponse}</p>
                             {dispute.expertResponseFiles && dispute.expertResponseFiles.length > 0 && (
                                 <div className="mt-2">
                                     <p className="text-xs text-gray-500 mb-1">Archivos del experto:</p>
@@ -1028,7 +967,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     {dispute.resolutionComments && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Resoluci�n del Administrador</label>
-                            <p className="text-gray-800 bg-white p-3 rounded-lg border">{dispute.resolutionComments}</p>
+                            <p className="text-white bg-white p-3 rounded-lg border">{dispute.resolutionComments}</p>
                         </div>
                     )}
 
@@ -1039,7 +978,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 <DollarSign className="w-5 h-5 text-gray-500" />
                                 <span className="text-sm font-medium text-gray-700">Monto del Servicio</span>
                             </div>
-                            <p className="text-lg font-semibold text-gray-800">{formatCurrency(dispute.searchHire.amount)}</p>
+                            <p className="text-lg font-semibold text-white">{formatCurrency(dispute.searchHire.amount)}</p>
                         </div>
 
                         <div className="bg-white p-4 rounded-lg border">
@@ -1047,7 +986,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 <Calendar className="w-5 h-5 text-gray-500" />
                                 <span className="text-sm font-medium text-gray-700">Fecha de Resoluci�n</span>
                             </div>
-                            <p className="text-sm text-gray-800">{formatDate(dispute.createdAt)}</p>
+                            <p className="text-sm text-white">{formatDate(dispute.createdAt)}</p>
                         </div>
                     </div>
 
@@ -1058,7 +997,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 <User className="w-5 h-5 text-blue-500" />
                                 <span className="text-sm font-medium text-gray-700">Cliente</span>
                             </div>
-                            <p className="text-sm text-gray-800">{dispute.client.name}</p>
+                            <p className="text-sm text-white">{dispute.client.name}</p>
                         </div>
 
                         {dispute.expert && (
@@ -1067,7 +1006,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     <User className="w-5 h-5 text-green-500" />
                                     <span className="text-sm font-medium text-gray-700">Experto</span>
                                 </div>
-                                <p className="text-sm text-gray-800">{dispute.expert.name}</p>
+                                <p className="text-sm text-white">{dispute.expert.name}</p>
                             </div>
                         )}
                     </div>
@@ -1142,7 +1081,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             currentStatus === 'awaiting_client_decision' ? 'En revisi�n' : 'Pendiente'}
                                     </span>
                                 </div>
-                                <h1 className="text-sm sm:text-xl font-semibold text-gray-800 truncate leading-tight">
+                                <h1 className="text-sm sm:text-xl font-semibold text-white truncate leading-tight">
                                     {search?.title || 'Cargando...'}
                                 </h1>
                             </div>
@@ -1188,7 +1127,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full object-cover border-2 border-white shadow-md"
                                             />
                                         ) : (
-                                            <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-gray-800 text-sm font-medium">
+                                            <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
                                                 {(expertInfo?.name || 'E').charAt(0)} 
                                             </div>
                                         )}
@@ -1196,7 +1135,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <h3 className="font-semibold text-gray-800 truncate text-sm">
+                                            <h3 className="font-semibold text-white truncate text-sm">
                                                 {expertInfo?.name || 'Experto'} 
                                             </h3>
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
@@ -1221,7 +1160,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors duration-200 relative ${
                                         activeTab === 'chat'
                                             ? 'text-blue-600 bg-gray-50'
-                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                            : 'text-gray-600 hover:text-white hover:bg-gray-50'
                                     }`}
                                 >
                                     <MessageSquare className="w-4 h-4" />
@@ -1235,7 +1174,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors duration-200 relative ${
                                         activeTab === 'details'
                                             ? 'text-blue-600 bg-gray-50'
-                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                            : 'text-gray-600 hover:text-white hover:bg-gray-50'
                                     }`}
                                 >
                                     <FileText className="w-4 h-4" />
@@ -1285,7 +1224,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         <div className="flex items-center gap-2">
                                             <Calendar className="w-3 h-3 text-gray-600" />
                                             <div>
-                                                <h3 className="text-xs font-medium text-gray-800">�Necesitas programar una cita?</h3>
+                                                <h3 className="text-xs font-medium text-white">�Necesitas programar una cita?</h3>
                                                 <p className="text-xs text-gray-500">Este servicio requiere una cita</p>
                                             </div>
                                         </div>
@@ -1305,7 +1244,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 status: 'awaiting_appointment',
                                                 amount: serviceInfo?.price || 0
                                             } as Appointment)}
-                                            className="bg-gray-600 text-gray-800 px-3 py-1.5 rounded text-xs hover:bg-gray-700 transition-colors flex items-center gap-1"
+                                            className="bg-gray-600 text-white px-3 py-1.5 rounded text-xs hover:bg-gray-700 transition-colors flex items-center gap-1"
                                         >
                                             <Calendar className="w-3 h-3" />
                                             Cita
@@ -1371,7 +1310,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             </span>
                                                         </div>
                                                         
-                                                        <h3 className="font-semibold text-gray-800 mb-0.5 leading-tight pr-16 text-sm">
+                                                        <h3 className="font-semibold text-white mb-0.5 leading-tight pr-16 text-sm">
                                                             {search?.title}
                                                         </h3>
                                                         <p className="text-xs text-gray-600 leading-tight line-clamp-1">
@@ -1386,7 +1325,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                                             {/* Order Information - Mobile */}
                                             <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
-                                                <h4 className="font-medium text-gray-800 mb-2 flex items-center gap-1.5 text-sm">
+                                                <h4 className="font-medium text-white mb-2 flex items-center gap-1.5 text-sm">
                                                     <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                     </svg>
@@ -1395,15 +1334,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 <div className="grid grid-cols-1 gap-2 text-sm">
                                                     <div className="flex justify-between">
                                                         <span className="text-gray-500">Solicitado por</span>
-                                                        <span className="font-medium text-gray-800">{user?.name || 'Usuario'}</span>
+                                                        <span className="font-medium text-white">{user?.name || 'Usuario'}</span>
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span className="text-gray-500">Categor�a</span>
-                                                        <span className="font-medium text-gray-800">{categoryName}</span>
+                                                        <span className="font-medium text-white">{categoryName}</span>
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span className="text-gray-500">Estado</span>
-                                                        <span className="font-medium text-gray-800">
+                                                        <span className="font-medium text-white">
                                                             {search?.searchHire?.status 
                                                                 ? search.searchHire.status.charAt(0).toUpperCase() + search.searchHire.status.slice(1).replace('_', ' ') // search - datos del hook optimizado
                                                                 : 'No disponible'
@@ -1490,7 +1429,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
                                                     <div className="flex items-center gap-3 mb-4">
                                                         <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                                                            <FileText className="w-4 h-4 text-gray-800" />
+                                                            <FileText className="w-4 h-4 text-white" />
                                                         </div>
                                                         <div>
                                                             <h3 className="text-base font-bold text-slate-900">?? Informes del Experto</h3>
@@ -1512,7 +1451,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             <p className="text-red-600 text-xs mb-3">No se pudieron cargar los informes del experto</p>
                                                             <button 
                                                                 onClick={() => window.location.reload()} // ✅ Recargar página para obtener datos actualizados
-                                                                className="px-3 py-1.5 bg-red-600 text-gray-800 text-xs rounded-lg hover:bg-red-700 transition-colors"
+                                                                className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors"
                                                             >
                                                                 Reintentar
                                                             </button>
@@ -1552,7 +1491,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                                         href={deliverable.url} 
                                                                                         target="_blank" 
                                                                                         rel="noopener noreferrer" 
-                                                                                        className="w-full px-3 py-2 bg-blue-600 text-gray-800 text-xs rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                                                                                        className="w-full px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                                                                                     >
                                                                                         <FileText className="w-3 h-3" />
                                                                                         Ver Informe
@@ -1582,7 +1521,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         </div>
                                                     )}
 
-                                                    {isExpert && appointment?.status === 'appointment_awaiting_report' && (
+                                                    {isExpert && (
                                                         <div className="mt-4 pt-3 border-t border-blue-200">
                                                             <h4 className="font-semibold text-slate-900 text-sm mb-3 flex items-center gap-2">
                                                                 <Upload className="w-4 h-4 text-blue-600" />
@@ -1607,7 +1546,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                     onClick={handleUploadDeliverable}
                                                                     className={`w-full py-2.5 text-xs rounded-lg flex items-center justify-center gap-2 font-medium ${selectedDeliverableFiles.length === 0 || isUploadingDeliverable
                                                                         ? 'bg-slate-300 cursor-not-allowed text-slate-500'
-                                                                        : 'bg-blue-600 hover:bg-blue-700 text-gray-800'
+                                                                        : 'bg-blue-600 hover:bg-blue-700 text-white'
                                                                         }`}
                                                                     disabled={selectedDeliverableFiles.length === 0 || isUploadingDeliverable}
                                                                 >
@@ -1633,26 +1572,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             {needsAppointment && (
                                                 <div className="space-y-3">
                                                     {appointment ? ( // appointmentQuery.data - datos del hook optimizado
-                                                        <>
-                                                            {console.log('[SearchDetails] Appointment debug:', {
-                                                                appointmentStatus: appointment.status,
-                                                                isClient,
-                                                                isExpert,
-                                                                userId,
-                                                                clientId,
-                                                                expertId,
-                                                                userRole: isClient ? 'client' : (isExpert ? 'expert' : 'client'),
-                                                                appointmentId: appointment.id,
-                                                                proposedDate: appointment.proposedDate,
-                                                                proposedTime: appointment.proposedTime,
-                                                                shouldShowButtons: isExpert && appointment.status === 'appointment_proposed'
-                                                            })}
-                                                            <AppointmentStatus
-                                                                appointment={appointment} // appointmentQuery.data - datos del hook optimizado
-                                                                userRole={isClient ? 'client' : (isExpert ? 'expert' : 'client')}
-                                                                onAction={handleAppointmentAction}
-                                                            />
-                                                        </>
+                                                        <AppointmentStatus
+                                                            appointment={appointment} // appointmentQuery.data - datos del hook optimizado
+                                                            userRole={isClient ? 'client' : 'expert'}
+                                                            onAction={handleAppointmentAction}
+                                                        />
                                                     ) : search?.searchHire && isClient && canProposeAppointment() ? ( // search - datos del hook optimizado
                                                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                                             <div className="flex items-center space-x-3">
@@ -1668,7 +1592,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                         status: 'awaiting_appointment',
                                                                         amount: serviceInfo?.price || 0
                                                                     } as Appointment)}
-                                                                    className="bg-blue-600 text-gray-800 px-3 py-2 rounded-md hover:bg-blue-700 transition-colors text-xs"
+                                                                    className="bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors text-xs"
                                                                 >
                                                                     Proponer Cita
                                                                 </button>
@@ -1679,7 +1603,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             <div className="flex items-center space-x-3">
                                                                 <Calendar className="w-6 h-6 text-gray-600" />
                                                                 <div className="flex-1">
-                                                                    <h3 className="text-sm font-medium text-gray-800">Esperando propuesta de cita</h3>
+                                                                    <h3 className="text-sm font-medium text-white">Esperando propuesta de cita</h3>
                                                                     <p className="text-xs text-gray-600 mt-1">El cliente debe proponer una fecha y hora para la revision</p>
                                                                 </div>
                                                             </div>
@@ -1701,7 +1625,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     <MessageSquare className="w-4 h-4 text-gray-600" />
                                                 </div>
                                                 <div>
-                                                    <h2 className="text-xl font-bold text-gray-800">Conversaci�n</h2>
+                                                    <h2 className="text-xl font-bold text-white">Conversaci�n</h2>
                                                     <p className="text-slate-300 text-sm">
                                                         {expertInfo?.name || 'Experto'} // search - datos del hook optimizado
                                                     </p>
@@ -1712,11 +1636,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             {needsAppointment && (
                                                 <div className="flex items-center gap-3">
                                                     {appointment ? ( // appointmentQuery.data - datos del hook optimizado
-                                                        <div className="bg-green-500 text-gray-800 px-4 py-2 rounded-full shadow-lg">
+                                                        <div className="bg-green-500 text-white px-4 py-2 rounded-full shadow-lg">
                                                             <span className="text-sm font-semibold">? Cita Programada</span>
                                                         </div>
                                                     ) : (
-                                                        <div className="bg-gradient-to-r from-orange-500 to-red-500 text-gray-800 px-4 py-2 rounded-full shadow-lg">
+                                                        <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full shadow-lg">
                                                             <span className="text-sm font-semibold">? {timeRemaining}</span>
                                                         </div>
                                                     )}
@@ -1741,14 +1665,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                                     {/* Clean Appointment Action Bar */}
                                     {needsAppointment && !appointment && isClient && canProposeAppointment() && ( // appointmentQuery.data - datos del hook optimizado
-                                        <div className="bg-gray-600 text-gray-800 p-4">
+                                        <div className="bg-gray-600 text-white p-4">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
-                                                        <Calendar className="w-5 h-5 text-gray-800" />
+                                                        <Calendar className="w-5 h-5 text-white" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-semibold text-gray-800 text-lg">�Necesitas programar una cita?</h4>
+                                                        <h4 className="font-semibold text-white text-lg">�Necesitas programar una cita?</h4>
                                                         <p className="text-blue-100 text-sm">Este servicio requiere una cita para coordinar la revisi�n</p>
                                                     </div>
                                                 </div>
@@ -1803,7 +1727,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             }}
                                         />
                                         {false && ( // No hay múltiples imágenes en el DTO optimizado
-                                            <div className="absolute -bottom-1 -right-1 bg-black/75 text-gray-800 text-xs px-1 py-0.5 rounded text-[10px] leading-none">
+                                            <div className="absolute -bottom-1 -right-1 bg-black/75 text-white text-xs px-1 py-0.5 rounded text-[10px] leading-none">
                                                 +0
                                             </div>
                                         )}
@@ -1818,7 +1742,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 className="w-full h-full object-cover rounded-lg"
                                             />
                                         ) : (
-                                            <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                             </svg>
                                         )}
@@ -1859,10 +1783,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 <div>
                                     <p className="text-gray-500 mb-1">Solicitado por</p>
                                     <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-gray-800 text-xs font-medium">
+                                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-white text-xs font-medium">
                                             {user?.name?.charAt(0) || 'U'}
                                         </div>
-                                        <span className="font-medium text-gray-800">{user?.name || 'Usuario'}</span>
+                                        <span className="font-medium text-white">{user?.name || 'Usuario'}</span>
                                     </div>
                                 </div>
                                 <div>
@@ -1871,7 +1795,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                                         </svg>
-                                        <span className="font-medium text-gray-800">Mi proyecto</span>
+                                        <span className="font-medium text-white">Mi proyecto</span>
                                     </div>
                                 </div>
                             </div>
@@ -1879,7 +1803,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             <div className="grid grid-cols-2 gap-2 lg:gap-3 text-xs">
                                 <div>
                                     <p className="text-gray-500 mb-1">Categor�a</p>
-                                    <span className="font-medium text-gray-800">{categoryName}</span>
+                                    <span className="font-medium text-white">{categoryName}</span>
                                 </div>
                                 <div>
                                     <p className="text-gray-500 mb-1">Encargado a</p>
@@ -1896,11 +1820,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 }}
                                             />
                                         ) : null}
-                                        <div className={`w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-gray-800 text-sm font-medium ${(search?.searchHire?.expert?.profilePictureUrl) ? 'hidden' : ''}`}>
+                                        <div className={`w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white text-sm font-medium ${(search?.searchHire?.expert?.profilePictureUrl) ? 'hidden' : ''}`}>
                                             {(search?.searchHire?.expert?.name || 'E').charAt(0)}
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="font-medium text-gray-800">{search?.searchHire?.expert?.name || 'Experto'}</span>
+                                            <span className="font-medium text-white">{search?.searchHire?.expert?.name || 'Experto'}</span>
                                         </div>
                                     </div>
                             </div>
@@ -1909,7 +1833,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             <div className="grid grid-cols-2 gap-2 lg:gap-3 text-xs">
                                 <div>
                                     <p className="text-gray-500 mb-1">Fecha de creaci�n</p>
-                                    <span className="font-medium text-gray-800">
+                                    <span className="font-medium text-white">
                                         {search?.createdAt 
                                             ? new Date(search.createdAt).toLocaleDateString('es-ES', { 
                                                 day: 'numeric', 
@@ -1924,7 +1848,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </div>
                                 <div>
                                     <p className="text-gray-500 mb-1">Estado de la contrataci�n</p>
-                                    <span className="font-medium text-gray-800">
+                                    <span className="font-medium text-white">
                                         {search?.searchHire?.status 
                                             ? search.searchHire.status.charAt(0).toUpperCase() + search.searchHire.status.slice(1).replace('_', ' ')
                                             : 'No disponible'
@@ -1942,7 +1866,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         {(isAdmin || isExpert) && (
                             <button
                                 onClick={() => setModalState((prev) => ({ ...prev, showAddAdForm: true }))}
-                                className="w-full mt-4 lg:mt-6 bg-gradient-to-r from-gray-900 to-gray-800 text-gray-800 py-2.5 lg:py-3 rounded-lg lg:rounded-xl hover:from-gray-800 hover:to-gray-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl text-sm lg:text-base"
+                                className="w-full mt-4 lg:mt-6 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-2.5 lg:py-3 rounded-lg lg:rounded-xl hover:from-gray-800 hover:to-gray-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl text-sm lg:text-base"
                             >
                                 Order Again
                             </button>
@@ -1955,7 +1879,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             onClick={() => setShowTrackOrder(!showTrackOrder)}
                             className="flex items-center justify-between w-full text-left group"
                         >
-                            <h3 className="font-semibold text-gray-800 group-hover:text-gray-700 transition-colors">Seguimiento del Pedido</h3>
+                            <h3 className="font-semibold text-white group-hover:text-gray-700 transition-colors">Seguimiento del Pedido</h3>
                             <div className="p-1 rounded-full group-hover:bg-gray-100 transition-colors">
                                 {showTrackOrder ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
                             </div>
@@ -1966,7 +1890,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 {statusRoadmap.map((step, index) => (
                                     <div key={step.status} className="flex items-center gap-3">
                                         <div className={`w-2 h-2 rounded-full ${index <= currentStepIndex ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                                        <span className={`text-sm ${index <= currentStepIndex ? 'text-gray-800' : 'text-gray-500'}`}>
+                                        <span className={`text-sm ${index <= currentStepIndex ? 'text-white' : 'text-gray-500'}`}>
                                             {step.label}
                                         </span>
                                     </div>
@@ -2013,23 +1937,23 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     <div className="p-4">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                                <svg className="w-5 h-5 text-gray-800" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
                                 </svg>
                             </div>
                             <div>
-                                <p className="font-medium text-gray-800">�Necesitas ayuda con tu pedido?</p>
+                                <p className="font-medium text-white">�Necesitas ayuda con tu pedido?</p>
                                 <p className="text-sm text-gray-500">Estoy aqu� para ti.</p>
                             </div>
                         </div>
 
-                        <button className="w-full mb-6 bg-gray-600 text-gray-800 py-3 rounded-lg hover:bg-gray-700 flex items-center justify-center gap-2 font-medium transition-colors duration-200">
+                        <button className="w-full mb-6 bg-gray-600 text-white py-3 rounded-lg hover:bg-gray-700 flex items-center justify-center gap-2 font-medium transition-colors duration-200">
                             <MessageCircle className="w-4 h-4" />
                             Let's Chat
                         </button>
 
                         <div className="space-y-4">
-                            <h4 className="font-semibold text-gray-800">Soporte</h4>
+                            <h4 className="font-semibold text-white">Soporte</h4>
 
                             {isDisputed && (
                                 <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mb-4">
@@ -2051,7 +1975,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             </svg>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-gray-800">Fiverr Pro FAQs</p>
+                                            <p className="text-sm font-medium text-white">Fiverr Pro FAQs</p>
                                             <p className="text-xs text-gray-500">Encuentra respuestas necesarias.</p>
                                         </div>
                                     </div>
@@ -2066,7 +1990,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             </svg>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-gray-800">Resolution center</p>
+                                            <p className="text-sm font-medium text-white">Resolution center</p>
                                             <p className="text-xs text-gray-500">Resuelve problemas del pedido.</p>
                                         </div>
                                     </div>
@@ -2089,7 +2013,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             {isAdmin && search?.searchHire && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showFinalizeModal: true }))}
-                                    className="w-full mt-3 bg-orange-500 text-gray-800 py-3 rounded-lg hover:bg-orange-600 text-sm font-medium transition-colors duration-200"
+                                    className="w-full mt-3 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 text-sm font-medium transition-colors duration-200"
                                 >
                                     Finalizar B�squeda
                                 </button>
@@ -2098,7 +2022,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             {canReview && (
                                 <button
                                     onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                    className="w-full mt-3 bg-yellow-500 text-gray-800 py-3 rounded-lg hover:bg-yellow-600 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                                    className="w-full mt-3 bg-yellow-500 text-white py-3 rounded-lg hover:bg-yellow-600 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
                                 >
                                     <Star className="w-4 h-4" />
                                     Enviar Rese�a
@@ -2112,7 +2036,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             <div className="bg-gray-50 p-4 sm:p-6 border border-gray-200">
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-gray-800" />
+                                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                     </div>
                                     <div>
                                         <h3 className="text-base sm:text-lg font-bold text-slate-900">?? Informes del Experto</h3>
@@ -2134,7 +2058,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         <p className="text-red-600 text-sm mb-3">No se pudieron cargar los informes del experto</p>
                                         <button 
                                             onClick={() => window.location.reload()} // ✅ Recargar página para obtener datos actualizados
-                                            className="px-4 py-2 bg-red-600 text-gray-800 text-sm rounded-lg hover:bg-red-700 transition-colors"
+                                            className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
                                         >
                                             Reintentar
                                         </button>
@@ -2177,7 +2101,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                     href={deliverable.url} 
                                                                     target="_blank" 
                                                                     rel="noopener noreferrer" 
-                                                                    className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-blue-600 text-gray-800 text-xs sm:text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                                                                    className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                                                                 >
                                                                     <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
                                                                     <span className="hidden sm:inline">Ver Informe</span>
@@ -2208,7 +2132,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
                                 )}
 
-                                {isExpert && appointment?.status === 'appointment_awaiting_report' && (
+                                {isExpert && (
                                     <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-blue-200">
                                         <h4 className="font-semibold text-slate-900 text-sm sm:text-base mb-3 flex items-center gap-2">
                                             <Upload className="w-4 h-4 text-blue-600" />
@@ -2233,7 +2157,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 onClick={handleUploadDeliverable}
                                                 className={`w-full py-2.5 sm:py-3 text-xs sm:text-sm rounded-lg flex items-center justify-center gap-2 font-medium transition-colors duration-200 ${selectedDeliverableFiles.length === 0 || isUploadingDeliverable
                                                     ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                                                    : 'bg-gray-600 hover:bg-gray-700 text-gray-800'
+                                                    : 'bg-gray-600 hover:bg-gray-700 text-white'
                                                     }`}
                                                 disabled={selectedDeliverableFiles.length === 0 || isUploadingDeliverable}
                                             >
@@ -2262,14 +2186,23 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
             {/* Modals */}
             {/* Debug temporal - Informaci�n del servicio */}
-            {process.env.NODE_ENV === 'development' && serviceInfo && (
-                <div className="fixed top-16 right-2 z-50 bg-blue-100 border border-blue-300 rounded-lg p-2 text-xs max-w-xs lg:top-20 lg:right-4 lg:p-3">
-                    <h4 className="font-bold text-blue-800 mb-1 text-xs">Debug:</h4>
-                    <div className="space-y-0.5 text-blue-700 text-xs">
-                        <div className="font-semibold text-blue-800 text-xs">Servicio:</div>
-                        <div>ID: {serviceInfo?.serviceTypeId || 'N/A'}</div>
-                        {/* <div>ServiceTypeCategoryId: {serviceInfo?.serviceTypeCategoryId || 'N/A'}</div> */}
-                        {/* <div>ServiceTypeCategoryName: {serviceInfo?.serviceTypeCategoryName || 'N/A'}</div> */}
+            {/* ✅ Debug eliminado - ahora usa DebugOverlay component */}
+                {/* <div className="fixed top-16 right-2 z-50 bg-blue-100 border border-blue-300 rounded-lg p-2 text-xs max-w-xs lg:top-20 lg:right-4 lg:p-3"> */}
+                    <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-bold text-blue-800 text-xs">Debug:</h4>
+                        <button
+                            onClick={() => setShowDebugOverlay(!showDebugOverlay)}
+                            className="text-blue-600 hover:text-blue-800 text-xs font-bold"
+                        >
+                            {showDebugOverlay ? '−' : '+'}
+                        </button>
+                    </div>
+                    {showDebugOverlay && (
+                        <div className="space-y-0.5 text-blue-700 text-xs">
+                            <div className="font-semibold text-blue-800 text-xs">Servicio:</div>
+                            <div>ID: {serviceInfo?.serviceTypeId || 'N/A'}</div>
+                            {/* <div>ServiceTypeCategoryId: {serviceInfo?.serviceTypeCategoryId || 'N/A'}</div> */}
+                            {/* <div>ServiceTypeCategoryName: {serviceInfo?.serviceTypeCategoryName || 'N/A'}</div> */}
                         <div>RequiresAppointment: {serviceInfo?.requiresAppointment ? 'S�' : 'NO'}</div>
                         <div>ServicePrice: �{serviceInfo?.price || 'N/A'}</div>
                         <div className="border-t border-blue-300 pt-1 mt-1">
@@ -2287,7 +2220,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             console.log('Refreshing search data (optimized)...');
                             invalidateAll();
                         }}
-                        className="mt-1 w-full bg-blue-600 text-gray-800 px-1 py-0.5 rounded text-xs hover:bg-blue-700"
+                        className="mt-1 w-full bg-blue-600 text-white px-1 py-0.5 rounded text-xs hover:bg-blue-700"
                     >
                         Refresh
                     </button>
@@ -2299,9 +2232,31 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         <div>Reseña: {hasReviewed ? 'Sí' : 'No'}</div>
                         {review && <div>Score: {review.score}/5</div>}
                     </div>
+                    )}
                 </div>
             )}
 
+            {/* ✅ Botón flotante para mostrar debug cuando esté oculto */}
+            {process.env.NODE_ENV === 'development' && serviceInfo && !showDebugOverlay && (
+                <button
+                    onClick={() => setShowDebugOverlay(true)}
+                    className="fixed top-16 right-2 z-50 bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold hover:bg-blue-700 transition-colors lg:top-20 lg:right-4"
+                    title="Mostrar Debug"
+                >
+                    D
+                </button>
+            )} */}
+
+            {/* ✅ Debug overlay con toggle */}
+            <DebugOverlay
+                showDebugOverlay={showDebugOverlay}
+                setShowDebugOverlay={setShowDebugOverlay}
+                serviceInfo={serviceInfo}
+                search={search}
+                hasReviewed={hasReviewed}
+                review={review}
+                invalidateAll={invalidateAll}
+            />
 
             {/* Modal para proponer cita */}
             {showAppointmentForm && appointmentData && (
@@ -2345,7 +2300,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </svg>
                         </button>
                         
-                        <h3 className="text-xl font-semibold text-gray-800 mb-6">
+                        <h3 className="text-xl font-semibold text-white mb-6">
                             Informaci�n de Distribuci�n de Dinero
                         </h3>
 
@@ -2375,7 +2330,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         setShowMoneyDistribution(false);
                                         setShowRejectModal(true);
                                     }}
-                                    className="px-4 py-2 bg-red-600 text-gray-800 rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
+                                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
                                 >
                                     Continuar con Rechazo
                                 </button>
@@ -2411,7 +2366,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             }
                                         }
                                     }}
-                                    className="px-4 py-2 bg-orange-600 text-gray-800 rounded-md hover:bg-orange-700 transition-colors text-sm font-medium"
+                                    className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors text-sm font-medium"
                                 >
                                     Continuar con Cancelaci�n
                                 </button>
@@ -2511,7 +2466,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         <MessageCircle className="w-6 h-6 text-blue-600" />
                                     </div>
                                     <div>
-                                        <h2 className="text-xl font-semibold text-gray-800">Responder a la Disputa</h2>
+                                        <h2 className="text-xl font-semibold text-white">Responder a la Disputa</h2>
                                         <p className="text-sm text-gray-600">Proporciona tu versi�n de los hechos</p>
                                     </div>
                                 </div>
@@ -2533,7 +2488,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             <div className="lg:w-1/2 p-6 border-r border-gray-200 overflow-y-auto">
                                 <div className="space-y-6">
                                     <div>
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                                             <AlertTriangle className="w-5 h-5 text-red-500" />
                                             Disputa del Cliente
                                         </h3>
@@ -2570,7 +2525,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             <div className="grid grid-cols-2 gap-4 text-sm">
                                                 <div>
                                                     <span className="text-gray-500">Fecha de disputa:</span>
-                                                    <p className="font-medium text-gray-800">
+                                                    <p className="font-medium text-white">
                                                         {disputes[0]?.createdAt ? new Date(disputes[0].createdAt).toLocaleDateString('es-ES') : 'N/A'}
                                                     </p>
                                                 </div>
@@ -2588,7 +2543,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             <div className="lg:w-1/2 p-6 overflow-y-auto">
                                 <div className="space-y-4">
                                     <div>
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                                             <MessageCircle className="w-5 h-5 text-green-500" />
                                             Tu Respuesta
                                         </h3>
@@ -2737,7 +2692,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 <button
                                     onClick={handleExpertResponseSubmit}
                                     disabled={!expertResponseText.trim() || expertResponse.isPending}
-                                    className="px-4 py-2 bg-blue-600 text-gray-800 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center gap-2"
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center gap-2"
                                 >
                                     {expertResponse.isPending ? (
                                         <>

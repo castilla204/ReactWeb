@@ -875,12 +875,17 @@ export function ReportModal({ isOpen, onClose, appointment, onSuccess, setNotifi
         }
 
         try {
-            await submitExpertReport(appointment.id, '');
+            const result = await submitExpertReport(appointment.id, '');
+            console.log('📊 Reporte enviado, resultado:', result);
+            console.log('📊 Estado después del reporte:', result.status);
+            
             setNotifications(prev => [...prev, {
                 id: Math.random().toString(36).substring(2, 9),
                 type: 'success',
                 message: 'Reporte enviado exitosamente'
             }]);
+            
+            // Llamar onSuccess antes de cerrar para que se actualice la UI
             onSuccess();
             onClose();
         } catch (error: any) {

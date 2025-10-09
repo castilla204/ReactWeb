@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getAuthToken } from '../lib/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { UpdateExpertProfileResponse } from '../types/stripe';
+import { API_CONFIG } from '../config/api';
 
 interface UpdateExpertProfileData {
     description: string;
@@ -40,7 +41,7 @@ export function useExpertProfile() {
                 hasProfilePicture: !!data.profilePicture
             });
 
-            const response = await fetch('/api/User/expert-profile', {
+            const response = await fetch(`${API_CONFIG.baseUrl}/api/User/expert-profile`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

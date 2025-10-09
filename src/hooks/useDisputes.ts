@@ -18,6 +18,12 @@ export const useDisputes = () => {
   // Hook para crear una disputa (usuarios normales)
   const createDispute = useMutation({
     mutationFn: async (data: CreateDisputeDto): Promise<CreateDisputeResponse> => {
+      console.log('🔍 [useDisputes] Creating dispute with data:', {
+        searchHireId: data.searchHireId,
+        reason: data.reason,
+        filesCount: data.files?.length || 0
+      });
+      
       const formData = new FormData();
       
       // Agregar campos obligatorios
@@ -27,9 +33,26 @@ export const useDisputes = () => {
       // Agregar archivos si existen
       if (data.files && data.files.length > 0) {
         data.files.forEach((file, index) => {
+          console.log(`🔍 [useDisputes] Adding file ${index}:`, {
+            name: file.name,
+            size: file.size,
+            type: file.type
+          });
           formData.append('Files', file);
         });
       }
+      
+      // Debug FormData contents
+      console.log('🔍 [useDisputes] FormData contents:');
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`🔍 FormData ${key} = ${value.name}, ${value.size} bytes, ${value.type}`);
+        } else {
+          console.log(`🔍 FormData ${key} = ${value}`);
+        }
+      }
+      
+      console.log('🔍 [useDisputes] Making request to:', API_CONFIG.endpoints.dispute.create);
       
       return fetchApi<CreateDisputeResponse>(API_CONFIG.endpoints.dispute.create, {
         method: 'POST',

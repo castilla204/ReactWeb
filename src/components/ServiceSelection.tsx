@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Clock, Star, CheckCircle, User, StarHalf, X, MapPin, DollarSign, Eye, Search, FileText, Video, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, Clock, Star, CheckCircle, User, StarHalf, X, MapPin, DollarSign, Eye, Search, FileText, Video, XCircle } from 'lucide-react';
 import { GoogleMap, useLoadScript, Circle } from '@react-google-maps/api';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServices } from '../hooks/useServices';
 import { useServiceTypes } from '../hooks/useServiceTypes';
+import { EnhancedReviewsList } from './EnhancedReviewCard';
 
 const libraries: ("geometry" | "places")[] = ['geometry', 'places'];
 
@@ -1132,53 +1133,13 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
 
                             {/* Reviews Section */}
                         <div className="mb-6">
-                                <h4 className="text-sm font-medium text-gray-600 mb-3 uppercase tracking-wide">
-                                    Reseñas
-                                    {(detailService.expert?.reviews?.length || 0) > 0 && (
-                                        <span className="text-xs font-normal text-gray-500 ml-1">
-                                            ({detailService.expert?.reviews?.length || 0})
-                                        </span>
-                                    )}
-                                </h4>
-                            {detailService.expert?.reviews && detailService.expert.reviews.length > 0 ? (
-                                <div className="space-y-3">
-                                        {detailService.expert.reviews.slice(0, 2).map((review) => (
-                                            <div key={review.id} className="bg-white border border-gray-200 rounded p-4">
-                                                <div className="flex items-start justify-between mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-                                                            <User className="w-4 h-4 text-blue-600" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm font-medium text-gray-900">Cliente verificado</p>
-                                                            <div className="flex items-center gap-1">
-                                                                <div className="flex scale-75">{renderStars(review.score)}</div>
-                                                                <span className="text-xs font-medium text-gray-900">{review.score.toFixed(1)}</span>
-                                                            </div>
-                                    </div>
-                                            </div>
-                                                    <span className="text-xs text-gray-500">
-                                                {new Date(review.createdAt).toLocaleDateString('es-ES')}
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm text-gray-700 leading-relaxed">{review.description}</p>
-                                        </div>
-                                    ))}
-                                        {(detailService.expert?.reviews?.length || 0) > 3 && (
-                                            <div className="text-center">
-                                                <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                                                    Ver todas las reseñas ({detailService.expert?.reviews?.length || 0})
-                                                </button>
-                                        </div>
-                                        )}
-                                </div>
-                            ) : (
-                                    <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
-                                        <Star className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                                        <p className="text-gray-500 font-medium">Sin reseñas aún</p>
-                                        <p className="text-gray-400 text-sm mt-1">Este experto está disponible para recibir su primera valoración</p>
-                                    </div>
-                            )}
+                            <EnhancedReviewsList 
+                                reviews={detailService.expert?.reviews || []}
+                                showReviewerInfo={true}
+                                showImages={true}
+                                maxImages={3}
+                                maxReviews={3}
+                            />
                         </div>
 
                                                                                                             {/* Action Buttons */}
