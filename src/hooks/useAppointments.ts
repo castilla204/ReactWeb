@@ -293,10 +293,16 @@ export const useAppointmentLock = (appointment: Appointment | null) => {
     }
 
     const checkLockStatus = () => {
-      const appointmentDateTime = new Date(`${appointment.proposedDate}T${appointment.proposedTime}`);
-      const twelveHoursBefore = new Date(appointmentDateTime.getTime() - 12 * 60 * 60 * 1000);
-      
-      setIsLocked(new Date() >= twelveHoursBefore);
+      // Solo bloquear si la cita está confirmada y es menos de 12 horas antes
+      if (appointment.status === 'appointment_confirmed') {
+        const appointmentDateTime = new Date(`${appointment.proposedDate}T${appointment.proposedTime}`);
+        const twelveHoursBefore = new Date(appointmentDateTime.getTime() - 12 * 60 * 60 * 1000);
+        
+        setIsLocked(new Date() >= twelveHoursBefore);
+      } else {
+        // Para citas propuestas, no bloquear nunca
+        setIsLocked(false);
+      }
     };
     
     checkLockStatus();
@@ -401,6 +407,10 @@ export const calculateMoneyDistribution = (appointment: Appointment | null): Mon
         expert: 0, 
         platform: amount * 0.02 
       };
+    
+    case "awaiting_client_decision":
+      // No mostrar distribución de dinero mientras el cliente decide
+      return { client: 0, expert: 0, platform: 0 };
     
     default:
       return { client: 0, expert: 0, platform: 0 };

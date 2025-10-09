@@ -25,18 +25,15 @@ export interface MoneyDistributionConfigDto {
   clientPercentage: number;
   expertPercentage: number;
   platformPercentage: number;
-  searchHireId?: number;
-  categoryId?: number;
-  serviceTypeCategoryId?: number;
+  source: string;
+  status: string;
 }
 
 export interface DeliverableDto {
   id: number;
-  url: string;
-  type: string;
-  fileName: string;
-  uploadedAt: string;
-  searchHireId: number;
+  type: string;                    // "pdf", "image", etc.
+  url: string;                     // URL del archivo
+  createdAt: string;
 }
 
 export interface MessageDto {
@@ -59,34 +56,111 @@ export interface ConversationDto {
 
 export interface DisputeDto {
   id: number;
+  searchHireId: number;
+  reporterId: number;
   status: string;
   reason: string;
-  searchHireId: number;
+  expertResponse: string | null;
   createdAt: string;
-  resolvedAt?: string;
-  expertResponse?: string;
-  resolutionComments?: string;
-  files?: string[];
-  expertResponseFiles?: string[];
-  expertResponseAt?: string;
-  client?: UserDto;
-  expert?: UserDto;
-  searchHire?: any; // Added for compatibility
 }
 
-// ✅ DTO PRINCIPAL - Datos esenciales
+// ✅ DTO PRINCIPAL - Datos esenciales (ACTUALIZADO CON NUEVA ESTRUCTURA)
 export interface SearchDetailsCompleteDto {
-  search: SearchItem;
-  moneyDistribution?: MoneyDistributionConfigDto;
-}
-
-// ✅ DTO ADICIONAL - Datos opcionales
-export interface SearchDetailsAdditionalDto {
-  conversations: ConversationDto[];
-  appointment?: Appointment;
+  search: SearchListDto;
+  moneyDistribution: MoneyDistributionConfigDto | null;
+  category: CategoryDto | null;
+  review: ReviewDto | null;
+  appointment: AppointmentDto | null;
   deliverables: DeliverableDto[];
   disputes: DisputeDto[];
 }
+
+// ✅ NUEVOS DTOs SEGÚN BACKEND ACTUALIZADO
+export interface SearchListDto {
+  id: number;
+  userId: number;
+  title: string;
+  description: string;
+  frequency: string;
+  isActive: boolean;
+  isRevised: boolean;
+  createdAt: string;
+  user: UserDto;
+  searchHire: SearchHireDto | null;
+}
+
+export interface SearchHireDto {
+  id: number;
+  status: string;
+  createdAt: string;
+  expert: UserDto | null;
+  service: ServiceInfo | null;
+}
+
+export interface CategoryDto {
+  id: number;
+  name: string;
+  parentId: number | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewDto {
+  id: number;
+  score: number;
+  description: string;
+  createdAt: string;
+  reviewer: UserDto;
+  imageUrls: string[];
+}
+
+export interface AppointmentDto {
+  id: number;
+  searchHireId: number;
+  status: string;
+  proposedDate: string;
+  proposedTime: string;
+  location: string;
+  latitude: number | null;
+  longitude: number | null;
+  doorNumber: string | null;
+  ownerPhone: string | null;
+  siteDetails: string | null;
+  disputeReason: string | null;
+  completedAt: string | null;
+  completedBy: number | null;
+  rejectionCount: number;
+  cancellationCount: number;
+  lastRejectionAt: string | null;
+  lastProposalAt: string | null;
+  lastResponseAt: string | null;
+  isLocked: boolean;
+  createdAt: string;
+  updatedAt: string;
+  clientName: string | null;
+  expertName: string | null;
+  amount: number;
+  timers: AppointmentTimerDto[];
+}
+
+export interface AppointmentTimerDto {
+  id: number;
+  appointmentId: number;
+  timerType: string;
+  startTime: string;
+  endTime: string | null;
+  isExpired: boolean;
+  expiredAt: string | null;
+}
+
+// ✅ DTO ADICIONAL - Datos opcionales (OBSOLETO - TODO INCLUIDO EN details-complete)
+// export interface SearchDetailsAdditionalDto {
+//   conversations: ConversationDto[];
+//   appointment?: Appointment;
+//   deliverables: DeliverableDto[];
+//   disputes: DisputeDto[];
+// }
 
 // ✅ DTO UNIFICADO - Todo junto
 export interface SearchDetailsOptimizedDto {
@@ -110,22 +184,25 @@ export interface UseSearchDetailsCompleteReturn {
   refetch: () => void;
 }
 
-export interface UseSearchDetailsAdditionalReturn {
-  data: SearchDetailsAdditionalDto | undefined;
-  isLoading: boolean;
-  isError: boolean;
-  error: Error | null;
-  refetch: () => void;
-}
+// ✅ TIPO OBSOLETO - UseSearchDetailsAdditionalReturn eliminado
+// export interface UseSearchDetailsAdditionalReturn {
+//   data: SearchDetailsAdditionalDto | undefined;
+//   isLoading: boolean;
+//   isError: boolean;
+//   error: Error | null;
+//   refetch: () => void;
+// }
 
 export interface UseSearchDetailsOptimizedReturn {
   // Datos principales
-  search: SearchItem | undefined;
+  search: SearchListDto | undefined;
   moneyDistribution: MoneyDistributionConfigDto | undefined;
+  category: CategoryDto | undefined; // ✅ NUEVO: Categoría incluida
+  review: ReviewDto | undefined; // ✅ NUEVO: Review incluida
   
   // Datos adicionales
   conversations: ConversationDto[];
-  appointment: Appointment | undefined;
+  appointment: AppointmentDto | undefined;
   deliverables: DeliverableDto[];
   disputes: DisputeDto[];
   

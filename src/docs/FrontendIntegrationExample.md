@@ -337,3 +337,5 @@ interface EnhancedReviewsListProps {
 ---
 
 **Nota:** Estos componentes están diseñados para ser compatibles con la estructura existente y pueden integrarse gradualmente sin romper la funcionalidad actual.
+
+

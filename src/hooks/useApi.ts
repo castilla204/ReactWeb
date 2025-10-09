@@ -12,13 +12,14 @@ export const useApi = () => {
         let responseText = '';
 
         // Log API calls for debugging
-        if (endpoint.includes('GetServiceByHireId')) {
+        if (endpoint.includes('GetServiceByHireId') || endpoint.includes('dispute-service')) {
             console.log('[useApi] Making API call:', {
                 endpoint,
                 fullUrl: url,
                 method: fetchConfig.method || 'GET',
                 requiresAuth,
-                hasToken: !!getAuthToken()
+                hasToken: !!getAuthToken(),
+                token: getAuthToken()?.substring(0, 20) + '...'
             });
         }
 
@@ -41,7 +42,7 @@ export const useApi = () => {
             responseText = await response.text();
 
             // Log response for debugging GetServiceByHireId calls
-            if (endpoint.includes('GetServiceByHireId')) {
+            if (endpoint.includes('GetServiceByHireId') || endpoint.includes('dispute-service')) {
                 console.log('[useApi] Response:', {
                     status: response.status,
                     statusText: response.statusText,

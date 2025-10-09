@@ -38,18 +38,20 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const validateForm = (): boolean => {
     const newErrors: string[] = [];
     
-    // Validar fecha (mínimo 12h en el futuro)
+    // Validar fecha (mínimo 24h en el futuro)
     if (formData.proposedDate && formData.proposedTime) {
       const appointmentDateTime = new Date(`${formData.proposedDate}T${formData.proposedTime}`);
-      const twelveHoursFromNow = new Date(Date.now() + 12 * 60 * 60 * 1000);
-      
-      if (appointmentDateTime <= twelveHoursFromNow) {
-        newErrors.push('La cita debe ser al menos 12 horas en el futuro');
-      }
+      const now = new Date();
+      const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
       
       // Validar que la fecha no sea en el pasado
-      if (appointmentDateTime <= new Date()) {
-        newErrors.push('La fecha no puede ser en el pasado');
+      if (appointmentDateTime <= now) {
+        newErrors.push('La fecha y hora no pueden ser en el pasado');
+      }
+      // Validar que sea al menos 24 horas en el futuro
+      else if (appointmentDateTime <= twentyFourHoursFromNow) {
+        const hoursRemaining = Math.ceil((twentyFourHoursFromNow.getTime() - now.getTime()) / (1000 * 60 * 60));
+        newErrors.push(`La cita debe ser al menos 24 horas en el futuro (faltan ${hoursRemaining} horas)`);
       }
     }
     
@@ -80,19 +82,46 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, proposedDate: e.target.value });
-    // Limpiar errores cuando el usuario empiece a escribir
-    if (errors.length > 0) {
+    const newFormData = { ...formData, proposedDate: e.target.value };
+    setFormData(newFormData);
+    
+    // Validar en tiempo real si tenemos fecha y hora
+    if (newFormData.proposedDate && newFormData.proposedTime) {
+      validateDateTime(newFormData.proposedDate, newFormData.proposedTime);
+    } else {
+      // Limpiar errores si no tenemos ambos campos
       setErrors([]);
     }
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, proposedTime: e.target.value + ':00' });
-    // Limpiar errores cuando el usuario empiece a escribir
-    if (errors.length > 0) {
+    const newFormData = { ...formData, proposedTime: e.target.value + ':00' };
+    setFormData(newFormData);
+    
+    // Validar en tiempo real si tenemos fecha y hora
+    if (newFormData.proposedDate && newFormData.proposedTime) {
+      validateDateTime(newFormData.proposedDate, newFormData.proposedTime);
+    } else {
+      // Limpiar errores si no tenemos ambos campos
       setErrors([]);
     }
+  };
+
+  const validateDateTime = (date: string, time: string) => {
+    const appointmentDateTime = new Date(`${date}T${time}`);
+    const now = new Date();
+    const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    
+    const newErrors: string[] = [];
+    
+    if (appointmentDateTime <= now) {
+      newErrors.push('La fecha y hora no pueden ser en el pasado');
+    } else if (appointmentDateTime <= twentyFourHoursFromNow) {
+      const hoursRemaining = Math.ceil((twentyFourHoursFromNow.getTime() - now.getTime()) / (1000 * 60 * 60));
+      newErrors.push(`La cita debe ser al menos 24 horas en el futuro (faltan ${hoursRemaining} horas)`);
+    }
+    
+    setErrors(newErrors);
   };
 
 
@@ -276,7 +305,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             <div className="text-sm text-blue-800">
               <p className="font-medium mb-1">Información importante:</p>
               <ul className="text-xs space-y-1">
-                <li>• La cita debe ser al menos 12 horas en el futuro</li>
+                <li>• La cita debe ser al menos 24 horas en el futuro</li>
                 <li>• El experto tendrá 48 horas para confirmar o rechazar</li>
                 <li>• Una vez confirmada, no se podrán hacer cambios 12h antes</li>
               </ul>

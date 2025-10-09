@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { setAuthToken } from '../lib/auth';
 import { BecomeExpertResponse } from '../types/stripe';
+import { API_CONFIG } from '../config/api';
 
 interface FormData {
     description: string;
@@ -118,7 +119,7 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 longitude: formData.longitude
             });
 
-            const response = await fetch('/api/User/become-expert', {
+            const response = await fetch(`${API_CONFIG.baseUrl}/api/User/become-expert`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`

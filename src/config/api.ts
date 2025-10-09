@@ -25,9 +25,8 @@ export const API_CONFIG = {
             update: (id: number) => `${API_PATH}/Search/${id}`,
             toggleActive: (id: number) => `${API_PATH}/Search/${id}/toggle-active`,
             revise: (id: number) => `${API_PATH}/Search/${id}/revise`,
-            // ✅ NUEVOS ENDPOINTS OPTIMIZADOS
+            // ✅ ENDPOINT OPTIMIZADO (details-additional eliminado)
             detailsComplete: (id: number) => `${API_PATH}/Search/${id}/details-complete`,
-            detailsAdditional: (id: number) => `${API_PATH}/Search/${id}/details-additional`,
         },
         searchParameters: {
             create: (searchId: number) => `${API_PATH}/SearchParameter/${searchId}`,
