@@ -521,8 +521,14 @@ export const useChat = (
         onSuccess: (deliverable) => {
             console.log('[10:45 CEST] Deliverable uploaded successfully:', deliverable);
             console.log('[10:45 CEST] Updating deliverables cache with URLs:', deliverable.deliverableUrls);
-            queryClient.setQueryData(['deliverables', conversation?.searchHireId, API_CONFIG.endpoints.chat.deliverable], deliverable);
+            
+            // Invalidar múltiples queries relacionadas para asegurar que se actualice la UI
             queryClient.invalidateQueries({ queryKey: ['deliverables', conversation?.searchHireId] });
+            queryClient.invalidateQueries({ queryKey: ['searchDetails', searchId] });
+            queryClient.invalidateQueries({ queryKey: ['searchDetailsOptimized', searchId] });
+            
+            // Actualizar el cache directamente para respuesta inmediata
+            queryClient.setQueryData(['deliverables', conversation?.searchHireId, API_CONFIG.endpoints.chat.deliverable], deliverable);
             lastDeliverableFetch.current = Date.now();
             setNotifications((prev) => [
                 ...prev,

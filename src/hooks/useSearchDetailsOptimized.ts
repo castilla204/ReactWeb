@@ -1,9 +1,8 @@
-// ✅ HOOK UNIFICADO OPTIMIZADO PARA SEARCHDETAILS
+// ✅ HOOK UNIFICADO OPTIMIZADO PARA SEARCHDETAILS (ACTUALIZADO)
 
-import React from 'react';
+// import React from 'react'; // ❌ YA NO NECESARIO
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchDetailsComplete } from './useSearchDetailsComplete';
-import { useSearchDetailsAdditional } from './useSearchDetailsAdditional';
 import { 
   UseSearchDetailsOptimizedReturn,
   UseSearchDetailsOptions 
@@ -11,7 +10,7 @@ import {
 
 /**
  * Hook unificado optimizado para SearchDetails
- * Combina datos principales y adicionales en una sola interfaz
+ * Ahora usa solo useSearchDetailsComplete que incluye TODA la información
  * 
  * @param searchId - ID de la búsqueda
  * @param options - Opciones de configuración del hook
@@ -23,39 +22,36 @@ export const useSearchDetailsOptimized = (
 ): UseSearchDetailsOptimizedReturn => {
   const queryClient = useQueryClient();
   
-  // ✅ Cargar datos principales inmediatamente
+  // ✅ Una sola llamada que incluye TODO
   const searchDetailsQuery = useSearchDetailsComplete(searchId, options);
-  
-  // ✅ Cargar datos adicionales en paralelo
-  const additionalDataQuery = useSearchDetailsAdditional(searchId, options);
   
   // ✅ Función para invalidar todas las queries relacionadas
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete', searchId] });
-    queryClient.invalidateQueries({ queryKey: ['searchDetailsAdditional', searchId] });
   };
   
-  // ✅ Función para refetch todas las queries
+  // ✅ Función para refetch
   const refetch = () => {
     searchDetailsQuery.refetch();
-    additionalDataQuery.refetch();
   };
   
   return {
     // Datos principales
     search: searchDetailsQuery.data?.search,
-    moneyDistribution: searchDetailsQuery.data?.moneyDistribution,
+    moneyDistribution: searchDetailsQuery.data?.moneyDistribution || undefined,
+    category: searchDetailsQuery.data?.category || undefined, // ✅ NUEVO: Categoría incluida
+    review: searchDetailsQuery.data?.review || undefined, // ✅ NUEVO: Review incluida
     
-    // Datos adicionales
-    conversations: additionalDataQuery.data?.conversations || [],
-    appointment: additionalDataQuery.data?.appointment,
-    deliverables: additionalDataQuery.data?.deliverables || [],
-    disputes: additionalDataQuery.data?.disputes || [],
+    // Datos adicionales (ahora incluidos en la misma respuesta)
+    conversations: [], // Las conversaciones siguen siendo un endpoint separado
+    appointment: searchDetailsQuery.data?.appointment || undefined,
+    deliverables: searchDetailsQuery.data?.deliverables || [],
+    disputes: searchDetailsQuery.data?.disputes || [],
     
     // Estados de carga
-    isLoading: searchDetailsQuery.isLoading || additionalDataQuery.isLoading,
-    isError: searchDetailsQuery.isError || additionalDataQuery.isError,
-    error: searchDetailsQuery.error || additionalDataQuery.error,
+    isLoading: searchDetailsQuery.isLoading,
+    isError: searchDetailsQuery.isError,
+    error: searchDetailsQuery.error,
     
     // Funciones de invalidación
     invalidateAll,
@@ -64,93 +60,62 @@ export const useSearchDetailsOptimized = (
 };
 
 /**
- * Hook con lazy loading para tabs
- * Carga datos adicionales solo cuando se necesitan
+ * Hook con lazy loading para tabs (SIMPLIFICADO)
+ * Ahora todos los datos vienen en una sola llamada
  */
 export const useSearchDetailsWithLazyLoading = (
   searchId: number,
   activeTab: 'details' | 'chat' | 'disputes' | 'appointment' = 'details'
 ) => {
-  // ✅ Siempre cargar datos principales
+  // ✅ Una sola llamada que incluye TODO
   const searchDetailsQuery = useSearchDetailsComplete(searchId);
-  
-  // ✅ Cargar datos adicionales solo cuando no esté en 'details'
-  const additionalDataQuery = useSearchDetailsAdditional(searchId, {
-    enabled: activeTab !== 'details'
-  });
-  
-  // ✅ Cargar conversación completa solo cuando se abra el chat
-  const fullConversationQuery = useSearchDetailsAdditional(searchId, {
-    enabled: activeTab === 'chat' && !!additionalDataQuery.data?.conversations?.length
-  });
   
   return {
     // Datos principales (siempre disponibles)
     search: searchDetailsQuery.data?.search,
     moneyDistribution: searchDetailsQuery.data?.moneyDistribution,
     
-    // Datos adicionales (cargados bajo demanda)
-    conversations: additionalDataQuery.data?.conversations || [],
-    appointment: additionalDataQuery.data?.appointment,
-    deliverables: additionalDataQuery.data?.deliverables || [],
-    disputes: additionalDataQuery.data?.disputes || [],
+    // Datos adicionales (ahora incluidos en la misma respuesta)
+    conversations: [], // Las conversaciones siguen siendo un endpoint separado
+    appointment: searchDetailsQuery.data?.appointment || undefined,
+    deliverables: searchDetailsQuery.data?.deliverables || [],
+    disputes: searchDetailsQuery.data?.disputes || [],
     
-    // Conversación completa (solo para chat)
-    fullConversation: fullConversationQuery.data?.conversations || [],
+    // Conversación completa (solo para chat - endpoint separado)
+    fullConversation: [],
     
     // Estados de carga
     isLoadingMain: searchDetailsQuery.isLoading,
-    isLoadingAdditional: additionalDataQuery.isLoading,
-    isLoadingFullConversation: fullConversationQuery.isLoading,
+    isLoadingAdditional: false, // Ya no hay carga adicional
+    isLoadingFullConversation: false, // Se maneja por separado
     
     // Estados de error
-    isError: searchDetailsQuery.isError || additionalDataQuery.isError,
-    error: searchDetailsQuery.error || additionalDataQuery.error,
+    isError: searchDetailsQuery.isError,
+    error: searchDetailsQuery.error,
     
     // Funciones
     refetch: () => {
       searchDetailsQuery.refetch();
-      additionalDataQuery.refetch();
-      fullConversationQuery.refetch();
     }
   };
 };
 
 /**
- * Hook para prefetch de datos relacionados
- * Útil para precargar datos que probablemente se necesitarán
+ * Hook para prefetch de datos relacionados (SIMPLIFICADO)
+ * Ya no es necesario prefetch porque todo viene en una sola llamada
  */
 export const useSearchDetailsWithPrefetch = (searchId: number) => {
-  const queryClient = useQueryClient();
-  
-  // ✅ Query principal
+  // ✅ Una sola llamada que incluye TODO
   const searchDetailsQuery = useSearchDetailsComplete(searchId);
-  
-  // ✅ Prefetch datos adicionales cuando estén disponibles
-  const prefetchAdditionalData = () => {
-    if (searchDetailsQuery.data?.search?.searchHire?.id) {
-      queryClient.prefetchQuery({
-        queryKey: ['searchDetailsAdditional', searchId],
-        queryFn: async () => {
-          const { fetchApi } = await import('./useApi');
-          const { API_CONFIG } = await import('../config/api');
-          return fetchApi(API_CONFIG.endpoints.search.detailsAdditional(searchId));
-        },
-        staleTime: 30000,
-      });
-    }
-  };
-  
-  // ✅ Ejecutar prefetch cuando cambien los datos principales
-  React.useEffect(() => {
-    if (searchDetailsQuery.data) {
-      prefetchAdditionalData();
-    }
-  }, [searchDetailsQuery.data]);
   
   return {
     search: searchDetailsQuery.data?.search,
     moneyDistribution: searchDetailsQuery.data?.moneyDistribution,
+    category: searchDetailsQuery.data?.category,
+    review: searchDetailsQuery.data?.review,
+    appointment: searchDetailsQuery.data?.appointment || undefined,
+    deliverables: searchDetailsQuery.data?.deliverables || [],
+    disputes: searchDetailsQuery.data?.disputes || [],
     isLoading: searchDetailsQuery.isLoading,
     isError: searchDetailsQuery.isError,
     error: searchDetailsQuery.error,

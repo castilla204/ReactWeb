@@ -5,6 +5,7 @@ import { useStatusMappings } from '../hooks/useStatusMappings';
 import { ConfigFormData } from '../types/admin';
 import PriorityInfo from './PriorityInfo';
 import PriorityBadge from './PriorityBadge';
+import { API_CONFIG } from '../config/api';
 
 const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'status' | 'category' | 'granular' | 'query' | 'mappings'>('status');
@@ -56,9 +57,9 @@ const AdminPanel: React.FC = () => {
         
         // Hacer los 3 GETs en paralelo
         const [statusesRes, categoriesRes, serviceTypesRes] = await Promise.all([
-          fetch('/api/AppointmentConfig/appointment-status'),
-          fetch('/api/AppointmentConfig/categories'),
-          fetch('/api/AppointmentConfig/service-types')
+          fetch(`${API_CONFIG.baseUrl}/api/AppointmentConfig/appointment-status`),
+          fetch(`${API_CONFIG.baseUrl}/api/AppointmentConfig/categories`),
+          fetch(`${API_CONFIG.baseUrl}/api/AppointmentConfig/service-types`)
         ]);
 
         // Verificar que las respuestas sean exitosas

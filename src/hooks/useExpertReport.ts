@@ -52,13 +52,27 @@ export const useExpertReport = () => {
       );
       
       console.log('✅ Reporte enviado exitosamente:', response);
+      console.log('📊 Estado de la cita después del reporte:', {
+        appointmentId: response.id,
+        status: response.status,
+        searchHireId: response.searchHireId
+      });
       return response;
     },
-    onSuccess: () => {
-      // Invalidar queries relacionadas
+    onSuccess: (data) => {
+      console.log('✅ Reporte enviado exitosamente, invalidando cache:', data);
+      
+      // Invalidar queries relacionadas para asegurar que se actualice el estado correctamente
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointment'] });
       queryClient.invalidateQueries({ queryKey: ['searches'] });
+      queryClient.invalidateQueries({ queryKey: ['searchDetails'] });
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsOptimized'] });
+      
+      // Actualizar el cache directamente con el nuevo estado
+      if (data && data.id) {
+        queryClient.setQueryData(['appointment', data.id], data);
+      }
     },
     onError: (error: any) => {
       console.error('❌ Error al enviar reporte:', error);

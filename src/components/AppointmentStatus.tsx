@@ -25,6 +25,16 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
   const { activeTimer, timeRemaining, formatTimeRemaining } = useAppointmentTimers(appointment);
   const moneyDistribution = calculateMoneyDistribution(appointment);
   
+  // Debug para verificar el estado de bloqueo
+  console.log('[AppointmentStatus] Component debug:', {
+    appointmentId: appointment.id,
+    appointmentStatus: appointment.status,
+    userRole,
+    isLocked,
+    proposedDate: appointment.proposedDate,
+    proposedTime: appointment.proposedTime
+  });
+  
   const statusText = getAppointmentStatusText(appointment.status);
   const statusColor = getAppointmentStatusColor(appointment.status);
 
@@ -50,6 +60,28 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
   const getActionButtons = () => {
     const buttons = [];
 
+    // Debug para entender por qué no aparecen los botones
+    console.log('[AppointmentStatus] Debug getActionButtons:', {
+      userRole,
+      appointmentStatus: appointment.status,
+      isLocked,
+      shouldShowConfirm: userRole === 'expert' && (appointment.status === 'appointment_proposed' || appointment.status === '') && !isLocked,
+      shouldShowReject: userRole === 'expert' && (appointment.status === 'appointment_proposed' || appointment.status === '') && !isLocked,
+      shouldShowCancelClient: appointment.status === 'appointment_confirmed' && !isLocked && userRole === 'client',
+      shouldShowCancelExpert: appointment.status === 'appointment_confirmed' && !isLocked && userRole === 'expert'
+    });
+
+    // Botón de debug que siempre aparece
+    buttons.push(
+      <button
+        key="debug"
+        className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm"
+        onClick={() => console.log('[DEBUG] Botón clickeado - userRole:', userRole, 'status:', appointment.status)}
+      >
+        DEBUG: {userRole} - {appointment.status}
+      </button>
+    );
+
     // Botón para proponer cita (solo clientes) - NO mostrar si ya hay sección específica para rechazada
     if (userRole === 'client' && ['awaiting_appointment', 'appointment_cancelled_by_client'].includes(appointment.status) && !isLocked) {
       buttons.push(
@@ -63,8 +95,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       );
     }
 
-    // Botón para confirmar (solo expertos)
-    if (userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked) {
+    // Botón para confirmar (solo expertos) - TEMPORAL: Manejar status vacío
+    if (userRole === 'expert' && (appointment.status === 'appointment_proposed' || appointment.status === '') && !isLocked) {
       buttons.push(
         <button
           key="confirm"
@@ -76,8 +108,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       );
     }
 
-    // Botón para rechazar (solo expertos)
-    if (userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked) {
+    // Botón para rechazar (solo expertos) - TEMPORAL: Manejar status vacío
+    if (userRole === 'expert' && (appointment.status === 'appointment_proposed' || appointment.status === '') && !isLocked) {
       buttons.push(
         <button
           key="reject"
@@ -167,6 +199,17 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
 
   // Hook para manejar el envío de reportes
   const { isSubmitting } = useExpertReport();
+
+  // Debug para verificar si el componente se renderiza
+  console.log('[AppointmentStatus] Component rendering:', {
+    appointmentId: appointment.id,
+    appointmentStatus: appointment.status,
+    userRole,
+    isLocked,
+    proposedDate: appointment.proposedDate,
+    proposedTime: appointment.proposedTime,
+    shouldShowConfirmReject: userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked
+  });
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
@@ -265,25 +308,9 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
               <h4 className="text-sm font-medium text-green-800 mb-2">
                 ¡El experto completó su trabajo!
               </h4>
-              <p className="text-sm text-green-700 mb-3">
+              <p className="text-sm text-green-700">
                 El experto ha enviado el reporte del trabajo realizado. Tienes 24 horas para revisar y aprobar o rechazar el trabajo.
               </p>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button
-                  onClick={() => onAction('approve', appointment)}
-                  className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Aprobar Trabajo
-                </button>
-                <button
-                  onClick={() => onAction('reject', appointment)}
-                  className="inline-flex items-center px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Rechazar Trabajo
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -600,8 +627,9 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
         </div>
       )}
 
-      {/* Distribución de dinero */}
-      {(moneyDistribution.client > 0 || moneyDistribution.expert > 0 || moneyDistribution.platform > 0) && (
+      {/* Distribución de dinero - No mostrar cuando está esperando decisión del cliente */}
+      {(moneyDistribution.client > 0 || moneyDistribution.expert > 0 || moneyDistribution.platform > 0) && 
+       appointment.status !== 'awaiting_client_decision' && (
         <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200">
           <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
             <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
