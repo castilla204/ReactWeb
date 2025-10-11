@@ -324,7 +324,6 @@ export const useServiceTypeCategoryConfigs = () => {
     try {
       // Usar el endpoint específico para configuraciones por categoría
       const response = await fetchApi<ServiceTypeCategoryConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.configurationsByCategory);
-      console.log('🔍 Configuraciones por categoría recibidas del endpoint específico:', response);
       setConfigs(response);
     } catch (err) {
       console.error('Error fetching service type category configs:', err);
@@ -569,11 +568,6 @@ export const useCategoryServiceTypeConfigs = () => {
     try {
       // Usar el endpoint específico para configuraciones granulares
       const response = await fetchApi<CategoryServiceTypeConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.granularConfigurations);
-      console.log('🔍 Configuraciones granulares recibidas del endpoint específico:', response);
-      console.log('🔍 Primera configuración granular completa:', response[0]);
-      console.log('🔍 Campos de la primera configuración:', Object.keys(response[0] || {}));
-      console.log('🔍 categoryId de la primera configuración:', response[0]?.categoryId);
-      console.log('🔍 serviceTypeCategoryId de la primera configuración:', response[0]?.serviceTypeCategoryId);
       setConfigs(response);
     } catch (err) {
       console.error('Error fetching category service type configs:', err);
