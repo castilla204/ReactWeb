@@ -409,7 +409,6 @@ const AdminPanel: React.FC = () => {
 
   const handleUpdateMapping = async (mappingId: number, updates: any) => {
     try {
-      console.log('🔍 DEBUG - handleUpdateMapping called with:', mappingId, updates);
       
       // 1. Obtener el mapeo actual para saber el sourceStatusId
       const currentMapping = statusMappings.mappings.find(m => m.id === mappingId);
@@ -429,20 +428,16 @@ const AdminPanel: React.FC = () => {
         targetStatusId: updates.targetStatusId
       };
       
-      console.log('🔍 DEBUG - Full update data:', fullUpdateData);
       await statusMappings.updateMapping(mappingId, fullUpdateData);
-      console.log('🔍 DEBUG - updateMapping completed successfully');
       alert('✅ Mapeo actualizado exitosamente');
     } catch (error: any) {
-      console.error('🔍 DEBUG - Error updating mapping:', error);
+      console.error('Error updating mapping:', error);
       
       // Si el error es por estados no existentes, refrescar datos
       if (error.message?.includes('han cambiado') || error.message?.includes('no existe')) {
-        console.log('🔍 DEBUG - States changed error detected, refreshing data');
         alert(`⚠️ ${error.message}\n\nLos datos se han refrescado automáticamente.`);
         await statusMappings.refreshAllData();
       } else {
-        console.log('🔍 DEBUG - Other error:', error.message);
         alert(`❌ Error al actualizar mapeo: ${error.message || 'Error desconocido'}`);
       }
     }
@@ -494,85 +489,6 @@ const AdminPanel: React.FC = () => {
                 <h1 className="text-2xl font-bold text-gray-900">Panel de Administración</h1>
                 <p className="text-gray-600">Gestionar porcentajes de distribución de dinero</p>
               </div>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => {
-                  console.log('🔍 DEBUG - Estado actual de los hooks:');
-                  console.log('appointmentStatusConfigs:', appointmentStatusConfigs);
-                  console.log('serviceTypeCategoryConfigs:', serviceTypeCategoryConfigs);
-                  console.log('granularConfigs:', granularConfigs);
-                }}
-                className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
-              >
-                Debug Hooks
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    console.log('🧪 Creando configuración granular de prueba...');
-                    const testConfig = {
-                      action: "create",
-                      statusId: 10, // Cita Propuesta
-                      categoryId: 3, // Inmobiliaria
-                      serviceTypeCategoryId: 1, // Búsqueda + Revisión
-                      clientPercentage: 20,
-                      expertPercentage: 40,
-                      platformPercentage: 40,
-                      isActive: true
-                    };
-                    console.log('🧪 Datos de prueba granular:', testConfig);
-                    await appointmentStatusConfigs.createConfig(testConfig);
-                    console.log('✅ Configuración granular de prueba creada');
-                    alert('✅ Configuración granular creada! Debería aparecer en la pestaña "Configuraciones Granulares"');
-                  } catch (error) {
-                    console.error('❌ Error creando configuración de prueba:', error);
-                    alert('❌ Error: ' + error.message);
-                  }
-                }}
-                className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
-              >
-                Test Granular
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    console.log('🧪 Creando configuración de categoría de prueba...');
-                    const testConfig = {
-                      action: "create",
-                      statusId: 10, // Cita Propuesta
-                      categoryId: 2, // Motos
-                      serviceTypeCategoryId: null, // NULL para que sea Nivel 2
-                      clientPercentage: 15,
-                      expertPercentage: 35,
-                      platformPercentage: 50,
-                      isActive: true
-                    };
-                    console.log('🧪 Datos de prueba categoría:', testConfig);
-                    await appointmentStatusConfigs.createConfig(testConfig);
-                    console.log('✅ Configuración de categoría de prueba creada');
-                    alert('✅ Configuración de categoría creada! Debería aparecer en la pestaña "Configuraciones por Categoría"');
-                  } catch (error) {
-                    console.error('❌ Error creando configuración de prueba:', error);
-                    alert('❌ Error: ' + error.message);
-                  }
-                }}
-                className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
-              >
-                Test Categoría
-              </button>
-              <button
-                onClick={() => {
-                  console.log('🔄 Refrescando todos los hooks...');
-                  appointmentStatusConfigs.fetchConfigs();
-                  serviceTypeCategoryConfigs.fetchConfigs();
-                  granularConfigs.fetchConfigs();
-                  console.log('✅ Hooks refrescados');
-                }}
-                className="px-3 py-1 bg-purple-500 text-white text-sm rounded hover:bg-purple-600"
-              >
-                Refrescar
-              </button>
             </div>
           </div>
         </div>
@@ -769,10 +685,6 @@ const AdminPanel: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {(() => {
-                        console.log('🎨 Renderizando tabla con', getConfigsForTab().length, 'configuraciones');
-                        return null;
-                      })()}
                       {getConfigsForTab().map((config) => (
                         <tr key={config.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -857,13 +769,6 @@ const AdminPanel: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {(() => {
-                    console.log('🎨 Renderizando tab categoría con', getConfigsForTab().length, 'configuraciones');
-                    console.log('🎨 configs:', getConfigsForTab());
-                    console.log('🎨 categories:', categories);
-                    console.log('🎨 Estructura de primera configuración:', getConfigsForTab()[0]);
-                    return null;
-                  })()}
                   {getConfigsForTab().length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-gray-500 text-lg">No hay configuraciones por categoría</p>
@@ -871,20 +776,9 @@ const AdminPanel: React.FC = () => {
                     </div>
                   ) : (
                     categories.map((category) => {
-                      console.log(`🔍 Procesando categoría: ${category.name} (ID: ${category.id})`);
-                      console.log(`🔍 Todas las configuraciones disponibles:`, getConfigsForTab());
-                      
                       const categoryConfigs = getConfigsForTab().filter((config: any) => {
-                        console.log(`🔍 Evaluando config:`, config);
-                        console.log(`🔍 config.categoryId: ${config.categoryId}, category.id: ${category.id}`);
-                        console.log(`🔍 config.serviceTypeCategoryId: ${config.serviceTypeCategoryId}`);
-                        const matches = config.categoryId === category.id && !config.serviceTypeCategoryId;
-                        console.log(`🔍 ¿Coincide? ${matches}`);
-                        return matches;
+                        return config.categoryId === category.id && !config.serviceTypeCategoryId;
                       });
-                      
-                      console.log(`🔍 Categoría ${category.name} (ID: ${category.id}):`, categoryConfigs.length, 'configuraciones');
-                      console.log(`🔍 Configuraciones filtradas:`, categoryConfigs);
                     return (
                       <div key={category.id} className="border border-gray-200 rounded-lg p-4">
                         <h3 className="text-lg font-medium text-gray-900 mb-4">{category.name}</h3>
@@ -1006,14 +900,6 @@ const AdminPanel: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-8">
-                  {(() => {
-                    console.log('🎨 Renderizando tab granular con', getConfigsForTab().length, 'configuraciones');
-                    console.log('🎨 configs granular:', getConfigsForTab());
-                    console.log('🎨 categories granular:', categories);
-                    console.log('🎨 Estructura de primera configuración granular:', getConfigsForTab()[0]);
-                    console.log('🎨 TODOS los campos de la configuración:', Object.keys(getConfigsForTab()[0] || {}));
-                    return null;
-                  })()}
                   {getConfigsForTab().length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-gray-500 text-lg">No hay configuraciones granulares</p>
@@ -1021,20 +907,9 @@ const AdminPanel: React.FC = () => {
                     </div>
                   ) : (
                     categories.map((category: any) => {
-                      console.log(`🔍 Procesando categoría granular: ${category.name} (ID: ${category.id})`);
-                      console.log(`🔍 Todas las configuraciones granulares disponibles:`, getConfigsForTab());
-                      
                       const granularConfigs = getConfigsForTab().filter((config: any) => {
-                        console.log(`🔍 Evaluando config granular:`, config);
-                        console.log(`🔍 config.categoryId: ${config.categoryId}, category.id: ${category.id}`);
-                        console.log(`🔍 config.serviceTypeCategoryId: ${config.serviceTypeCategoryId}`);
-                        const matches = config.categoryId === category.id && config.serviceTypeCategoryId;
-                        console.log(`🔍 ¿Coincide granular? ${matches}`);
-                        return matches;
+                        return config.categoryId === category.id && config.serviceTypeCategoryId;
                       });
-                      
-                      console.log(`🔍 Categoría granular ${category.name} (ID: ${category.id}):`, granularConfigs.length, 'configuraciones');
-                      console.log(`🔍 Configuraciones granulares filtradas:`, granularConfigs);
                       return (
                     <div key={category.id} className="border border-gray-200 rounded-lg p-4">
                       <h3 className="text-xl font-semibold text-gray-700 mb-4">{category.name}</h3>
@@ -1564,10 +1439,6 @@ const AdminPanel: React.FC = () => {
                                     return;
                                   }
                                   
-                                  console.log('🔍 DEBUG - Estados disponibles para dropdown:', statusMappings.searchHireStatuses.map(s => ({ id: s.id, name: s.displayName })));
-                                  console.log('🔍 DEBUG - Estado actual del mapeo:', { id: mapping.targetStatus.id, name: mapping.targetStatus.displayName });
-                                  console.log('🔍 DEBUG - Mapeo completo:', mapping);
-                                  console.log('🔍 DEBUG - Estado origen del mapeo:', { id: mapping.sourceStatus.id, name: mapping.sourceStatus.displayName });
                                   
                                   modalContent.innerHTML = `
                                     <div class="mt-3">
@@ -1626,14 +1497,8 @@ const AdminPanel: React.FC = () => {
                                     const select = document.getElementById('newTargetStatus') as HTMLSelectElement;
                                     const newTargetStatusId = Number(select.value);
                                     
-                                    console.log('🔍 DEBUG - Mapping ID:', mapping.id);
-                                    console.log('🔍 DEBUG - New Target Status ID:', newTargetStatusId);
-                                    console.log('🔍 DEBUG - Current Target Status ID:', mapping.targetStatus.id);
-                                    console.log('🔍 DEBUG - Will update?', newTargetStatusId !== mapping.targetStatus.id);
-                                    
                                     // Validar que el estado seleccionado existe en la lista actual
                                     const selectedStatusExists = statusMappings.searchHireStatuses.some(s => s.id === newTargetStatusId);
-                                    console.log('🔍 DEBUG - Selected status exists?', selectedStatusExists);
                                     
                                     if (!selectedStatusExists) {
                                       alert(`⚠️ El estado con ID ${newTargetStatusId} no existe en la lista actual. Refrescando datos...`);
@@ -1643,10 +1508,7 @@ const AdminPanel: React.FC = () => {
                                     }
                                     
                                     if (newTargetStatusId !== mapping.targetStatus.id) {
-                                      console.log('🔍 DEBUG - Calling handleUpdateMapping with:', mapping.id, { targetStatusId: newTargetStatusId });
                                       handleUpdateMapping(mapping.id, { targetStatusId: newTargetStatusId });
-                                    } else {
-                                      console.log('🔍 DEBUG - No changes detected, not updating');
                                     }
                                     
                                     document.body.removeChild(modal);
