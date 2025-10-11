@@ -26,10 +26,6 @@ const AdminPanel: React.FC = () => {
   const [selectedServiceTypeId, setSelectedServiceTypeId] = useState<number | null>(null);
   const [loadingBasicData, setLoadingBasicData] = useState(true);
 
-  // Estados para configuraciones dinámicas
-  const [dynamicConfigs, setDynamicConfigs] = useState<any[]>([]);
-  const [loadingConfigs, setLoadingConfigs] = useState(false);
-  const [configsError, setConfigsError] = useState<string | null>(null);
 
   // Estados para mapeos de estado
   const [showMappingForm, setShowMappingForm] = useState(false);
@@ -99,55 +95,47 @@ const AdminPanel: React.FC = () => {
     loadBasicData();
   }, []);
 
-  // Función para cargar configuraciones según el tab activo
-  const loadConfigurationsForTab = async (tab: 'status' | 'category' | 'granular' | 'query' | 'mappings') => {
-    try {
-      console.log('🔄 Cargando configuraciones para tab:', tab);
-      setLoadingConfigs(true);
-      setConfigsError(null);
-      
-      // Para la pestaña de mapeos, no necesitamos cargar configuraciones
-      if (tab === 'mappings') {
-        setLoadingConfigs(false);
-        return;
-      }
-      
-      const configs = await loadConfigurationsByTab(tab);
-      console.log(`📡 Respuesta del backend para ${tab}:`, configs);
-      console.log(`📊 Tipo de datos:`, typeof configs, Array.isArray(configs));
-      console.log(`📊 Cantidad de configuraciones:`, configs?.length || 0);
-      
-      setDynamicConfigs(configs as any[]);
-      
-      console.log(`✅ Configuraciones cargadas para ${tab}:`, configs);
-      console.log(`📊 Total configuraciones en dynamicConfigs:`, configs?.length || 0);
-      
-      // Verificar el estado después de setear
-      setTimeout(() => {
-        console.log(`🔍 Estado de dynamicConfigs después de setear:`, dynamicConfigs.length);
-      }, 100);
-      
-    } catch (error: any) {
-      console.error('❌ Error cargando configuraciones:', error);
-      setConfigsError('Error cargando configuraciones: ' + error.message);
-    } finally {
-      setLoadingConfigs(false);
+  // Función para obtener configuraciones según el tab activo
+  const getConfigsForTab = () => {
+    switch (activeTab) {
+      case 'status':
+        return appointmentStatusConfigs.configs;
+      case 'category':
+        return serviceTypeCategoryConfigs.configs;
+      case 'granular':
+        return granularConfigs.configs;
+      default:
+        return [];
     }
   };
 
-  // Cargar configuraciones al cambiar de tab
-  useEffect(() => {
-    if (activeTab !== 'query' && activeTab !== 'mappings') {
-      loadConfigurationsForTab(activeTab);
+  // Función para obtener estado de carga según el tab activo
+  const getLoadingForTab = () => {
+    switch (activeTab) {
+      case 'status':
+        return appointmentStatusConfigs.isLoading;
+      case 'category':
+        return serviceTypeCategoryConfigs.isLoading;
+      case 'granular':
+        return granularConfigs.isLoading;
+      default:
+        return false;
     }
-  }, [activeTab]);
+  };
 
-  // Cargar configuraciones iniciales al montar el componente
-  useEffect(() => {
-    if (activeTab !== 'query' && activeTab !== 'mappings') {
-      loadConfigurationsForTab(activeTab);
+  // Función para obtener error según el tab activo
+  const getErrorForTab = () => {
+    switch (activeTab) {
+      case 'status':
+        return appointmentStatusConfigs.error;
+      case 'category':
+        return serviceTypeCategoryConfigs.error;
+      case 'granular':
+        return granularConfigs.error;
+      default:
+        return null;
     }
-  }, []); // Solo se ejecuta una vez al montar
+  };
 
   // Estados para la consulta
   const [queryStatus, setQueryStatus] = useState('');
@@ -159,6 +147,18 @@ const AdminPanel: React.FC = () => {
     const total = formData.clientPercentage + formData.expertPercentage + formData.platformPercentage;
     if (total !== 100) {
       alert(`Los porcentajes deben sumar 100%. Actual: ${total}%`);
+      return;
+    }
+
+    // Validar que se haya seleccionado una categoría para configuraciones por categoría y granulares
+    if ((activeTab === 'category' || activeTab === 'granular') && !selectedCategoryId) {
+      alert('Debes seleccionar una categoría para crear esta configuración');
+      return;
+    }
+
+    // Validar que se haya seleccionado un tipo de servicio para configuraciones granulares
+    if (activeTab === 'granular' && !selectedServiceTypeId) {
+      alert('Debes seleccionar un tipo de servicio para crear una configuración granular');
       return;
     }
 
@@ -189,14 +189,15 @@ const AdminPanel: React.FC = () => {
         }
 
         console.log('=== DEBUG FRONTEND ===');
+        console.log('ActiveTab:', activeTab);
         console.log('FormData:', formData);
-        console.log('SubmitData:', submitData);
+        console.log('SelectedCategoryId:', selectedCategoryId);
+        console.log('SelectedServiceTypeId:', selectedServiceTypeId);
+        console.log('SubmitData ANTES de createConfig:', submitData);
         console.log('Total percentage:', total);
+        console.log('=== FIN DEBUG FRONTEND ===');
 
         await appointmentStatusConfigs.createConfig(submitData);
-        
-        // ✅ RECARGAR CONFIGURACIONES PARA EL TAB ACTUAL
-        await loadConfigurationsForTab(activeTab);
         
         // Limpiar formulario después de crear
         setFormData({
@@ -206,10 +207,13 @@ const AdminPanel: React.FC = () => {
           platformPercentage: 0,
           isActive: true
         });
+        setSelectedCategoryId(null);
+        setSelectedServiceTypeId(null);
         setShowForm(false);
       } else if (activeTab === 'category') {
         await serviceTypeCategoryConfigs.createConfig({
-          serviceTypeCategoryId: formData.serviceTypeCategoryId!,
+          categoryId: selectedCategoryId!,
+          serviceTypeCategoryId: null, // Para configuraciones por categoría, serviceTypeCategoryId debe ser null
           status: formData.statusId.toString(),
           clientPercentage: formData.clientPercentage,
           expertPercentage: formData.expertPercentage,
@@ -218,24 +222,30 @@ const AdminPanel: React.FC = () => {
         });
       } else if (activeTab === 'granular') {
         await granularConfigs.createConfig({
-          categoryId: formData.categoryId!,
-          serviceTypeCategoryId: formData.serviceTypeCategoryId!,
+          categoryId: selectedCategoryId!,
+          serviceTypeCategoryId: selectedServiceTypeId!,
           status: formData.statusId.toString(),
           clientPercentage: formData.clientPercentage,
           expertPercentage: formData.expertPercentage,
           platformPercentage: formData.platformPercentage,
           isActive: formData.isActive
         });
+        setSelectedCategoryId(null);
+        setSelectedServiceTypeId(null);
       }
-      
-      // ✅ RECARGAR CONFIGURACIONES PARA EL TAB ACTUAL
-      await loadConfigurationsForTab(activeTab);
       
       // Mostrar mensaje de éxito
       alert('✅ Configuración creada correctamente');
       
       setShowForm(false);
       resetForm();
+      
+      // Forzar refresh de todos los hooks para asegurar que se actualicen
+      setTimeout(() => {
+        appointmentStatusConfigs.fetchConfigs();
+        serviceTypeCategoryConfigs.fetchConfigs();
+        granularConfigs.fetchConfigs();
+      }, 500);
     } catch (error: any) {
       console.error('Error creating config:', error);
       alert(`❌ Error: ${error.message || 'Error al crear la configuración'}`);
@@ -307,9 +317,6 @@ const AdminPanel: React.FC = () => {
         });
       }
       
-      // ✅ RECARGAR CONFIGURACIONES PARA EL TAB ACTUAL
-      await loadConfigurationsForTab(activeTab);
-      
       // Cerrar modal y recargar datos
       setShowForm(false);
       setEditingConfig(null);
@@ -339,9 +346,6 @@ const AdminPanel: React.FC = () => {
       } else if (activeTab === 'granular') {
         await granularConfigs.deleteConfig(id);
       }
-      
-      // ✅ RECARGAR CONFIGURACIONES PARA EL TAB ACTUAL
-      await loadConfigurationsForTab(activeTab);
       
       alert('✅ Configuración eliminada correctamente');
     } catch (error: any) {
@@ -483,11 +487,92 @@ const AdminPanel: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center space-x-3">
-            <Settings className="w-8 h-8 text-blue-600" />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Panel de Administración</h1>
-              <p className="text-gray-600">Gestionar porcentajes de distribución de dinero</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Settings className="w-8 h-8 text-blue-600" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Panel de Administración</h1>
+                <p className="text-gray-600">Gestionar porcentajes de distribución de dinero</p>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => {
+                  console.log('🔍 DEBUG - Estado actual de los hooks:');
+                  console.log('appointmentStatusConfigs:', appointmentStatusConfigs);
+                  console.log('serviceTypeCategoryConfigs:', serviceTypeCategoryConfigs);
+                  console.log('granularConfigs:', granularConfigs);
+                }}
+                className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+              >
+                Debug Hooks
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('🧪 Creando configuración granular de prueba...');
+                    const testConfig = {
+                      action: "create",
+                      statusId: 10, // Cita Propuesta
+                      categoryId: 3, // Inmobiliaria
+                      serviceTypeCategoryId: 1, // Búsqueda + Revisión
+                      clientPercentage: 20,
+                      expertPercentage: 40,
+                      platformPercentage: 40,
+                      isActive: true
+                    };
+                    console.log('🧪 Datos de prueba granular:', testConfig);
+                    await appointmentStatusConfigs.createConfig(testConfig);
+                    console.log('✅ Configuración granular de prueba creada');
+                    alert('✅ Configuración granular creada! Debería aparecer en la pestaña "Configuraciones Granulares"');
+                  } catch (error) {
+                    console.error('❌ Error creando configuración de prueba:', error);
+                    alert('❌ Error: ' + error.message);
+                  }
+                }}
+                className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
+              >
+                Test Granular
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('🧪 Creando configuración de categoría de prueba...');
+                    const testConfig = {
+                      action: "create",
+                      statusId: 10, // Cita Propuesta
+                      categoryId: 2, // Motos
+                      serviceTypeCategoryId: null, // NULL para que sea Nivel 2
+                      clientPercentage: 15,
+                      expertPercentage: 35,
+                      platformPercentage: 50,
+                      isActive: true
+                    };
+                    console.log('🧪 Datos de prueba categoría:', testConfig);
+                    await appointmentStatusConfigs.createConfig(testConfig);
+                    console.log('✅ Configuración de categoría de prueba creada');
+                    alert('✅ Configuración de categoría creada! Debería aparecer en la pestaña "Configuraciones por Categoría"');
+                  } catch (error) {
+                    console.error('❌ Error creando configuración de prueba:', error);
+                    alert('❌ Error: ' + error.message);
+                  }
+                }}
+                className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+              >
+                Test Categoría
+              </button>
+              <button
+                onClick={() => {
+                  console.log('🔄 Refrescando todos los hooks...');
+                  appointmentStatusConfigs.fetchConfigs();
+                  serviceTypeCategoryConfigs.fetchConfigs();
+                  granularConfigs.fetchConfigs();
+                  console.log('✅ Hooks refrescados');
+                }}
+                className="px-3 py-1 bg-purple-500 text-white text-sm rounded hover:bg-purple-600"
+              >
+                Refrescar
+              </button>
             </div>
           </div>
         </div>
@@ -651,19 +736,19 @@ const AdminPanel: React.FC = () => {
                 </div>
               </div>
 
-              {loadingConfigs ? (
+              {getLoadingForTab() ? (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   <p className="mt-2 text-gray-600">Cargando configuraciones...</p>
                 </div>
-              ) : configsError ? (
+              ) : getErrorForTab() ? (
                 <div className="text-center py-8">
                   <div className="text-red-600 mb-4">
                     <p className="text-lg font-semibold">Error al cargar configuraciones</p>
-                    <p className="text-sm">{configsError}</p>
+                    <p className="text-sm">{getErrorForTab()}</p>
                   </div>
                   <button
-                    onClick={() => loadConfigurationsForTab(activeTab)}
+                    onClick={() => appointmentStatusConfigs.fetchConfigs()}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                   >
                     Reintentar
@@ -685,10 +770,10 @@ const AdminPanel: React.FC = () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {(() => {
-                        console.log('🎨 Renderizando tabla con', dynamicConfigs.length, 'configuraciones');
+                        console.log('🎨 Renderizando tabla con', getConfigsForTab().length, 'configuraciones');
                         return null;
                       })()}
-                      {dynamicConfigs.map((config) => (
+                      {getConfigsForTab().map((config) => (
                         <tr key={config.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {getStatusLabel(config)}
@@ -752,19 +837,19 @@ const AdminPanel: React.FC = () => {
                 </button>
               </div>
 
-              {loadingConfigs ? (
+              {getLoadingForTab() ? (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   <p className="mt-2 text-gray-600">Cargando configuraciones...</p>
                 </div>
-              ) : configsError ? (
+              ) : getErrorForTab() ? (
                 <div className="text-center py-8">
                   <div className="text-red-600 mb-4">
                     <p className="text-lg font-semibold">Error al cargar configuraciones</p>
-                    <p className="text-sm">{configsError}</p>
+                    <p className="text-sm">{getErrorForTab()}</p>
                   </div>
                   <button
-                    onClick={() => loadConfigurationsForTab(activeTab)}
+                    onClick={() => serviceTypeCategoryConfigs.fetchConfigs()}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                   >
                     Reintentar
@@ -773,21 +858,31 @@ const AdminPanel: React.FC = () => {
               ) : (
                 <div className="space-y-6">
                   {(() => {
-                    console.log('🎨 Renderizando tab categoría con', dynamicConfigs.length, 'configuraciones');
-                    console.log('🎨 dynamicConfigs:', dynamicConfigs);
+                    console.log('🎨 Renderizando tab categoría con', getConfigsForTab().length, 'configuraciones');
+                    console.log('🎨 configs:', getConfigsForTab());
                     console.log('🎨 categories:', categories);
+                    console.log('🎨 Estructura de primera configuración:', getConfigsForTab()[0]);
                     return null;
                   })()}
-                  {dynamicConfigs.length === 0 ? (
+                  {getConfigsForTab().length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-gray-500 text-lg">No hay configuraciones por categoría</p>
                       <p className="text-gray-400 text-sm mt-2">Crea una nueva configuración para verla aquí</p>
                     </div>
                   ) : (
                     categories.map((category) => {
-                      const categoryConfigs = dynamicConfigs.filter((config: any) => 
-                        config.categoryId === category.id && !config.serviceTypeCategoryId
-                      );
+                      console.log(`🔍 Procesando categoría: ${category.name} (ID: ${category.id})`);
+                      console.log(`🔍 Todas las configuraciones disponibles:`, getConfigsForTab());
+                      
+                      const categoryConfigs = getConfigsForTab().filter((config: any) => {
+                        console.log(`🔍 Evaluando config:`, config);
+                        console.log(`🔍 config.categoryId: ${config.categoryId}, category.id: ${category.id}`);
+                        console.log(`🔍 config.serviceTypeCategoryId: ${config.serviceTypeCategoryId}`);
+                        const matches = config.categoryId === category.id && !config.serviceTypeCategoryId;
+                        console.log(`🔍 ¿Coincide? ${matches}`);
+                        return matches;
+                      });
+                      
                       console.log(`🔍 Categoría ${category.name} (ID: ${category.id}):`, categoryConfigs.length, 'configuraciones');
                       console.log(`🔍 Configuraciones filtradas:`, categoryConfigs);
                     return (
@@ -886,12 +981,12 @@ const AdminPanel: React.FC = () => {
                 </button>
               </div>
 
-              {loadingConfigs ? (
+              {getLoadingForTab() ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   <span className="ml-3 text-gray-600">Cargando configuraciones granulares...</span>
                 </div>
-              ) : configsError ? (
+              ) : getErrorForTab() ? (
                 <div className="bg-red-50 border-l-4 border-red-400 p-4">
                   <div className="flex">
                     <div className="flex-shrink-0">
@@ -899,9 +994,9 @@ const AdminPanel: React.FC = () => {
                     </div>
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-red-800">Error al cargar configuraciones</h3>
-                      <p className="mt-2 text-sm text-red-700">{configsError}</p>
+                      <p className="mt-2 text-sm text-red-700">{getErrorForTab()}</p>
                       <button
-                        onClick={() => loadConfigurationsForTab(activeTab)}
+                        onClick={() => granularConfigs.fetchConfigs()}
                         className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                       >
                         Reintentar
@@ -912,21 +1007,32 @@ const AdminPanel: React.FC = () => {
               ) : (
                 <div className="space-y-8">
                   {(() => {
-                    console.log('🎨 Renderizando tab granular con', dynamicConfigs.length, 'configuraciones');
-                    console.log('🎨 dynamicConfigs granular:', dynamicConfigs);
+                    console.log('🎨 Renderizando tab granular con', getConfigsForTab().length, 'configuraciones');
+                    console.log('🎨 configs granular:', getConfigsForTab());
                     console.log('🎨 categories granular:', categories);
+                    console.log('🎨 Estructura de primera configuración granular:', getConfigsForTab()[0]);
+                    console.log('🎨 TODOS los campos de la configuración:', Object.keys(getConfigsForTab()[0] || {}));
                     return null;
                   })()}
-                  {dynamicConfigs.length === 0 ? (
+                  {getConfigsForTab().length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-gray-500 text-lg">No hay configuraciones granulares</p>
                       <p className="text-gray-400 text-sm mt-2">Crea una nueva configuración para verla aquí</p>
                     </div>
                   ) : (
                     categories.map((category: any) => {
-                      const granularConfigs = dynamicConfigs.filter((config: any) => 
-                        config.categoryId === category.id && config.serviceTypeCategoryId
-                      );
+                      console.log(`🔍 Procesando categoría granular: ${category.name} (ID: ${category.id})`);
+                      console.log(`🔍 Todas las configuraciones granulares disponibles:`, getConfigsForTab());
+                      
+                      const granularConfigs = getConfigsForTab().filter((config: any) => {
+                        console.log(`🔍 Evaluando config granular:`, config);
+                        console.log(`🔍 config.categoryId: ${config.categoryId}, category.id: ${category.id}`);
+                        console.log(`🔍 config.serviceTypeCategoryId: ${config.serviceTypeCategoryId}`);
+                        const matches = config.categoryId === category.id && config.serviceTypeCategoryId;
+                        console.log(`🔍 ¿Coincide granular? ${matches}`);
+                        return matches;
+                      });
+                      
                       console.log(`🔍 Categoría granular ${category.name} (ID: ${category.id}):`, granularConfigs.length, 'configuraciones');
                       console.log(`🔍 Configuraciones granulares filtradas:`, granularConfigs);
                       return (

@@ -121,6 +121,9 @@ export const API_CONFIG = {
             categoryServiceTypeById: (id: number) => `${API_PATH}/CategoryServiceTypeConfig/${id}`,
             categoryServiceTypeByCategory: (categoryId: number) => `${API_PATH}/CategoryServiceTypeConfig/category/${categoryId}`,
             categoryServiceTypeByServiceType: (serviceTypeCategoryId: number) => `${API_PATH}/CategoryServiceTypeConfig/service-type/${serviceTypeCategoryId}`,
+            // Endpoints específicos para cada tipo de configuración
+            granularConfigurations: `${API_PATH}/AppointmentConfig/granular-configurations`,
+            configurationsByCategory: `${API_PATH}/AppointmentConfig/configurations-by-category`,
             moneyDistribution: `${API_PATH}/AppointmentConfig/money-distribution`,
             moneyDistributionPublic: `${API_PATH}/AppointmentConfig/money-distribution/public`,
         },
