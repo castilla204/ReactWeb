@@ -62,15 +62,19 @@ export interface ServiceTypeCategoryConfigDto {
 
 export interface CategoryServiceTypeConfigDto {
   id: number;
-  categoryId: number;
+  estado: string;                    // Nombre legible del estado
+  statusId: number;                  // ID del estado
+  statusValue: string;               // Valor del estado (appointment_completed, etc.)
+  statusName: string;                // Nombre del estado (AppointmentCompleted, etc.)
+  cliente: number;                   // Porcentaje del cliente
+  experto: number;                   // Porcentaje del experto
+  plataforma: number;                // Porcentaje de la plataforma
+  prioridad: string;                 // Prioridad de la configuración
+  activo: string;                    // Estado activo/inactivo
+  categoryId: number;                // ID de la categoría
   categoryName: string;              // "Electrodomésticos"
-  serviceTypeCategoryId: number;
+  serviceTypeCategoryId: number;     // ID del tipo de servicio
   serviceTypeCategoryName: string;   // "Búsqueda + Revisión"
-  status: string;
-  clientPercentage: number;
-  expertPercentage: number;
-  platformPercentage: number;
-  isActive: boolean;
   createdAt: string;                 // ISO date string
   updatedAt: string;                 // ISO date string
 }

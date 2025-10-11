@@ -82,8 +82,8 @@ export const useAppointmentStatusConfigs = () => {
       const submitData = {
         action: "create",
         statusId: config.statusId,
-        categoryId: config.categoryId || null,
-        serviceTypeCategoryId: config.serviceTypeCategoryId || null,
+        categoryId: config.categoryId !== undefined ? config.categoryId : null,
+        serviceTypeCategoryId: config.serviceTypeCategoryId !== undefined ? config.serviceTypeCategoryId : null,
         clientPercentage: config.clientPercentage,
         expertPercentage: config.expertPercentage,
         platformPercentage: config.platformPercentage,
@@ -91,6 +91,17 @@ export const useAppointmentStatusConfigs = () => {
       };
 
       console.log('📤 Enviando datos de creación:', submitData);
+      console.log('📤 Config original:', config);
+      console.log('📤 categoryId check:', { 
+        original: config.categoryId, 
+        isUndefined: config.categoryId === undefined,
+        result: config.categoryId !== undefined ? config.categoryId : null 
+      });
+      console.log('📤 serviceTypeCategoryId check:', { 
+        original: config.serviceTypeCategoryId, 
+        isUndefined: config.serviceTypeCategoryId === undefined,
+        result: config.serviceTypeCategoryId !== undefined ? config.serviceTypeCategoryId : null 
+      });
 
       const response = await fetchApi<AppointmentStatusConfigDto>(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs, {
         method: 'POST',
@@ -122,8 +133,8 @@ export const useAppointmentStatusConfigs = () => {
         action: "update",
         configId: configId,
         statusId: config.statusId,
-        categoryId: config.categoryId || null,
-        serviceTypeCategoryId: config.serviceTypeCategoryId || null,
+        categoryId: config.categoryId !== undefined ? config.categoryId : null,
+        serviceTypeCategoryId: config.serviceTypeCategoryId !== undefined ? config.serviceTypeCategoryId : null,
         clientPercentage: config.clientPercentage,
         expertPercentage: config.expertPercentage,
         platformPercentage: config.platformPercentage,
@@ -311,7 +322,9 @@ export const useServiceTypeCategoryConfigs = () => {
     setError(null);
     
     try {
-      const response = await fetchApi<ServiceTypeCategoryConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.serviceTypeCategory);
+      // Usar el endpoint específico para configuraciones por categoría
+      const response = await fetchApi<ServiceTypeCategoryConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.configurationsByCategory);
+      console.log('🔍 Configuraciones por categoría recibidas del endpoint específico:', response);
       setConfigs(response);
     } catch (err) {
       console.error('Error fetching service type category configs:', err);
@@ -335,8 +348,8 @@ export const useServiceTypeCategoryConfigs = () => {
       const submitData = {
         action: "create",
         statusId: parseInt(config.status), // Convertir string a número
-        categoryId: null, // Para configuraciones por categoría, no se especifica categoría específica
-        serviceTypeCategoryId: config.serviceTypeCategoryId,
+        categoryId: config.categoryId !== undefined ? config.categoryId : null,
+        serviceTypeCategoryId: config.serviceTypeCategoryId !== undefined ? config.serviceTypeCategoryId : null,
         clientPercentage: config.clientPercentage,
         expertPercentage: config.expertPercentage,
         platformPercentage: config.platformPercentage,
@@ -554,7 +567,13 @@ export const useCategoryServiceTypeConfigs = () => {
     setError(null);
     
     try {
-      const response = await fetchApi<CategoryServiceTypeConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.categoryServiceType);
+      // Usar el endpoint específico para configuraciones granulares
+      const response = await fetchApi<CategoryServiceTypeConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.granularConfigurations);
+      console.log('🔍 Configuraciones granulares recibidas del endpoint específico:', response);
+      console.log('🔍 Primera configuración granular completa:', response[0]);
+      console.log('🔍 Campos de la primera configuración:', Object.keys(response[0] || {}));
+      console.log('🔍 categoryId de la primera configuración:', response[0]?.categoryId);
+      console.log('🔍 serviceTypeCategoryId de la primera configuración:', response[0]?.serviceTypeCategoryId);
       setConfigs(response);
     } catch (err) {
       console.error('Error fetching category service type configs:', err);
@@ -578,6 +597,11 @@ export const useCategoryServiceTypeConfigs = () => {
       setIsLoading(false);
     }
   };
+
+  // Cargar configuraciones automáticamente al montar el componente
+  useEffect(() => {
+    fetchConfigs();
+  }, []);
 
   const getConfigsByServiceType = async (serviceTypeCategoryId: number) => {
     setIsLoading(true);
@@ -625,7 +649,10 @@ export const useCategoryServiceTypeConfigs = () => {
       });
       
       console.log('✅ Configuración granular creada:', response);
-      setConfigs(prev => [...prev, response]);
+      
+      // Refrescar la lista de configuraciones granulares
+      await fetchConfigs();
+      
       return response;
     } catch (err) {
       console.error('❌ Error creating granular config:', err);
@@ -753,7 +780,7 @@ export const loadConfigurationsByTab = async (activeTab: 'status' | 'category' |
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
       }
     });
     
