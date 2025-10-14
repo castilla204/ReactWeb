@@ -23,7 +23,7 @@ interface Hire {
     client: { name: string; email: string };
     service: { categoryId: number };
     serviceType: { id: number; name: string; description: string; isActive: boolean; createdAt: string; updatedAt: string } | null;
-    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved';
+    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved' | 'dispute-resolved-client' | 'dispute-resolved-expert';
     createdAt: string;
     amount: number;
 }
@@ -39,6 +39,23 @@ interface Service {
     imageUrls: string[];
     createdAt?: string;
     updatedAt?: string;
+    selectedDeliverableTypes?: Array<{
+        id: number;
+        name: string;
+        displayName: string;
+        description?: string;
+        isRequired?: boolean;
+        isActive?: boolean;
+        // Campos adicionales para la estructura de crear/actualizar
+        deliverableTypeId?: number;
+        isSelected?: boolean;
+        deliverableType?: {
+            id: number;
+            name: string;
+            displayName: string;
+            description: string;
+        };
+    }>;
 }
 
 export function ExpertPanelPage() {
@@ -65,7 +82,7 @@ export function ExpertPanelPage() {
     const [showProfileEditForm, setShowProfileEditForm] = useState(false);
     const [filters, setFilters] = useState<{
         clientName: string;
-        status: '' | 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved';
+        status: '' | 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved' | 'dispute-resolved-client' | 'dispute-resolved-expert';
         dateFrom: string;
         dateTo: string;
     }>({
@@ -301,7 +318,24 @@ export function ExpertPanelPage() {
         console.log('🔍 Service selectedDeliverableTypes:', (service as any).selectedDeliverableTypes);
         
         // Extraer los IDs de los tipos de entregables seleccionados
-        const selectedDeliverableTypeIds = (service as any).selectedDeliverableTypes?.map((dt: any) => dt.id) || [];
+        // Manejar ambas estructuras: listado (sin isSelected) y crear/actualizar (con isSelected)
+        let selectedDeliverableTypeIds: number[] = [];
+        
+        if ((service as any).selectedDeliverableTypes && Array.isArray((service as any).selectedDeliverableTypes)) {
+            const deliverableTypes = (service as any).selectedDeliverableTypes;
+            
+            // Verificar si es la estructura de crear/actualizar (tiene isSelected)
+            if (deliverableTypes.some((dt: any) => dt.hasOwnProperty('isSelected'))) {
+                // Estructura de crear/actualizar: filtrar por isSelected
+                selectedDeliverableTypeIds = deliverableTypes
+                    .filter((dt: any) => dt.isSelected === true)
+                    .map((dt: any) => dt.deliverableTypeId || dt.deliverableType?.id);
+            } else {
+                // Estructura de listado: todos los tipos están seleccionados
+                selectedDeliverableTypeIds = deliverableTypes.map((dt: any) => dt.id);
+            }
+        }
+        
         console.log('🔍 Extracted selectedDeliverableTypeIds:', selectedDeliverableTypeIds);
         
         setEditingService(service);

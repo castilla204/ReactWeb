@@ -96,7 +96,7 @@ export function useServices({
 
             let url: string;
             if (expertProfileId) {
-                url = `/api/SearchService/expert/${expertProfileId}`;
+                url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.getByExpert(expertProfileId)}`;
                 if (serviceTypeId && serviceTypeId > 0) {
                     url += `?serviceTypeId=${serviceTypeId}`;
                 }
@@ -113,7 +113,7 @@ export function useServices({
                     longitude,
                     locationRange: locationRange.toString(),
                 });
-                url = `/api/SearchService?${params.toString()}`;
+                url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.list}?${params.toString()}`;
             }
 
             console.log('Fetching services with URL:', url);
@@ -155,6 +155,9 @@ export function useServices({
                     });
                     if ((service as any).selectedDeliverableTypes) {
                         console.log(`🔍 useServices: Service ${index} selectedDeliverableTypes details:`, (service as any).selectedDeliverableTypes);
+                        // NOTA: Esta es la estructura del endpoint de LISTADO:
+                        // [{ id, name, displayName, isRequired, isActive }]
+                        // NO tiene deliverableTypeId ni isSelected
                     }
                 });
             }
@@ -199,7 +202,7 @@ export function useServices({
                 formData.append('durationInHours', serviceData.durationInHours.toString());
             }
             if (serviceData.selectedDeliverableTypes && serviceData.selectedDeliverableTypes.length > 0) {
-                formData.append('selectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));
+                formData.append('SelectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));
             }
             serviceData.images.forEach((image) => {
                 formData.append('Images', image);
@@ -229,7 +232,24 @@ export function useServices({
 
             return await response.json();
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
+            console.log('🔍 useServices: createService success response:', data);
+            
+            // Actualizar el cache con la respuesta del servidor
+            if (data && data.searchService) {
+                const newService = data.searchService;
+                console.log('🔍 useServices: New service with selectedDeliverableTypes:', newService.selectedDeliverableTypes);
+                // NOTA: Esta es la estructura del endpoint de CREAR:
+                // [{ id, deliverableTypeId, isSelected, deliverableType: { id, name, displayName, description } }]
+                
+                // Actualizar el cache de servicios agregando el nuevo servicio
+                queryClient.setQueryData(['services', expertProfileId || categoryId, serviceTypeId], (oldData: any) => {
+                    if (!oldData) return [newService];
+                    return [...oldData, newService];
+                });
+            }
+            
+            // También invalidar para asegurar que se refresquen los datos
             queryClient.invalidateQueries({ queryKey: ['services', expertProfileId || categoryId, serviceTypeId] });
         },
         onError: (error) => {
@@ -269,7 +289,7 @@ export function useServices({
                 formData.append('durationInHours', serviceData.durationInHours.toString());
             }
             if (serviceData.selectedDeliverableTypes && serviceData.selectedDeliverableTypes.length > 0) {
-                formData.append('selectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));
+                formData.append('SelectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));
             }
             if (serviceData.images && serviceData.images.length > 0) {
                 serviceData.images.forEach((image) => {
@@ -340,7 +360,29 @@ export function useServices({
             
             throw lastError;
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
+            console.log('🔍 useServices: updateService success response:', data);
+            
+            // Actualizar el cache con la respuesta del servidor
+            if (data && data.searchService) {
+                const updatedService = data.searchService;
+                console.log('🔍 useServices: Updated service with selectedDeliverableTypes:', updatedService.selectedDeliverableTypes);
+                // NOTA: Esta es la estructura del endpoint de ACTUALIZAR:
+                // [{ id, deliverableTypeId, isSelected, deliverableType: { id, name, displayName, description } }]
+                
+                // Actualizar el cache de servicios
+                queryClient.setQueryData(['services', expertProfileId || categoryId, serviceTypeId], (oldData: any) => {
+                    if (!oldData) return oldData;
+                    
+                    return oldData.map((service: any) => 
+                        service.id === updatedService.id 
+                            ? { ...service, selectedDeliverableTypes: updatedService.selectedDeliverableTypes }
+                            : service
+                    );
+                });
+            }
+            
+            // También invalidar para asegurar que se refresquen los datos
             queryClient.invalidateQueries({ queryKey: ['services', expertProfileId || categoryId, serviceTypeId] });
         },
         onError: (error) => {

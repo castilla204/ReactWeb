@@ -6,7 +6,7 @@ interface Hire {
     client: { name: string; email: string }; 
     service: { categoryId: number }; 
     serviceType: { name: string } | null; 
-    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved'; 
+    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved' | 'dispute-resolved-client' | 'dispute-resolved-expert'; 
     createdAt: string; 
     amount: number;
     // NUEVOS CAMPOS DEL BACKEND
@@ -21,7 +21,7 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
     if (!activeTab || activeTab !== 'hires') return null;
 
     const activeHires = hires.filter((hire) => ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status));
-    const inactiveHires = hires.filter((hire) => ['completed', 'cancelled', 'transfer_failed', 'dispute-resolved'].includes(hire.status));
+    const inactiveHires = hires.filter((hire) => ['completed', 'cancelled', 'transfer_failed', 'dispute-resolved', 'dispute-resolved-client', 'dispute-resolved-expert'].includes(hire.status));
     const filteredHires = (hireTab === 'active' ? activeHires : inactiveHires).filter((hire) => {
         const matchesClient = !filters.clientName || hire.client.name.toLowerCase().includes(filters.clientName.toLowerCase());
         const matchesStatus = !filters.status || hire.status === filters.status;
@@ -99,6 +99,8 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                         <option value="cancelled">Cancelado</option>
                         <option value="transfer_failed">Transferencia Fallida</option>
                         <option value="dispute-resolved">Disputa Resuelta</option>
+                        <option value="dispute-resolved-client">Disputa Resuelta (Cliente)</option>
+                        <option value="dispute-resolved-expert">Disputa Resuelta (Experto)</option>
                     </select>
                     <input
                         type="date"
@@ -168,6 +170,8 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                                 hire.status === 'cancelled' ? 'bg-red-100 text-red-700' :
                                                 hire.status === 'transfer_failed' ? 'bg-red-100 text-red-700' :
                                                 hire.status === 'dispute-resolved' ? 'bg-green-100 text-green-700' :
+                                                hire.status === 'dispute-resolved-client' ? 'bg-green-100 text-green-700' :
+                                                hire.status === 'dispute-resolved-expert' ? 'bg-green-100 text-green-700' :
                                                 'bg-slate-100 text-slate-700'
                                             }`}
                                         >
@@ -177,7 +181,9 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                              hire.status === 'completed' ? 'Completado' :
                                              hire.status === 'cancelled' ? 'Cancelado' :
                                              hire.status === 'transfer_failed' ? 'Fallida' :
-                                             hire.status === 'dispute-resolved' ? 'Resuelta' : hire.status}
+                                             hire.status === 'dispute-resolved' ? 'Resuelta' :
+                                             hire.status === 'dispute-resolved-client' ? 'Resuelta (Cliente)' :
+                                             hire.status === 'dispute-resolved-expert' ? 'Resuelta (Experto)' : hire.status}
                                         </span>
                                         {hire.unreadMessagesCount > 0 && (
                                             <div className="flex items-center gap-1">
