@@ -4,7 +4,7 @@ export async function authenticateWithGoogle(accessToken: string, email: string,
     try {
         console.log('Sending auth request to:', API_CONFIG.endpoints.auth.googleAuth);
 
-        const response = await fetch(API_CONFIG.endpoints.auth.googleAuth, {
+        const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.googleAuth}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

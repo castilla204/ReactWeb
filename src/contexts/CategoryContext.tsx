@@ -31,7 +31,7 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const url = API_CONFIG.endpoints.categories.list;
+                const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.categories.list}`;
                 const response = await fetch(url, {
                     headers: getAuthToken() ? {
                         'Authorization': `Bearer ${getAuthToken()}`
