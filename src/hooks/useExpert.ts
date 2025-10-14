@@ -16,6 +16,8 @@ interface ExpertProfile {
     stripeStatusDetails: string | null; // Mensaje detallado del estado
     createdAt: string;
     isOnVacation: boolean;
+    latitude?: string;
+    longitude?: string;
 }
 
 interface Search {
@@ -103,7 +105,9 @@ export function useExpert() {
                 stripeStatus: data.stripeStatus,
                 stripeStatusDetails: data.stripeStatusDetails,
                 createdAt: data.createdAt,
-                isOnVacation: data.isOnVacation || false
+                isOnVacation: data.isOnVacation || false,
+                latitude: data.latitude,
+                longitude: data.longitude
             };
             
             setProfile(mappedProfile);

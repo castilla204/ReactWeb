@@ -216,29 +216,29 @@ export const loadConfigsByType = async (type: string, categoryId?: number, servi
     switch (type) {
       case 'status':
         // Nivel 4 - Configuraciones generales (sin categoría ni tipo de servicio)
-        endpoint = API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs;
+        endpoint = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}`;
         break;
       case 'category':
         // Nivel 3 - Configuraciones por categoría
         if (categoryId) {
-          endpoint = `${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/configurations-by-category/${categoryId}`;
+          endpoint = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/configurations-by-category/${categoryId}`;
         } else {
-          endpoint = `${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/configurations-by-category`;
+          endpoint = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/configurations-by-category`;
         }
         break;
       case 'granular':
         // Nivel 1 - Configuraciones granulares
         if (categoryId && serviceTypeId) {
-          endpoint = `${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/granular-configurations/${categoryId}/${serviceTypeId}`;
+          endpoint = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/granular-configurations/${categoryId}/${serviceTypeId}`;
         } else {
-          endpoint = `${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/granular-configurations`;
+          endpoint = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/granular-configurations`;
         }
         break;
       default:
-        endpoint = API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs;
+        endpoint = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}`;
     }
     
-    const response = await fetch(endpoint);
+    const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -255,7 +255,7 @@ export const loadConfigsByType = async (type: string, categoryId?: number, servi
 // Función para cargar categorías
 export const loadCategories = async () => {
   try {
-    const response = await fetch(`${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/categories`);
+    const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/categories`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -271,7 +271,7 @@ export const loadCategories = async () => {
 // Función para cargar tipos de servicio
 export const loadServiceTypes = async () => {
   try {
-    const response = await fetch(`${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/service-types`);
+    const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs}/service-types`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -287,7 +287,7 @@ export const loadServiceTypes = async () => {
 // Función para obtener distribución de dinero
 export const getMoneyDistribution = async (statusValue: string, categoryId?: number, serviceTypeId?: number) => {
   try {
-    let endpoint = `${API_CONFIG.endpoints.appointmentConfig.moneyDistribution}?statusValue=${statusValue}`;
+    let endpoint = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.appointmentConfig.moneyDistribution}?statusValue=${statusValue}`;
     
     if (categoryId) {
       endpoint += `&categoryId=${categoryId}`;
@@ -297,7 +297,7 @@ export const getMoneyDistribution = async (statusValue: string, categoryId?: num
       endpoint += `&serviceTypeCategoryId=${serviceTypeId}`;
     }
     
-    const response = await fetch(endpoint);
+    const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -770,7 +770,7 @@ export const loadConfigurationsByTab = async (activeTab: 'status' | 'category' |
     console.log('📡 Llamando endpoint:', endpoint);
     
     // Usar fetch directamente para evitar problemas con fetchApi
-    const response = await fetch(endpoint, {
+    const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

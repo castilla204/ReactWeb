@@ -24,7 +24,7 @@ export function PhoneVerification() {
 
         try {
             const formattedPhone = '+' + phoneNumber;
-            const response = await fetch(`${API_CONFIG.endpoints.auth.sendVerification}`, {
+            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.sendVerification}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -53,7 +53,7 @@ export function PhoneVerification() {
 
         try {
             const formattedPhone = '+' + phoneNumber;
-            const response = await fetch(`${API_CONFIG.endpoints.auth.verifyCode}`, {
+            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.verifyCode}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

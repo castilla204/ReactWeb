@@ -76,8 +76,8 @@ interface ProfileEditFormProps {
         description: string;
         stripeAccountId?: string | null;
         createdAt: string;
-        latitude?: number;
-        longitude?: number;
+        latitude?: number | string;
+        longitude?: number | string;
     };
     onProfileUpdated: () => void;
 }
