@@ -8,14 +8,24 @@ interface AppointmentFormProps {
   onSubmit: (data: ProposeAppointmentDto) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  // ✅ NUEVOS PROPS PARA INFORMACIÓN DEL EXPERTO
+  expertLocation?: {
+    latitude: number;
+    longitude: number;
+  } | null;
+  expertRange?: number | null;
 }
 
 const AppointmentForm: React.FC<AppointmentFormProps> = ({ 
-  searchHireId, 
+  searchHireId,
   onSubmit, 
   onCancel,
-  isLoading = false
+  isLoading = false,
+  expertLocation,
+  expertRange
 }) => {
+  // searchHireId se usa implícitamente en el contexto del componente padre
+  console.log('AppointmentForm initialized for searchHireId:', searchHireId);
   const [formData, setFormData] = useState<ProposeAppointmentDto>({
     proposedDate: '',
     proposedTime: '',
@@ -77,6 +87,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
+      // searchHireId se pasa al onSubmit a través del contexto del componente padre
       onSubmit(formData);
     }
   };
@@ -234,6 +245,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 onLocationSelect={handleLocationSelect}
                 initialLocation={selectedLocation}
                 disabled={isLoading}
+                expertLocation={expertLocation}
+                expertRange={expertRange}
               />
             </div>
           </div>

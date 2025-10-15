@@ -19,6 +19,10 @@ export interface ServiceInfo {
   serviceTypeCategoryName: string;
   requiresAppointment: boolean;
   price: number;
+  // ✅ NUEVOS CAMPOS DEL BACKEND
+  expertLatitude: number | null;
+  expertLongitude: number | null;
+  locationRange: number | null;
 }
 
 export interface MoneyDistributionConfigDto {
@@ -142,6 +146,10 @@ export interface AppointmentDto {
   expertName: string | null;
   amount: number;
   timers: AppointmentTimerDto[];
+  // ✅ NUEVOS CAMPOS DEL BACKEND
+  expertLatitude: number | null;
+  expertLongitude: number | null;
+  locationRange: number | null;
 }
 
 export interface AppointmentTimerDto {
