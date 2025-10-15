@@ -87,7 +87,7 @@ export interface Appointment {
 export interface ProposeAppointmentDto {
   proposedDate: string;    // "2024-01-15" (YYYY-MM-DD)
   proposedTime: string;    // "14:30:00" (HH:mm:ss)
-  location: string;        // "Calle Mayor 123, Madrid"
+  address: string;         // "Calle Mayor 123, Madrid"
   latitude?: number | null;       // 40.4168
   longitude?: number | null;      // -3.7038
   doorNumber?: string | null;     // "Portal A, 2ºB"
