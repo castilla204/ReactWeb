@@ -181,6 +181,59 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     // ? DATOS DE EXPERTO DESDE SEARCHHIRE (ya viene en el hook optimizado)
     const expertInfo = search?.searchHire?.expert;
 
+    // ✅ FUNCIÓN HELPER PARA OBTENER INFORMACIÓN DEL EXPERTO
+    const getExpertLocationInfo = () => {
+        // Priorizar appointment si existe, sino usar service
+        if (appointment?.expertLatitude && appointment?.expertLongitude) {
+            const lat = typeof appointment.expertLatitude === 'string' 
+                ? parseFloat(appointment.expertLatitude) 
+                : appointment.expertLatitude;
+            const lng = typeof appointment.expertLongitude === 'string' 
+                ? parseFloat(appointment.expertLongitude) 
+                : appointment.expertLongitude;
+            
+            console.log('Appointment coordinates:', {
+                original: { lat: appointment.expertLatitude, lng: appointment.expertLongitude },
+                converted: { lat, lng }
+            });
+            
+            return {
+                location: {
+                    latitude: lat,
+                    longitude: lng
+                },
+                range: appointment.locationRange
+            };
+        }
+        
+        if (serviceInfo?.expertLatitude && serviceInfo?.expertLongitude) {
+            const lat = typeof serviceInfo.expertLatitude === 'string' 
+                ? parseFloat(serviceInfo.expertLatitude) 
+                : serviceInfo.expertLatitude;
+            const lng = typeof serviceInfo.expertLongitude === 'string' 
+                ? parseFloat(serviceInfo.expertLongitude) 
+                : serviceInfo.expertLongitude;
+            
+            console.log('Service coordinates:', {
+                original: { lat: serviceInfo.expertLatitude, lng: serviceInfo.expertLongitude },
+                converted: { lat, lng }
+            });
+            
+            return {
+                location: {
+                    latitude: lat,
+                    longitude: lng
+                },
+                range: serviceInfo.locationRange
+            };
+        }
+        
+        return {
+            location: null,
+            range: null
+        };
+    };
+
     // ? HOOKS PARA ACCIONES (se mantienen)
     const { uploadDeliverable, isUploadingDeliverable } = useChat(searchId, setNotifications);
     const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit, handleResolveDispute, handleAddAd } =
@@ -897,25 +950,32 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 setShowAppointmentForm(false);
                 setAppointmentData(null);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error al proponer cita:', error);
             
             // Manejar errores específicos del servidor
             let errorMessage = 'Error al proponer cita';
             
-            if (error instanceof Error) {
-                // Si el error contiene información específica del servidor
-                if (error.message.includes('24 horas') || error.message.includes('12 horas')) {
-                    errorMessage = 'La cita debe ser al menos 24 horas en el futuro';
-                } else if (error.message.includes('fecha')) {
-                    errorMessage = 'La fecha seleccionada no es válida';
-                } else if (error.message.includes('ubicación')) {
-                    errorMessage = 'Debes seleccionar una ubicación válida';
-                } else if (error.message.includes('tiempo')) {
-                    errorMessage = 'El tiempo seleccionado no es válido';
-                } else {
-                    // Usar el mensaje del servidor si está disponible
-                    errorMessage = error.message;
+            if (error && typeof error === 'object') {
+                // Si el error tiene un mensaje específico del backend
+                if (error.message) {
+                    // Verificar si es un error de rango de ubicación
+                    if (error.message.includes('fuera del rango') || 
+                        error.message.includes('Distancia:') || 
+                        error.message.includes('Rango máximo:')) {
+                        errorMessage = error.message;
+                    } else if (error.message.includes('24 horas') || error.message.includes('12 horas')) {
+                        errorMessage = 'La cita debe ser al menos 24 horas en el futuro';
+                    } else if (error.message.includes('fecha')) {
+                        errorMessage = 'La fecha seleccionada no es válida';
+                    } else if (error.message.includes('ubicación')) {
+                        errorMessage = 'Debes seleccionar una ubicación válida';
+                    } else if (error.message.includes('tiempo')) {
+                        errorMessage = 'El tiempo seleccionado no es válido';
+                    } else {
+                        // Usar el mensaje del servidor si está disponible
+                        errorMessage = error.message;
+                    }
                 }
             }
             
@@ -2304,17 +2364,23 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
 
             {/* Modal para proponer cita */}
-            {showAppointmentForm && appointmentData && (
-                <AppointmentForm
-                    searchHireId={appointmentData.searchHireId}
-                    onSubmit={handleProposalSubmit}
-                    onCancel={() => {
-                        setShowAppointmentForm(false);
-                        setAppointmentData(null);
-                    }}
-                    isLoading={isProposing}
-                />
-            )}
+            {showAppointmentForm && appointmentData && (() => {
+                const expertInfo = getExpertLocationInfo();
+                return (
+                    <AppointmentForm
+                        searchHireId={appointmentData.searchHireId}
+                        onSubmit={handleProposalSubmit}
+                        onCancel={() => {
+                            setShowAppointmentForm(false);
+                            setAppointmentData(null);
+                        }}
+                        isLoading={isProposing}
+                        // ✅ Pasar información del experto desde el endpoint details-complete
+                        expertLocation={expertInfo.location}
+                        expertRange={expertInfo.range}
+                    />
+                );
+            })()}
 
             {/* Modal para rechazar cita */}
             <RejectAppointmentModal

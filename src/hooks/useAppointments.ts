@@ -84,8 +84,33 @@ export const useAppointments = () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointment'] });
     },
-    onError: (error) => {
-      setError(error instanceof Error ? error.message : 'Error al proponer cita');
+    onError: (error: any) => {
+      console.error('Error en useAppointments proposeAppointmentMutation:', error);
+      
+      // Manejar errores específicos del backend
+      let errorMessage = 'Error al proponer cita';
+      
+      if (error && typeof error === 'object' && error.message) {
+        // Verificar si es un error de rango de ubicación
+        if (error.message.includes('fuera del rango') || 
+            error.message.includes('Distancia:') || 
+            error.message.includes('Rango máximo:')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('24 horas') || error.message.includes('12 horas')) {
+          errorMessage = 'La cita debe ser al menos 24 horas en el futuro';
+        } else if (error.message.includes('fecha')) {
+          errorMessage = 'La fecha seleccionada no es válida';
+        } else if (error.message.includes('ubicación')) {
+          errorMessage = 'Debes seleccionar una ubicación válida';
+        } else if (error.message.includes('tiempo')) {
+          errorMessage = 'El tiempo seleccionado no es válido';
+        } else {
+          // Usar el mensaje del servidor si está disponible
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
     },
   });
 
