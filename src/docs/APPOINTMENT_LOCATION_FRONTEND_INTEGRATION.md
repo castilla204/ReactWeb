@@ -178,3 +178,4 @@ interface AppointmentMapProps {
 - No hay breaking changes en el código existente
 - La información del experto se mantiene consistente con el momento de la contratación
 
+

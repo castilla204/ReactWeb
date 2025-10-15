@@ -176,3 +176,4 @@ useEffect(() => {
 
 **El frontend ahora tiene toda la información necesaria para una excelente experiencia de usuario, con el círculo del rango del experto visible en el mapa desde el primer momento.** 🎉
 
+

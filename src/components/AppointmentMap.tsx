@@ -1,7 +1,10 @@
+
 import React, { useEffect, useRef } from 'react';
+import { useLoadScript } from '@react-google-maps/api';
+
+const libraries: ('drawing' | 'geometry' | 'places')[] = ['geometry', 'places'];
 
 interface AppointmentMapProps {
-  // Props originales del AppointmentForm
   onLocationSelect?: (location: {
     address: string;
     latitude: number;
@@ -17,8 +20,6 @@ interface AppointmentMapProps {
     longitude: number;
   } | null;
   expertRange?: number | null;
-  
-  // Props adicionales para compatibilidad
   latitude?: number;
   longitude?: number;
   address?: string;
@@ -37,18 +38,18 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
   expertLocation,
   expertRange,
   onLocationSelect,
-  initialLocation,
-  disabled
+  initialLocation
 }) => {
-  // Generar ID único para evitar conflictos (fuera del render)
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
+    libraries
+  });
+
   const searchInputId = React.useMemo(() => `search-input-${Math.random().toString(36).substr(2, 9)}`, []);
-  
-  console.log('AppointmentMap renderizando con ID:', searchInputId);
-  // Obtener coordenadas del servicio si está disponible
+  const mapRef = useRef<HTMLDivElement>(null);
+
   const getCoordinates = () => {
-    // Prioridad 1: expertLocation (del AppointmentForm)
     if (expertLocation) {
-      console.log('Usando expertLocation:', expertLocation);
       return {
         lat: expertLocation.latitude,
         lng: expertLocation.longitude,
@@ -56,20 +57,10 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       };
     }
     
-    // Prioridad 2: service (del SearchDetails)
     if (service?.searchHire?.service) {
       const serviceData = service.searchHire.service;
       const lat = parseFloat(serviceData.expertLatitude);
       const lng = parseFloat(serviceData.expertLongitude);
-      
-      console.log('Coordenadas del servicio:', {
-        expertLatitude: serviceData.expertLatitude,
-        expertLongitude: serviceData.expertLongitude,
-        parsedLat: lat,
-        parsedLng: lng,
-        locationRange: serviceData.locationRange
-      });
-      
       return {
         lat: lat || 40.4168,
         lng: lng || -3.7038,
@@ -77,9 +68,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       };
     }
     
-    // Prioridad 3: initialLocation
     if (initialLocation) {
-      console.log('Usando initialLocation:', initialLocation);
       return {
         lat: initialLocation.latitude,
         lng: initialLocation.longitude,
@@ -87,7 +76,6 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       };
     }
     
-    // Fallback: props directos o Madrid
     return {
       lat: latitude || 40.4168,
       lng: longitude || -3.7038,
@@ -96,33 +84,38 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
   };
 
   const coordinates = getCoordinates();
-  
-  console.log('Coordenadas finales para el mapa:', coordinates);
-  const mapRef = useRef<HTMLDivElement>(null);
+
+  console.log('🗺️ AppointmentMap renderizando con onLocationSelect:', !!onLocationSelect);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!isLoaded || loadError || !mapRef.current) return;
 
-    console.log('Creando mapa con coordenadas:', coordinates);
-
-    // Limpiar el contenido anterior
     mapRef.current.innerHTML = '';
 
-    // Verificar que Google Maps esté disponible
     if (!(window as any).google || !(window as any).google.maps) {
       console.error('Google Maps no está disponible');
       return;
     }
+    
+    if (!(window as any).google.maps.geometry || !(window as any).google.maps.geometry.spherical) {
+      console.error('Google Maps Geometry library no está disponible');
+      return;
+    }
 
     try {
-      // Crear un mapa simple con Google Maps
       const map = new (window as any).google.maps.Map(mapRef.current, {
         center: { lat: coordinates.lat, lng: coordinates.lng },
-        zoom: 11, // Zoom apropiado para ver rango de 25km
-        mapTypeId: 'roadmap'
+        zoom: 11,
+        mapTypeId: 'roadmap',
+        streetViewControl: false,
+        fullscreenControl: true,
+        zoomControl: true,
+        mapTypeControl: false,
+        scaleControl: false,
+        rotateControl: false,
+        clickableIcons: false
       });
 
-      // Crear marcador del experto
       const expertMarker = new (window as any).google.maps.Marker({
         position: { lat: coordinates.lat, lng: coordinates.lng },
         map: map,
@@ -139,25 +132,64 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         }
       });
 
-      // Crear círculo de rango coloreado (convertir km a metros)
-      const radiusInMeters = coordinates.radius * 1000; // Convertir km a metros
-      const circle = new (window as any).google.maps.Circle({
+      const radiusInMeters = coordinates.radius * 1000;
+
+      const createMask = () => {
+        // Calcular el antipode (punto opuesto en la Tierra)
+        const antipode = {
+          lat: -coordinates.lat,
+          lng: coordinates.lng > 0 ? coordinates.lng - 180 : coordinates.lng + 180
+        };
+        
+         // Radio del círculo inverso (más pequeño para dejar más área sin colorear)
+         const earthRadius = 6371000; // Radio de la Tierra en metros
+         const inverseRadius = earthRadius * Math.PI - radiusInMeters - 15000; // -15000m para reducir mucho el círculo rojo
+
+        const maskCircle = new (window as any).google.maps.Circle({
+          center: antipode,
+          radius: inverseRadius,
+          fillColor: '#EF4444',
+          fillOpacity: 0.4,
+          strokeColor: '#EF4444',
+          strokeOpacity: 0.1,
+          strokeWeight: 0,
+          map: map
+        });
+
+        return [maskCircle];
+      };
+
+      let maskElements: any[] = [];
+
+      const createMaskWhenReady = () => {
+        if (maskElements.length > 0) {
+          maskElements.forEach(element => element.setMap(null));
+        }
+        maskElements = createMask();
+      };
+
+      (window as any).google.maps.event.addListenerOnce(map, 'idle', () => {
+        createMaskWhenReady();
+      });
+
+      map.addListener('bounds_changed', createMaskWhenReady);
+
+      // Add a transparent circle to define the boundary
+      new (window as any).google.maps.Circle({
         strokeColor: '#10B981',
         strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: '#10B981',
-        fillOpacity: 0.1,
+        strokeWeight: 3,
+        fillColor: 'transparent',
+        fillOpacity: 0,
         map: map,
         center: { lat: coordinates.lat, lng: coordinates.lng },
         radius: radiusInMeters
       });
 
-      // Marcador para ubicación seleccionada
-      let selectedMarker = null;
-      let selectedInfoWindow = null;
+      let selectedMarker: any = null;
+      let selectedInfoWindow: any = null;
 
-      // Función para verificar si una ubicación está dentro del rango
-      const isWithinRange = (lat, lng) => {
+      const isWithinRange = (lat: number, lng: number) => {
         const distance = (window as any).google.maps.geometry.spherical.computeDistanceBetween(
           new (window as any).google.maps.LatLng(coordinates.lat, coordinates.lng),
           new (window as any).google.maps.LatLng(lat, lng)
@@ -165,112 +197,142 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         return distance <= radiusInMeters;
       };
 
-      // Función para manejar clic en el mapa
-      const handleMapClick = (event) => {
-        const clickedLat = event.latLng.lat();
-        const clickedLng = event.latLng.lng();
-        
-        if (isWithinRange(clickedLat, clickedLng)) {
-          // Eliminar marcador anterior si existe
-          if (selectedMarker) {
-            selectedMarker.setMap(null);
-          }
-          if (selectedInfoWindow) {
-            selectedInfoWindow.close();
-          }
+       const handleMapClick = (event: any) => {
+         const clickedLat = event.latLng.lat();
+         const clickedLng = event.latLng.lng();
 
-          // Crear nuevo marcador
-          selectedMarker = new (window as any).google.maps.Marker({
-            position: { lat: clickedLat, lng: clickedLng },
-            map: map,
-            title: "Ubicación seleccionada",
-            icon: {
-              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="10" fill="#3B82F6" stroke="#1E40AF" stroke-width="2"/>
-                  <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
-                </svg>
-              `),
-              scaledSize: new (window as any).google.maps.Size(24, 24),
-              anchor: new (window as any).google.maps.Point(12, 12)
-            }
-          });
+         if (selectedMarker) {
+           selectedMarker.setMap(null);
+         }
+         if (selectedInfoWindow) {
+           selectedInfoWindow.close();
+         }
 
-          // Crear info window
-          selectedInfoWindow = new (window as any).google.maps.InfoWindow({
-            content: `
-              <div class="p-2">
-                <p class="text-sm font-medium text-blue-600">✅ Ubicación válida</p>
-                <p class="text-xs text-gray-500">Dentro del rango de ${coordinates.radius}km</p>
-              </div>
-            `
-          });
+         if (isWithinRange(clickedLat, clickedLng)) {
+           console.log('📍 Ubicación dentro del rango, obteniendo dirección...');
+           
+           // Obtener la dirección real usando Geocoding
+           const geocoder = new (window as any).google.maps.Geocoder();
+           geocoder.geocode({ location: { lat: clickedLat, lng: clickedLng } }, (results: any, status: any) => {
+             let address = `Lat: ${clickedLat.toFixed(6)}, Lng: ${clickedLng.toFixed(6)}`;
+             
+             if (status === 'OK' && results[0]) {
+               address = results[0].formatted_address;
+               console.log('✅ Dirección obtenida:', address);
+             } else {
+               console.log('❌ Error obteniendo dirección:', status);
+             }
 
-          selectedInfoWindow.open(map, selectedMarker);
+             selectedMarker = new (window as any).google.maps.Marker({
+               position: { lat: clickedLat, lng: clickedLng },
+               map: map,
+               title: "Ubicación seleccionada",
+               icon: {
+                 url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                   <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                     <circle cx="12" cy="12" r="10" fill="#3B82F6" stroke="#1E40AF" stroke-width="2"/>
+                     <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
+                   </svg>
+                 `),
+                 scaledSize: new (window as any).google.maps.Size(24, 24),
+                 anchor: new (window as any).google.maps.Point(12, 12)
+               }
+             });
 
-          // Llamar a onLocationSelect si está disponible
-          if (onLocationSelect) {
-            onLocationSelect({
-              address: `Lat: ${clickedLat.toFixed(6)}, Lng: ${clickedLng.toFixed(6)}`,
-              latitude: clickedLat,
-              longitude: clickedLng
-            });
-          }
-        } else {
-          // Mostrar mensaje de error
-          const errorInfoWindow = new (window as any).google.maps.InfoWindow({
-            content: `
-              <div class="p-2">
-                <p class="text-sm font-medium text-red-600">❌ Fuera del rango</p>
-                <p class="text-xs text-gray-500">Debe estar dentro de ${coordinates.radius}km del experto</p>
-              </div>
-            `,
-            position: { lat: clickedLat, lng: clickedLng }
-          });
-          errorInfoWindow.open(map);
-          
-          // Cerrar después de 3 segundos
-          setTimeout(() => {
-            errorInfoWindow.close();
-          }, 3000);
-        }
-      };
+             selectedInfoWindow = new (window as any).google.maps.InfoWindow({
+               content: `
+                 <div class="p-2">
+                   <p class="text-sm font-medium text-green-600">✅ Ubicación válida</p>
+                   <p class="text-xs text-gray-500">Dentro del rango de ${coordinates.radius}km</p>
+                   <p class="text-xs text-gray-600 mt-1">${address}</p>
+                 </div>
+               `
+             });
 
-      // Añadir listener para clics en el mapa
+             selectedInfoWindow.open(map, selectedMarker);
+
+             console.log('🔄 Llamando onLocationSelect con:', { address, latitude: clickedLat, longitude: clickedLng });
+             console.log('🔍 onLocationSelect existe?', !!onLocationSelect);
+             
+             if (onLocationSelect) {
+               onLocationSelect({
+                 address: address,
+                 latitude: clickedLat,
+                 longitude: clickedLng
+               });
+               console.log('✅ onLocationSelect llamado exitosamente');
+             } else {
+               console.log('❌ onLocationSelect no está definido');
+             }
+           });
+         } else {
+           const errorInfoWindow = new (window as any).google.maps.InfoWindow({
+             content: `
+               <div class="p-2">
+                 <p class="text-sm font-medium text-red-600">❌ Fuera del rango</p>
+                 <p class="text-xs text-gray-500">Debe estar dentro de ${coordinates.radius}km</p>
+               </div>
+             `,
+             position: { lat: clickedLat, lng: clickedLng }
+           });
+           errorInfoWindow.open(map);
+           setTimeout(() => errorInfoWindow.close(), 3000);
+         }
+       };
+
       map.addListener('click', handleMapClick);
 
-      // Configurar barra de búsqueda
       const searchInput = document.getElementById(searchInputId);
       if (searchInput) {
         const searchBox = new (window as any).google.maps.places.SearchBox(searchInput);
         
-        searchBox.addListener('places_changed', () => {
-          const places = searchBox.getPlaces();
-          if (places.length === 0) return;
+         searchBox.addListener('places_changed', () => {
+           const places = searchBox.getPlaces();
+           if (places.length === 0) return;
 
-          const place = places[0];
-          if (place.geometry && place.geometry.location) {
-            const placeLat = place.geometry.location.lat();
-            const placeLng = place.geometry.location.lng();
-            
-            if (isWithinRange(placeLat, placeLng)) {
-              // Centrar mapa en la ubicación encontrada
-              map.setCenter(place.geometry.location);
-              map.setZoom(15);
-              
-              // Simular clic en esa ubicación
-              const clickEvent = {
-                latLng: place.geometry.location
-              };
-              handleMapClick(clickEvent);
-            } else {
-              alert(`La ubicación "${place.name}" está fuera del rango de ${coordinates.radius}km del experto.`);
+           const place = places[0];
+           if (place.geometry && place.geometry.location) {
+             const placeLat = place.geometry.location.lat();
+             const placeLng = place.geometry.location.lng();
+             
+             map.setCenter(place.geometry.location);
+             map.setZoom(15);
+             
+             // Usar la dirección del lugar encontrado directamente
+             console.log('🔍 Lugar encontrado:', place.name, 'Dirección:', place.formatted_address);
+             console.log('📍 Coordenadas:', placeLat, placeLng);
+             console.log('✅ ¿Dentro del rango?', isWithinRange(placeLat, placeLng));
+             
+             if (onLocationSelect && isWithinRange(placeLat, placeLng)) {
+               const address = place.formatted_address || place.name || `Lat: ${placeLat.toFixed(6)}, Lng: ${placeLng.toFixed(6)}`;
+               console.log('🔄 Llamando onLocationSelect desde búsqueda con:', { address, latitude: placeLat, longitude: placeLng });
+               
+               onLocationSelect({
+                 address: address,
+                 latitude: placeLat,
+                 longitude: placeLng
+               });
+               console.log('✅ onLocationSelect desde búsqueda llamado exitosamente');
+             } else {
+               console.log('❌ Ubicación fuera del rango o onLocationSelect no definido');
+               // Si está fuera del rango, simular clic para mostrar error
+               const clickEvent = { latLng: place.geometry.location };
+               handleMapClick(clickEvent);
+             }
+           }
+         });
+
+        searchInput.addEventListener('keypress', (e: KeyboardEvent) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const query = (searchInput as HTMLInputElement).value.trim();
+            if (query) {
+              // SearchBox handles the search automatically
             }
           }
         });
       }
 
-      // Info window del experto
       const expertInfoWindow = new (window as any).google.maps.InfoWindow({
         content: `
           <div class="p-3 bg-white rounded-lg shadow-lg">
@@ -286,20 +348,42 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         `
       });
 
-      // Mostrar info window del experto al hacer clic
       expertMarker.addListener('click', () => {
         expertInfoWindow.open(map, expertMarker);
       });
 
+      return () => {
+        maskElements.forEach(element => element.setMap(null));
+        (window as any).google.maps.event.clearInstanceListeners(map);
+      };
     } catch (error) {
       console.error('Error creando el mapa:', error);
     }
+  }, [isLoaded, loadError, coordinates.lat, coordinates.lng, coordinates.radius, address]);
 
-  }, [coordinates.lat, coordinates.lng, coordinates.radius, address]);
+  if (loadError) {
+    return (
+      <div className={`${className} rounded-lg border border-gray-200 shadow-sm flex items-center justify-center`}>
+        <div className="text-red-600 text-center">
+          <p>Error cargando Google Maps</p>
+          <p className="text-sm">{loadError.message}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className={`${className} rounded-lg border border-gray-200 shadow-sm flex items-center justify-center`}>
+        <div className="text-gray-600 text-center">
+          <p>Cargando mapa...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${className} rounded-lg border border-gray-200 shadow-sm`}>
-      {/* Barra de búsqueda */}
       <div className="p-3 border-b border-gray-200">
         <input
           type="text"
@@ -311,8 +395,6 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
           Selecciona una ubicación dentro del rango de {coordinates.radius}km
         </p>
       </div>
-      
-      {/* Mapa */}
       <div ref={mapRef} className="w-full h-full rounded-b-lg" />
     </div>
   );

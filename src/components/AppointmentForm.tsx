@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, MapPin, X, Phone, Home, FileText } from 'lucide-react';
+import { Calendar, MapPin, X, FileText } from 'lucide-react';
 import { ProposeAppointmentDto } from '../types/appointment';
 import AppointmentMap from './AppointmentMap';
 
@@ -167,19 +167,22 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">Proponer Cita</h3>
+      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">Proponer Cita</h3>
+            <p className="text-sm text-gray-600 mt-1">Completa los datos para programar tu cita</p>
+          </div>
           <button
             onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-white rounded-full"
             disabled={isLoading}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-8">
           {errors.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3">
               <div className="text-sm text-red-600">
@@ -191,15 +194,17 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           )}
           
           {/* Sección 1: Fecha y Hora */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium text-gray-900 border-b border-gray-200 pb-2">
-              📅 Fecha y Hora
-            </h4>
+          <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-blue-600" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900">Fecha y Hora</h4>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700">
-                  <Calendar className="w-4 h-4 inline mr-2" />
                   Fecha de la cita
                 </label>
                 <input
@@ -207,22 +212,21 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   value={formData.proposedDate}
                   onChange={handleDateChange}
                   min={today}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   required
                   disabled={isLoading}
                 />
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700">
-                  <Clock className="w-4 h-4 inline mr-2" />
                   Hora de la cita
                 </label>
                 <input
                   type="time"
                   value={formData.proposedTime.replace(':00', '')}
                   onChange={handleTimeChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   required
                   disabled={isLoading}
                 />
@@ -231,36 +235,56 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           </div>
 
           {/* Sección 2: Ubicación */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium text-gray-900 border-b border-gray-200 pb-2">
-              📍 Ubicación
-            </h4>
+          <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-green-600" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900">Ubicación</h4>
+            </div>
             
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                <MapPin className="w-4 h-4 inline mr-2" />
-                Ubicación de la cita
-              </label>
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Dirección seleccionada
+                </label>
+                <input
+                  type="text"
+                  value={formData.location || ''}
+                  placeholder="Selecciona una ubicación en el mapa..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors bg-white"
+                  readOnly
+                />
+                {selectedLocation && (
+                  <div className="text-xs text-green-600 bg-green-50 p-2 rounded-md">
+                    ✅ Ubicación válida: {selectedLocation.latitude.toFixed(6)}, {selectedLocation.longitude.toFixed(6)}
+                  </div>
+                )}
+              </div>
+              
               <AppointmentMap
                 onLocationSelect={handleLocationSelect}
-                initialLocation={selectedLocation}
+                initialLocation={selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude } : undefined}
                 disabled={isLoading}
                 expertLocation={expertLocation}
                 expertRange={expertRange}
+                className="w-full h-80"
               />
             </div>
           </div>
 
           {/* Sección 3: Información Adicional */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium text-gray-900 border-b border-gray-200 pb-2">
-              ℹ️ Información Adicional
-            </h4>
+          <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                <FileText className="w-4 h-4 text-purple-600" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900">Información Adicional</h4>
+            </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
+            <div className="space-y-6">
+              <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700">
-                  <Home className="w-4 h-4 inline mr-2" />
                   Número de puerta/garaje
                 </label>
                 <input
@@ -268,7 +292,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   value={formData.doorNumber || ''}
                   onChange={handleDoorNumberChange}
                   placeholder="Portal A, 2ºB, Garaje 15..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   disabled={isLoading}
                 />
                 <p className="text-xs text-gray-500">
@@ -276,9 +300,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 </p>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700">
-                  <Phone className="w-4 h-4 inline mr-2" />
                   Teléfono del propietario
                 </label>
                 <input
@@ -286,7 +309,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   value={formData.ownerPhone || ''}
                   onChange={handleOwnerPhoneChange}
                   placeholder="+34 666 123 456"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   disabled={isLoading}
                 />
                 <p className="text-xs text-gray-500">
@@ -294,17 +317,16 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 </p>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700">
-                  <FileText className="w-4 h-4 inline mr-2" />
                   Detalles específicos del sitio
                 </label>
                 <textarea
                   value={formData.siteDetails || ''}
                   onChange={handleSiteDetailsChange}
                   placeholder="Entrada por el garaje, timbre roto, código de acceso..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-colors"
                   disabled={isLoading}
                 />
                 <p className="text-xs text-gray-500">
@@ -314,29 +336,51 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </div>
           </div>
           
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
             <div className="text-sm text-blue-800">
-              <p className="font-medium mb-1">Información importante:</p>
-              <ul className="text-xs space-y-1">
-                <li>• La cita debe ser al menos 24 horas en el futuro</li>
-                <li>• El experto tendrá 48 horas para confirmar o rechazar</li>
-                <li>• Una vez confirmada, no se podrán hacer cambios 12h antes</li>
+              <p className="font-semibold mb-2 flex items-center">
+                <span className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center mr-2 text-xs">ℹ️</span>
+                Información importante
+              </p>
+              <ul className="text-xs space-y-1 ml-7">
+                <li className="flex items-start">
+                  <span className="w-1 h-1 bg-blue-600 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                  La cita debe ser al menos 24 horas en el futuro
+                </li>
+                <li className="flex items-start">
+                  <span className="w-1 h-1 bg-blue-600 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                  El experto tendrá 48 horas para confirmar o rechazar
+                </li>
+                <li className="flex items-start">
+                  <span className="w-1 h-1 bg-blue-600 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                  Una vez confirmada, no se podrán hacer cambios 12h antes
+                </li>
               </ul>
             </div>
           </div>
           
-          <div className="flex space-x-3 pt-4">
+          <div className="flex space-x-4 pt-6">
             <button
               type="submit"
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg"
               disabled={isLoading}
             >
-              {isLoading ? 'Proponiendo...' : 'Proponer Cita'}
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Proponiendo...
+                </span>
+              ) : (
+                'Proponer Cita'
+              )}
             </button>
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               disabled={isLoading}
             >
               Cancelar
