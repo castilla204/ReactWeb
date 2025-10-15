@@ -29,7 +29,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const [formData, setFormData] = useState<ProposeAppointmentDto>({
     proposedDate: '',
     proposedTime: '',
-    location: '',
+    address: '',
     latitude: null,
     longitude: null,
     doorNumber: null,
@@ -66,7 +66,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     }
     
     // Validar ubicación
-    if (!formData.location.trim() || !selectedLocation) {
+    if (!formData.address.trim() || !selectedLocation) {
       newErrors.push('Debes seleccionar una ubicación en el mapa');
     }
     
@@ -87,6 +87,10 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
+      console.log('📋 DTO de creación de cita que se enviará:', formData);
+      console.log('📍 Ubicación seleccionada:', selectedLocation);
+      console.log('🔍 searchHireId:', searchHireId);
+      
       // searchHireId se pasa al onSubmit a través del contexto del componente padre
       onSubmit(formData);
     }
@@ -153,13 +157,23 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     latitude: number;
     longitude: number;
   }) => {
-    setSelectedLocation(location);
-    setFormData({
-      ...formData,
-      location: location.address,
-      latitude: location.latitude,
-      longitude: location.longitude
+    console.log('🎯 handleLocationSelect LLAMADO con:', location);
+    console.log('📍 Dirección recibida:', location.address);
+    
+    // Actualizar estado usando callback para asegurar que se actualice
+    setFormData(prevFormData => {
+      const newFormData = {
+        ...prevFormData,
+        address: location.address,
+        latitude: location.latitude,
+        longitude: location.longitude
+      };
+      console.log('📝 Actualizando formData con address:', newFormData.address);
+      return newFormData;
     });
+    
+    setSelectedLocation(location);
+    console.log('🔄 Estado actualizado correctamente');
   };
 
   // Obtener fecha mínima (hoy)
@@ -167,8 +181,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
+      <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
           <div>
             <h3 className="text-xl font-bold text-gray-900">Proponer Cita</h3>
             <p className="text-sm text-gray-600 mt-1">Completa los datos para programar tu cita</p>
@@ -182,167 +196,160 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-8">
-          {errors.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <div className="text-sm text-red-600">
-                {errors.map((error, index) => (
-                  <p key={index} className="mb-1 last:mb-0">• {error}</p>
-                ))}
+        <form onSubmit={handleSubmit} className="p-4">
+          {/* Layout simple: siempre vertical en móvil, grid en desktop */}
+          <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
+            {errors.length > 0 && (
+              <div className="col-span-full bg-red-50 border border-red-200 rounded-md p-3">
+                <div className="text-sm text-red-600">
+                  {errors.map((error, index) => (
+                    <p key={index} className="mb-1 last:mb-0">• {error}</p>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-          
-          {/* Sección 1: Fecha y Hora */}
-          <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-blue-600" />
-              </div>
-              <h4 className="text-lg font-semibold text-gray-900">Fecha y Hora</h4>
-            </div>
+            )}
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Fecha de la cita
-                </label>
-                <input
-                  type="date"
-                  value={formData.proposedDate}
-                  onChange={handleDateChange}
-                  min={today}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  required
-                  disabled={isLoading}
-                />
+            {/* Sección 1: Fecha y Hora */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900">Fecha y Hora</h4>
               </div>
               
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Hora de la cita
-                </label>
-                <input
-                  type="time"
-                  value={formData.proposedTime.replace(':00', '')}
-                  onChange={handleTimeChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  required
-                  disabled={isLoading}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Fecha de la cita
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.proposedDate}
+                    onChange={handleDateChange}
+                    min={today}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Hora de la cita
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.proposedTime.replace(':00', '')}
+                    onChange={handleTimeChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Sección 2: Ubicación */}
-          <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <MapPin className="w-4 h-4 text-green-600" />
-              </div>
-              <h4 className="text-lg font-semibold text-gray-900">Ubicación</h4>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Dirección seleccionada
-                </label>
-                <input
-                  type="text"
-                  value={formData.location || ''}
-                  placeholder="Selecciona una ubicación en el mapa..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors bg-white"
-                  readOnly
-                />
-                {selectedLocation && (
-                  <div className="text-xs text-green-600 bg-green-50 p-2 rounded-md">
-                    ✅ Ubicación válida: {selectedLocation.latitude.toFixed(6)}, {selectedLocation.longitude.toFixed(6)}
-                  </div>
-                )}
+            {/* Sección 2: Mapa */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-green-600" />
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900">Ubicación</h4>
               </div>
               
-              <AppointmentMap
-                onLocationSelect={handleLocationSelect}
-                initialLocation={selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude } : undefined}
-                disabled={isLoading}
-                expertLocation={expertLocation}
-                expertRange={expertRange}
-                className="w-full h-80"
-              />
-            </div>
-          </div>
-
-          {/* Sección 3: Información Adicional */}
-          <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                <FileText className="w-4 h-4 text-purple-600" />
+              <div className="h-64 lg:h-80">
+                <AppointmentMap
+                  onLocationSelect={handleLocationSelect}
+                  initialLocation={selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude } : undefined}
+                  disabled={isLoading}
+                  expertLocation={expertLocation}
+                  expertRange={expertRange}
+                  className="w-full h-full"
+                />
               </div>
-              <h4 className="text-lg font-semibold text-gray-900">Información Adicional</h4>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Número de puerta/garaje
-                </label>
-                <input
-                  type="text"
-                  value={formData.doorNumber || ''}
-                  onChange={handleDoorNumberChange}
-                  placeholder="Portal A, 2ºB, Garaje 15..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-gray-500">
-                  Información adicional para facilitar el acceso
-                </p>
+            {/* Sección 3: Información Adicional */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-4 lg:col-span-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-purple-600" />
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900">Información Adicional</h4>
               </div>
 
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Teléfono del propietario
-                </label>
-                <input
-                  type="tel"
-                  value={formData.ownerPhone || ''}
-                  onChange={handleOwnerPhoneChange}
-                  placeholder="+34 666 123 456"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-gray-500">
-                  Teléfono de contacto del propietario del objeto/servicio
-                </p>
-              </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Dirección
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.address || ''}
+                    onChange={(e) => {
+                      setFormData({ ...formData, address: e.target.value });
+                    }}
+                    placeholder="Escribe la dirección o selecciona en el mapa..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors text-sm"
+                  />
+                </div>
 
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Detalles específicos del sitio
-                </label>
-                <textarea
-                  value={formData.siteDetails || ''}
-                  onChange={handleSiteDetailsChange}
-                  placeholder="Entrada por el garaje, timbre roto, código de acceso..."
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-colors"
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-gray-500">
-                  Información adicional que pueda ser útil para el experto
-                </p>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Número de puerta/garaje
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.doorNumber || ''}
+                    onChange={handleDoorNumberChange}
+                    placeholder="Portal A, 2ºB, Garaje 15..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors text-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Teléfono del propietario
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.ownerPhone || ''}
+                    onChange={handleOwnerPhoneChange}
+                    placeholder="+34 666 123 456"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors text-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Detalles específicos del sitio
+                  </label>
+                  <textarea
+                    value={formData.siteDetails || ''}
+                    onChange={handleSiteDetailsChange}
+                    placeholder="Entrada por el garaje, timbre roto, código de acceso..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-colors text-sm"
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-            <div className="text-sm text-blue-800">
+          {/* Información importante y botones */}
+          <div className="mt-4 space-y-3">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
+              <div className="text-sm text-blue-800">
               <p className="font-semibold mb-2 flex items-center">
-                <span className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center mr-2 text-xs">ℹ️</span>
+                <span className="w-4 h-4 bg-blue-200 rounded-full flex items-center justify-center mr-2 text-xs">ℹ️</span>
                 Información importante
               </p>
-              <ul className="text-xs space-y-1 ml-7">
+              <ul className="text-xs space-y-1 ml-6">
                 <li className="flex items-start">
                   <span className="w-1 h-1 bg-blue-600 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                   La cita debe ser al menos 24 horas en el futuro
@@ -356,13 +363,13 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   Una vez confirmada, no se podrán hacer cambios 12h antes
                 </li>
               </ul>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex space-x-4 pt-6">
+            
+            <div className="flex space-x-3 pt-3">
             <button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 px-5 rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg text-sm"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -380,11 +387,12 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               disabled={isLoading}
             >
               Cancelar
             </button>
+            </div>
           </div>
         </form>
       </div>
