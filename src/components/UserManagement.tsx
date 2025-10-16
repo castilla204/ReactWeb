@@ -1,7 +1,7 @@
 ﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../hooks/useApi';
-import { Shield, Trash2, CheckCircle, XCircle, Users, Search, CreditCard, Calendar, ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { Shield, CheckCircle, XCircle, Users, Search, CreditCard, Calendar, ArrowLeft } from 'lucide-react';
+import { UserAccountActions } from './UserAccountActions';
 
 interface User {
     id: number;
@@ -54,29 +54,6 @@ export function UserManagement({ onBack }: UserManagementProps) {
         }
     });
 
-    const deleteUserMutation = useMutation({
-        mutationFn: (userId: number) =>
-            fetchApi(`/api/User/${userId}`, {
-                method: 'DELETE',
-            }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['users'] });
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: '🗑️ User deleted successfully'
-                }
-            }));
-        },
-        onError: () => {
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'error',
-                    message: '❌ Failed to delete user'
-                }
-            }));
-        }
-    });
 
     const handleBlockUser = async (userId: number) => {
         try {
@@ -86,17 +63,6 @@ export function UserManagement({ onBack }: UserManagementProps) {
         }
     };
 
-    const handleDeleteUser = async (userId: number) => {
-        if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-            return;
-        }
-
-        try {
-            await deleteUserMutation.mutateAsync(userId);
-        } catch (error) {
-            console.error('Error deleting user:', error);
-        }
-    };
 
 
     if (usersQuery.isLoading) {
@@ -211,13 +177,11 @@ export function UserManagement({ onBack }: UserManagementProps) {
                                                 >
                                                     <Shield className="w-5 h-5" />
                                                 </button>
-                                                <button
-                                                    onClick={() => handleDeleteUser(user.id)}
-                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Delete user"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
+                                                <UserAccountActions 
+                                                    userId={user.id}
+                                                    userName={user.name}
+                                                    userEmail={user.email}
+                                                />
                                             </div>
                                         </td>
                                     </tr>

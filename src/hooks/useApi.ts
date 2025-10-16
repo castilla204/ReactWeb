@@ -12,7 +12,7 @@ export const useApi = () => {
         let responseText = '';
 
         // Log API calls for debugging
-        if (endpoint.includes('GetServiceByHireId') || endpoint.includes('dispute-service')) {
+        if (endpoint.includes('GetServiceByHireId') || endpoint.includes('dispute-service') || endpoint.includes('map-experts')) {
             console.log('[useApi] Making API call:', {
                 endpoint,
                 fullUrl: url,
@@ -23,9 +23,9 @@ export const useApi = () => {
             });
         }
 
-        const headers: HeadersInit = {
+        const headers: Record<string, string> = {
             ...(requiresAuth && getAuthToken() ? { 'Authorization': `Bearer ${getAuthToken()}` } : {}),
-            ...config.headers,
+            ...(config.headers as Record<string, string>),
         };
 
         // Only add Content-Type if we're not sending FormData
@@ -42,7 +42,7 @@ export const useApi = () => {
             responseText = await response.text();
 
             // Log response for debugging GetServiceByHireId calls
-            if (endpoint.includes('GetServiceByHireId') || endpoint.includes('dispute-service')) {
+            if (endpoint.includes('GetServiceByHireId') || endpoint.includes('dispute-service') || endpoint.includes('map-experts')) {
                 console.log('[useApi] Response:', {
                     status: response.status,
                     statusText: response.statusText,
@@ -75,7 +75,7 @@ export const useApi = () => {
 
             // Handle 204 No Content responses
             if (response.status === 204) {
-                return null as T;
+                return undefined as T;
             }
 
             if (!response.ok) {
@@ -97,7 +97,7 @@ export const useApi = () => {
             }
 
             // Parse JSON only if we have content
-            return responseText ? JSON.parse(responseText) : null;
+            return responseText ? JSON.parse(responseText) : undefined as T;
         } catch (error) {
             console.error('API Error:', {
                 url,
@@ -110,5 +110,35 @@ export const useApi = () => {
         }
     };
 
-    return { fetchApi };
+    const get = <T>(endpoint: string, config: RequestConfig = {}): Promise<T> => {
+        return fetchApi<T>(endpoint, { ...config, method: 'GET' });
+    };
+
+    const post = <T>(endpoint: string, data?: any, config: RequestConfig = {}): Promise<T> => {
+        return fetchApi<T>(endpoint, {
+            ...config,
+            method: 'POST',
+            body: data ? JSON.stringify(data) : undefined,
+        });
+    };
+
+    const put = <T>(endpoint: string, data?: any, config: RequestConfig = {}): Promise<T> => {
+        return fetchApi<T>(endpoint, {
+            ...config,
+            method: 'PUT',
+            body: data ? JSON.stringify(data) : undefined,
+        });
+    };
+
+    const del = <T>(endpoint: string, config: RequestConfig = {}): Promise<T> => {
+        return fetchApi<T>(endpoint, { ...config, method: 'DELETE' });
+    };
+
+    return { 
+        fetchApi, 
+        get, 
+        post, 
+        put, 
+        delete: del 
+    };
 };

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Search, X, Radar, DollarSign, Settings } from 'lucide-react';
+import { ArrowRight, Search, X, Radar, DollarSign, Settings, Star } from 'lucide-react';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
+import { useMapExperts } from '../hooks/useMapExperts';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
 
@@ -27,6 +28,17 @@ const markerIcon = {
     strokeWeight: 1.5,
     scale: 1.5,
     zIndex: 3
+};
+
+// Icono simple que siempre se ve
+const expertMarkerIcon = {
+  path: "M 0,-8 A 8,8 0 1,0 0,8 A 8,8 0 1,0 0,-8", // Círculo simple
+  fillColor: '#10b981', 
+  fillOpacity: 1,
+  strokeColor: '#ffffff',
+  strokeWeight: 2,
+  scale: 1.2,
+  zIndex: 2
 };
 
 const circleOptions = {
@@ -73,7 +85,18 @@ interface SearchParameterFormProps {
     serviceTypeId: number | null;
 }
 
-export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId }: SearchParameterFormProps) {
+// Interfaz para el estado del experto seleccionado en el InfoWindow
+interface ExpertInfo {
+    id: number;
+    lat: number;
+    lng: number;
+    name: string;
+    profilePictureUrl?: string;
+    averageRating: number;
+    completedSearches: number;
+}
+
+export function SearchParameterForm({ onComplete, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId }: SearchParameterFormProps) {
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
         libraries
@@ -87,6 +110,18 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+    
+    // Estados para expertos en el mapa
+    const { experts, totalCount, loading: expertsLoading } = useMapExperts(selectedCategory, serviceTypeId);
+    // Cambio clave: Ahora almacena el objeto de experto para el InfoWindow
+    const [selectedExpert, setSelectedExpert] = useState<ExpertInfo | null>(null);
+    const [showInfoWindow, setShowInfoWindow] = useState<boolean>(false);
+    
+    // Debug: Log cuando cambie selectedExpert
+    useEffect(() => {
+        console.log('🔍 selectedExpert changed:', selectedExpert);
+        setShowInfoWindow(!!selectedExpert);
+    }, [selectedExpert]);
 
     const initialFormState = {
         keywords: initialKeywords,
@@ -205,6 +240,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }));
     }, [minSearchInterval]);
 
+
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -305,6 +341,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     }, [selectedLocation, map, circle]);
 
     const handleMapClick = (e: google.maps.MapMouseEvent) => {
+        setSelectedExpert(null); // Cerrar cualquier InfoWindow abierto
+        setShowInfoWindow(false);
+        
         if (e.latLng) {
             const newLocation = {
                 lat: e.latLng.lat(),
@@ -376,14 +415,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         onComplete(searchParameterData);
     };
 
-    const handleBack = (e: React.MouseEvent) => {
-        e.preventDefault();
-        setCurrentStep(0);
-    };
+    // const handleBack = (e: React.MouseEvent) => {
+    //     e.preventDefault();
+    //     setCurrentStep(0);
+    // };
 
     return (
         <div className="w-full max-w-6xl mx-auto px-4 pt-2">
-
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Combined Container - Map + Settings */}
                 <div className="bg-white rounded-none md:rounded-2xl overflow-hidden shadow-xl border border-gray-100/50">
@@ -394,15 +432,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 <Settings className="w-3 h-3 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h2 className="text-sm md:text-base font-semibold text-gray-900">
-                                    {serviceTypeId === 1 ? 'Ubicación del vehículo' : 'Área de búsqueda'}
-                                </h2>
-                                <p className="text-xs text-gray-600 mt-0.5">
-                                    {serviceTypeId === 1 
-                                        ? 'Seleccione la ubicación exacta donde se encuentra el coche y el rango de precio del vehículo'
-                                        : 'Especifique el área donde está buscando el vehículo y el rango de precio que está dispuesto a pagar'
-                                    }
-                                </p>
+                                                        <h2 className="text-sm md:text-base font-semibold text-gray-900">
+                                                            {serviceTypeId === 1 ? 'Ubicación del vehículo' : 'Área de búsqueda'}
+                                                        </h2>
+                                                        <p className="text-xs text-gray-600 mt-0.5">
+                                                            {serviceTypeId === 1 
+                                                                ? 'Seleccione la ubicación aproximada donde se encuentra el coche y el rango de precio del vehículo'
+                                                                : 'Especifique el área donde está buscando el vehículo y el rango de precio que está dispuesto a pagar'
+                                                            }
+                                                        </p>
                             </div>
                         </div>
                     </div>
@@ -453,16 +491,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
                                                 </button>
                                             )}
-                                            {selectedAddress && (
-                                                <div className="absolute -bottom-1.5 md:-bottom-2 left-0 right-0 transform translate-y-full animate-in slide-in-from-top-2 duration-300">
-                                                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/60 rounded-md md:rounded-lg shadow-lg px-2.5 py-1.5 md:px-3 md:py-2 text-xs font-medium mx-1 md:mx-0">
-                                                        <div className="flex items-center gap-1.5 md:gap-2">
-                                                            <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full flex-shrink-0 animate-pulse"></div>
-                                                            <span className="text-green-700 truncate text-xs">{selectedAddress}</span>
-                                                        </div>
-                                                    </div>
-                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -477,6 +505,24 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         {formData.latitude && formData.longitude ? 'Seleccionada' : 'Ubicación'}
                                     </span>
                                 </div>
+                                
+                                {/* Indicador de expertos en la esquina superior derecha */}
+                                {!expertsLoading && totalCount > 0 && (
+                                    <div className="absolute top-2 right-2 md:top-4 md:right-4 z-10 flex items-center gap-1.5 md:gap-2 px-2.5 py-1 md:px-3 md:py-1.5 bg-white/90 backdrop-blur-sm rounded-full border border-gray-200/40 shadow-sm">
+                                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full"></div>
+                                        <span className="text-xs text-gray-600 font-medium">
+                                            {totalCount} experto{totalCount !== 1 ? 's' : ''} disponible{totalCount !== 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+                                )}
+                                
+                                {/* Indicador de carga de expertos */}
+                                {expertsLoading && (
+                                    <div className="absolute top-2 right-2 md:top-4 md:right-4 z-10 flex items-center gap-1.5 md:gap-2 px-2.5 py-1 md:px-3 md:py-1.5 bg-white/90 backdrop-blur-sm rounded-full border border-gray-200/40 shadow-sm">
+                                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 border border-green-400/30 border-t-green-500 rounded-full animate-spin"></div>
+                                        <span className="text-xs text-gray-600 font-medium">Cargando expertos...</span>
+                                    </div>
+                                )}
                                 <GoogleMap
                                     mapContainerStyle={{ width: '100%', height: '100%' }}
                                     zoom={getZoomLevel(parseInt(formData.locationRange))}
@@ -564,6 +610,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         styles: mapStyles
                                     }}
                                 >
+                                    {/* Marcador de ubicación seleccionada */}
                                     {selectedLocation && formData.latitude && formData.longitude && (
                                         <Marker
                                             position={selectedLocation}
@@ -572,11 +619,92 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             animation={google.maps.Animation.DROP}
                                         />
                                     )}
+                                    
+                                    {/* Marcadores de expertos */}
+                                    {experts.map((expert) => (
+                                        <Marker
+                                            key={`expert-${expert.id}`}
+                                            position={{
+                                                lat: parseFloat(expert.latitude),
+                                                lng: parseFloat(expert.longitude)
+                                            }}
+                                            icon={expertMarkerIcon}
+                                            zIndex={2}
+                                            onClick={() => {
+                                                console.log('🎯 Click en experto:', expert.name);
+                                                setSelectedExpert({
+                                                    id: expert.id,
+                                                    lat: parseFloat(expert.latitude),
+                                                    lng: parseFloat(expert.longitude),
+                                                    name: expert.name,
+                                                    profilePictureUrl: expert.profilePictureUrl,
+                                                    averageRating: expert.averageRating,
+                                                    completedSearches: expert.completedSearches,
+                                                });
+                                            }}
+                                        />
+                                    ))}
+                                    
                                 </GoogleMap>
                             </>
                         )}
                     </div>
-
+                    
+                    {/* Modal personalizado para información del experto */}
+                    {selectedExpert && selectedExpert.id && showInfoWindow && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4">
+                                <div className="p-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900">Información del Experto</h3>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedExpert(null);
+                                                setShowInfoWindow(false);
+                                            }}
+                                            className="text-gray-400 hover:text-gray-600"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="flex items-center space-x-3 mb-4">
+                                        {/* Foto/Avatar */}
+                                        {selectedExpert.profilePictureUrl ? (
+                                            <img 
+                                                src={selectedExpert.profilePictureUrl} 
+                                                alt={selectedExpert.name}
+                                                className="w-16 h-16 rounded-full object-cover border-2 border-green-500 flex-shrink-0"
+                                            />
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-2xl border-2 border-white shadow">
+                                                {selectedExpert.name.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                        
+                                        {/* Nombre y Rating */}
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900 text-lg">{selectedExpert.name}</h4>
+                                            <p className="text-yellow-600 font-medium flex items-center">
+                                                <Star className="w-4 h-4 mr-1" fill="#facc15" stroke="#facc15" />
+                                                {selectedExpert.averageRating.toFixed(1)} 
+                                                <span className="text-sm text-gray-500 ml-1">({selectedExpert.completedSearches} búsquedas)</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Botón de Contacto/Acción */}
+                                    <button 
+                                        className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                        onClick={() => { /* Implementar navegación a perfil del experto */ }}
+                                    >
+                                        Ver Perfil <ArrowRight className="ml-2 w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
                     {/* Settings Grid - Connected directly to map */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 border-t border-gray-100">
                         <div className="p-3 border-r border-gray-100 lg:border-r-gray-100">
