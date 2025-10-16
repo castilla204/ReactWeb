@@ -77,6 +77,7 @@ export const API_CONFIG = {
                 get: (id: number) => `${API_PATH}/SearchService/${id}`,
                 getByExpert: (expertId: number) => `${API_PATH}/SearchService/expert/${expertId}`,
                 getByHireId: (hireId: number) => `${API_PATH}/SearchService/GetServiceByHireId/${hireId}`,
+                mapExperts: `${API_PATH}/SearchService/map-experts`,
             },
             hires: {
                 createCheckout: (serviceId: number) => `${API_PATH}/SearchHire/create-checkout-session/${serviceId}`,
@@ -152,6 +153,12 @@ export const API_CONFIG = {
             // Mapeos de estado
             mappings: `${API_PATH}/SystemStatus/mappings`,
             mappingsById: (id: number) => `${API_PATH}/SystemStatus/mappings/${id}`,
+        },
+        accountDeletion: {
+            status: `${API_PATH}/AccountDeletion/status`,
+            delete: `${API_PATH}/AccountDeletion/delete`,
+            adminStatus: (userId: number) => `${API_PATH}/AccountDeletion/admin/status/${userId}`,
+            adminDelete: (userId: number) => `${API_PATH}/AccountDeletion/admin/delete/${userId}`,
         },
     },
 };

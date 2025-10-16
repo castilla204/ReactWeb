@@ -94,7 +94,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     }, []);
 
 
-    const isAdmin = user?.email?.trim().toLowerCase() === 'dcastillaa@gmail.com'.toLowerCase();
+    const isAdmin = user?.role === 'Admin' || user?.email?.trim().toLowerCase() === 'dcastillaa@gmail.com'.toLowerCase();
     
     // ✅ COMPLETO: Preparar filtros para la API (5 filtros principales)
     const apiFilters: SearchFilters = {
