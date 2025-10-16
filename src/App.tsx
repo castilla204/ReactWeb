@@ -22,6 +22,7 @@ import { BecomeExpertPage } from './pages/BecomeExpertPage';
 import { ExpertPanelPage } from './pages/ExpertPanelPage';
 import { SearchResultsPage } from './pages/SearchResultsPage';
 import { DisputePanelPage } from './pages/DisputePanelPage';
+import { AccountSettingsModal } from './components/AccountSettingsModal';
 import SearchDetails from './components/SearchDetails';
 import { GoogleAuth } from './components/GoogleAuth';
 
@@ -40,6 +41,7 @@ const App: React.FC = React.memo(() => {
     const { user, isAuthenticated, signOut } = useAuth();
     const [showFavorites, setShowFavorites] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showAccountSettings, setShowAccountSettings] = useState(false);
 
     const [notification, setNotification] = useState<{
         type: NotificationType;
@@ -192,6 +194,16 @@ const App: React.FC = React.memo(() => {
                                                 <Sparkles className="w-4 h-4 text-blue-600" />
                                                 Suscripción
                                             </a>
+                                            <button
+                                                onClick={() => {
+                                                    setShowAccountSettings(true);
+                                                    setShowProfileMenu(false);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                            >
+                                                <Settings className="w-4 h-4 text-gray-600" />
+                                                Configuración
+                                            </button>
                                             <button
                                                 onClick={handleSignOut}
                                                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -400,7 +412,7 @@ const App: React.FC = React.memo(() => {
                             <Route path="/cancel" element={<PaymentCancelPage />} />
                             <Route path="/ad/:id" element={<AdDetails onBack={() => window.history.back()} />} />
                             <Route path="/busquedas" element={<ProtectedRoute><SearchesPage /></ProtectedRoute>} />
-                            <Route path="/busquedas/:id" element={<ProtectedRoute><SearchDetailsWrapper isAdmin={user?.email === 'dcastillaa@gmail.com'} /></ProtectedRoute>} />
+                            <Route path="/busquedas/:id" element={<ProtectedRoute><SearchDetailsWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRoute>} />
                             <Route path="/detalles/:id" element={<ProtectedRoute><SearchResultsPage /></ProtectedRoute>} />
                             <Route path="/suscripciones" element={<ProtectedRoute><SubscriptionsPage /></ProtectedRoute>} />
                             <Route path="/admin" element={<ProtectedRoute><AdminPanelPage /></ProtectedRoute>} />
@@ -415,6 +427,7 @@ const App: React.FC = React.memo(() => {
 
                 {showFavorites && <FavoritesModal onClose={() => setShowFavorites(false)} />}
                 <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
+                <AccountSettingsModal isOpen={showAccountSettings} onClose={() => setShowAccountSettings(false)} />
                 {notification && (
                     <Notification
                         type={notification.type}

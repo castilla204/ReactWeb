@@ -13,9 +13,9 @@ export const ProtectedRoute = React.memo(({ children }: ProtectedRouteProps) => 
 
     useEffect(() => {
         // Solo redirigir si:
-        // 1. El usuario está autenticado
-        // 2. El teléfono NO está verificado
-        // 3. NO estamos ya en la página de verificación
+        // 1. El usuario estï¿½ autenticado
+        // 2. El telï¿½fono NO estï¿½ verificado
+        // 3. NO estamos ya en la pï¿½gina de verificaciï¿½n
         if (isAuthenticated && user && !user.phoneVerified && currentPath !== '/verify-phone') {
             navigate('/verify-phone', { replace: true });
         }
