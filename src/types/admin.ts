@@ -1,3 +1,22 @@
+// ✅ TIPOS PARA GESTIÓN DE ESTADOS DE FINALIZACIÓN
+export interface AppointmentStatusDto {
+  id: number;
+  statusType: string;               // ✅ AGREGADO: Tipo de estado (ej: "AppointmentStatus")
+  statusName: string;               // ✅ AGREGADO: Nombre técnico (ej: "AppointmentProposed")
+  statusValue: string;              // ✅ AGREGADO: Valor del estado (ej: "appointment_proposed")
+  displayName: string;              // ✅ AGREGADO: Nombre para mostrar (ej: "Cita Propuesta")
+  description: string;              // ✅ AGREGADO: Descripción del estado
+  sortOrder: number;                // ✅ AGREGADO: Orden de clasificación
+  isActive: boolean;                // ✅ AGREGADO: Si el estado está activo
+  isFinalizationStatus: boolean;    // ✅ AGREGADO: Si es estado de finalización
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateFinalizationStatusDto {
+  isFinalizationStatus: boolean;
+}
+
 // DTOs de Entrada (Para crear/actualizar)
 export interface CreateAppointmentStatusConfigDto {
   statusId: number;                  // ID del estado (1, 2, 3, etc.)
@@ -10,6 +29,7 @@ export interface CreateAppointmentStatusConfigDto {
 }
 
 export interface CreateServiceTypeCategoryConfigDto {
+  categoryId: number;                // ✅ AGREGADO: ID de la categoría principal
   serviceTypeCategoryId: number;     // ID de la categoría (1, 2, 3, etc.)
   status: string;                    // "appointment_completed", "appointment_cancelled_by_client_second", etc.
   clientPercentage: number;          // 0-100

@@ -172,6 +172,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         error,
         invalidateAll
     } = useSearchDetailsOptimized(searchId);
+    
+    // ✅ DEBUG: Verificar si el problema está en la obtención de datos del hook
+    console.log('[SearchDetails] Hook DEBUG:', {
+        searchId,
+        search,
+        searchHire: search?.searchHire,
+        isLoading,
+        isError,
+        error,
+        moneyDistribution,
+        category,
+        review,
+        appointment,
+        deliverables,
+        disputes
+    });
 
     // ? DATOS DERIVADOS
     const hireId = search?.searchHire?.id;
@@ -423,6 +439,40 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     });
     const canDispute = isClient && search?.searchHire?.status === 'awaiting_client_decision';
     const canApprove = isClient && search?.searchHire?.status === 'awaiting_client_decision';
+    
+    // ✅ DEBUG: Verificar si el problema está en la obtención de datos
+    console.log('[SearchDetails] Datos completos DEBUG:', {
+        searchId,
+        search,
+        searchHire: search?.searchHire,
+        isLoading,
+        isError,
+        error
+    });
+    
+    // ✅ DEBUG: Verificar por qué no se muestran los botones de aceptar/denegar
+    console.log('[SearchDetails] Botones Aceptar/Denegar DEBUG:', {
+        isClient,
+        clientId,
+        userId,
+        searchHireStatus: search?.searchHire?.status,
+        canDispute,
+        canApprove,
+        searchHireExists: !!search?.searchHire,
+        searchData: search,
+        searchHireData: search?.searchHire,
+        statusComparison: {
+            actualStatus: search?.searchHire?.status,
+            expectedStatus: 'awaiting_client_decision',
+            isMatch: search?.searchHire?.status === 'awaiting_client_decision'
+        },
+        // ✅ DEBUG ADICIONAL: Verificar si hay algún problema con el tipo de dato
+        statusType: typeof search?.searchHire?.status,
+        statusLength: search?.searchHire?.status?.length,
+        statusTrimmed: search?.searchHire?.status?.trim(),
+        // ✅ DEBUG: Verificar si hay espacios o caracteres especiales
+        statusCharCodes: search?.searchHire?.status ? search.searchHire.status.split('').map(c => c.charCodeAt(0)) : null
+    });
     const canCancel = isExpert && search?.searchHire && !['completed', 'canceled', 'disputed'].includes(search.searchHire.status);
     const isDisputed = (isClient || isExpert) && search?.searchHire?.status === 'disputed';
     const isDisputeResolved = (isClient || isExpert) && search?.searchHire?.status === 'dispute-resolved';
