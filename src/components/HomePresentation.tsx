@@ -145,7 +145,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                 </span>
                                             </span>
                                             <span className="block">antes de comprar</span>
-                                            <span className="block text-gray-900 font-extrabold">con expertos</span>
+                                            <span className="block text-gray-900 font-extrabold">gracias a expertos</span>
                                         </h1>
                                     </div>
                                     
