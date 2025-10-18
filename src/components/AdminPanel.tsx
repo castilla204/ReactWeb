@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Settings, Plus, Edit, Trash2, Search, Save, X } from 'lucide-react';
-import { useAppointmentStatusConfigs, useServiceTypeCategoryConfigs, useCategoryServiceTypeConfigs, useMoneyDistributionQuery, useConfigValidation, useAppointmentStatuses, loadConfigurationsByTab } from '../hooks/useAdminConfig';
+import { useAppointmentStatusConfigs, useServiceTypeCategoryConfigs, useCategoryServiceTypeConfigs, useMoneyDistributionQuery, useConfigValidation, useAppointmentStatuses, useAppointmentStatusManagement } from '../hooks/useAdminConfig';
 import { useStatusMappings } from '../hooks/useStatusMappings';
 import { ConfigFormData } from '../types/admin';
 import PriorityInfo from './PriorityInfo';
@@ -13,6 +13,8 @@ const AdminPanel: React.FC = () => {
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [formData, setFormData] = useState<ConfigFormData>({
     statusId: 0,
+    categoryId: undefined,
+    serviceTypeCategoryId: undefined,
     clientPercentage: 0,
     expertPercentage: 0,
     platformPercentage: 0,
@@ -43,6 +45,7 @@ const AdminPanel: React.FC = () => {
   const { validateForm } = useConfigValidation();
   const appointmentStatuses = useAppointmentStatuses();
   const statusMappings = useStatusMappings();
+  const statusManagement = useAppointmentStatusManagement();
 
   // Cargar datos básicos al montar el componente
   React.useEffect(() => {
@@ -51,12 +54,15 @@ const AdminPanel: React.FC = () => {
         setLoadingBasicData(true);
         console.log('🔄 Cargando datos básicos...');
         
-        // Hacer los 3 GETs en paralelo
+        // Hacer los 4 GETs en paralelo (incluyendo estados de finalización)
         const [statusesRes, categoriesRes, serviceTypesRes] = await Promise.all([
           fetch(`${API_CONFIG.baseUrl}/api/AppointmentConfig/appointment-status`),
           fetch(`${API_CONFIG.baseUrl}/api/AppointmentConfig/categories`),
           fetch(`${API_CONFIG.baseUrl}/api/AppointmentConfig/service-types`)
         ]);
+
+        // Cargar estados de finalización
+        await statusManagement.fetchAllStatuses();
 
         // Verificar que las respuestas sean exitosas
         if (!statusesRes.ok) throw new Error(`Error cargando estados: ${statusesRes.status}`);
@@ -240,11 +246,17 @@ const AdminPanel: React.FC = () => {
       setShowForm(false);
       resetForm();
       
-      // Forzar refresh de todos los hooks para asegurar que se actualicen
+      // ✅ CORREGIDO: Solo refrescar el hook correspondiente al tipo de configuración
       setTimeout(() => {
-        appointmentStatusConfigs.fetchConfigs();
-        serviceTypeCategoryConfigs.fetchConfigs();
-        granularConfigs.fetchConfigs();
+        console.log('🔄 Refrescando datos después de crear...');
+        if (activeTab === 'status') {
+          appointmentStatusConfigs.fetchConfigs();
+        } else if (activeTab === 'category') {
+          serviceTypeCategoryConfigs.fetchConfigs();
+        } else if (activeTab === 'granular') {
+          granularConfigs.fetchConfigs();
+        }
+        console.log('✅ Datos refrescados exitosamente');
       }, 500);
     } catch (error: any) {
       console.error('Error creating config:', error);
@@ -254,7 +266,12 @@ const AdminPanel: React.FC = () => {
 
   const handleUpdateConfig = async () => {
     try {
-      console.log('🔄 Actualizando configuración:', { editingConfig, formData });
+      console.log('🔄 DEBUG - handleUpdateConfig - Iniciando actualización');
+      console.log('🔄 DEBUG - handleUpdateConfig - editingConfig:', editingConfig);
+      console.log('🔄 DEBUG - handleUpdateConfig - formData:', formData);
+      console.log('🔄 DEBUG - handleUpdateConfig - activeTab:', activeTab);
+      console.log('🔄 DEBUG - handleUpdateConfig - selectedCategoryId:', selectedCategoryId);
+      console.log('🔄 DEBUG - handleUpdateConfig - selectedServiceTypeId:', selectedServiceTypeId);
 
       // Validar datos
       if (!formData.statusId || formData.statusId <= 0) {
@@ -269,35 +286,41 @@ const AdminPanel: React.FC = () => {
         return;
       }
 
+      // Validaciones específicas para configuraciones granulares
+      if (activeTab === 'granular') {
+        if (!formData.categoryId) {
+          alert('Debe seleccionar una categoría para configuraciones granulares');
+          return;
+        }
+        if (!formData.serviceTypeCategoryId) {
+          alert('Debe seleccionar un tipo de servicio para configuraciones granulares');
+          return;
+        }
+      }
+
       const errors = validateForm(formData, activeTab);
       if (errors.length > 0) {
+        console.log('🔄 DEBUG - handleUpdateConfig - Errores de validación:', errors);
         alert(errors.join('\n'));
         return;
       }
 
-      // Llamar a la función de actualización
-            if (activeTab === 'status') {
-              // Preparar datos según el tipo de configuración
-              let updateData: any = {
-                statusId: formData.statusId,
-                clientPercentage: formData.clientPercentage,
-                expertPercentage: formData.expertPercentage,
-                platformPercentage: formData.platformPercentage,
-                isActive: formData.isActive
-              };
+      // Llamar a la función de actualización según el tipo de configuración
+      if (activeTab === 'status') {
+        // Preparar datos para configuraciones por estado
+        let updateData: any = {
+          statusId: formData.statusId,
+          clientPercentage: formData.clientPercentage,
+          expertPercentage: formData.expertPercentage,
+          platformPercentage: formData.platformPercentage,
+          isActive: formData.isActive
+        };
 
-              // Agregar categoría y tipo de servicio según el tipo de configuración
-              if (activeTab === 'category' || activeTab === 'granular') {
-                updateData.categoryId = selectedCategoryId;
-              }
-
-              if (activeTab === 'granular') {
-                updateData.serviceTypeCategoryId = selectedServiceTypeId;
-              }
-
-              await appointmentStatusConfigs.updateConfig(editingConfig.id, updateData);
+        console.log('🔄 DEBUG - handleUpdateConfig - updateData final (status):', updateData);
+        await appointmentStatusConfigs.updateConfig(editingConfig.id, updateData);
             } else if (activeTab === 'category') {
         await serviceTypeCategoryConfigs.updateConfig(editingConfig.id, {
+          categoryId: formData.categoryId!, // ✅ AGREGADO: Incluir categoryId
           serviceTypeCategoryId: formData.serviceTypeCategoryId!,
           status: formData.statusId.toString(),
           clientPercentage: formData.clientPercentage,
@@ -321,6 +344,19 @@ const AdminPanel: React.FC = () => {
       setShowForm(false);
       setEditingConfig(null);
       resetForm();
+      
+      // ✅ CORREGIDO: Solo refrescar el hook correspondiente al tipo de configuración
+      setTimeout(() => {
+        console.log('🔄 Refrescando datos después de actualizar...');
+        if (activeTab === 'status') {
+          appointmentStatusConfigs.fetchConfigs();
+        } else if (activeTab === 'category') {
+          serviceTypeCategoryConfigs.fetchConfigs();
+        } else if (activeTab === 'granular') {
+          granularConfigs.fetchConfigs();
+        }
+        console.log('✅ Datos refrescados exitosamente');
+      }, 500);
       
       // Mostrar mensaje de éxito
       alert('✅ Configuración actualizada correctamente');
@@ -347,6 +383,19 @@ const AdminPanel: React.FC = () => {
         await granularConfigs.deleteConfig(id);
       }
       
+      // ✅ CORREGIDO: Solo refrescar el hook correspondiente al tipo de configuración
+      setTimeout(() => {
+        console.log('🔄 Refrescando datos después de eliminar...');
+        if (activeTab === 'status') {
+          appointmentStatusConfigs.fetchConfigs();
+        } else if (activeTab === 'category') {
+          serviceTypeCategoryConfigs.fetchConfigs();
+        } else if (activeTab === 'granular') {
+          granularConfigs.fetchConfigs();
+        }
+        console.log('✅ Datos refrescados exitosamente');
+      }, 500);
+      
       alert('✅ Configuración eliminada correctamente');
     } catch (error: any) {
       console.error('❌ Error deleting config:', error);
@@ -354,22 +403,115 @@ const AdminPanel: React.FC = () => {
     }
   };
 
+  // ✅ MAPEO DE NOMBRES DE ESTADOS (usando la nueva estructura del backend)
+  const getStatusDisplayName = (status: any) => {
+    // ✅ PRIORIDAD 1: Usar displayName del backend (más confiable)
+    if (status.displayName && status.displayName.trim() !== '') {
+      console.log(`🔍 DEBUG - getStatusDisplayName - DisplayName del backend: "${status.displayName}"`);
+      return status.displayName.trim();
+    }
+    
+    // ✅ PRIORIDAD 2: Usar statusName como fallback
+    if (status.statusName && status.statusName.trim() !== '') {
+      console.log(`🔍 DEBUG - getStatusDisplayName - StatusName del backend: "${status.statusName}"`);
+      return status.statusName.trim();
+    }
+    
+    // ✅ PRIORIDAD 3: Usar name (compatibilidad con estructura anterior)
+    if (status.name && status.name.trim() !== '') {
+      console.log(`🔍 DEBUG - getStatusDisplayName - Name del backend: "${status.name}"`);
+      return status.name.trim();
+    }
+    
+    // ✅ FALLBACK: Estado genérico
+    console.log(`🔍 DEBUG - getStatusDisplayName - Sin nombre, usando fallback: "Estado ${status.id}"`);
+    return `Estado ${status.id}`;
+  };
+
+  // ✅ FUNCIÓN PARA VERIFICAR SI UN ESTADO TIENE CONFIGURACIÓN
+  const hasConfiguration = (statusId: number) => {
+    // Verificar en configuraciones por estado
+    const hasStatusConfig = appointmentStatusConfigs.configs.some(config => 
+      config.statusId === statusId
+    );
+    
+    // Verificar en configuraciones por categoría (usar 'status' en lugar de 'statusId')
+    const hasCategoryConfig = serviceTypeCategoryConfigs.configs.some(config => 
+      config.status && config.status.includes(statusId.toString())
+    );
+    
+    // Verificar en configuraciones granulares
+    const hasGranularConfig = granularConfigs.configs.some(config => 
+      config.status && config.status.includes(statusId.toString())
+    );
+    
+    return hasStatusConfig || hasCategoryConfig || hasGranularConfig;
+  };
+
+  // ✅ FUNCIÓN PARA TOGGLE DE ESTADO DE FINALIZACIÓN
+  const handleToggleFinalizationStatus = async (statusId: number, currentStatus: boolean) => {
+    try {
+      console.log(`🔄 Cambiando estado de finalización para statusId: ${statusId}, de ${currentStatus} a ${!currentStatus}`);
+      
+      await statusManagement.updateFinalizationStatus(statusId, !currentStatus);
+      
+      alert(`✅ Estado de finalización ${!currentStatus ? 'activado' : 'desactivado'} correctamente`);
+    } catch (error) {
+      console.error('Error actualizando estado de finalización:', error);
+      alert('❌ Error al actualizar el estado de finalización');
+    }
+  };
+
   const handleEditConfig = (config: any) => {
+    console.log('🔍 DEBUG - handleEditConfig - Config recibida:', config);
+    console.log('🔍 DEBUG - handleEditConfig - Campos disponibles:', Object.keys(config));
+    console.log('🔍 DEBUG - handleEditConfig - categoryId:', config.categoryId);
+    console.log('🔍 DEBUG - handleEditConfig - serviceTypeCategoryId:', config.serviceTypeCategoryId);
+    console.log('🔍 DEBUG - handleEditConfig - activeTab actual:', activeTab);
+    console.log('🔍 DEBUG - handleEditConfig - Config completa para granular:', {
+      id: config.id,
+      statusId: config.statusId,
+      categoryId: config.categoryId,
+      serviceTypeCategoryId: config.serviceTypeCategoryId,
+      cliente: config.cliente,
+      experto: config.experto,
+      plataforma: config.plataforma,
+      activo: config.activo,
+      clientPercentage: config.clientPercentage,
+      expertPercentage: config.expertPercentage,
+      platformPercentage: config.platformPercentage,
+      isActive: config.isActive
+    });
+    
     setEditingConfig(config);
     setFormData({
       statusId: config.statusId || 0,
+      categoryId: config.categoryId || null, // ✅ AGREGADO: Incluir categoryId
       serviceTypeCategoryId: config.serviceTypeCategoryId,
-      clientPercentage: config.cliente || config.clientPercentage || 0,
-      expertPercentage: config.experto || config.expertPercentage || 0,
-      platformPercentage: config.plataforma || config.platformPercentage || 0,
+      clientPercentage: Number(config.cliente || config.clientPercentage || 0), // ✅ Asegurar que sea número
+      expertPercentage: Number(config.experto || config.expertPercentage || 0), // ✅ Asegurar que sea número
+      platformPercentage: Number(config.plataforma || config.platformPercentage || 0), // ✅ Asegurar que sea número
       isActive: config.activo === 'Activo' || config.isActive || true
     });
+    
+    console.log('🔍 DEBUG - handleEditConfig - FormData establecida:', {
+      statusId: config.statusId || 0,
+      categoryId: config.categoryId || null,
+      serviceTypeCategoryId: config.serviceTypeCategoryId,
+      clientPercentage: Number(config.cliente || config.clientPercentage || 0),
+      expertPercentage: Number(config.experto || config.expertPercentage || 0),
+      platformPercentage: Number(config.plataforma || config.platformPercentage || 0),
+      isActive: config.activo === 'Activo' || config.isActive || true
+    });
+    
     setShowForm(true);
   };
 
   const resetForm = () => {
     setFormData({
       statusId: 0,
+      categoryId: undefined, // ✅ AGREGADO: Resetear categoryId
+      serviceTypeCategoryId: undefined, // ✅ AGREGADO: Resetear serviceTypeCategoryId
       clientPercentage: 0,
       expertPercentage: 0,
       platformPercentage: 0,
@@ -650,6 +792,207 @@ const AdminPanel: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* ✅ NUEVA SECCIÓN: GESTIÓN DE ESTADOS DE FINALIZACIÓN */}
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-blue-900">
+                    🎯 Gestión de Estados de Finalización
+                  </h3>
+                  <button
+                    onClick={() => statusManagement.fetchAllStatuses()}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  >
+                    🔄 Actualizar
+                  </button>
+                </div>
+                
+                <p className="text-sm text-blue-700 mb-4">
+                  Marca qué estados son considerados de "finalización" para las configuraciones de distribución de dinero.
+                </p>
+
+
+                {/* ✅ RESUMEN ESTADÍSTICO COMPACTO */}
+                <div className="mb-3 p-2 bg-gray-50 border border-gray-200 rounded text-sm">
+                  <div className="flex items-center gap-4">
+                    <span className="text-gray-600">📊 {statusManagement.statuses.length}</span>
+                    {statusManagement.statuses.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length > 0 && (
+                      <span className="text-red-600">⚠️ {statusManagement.statuses.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length}</span>
+                    )}
+                    <span className="text-green-600">✅ {statusManagement.statuses.filter(s => s.isFinalizationStatus).length}</span>
+                    <span className="text-gray-600">⏳ {statusManagement.statuses.filter(s => !s.isFinalizationStatus).length}</span>
+                  </div>
+                </div>
+
+                {statusManagement.isLoading ? (
+                  <div className="text-center py-4">
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <p className="mt-2 text-sm text-blue-600">Cargando estados...</p>
+                  </div>
+                ) : statusManagement.error ? (
+                  <div className="text-center py-4">
+                    <p className="text-red-600 text-sm">❌ {statusManagement.error}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* ✅ GRUPO: ESTADOS SIN CONFIGURACIÓN (PRIMERO) */}
+                    {statusManagement.statuses.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length > 0 && (
+                      <div>
+                        <h4 className="text-base font-semibold text-red-800 mb-2 flex items-center">
+                          <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                          ⚠️ Sin Config ({statusManagement.statuses.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length})
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+                          {statusManagement.statuses
+                            .filter(status => status.isFinalizationStatus && !hasConfiguration(status.id))
+                            .sort((a, b) => a.id - b.id)
+                            .map((status) => (
+                              <div
+                                key={status.id}
+                                className="p-2 rounded border bg-red-50 border-red-300 transition-all"
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <h4 className="font-medium text-gray-900 text-sm truncate">
+                                    {getStatusDisplayName(status)}
+                                  </h4>
+                                  <span className="text-xs text-gray-500 bg-gray-100 px-1 py-0.5 rounded text-nowrap">
+                                    {status.id}
+                                  </span>
+                                </div>
+                                
+                                {/* ✅ STATUS VALUE COMPACTO */}
+                                {status.statusValue && (
+                                  <p className="text-xs font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded mb-1 truncate">
+                                    {status.statusValue}
+                                  </p>
+                                )}
+                                
+                                <div className="flex items-center justify-between">
+                                  <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                    ⚠️
+                                  </span>
+                                  <button
+                                    onClick={() => handleToggleFinalizationStatus(status.id, status.isFinalizationStatus)}
+                                    className="px-2 py-0.5 text-xs rounded transition-colors bg-red-100 text-red-700 hover:bg-red-200"
+                                  >
+                                    ❌
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ✅ GRUPO: ESTADOS DE FINALIZACIÓN (TODOS) */}
+                    {statusManagement.statuses.filter(s => s.isFinalizationStatus).length > 0 && (
+                      <div>
+                        <h4 className="text-base font-semibold text-green-800 mb-2 flex items-center">
+                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                          ✅ Final ({statusManagement.statuses.filter(s => s.isFinalizationStatus).length})
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+                          {statusManagement.statuses
+                            .filter(status => status.isFinalizationStatus)
+                            .sort((a, b) => a.id - b.id)
+                            .map((status) => (
+                              <div
+                                key={status.id}
+                                className={`p-2 rounded border transition-all ${
+                                  hasConfiguration(status.id) 
+                                    ? 'bg-green-50 border-green-300' 
+                                    : 'bg-red-50 border-red-300'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <h4 className="font-medium text-gray-900 text-sm truncate">
+                                    {getStatusDisplayName(status)}
+                                  </h4>
+                                  <span className="text-xs text-gray-500 bg-gray-100 px-1 py-0.5 rounded text-nowrap">
+                                    {status.id}
+                                  </span>
+                                </div>
+                                
+                                {/* ✅ STATUS VALUE COMPACTO */}
+                                {status.statusValue && (
+                                  <p className="text-xs font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded mb-1 truncate">
+                                    {status.statusValue}
+                                  </p>
+                                )}
+                                
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1">
+                                    <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                      ✅
+                                    </span>
+                                    {!hasConfiguration(status.id) && (
+                                      <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        ⚠️
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => handleToggleFinalizationStatus(status.id, status.isFinalizationStatus)}
+                                    className="px-2 py-0.5 text-xs rounded transition-colors bg-red-100 text-red-700 hover:bg-red-200"
+                                  >
+                                    ❌
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ✅ GRUPO: ESTADOS INTERMEDIOS */}
+                    <div>
+                      <h4 className="text-base font-semibold text-gray-700 mb-2 flex items-center">
+                        <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                        ⏳ Inter ({statusManagement.statuses.filter(s => !s.isFinalizationStatus).length})
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+                        {statusManagement.statuses
+                          .filter(status => !status.isFinalizationStatus)
+                          .sort((a, b) => a.id - b.id)
+                          .map((status) => (
+                            <div
+                              key={status.id}
+                              className="p-2 rounded border bg-gray-50 border-gray-200 transition-all"
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className="font-medium text-gray-900 text-sm truncate">
+                                  {getStatusDisplayName(status)}
+                                </h4>
+                                <span className="text-xs text-gray-500 bg-gray-100 px-1 py-0.5 rounded text-nowrap">
+                                  {status.id}
+                                </span>
+                              </div>
+                              
+                              {/* ✅ STATUS VALUE COMPACTO */}
+                              {status.statusValue && (
+                                <p className="text-xs font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded mb-1 truncate">
+                                  {status.statusValue}
+                                </p>
+                              )}
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                  ⏳
+                                </span>
+                                <button
+                                  onClick={() => handleToggleFinalizationStatus(status.id, status.isFinalizationStatus)}
+                                  className="px-2 py-0.5 text-xs rounded transition-colors bg-green-100 text-green-700 hover:bg-green-200"
+                                >
+                                  ✅
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {getLoadingForTab() ? (
@@ -947,19 +1290,7 @@ const AdminPanel: React.FC = () => {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                   <button
-                                    onClick={() => {
-                                      setEditingConfig(config);
-                                      setFormData({
-                                        statusId: 0, // Las configuraciones granulares no tienen statusId
-                                        categoryId: config.categoryId,
-                                        serviceTypeCategoryId: config.serviceTypeCategoryId,
-                                        clientPercentage: config.clientPercentage,
-                                        expertPercentage: config.expertPercentage,
-                                        platformPercentage: config.platformPercentage,
-                                        isActive: config.isActive
-                                      });
-                                      setShowForm(true);
-                                    }}
+                                    onClick={() => handleEditConfig(config)}
                                     className="text-blue-600 hover:text-blue-900 mr-3"
                                   >
                                     <Edit className="w-5 h-5" />
@@ -1132,6 +1463,10 @@ const AdminPanel: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                       disabled={loadingBasicData}
+                      onFocus={() => {
+                        console.log('🔍 DEBUG - Select estado - onFocus - formData.statusId:', formData.statusId);
+                        console.log('🔍 DEBUG - Select estado - onFocus - editingConfig:', editingConfig);
+                      }}
                     >
                       <option value={0}>
                         {loadingBasicData ? 'Cargando estados...' : 'Seleccionar estado...'}
@@ -1151,11 +1486,27 @@ const AdminPanel: React.FC = () => {
                         Categoría
                       </label>
                       <select
-                        value={selectedCategoryId || ''}
-                        onChange={(e) => setSelectedCategoryId(e.target.value ? parseInt(e.target.value) : null)}
+                        value={editingConfig ? (formData.categoryId || '') : (selectedCategoryId || '')}
+                        onChange={(e) => {
+                          const value = e.target.value ? parseInt(e.target.value) : null;
+                          if (editingConfig) {
+                            // ✅ CORREGIDO: Al editar, actualizar formData en lugar de selectedCategoryId
+                            setFormData({ ...formData, categoryId: value || undefined });
+                            console.log('🔍 DEBUG - Select categoría - Actualizando formData.categoryId:', value);
+                          } else {
+                            setSelectedCategoryId(value);
+                            console.log('🔍 DEBUG - Select categoría - Actualizando selectedCategoryId:', value);
+                          }
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                         disabled={loadingBasicData}
+                        onFocus={() => {
+                          console.log('🔍 DEBUG - Select categoría - onFocus - editingConfig:', editingConfig);
+                          console.log('🔍 DEBUG - Select categoría - onFocus - formData.categoryId:', formData.categoryId);
+                          console.log('🔍 DEBUG - Select categoría - onFocus - selectedCategoryId:', selectedCategoryId);
+                          console.log('🔍 DEBUG - Select categoría - onFocus - value mostrado:', editingConfig ? (formData.categoryId || '') : (selectedCategoryId || ''));
+                        }}
                       >
                         <option value="">
                           {loadingBasicData ? 'Cargando categorías...' : 'Seleccionar categoría...'}
@@ -1181,11 +1532,27 @@ const AdminPanel: React.FC = () => {
                         Tipo de Servicio
                       </label>
                       <select
-                        value={selectedServiceTypeId || ''}
-                        onChange={(e) => setSelectedServiceTypeId(e.target.value ? parseInt(e.target.value) : null)}
+                        value={editingConfig ? (formData.serviceTypeCategoryId || '') : (selectedServiceTypeId || '')}
+                        onChange={(e) => {
+                          const value = e.target.value ? parseInt(e.target.value) : null;
+                          if (editingConfig) {
+                            // ✅ CORREGIDO: Al editar, actualizar formData en lugar de selectedServiceTypeId
+                            setFormData({ ...formData, serviceTypeCategoryId: value || undefined });
+                            console.log('🔍 DEBUG - Select tipo servicio - Actualizando formData.serviceTypeCategoryId:', value);
+                          } else {
+                            setSelectedServiceTypeId(value);
+                            console.log('🔍 DEBUG - Select tipo servicio - Actualizando selectedServiceTypeId:', value);
+                          }
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                         disabled={loadingBasicData}
+                        onFocus={() => {
+                          console.log('🔍 DEBUG - Select tipo servicio - onFocus - editingConfig:', editingConfig);
+                          console.log('🔍 DEBUG - Select tipo servicio - onFocus - formData.serviceTypeCategoryId:', formData.serviceTypeCategoryId);
+                          console.log('🔍 DEBUG - Select tipo servicio - onFocus - selectedServiceTypeId:', selectedServiceTypeId);
+                          console.log('🔍 DEBUG - Select tipo servicio - onFocus - value mostrado:', editingConfig ? (formData.serviceTypeCategoryId || '') : (selectedServiceTypeId || ''));
+                        }}
                       >
                         <option value="">
                           {loadingBasicData ? 'Cargando tipos de servicio...' : 'Seleccionar tipo de servicio...'}
@@ -1211,7 +1578,7 @@ const AdminPanel: React.FC = () => {
                       type="number"
                       min="0"
                       max="100"
-                      value={formData.clientPercentage}
+                      value={formData.clientPercentage || 0}
                       onChange={(e) => setFormData({ ...formData, clientPercentage: parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
@@ -1223,7 +1590,7 @@ const AdminPanel: React.FC = () => {
                       type="number"
                       min="0"
                       max="100"
-                      value={formData.expertPercentage}
+                      value={formData.expertPercentage || 0}
                       onChange={(e) => setFormData({ ...formData, expertPercentage: parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
@@ -1235,7 +1602,7 @@ const AdminPanel: React.FC = () => {
                       type="number"
                       min="0"
                       max="100"
-                      value={formData.platformPercentage}
+                      value={formData.platformPercentage || 0}
                       onChange={(e) => setFormData({ ...formData, platformPercentage: parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required

@@ -127,6 +127,9 @@ export const API_CONFIG = {
             configurationsByCategory: `${API_PATH}/AppointmentConfig/configurations-by-category`,
             moneyDistribution: `${API_PATH}/AppointmentConfig/money-distribution`,
             moneyDistributionPublic: `${API_PATH}/AppointmentConfig/money-distribution/public`,
+            // ✅ NUEVOS ENDPOINTS PARA GESTIÓN DE ESTADOS DE FINALIZACIÓN
+            allStatuses: `${API_PATH}/AppointmentConfig/all-statuses`,
+            updateFinalizationStatus: (statusId: number) => `${API_PATH}/AppointmentConfig/update-finalization-status/${statusId}`,
         },
         dispute: {
             create: `${API_PATH}/Dispute/dispute-service`,

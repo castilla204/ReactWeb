@@ -9,7 +9,8 @@ import {
   CreateAppointmentStatusConfigDto,
   CreateServiceTypeCategoryConfigDto,
   CreateCategoryServiceTypeConfigDto,
-  ConfigFormData
+  ConfigFormData,
+  AppointmentStatusDto,
 } from '../types/admin';
 
 // Hook para obtener estados de citas disponibles
@@ -58,7 +59,10 @@ export const useAppointmentStatusConfigs = () => {
     setError(null);
     
     try {
+      console.log('🔍 DEBUG - useAppointmentStatusConfigs - Endpoint:', API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs);
       const response = await fetchApi<AppointmentStatusConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.appointmentStatusConfigs);
+      console.log('🔍 DEBUG - useAppointmentStatusConfigs - Response:', response);
+      console.log('🔍 DEBUG - useAppointmentStatusConfigs - Response length:', response?.length);
       setConfigs(response);
     } catch (err) {
       console.error('Error fetching appointment status configs:', err);
@@ -323,7 +327,10 @@ export const useServiceTypeCategoryConfigs = () => {
     
     try {
       // Usar el endpoint específico para configuraciones por categoría
+      console.log('🔍 DEBUG - useServiceTypeCategoryConfigs - Endpoint:', API_CONFIG.endpoints.appointmentConfig.configurationsByCategory);
       const response = await fetchApi<ServiceTypeCategoryConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.configurationsByCategory);
+      console.log('🔍 DEBUG - useServiceTypeCategoryConfigs - Response:', response);
+      console.log('🔍 DEBUG - useServiceTypeCategoryConfigs - Response length:', response?.length);
       setConfigs(response);
     } catch (err) {
       console.error('Error fetching service type category configs:', err);
@@ -387,7 +394,7 @@ export const useServiceTypeCategoryConfigs = () => {
         action: "update",
         configId: id,
         statusId: parseInt(config.status), // Convertir string a número
-        categoryId: null, // Para configuraciones por categoría, no se especifica categoría específica
+        categoryId: config.categoryId, // ✅ CORREGIDO: Usar config.categoryId en lugar de null
         serviceTypeCategoryId: config.serviceTypeCategoryId,
         clientPercentage: config.clientPercentage,
         expertPercentage: config.expertPercentage,
@@ -536,7 +543,8 @@ export const useConfigValidation = () => {
     }
     
     if (configType === 'category' || configType === 'granular') {
-      if (data.serviceTypeCategoryId !== undefined && data.serviceTypeCategoryId <= 0) {
+      // ✅ CORREGIDO: Permitir serviceTypeCategoryId: null para "todos los tipos de servicio"
+      if (data.serviceTypeCategoryId !== undefined && data.serviceTypeCategoryId !== null && data.serviceTypeCategoryId <= 0) {
         errors.push('Debe seleccionar una categoría de servicio válida');
       }
     }
@@ -567,7 +575,10 @@ export const useCategoryServiceTypeConfigs = () => {
     
     try {
       // Usar el endpoint específico para configuraciones granulares
+      console.log('🔍 DEBUG - useCategoryServiceTypeConfigs - Endpoint:', API_CONFIG.endpoints.appointmentConfig.granularConfigurations);
       const response = await fetchApi<CategoryServiceTypeConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.granularConfigurations);
+      console.log('🔍 DEBUG - useCategoryServiceTypeConfigs - Response:', response);
+      console.log('🔍 DEBUG - useCategoryServiceTypeConfigs - Response length:', response?.length);
       setConfigs(response);
     } catch (err) {
       console.error('Error fetching category service type configs:', err);
@@ -791,4 +802,91 @@ export const loadConfigurationsByTab = async (activeTab: 'status' | 'category' |
     console.error('❌ Error cargando configuraciones:', error);
     throw error;
   }
+};
+
+// ✅ HOOK PARA GESTIÓN DE ESTADOS DE FINALIZACIÓN
+export const useAppointmentStatusManagement = () => {
+  const { fetchApi } = useApi();
+  const [statuses, setStatuses] = useState<AppointmentStatusDto[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAllStatuses = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      console.log('🔍 DEBUG - useAppointmentStatusManagement - Fetching all statuses...');
+      console.log('🔍 DEBUG - useAppointmentStatusManagement - Endpoint:', API_CONFIG.endpoints.appointmentConfig.allStatuses);
+      const response = await fetchApi<AppointmentStatusDto[]>(API_CONFIG.endpoints.appointmentConfig.allStatuses);
+      console.log('🔍 DEBUG - useAppointmentStatusManagement - Response:', response);
+      console.log('🔍 DEBUG - useAppointmentStatusManagement - Response length:', response?.length);
+      
+      // Log detallado de cada estado
+      if (response && response.length > 0) {
+        response.forEach((status, index) => {
+          console.log(`🔍 DEBUG - Estado ${index + 1}:`, {
+            id: status.id,
+            statusType: status.statusType,
+            statusName: status.statusName,
+            statusValue: status.statusValue,
+            displayName: status.displayName,
+            description: status.description,
+            sortOrder: status.sortOrder,
+            isActive: status.isActive,
+            isFinalizationStatus: status.isFinalizationStatus
+          });
+        });
+      }
+      
+      setStatuses(response);
+    } catch (err) {
+      console.error('Error fetching all statuses:', err);
+      setError('Error al obtener todos los estados');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateFinalizationStatus = async (statusId: number, isFinalizationStatus: boolean) => {
+    try {
+      console.log(`🔄 Actualizando estado de finalización para statusId: ${statusId}, isFinalizationStatus: ${isFinalizationStatus}`);
+      
+      const response = await fetchApi<AppointmentStatusDto>(
+        API_CONFIG.endpoints.appointmentConfig.updateFinalizationStatus(statusId),
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ isFinalizationStatus }),
+        }
+      );
+
+      console.log('✅ Estado de finalización actualizado:', response);
+      
+      // Actualizar el estado local
+      setStatuses(prevStatuses => 
+        prevStatuses.map(status => 
+          status.id === statusId 
+            ? { ...status, isFinalizationStatus }
+            : status
+        )
+      );
+
+      return response;
+    } catch (err) {
+      console.error('Error updating finalization status:', err);
+      setError('Error al actualizar estado de finalización');
+      throw err;
+    }
+  };
+
+  return {
+    statuses,
+    isLoading,
+    error,
+    fetchAllStatuses,
+    updateFinalizationStatus,
+  };
 };
