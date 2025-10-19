@@ -56,7 +56,7 @@ export default function SearchForm({
     const queryClient = useQueryClient();
     const { createSearchWithHire } = useSearch();
     const { maxSearchesReached, maxSearches } = useSubscriptionLimits();
-    const { balance, isLoadingBalance, balanceError, refetchBalance } = useUserSettings();
+    const { } = useUserSettings();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [notification, setNotification] = useState<{
         type: NotificationType;
@@ -85,30 +85,6 @@ export default function SearchForm({
         window.scrollTo(0, 0);
     }, []);
 
-    // Handle balance error with useEffect to prevent infinite re-renders
-    useEffect(() => {
-        if (balanceError) {
-            console.error('[SearchForm] Balance error details:', balanceError);
-            
-            // More specific error messages based on error type
-            let errorMessage = '❌ Error al obtener el saldo de la cuenta';
-            
-            if (balanceError instanceof Error) {
-                if (balanceError.message.includes('Failed to fetch') || balanceError.message.includes('NetworkError')) {
-                    errorMessage = '🌐 Error de conexión. Verifica tu conexión a internet e inténtalo de nuevo.';
-                } else if (balanceError.message.includes('timeout')) {
-                    errorMessage = '⏱️ La conexión está tardando mucho. Inténtalo de nuevo.';
-                } else if (balanceError.message.includes('401') || balanceError.message.includes('Unauthorized')) {
-                    errorMessage = '🔐 Sesión expirada. Por favor, inicia sesión de nuevo.';
-                }
-            }
-            
-            setNotification({
-                type: 'error',
-                message: errorMessage,
-            });
-        }
-    }, [balanceError]);
 
     const isDataComplete = serviceId !== null && expertName && servicePrice !== undefined;
 
@@ -116,7 +92,7 @@ export default function SearchForm({
         e.preventDefault();
         setIsSubmitting(true);
 
-        console.log('SearchForm - Submitting with:', { serviceId, servicePrice, balance });
+        console.log('SearchForm - Submitting with:', { serviceId, servicePrice });
 
         if (!isDataComplete) {
             setNotification({
@@ -137,10 +113,10 @@ export default function SearchForm({
             return;
         }
 
-        if (createSearchWithHire.isPending || isSubmitting || isLoadingBalance || balance === null) {
+        if (createSearchWithHire.isPending || isSubmitting) {
             setNotification({
                 type: 'error',
-                message: '❌ Error: No se pudo cargar el saldo. Por favor, intenta de nuevo.',
+                message: '❌ Error: Procesando solicitud. Por favor, espera.',
             });
             setIsSubmitting(false);
             return;
@@ -232,31 +208,6 @@ export default function SearchForm({
         }
     };
 
-    useEffect(() => {
-        const pendingHire = sessionStorage.getItem('pendingHire');
-        if (pendingHire) {
-            (async () => {
-                setIsSubmitting(true);
-                try {
-                    await refetchBalance();
-                    queryClient.invalidateQueries({ queryKey: ['searches'] });
-                    setNotification({
-                        type: 'success',
-                        message: `✅ Búsqueda y contratación creadas exitosamente para el servicio de ${expertName}.`,
-                    });
-                    onComplete();
-                } catch (err) {
-                    setNotification({
-                        type: 'error',
-                        message: `❌ Error al verificar el saldo: ${err instanceof Error ? err.message : 'Error desconocido'}`,
-                    });
-                } finally {
-                    setIsSubmitting(false);
-                    sessionStorage.removeItem('pendingHire');
-                }
-            })();
-        }
-    }, [expertName, onComplete, refetchBalance, queryClient]);
 
     const handleBack = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -529,39 +480,6 @@ export default function SearchForm({
                                 </div>
                             )}
                         </div>
-                        {/* Balance Error State */}
-                        {balanceError && (
-                            <div className="col-span-1 lg:col-span-2 mb-4">
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                                        <div className="flex items-start gap-3">
-                                            <div className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0">
-                                                <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-red-800">
-                                                    No se pudo cargar el saldo de tu cuenta
-                                                </p>
-                                                <p className="text-sm text-red-600 mt-1">
-                                                    Esto puede deberse a un problema de conexión temporal
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => refetchBalance()}
-                                            className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-md transition-colors flex items-center gap-2 whitespace-nowrap"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-                                            </svg>
-                                            Reintentar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
                         <div className="col-span-1 lg:col-span-2 bg-white border border-gray-200">
                             {/* Professional Payment Summary */}
@@ -582,20 +500,6 @@ export default function SearchForm({
                                         </span>
                                     </div>
                                     
-                                    {/* Balance Discount (only show if user has balance) */}
-                                    {!isLoadingBalance && balance !== null && (balance ?? 0) > 0 && (
-                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 py-1">
-                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                                                <span className="text-gray-600 text-xs sm:text-sm">Crédito aplicado</span>
-                                                <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 font-mono self-start">
-                                                    Disponible: €{(balance ?? 0).toFixed(2)}
-                                                </span>
-                                            </div>
-                                            <span className="font-mono text-gray-900 font-medium text-sm sm:text-base self-end sm:self-auto">
-                                                -€{Math.min(balance ?? 0, servicePrice || 0).toFixed(2)}
-                                            </span>
-                                        </div>
-                                    )}
                                     
                                     {/* Divider */}
                                     <div className="border-t border-gray-300 pt-3 sm:pt-4 mt-3 sm:mt-4">
@@ -603,22 +507,19 @@ export default function SearchForm({
                                         <div className="flex justify-between items-center py-1">
                                             <span className="text-gray-900 font-medium text-sm sm:text-base">Total</span>
                                             <span className="text-lg sm:text-xl font-mono font-semibold text-gray-900">
-                                                {isLoadingBalance || balance === null || servicePrice === undefined ? (
-                                                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-gray-400 border-t-gray-800 rounded-full animate-spin" />
+                                                {servicePrice !== undefined ? (
+                                                    `€${servicePrice.toFixed(2)}`
                                                 ) : (
-                                                    `€${Math.max(0, servicePrice - (balance ?? 0)).toFixed(2)}`
+                                                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-gray-400 border-t-gray-800 rounded-full animate-spin" />
                                                 )}
                                             </span>
                                         </div>
                                     </div>
                                     
                                     {/* Payment Status Message */}
-                                    {!isLoadingBalance && balance !== null && servicePrice !== undefined && (
+                                    {servicePrice !== undefined && (
                                         <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gray-50 border-l-4 border-gray-400 text-xs sm:text-sm text-gray-700">
-                                            {(balance ?? 0) >= servicePrice 
-                                                ? 'Pago completo mediante crédito disponible'
-                                                : `Importe a cobrar: €${(servicePrice - (balance ?? 0)).toFixed(2)}`
-                                            }
+                                            Pago procesado mediante Stripe
                                         </div>
                                     )}
                                 </div>
@@ -642,14 +543,14 @@ export default function SearchForm({
                         ) : (
                             <button
                                 type="submit"
-                                disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete || isLoadingBalance}
+                                disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete}
                                 className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
                             >
                                 {createSearchWithHire.isPending || isSubmitting ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin flex-shrink-0" />
                                         <span>
-                                            {balance !== null && servicePrice !== undefined && (balance ?? 0) < servicePrice
+                                            {servicePrice !== undefined
                                                 ? 'Procesando...'
                                                 : 'Creando...'}
                                         </span>
@@ -658,7 +559,7 @@ export default function SearchForm({
                                     <>
                                         <Wallet className="w-4 h-4 flex-shrink-0" />
                                         <span>
-                                            {balance !== null && servicePrice !== undefined && (balance ?? 0) < servicePrice
+                                            {servicePrice !== undefined
                                                 ? 'Pagar'
                                                 : 'Confirmar'}
                                         </span>

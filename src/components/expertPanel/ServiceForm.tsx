@@ -87,7 +87,7 @@ export function ServiceForm({
         }
     }, [editingService]);
 
-    // Inicializar tipos de entregables seleccionados (PDF obligatorio)
+    // Inicializar tipos de entregables seleccionados (PDF siempre obligatorio)
     useEffect(() => {
         console.log('🔍 ServiceForm useEffect - deliverableTypes:', deliverableTypes);
         console.log('🔍 ServiceForm useEffect - formData.selectedDeliverableTypes:', formData.selectedDeliverableTypes);
@@ -95,24 +95,35 @@ export function ServiceForm({
         console.log('🔍 ServiceForm useEffect - deliverableTypes.length:', deliverableTypes.length);
         console.log('🔍 ServiceForm useEffect - formData.selectedDeliverableTypes.length:', formData.selectedDeliverableTypes.length);
         
-        if (deliverableTypes.length > 0 && formData.selectedDeliverableTypes.length === 0 && !editingService && !isLoadingDeliverableTypes && !hasInitializedDeliverableTypes) {
+        if (deliverableTypes.length > 0 && !isLoadingDeliverableTypes) {
             const pdfType = deliverableTypes.find(dt => dt.name === 'PDF');
             console.log('🔍 ServiceForm useEffect - pdfType found:', pdfType);
+            
             if (pdfType) {
-                console.log('🔍 ServiceForm useEffect - Setting PDF as default selected with ID:', pdfType.id);
-                setFormData(prev => {
-                    console.log('🔍 ServiceForm useEffect - Previous formData:', prev);
-                    const newFormData = {
-                        ...prev,
-                        selectedDeliverableTypes: [pdfType.id]
-                    };
-                    console.log('🔍 ServiceForm useEffect - New formData:', newFormData);
-                    return newFormData;
-                });
-                setHasInitializedDeliverableTypes(true);
+                // Siempre asegurar que el PDF esté seleccionado
+                const currentSelected = formData.selectedDeliverableTypes;
+                const hasPdf = currentSelected.includes(pdfType.id);
+                
+                if (!hasPdf) {
+                    console.log('🔍 ServiceForm useEffect - Adding PDF to selected types with ID:', pdfType.id);
+                    setFormData(prev => {
+                        console.log('🔍 ServiceForm useEffect - Previous formData:', prev);
+                        const newFormData = {
+                            ...prev,
+                            selectedDeliverableTypes: [...prev.selectedDeliverableTypes, pdfType.id]
+                        };
+                        console.log('🔍 ServiceForm useEffect - New formData:', newFormData);
+                        return newFormData;
+                    });
+                }
+                
+                // Solo marcar como inicializado si no estamos editando
+                if (!editingService && !hasInitializedDeliverableTypes) {
+                    setHasInitializedDeliverableTypes(true);
+                }
             }
         }
-    }, [deliverableTypes, editingService, isLoadingDeliverableTypes, hasInitializedDeliverableTypes]);
+    }, [deliverableTypes, editingService, isLoadingDeliverableTypes, hasInitializedDeliverableTypes, formData.selectedDeliverableTypes]);
 
     // Resetear el flag cuando se abre el formulario para crear un nuevo servicio
     useEffect(() => {
@@ -158,9 +169,9 @@ export function ServiceForm({
         
         if (!deliverableType) return;
 
-        // Si es PDF (obligatorio), no permitir deseleccionar
-        if (deliverableType.name === 'PDF' && deliverableType.isRequired) {
-            console.log('🔍 PDF is required, cannot deselect');
+        // Si es PDF, no permitir deseleccionar (siempre obligatorio)
+        if (deliverableType.name === 'PDF') {
+            console.log('🔍 PDF is always required, cannot deselect');
             return;
         }
 
@@ -409,11 +420,13 @@ export function ServiceForm({
                             <div className="space-y-3">
                                 {deliverableTypes.map((deliverableType) => {
                                     const isSelected = formData.selectedDeliverableTypes.includes(deliverableType.id);
-                                    const isRequired = deliverableType.isRequired;
+                                    const isPdf = deliverableType.name === 'PDF';
+                                    const isRequired = deliverableType.isRequired || isPdf; // PDF siempre es obligatorio
                                     
                                     console.log(`🔍 Rendering deliverableType ${deliverableType.id} (${deliverableType.name}):`, {
                                         isSelected,
                                         isRequired,
+                                        isPdf,
                                         selectedDeliverableTypes: formData.selectedDeliverableTypes
                                     });
                                     
@@ -424,13 +437,15 @@ export function ServiceForm({
                                                 isSelected
                                                     ? 'border-blue-200 bg-blue-50'
                                                     : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
-                                            } ${isRequired ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
-                                            onClick={() => handleDeliverableTypeSelect(deliverableType.id)}
+                                            } ${isPdf ? 'cursor-not-allowed opacity-75 bg-red-50 border-red-200' : 'cursor-pointer'}`}
+                                            onClick={() => !isPdf && handleDeliverableTypeSelect(deliverableType.id)}
                                         >
                                             <div className="flex items-start gap-3">
                                                 <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                                                     isSelected
-                                                        ? 'border-blue-500 bg-blue-500'
+                                                        ? isPdf 
+                                                            ? 'border-red-500 bg-red-500'
+                                                            : 'border-blue-500 bg-blue-500'
                                                         : 'border-gray-300'
                                                 }`}>
                                                     {isSelected && (
@@ -440,26 +455,30 @@ export function ServiceForm({
                                                 
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        {deliverableType.name === 'PDF' ? (
+                                                        {isPdf ? (
                                                             <FileText className="w-4 h-4 text-red-500" />
                                                         ) : (
                                                             <Video className="w-4 h-4 text-blue-500" />
                                                         )}
                                                         <span className={`text-sm font-medium ${
-                                                            isSelected ? 'text-blue-900' : 'text-gray-900'
+                                                            isSelected ? (isPdf ? 'text-red-900' : 'text-blue-900') : 'text-gray-900'
                                                         }`}>
                                                             {deliverableType.displayName}
                                                         </span>
-                                                        {isRequired && (
+                                                        {isPdf ? (
+                                                            <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">
+                                                                Siempre Incluido
+                                                            </span>
+                                                        ) : isRequired && (
                                                             <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
                                                                 Obligatorio
                                                             </span>
                                                         )}
                                                     </div>
                                                     <p className={`text-xs ${
-                                                        isSelected ? 'text-blue-700' : 'text-gray-600'
+                                                        isSelected ? (isPdf ? 'text-red-700' : 'text-blue-700') : 'text-gray-600'
                                                     }`}>
-                                                        {deliverableType.description}
+                                                        {isPdf ? 'El informe en PDF siempre se incluye en todos los servicios' : deliverableType.description}
                                                     </p>
                                                 </div>
                                             </div>

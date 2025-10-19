@@ -34,7 +34,7 @@ const SubscriptionsPage: React.FC = () => {
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'error',
-                    message: `❌ Error al cargar dinero: ${error.message}`
+                    message: `❌ Error al procesar suscripción: ${error.message}`
                 }
             }));
         }
@@ -55,10 +55,10 @@ const SubscriptionsPage: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-4 py-12">
                     <div className="text-center mb-12">
                         <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                            Recargar Saldo
+                            Planes de Suscripción
                         </h1>
                         <p className="text-gray-500 max-w-2xl mx-auto">
-                            Recarga tu saldo para poder contratar servicios de búsqueda de expertos
+                            Elige el plan que mejor se adapte a tus necesidades para contratar servicios de búsqueda de expertos
                         </p>
                     </div>
 
@@ -70,7 +70,7 @@ const SubscriptionsPage: React.FC = () => {
                                     <Wallet className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-semibold text-gray-900">Recarga Básica</h3>
+                                    <h3 className="text-lg font-semibold text-gray-900">Plan Básico</h3>
                                     <p className="text-sm text-gray-500">Ideal para empezar</p>
                                 </div>
                             </div>
@@ -94,7 +94,7 @@ const SubscriptionsPage: React.FC = () => {
                                 ) : (
                                     <>
                                         <CreditCard className="w-5 h-5" />
-                                        <span>Recargar 10€</span>
+                                        <span>Suscribirse 10€</span>
                                     </>
                                 )}
                             </button>
@@ -107,7 +107,7 @@ const SubscriptionsPage: React.FC = () => {
                                     <Wallet className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-semibold text-gray-900">Recarga Plus</h3>
+                                    <h3 className="text-lg font-semibold text-gray-900">Plan Plus</h3>
                                     <p className="text-sm text-gray-500">Para búsquedas regulares</p>
                                 </div>
                             </div>
@@ -131,7 +131,7 @@ const SubscriptionsPage: React.FC = () => {
                                 ) : (
                                     <>
                                         <CreditCard className="w-5 h-5" />
-                                        <span>Recargar 20€</span>
+                                        <span>Suscribirse 20€</span>
                                     </>
                                 )}
                             </button>
@@ -144,7 +144,7 @@ const SubscriptionsPage: React.FC = () => {
                                     <Wallet className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-semibold text-gray-900">Recarga Pro</h3>
+                                    <h3 className="text-lg font-semibold text-gray-900">Plan Pro</h3>
                                     <p className="text-sm text-gray-500">Para usuarios frecuentes</p>
                                 </div>
                             </div>
@@ -168,7 +168,7 @@ const SubscriptionsPage: React.FC = () => {
                                 ) : (
                                     <>
                                         <CreditCard className="w-5 h-5" />
-                                        <span>Recargar 50€</span>
+                                        <span>Suscribirse 50€</span>
                                     </>
                                 )}
                             </button>
