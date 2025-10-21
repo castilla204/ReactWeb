@@ -15,19 +15,19 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
 
     useEffect(() => {
         const interval = setInterval(() => {
-            // Iniciar efecto glitch
+            // Iniciar efecto glitch más suave
             setIsGlitching(true);
             
-            // Generar texto glitch aleatorio
-            const glitchChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            // Generar texto glitch más moderno con caracteres más elegantes
+            const glitchChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*';
             const glitchInterval = setInterval(() => {
                 const randomText = Array.from({ length: currentWord.length }, () => 
                     glitchChars[Math.floor(Math.random() * glitchChars.length)]
                 ).join('');
                 setGlitchText(randomText);
-            }, 50);
+            }, 100); // Más lento para efecto más elegante
 
-            // Después de 300ms, cambiar a la palabra real
+            // Después de 200ms, cambiar a la palabra real
             setTimeout(() => {
                 clearInterval(glitchInterval);
                 setCurrentWord((prev) => {
@@ -37,8 +37,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 });
                 setGlitchText(currentWord);
                 setIsGlitching(false);
-            }, 300);
-        }, 3000); // Cambia cada 3 segundos
+            }, 200);
+        }, 5000); // Cambia cada 5 segundos para ser más sutil
 
         // Inyectar el widget de Elfsight dinámicamente
         const widgetContainer = document.createElement('div');
@@ -136,9 +136,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                             <span className="block">Revisa tu{' '}
                                                 <span className="relative inline-block">
                                                     <span 
-                                                        className={`bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-extrabold transition-all duration-300 ${
-                                                            isGlitching ? 'glitch-effect' : ''
-                                                        }`}
+                                                        className={`${isGlitching ? 'glitch-effect' : 'glitch-text-gradient'} bg-clip-text text-transparent font-extrabold transition-all duration-300`}
+                                                        data-text={isGlitching ? glitchText : currentWord}
                                                     >
                                                         {isGlitching ? glitchText : currentWord}
                                                     </span>
@@ -171,9 +170,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     <div className="block">Revisa tu{' '}
                                     <span className="relative inline-block">
                                         <span 
-                                            className={`bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent font-extrabold transition-all duration-300 ${
-                                                isGlitching ? 'glitch-effect' : ''
-                                            }`}
+                                            className={`${isGlitching ? 'glitch-effect' : 'glitch-text-gradient'} bg-clip-text text-transparent font-extrabold transition-all duration-300`}
+                                            data-text={isGlitching ? glitchText : currentWord}
                                         >
                                             {isGlitching ? glitchText : currentWord}
                                         </span>
@@ -293,46 +291,61 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
             </div>
 
             <style>{`
+                /* Efecto glitch profesional moderno */
+                .glitch-effect {
+                    position: relative;
+                    animation: glitch 0.3s ease-in-out;
+                }
+                
+                .glitch-effect::before,
+                .glitch-effect::after {
+                    content: attr(data-text);
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    opacity: 0.8;
+                }
+                
+                .glitch-effect::before {
+                    color: #ff0080;
+                    transform: translate(-2px, -2px);
+                    clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+                    animation: glitch-before 0.3s ease-in-out;
+                }
+                
+                .glitch-effect::after {
+                    color: #00ffff;
+                    transform: translate(2px, 2px);
+                    clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+                    animation: glitch-after 0.3s ease-in-out;
+                }
+                
                 @keyframes glitch {
                     0% { 
                         transform: translate(0);
                         filter: hue-rotate(0deg);
                     }
                     10% { 
-                        transform: translate(-2px, 2px);
+                        transform: translate(-1px, 1px);
                         filter: hue-rotate(90deg);
                     }
                     20% { 
-                        transform: translate(2px, -2px);
+                        transform: translate(1px, -1px);
                         filter: hue-rotate(180deg);
                     }
                     30% { 
-                        transform: translate(-2px, -2px);
+                        transform: translate(-1px, -1px);
                         filter: hue-rotate(270deg);
                     }
                     40% { 
-                        transform: translate(2px, 2px);
+                        transform: translate(1px, 1px);
                         filter: hue-rotate(360deg);
                     }
                     50% { 
-                        transform: translate(-2px, 2px);
-                        filter: hue-rotate(45deg);
-                    }
-                    60% { 
-                        transform: translate(2px, -2px);
-                        filter: hue-rotate(135deg);
-                    }
-                    70% { 
-                        transform: translate(-2px, -2px);
-                        filter: hue-rotate(225deg);
-                    }
-                    80% { 
-                        transform: translate(2px, 2px);
-                        filter: hue-rotate(315deg);
-                    }
-                    90% { 
-                        transform: translate(-2px, 2px);
-                        filter: hue-rotate(45deg);
+                        transform: translate(0);
+                        filter: hue-rotate(0deg);
                     }
                     100% { 
                         transform: translate(0);
@@ -340,13 +353,65 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                     }
                 }
                 
-                .glitch-effect {
-                    animation: glitch 0.3s ease-in-out;
-                    text-shadow: 
-                        2px 0 #ff0000,
-                        -2px 0 #00ff00,
-                        0 2px #0000ff,
-                        0 -2px #ffff00;
+                @keyframes glitch-before {
+                    0% { 
+                        transform: translate(-2px, -2px);
+                        clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+                    }
+                    25% { 
+                        transform: translate(-3px, -1px);
+                        clip-path: polygon(0 0, 100% 0, 100% 40%, 0 40%);
+                    }
+                    50% { 
+                        transform: translate(-1px, -3px);
+                        clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
+                    }
+                    75% { 
+                        transform: translate(-2px, -2px);
+                        clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+                    }
+                    100% { 
+                        transform: translate(-2px, -2px);
+                        clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+                    }
+                }
+                
+                @keyframes glitch-after {
+                    0% { 
+                        transform: translate(2px, 2px);
+                        clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+                    }
+                    25% { 
+                        transform: translate(3px, 1px);
+                        clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+                    }
+                    50% { 
+                        transform: translate(1px, 3px);
+                        clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+                    }
+                    75% { 
+                        transform: translate(2px, 2px);
+                        clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+                    }
+                    100% { 
+                        transform: translate(2px, 2px);
+                        clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+                    }
+                }
+                
+                /* Gradiente profesional moderno */
+                .glitch-text-gradient {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background-clip: text;
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-size: 200% 200%;
+                    animation: gradientShift 3s ease-in-out infinite;
+                }
+                
+                @keyframes gradientShift {
+                    0%, 100% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
                 }
                 
                 @keyframes float {
@@ -441,3 +506,4 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
 };
 
 export default HomePresentation;
+

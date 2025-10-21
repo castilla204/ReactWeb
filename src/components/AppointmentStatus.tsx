@@ -9,6 +9,8 @@ import {
   calculateMoneyDistribution 
 } from '../hooks/useAppointments';
 import { useExpertReport } from '../hooks/useExpertReport';
+import { CancellationInfoCard } from './CancellationInfoCard';
+import { AccountDeletionInfo } from './AccountDeletionInfo';
 
 interface AppointmentStatusProps {
   appointment: Appointment;
@@ -47,6 +49,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       case 'appointment_cancelled_by_expert':
       case 'appointment_cancelled_by_no_response':
       case 'appointment_cancelled_by_no_report':
+      case 'cancelled_by_client_account_delete':
+      case 'cancelled_by_expert_account_delete':
         return <XCircle className="w-5 h-5 text-red-600" />;
       case 'appointment_rejected':
         return <XCircle className="w-5 h-5 text-orange-600" />;
@@ -65,8 +69,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       userRole,
       appointmentStatus: appointment.status,
       isLocked,
-      shouldShowConfirm: userRole === 'expert' && (appointment.status === 'appointment_proposed' || appointment.status === '') && !isLocked,
-      shouldShowReject: userRole === 'expert' && (appointment.status === 'appointment_proposed' || appointment.status === '') && !isLocked,
+      shouldShowConfirm: userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked,
+      shouldShowReject: userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked,
       shouldShowCancelClient: appointment.status === 'appointment_confirmed' && !isLocked && userRole === 'client',
       shouldShowCancelExpert: appointment.status === 'appointment_confirmed' && !isLocked && userRole === 'expert'
     });
@@ -95,8 +99,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       );
     }
 
-    // Botón para confirmar (solo expertos) - TEMPORAL: Manejar status vacío
-    if (userRole === 'expert' && (appointment.status === 'appointment_proposed' || appointment.status === '') && !isLocked) {
+    // Botón para confirmar (solo expertos)
+    if (userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked) {
       buttons.push(
         <button
           key="confirm"
@@ -108,8 +112,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       );
     }
 
-    // Botón para rechazar (solo expertos) - TEMPORAL: Manejar status vacío
-    if (userRole === 'expert' && (appointment.status === 'appointment_proposed' || appointment.status === '') && !isLocked) {
+    // Botón para rechazar (solo expertos)
+    if (userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked) {
       buttons.push(
         <button
           key="reject"
@@ -627,9 +631,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
         </div>
       )}
 
-      {/* Distribución de dinero - No mostrar cuando está esperando decisión del cliente */}
-      {(moneyDistribution.client > 0 || moneyDistribution.expert > 0 || moneyDistribution.platform > 0) && 
-       appointment.status !== 'awaiting_client_decision' && (
+      {/* Distribución de dinero */}
+      {(moneyDistribution.client > 0 || moneyDistribution.expert > 0 || moneyDistribution.platform > 0) && (
         <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200">
           <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
             <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
@@ -704,6 +707,12 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
           )}
         </div>
       )}
+
+      {/* 🆕 Información de cancelaciones separadas */}
+      <CancellationInfoCard appointment={appointment} />
+
+      {/* 🆕 Información de eliminación de cuenta */}
+      <AccountDeletionInfo appointment={appointment} />
     </div>
   );
 };
