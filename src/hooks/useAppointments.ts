@@ -433,6 +433,22 @@ export const calculateMoneyDistribution = (appointment: Appointment | null): Mon
         platform: amount * 0.02 
       };
     
+    case "cancelled_by_client_account_delete":
+      // Cliente eliminó cuenta → Experto recibe todo el dinero
+      return { 
+        client: 0, 
+        expert: amount, 
+        platform: 0 
+      };
+    
+    case "cancelled_by_expert_account_delete":
+      // Experto eliminó cuenta → Cliente recibe todo el dinero
+      return { 
+        client: amount, 
+        expert: 0, 
+        platform: 0 
+      };
+    
     case "awaiting_client_decision":
       // No mostrar distribución de dinero mientras el cliente decide
       return { client: 0, expert: 0, platform: 0 };
@@ -458,7 +474,9 @@ export const getAppointmentStatusText = (status: string): string => {
     'appointment_cancelled_by_no_response': 'Cancelada por falta de respuesta',
     'appointment_awaiting_report': 'Esperando reporte del experto',
     'appointment_completed': 'Cita completada',
-    'appointment_cancelled_by_no_report': 'Cancelada - Experto no envió reporte'
+    'appointment_cancelled_by_no_report': 'Cancelada - Experto no envió reporte',
+    'cancelled_by_client_account_delete': 'Cancelada - Cliente eliminó su cuenta',
+    'cancelled_by_expert_account_delete': 'Cancelada - Experto eliminó su cuenta'
   };
   
   return statusTexts[status] || status;
@@ -480,7 +498,9 @@ export const getAppointmentStatusColor = (status: string): string => {
     'appointment_cancelled_by_no_response': 'gray',
     'appointment_awaiting_report': 'purple',
     'appointment_completed': 'green',
-    'appointment_cancelled_by_no_report': 'red'
+    'appointment_cancelled_by_no_report': 'red',
+    'cancelled_by_client_account_delete': 'red',
+    'cancelled_by_expert_account_delete': 'red'
   };
   
   return statusColors[status] || 'gray';

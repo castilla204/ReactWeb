@@ -12,7 +12,9 @@ export type AppointmentStatus =
   | "appointment_cancelled_by_no_response"    // Cliente no propuso en tiempo
   | "appointment_awaiting_report"             // Esperando reporte del experto (24h timer)
   | "appointment_completed"                   // Cita completada por el experto
-  | "appointment_cancelled_by_no_report";     // Cancelado por no enviar reporte en 24h
+  | "appointment_cancelled_by_no_report"      // Cancelado por no enviar reporte en 24h
+  | "cancelled_by_client_account_delete"      // 🆕 Cliente eliminó su cuenta
+  | "cancelled_by_expert_account_delete";     // 🆕 Experto eliminó su cuenta
 
 export type TimerType = 
   | "proposal"                           // 48h para proponer cita
@@ -61,6 +63,12 @@ export interface Appointment {
   // Contadores y control
   rejectionCount: number;      // Veces que el experto rechazó
   cancellationCount: number;   // Veces que se canceló
+  
+  // 🆕 NUEVOS CAMPOS DE RECHAZOS SEPARADOS:
+  clientCancellationCount: number;        // Número de cancelaciones del cliente
+  expertCancellationCount: number;        // Número de cancelaciones del experto
+  lastClientCancellationAt?: string;      // Última cancelación del cliente
+  lastExpertCancellationAt?: string;      // Última cancelación del experto
   
   // Timestamps de actividad
   lastRejectionAt?: string;    // Última vez que se rechazó
