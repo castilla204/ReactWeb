@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Play, RefreshCw, Info } from 'lucide-react';
 import { useMoneyDistribution } from '../hooks/useMoneyDistribution';
-import { CATEGORIES, SERVICE_TYPE_CATEGORIES, APPOINTMENT_STATUSES } from '../types/admin';
+import { CATEGORIES, SERVICE_TYPE_CATEGORIES } from '../types/admin';
+import { useAppointmentStatuses, getAppointmentStatusText } from '../hooks/useAppointmentStatuses';
 import PriorityInfo from './PriorityInfo';
 
 const ConfigurationSimulator: React.FC = () => {
@@ -9,6 +10,9 @@ const ConfigurationSimulator: React.FC = () => {
   const [serviceTypeCategoryId, setServiceTypeCategoryId] = useState<number | undefined>(1);
   const [status, setStatus] = useState("appointment_completed");
   const [isSimulating, setIsSimulating] = useState(false);
+
+  // ✅ HOOK DINÁMICO PARA ESTADOS
+  const { data: appointmentStatuses } = useAppointmentStatuses();
 
   const { config: result, isLoading, error } = useMoneyDistribution(
     status, 
@@ -23,8 +27,9 @@ const ConfigurationSimulator: React.FC = () => {
   };
 
   const getStatusLabel = (statusValue: string) => {
-    const statusObj = APPOINTMENT_STATUSES.find(s => s.value === statusValue);
-    return statusObj ? statusObj.label : statusValue;
+    return appointmentStatuses 
+      ? getAppointmentStatusText(statusValue, appointmentStatuses)
+      : statusValue;
   };
 
   return (
@@ -96,11 +101,13 @@ const ConfigurationSimulator: React.FC = () => {
             onChange={(e) => setStatus(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {APPOINTMENT_STATUSES.map((statusOption) => (
-              <option key={statusOption.value} value={statusOption.value}>
-                {statusOption.label}
+            {appointmentStatuses ? appointmentStatuses.map((statusOption) => (
+              <option key={statusOption.statusValue} value={statusOption.statusValue}>
+                {statusOption.displayName}
               </option>
-            ))}
+            )) : (
+              <option value="appointment_completed">Cita Completada</option>
+            )}
           </select>
         </div>
       </div>
@@ -169,6 +176,8 @@ const ConfigurationSimulator: React.FC = () => {
 };
 
 export default ConfigurationSimulator;
+
+
 
 
 

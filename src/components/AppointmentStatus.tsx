@@ -3,11 +3,18 @@ import { Calendar, Clock, MapPin, AlertTriangle, CheckCircle, XCircle, Timer, Ho
 import { Appointment } from '../types/appointment';
 import { 
   useAppointmentTimers, 
-  useAppointmentLock, 
-  getAppointmentStatusText, 
-  getAppointmentStatusColor,
-  calculateMoneyDistribution 
+  useAppointmentLock
 } from '../hooks/useAppointments';
+import { 
+  useAppointmentStatuses, 
+  getAppointmentStatusText, 
+  getAppointmentStatusColor, 
+  getAppointmentStatusIcon 
+} from '../hooks/useAppointmentStatuses';
+import { 
+  useMoneyDistributionConfig, 
+  calculateMoneyDistribution 
+} from '../hooks/useMoneyDistributionConfig';
 import { useExpertReport } from '../hooks/useExpertReport';
 import { CancellationInfoCard } from './CancellationInfoCard';
 import { AccountDeletionInfo } from './AccountDeletionInfo';
@@ -25,7 +32,18 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
 }) => {
   const isLocked = useAppointmentLock(appointment);
   const { activeTimer, timeRemaining, formatTimeRemaining } = useAppointmentTimers(appointment);
-  const moneyDistribution = calculateMoneyDistribution(appointment);
+  
+  // ✅ USAR HOOKS DINÁMICOS
+  const { data: statuses } = useAppointmentStatuses();
+  const { data: moneyConfig } = useMoneyDistributionConfig(
+    appointment.status,
+    undefined, // categoryId no está disponible en Appointment
+    undefined  // serviceTypeCategoryId no está disponible en Appointment
+  );
+  
+  const moneyDistribution = moneyConfig 
+    ? calculateMoneyDistribution(appointment.amount, moneyConfig)
+    : { client: 0, expert: 0, platform: 0 };
   
   // Debug para verificar el estado de bloqueo
   console.log('[AppointmentStatus] Component debug:', {
@@ -37,27 +55,25 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
     proposedTime: appointment.proposedTime
   });
   
-  const statusText = getAppointmentStatusText(appointment.status);
-  const statusColor = getAppointmentStatusColor(appointment.status);
+  const statusText = statuses ? getAppointmentStatusText(appointment.status, statuses) : appointment.status;
+  const statusColor = statuses ? getAppointmentStatusColor(appointment.status, statuses) : 'gray';
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'appointment_completed':
+    if (!statuses) return <AlertTriangle className="w-5 h-5 text-gray-600" />;
+    
+    const iconName = getAppointmentStatusIcon(status, statuses);
+    
+    switch (iconName) {
+      case 'check-circle':
         return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case 'appointment_cancelled_by_client':
-      case 'appointment_cancelled_by_client_second':
-      case 'appointment_cancelled_by_expert':
-      case 'appointment_cancelled_by_no_response':
-      case 'appointment_cancelled_by_no_report':
-      case 'cancelled_by_client_account_delete':
-      case 'cancelled_by_expert_account_delete':
+      case 'x-circle':
         return <XCircle className="w-5 h-5 text-red-600" />;
-      case 'appointment_rejected':
-        return <XCircle className="w-5 h-5 text-orange-600" />;
-      case 'appointment_awaiting_report':
-        return <FileText className="w-5 h-5 text-purple-600" />;
+      case 'clock':
+        return <Clock className="w-5 h-5 text-purple-600" />;
+      case 'calendar':
+        return <Calendar className="w-5 h-5 text-blue-600" />;
       default:
-        return <Clock className="w-5 h-5 text-blue-600" />;
+        return <AlertTriangle className="w-5 h-5 text-gray-600" />;
     }
   };
 

@@ -8,6 +8,7 @@ interface RejectAppointmentModalProps {
   onConfirm: (reason: string) => void;
   appointment: Appointment | null;
   isLoading?: boolean;
+  actionType?: 'reject' | 'cancel'; // Nuevo prop para distinguir entre rechazo y cancelación
 }
 
 const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
@@ -15,7 +16,8 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
   onClose,
   onConfirm,
   appointment,
-  isLoading = false
+  isLoading = false,
+  actionType = 'reject'
 }) => {
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
@@ -24,7 +26,7 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
     e.preventDefault();
     
     if (!reason.trim()) {
-      setError('Por favor, proporciona una razón para el rechazo');
+      setError(`Por favor, proporciona una razón para la ${actionType === 'cancel' ? 'cancelación' : 'rechazo'}`);
       return;
     }
 
@@ -56,7 +58,7 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Rechazar Cita
+                {actionType === 'cancel' ? 'Cancelar Cita' : 'Rechazar Cita'}
               </h3>
               <p className="text-sm text-gray-500">
                 Cita #{appointment?.id}
@@ -109,25 +111,46 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
             </div>
           )}
 
-          {/* Advertencia sobre rechazos */}
+          {/* Advertencia sobre rechazos/cancelaciones */}
           <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
             <div className="flex items-start space-x-3">
               <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
               <div className="text-sm">
-                <p className="font-medium text-orange-800 mb-1">
-                  Rechazos realizados: {appointment?.rejectionCount || 0} de 2 máximo
-                </p>
-                <p className="text-orange-700">
-                  {appointment && appointment.rejectionCount >= 1 ? (
-                    <>
-                      <strong>⚠️ Último rechazo:</strong> Si rechazas esta cita, el servicio se cancelará automáticamente y el cliente recibirá el reembolso completo.
-                    </>
-                  ) : (
-                    <>
-                      Si rechazas esta cita, el cliente podrá proponer una nueva fecha y hora.
-                    </>
-                  )}
-                </p>
+                {actionType === 'cancel' ? (
+                  <>
+                    <p className="font-medium text-orange-800 mb-1">
+                      Cancelaciones realizadas: {appointment?.clientCancellationCount || 0} de 2 máximo
+                    </p>
+                    <p className="text-orange-700">
+                      {appointment && (appointment.clientCancellationCount || 0) >= 1 ? (
+                        <>
+                          <strong>⚠️ Última cancelación:</strong> Si cancelas esta cita, el servicio se cancelará definitivamente y se aplicarán las políticas de reembolso correspondientes.
+                        </>
+                      ) : (
+                        <>
+                          Si cancelas esta cita, podrás proponer una nueva fecha y hora.
+                        </>
+                      )}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium text-orange-800 mb-1">
+                      Rechazos realizados: {appointment?.rejectionCount || 0} de 2 máximo
+                    </p>
+                    <p className="text-orange-700">
+                      {appointment && appointment.rejectionCount >= 1 ? (
+                        <>
+                          <strong>⚠️ Último rechazo:</strong> Si rechazas esta cita, el servicio se cancelará automáticamente y el cliente recibirá el reembolso completo.
+                        </>
+                      ) : (
+                        <>
+                          Si rechazas esta cita, el cliente podrá proponer una nueva fecha y hora.
+                        </>
+                      )}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -136,13 +159,16 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">
-                Razón del rechazo *
+                Razón de la {actionType === 'cancel' ? 'cancelación' : 'rechazo'} *
               </label>
               <textarea
                 id="reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Explica por qué no puedes aceptar esta cita (mínimo 10 caracteres)..."
+                placeholder={actionType === 'cancel' 
+                  ? "Explica por qué necesitas cancelar esta cita (mínimo 10 caracteres)..."
+                  : "Explica por qué no puedes aceptar esta cita (mínimo 10 caracteres)..."
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
                 rows={4}
                 disabled={isLoading}
@@ -178,12 +204,12 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Rechazando...</span>
+                    <span>{actionType === 'cancel' ? 'Cancelando...' : 'Rechazando...'}</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>Rechazar Cita</span>
+                    <span>{actionType === 'cancel' ? 'Cancelar Cita' : 'Rechazar Cita'}</span>
                   </>
                 )}
               </button>
@@ -196,6 +222,8 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
 };
 
 export default RejectAppointmentModal;
+
+
 
 
 

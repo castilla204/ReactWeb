@@ -1,5 +1,6 @@
 import React from 'react';
 import { Info, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { useAppointmentStatuses, getAppointmentStatusText } from '../hooks/useAppointmentStatuses';
 import { MoneyDistributionConfig } from '../hooks/useMoneyDistribution';
 
 interface MoneyDistributionInfoProps {
@@ -10,54 +11,41 @@ interface MoneyDistributionInfoProps {
   className?: string;
 }
 
-const getStatusInfo = (status: string) => {
-  switch (status) {
-    case 'appointment_completed':
-      return {
-        title: 'Servicio Completado',
-        description: 'Distribución cuando el servicio se completa exitosamente',
-        icon: CheckCircle,
-        color: 'text-green-600',
-        bgColor: 'bg-green-50',
-        borderColor: 'border-green-200'
-      };
-    case 'appointment_cancelled_by_client_second':
-      return {
-        title: 'Cliente Cancela (2ª vez)',
-        description: 'Distribución cuando el cliente cancela por segunda vez',
-        icon: XCircle,
-        color: 'text-orange-600',
-        bgColor: 'bg-orange-50',
-        borderColor: 'border-orange-200'
-      };
-    case 'appointment_cancelled_by_expert':
-      return {
-        title: 'Experto Cancela',
-        description: 'Distribución cuando el experto cancela la cita',
-        icon: XCircle,
-        color: 'text-red-600',
-        bgColor: 'bg-red-50',
-        borderColor: 'border-red-200'
-      };
-    case 'appointment_cancelled_by_expert_rejection':
-      return {
-        title: 'Experto Rechaza 2 veces',
-        description: 'Distribución cuando el experto rechaza la cita dos veces',
-        icon: AlertTriangle,
-        color: 'text-red-600',
-        bgColor: 'bg-red-50',
-        borderColor: 'border-red-200'
-      };
-    default:
-      return {
-        title: 'Distribución de Dinero',
-        description: 'Porcentajes de distribución para este escenario',
-        icon: Info,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-50',
-        borderColor: 'border-blue-200'
-      };
+const getStatusInfo = (status: string, statuses: any[] | undefined) => {
+  // ✅ USAR ESTADOS DINÁMICOS
+  const statusText = statuses ? getAppointmentStatusText(status, statuses) : status;
+  
+  // Determinar icono y colores basado en el tipo de estado
+  let icon = Info;
+  let color = 'text-blue-600';
+  let bgColor = 'bg-blue-50';
+  let borderColor = 'border-blue-200';
+  
+  if (status.includes('completed')) {
+    icon = CheckCircle;
+    color = 'text-green-600';
+    bgColor = 'bg-green-50';
+    borderColor = 'border-green-200';
+  } else if (status.includes('cancelled') || status.includes('rejected')) {
+    icon = XCircle;
+    color = 'text-red-600';
+    bgColor = 'bg-red-50';
+    borderColor = 'border-red-200';
+  } else if (status.includes('client_second')) {
+    icon = XCircle;
+    color = 'text-orange-600';
+    bgColor = 'bg-orange-50';
+    borderColor = 'border-orange-200';
   }
+  
+  return {
+    title: statusText,
+    description: `Distribución de dinero para: ${statusText}`,
+    icon,
+    color,
+    bgColor,
+    borderColor
+  };
 };
 
 const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
@@ -67,7 +55,9 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
   error = null,
   className = ''
 }) => {
-  const statusInfo = getStatusInfo(status);
+  // ✅ HOOK DINÁMICO PARA ESTADOS
+  const { data: statuses } = useAppointmentStatuses();
+  const statusInfo = getStatusInfo(status, statuses);
   const IconComponent = statusInfo.icon;
 
   if (isLoading) {
@@ -156,6 +146,8 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
 };
 
 export default MoneyDistributionInfo;
+
+
 
 
 

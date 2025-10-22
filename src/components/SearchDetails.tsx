@@ -18,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Imports para el sistema de citas
 import { useAppointments } from '../hooks/useAppointments';
+import { useAppointmentStatuses } from '../hooks/useAppointmentStatuses';
 import AppointmentForm from './AppointmentForm';
 import AppointmentStatus from './AppointmentStatus';
 import RejectAppointmentModal from './RejectAppointmentModal';
@@ -122,6 +123,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const [timeRemaining, setTimeRemaining] = useState<string>('00:00:00');
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [appointmentToReject, setAppointmentToReject] = useState<Appointment | null>(null);
+    const [modalActionType, setModalActionType] = useState<'reject' | 'cancel'>('reject');
     
     // Estado para mostrar informaci�n de porcentajes
     const [showMoneyDistribution, setShowMoneyDistribution] = useState(false);
@@ -267,6 +269,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         isProposing,
         isRejecting
     } = useAppointments();
+    
+    // ✅ HOOK DINÁMICO PARA ESTADOS
+    const { data: appointmentStatuses } = useAppointmentStatuses();
     
     // ? QUERIES LEGACY ELIMINADAS - Ahora se usan los datos del hook optimizado
     // const { getSearch } = useSearch({ enableQueries: false });
@@ -793,7 +798,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const canProposeAppointment = () => {
         // Si ya existe una cita, verificar su estado
         if (appointment) { // appointmentQuery.data - datos del hook optimizado
-            const validAppointmentStatuses = ['awaiting_appointment', 'appointment_rejected', 'appointment_cancelled_by_client'];
+            // ✅ USAR ESTADOS DINÁMICOS
+            const validAppointmentStatuses = appointmentStatuses && Array.isArray(appointmentStatuses)
+                ? appointmentStatuses
+                    .filter((s: any) => s.statusValue === 'awaiting_appointment' || 
+                                s.statusValue === 'appointment_rejected' || 
+                                s.statusValue === 'appointment_cancelled_by_client')
+                    .map((s: any) => s.statusValue)
+                : ['awaiting_appointment', 'appointment_rejected', 'appointment_cancelled_by_client'];
             const canPropose = validAppointmentStatuses.includes(appointment.status);
             console.log('[SearchDetails] Can propose appointment (existing appointment):', {
                 appointmentStatus: appointment.status,
@@ -823,18 +835,35 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         if (!appointmentToReject) return;
         
         try {
-            const rejectData: RejectAppointmentDto = {
-                appointmentId: appointmentToReject.id,
-                reason: reason
-            };
-            
-            await rejectAppointment(rejectData);
-            
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'success',
-                message: 'Cita rechazada exitosamente'
-            }]);
+            if (modalActionType === 'cancel') {
+                // Usar endpoint de cancelación
+                const cancelData: CancelAppointmentDto = {
+                    appointmentId: appointmentToReject.id,
+                    reason: reason
+                };
+                
+                await cancelAppointment(cancelData);
+                
+                setNotifications(prev => [...prev, {
+                    id: uuidv4(),
+                    type: 'success',
+                    message: 'Cita cancelada exitosamente'
+                }]);
+            } else {
+                // Usar endpoint de rechazo
+                const rejectData: RejectAppointmentDto = {
+                    appointmentId: appointmentToReject.id,
+                    reason: reason
+                };
+                
+                await rejectAppointment(rejectData);
+                
+                setNotifications(prev => [...prev, {
+                    id: uuidv4(),
+                    type: 'success',
+                    message: 'Cita rechazada exitosamente'
+                }]);
+            }
             
             // Cerrar modal y limpiar estado
             setShowRejectModal(false);
@@ -845,11 +874,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             invalidateAll();
             
         } catch (error) {
-            console.error('Error al rechazar cita:', error);
+            console.error(`Error al ${modalActionType === 'cancel' ? 'cancelar' : 'rechazar'} cita:`, error);
             setNotifications(prev => [...prev, {
                 id: uuidv4(),
                 type: 'error',
-                message: 'Error al rechazar la cita'
+                message: `Error al ${modalActionType === 'cancel' ? 'cancelar' : 'rechazar'} la cita`
             }]);
         }
     };
@@ -922,6 +951,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         // Si es el segundo rechazo, mostrar informaci�n de porcentajes
                         // Rechazar directamente sin mostrar porcentajes
                         setAppointmentToReject(appointment);
+                        setModalActionType('reject');
                         setShowRejectModal(true);
                     }
                     break;
@@ -944,6 +974,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         // Si es la segunda cancelaci�n, mostrar informaci�n de porcentajes
                         // Cancelar directamente sin mostrar porcentajes
                         setAppointmentToReject(appointment);
+                        setModalActionType('cancel');
                         setShowRejectModal(true);
                     }
                     break;
@@ -977,7 +1008,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     
                     let errorMessage = 'No se puede proponer cita.';
                     if (appointment) { // appointmentQuery.data - datos del hook optimizado
-                        errorMessage += ` Estado de cita actual: ${currentAppointmentStatus}. Estados v�lidos: awaiting_appointment, appointment_rejected, appointment_cancelled_by_client`;
+                        errorMessage += ` Estado de cita actual: ${currentAppointmentStatus}. Estados v�lidos: ${appointmentStatuses ? appointmentStatuses.filter((s: any) => s.statusValue === 'awaiting_appointment' || s.statusValue === 'appointment_rejected' || s.statusValue === 'appointment_cancelled_by_client').map((s: any) => s.displayName).join(', ') : 'awaiting_appointment, appointment_rejected, appointment_cancelled_by_client'}`;
                     } else {
                         errorMessage += ` Estado de contrataci�n actual: ${currentHireStatus}. Estados v�lidos: pending`;
                     }
@@ -2442,6 +2473,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 onConfirm={handleRejectConfirm}
                 appointment={appointmentToReject}
                 isLoading={isRejecting}
+                actionType={modalActionType}
             />
 
             {/* Modal para mostrar informaci�n de distribuci�n de dinero */}

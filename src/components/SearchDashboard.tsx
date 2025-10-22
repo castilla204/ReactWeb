@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useSearch } from '../hooks/useSearch.hooks';
+import { useAppointmentStatuses, getAppointmentStatusText } from '../hooks/useAppointmentStatuses';
 import type { SearchItem, SearchFilters, PaginationMetadata } from '../hooks/useSearch.hooks';
 import { useNavigate } from 'react-router-dom';
 
@@ -136,17 +137,14 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         return search.isActive && (!search.searchHire || !terminalStatuses.includes(search.searchHire.status)) ? 'Activa' : 'Inactiva';
     };
 
-    const getAppointmentStatusText = (status?: string) => {
-        switch (status) {
-            case 'awaiting_appointment':
-                return 'Esperando propuesta de cita';
-            case 'appointment_proposed':
-                return 'Cita propuesta - Pendiente de confirmación';
-            case 'appointment_confirmed':
-                return 'Cita confirmada';
-            default:
-                return 'Cita pendiente';
-        }
+    // ✅ HOOK DINÁMICO PARA ESTADOS
+    const { data: appointmentStatuses } = useAppointmentStatuses();
+    
+    const getLocalAppointmentStatusText = (status?: string) => {
+        if (!status) return 'Cita pendiente';
+        return appointmentStatuses 
+            ? getAppointmentStatusText(status, appointmentStatuses)
+            : status;
     };
 
     const handleSearchClick = async (searchId: number) => {
@@ -491,7 +489,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                 )}
                                             </div>
                                             {search.hasPendingAppointment ? (
-                                            <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center" title={getAppointmentStatusText(search.pendingAppointmentStatus)}>
+                                            <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center" title={getLocalAppointmentStatusText(search.pendingAppointmentStatus)}>
                                                 <Calendar className="w-3 h-3 text-orange-600" />
                                                 </div>
                                             ) : (
@@ -610,7 +608,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                         )}
                                                     </div>
                                                     {search.hasPendingAppointment ? (
-                                                        <div title={getAppointmentStatusText(search.pendingAppointmentStatus)}>
+                                                        <div title={getLocalAppointmentStatusText(search.pendingAppointmentStatus)}>
                                                             <Calendar className="w-4 h-4 text-orange-500" />
                                                         </div>
                                                     ) : (
