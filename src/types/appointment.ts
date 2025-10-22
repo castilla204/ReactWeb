@@ -1,20 +1,7 @@
 // Tipos para el sistema de citas
 
-export type AppointmentStatus = 
-  | "awaiting_appointment"                    // Esperando propuesta del cliente
-  | "appointment_proposed"                    // Cliente propuso cita
-  | "appointment_confirmed"                   // Experto confirmó
-  | "appointment_rejected"                    // Experto rechazó
-  | "appointment_cancelled_by_client"         // Primera cancelación del cliente
-  | "appointment_cancelled_by_client_second"  // Segunda cancelación del cliente
-  | "appointment_cancelled_by_expert"         // Experto cancela voluntariamente
-  | "appointment_cancelled_by_expert_rejection" // Experto rechazó 2 veces (cancelación por rechazos)
-  | "appointment_cancelled_by_no_response"    // Cliente no propuso en tiempo
-  | "appointment_awaiting_report"             // Esperando reporte del experto (24h timer)
-  | "appointment_completed"                   // Cita completada por el experto
-  | "appointment_cancelled_by_no_report"      // Cancelado por no enviar reporte en 24h
-  | "cancelled_by_client_account_delete"      // 🆕 Cliente eliminó su cuenta
-  | "cancelled_by_expert_account_delete";     // 🆕 Experto eliminó su cuenta
+// ✅ ESTADO DINÁMICO: Los estados vienen del backend
+export type AppointmentStatus = string;
 
 export type TimerType = 
   | "proposal"                           // 48h para proponer cita

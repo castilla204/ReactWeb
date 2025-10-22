@@ -110,6 +110,8 @@ export const API_CONFIG = {
             submitReport: (appointmentId: number) => `${API_PATH}/Appointment/submit-report/${appointmentId}`,
             adminMetrics: `${API_PATH}/appointment/admin/metrics`,
             adminCheckTimers: `${API_PATH}/appointment/admin/check-timers`,
+            statuses: `${API_PATH}/appointment/statuses`,
+            moneyDistributionConfig: `${API_PATH}/appointment/money-distribution-config`,
         },
         appointmentConfig: {
             appointmentStatus: `${API_PATH}/AppointmentConfig/appointment-status`,
