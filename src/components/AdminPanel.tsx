@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, Plus, Edit, Trash2, Search, Save, X } from 'lucide-react';
-import { useAppointmentStatusConfigs, useServiceTypeCategoryConfigs, useCategoryServiceTypeConfigs, useMoneyDistributionQuery, useConfigValidation, useAppointmentStatuses, useAppointmentStatusManagement } from '../hooks/useAdminConfig';
+import { useAppointmentStatusConfigs, useServiceTypeCategoryConfigs, useCategoryServiceTypeConfigs, useMoneyDistributionQuery, useConfigValidation, useAppointmentStatusManagement } from '../hooks/useAdminConfig';
+import { useAppointmentStatuses } from '../hooks/useAppointmentStatuses';
 import { useStatusMappings } from '../hooks/useStatusMappings';
 import { ConfigFormData } from '../types/admin';
 import PriorityInfo from './PriorityInfo';
@@ -43,7 +44,7 @@ const AdminPanel: React.FC = () => {
   const granularConfigs = useCategoryServiceTypeConfigs();
   const moneyDistributionQuery = useMoneyDistributionQuery();
   const { validateForm } = useConfigValidation();
-  const appointmentStatuses = useAppointmentStatuses();
+  const { data: appointmentStatuses } = useAppointmentStatuses();
   const statusMappings = useStatusMappings();
   const statusManagement = useAppointmentStatusManagement();
 
@@ -1031,7 +1032,12 @@ const AdminPanel: React.FC = () => {
                       {getConfigsForTab().map((config) => (
                         <tr key={config.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {getStatusLabel(config)}
+                            <div>
+                              <div>{getStatusLabel(config)}</div>
+                              <div className="text-xs text-gray-500 font-mono mt-1">
+                                {config.statusValue}
+                              </div>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {config.cliente}%
