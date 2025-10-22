@@ -27,26 +27,26 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden mx-4 sm:mx-0">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
+        <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[80vh] overflow-hidden mx-2 sm:mx-0">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Configuración de Cuenta</h2>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <h2 className="text-base font-medium text-gray-900">Configuración de Cuenta</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-md hover:bg-gray-100"
             >
-              <X className="w-6 h-6" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="flex flex-col lg:flex-row h-[calc(90vh-80px)]">
+          <div className="flex flex-col lg:flex-row h-[calc(80vh-60px)]">
             {/* Sidebar Navigation */}
-            <div className="w-full lg:w-64 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 p-4">
+            <div className="w-full lg:w-52 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 p-3">
               <nav className="flex flex-wrap lg:flex-col lg:space-y-1 space-x-1 lg:space-x-0">
                 <button
                   onClick={() => setActiveTab('profile')}
-                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex items-center px-3 py-2 text-xs font-medium rounded-md transition-colors ${
                     activeTab === 'profile'
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
@@ -57,7 +57,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveTab('security')}
-                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex items-center px-3 py-2 text-xs font-medium rounded-md transition-colors ${
                     activeTab === 'security'
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
@@ -68,7 +68,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveTab('notifications')}
-                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex items-center px-3 py-2 text-xs font-medium rounded-md transition-colors ${
                     activeTab === 'notifications'
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
@@ -79,7 +79,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveTab('privacy')}
-                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex items-center px-3 py-2 text-xs font-medium rounded-md transition-colors ${
                     activeTab === 'privacy'
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
@@ -90,7 +90,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveTab('delete')}
-                  className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex items-center px-3 py-2 text-xs font-medium rounded-md transition-colors ${
                     activeTab === 'delete'
                       ? 'bg-red-600 text-white'
                       : 'text-red-600 hover:text-red-700 hover:bg-red-50'
@@ -104,42 +104,42 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
             {/* Main Content */}
             <div className="flex-1 overflow-y-auto">
-              <div className="p-4 sm:p-6">
+              <div className="p-4">
                 {/* Profile Tab */}
                 {activeTab === 'profile' && (
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Información del Perfil</h3>
-                      <div className="flex items-center space-x-4 mb-6">
-                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                          <User className="w-8 h-8 text-blue-600" />
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Información del Perfil</h3>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-blue-600" />
                         </div>
                         <div>
-                          <h4 className="text-lg font-medium text-gray-900">{user?.name || 'Usuario'}</h4>
-                          <p className="text-gray-600">{user?.email || 'usuario@email.com'}</p>
+                          <h4 className="text-sm font-medium text-gray-900">{user?.name || 'Usuario'}</h4>
+                          <p className="text-xs text-gray-500">{user?.email || 'usuario@email.com'}</p>
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Nombre
                           </label>
                           <input
                             type="text"
                             value={user?.name || ''}
-                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             readOnly
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Email
                           </label>
                           <input
                             type="email"
                             value={user?.email || ''}
-                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             readOnly
                           />
                         </div>
@@ -150,19 +150,19 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
                 {/* Security Tab */}
                 {activeTab === 'security' && (
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuración de Seguridad</h3>
-                      <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Configuración de Seguridad</h3>
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
                           <div className="flex items-center">
                             <Lock className="w-5 h-5 text-gray-600 mr-3" />
                             <div>
-                              <h4 className="text-sm font-medium text-gray-900">Cambiar Contraseña</h4>
-                              <p className="text-sm text-gray-600">Actualiza tu contraseña para mantener tu cuenta segura</p>
+                              <h4 className="text-xs font-medium text-gray-900">Cambiar Contraseña</h4>
+                              <p className="text-xs text-gray-600">Actualiza tu contraseña para mantener tu cuenta segura</p>
                             </div>
                           </div>
-                          <button className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                          <button className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
                             Cambiar
                           </button>
                         </div>
@@ -173,16 +173,16 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
                 {/* Notifications Tab */}
                 {activeTab === 'notifications' && (
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Preferencias de Notificaciones</h3>
-                      <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Preferencias de Notificaciones</h3>
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
                           <div className="flex items-center">
                             <Bell className="w-5 h-5 text-gray-600 mr-3" />
                             <div>
-                              <h4 className="text-sm font-medium text-gray-900">Notificaciones por Email</h4>
-                              <p className="text-sm text-gray-600">Recibe notificaciones por correo electrónico</p>
+                              <h4 className="text-xs font-medium text-gray-900">Notificaciones por Email</h4>
+                              <p className="text-xs text-gray-600">Recibe notificaciones por correo electrónico</p>
                             </div>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -197,16 +197,16 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
                 {/* Privacy Tab */}
                 {activeTab === 'privacy' && (
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuración de Privacidad</h3>
-                      <div className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Configuración de Privacidad</h3>
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
                           <div className="flex items-center">
                             <Globe className="w-5 h-5 text-gray-600 mr-3" />
                             <div>
-                              <h4 className="text-sm font-medium text-gray-900">Visibilidad del Perfil</h4>
-                              <p className="text-sm text-gray-600">Controla quién puede ver tu perfil</p>
+                              <h4 className="text-xs font-medium text-gray-900">Visibilidad del Perfil</h4>
+                              <p className="text-xs text-gray-600">Controla quién puede ver tu perfil</p>
                             </div>
                           </div>
                           <select className="px-3 py-1 bg-white border border-gray-300 rounded text-gray-900 text-sm">
@@ -222,12 +222,12 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
                 {/* Delete Account Tab */}
                 {activeTab === 'delete' && (
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Eliminar Cuenta</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Eliminar Cuenta</h3>
                       
                       {/* Delete Account Section */}
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         <div className="p-6 bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-xl">
                           <div className="flex items-start space-x-4">
                             <div className="flex-shrink-0">
@@ -237,7 +237,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                             </div>
                             <div className="flex-1">
                               <h4 className="text-base font-semibold text-gray-900 mb-2">Eliminar Cuenta Permanentemente</h4>
-                              <p className="text-sm text-gray-700 mb-4 leading-relaxed">
+                              <p className="text-xs text-gray-700 mb-3 leading-relaxed">
                                 Esta acción eliminará tu cuenta y todos los datos asociados de forma irreversible. 
                                 Se crearán disputas automáticas para proteger cualquier contratación activa.
                               </p>
@@ -246,7 +246,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                                 {!showDeleteButton ? (
                                   <button
                                     onClick={() => setShowDeleteButton(true)}
-                                    className="px-5 py-2.5 text-sm font-medium text-red-600 hover:text-red-700 border border-red-300 hover:border-red-400 rounded-lg transition-all duration-200 hover:bg-red-50"
+                                    className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 border border-red-300 hover:border-red-400 rounded-lg transition-all duration-200 hover:bg-red-50"
                                   >
                                     Proceder con la Eliminación
                                   </button>
@@ -254,13 +254,13 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                                   <div className="flex flex-col sm:flex-row gap-3">
                                     <button
                                       onClick={() => setShowDeleteButton(false)}
-                                      className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-700 border border-gray-300 hover:border-gray-400 rounded-lg transition-all duration-200 hover:bg-gray-50"
+                                      className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-700 border border-gray-300 hover:border-gray-400 rounded-lg transition-all duration-200 hover:bg-gray-50"
                                     >
                                       Cancelar
                                     </button>
                                     <button
                                       onClick={() => setShowDeletionModal(true)}
-                                      className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                                      className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                                     >
                                       Confirmar Eliminación
                                     </button>
