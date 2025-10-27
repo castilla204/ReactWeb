@@ -186,10 +186,14 @@ export const useAppointments = () => {
   };
 
   const confirmAppointment = async (data: ConfirmAppointmentDto) => {
+    console.log('[useAppointments] confirmAppointment called with data:', data);
     try {
       setError(null);
-      return await confirmAppointmentMutation.mutateAsync(data);
+      const result = await confirmAppointmentMutation.mutateAsync(data);
+      console.log('[useAppointments] confirmAppointment success:', result);
+      return result;
     } catch (err) {
+      console.error('[useAppointments] confirmAppointment error:', err);
       throw err;
     }
   };
@@ -323,7 +327,8 @@ export const useAppointmentLock = (appointment: Appointment | null) => {
         const appointmentDateTime = new Date(`${appointment.proposedDate}T${appointment.proposedTime}`);
         const twelveHoursBefore = new Date(appointmentDateTime.getTime() - 12 * 60 * 60 * 1000);
         
-        setIsLocked(new Date() >= twelveHoursBefore);
+        const newLockedStatus = new Date() >= twelveHoursBefore;
+        setIsLocked(prev => prev !== newLockedStatus ? newLockedStatus : prev);
       } else {
         // Para citas propuestas, no bloquear nunca
         setIsLocked(false);
@@ -334,7 +339,7 @@ export const useAppointmentLock = (appointment: Appointment | null) => {
     const interval = setInterval(checkLockStatus, 60000); // Verificar cada minuto
     
     return () => clearInterval(interval);
-  }, [appointment?.proposedDate, appointment?.proposedTime]);
+  }, [appointment?.proposedDate, appointment?.proposedTime, appointment?.status]);
 
   return isLocked;
 };

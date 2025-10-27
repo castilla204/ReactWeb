@@ -192,8 +192,15 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[80vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex min-h-full items-end justify-center p-0 text-center sm:items-center sm:p-0">
+        <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300" onClick={onCancel}></div>
+        <div className="relative transform overflow-hidden rounded-t-lg bg-white text-left shadow-xl transition-all duration-500 ease-out translate-y-0 sm:my-8 sm:w-full sm:max-w-4xl sm:rounded-lg sm:translate-y-0 sm:duration-300 sm:ease-out">
+        
+        {/* Swipe indicator - Mobile only */}
+        <div className="sm:hidden flex justify-center pt-3 pb-2">
+          <div className="w-12 h-1 bg-gray-400 rounded-full shadow-sm"></div>
+        </div>
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
@@ -207,7 +214,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-4">
+        <form onSubmit={handleSubmit} className="px-4 pb-4 pt-5 sm:p-6 max-h-[75vh] overflow-y-auto">
           
           {/* Errores */}
           {errors.length > 0 && (
@@ -394,6 +401,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

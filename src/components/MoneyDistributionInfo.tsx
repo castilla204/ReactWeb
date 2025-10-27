@@ -1,7 +1,7 @@
 import React from 'react';
 import { Info, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { useAppointmentStatuses, getAppointmentStatusText } from '../hooks/useAppointmentStatuses';
-import { MoneyDistributionConfig } from '../hooks/useMoneyDistribution';
+import { MoneyDistributionConfig, shouldShowMoneyDistribution } from '../hooks/useMoneyDistributionConfig';
 
 interface MoneyDistributionInfoProps {
   config: MoneyDistributionConfig | null;
@@ -60,6 +60,11 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
   const statusInfo = getStatusInfo(status, statuses);
   const IconComponent = statusInfo.icon;
 
+  // ✅ VERIFICACIÓN ADICIONAL: No mostrar si no debería mostrar distribución
+  if (!shouldShowMoneyDistribution(config, status, statuses)) {
+    return null;
+  }
+
   if (isLoading) {
     return (
       <div className={`${statusInfo.bgColor} ${statusInfo.borderColor} border rounded-lg p-4 ${className}`}>
@@ -71,17 +76,22 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
     );
   }
 
-  if (error || !config) {
+  if (error) {
     return (
       <div className={`${statusInfo.bgColor} ${statusInfo.borderColor} border rounded-lg p-4 ${className}`}>
         <div className="flex items-center space-x-3">
           <AlertTriangle className={`w-5 h-5 ${statusInfo.color}`} />
           <span className="text-sm text-gray-600">
-            {error || 'No se pudo cargar la información de porcentajes'}
+            {error}
           </span>
         </div>
       </div>
     );
+  }
+
+  // Si no hay config o es un estado intermedio sin distribución, no mostrar nada
+  if (!config || config.source === 'no_distribution_required') {
+    return null;
   }
 
   return (
@@ -97,7 +107,7 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
           </p>
           
           <div className="space-y-2">
-            {config.clientPercentage > 0 && (
+            {parseFloat(config.clientPercentage) > 0 && (
               <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -109,7 +119,7 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
               </div>
             )}
             
-            {config.expertPercentage > 0 && (
+            {parseFloat(config.expertPercentage) > 0 && (
               <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -121,7 +131,7 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
               </div>
             )}
             
-            {config.platformPercentage > 0 && (
+            {parseFloat(config.platformPercentage) > 0 && (
               <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
@@ -136,7 +146,7 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
           
           <div className="mt-3 p-2 bg-white rounded border border-gray-200">
             <p className="text-xs text-gray-500 text-center">
-              <strong>Total:</strong> {config.clientPercentage + config.expertPercentage + config.platformPercentage}%
+              <strong>Total:</strong> {(parseFloat(config.clientPercentage) + parseFloat(config.expertPercentage) + parseFloat(config.platformPercentage)).toFixed(1)}%
             </p>
           </div>
         </div>
