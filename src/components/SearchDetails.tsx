@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp, FileText, MessageSquare, Calendar, CheckCircle, DollarSign, User, XCircle, MapPin, Home, Phone } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp, FileText, MessageSquare, Calendar, CheckCircle, DollarSign, User, XCircle, MapPin, Home, Phone, Info } from 'lucide-react';
 import { SearchHire } from '../hooks/useSearch.hooks';
 import { useAuth } from '../contexts/AuthContext';
 import { useChat } from '../hooks/useChat';
@@ -105,6 +105,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     });
     const [notifications, setNotifications] = useState<{ id: string; type: NotificationType; message: string; duration?: number }[]>([]);
     const [selectedDeliverableFiles, setSelectedDeliverableFiles] = useState<File[]>([]);
+    const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+    const [fileValidation, setFileValidation] = useState<{canSubmit: boolean, message: string} | null>(null);
     const [showTrackOrder, setShowTrackOrder] = useState(false);
     const lastSearchHireId = useRef<number | null>(null);
     const [activeTab, setActiveTab] = useState<'chat' | 'details'>('chat');
@@ -176,7 +178,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     // ? HOOKS PARA ACCIONES
     const { uploadDeliverable, isUploadingDeliverable } = useChat(searchId, setNotifications);
-    const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit, handleResolveDispute, handleAddAd } =
+    const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit: submitDispute, handleResolveDispute, handleAddAd } =
         useSearchActions(setNotifications);
     
     // Hook para obtener información de disputa
@@ -192,6 +194,218 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         isRejecting
     } = useAppointments();
     
+    // Funciones para los nuevos endpoints de gestión de archivos
+    const validateFiles = async (appointmentId: number) => {
+        try {
+            const response = await fetch(`${API_CONFIG.baseUrl}/api/appointment/validate-files/${appointmentId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.isValid) {
+                    return { canSubmit: true, message: 'Todos los archivos requeridos están subidos' };
+                } else {
+                    const missingText = result.missingFiles.join(' y ');
+                    return { 
+                        canSubmit: false, 
+                        message: `Para enviar el reporte necesitas subir: ${missingText}` 
+                    };
+                }
+            } else {
+                throw new Error('Error al validar archivos');
+            }
+        } catch (error) {
+            console.error('Error validando archivos:', error);
+            return { canSubmit: false, message: 'Error al validar archivos' };
+        }
+    };
+
+    const getUploadedFiles = async (appointmentId: number) => {
+        try {
+            const response = await fetch(`${API_CONFIG.baseUrl}/api/appointment/files/${appointmentId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                return result.files || [];
+            } else {
+                throw new Error('Error obteniendo archivos');
+            }
+        } catch (error) {
+            console.error('Error obteniendo archivos:', error);
+            return [];
+        }
+    };
+
+    const deleteFile = async (appointmentId: number, deliverableId: number) => {
+        try {
+            const response = await fetch(`${API_CONFIG.baseUrl}/api/appointment/files/${appointmentId}/${deliverableId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                return { success: true, message: result.message };
+            } else {
+                const error = await response.json();
+                return { success: false, message: error.message };
+            }
+        } catch (error) {
+            console.error('Error eliminando archivo:', error);
+            return { success: false, message: 'Error al eliminar archivo' };
+        }
+    };
+
+    const submitReportWithFiles = async (appointmentId: number, files: File[], notes: string = '') => {
+        try {
+            const formData = new FormData();
+            
+            // Agregar notas si las hay
+            if (notes) {
+                formData.append('notes', notes);
+            }
+            
+            // Agregar archivos
+            if (files && files.length > 0) {
+                files.forEach(file => {
+                    formData.append('files', file);
+                });
+            }
+            
+            const response = await fetch(`${API_CONFIG.baseUrl}/api/appointment/submit-report-with-files/${appointmentId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                    // NO incluir Content-Type para FormData
+                },
+                body: formData
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                return { success: true, appointment: result.appointment };
+            } else {
+                const error = await response.json();
+                return { success: false, message: error.message };
+            }
+        } catch (error) {
+            console.error('Error enviando reporte:', error);
+            return { success: false, message: 'Error al enviar reporte' };
+        }
+    };
+
+    // Cargar archivos existentes y validar cuando cambie la cita
+    useEffect(() => {
+        if (appointment?.id) {
+            loadUploadedFiles();
+            validateFilesAndUpdate();
+        }
+    }, [appointment?.id]);
+
+    // Validar archivos cuando cambien los archivos subidos o seleccionados
+    useEffect(() => {
+        // Si hay archivos seleccionados, usar validación local
+        if (selectedDeliverableFiles.length > 0) {
+            validateLocalFiles();
+        } else {
+            // Si no hay archivos seleccionados, usar validación del servidor
+            validateFilesAndUpdate();
+        }
+    }, [uploadedFiles, selectedDeliverableFiles]);
+
+    const loadUploadedFiles = async () => {
+        if (appointment?.id) {
+            const files = await getUploadedFiles(appointment.id);
+            setUploadedFiles(files);
+        }
+    };
+
+    const validateFilesAndUpdate = async () => {
+        if (appointment?.id) {
+            const validation = await validateFiles(appointment.id);
+            setFileValidation(validation);
+        }
+    };
+
+    const validateLocalFiles = () => {
+        // Validación local que considera archivos subidos + archivos seleccionados
+        const totalFiles = [...uploadedFiles, ...selectedDeliverableFiles];
+        
+        // Verificar si hay al menos un PDF y un MP4
+        const hasPDF = totalFiles.some(file => 
+            file.fileName?.toLowerCase().endsWith('.pdf') || 
+            file.name?.toLowerCase().endsWith('.pdf')
+        );
+        const hasMP4 = totalFiles.some(file => 
+            file.fileName?.toLowerCase().endsWith('.mp4') || 
+            file.name?.toLowerCase().endsWith('.mp4')
+        );
+        
+        if (hasPDF && hasMP4) {
+            setFileValidation({ 
+                canSubmit: true, 
+                message: 'Todos los archivos requeridos están listos' 
+            });
+            // Limpiar notificaciones de error cuando la validación es exitosa
+            setNotifications(prev => prev.filter(notif => 
+                !notif.message.includes('Para enviar el reporte necesitas subir')
+            ));
+        } else {
+            const missing = [];
+            if (!hasPDF) missing.push('PDF');
+            if (!hasMP4) missing.push('MP4');
+            setFileValidation({ 
+                canSubmit: false, 
+                message: `Para enviar el reporte necesitas subir: ${missing.join(' y ')}` 
+            });
+        }
+    };
+
+    const handleDeleteFile = async (deliverableId: number) => {
+        if (!appointment?.id) return;
+        
+        try {
+            const result = await deleteFile(appointment.id, deliverableId);
+            if (result.success) {
+                setNotifications(prev => [...prev, {
+                    id: uuidv4(),
+                    type: 'success',
+                    message: 'Archivo eliminado exitosamente'
+                }]);
+                // Recargar archivos y validación
+                await loadUploadedFiles();
+                await validateFilesAndUpdate();
+            } else {
+                setNotifications(prev => [...prev, {
+                    id: uuidv4(),
+                    type: 'error',
+                    message: result.message
+                }]);
+            }
+        } catch (error) {
+            console.error('Error eliminando archivo:', error);
+            setNotifications(prev => [...prev, {
+                id: uuidv4(),
+                type: 'error',
+                message: 'Error al eliminar archivo'
+            }]);
+        }
+    };
+
     // Funciones para manejar deliverables
     const handleDeliverableFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files ? Array.from(e.target.files) : [];
@@ -210,7 +424,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 message: `${validFiles.length} archivo(s) seleccionado(s) correctamente`
             }]);
         }
-        setSelectedDeliverableFiles(validFiles);
+        setSelectedDeliverableFiles(prev => [...prev, ...validFiles]);
+        
+        // Limpiar el input para permitir seleccionar los mismos archivos otra vez
+        e.target.value = '';
     };
 
     const handleUploadDeliverable = async () => {
@@ -263,6 +480,61 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         }
     };
 
+    const removeSelectedFile = (index: number) => {
+        setSelectedDeliverableFiles(prev => prev.filter((_, i) => i !== index));
+        // La validación se ejecutará automáticamente por el useEffect
+    };
+
+    const handleDisputeSubmit = async () => {
+        if (!search?.searchHire?.id) {
+            setNotifications(prev => [...prev, {
+                id: uuidv4(),
+                type: 'error',
+                message: 'No se encontró el ID del servicio'
+            }]);
+            return;
+        }
+
+        if (!disputeReason.trim()) {
+            setNotifications(prev => [...prev, {
+                id: uuidv4(),
+                type: 'error',
+                message: 'Por favor, describe el motivo de la disputa'
+            }]);
+            return;
+        }
+
+        try {
+            await submitDispute(
+                search.searchHire.id, 
+                disputeReason, 
+                disputeFiles,
+                () => {
+                    // Callback de éxito
+                    setNotifications(prev => [...prev, {
+                        id: uuidv4(),
+                        type: 'success',
+                        message: 'Disputa enviada exitosamente'
+                    }]);
+                    // Limpiar el formulario
+                    setDisputeReason('');
+                    setDisputeFiles([]);
+                    // Cerrar el modal
+                    setModalState((prev) => ({ ...prev, showDisputeModal: false }));
+                    // Refrescar datos
+                    invalidateAll();
+                }
+            );
+        } catch (error) {
+            console.error('Error enviando disputa:', error);
+            setNotifications(prev => [...prev, {
+                id: uuidv4(),
+                type: 'error',
+                message: 'Error al enviar la disputa'
+            }]);
+        }
+    };
+
     const handleSubmitReport = async () => {
         if (!appointment?.id) {
             setNotifications(prev => [...prev, {
@@ -273,51 +545,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             return;
         }
 
-        // Verificar si hay archivos seleccionados para subir
-        if (selectedDeliverableFiles.length === 0) {
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: 'Es obligatorio subir al menos un archivo PDF antes de enviar el reporte'
-            }]);
-            return;
-        }
-
         try {
-            // Primero subir los archivos
-            console.log('[SearchDetails] Subiendo archivos antes de enviar reporte...');
-            const formData = new FormData();
-            selectedDeliverableFiles.forEach(file => {
-                formData.append('Files', file);
-            });
-
-            const uploadResponse = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.chat.deliverable(search?.searchHire?.id || 0)}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`
-                },
-                body: formData
-            });
-
-            if (!uploadResponse.ok) {
-                throw new Error('Error al subir archivos');
-            }
-
-            console.log('[SearchDetails] Archivos subidos exitosamente, enviando reporte...');
-
-            // Luego enviar el reporte
-            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.appointment.submitReport(appointment.id)}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getAuthToken()}`
-                },
-                body: JSON.stringify({
-                    notes: 'Reporte completado por el experto'
-                })
-            });
-
-            if (response.ok) {
+            // Usar el endpoint unificado que maneja todo: subida + validación + envío
+            console.log('[SearchDetails] Enviando reporte con archivos usando endpoint unificado...');
+            const result = await submitReportWithFiles(appointment.id, selectedDeliverableFiles, 'Reporte completado por el experto');
+            
+            if (result.success) {
                 setNotifications(prev => [...prev, {
                     id: uuidv4(),
                     type: 'success',
@@ -328,7 +561,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 // Refrescar datos
                 invalidateAll();
             } else {
-                throw new Error('Error al enviar reporte');
+                setNotifications(prev => [...prev, {
+                    id: uuidv4(),
+                    type: 'error',
+                    message: result.message
+                }]);
             }
         } catch (error) {
             console.error('[SearchDetails] Error submitting report:', error);
@@ -1007,6 +1244,109 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
                                 )}
 
+                                {/* Deliverables Upload - Mobile - Solo para expertos cuando está esperando reporte */}
+                                {isExpert && appointment?.status === 'appointment_awaiting_report' && (
+                                    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                            <Upload className="w-5 h-5 text-blue-600" />
+                                            Subir Informe del Experto
+                                        </h3>
+                                        
+                                        {/* Validación de archivos */}
+                                        {fileValidation && (
+                                            <div className={`mb-4 p-3 rounded-lg border ${
+                                                fileValidation.canSubmit 
+                                                    ? 'bg-green-50 border-green-200 text-green-800' 
+                                                    : 'bg-blue-50 border-blue-200 text-blue-800'
+                                            }`}>
+                                                <div className="flex items-center gap-2">
+                                                    {fileValidation.canSubmit ? (
+                                                        <CheckCircle className="w-4 h-4" />
+                                                    ) : (
+                                                        <Info className="w-4 h-4" />
+                                                    )}
+                                                    <span className="text-sm font-medium">{fileValidation.message}</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Archivos ya subidos */}
+                                        {uploadedFiles.length > 0 && (
+                                            <div className="mb-4">
+                                                <h4 className="text-sm font-medium text-gray-700 mb-2">Archivos Subidos:</h4>
+                                                <div className="space-y-2">
+                                                    {uploadedFiles.map((file) => (
+                                                        <div key={file.id} className="flex items-center justify-between bg-gray-50 p-2 rounded border">
+                                                            <div className="flex items-center gap-2">
+                                                                <FileText className="w-4 h-4 text-gray-500" />
+                                                                <span className="text-sm text-gray-600">{file.fileName}</span>
+                                                                <span className="text-xs text-gray-500">({file.fileType})</span>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => handleDeleteFile(file.id)}
+                                                                className="text-red-600 hover:text-red-800 text-xs font-medium"
+                                                            >
+                                                                Eliminar
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-3">
+                                            <label className="block">
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    accept=".pdf,.mp4"
+                                                    onChange={handleDeliverableFileChange}
+                                                    className="hidden"
+                                                />
+                                                <div className="w-full p-4 border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 cursor-pointer rounded-lg hover:bg-blue-100 transition-colors text-center">
+                                                    <Upload className="w-6 h-6 mx-auto mb-2" />
+                                                    <p className="font-medium text-sm">Seleccionar archivos</p>
+                                                    <p className="text-xs">PDF o MP4 (máx. 10MB)</p>
+                                                </div>
+                                            </label>
+                                            {selectedDeliverableFiles.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <p className="text-sm font-medium text-gray-700">Archivos seleccionados:</p>
+                                            {selectedDeliverableFiles.map((file, index) => (
+                                                <div key={index} className="flex items-center justify-between bg-white p-2 rounded border">
+                                                    <div className="flex items-center gap-2">
+                                                        <FileText className="w-4 h-4 text-gray-500" />
+                                                        <span className="text-sm text-gray-600">{file.name}</span>
+                                                        <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(1)}MB</span>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => removeSelectedFile(index)}
+                                                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                            ))}
+                                                </div>
+                                            )}
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={handleSubmitReport}
+                                                    className={`flex-1 py-3 text-sm rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${
+                                                        fileValidation && !fileValidation.canSubmit
+                                                            ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                                                            : 'bg-green-600 hover:bg-green-700 text-white'
+                                                    }`}
+                                                    disabled={fileValidation ? !fileValidation.canSubmit : false}
+                                                >
+                                                    <CheckCircle className="w-4 h-4" />
+                                                    Enviar Reporte
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Review Button - Mobile */}
                                 {canReview && (
                                     <div className="mt-4">
@@ -1026,7 +1366,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                 {/* Sidebar - Desktop Only */}
                 <aside className="hidden lg:flex lg:w-1/3 bg-white border-l border-gray-200 flex-col">
-                    <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-6">
                     <div className="p-6 space-y-6">
                         {/* Service Details */}
                                 <div className="bg-gray-50 rounded-lg p-4">
@@ -1240,6 +1580,49 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     <Upload className="w-5 h-5 text-blue-600" />
                                     Subir Informe del Experto
                                 </h3>
+                                
+                                {/* Validación de archivos */}
+                                {fileValidation && (
+                                    <div className={`mb-4 p-3 rounded-lg border ${
+                                        fileValidation.canSubmit 
+                                            ? 'bg-green-50 border-green-200 text-green-800' 
+                                            : 'bg-blue-50 border-blue-200 text-blue-800'
+                                    }`}>
+                                        <div className="flex items-center gap-2">
+                                            {fileValidation.canSubmit ? (
+                                                <CheckCircle className="w-4 h-4" />
+                                            ) : (
+                                                <Info className="w-4 h-4" />
+                                            )}
+                                            <span className="text-sm font-medium">{fileValidation.message}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Archivos ya subidos */}
+                                {uploadedFiles.length > 0 && (
+                                    <div className="mb-4">
+                                        <h4 className="text-sm font-medium text-gray-700 mb-2">Archivos Subidos:</h4>
+                                        <div className="space-y-2">
+                                            {uploadedFiles.map((file) => (
+                                                <div key={file.id} className="flex items-center justify-between bg-white p-2 rounded border">
+                                                    <div className="flex items-center gap-2">
+                                                        <FileText className="w-4 h-4 text-gray-500" />
+                                                        <span className="text-sm text-gray-600">{file.fileName}</span>
+                                                        <span className="text-xs text-gray-500">({file.fileType})</span>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => handleDeleteFile(file.id)}
+                                                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="space-y-3">
                                     <label className="block">
                                         <input
@@ -1260,43 +1643,36 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             <p className="text-sm font-medium text-gray-700">Archivos seleccionados:</p>
                                             {selectedDeliverableFiles.map((file, index) => (
                                                 <div key={index} className="flex items-center justify-between bg-white p-2 rounded border">
-                                                    <span className="text-sm text-gray-600">{file.name}</span>
-                                                    <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(1)}MB</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <FileText className="w-4 h-4 text-gray-500" />
+                                                        <span className="text-sm text-gray-600">{file.name}</span>
+                                                        <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(1)}MB</span>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => removeSelectedFile(index)}
+                                                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                                                    >
+                                                        Eliminar
+                                                    </button>
                                                 </div>
                                             ))}
-                                    </div>
-                                )}
+                                        </div>
+                                    )}
                                     <div className="flex gap-2">
                                         <button
-                                            onClick={handleUploadDeliverable}
-                                            className={`flex-1 py-3 text-sm rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${
-                                                selectedDeliverableFiles.length === 0 || isUploadingDeliverable
-                                                    ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                                            }`}
-                                            disabled={selectedDeliverableFiles.length === 0 || isUploadingDeliverable}
-                                        >
-                                            {isUploadingDeliverable ? (
-                                                <>
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                                                    Subiendo archivos...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Upload className="w-4 h-4" />
-                                                    Subir Archivos
-                                                </>
-                                            )}
-                                        </button>
-                                        <button
                                             onClick={handleSubmitReport}
-                                            className="px-4 py-3 text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-colors flex items-center gap-2"
+                                            className={`flex-1 py-3 text-sm rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${
+                                                fileValidation && !fileValidation.canSubmit
+                                                    ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                                                    : 'bg-green-600 hover:bg-green-700 text-white'
+                                            }`}
+                                            disabled={fileValidation ? !fileValidation.canSubmit : false}
                                         >
                                             <CheckCircle className="w-4 h-4" />
                                             Enviar Reporte
                                         </button>
-                    </div>
-                </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -1348,6 +1724,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </div>
                         )}
 
+                        {/* Espacio adicional para asegurar que todos los botones sean visibles */}
+                        <div className="h-8"></div>
+
                     </div>
                 </div>
                 </aside>
@@ -1393,16 +1772,39 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 />
             )}
 
-            {/* Notifications */}
-            {notifications.map((notification) => (
-                <Notification
-                    key={notification.id}
-                    id={notification.id}
-                    type={notification.type}
-                    message={notification.message}
-                    onClose={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
+            {/* Dispute Modal */}
+            {modalState.showDisputeModal && (
+                <DisputeModal
+                    isOpen={modalState.showDisputeModal}
+                    onClose={() => setModalState((prev) => ({ ...prev, showDisputeModal: false }))}
+                    disputeReason={disputeReason}
+                    setDisputeReason={setDisputeReason}
+                    files={disputeFiles}
+                    setFiles={setDisputeFiles}
+                    onSubmit={handleDisputeSubmit}
                 />
-            ))}
+            )}
+
+            {/* Notifications - Fixed Position */}
+            <div className="fixed top-24 right-6 z-[60] space-y-3 max-w-md">
+                {notifications.map((notification, index) => (
+                    <div 
+                        key={notification.id}
+                        className="transform transition-all duration-300 ease-out"
+                        style={{
+                            transform: `translateY(${index * 10}px)`,
+                            zIndex: 60 - index
+                        }}
+                    >
+                        <Notification
+                            type={notification.type}
+                            message={notification.message}
+                            onClose={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                            duration={notification.duration || 6000}
+                        />
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }
