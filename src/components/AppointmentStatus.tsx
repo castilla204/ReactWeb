@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Calendar, Clock, MapPin, AlertTriangle, CheckCircle, XCircle, Timer, Home, Phone, FileText, MessageCircle, RefreshCw } from 'lucide-react';
 import { Appointment } from '../types/appointment';
 import { 
@@ -13,7 +13,8 @@ import {
 } from '../hooks/useAppointmentStatuses';
 import { 
   useMoneyDistributionConfig, 
-  calculateMoneyDistribution 
+  calculateMoneyDistribution,
+  shouldShowMoneyDistribution 
 } from '../hooks/useMoneyDistributionConfig';
 import { useExpertReport } from '../hooks/useExpertReport';
 import { CancellationInfoCard } from './CancellationInfoCard';
@@ -45,18 +46,12 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
     ? calculateMoneyDistribution(appointment.amount, moneyConfig)
     : { client: 0, expert: 0, platform: 0 };
   
-  // Debug para verificar el estado de bloqueo
-  console.log('[AppointmentStatus] Component debug:', {
-    appointmentId: appointment.id,
-    appointmentStatus: appointment.status,
-    userRole,
-    isLocked,
-    proposedDate: appointment.proposedDate,
-    proposedTime: appointment.proposedTime
-  });
   
   const statusText = statuses ? getAppointmentStatusText(appointment.status, statuses) : appointment.status;
   const statusColor = statuses ? getAppointmentStatusColor(appointment.status, statuses) : 'gray';
+
+  // Hook para manejar el envío de reportes
+  const { isSubmitting } = useExpertReport();
 
   const getStatusIcon = (status: string) => {
     if (!statuses) return <AlertTriangle className="w-5 h-5 text-gray-600" />;
@@ -77,30 +72,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
     }
   };
 
-  const getActionButtons = () => {
+  const actionButtons = useMemo(() => {
     const buttons = [];
-
-    // Debug para entender por qué no aparecen los botones
-    console.log('[AppointmentStatus] Debug getActionButtons:', {
-      userRole,
-      appointmentStatus: appointment.status,
-      isLocked,
-      shouldShowConfirm: userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked,
-      shouldShowReject: userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked,
-      shouldShowCancelClient: appointment.status === 'appointment_confirmed' && !isLocked && userRole === 'client',
-      shouldShowCancelExpert: appointment.status === 'appointment_confirmed' && !isLocked && userRole === 'expert'
-    });
-
-    // Botón de debug que siempre aparece
-    buttons.push(
-      <button
-        key="debug"
-        className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm"
-        onClick={() => console.log('[DEBUG] Botón clickeado - userRole:', userRole, 'status:', appointment.status)}
-      >
-        DEBUG: {userRole} - {appointment.status}
-      </button>
-    );
 
     // Botón para proponer cita (solo clientes) - NO mostrar si ya hay sección específica para rechazada
     if (userRole === 'client' && ['awaiting_appointment', 'appointment_cancelled_by_client'].includes(appointment.status) && !isLocked) {
@@ -120,7 +93,12 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       buttons.push(
         <button
           key="confirm"
-          onClick={() => onAction('confirm', appointment)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[AppointmentStatus] Confirm button clicked!', { appointmentId: appointment.id, userRole, status: appointment.status });
+            onAction('confirm', appointment);
+          }}
           className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
         >
           Confirmar
@@ -133,7 +111,11 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       buttons.push(
         <button
           key="reject"
-          onClick={() => onAction('reject', appointment)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAction('reject', appointment);
+          }}
           className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm"
         >
           Rechazar
@@ -215,21 +197,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
     }
 
     return buttons;
-  };
+  }, [userRole, appointment.status, isLocked, appointment.id, onAction, isSubmitting]);
 
-  // Hook para manejar el envío de reportes
-  const { isSubmitting } = useExpertReport();
-
-  // Debug para verificar si el componente se renderiza
-  console.log('[AppointmentStatus] Component rendering:', {
-    appointmentId: appointment.id,
-    appointmentStatus: appointment.status,
-    userRole,
-    isLocked,
-    proposedDate: appointment.proposedDate,
-    proposedTime: appointment.proposedTime,
-    shouldShowConfirmReject: userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked
-  });
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
@@ -648,7 +617,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       )}
 
       {/* Distribución de dinero */}
-      {(moneyDistribution.client > 0 || moneyDistribution.expert > 0 || moneyDistribution.platform > 0) && (
+      {shouldShowMoneyDistribution(moneyConfig) && (
         <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200">
           <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
             <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
@@ -706,9 +675,9 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       )}
 
       {/* Botones de acción */}
-      {getActionButtons().length > 0 && (
+      {actionButtons.length > 0 && (
         <div className="flex flex-wrap gap-2 pt-2">
-          {getActionButtons()}
+          {actionButtons}
         </div>
       )}
 

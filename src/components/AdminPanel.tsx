@@ -86,9 +86,9 @@ const AdminPanel: React.FC = () => {
         setServiceTypes(serviceTypesData);
         
         // También actualizar los estados del hook si es necesario
-        if (appointmentStatuses.statuses.length === 0) {
+        if (appointmentStatuses && appointmentStatuses.length === 0) {
           // Forzar recarga de estados si no están cargados
-          appointmentStatuses.fetchStatuses?.();
+          // appointmentStatuses.fetchStatuses?.();
         }
 
       } catch (error: any) {
@@ -1335,7 +1335,7 @@ const AdminPanel: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Seleccionar estado...</option>
-                    {appointmentStatuses.statuses.map((status: any) => (
+                    {appointmentStatuses?.map((status: any) => (
                       <option key={status.id} value={status.statusValue}>
                         {status.displayName}
                       </option>
@@ -1477,7 +1477,7 @@ const AdminPanel: React.FC = () => {
                       <option value={0}>
                         {loadingBasicData ? 'Cargando estados...' : 'Seleccionar estado...'}
                       </option>
-                      {appointmentStatuses.statuses.map((status) => (
+                      {appointmentStatuses?.map((status) => (
                         <option key={status.id} value={status.id}>
                           {status.displayName}
                         </option>
