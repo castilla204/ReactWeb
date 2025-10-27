@@ -39,29 +39,29 @@ export function Notification({ type, message, action, onClose, duration = 5000 }
         switch (type) {
             case 'success':
                 return {
-                    icon: <CheckCircle className="w-4 h-4" />,
-                    bgColor: 'bg-white/95',
-                    borderColor: 'border-gray-200/50',
-                    iconColor: 'text-emerald-600',
-                    textColor: 'text-gray-700',
-                    dotColor: 'bg-emerald-500'
+                    icon: <CheckCircle className="w-5 h-5" />,
+                    bgColor: 'bg-green-50/95',
+                    borderColor: 'border-green-200/80',
+                    iconColor: 'text-green-600',
+                    textColor: 'text-green-800',
+                    dotColor: 'bg-green-500'
                 };
             case 'error':
                 return {
-                    icon: <XCircle className="w-4 h-4" />,
-                    bgColor: 'bg-white/95',
-                    borderColor: 'border-gray-200/50',
+                    icon: <XCircle className="w-5 h-5" />,
+                    bgColor: 'bg-red-50/95',
+                    borderColor: 'border-red-200/80',
                     iconColor: 'text-red-600',
-                    textColor: 'text-gray-700',
+                    textColor: 'text-red-800',
                     dotColor: 'bg-red-500'
                 };
             case 'info':
                 return {
-                    icon: <Info className="w-4 h-4" />,
-                    bgColor: 'bg-white/95',
-                    borderColor: 'border-gray-200/50',
+                    icon: <Info className="w-5 h-5" />,
+                    bgColor: 'bg-blue-50/95',
+                    borderColor: 'border-blue-200/80',
                     iconColor: 'text-blue-600',
-                    textColor: 'text-gray-700',
+                    textColor: 'text-blue-800',
                     dotColor: 'bg-blue-500'
                 };
         }
@@ -72,7 +72,7 @@ export function Notification({ type, message, action, onClose, duration = 5000 }
     return (
         <div 
             className={`
-                fixed top-6 right-6 z-50
+                relative
                 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]
                 ${isVisible && !isExiting 
                     ? 'translate-x-0 opacity-100 scale-100' 
@@ -100,7 +100,7 @@ export function Notification({ type, message, action, onClose, duration = 5000 }
                         
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                            <p className={`text-sm ${config.textColor} leading-relaxed font-normal`}>
+                            <p className={`text-sm ${config.textColor} leading-relaxed font-medium`}>
                                 {message}
                             </p>
                             
