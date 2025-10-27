@@ -12,14 +12,15 @@ export const useApi = () => {
         let responseText = '';
 
         // Log API calls for debugging
-        if (endpoint.includes('GetServiceByHireId') || endpoint.includes('dispute-service') || endpoint.includes('map-experts')) {
+        if (endpoint.includes('GetServiceByHireId') || endpoint.includes('dispute-service') || endpoint.includes('map-experts') || endpoint.includes('appointment/confirm')) {
             console.log('[useApi] Making API call:', {
                 endpoint,
                 fullUrl: url,
                 method: fetchConfig.method || 'GET',
                 requiresAuth,
                 hasToken: !!getAuthToken(),
-                token: getAuthToken()?.substring(0, 20) + '...'
+                token: getAuthToken()?.substring(0, 20) + '...',
+                body: config.body
             });
         }
 
@@ -65,6 +66,17 @@ export const useApi = () => {
             // Log response for debugging appointment config calls
             if (endpoint.includes('appointment-status-configs')) {
                 console.log('[useApi] Appointment Config Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    responseText: responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''),
+                    requestBody: config.body
+                });
+            }
+
+            // Log response for debugging appointment confirm calls
+            if (endpoint.includes('appointment/confirm')) {
+                console.log('[useApi] Appointment Confirm Response:', {
                     status: response.status,
                     statusText: response.statusText,
                     ok: response.ok,

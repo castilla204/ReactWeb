@@ -114,7 +114,7 @@ export const useChat = (
 
     // Fetch deliverables
     const { data: deliverables, refetch: refetchDeliverables, isLoading: deliverablesLoading, error: deliverablesError } = useQuery<Deliverable, Error>({
-        queryKey: ['deliverables', conversation?.searchHireId, API_CONFIG.endpoints.chat.deliverable],
+        queryKey: ['deliverables', conversation?.searchHireId],
         queryFn: async () => {
             console.log('[10:45 CEST] Fetching deliverables for searchHireId:', conversation?.searchHireId);
             if (!conversation?.searchHireId) {
@@ -125,7 +125,7 @@ export const useChat = (
                 console.error('[10:45 CEST] Deliverable endpoint is undefined in API_CONFIG');
                 throw new Error('Deliverable endpoint not configured');
             }
-            const deliverableEndpoint = `${API_CONFIG.endpoints.chat.deliverable}/${conversation.searchHireId}`;
+            const deliverableEndpoint = API_CONFIG.endpoints.chat.deliverable(conversation.searchHireId);
             console.log('[10:45 CEST] Deliverable endpoint:', deliverableEndpoint);
             try {
                 const response = await fetchApi<{ message: string; deliverable?: Deliverable; deliverables?: any[] }>(deliverableEndpoint);
@@ -315,7 +315,7 @@ export const useChat = (
         conn.on('ReceiveDeliverable', (deliverable: Deliverable) => {
             console.log('[10:45 CEST] Received SignalR deliverable:', deliverable);
             console.log('[10:45 CEST] Updating deliverables cache for searchHireId:', deliverable.searchHireId);
-            queryClient.setQueryData(['deliverables', deliverable.searchHireId, API_CONFIG.endpoints.chat.deliverable], {
+            queryClient.setQueryData(['deliverables', deliverable.searchHireId], {
                 ...deliverable,
                 deliverableUrls: Array.isArray(deliverable.deliverableUrls) ? deliverable.deliverableUrls : [],
             });
@@ -471,7 +471,7 @@ export const useChat = (
             formData.forEach((value, key) => {
                 formDataEntries[key] = value instanceof File ? { name: value.name, type: value.type, size: value.size } : value;
             });
-            const deliverableEndpoint = `${API_CONFIG.endpoints.chat.deliverable}/${conversation.searchHireId}`;
+            const deliverableEndpoint = API_CONFIG.endpoints.chat.deliverable(conversation.searchHireId);
             console.log(`[10:45 CEST] Uploading deliverable to: ${deliverableEndpoint}`, {
                 SearchHireId: conversation.searchHireId,
                 FormData: formDataEntries,
