@@ -1,13 +1,12 @@
-import { useLayoutEffect, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ChevronDown, Star, AlertTriangle, MessageCircle, Upload, Share2, ChevronUp, FileText, MessageSquare, Calendar, CheckCircle, DollarSign, User, XCircle, MapPin, Home, Phone, Info } from 'lucide-react';
+import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info } from 'lucide-react';
 import { SearchHire } from '../hooks/useSearch.hooks';
 import { useAuth } from '../contexts/AuthContext';
 import { useChat } from '../hooks/useChat';
 import Chat from './Chat';
-import { ReviewModal, DisputeModal, ResolveDisputeModal, AddAdModal, CancelServiceModal, FinalizeModal, ReportModal } from './Modals';
-import ExistingReviewCard from './ExistingReviewCard';
-import ProfessionalReviewCard from './ProfessionalReviewCard';
+import { ReviewModal, DisputeModal } from './Modals';
+import { ExpertResponseModal } from './ExpertResponseModal';
 import { useSearchActions } from '../hooks/useSearchActions';
 import { useDisputes } from '../hooks/useDisputes';
 import { Notification, NotificationType } from './Notification';
@@ -16,15 +15,19 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Imports para el sistema de citas
 import { useAppointments } from '../hooks/useAppointments';
-import { useAppointmentStatuses, getAppointmentStatusText, getAppointmentStatusColor, getAppointmentStatusIcon } from '../hooks/useAppointmentStatuses';
+import { useAppointmentStatuses, getAppointmentStatusIcon } from '../hooks/useAppointmentStatuses';
 import AppointmentForm from './AppointmentForm';
-import AppointmentStatus from './AppointmentStatus';
 import RejectAppointmentModal from './RejectAppointmentModal';
 import { Appointment, ProposeAppointmentDto, ConfirmAppointmentDto, RejectAppointmentDto, CancelAppointmentDto } from '../types/appointment';
 
 // Imports para distribución de dinero
 import MoneyDistributionInfo from './MoneyDistributionInfo';
 import { useMoneyDistributionConfig, shouldShowMoneyDistribution } from '../hooks/useMoneyDistributionConfig';
+
+// ✅ NUEVOS IMPORTS PARA SISTEMA DE ESTADOS
+import StatusBadge from './StatusBadge';
+import { getStatusInfoWithFallback } from '../utils/statusUtils';
+import { useExpertResponse } from '../hooks/useExpertResponse';
 
 // ? NUEVOS HOOKS OPTIMIZADOS
 import { useSearchDetailsOptimized } from '../hooks/useSearchDetailsOptimized';
@@ -183,6 +186,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     
     // Hook para obtener información de disputa
     const { expertResponse, debugDispute } = useDisputes();
+    
+    // Hook para enviar respuesta del experto
+    const { sendExpertResponse, isSubmitting: isSubmittingExpertResponse } = useExpertResponse();
     
     // Hook para el sistema de citas
     const { 
@@ -535,6 +541,43 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         }
     };
 
+    const handleExpertResponseSubmit = async (response: string, files: File[]) => {
+        if (!disputes[0]?.id) {
+            setNotifications(prev => [...prev, {
+                id: uuidv4(),
+                type: 'error',
+                message: 'No se encontró la disputa'
+            }]);
+            return;
+        }
+
+        try {
+            console.log('[SearchDetails] Sending expert response:', { 
+                disputeId: disputes[0].id, 
+                response, 
+                filesCount: files.length 
+            });
+            
+            await sendExpertResponse(disputes[0].id, response, files);
+            
+            setNotifications(prev => [...prev, {
+                id: uuidv4(),
+                type: 'success',
+                message: 'Respuesta enviada exitosamente'
+            }]);
+            
+            setShowExpertResponseModal(false);
+            invalidateAll();
+        } catch (error: any) {
+            console.error('[SearchDetails] Error submitting expert response:', error);
+            setNotifications(prev => [...prev, {
+                id: uuidv4(),
+                type: 'error',
+                message: error.message || 'Error al enviar la respuesta'
+            }]);
+        }
+    };
+
     const handleSubmitReport = async () => {
         if (!appointment?.id) {
             setNotifications(prev => [...prev, {
@@ -586,11 +629,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     // ✅ HOOK DINÁMICO PARA ESTADOS
     const { data: appointmentStatuses } = useAppointmentStatuses();
     
-    // Variables para el estado de la cita
-    const statusText = appointmentStatuses ? getAppointmentStatusText(appointment?.status || '', appointmentStatuses) : appointment?.status || '';
-    const statusColor = appointmentStatuses ? getAppointmentStatusColor(appointment?.status || '', appointmentStatuses) : 'gray';
-    
-    // Función para obtener el icono del estado
+    // ✅ FUNCIÓN PARA OBTENER EL ICONO DEL ESTADO (mantenida para compatibilidad)
     const getStatusIcon = (status: string) => {
         if (!appointmentStatuses) return <AlertTriangle className="w-5 h-5 text-gray-600" />;
         
@@ -687,12 +726,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const isDisputeResolved = (isClient || isExpert) && search?.searchHire?.status === 'dispute-resolved';
     
     // Determinar si el experto puede responder a la disputa
-    const canExpertRespond = disputes[0]?.canExpertRespond !== undefined 
-        ? disputes[0].canExpertRespond 
-        : (isDisputeExpert && 
-           disputes[0]?.status === 'pending' && 
-           !disputes[0]?.expertResponse &&
-           search?.searchHire?.status === 'disputed');
+    // ✅ SOLO PARA EXPERTOS: Verificar que el usuario actual es el experto de la disputa
+    const canExpertRespond = isExpert && // ← AÑADIDO: Solo si es experto
+        (disputes[0]?.canExpertRespond !== undefined 
+            ? disputes[0].canExpertRespond 
+            : (isDisputeExpert && 
+               disputes[0]?.status === 'pending' && 
+               !disputes[0]?.expertResponse &&
+               search?.searchHire?.status === 'disputed'));
     
     // Validación más robusta para el chat
     const canViewChat = (isClient || isExpert || isAdmin) && !!search?.searchHire && !!search?.searchHire?.id;
@@ -883,6 +924,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     };
 
     const currentStatus = search?.searchHire?.status || 'pending';
+    
+    // ✅ OBTENER INFORMACIÓN DE ESTADO CON FALLBACK
+    const searchHireStatusInfo = getStatusInfoWithFallback(
+        search?.searchHire?.statusInfo, 
+        currentStatus
+    );
+    
+    const appointmentStatusInfo = getStatusInfoWithFallback(
+        appointment?.statusInfo,
+        appointment?.status || ''
+    );
 
     // Only show loading for critical queries
     if (isLoading) {
@@ -1006,15 +1058,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     </div>
                                                     <div className="flex justify-between">
                                             <span className="text-gray-600">Estado:</span>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                currentStatus === 'completed' ? 'bg-green-100 text-green-800' :
-                                                currentStatus === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                                currentStatus === 'awaiting_client_decision' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
-                                            }`}>
-                                                {currentStatus === 'completed' ? 'Completado' :
-                                                currentStatus === 'in_progress' ? 'En progreso' :
-                                                currentStatus === 'awaiting_client_decision' ? 'En revisión' : 'Pendiente'}
-                                                        </span>
+                                            <StatusBadge 
+                                                statusInfo={searchHireStatusInfo} 
+                                                size="sm"
+                                            />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1058,9 +1105,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 {getStatusIcon(appointment.status)}
                                                 <h3 className="text-lg font-semibold text-gray-900">Cita Programada</h3>
                                             </div>
-                                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-${statusColor}-100 text-${statusColor}-800`}>
-                                                {statusText}
-                                            </span>
+                                            <StatusBadge 
+                                                statusInfo={appointmentStatusInfo} 
+                                                size="sm"
+                                            />
                                         </div>
                                         
                                         {/* Appointment Details */}
@@ -1382,16 +1430,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Estado:</span>
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                        currentStatus === 'completed' ? 'bg-green-100 text-green-800' :
-                                        currentStatus === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                        currentStatus === 'awaiting_client_decision' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
-                                    }`}>
-                                        {currentStatus === 'completed' ? 'Completado' :
-                                        currentStatus === 'in_progress' ? 'En progreso' :
-                                        currentStatus === 'awaiting_client_decision' ? 'En revisión' : 'Pendiente'}
-                                </span>
-                            </div>
+                                    <StatusBadge 
+                                        statusInfo={searchHireStatusInfo} 
+                                        size="sm"
+                                    />
+                                </div>
                                 </div>
                             </div>
                             
@@ -1434,9 +1477,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         {getStatusIcon(appointment.status)}
                                         <h3 className="text-lg font-semibold text-gray-900">Cita</h3>
                                     </div>
-                                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-${statusColor}-100 text-${statusColor}-800`}>
-                                        {statusText}
-                                    </span>
+                                    <StatusBadge 
+                                        statusInfo={appointmentStatusInfo} 
+                                        size="sm"
+                                    />
                                 </div>
                                 
                                 {/* Appointment Details */}
@@ -1782,6 +1826,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     files={disputeFiles}
                     setFiles={setDisputeFiles}
                     onSubmit={handleDisputeSubmit}
+                />
+            )}
+
+            {/* Expert Response Modal */}
+            {showExpertResponseModal && (
+                <ExpertResponseModal
+                    isOpen={showExpertResponseModal}
+                    onClose={() => setShowExpertResponseModal(false)}
+                    onSubmit={handleExpertResponseSubmit}
+                    isSubmitting={isSubmittingExpertResponse}
+                    dispute={disputes[0]}
                 />
             )}
 

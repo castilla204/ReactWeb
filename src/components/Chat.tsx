@@ -405,69 +405,77 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                     </div>
                 ) : (
                     groupedMessages.map((group, groupIndex) => (
-                        <div key={groupIndex} className={`flex gap-3 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-                            {/* Avatar */}
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0 overflow-hidden ${getAvatarColor(group.senderId)}`}>
-                                {getAvatarImage(group.senderId) ? (
-                                    <img 
-                                        src={getAvatarImage(group.senderId)} 
-                                        alt="Avatar"
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            // Fallback to initials if image fails to load
-                                            (e.currentTarget as HTMLImageElement).style.display = 'none';
-                                            ((e.currentTarget.nextElementSibling as HTMLElement)).style.display = 'flex';
-                                        }}
-                                    />
-                                ) : null}
-                                <span 
-                                    className={`w-full h-full flex items-center justify-center ${getAvatarImage(group.senderId) ? 'hidden' : ''}`}
-                                >
-                                    {getAvatarInitials(group.senderId)}
-                                </span>
-                            </div>
-
-                            {/* Message group */}
-                            <div className="flex-1 space-y-1">
-                                {/* Sender name and timestamp */}
-                                <div className={`flex items-center gap-2 mb-2 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-                                    <div className={`flex flex-col ${group.isOwn ? 'items-end' : 'items-start'}`}>
-                                        <span className="text-sm font-medium text-gray-900">
-                                            {group.isOwn ? 'Tú' : (isExpert ? 'Cliente' : (expertData?.name || 'Experto'))}
-                                        </span>
-                                        {!group.isOwn && !isExpert && (
-                                            <span className="text-xs text-blue-600 font-medium">Experto</span>
-                                        )}
+                        <div key={groupIndex} className="w-full">
+                            {/* Message group - Sin avatar en header, solo texto */}
+                            <div className="space-y-1">
+                                {/* Subtítulo descriptivo: Explicación clara de quién es cada participante */}
+                                <div className={`flex ${group.isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
+                                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                        group.isOwn 
+                                            ? 'bg-blue-100 text-blue-700' 
+                                            : 'bg-gray-100 text-gray-700'
+                                    }`}>
+                                        {group.isOwn 
+                                            ? '👨‍🔧 Tú (Experto)' 
+                                            : isExpert 
+                                                ? '👤 Cliente' 
+                                                : '👨‍🔧 Experto'
+                                        }
                                     </div>
-                                    <span className="text-xs text-gray-500">
-                                        {new Date(group.timestamp).toLocaleDateString('es-ES', {
-                                            day: 'numeric',
-                                            month: 'short',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        })}
-                                    </span>
                                 </div>
 
-                                {/* Messages in group */}
+                                {/* Messages in group - Con avatar en cada mensaje */}
                                 {group.messages.map((message: any) => (
-                                    <div key={message.id} className="w-full">
-                                        {/* Text content */}
+                                    <div key={message.id} className={`flex gap-2 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'} mb-1.5`}>
+                                        {/* Avatar en cada mensaje */}
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white font-medium text-xs flex-shrink-0 overflow-hidden ${getAvatarColor(group.senderId)}`}>
+                                            {getAvatarImage(group.senderId) ? (
+                                                <img 
+                                                    src={getAvatarImage(group.senderId)} 
+                                                    alt="Avatar"
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                                        ((e.currentTarget.nextElementSibling as HTMLElement)).style.display = 'flex';
+                                                    }}
+                                                />
+                                            ) : null}
+                                            <span 
+                                                className={`w-full h-full flex items-center justify-center ${getAvatarImage(group.senderId) ? 'hidden' : ''}`}
+                                            >
+                                                {getAvatarInitials(group.senderId)}
+                                            </span>
+                                        </div>
+
+                                        {/* Text content - Mejorado con fecha/hora dentro y color menos agresivo */}
                                         {message.content && (
-                                            <div className={`w-full ${group.isOwn ? 'flex justify-end' : 'flex justify-start'} mb-2`}>
-                                                <div className={`relative inline-block px-3 py-2 max-w-sm ${
+                                            <div className={`flex-1 ${group.isOwn ? 'flex justify-end' : 'flex justify-start'}`}>
+                                                <div className={`relative inline-block px-2.5 py-1.5 max-w-xs ${
                                                     group.isOwn 
-                                                        ? 'bg-blue-500 text-white' 
-                                                        : 'bg-white text-gray-900 border border-gray-200'
+                                                        ? 'bg-blue-400 text-white' 
+                                                        : 'bg-gray-50 text-gray-900 border border-gray-200'
                                                 } shadow-sm`}
                                                 style={{
                                                     borderRadius: group.isOwn 
-                                                        ? '18px 18px 4px 18px' 
-                                                        : '18px 18px 18px 4px'
+                                                        ? '16px 16px 4px 16px' 
+                                                        : '16px 16px 16px 4px'
                                                 }}>
-                                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                                    <p className="text-sm leading-tight whitespace-pre-wrap break-words">
                                                         {message.content}
                                                     </p>
+                                                    {/* Fecha y hora dentro del bocadillo */}
+                                                    <div className={`text-xs mt-1 ${
+                                                        group.isOwn 
+                                                            ? 'text-blue-100' 
+                                                            : 'text-gray-500'
+                                                    }`}>
+                                                        {new Date(message.createdAt).toLocaleDateString('es-ES', {
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}

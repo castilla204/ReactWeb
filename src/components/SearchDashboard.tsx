@@ -17,6 +17,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useAppointmentStatuses, getAppointmentStatusText } from '../hooks/useAppointmentStatuses';
+
+// ✅ NUEVOS IMPORTS PARA SISTEMA DE ESTADOS
+import StatusBadge from './StatusBadge';
+import { getStatusInfoWithFallback } from '../utils/statusUtils';
 import type { SearchItem, SearchFilters, PaginationMetadata } from '../hooks/useSearch.hooks';
 import { useNavigate } from 'react-router-dom';
 
@@ -133,8 +137,23 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     const filteredSearches = searchesList;
 
     const getActivityStatus = (search: SearchItem) => {
+        // ✅ NUEVA LÓGICA: Usar isFinalizationStatus del statusInfo del backend
+        if (!search.isActive) {
+            return 'Inactiva';
+        }
+        
+        if (!search.searchHire) {
+            return 'Activa'; // Sin contratación = activa
+        }
+        
+        // Si hay statusInfo, usar isFinalizationStatus
+        if (search.searchHire.statusInfo) {
+            return search.searchHire.statusInfo.isFinalizationStatus ? 'Inactiva' : 'Activa';
+        }
+        
+        // Fallback: lógica hardcodeada anterior
         const terminalStatuses = ['dispute-resolved', 'completed', 'cancelled'];
-        return search.isActive && (!search.searchHire || !terminalStatuses.includes(search.searchHire.status)) ? 'Activa' : 'Inactiva';
+        return !terminalStatuses.includes(search.searchHire.status) ? 'Activa' : 'Inactiva';
     };
 
     // ✅ HOOK DINÁMICO PARA ESTADOS
@@ -538,16 +557,13 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                 {getActivityStatus(search)}
                                         </span>
                                             {search.searchHire && (
-                                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${search.searchHire.status === 'pending'
-                                                    ? 'bg-yellow-100 text-yellow-700'
-                                                    : search.searchHire.status === 'awaiting_client_decision'
-                                                        ? 'bg-blue-100 text-blue-700'
-                                                        : search.searchHire.status === 'disputed'
-                                                            ? 'bg-red-100 text-red-700'
-                                                        : 'bg-gray-100 text-gray-600'
-                                                    }`}>
-                                                    {search.searchHire.statusTranslated || search.searchHire.status.replace(/_/g, ' ')}
-                                                </span>
+                                                <StatusBadge 
+                                                    statusInfo={getStatusInfoWithFallback(
+                                                        search.searchHire.statusInfo,
+                                                        search.searchHire.status
+                                                    )}
+                                                    size="sm"
+                                                />
                                             )}
                                     </div>
                                     <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />

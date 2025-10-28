@@ -3,6 +3,22 @@
 import { SearchItem } from '../hooks/useSearch.hooks';
 import { Appointment } from './appointment';
 
+// ✅ NUEVA INTERFAZ PARA INFORMACIÓN DE ESTADOS (ACTUALIZADA)
+export interface SystemStatusDto {
+  id: number;
+  statusType: string;                  // "SearchHireStatus", "AppointmentStatus"
+  statusName: string;                  // "Dispute Resolved Client"
+  statusValue: string;                 // "dispute_resolved_client"
+  displayName: string;                 // "Disputa Resuelta (Cliente)"
+  description: string | null;          // "La disputa ha sido resuelta a favor del cliente"
+  color: string | null;                // "#17A2B8"
+  isActive: boolean;
+  isFinalizationStatus: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // DTOs existentes que se reutilizan
 export interface UserDto {
   id: number;
@@ -96,6 +112,7 @@ export interface SearchListDto {
 export interface SearchHireDto {
   id: number;
   status: string;
+  statusInfo?: SystemStatusDto;  // ✅ ACTUALIZADO: Usar SystemStatusDto
   createdAt: string;
   expert: UserDto | null;
   service: ServiceInfo | null;
@@ -123,6 +140,7 @@ export interface AppointmentDto {
   id: number;
   searchHireId: number;
   status: string;
+  statusInfo?: SystemStatusDto;  // ✅ ACTUALIZADO: Usar SystemStatusDto
   proposedDate: string;
   proposedTime: string;
   location: string;
