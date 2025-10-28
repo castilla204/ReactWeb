@@ -2,12 +2,29 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 
+// ✅ NUEVA INTERFAZ PARA INFORMACIÓN DE ESTADOS
+export interface SystemStatusDto {
+  id: number;
+  statusType: string;
+  statusName: string;
+  statusValue: string;
+  displayName: string;
+  description: string | null;
+  color: string | null;
+  isActive: boolean;
+  isFinalizationStatus: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Interfaz específica para SearchHire
 export interface SearchHire {
     id: number;
     expertId: number;
     status: string;
     statusTranslated?: string; // ✅ NUEVO: Estado traducido del backend
+    statusInfo?: SystemStatusDto; // ✅ NUEVO: Información completa del estado
     createdAt: string;
     expert?: {
         id: number;
@@ -162,16 +179,18 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
     const { enableQueries = true } = options;
 
     // Queries - only enabled when specifically requested
+    // ✅ DESHABILITADO: Query sin parámetros para evitar llamadas duplicadas
     const searchesQuery = useQuery({
         queryKey: ['searches'],
         queryFn: () => fetchApi<SearchItem[]>(API_CONFIG.endpoints.search.list),
-        enabled: enableQueries,
+        enabled: false, // ✅ DESHABILITADO: Solo usar searchesWithFilters
     });
 
+    // ✅ DESHABILITADO: Query de admin sin parámetros para evitar llamadas duplicadas
     const adminSearchesQuery = useQuery({
         queryKey: ['searches', 'admin'],
         queryFn: () => fetchApi<SearchItem[]>(API_CONFIG.endpoints.search.listAll),
-        enabled: enableQueries,
+        enabled: false, // ✅ DESHABILITADO: Solo usar searchesWithFilters
     });
 
     const getSearch = (searchId: number) =>

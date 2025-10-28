@@ -1,4 +1,7 @@
 import React from 'react'; import { Search, Loader2, MessageCircle } from 'lucide-react'; import { useCategories } from '../../contexts/CategoryContext';
+// ✅ NUEVOS IMPORTS PARA SISTEMA DE ESTADOS
+import StatusBadge from '../StatusBadge';
+import { getStatusInfoWithFallback } from '../../utils/statusUtils';
 
 interface Hire { 
     id: number; 
@@ -13,6 +16,21 @@ interface Hire {
     searchTitle?: string | null;
     searchDescription?: string | null;
     unreadMessagesCount: number;
+    // ✅ NUEVO: statusInfo del backend
+    statusInfo?: {
+        id: number;
+        statusType: string;
+        statusName: string;
+        statusValue: string;
+        displayName: string;
+        description: string | null;
+        color: string | null;
+        isActive: boolean;
+        isFinalizationStatus: boolean;
+        sortOrder: number;
+        createdAt: string;
+        updatedAt: string;
+    };
 }
 
 interface HiresTabProps { activeTab: 'services' | 'hires'; hireTab: 'active' | 'inactive'; hires: Hire[]; isLoadingHires: boolean; hiresError: Error | null; filters: { clientName: string; status: string; dateFrom: string; dateTo: string }; setHireTab: (value: 'active' | 'inactive') => void; setFilters: (value: { clientName: string; status: string; dateFrom: string; dateTo: string }) => void; handleViewHire: (hireId: number | null) => void; categories: { id: number; name: string }[] | undefined; }
@@ -20,8 +38,24 @@ interface HiresTabProps { activeTab: 'services' | 'hires'; hireTab: 'active' | '
 export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError, filters, setHireTab, setFilters, handleViewHire, categories, }: HiresTabProps) {
     if (!activeTab || activeTab !== 'hires') return null;
 
-    const activeHires = hires.filter((hire) => ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status));
-    const inactiveHires = hires.filter((hire) => ['completed', 'cancelled', 'transfer_failed', 'dispute-resolved', 'dispute-resolved-client', 'dispute-resolved-expert'].includes(hire.status));
+    // ✅ NUEVA LÓGICA: Usar isFinalizationStatus del statusInfo del backend
+    const activeHires = hires.filter((hire) => {
+        // Si no hay statusInfo, usar lógica de fallback
+        if (!hire.statusInfo) {
+            return ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status);
+        }
+        // Usar isFinalizationStatus del backend
+        return !hire.statusInfo.isFinalizationStatus;
+    });
+    
+    const inactiveHires = hires.filter((hire) => {
+        // Si no hay statusInfo, usar lógica de fallback
+        if (!hire.statusInfo) {
+            return ['completed', 'cancelled', 'transfer_failed', 'dispute-resolved', 'dispute-resolved-client', 'dispute-resolved-expert'].includes(hire.status);
+        }
+        // Usar isFinalizationStatus del backend
+        return hire.statusInfo.isFinalizationStatus;
+    });
     const filteredHires = (hireTab === 'active' ? activeHires : inactiveHires).filter((hire) => {
         const matchesClient = !filters.clientName || hire.client.name.toLowerCase().includes(filters.clientName.toLowerCase());
         const matchesStatus = !filters.status || hire.status === filters.status;
@@ -161,30 +195,14 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
-                                        <span
-                                            className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs font-medium ${
-                                                hire.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                hire.status === 'pending' ? 'bg-blue-100 text-blue-700' :
-                                                hire.status === 'awaiting_client_decision' ? 'bg-amber-100 text-amber-700' :
-                                                hire.status === 'disputed' ? 'bg-orange-100 text-orange-700' :
-                                                hire.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                                hire.status === 'transfer_failed' ? 'bg-red-100 text-red-700' :
-                                                hire.status === 'dispute-resolved' ? 'bg-green-100 text-green-700' :
-                                                hire.status === 'dispute-resolved-client' ? 'bg-green-100 text-green-700' :
-                                                hire.status === 'dispute-resolved-expert' ? 'bg-green-100 text-green-700' :
-                                                'bg-slate-100 text-slate-700'
-                                            }`}
-                                        >
-                                            {hire.status === 'pending' ? 'Pendiente' :
-                                             hire.status === 'awaiting_client_decision' ? 'Esperando' :
-                                             hire.status === 'disputed' ? 'Disputado' :
-                                             hire.status === 'completed' ? 'Completado' :
-                                             hire.status === 'cancelled' ? 'Cancelado' :
-                                             hire.status === 'transfer_failed' ? 'Fallida' :
-                                             hire.status === 'dispute-resolved' ? 'Resuelta' :
-                                             hire.status === 'dispute-resolved-client' ? 'Resuelta (Cliente)' :
-                                             hire.status === 'dispute-resolved-expert' ? 'Resuelta (Experto)' : hire.status}
-                                        </span>
+                                        {/* ✅ NUEVO: Usar StatusBadge con statusInfo del backend */}
+                                        <StatusBadge
+                                            statusInfo={getStatusInfoWithFallback(
+                                                hire.statusInfo,
+                                                hire.status
+                                            )}
+                                            size="sm"
+                                        />
                                         {hire.unreadMessagesCount > 0 && (
                                             <div className="flex items-center gap-1">
                                                 <MessageCircle className="w-3 h-3 text-blue-600" />
