@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Search, X, Radar, DollarSign, Settings, Star } from 'lucide-react';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
-import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import { useMapExperts } from '../hooks/useMapExperts';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
@@ -104,7 +103,7 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
 
     const [error, setError] = useState<string | null>(null);
     const [map, setMap] = useState<google.maps.Map | null>(null);
-    const { minSearchInterval } = useSubscriptionLimits();
+    // Removed subscription limits - no longer needed
     const [searchAddress, setSearchAddress] = useState<string>('');
     const [selectedAddress, setSelectedAddress] = useState<string>('');
     const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
@@ -129,7 +128,7 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
         latitude: '',
         longitude: '',
         locationRange: '25',
-        frequency: minSearchInterval.toString(),
+        frequency: '1', // Default to 1 hour
         minPrice: '',
         maxPrice: '',
         address: '',
@@ -236,9 +235,9 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
     useEffect(() => {
         setFormData(prev => ({
             ...prev,
-            frequency: minSearchInterval.toString()
+            frequency: '1' // Default to 1 hour
         }));
-    }, [minSearchInterval]);
+    }, []);
 
 
     useEffect(() => {
@@ -396,7 +395,7 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
             latitude: selectedLocation.lat.toString(),
             longitude: selectedLocation.lng.toString(),
             locationRange: formData.locationRange ? parseInt(formData.locationRange) : null,
-            frequency: formData.frequency ? parseInt(formData.frequency) : minSearchInterval,
+            frequency: formData.frequency ? parseInt(formData.frequency) : 1, // Default to 1 hour
             minPrice: formData.minPrice ? parseInt(formData.minPrice) : null,
             maxPrice: formData.maxPrice ? parseInt(formData.maxPrice) : null,
             brandId: null,

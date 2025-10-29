@@ -15,7 +15,6 @@ import { Notification, NotificationType } from './components/Notification';
 
 import SearchesPage from './pages/SearchesPage';
 import SearchCreationPage from './pages/SearchCreationPage';
-import SubscriptionsPage from './pages/SubscriptionsPage';
 import AdminPanelPage from './pages/AdminPanelPage';
 import Background from './components/Background';
 import { BecomeExpertPage } from './pages/BecomeExpertPage';
@@ -102,9 +101,9 @@ const App: React.FC = React.memo(() => {
                 {/* Header */}
                 <header className="h-16 bg-white border-b border-gray-200 shadow-sm relative z-50">
                     <div className="max-w-7xl mx-auto h-full px-4 lg:px-6 flex items-center justify-between">
-                        {/* Marca YoChequeo */}
-                        <h1 className="text-xl font-bold bg-gradient-to-r from-gray-800 via-blue-700 to-emerald-700 bg-clip-text text-transparent tracking-tight">
-                            YoChequeo
+                        {/* Marca inspecciono.com */}
+                        <h1 className="text-lg font-medium text-gray-700 tracking-tight cursor-pointer hover:text-gray-900 transition-colors">
+                            inspecciono.com
                         </h1>
 
                         {/* Navegación compacta */}
@@ -186,14 +185,6 @@ const App: React.FC = React.memo(() => {
                                                     {isExpert ? 'Experto' : 'Usuario'}
                                                 </span>
                                             </div>
-                                            <a
-                                                href="/suscripciones"
-                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                                onClick={() => setShowProfileMenu(false)}
-                                            >
-                                                <Sparkles className="w-4 h-4 text-blue-600" />
-                                                Suscripción
-                                            </a>
                                             <button
                                                 onClick={() => {
                                                     setShowAccountSettings(true);
@@ -278,20 +269,6 @@ const App: React.FC = React.memo(() => {
                                         <Heart className="w-4 h-4 text-blue-600" />
                                         Favoritos
                                     </button>
-                                    <button
-                                        onClick={() => {
-                                            if (isAuthenticated) {
-                                                window.location.href = '/suscripciones';
-                                            } else {
-                                                handleRequireAuth('Ver planes de suscripción');
-                                            }
-                                            setSidebarOpen(false);
-                                        }}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                    >
-                                        <Sparkles className="w-4 h-4 text-blue-600" />
-                                        Mejorar Plan
-                                    </button>
                                     {isAuthenticated && isExpert ? (
                                         <a
                                             href="/expert-panel"
@@ -333,14 +310,6 @@ const App: React.FC = React.memo(() => {
                                         <HelpCircle className="w-4 h-4 text-gray-500" />
                                         Centro de Ayuda
                                     </button>
-                                    <a
-                                        href="/suscripciones"
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                        onClick={() => setSidebarOpen(false)}
-                                    >
-                                        <CreditCard className="w-4 h-4 text-gray-500" />
-                                        Mi Suscripción
-                                    </a>
                                 </div>
                             </nav>
                             <div className="p-4 border-t border-gray-100">
@@ -414,7 +383,6 @@ const App: React.FC = React.memo(() => {
                             <Route path="/busquedas" element={<ProtectedRoute><SearchesPage /></ProtectedRoute>} />
                             <Route path="/busquedas/:id" element={<ProtectedRoute><SearchDetailsWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRoute>} />
                             <Route path="/detalles/:id" element={<ProtectedRoute><SearchResultsPage /></ProtectedRoute>} />
-                            <Route path="/suscripciones" element={<ProtectedRoute><SubscriptionsPage /></ProtectedRoute>} />
                             <Route path="/admin" element={<ProtectedRoute><AdminPanelPage /></ProtectedRoute>} />
                             <Route path="/admin/disputes" element={<ProtectedRoute><DisputePanelPage /></ProtectedRoute>} />
                             <Route path="/become-expert" element={<ProtectedRoute><BecomeExpertPage /></ProtectedRoute>} />

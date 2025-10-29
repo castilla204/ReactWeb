@@ -244,35 +244,38 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
     };
 
     const getAvatarInitials = (senderId: string) => {
-        if (senderId === user?.id) {
+        if (senderId === String(user?.id)) {
             return user?.name?.charAt(0)?.toUpperCase() || 'Y';
         }
         // Special case for header - 'other' means the other person in conversation
         if (senderId === 'other') {
             return isClient ? (expertData?.name?.charAt(0)?.toUpperCase() || 'E') : 'C';
         }
-        // For expert, use expert name initial, for client use 'C'
-        return isExpert ? 'C' : (expertData?.name?.charAt(0)?.toUpperCase() || 'E');
+        // ✅ CORREGIDO: Para mensajes en el chat
+        // Si el senderId es del experto, mostrar inicial del experto
+        // Si el senderId es del cliente, mostrar inicial 'C'
+        return String(senderId) === String(expertId) ? (expertData?.name?.charAt(0)?.toUpperCase() || 'E') : 'C';
     };
 
     const getAvatarColor = (senderId: string) => {
-        if (senderId === user?.id) {
+        if (senderId === String(user?.id)) {
             return 'bg-gray-600';
         }
         return 'bg-gray-500';
     };
 
     const getAvatarImage = (senderId: string) => {
-        if (senderId === user?.id) {
+        if (senderId === String(user?.id)) {
             return user?.profilePictureUrl;
         }
         // Special case for header - 'other' means the other person in conversation
         if (senderId === 'other') {
-            return isClient ? expertData?.profilePictureUrl : null;
+            return isClient ? expertData?.profilePictureUrl : undefined;
         }
-        // If current user is expert, then other messages are from client (no image)
-        // If current user is client, then other messages are from expert (use expert image)
-        return isExpert ? null : expertData?.profilePictureUrl;
+        // ✅ CORREGIDO: Para mensajes en el chat
+        // Si el senderId es del experto, mostrar su imagen
+        // Si el senderId es del cliente, no mostrar imagen (solo inicial)
+        return String(senderId) === String(expertId) ? expertData?.profilePictureUrl : undefined;
     };
 
     const formatFileSize = (bytes: number) => {
@@ -416,10 +419,8 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                             : 'bg-gray-100 text-gray-700'
                                     }`}>
                                         {group.isOwn 
-                                            ? '👨‍🔧 Tú (Experto)' 
-                                            : isExpert 
-                                                ? '👤 Cliente' 
-                                                : '👨‍🔧 Experto'
+                                            ? (isExpert ? '👨‍🔧 Tú (Experto)' : '👤 Tú (Cliente)')
+                                            : (isExpert ? '👤 Cliente' : '👨‍🔧 Experto')
                                         }
                                     </div>
                                 </div>
@@ -469,12 +470,17 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                                             ? 'text-blue-100' 
                                                             : 'text-gray-500'
                                                     }`}>
-                                                        {new Date(message.createdAt).toLocaleDateString('es-ES', {
-                                                            day: 'numeric',
-                                                            month: 'short',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        })}
+                                                        {(() => {
+                                                            const date = new Date(message.sentAt);
+                                                            return isNaN(date.getTime()) 
+                                                                ? 'Fecha no disponible'
+                                                                : date.toLocaleDateString('es-ES', {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                });
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>

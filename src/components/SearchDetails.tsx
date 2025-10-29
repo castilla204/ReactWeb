@@ -178,6 +178,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     
     // ? DATOS DE EXPERTO DESDE SEARCHHIRE
     const expertInfo = search?.searchHire?.expert;
+    
+    // Debug: Verificar qué datos tiene expertInfo
+    console.log('[SearchDetails] expertInfo:', expertInfo);
+    console.log('[SearchDetails] user:', user);
 
     // ? HOOKS PARA ACCIONES
     const { uploadDeliverable, isUploadingDeliverable } = useChat(searchId, setNotifications);
@@ -712,6 +716,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const isExpert = userId === expertId || (search?.searchHire?.expert?.id && userId === Number(search.searchHire.expert.id));
     const userRole = isClient ? 'client' : 'expert';
     
+    // Debug: Verificar isExpert
+    console.log('[SearchDetails] isExpert:', isExpert);
+    
+    // ✅ SOLUCIÓN TEMPORAL: Usar datos del usuario actual si es experto
+    const expertData = isExpert && user ? {
+        name: user.name || expertInfo?.name || 'Experto',
+        profilePictureUrl: user.profilePictureUrl || expertInfo?.profilePictureUrl
+    } : expertInfo;
+    
     const isDisputeExpert = userId === Number(disputes[0]?.expert?.id ?? search?.searchHire?.expert?.id ?? 0);
     
     // ✅ Usar la información de review del endpoint details-complete
@@ -1034,8 +1047,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             setNotifications={setNotifications} 
                                             isExpert={!!isExpert} 
                                             expertData={{
-                                                name: expertInfo?.name, 
-                                                profilePictureUrl: expertInfo?.profilePictureUrl 
+                                                name: expertData?.name, 
+                                                profilePictureUrl: expertData?.profilePictureUrl 
                                             }}
                                         />
                                     </div>
@@ -1067,29 +1080,24 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             </div>
 
                                 {/* Expert Info */}
-                                {expertInfo && (
+                                {expertData && (
                                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                                         <h3 className="text-lg font-semibold text-gray-900 mb-3">Experto</h3>
                                         <div className="flex items-center gap-3">
-                                            {isClient ? (
-                                            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                                                {expertInfo.name?.charAt(0)}
-                                                        </div>
+                                            {/* ✅ CORREGIDO: Usar expertData que incluye datos del usuario actual si es experto */}
+                                            {expertData.profilePictureUrl ? (
+                                                <img 
+                                                    src={expertData.profilePictureUrl} 
+                                                    alt={expertData.name}
+                                                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                                                />
                                             ) : (
-                                                expertInfo.profilePictureUrl ? (
-                                                    <img 
-                                                        src={expertInfo.profilePictureUrl} 
-                                                        alt={expertInfo.name}
-                                                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                                                    />
-                                                ) : (
-                                                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                                                        {expertInfo.name?.charAt(0)}
-                                                    </div>
-                                                )
+                                                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                                    {expertData.name?.charAt(0)}
+                                                </div>
                                             )}
                                                         <div>
-                                                <h4 className="font-medium text-gray-900">{expertInfo.name}</h4>
+                                                <h4 className="font-medium text-gray-900">{expertData.name}</h4>
                                                 <p className="text-sm text-gray-600">Experto verificado</p>
                                                         </div>
                                                     </div>
@@ -1438,30 +1446,25 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </div>
                             </div>
                             
-                        {/* Expert Info */}
-                        {expertInfo && (
+                        {/* Expert Info - Desktop */}
+                        {expertData && (
                             <div className="bg-gray-50 rounded-lg p-4">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Experto</h3>
                                     <div className="flex items-center gap-3">
-                                    {isClient ? (
-                                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                                        {expertInfo.name?.charAt(0)}
-                                        </div>
+                                    {/* ✅ CORREGIDO: Usar expertData que incluye datos del usuario actual si es experto */}
+                                    {expertData.profilePictureUrl ? (
+                                        <img 
+                                            src={expertData.profilePictureUrl} 
+                                            alt={expertData.name}
+                                            className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                                        />
                                     ) : (
-                                        expertInfo.profilePictureUrl ? (
-                                            <img 
-                                                src={expertInfo.profilePictureUrl} 
-                                                alt={expertInfo.name}
-                                                className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                                            />
-                                        ) : (
-                                            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                                                {expertInfo.name?.charAt(0)}
-                                            </div>
-                                        )
+                                        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                            {expertData.name?.charAt(0)}
+                                        </div>
                                     )}
                                         <div>
-                                        <h4 className="font-medium text-gray-900">{expertInfo.name}</h4>
+                                        <h4 className="font-medium text-gray-900">{expertData.name}</h4>
                                         <p className="text-sm text-gray-600">Experto verificado</p>
                                         </div>
                                     </div>
