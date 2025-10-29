@@ -2,7 +2,6 @@
 import { Sparkles, Target, Zap, ArrowLeft, Crown, Search, Wallet, User, MapPin } from 'lucide-react';
 import { GoogleMap, useLoadScript } from '@react-google-maps/api';
 import { useSearch } from '../hooks/useSearch.hooks';
-import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { Notification, NotificationType } from './Notification';
 import { useQueryClient } from '@tanstack/react-query';
@@ -55,7 +54,7 @@ export default function SearchForm({
 }: SearchFormProps) {
     const queryClient = useQueryClient();
     const { createSearchWithHire } = useSearch();
-    const { maxSearchesReached, maxSearches } = useSubscriptionLimits();
+    // Removed subscription limits - no longer needed
     const { } = useUserSettings();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [notification, setNotification] = useState<{
@@ -103,15 +102,7 @@ export default function SearchForm({
             return;
         }
 
-        if (maxSearchesReached) {
-            setNotification({
-                type: 'error',
-                message: `👑 Has alcanzado el límite de ${maxSearches} búsquedas activas. ¡Mejora tu plan para crear más búsquedas!`,
-                action: () => setShowSubscriptions(true),
-            });
-            setIsSubmitting(false);
-            return;
-        }
+        // Removed subscription limits - unlimited searches now available
 
         if (createSearchWithHire.isPending || isSubmitting) {
             setNotification({
@@ -528,19 +519,6 @@ export default function SearchForm({
                     </div>
                     <div className="bg-white border-t border-gray-100 p-4 sm:p-6 mt-4 md:mt-6">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
-                        {maxSearchesReached ? (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setCurrentStep(0);
-                                    setShowSubscriptions(true);
-                                }}
-                                className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
-                            >
-                                <Crown className="w-4 h-4 flex-shrink-0" />
-                                <span>Mejorar Plan</span>
-                            </button>
-                        ) : (
                             <button
                                 type="submit"
                                 disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete}
@@ -566,7 +544,6 @@ export default function SearchForm({
                                     </>
                                 )}
                             </button>
-                        )}
                         </div>
                     </div>
                 </form>
