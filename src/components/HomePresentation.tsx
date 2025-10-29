@@ -133,7 +133,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     {/* Título centrado */}
                                     <div className="text-center">
                                         <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-                                            <span className="block">Revisa tu{' '}
+                                            <span className="block whitespace-nowrap">
+                                                Inspecciona tu{' '}
                                                 <span className="relative inline-block">
                                                     <span 
                                                         className={`${isGlitching ? 'glitch-effect' : 'glitch-text-gradient'} bg-clip-text text-transparent font-extrabold transition-all duration-300`}
@@ -167,15 +168,16 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 
                                 {/* Título desktop */}
                                 <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-[1.1] tracking-tight">
-                                    <div className="block">Revisa tu{' '}
-                                    <span className="relative inline-block">
-                                        <span 
-                                            className={`${isGlitching ? 'glitch-effect' : 'glitch-text-gradient'} bg-clip-text text-transparent font-extrabold transition-all duration-300`}
-                                            data-text={isGlitching ? glitchText : currentWord}
-                                        >
-                                            {isGlitching ? glitchText : currentWord}
+                                    <div className="block whitespace-nowrap">
+                                        Inspecciona tu{' '}
+                                        <span className="relative inline-block">
+                                            <span 
+                                                className={`${isGlitching ? 'glitch-effect' : 'glitch-text-gradient'} bg-clip-text text-transparent font-extrabold transition-all duration-300`}
+                                                data-text={isGlitching ? glitchText : currentWord}
+                                            >
+                                                {isGlitching ? glitchText : currentWord}
+                                            </span>
                                         </span>
-                                    </span>
                                     </div>
                                     <div className="block">antes de comprar</div>
                                     <div className="block text-gray-900 font-extrabold">con expertos</div>

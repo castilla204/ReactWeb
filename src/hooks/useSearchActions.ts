@@ -1,11 +1,9 @@
-﻿import { useSubscription } from './useSubscription.hooks';
-import { useDisputes } from './useDisputes';
+﻿import { useDisputes } from './useDisputes';
 import { useApi } from './useApi';
 import { useNavigate } from 'react-router-dom';
 import { NotificationType } from './Notification';
 
 export function useSearchActions(setNotifications: React.Dispatch<React.SetStateAction<{ id: string; type: NotificationType; message: string; duration?: number }[]>>) {
-    const { forceFinalize, completeService, disputeService } = useSubscription();
     const { createDispute, resolveDispute } = useDisputes();
     const { fetchApi } = useApi();
     const navigate = useNavigate();
@@ -41,9 +39,12 @@ export function useSearchActions(setNotifications: React.Dispatch<React.SetState
             if (!searchHireId) {
                 throw new Error('SearchHire ID not found');
             }
-            await forceFinalize({
-                SearchHireId: searchHireId,
-                ResolveInFavorOfClient: !favorExpert,
+            await fetchApi('/api/SearchHire/force-finalize', {
+                method: 'POST',
+                body: JSON.stringify({
+                    SearchHireId: searchHireId,
+                    ResolveInFavorOfClient: !favorExpert,
+                }),
             });
             addNotification('success', '✅ Búsqueda finalizada exitosamente');
             onSuccess();
@@ -58,9 +59,12 @@ export function useSearchActions(setNotifications: React.Dispatch<React.SetState
             if (!searchHireId) {
                 throw new Error('SearchHire ID not found');
             }
-            await completeService({
-                SearchHireId: searchHireId,
-                ClientApproved: true,
+            await fetchApi('/api/SearchHire/complete-service', {
+                method: 'POST',
+                body: JSON.stringify({
+                    SearchHireId: searchHireId,
+                    ClientApproved: true,
+                }),
             });
             addNotification('success', '✅ Servicio completado exitosamente');
             onSuccess();

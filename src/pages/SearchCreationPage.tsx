@@ -5,7 +5,6 @@ import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
 import { ServiceSelection } from '../components/ServiceSelection';
 import { ProgressBar } from '../components/ProgressBar';
-import { useSubscriptionLimits } from '../hooks/useSubscriptionLimits';
 import { useAuth } from '../contexts/AuthContext';
 import { Notification, NotificationType } from '../components/Notification';
 import HomePresentation from '../components/HomePresentation';
@@ -29,7 +28,7 @@ interface SearchParameters {
 const SearchCreationPage: React.FC = () => {
     const { isAuthenticated } = useAuth();
     const { categories } = useCategories();
-    const { currentSearchCount, maxSearches } = useSubscriptionLimits();
+    // Removed subscription limits - no longer needed
     const { serviceTypes, isLoading: serviceTypesLoading, error: serviceTypesError } = useServiceTypes();
     const [notification, setNotification] = useState<{ type: NotificationType; message: string } | null>(null);
     const [currentStep, setCurrentStep] = useState(0);
@@ -84,14 +83,7 @@ const SearchCreationPage: React.FC = () => {
             });
             return;
         }
-        if (currentSearchCount >= maxSearches) {
-            setNotification({
-                type: 'error',
-                message: `👑 Has alcanzado el límite de ${maxSearches} búsquedas activas. ¡Mejora tu plan para crear más búsquedas!`,
-            });
-            window.location.href = '/suscripciones';
-            return;
-        }
+        // Removed subscription limits - unlimited searches now available
         console.log('SearchCreationPage - Parameters received:', parameters);
         // Ensure strictMatchOnly is always false
         const updatedParameters = { ...parameters, strictMatchOnly: false };
@@ -506,7 +498,7 @@ const SearchCreationPage: React.FC = () => {
                             </div>
                             {isAuthenticated && (
                                 <div className="mt-6 text-sm text-gray-500 flex items-center justify-center gap-2">
-                                    <span>Búsquedas activas: {currentSearchCount} / {maxSearches}</span>
+                                    <span>Búsquedas ilimitadas disponibles</span>
                                 </div>
                             )}
                         </div>
@@ -518,7 +510,7 @@ const SearchCreationPage: React.FC = () => {
                                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
                                     {/* Copyright */}
                                     <p className="text-sm text-gray-600 text-center sm:text-left">
-                                        © 2025 YoChequeo. Todos los derechos reservados.
+                                        © 2025 inspecciono.com. Todos los derechos reservados.
                                     </p>
                                     
                                     {/* Links */}
