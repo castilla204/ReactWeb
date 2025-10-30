@@ -397,11 +397,13 @@ const App: React.FC = React.memo(() => {
                 <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
                 <AccountSettingsModal isOpen={showAccountSettings} onClose={() => setShowAccountSettings(false)} />
                 {notification && (
-                    <Notification
-                        type={notification.type}
-                        message={notification.message}
-                        onClose={() => setNotification(null)}
-                    />
+                    <div className="fixed top-4 right-4 z-[1000] flex flex-col items-end gap-2">
+                        <Notification
+                            type={notification.type}
+                            message={notification.message}
+                            onClose={() => setNotification(null)}
+                        />
+                    </div>
                 )}
             </div>
         </Router>
