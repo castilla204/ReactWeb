@@ -249,6 +249,21 @@ export function useExpert() {
                     signOut();
                     throw new Error('Request failed with status 401');
                 }
+                if (response.status === 400) {
+                    // Intentar extraer mensaje claro del backend
+                    let backendMessage = 'Reinicia el onboarding para crear una cuenta nueva.';
+                    try {
+                        const errData = await response.json();
+                        if (errData?.message) backendMessage = errData.message;
+                    } catch {}
+                    window.dispatchEvent(new CustomEvent('showNotification', {
+                        detail: {
+                            type: 'warning',
+                            message: backendMessage,
+                        },
+                    }));
+                    throw new Error(`Failed to start onboarding: Bad Request`);
+                }
                 throw new Error(`Failed to start onboarding: ${response.statusText}`);
             }
 
@@ -266,6 +281,46 @@ export function useExpert() {
         } catch (error) {
             console.error('❌ useExpert: Error starting onboarding:', error);
             throw error;
+        } finally {
+            setIsStartingOnboarding(false);
+        }
+    };
+
+    // Helper para parsear errores del backend y devolver mensaje claro
+    const safeFetch = async (url: string, options: RequestInit) => {
+        const res = await fetch(url, options);
+        if (!res.ok) {
+            let msg = res.statusText;
+            try {
+                const j = await res.json();
+                if ((j as any)?.message) msg = (j as any).message;
+            } catch {}
+            throw new Error(msg);
+        }
+        return res.json();
+    };
+
+    // Flujo recomendado: reiniciar y luego crear link de onboarding; redirigir a la URL
+    const restartAndStartOnboarding = async () => {
+        setIsStartingOnboarding(true);
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
+            await safeFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.subscription.restartOnboarding}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            });
+
+            const { url } = await safeFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.subscription.expertOnboarding}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            });
+
+            window.location.href = url;
         } finally {
             setIsStartingOnboarding(false);
         }
@@ -526,6 +581,7 @@ export function useExpert() {
         serviceTypes,
         isLoadingServiceTypes,
         startOnboarding,
+        restartAndStartOnboarding,
         isStartingOnboarding,
         checkOnboardingStatus,
         isCheckingOnboardingStatus,

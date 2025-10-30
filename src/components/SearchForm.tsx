@@ -549,12 +549,14 @@ export default function SearchForm({
                 </form>
             </div>
             {notification && (
-                <Notification
-                    type={notification.type}
-                    message={notification.message}
-                    action={notification.action}
-                    onClose={() => setNotification(null)}
-                />
+                <div className="fixed top-4 right-4 z-[1000] flex flex-col items-end gap-2">
+                    <Notification
+                        type={notification.type}
+                        message={notification.message}
+                        action={notification.action}
+                        onClose={() => setNotification(null)}
+                    />
+                </div>
             )}
         </div>
     );
