@@ -100,6 +100,7 @@ export function ExpertPanelPage() {
         isLoadingProfile,
         profileError,
         startOnboarding,
+        restartAndStartOnboarding,
         isStartingOnboarding,
         checkOnboardingStatus,
         isCheckingOnboardingStatus,
@@ -616,8 +617,9 @@ export function ExpertPanelPage() {
         );
     }
 
-    // Verificar si el experto puede acceder al panel (tiene cuenta Stripe aprobada)
-    const canAccessPanel = stripeStatus?.canCreateServices === true;
+    // Verificar si el experto puede acceder al panel según backend
+    // Ahora usamos canAccessStripe para permitir acceso de lectura/gestión
+    const canAccessPanel = stripeStatus?.canAccessStripe === true;
 
     if (!canAccessPanel) {
         return (
@@ -652,15 +654,20 @@ export function ExpertPanelPage() {
                         <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[calc(100vh-300px)]">
                         <StripeStatusCard
                         onSetupStripe={async () => {
-                            console.log('ExpertPanelPage: onSetupStripe called, starting Stripe onboarding');
+                            console.log('ExpertPanelPage: onSetupStripe called');
+                            if (isStartingOnboarding || isRestartingOnboarding) return;
                             try {
-                                await startOnboarding();
-                            } catch (error) {
+                                if (stripeStatus?.stripeStatus === 'Rejected') {
+                                    await restartAndStartOnboarding();
+                                } else {
+                                    await startOnboarding();
+                                }
+                            } catch (error: any) {
                                 console.error('Error starting Stripe onboarding:', error);
                                 window.dispatchEvent(new CustomEvent('showNotification', {
                                     detail: {
                                         type: 'error',
-                                        message: 'Error al configurar cuenta Stripe. Inténtalo de nuevo.',
+                                        message: error?.message || 'No se pudo iniciar el proceso en Stripe. Inténtalo de nuevo.',
                                     },
                                 }));
                             }
