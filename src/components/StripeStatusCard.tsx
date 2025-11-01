@@ -7,6 +7,7 @@ interface StripeStatusCardProps {
     onAccessDashboard?: () => void;
     onContactSupport?: () => void;
     className?: string;
+    isLoadingOnboarding?: boolean;
 }
 
 const getStatusIcon = (status: string) => {
@@ -93,7 +94,8 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
     onSetupStripe,
     onAccessDashboard,
     onContactSupport,
-    className = ''
+    className = '',
+    isLoadingOnboarding = false
 }) => {
     const { status, loading, error, refetch, syncStatus, statusInfo, isPolling } = useExpertStripeStatus();
     
@@ -204,7 +206,7 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
             </div>
             
             <div className="mb-6 lg:mb-8">
-                <p className="text-gray-700 leading-relaxed text-sm lg:text-base">{statusInfo.message}</p>
+                <p className="text-gray-700 leading-relaxed text-sm lg:text-base whitespace-pre-line">{statusInfo.message}</p>
                 
                 {/* Display detailed status information if available */}
                 {status.stripeStatusDetails && status.stripeStatusDetails !== statusInfo.message && (
@@ -216,27 +218,32 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                 )}
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
-                <button 
-                    onClick={handleAction}
-                    disabled={loading}
-                    className={`px-4 lg:px-6 py-2 lg:py-3 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 rounded-md shadow-sm hover:shadow-md transform hover:-translate-y-0.5 ${getButtonClass(statusInfo.action)} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                    {statusInfo.action === 'wait' && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {getActionIcon(statusInfo.action)}
-                    {statusInfo.buttonText}
-                </button>
-                
-                {statusInfo.action === 'wait' && (
+            {/* Ocultar botón si Rejected y canRetryOnboarding es false */}
+            {(status.stripeStatus !== 'Rejected' || status.canRetryOnboarding !== false) && (
+                <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
                     <button 
-                        onClick={syncStatus}
-                        className="px-4 lg:px-6 py-2 lg:py-3 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 transition-all duration-300 flex items-center justify-center gap-2 rounded-md shadow-sm hover:shadow-md bg-white/80 backdrop-blur-sm transform hover:-translate-y-0.5"
+                        onClick={handleAction}
+                        disabled={loading || isLoadingOnboarding}
+                        className={`px-4 lg:px-6 py-2 lg:py-3 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 rounded-md shadow-sm hover:shadow-md transform hover:-translate-y-0.5 ${getButtonClass(statusInfo.action)} ${(loading || isLoadingOnboarding) ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        <RefreshCw className="w-4 h-4" />
-                        Verificar Estado
+                        {(statusInfo.action === 'wait' || isLoadingOnboarding) && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {!isLoadingOnboarding && getActionIcon(statusInfo.action)}
+                        {isLoadingOnboarding ? 'Cargando...' : statusInfo.buttonText}
                     </button>
-                )}
-            </div>
+                </div>
+            )}
+            
+            {/* Mostrar información de contacto cuando Rejected y canRetryOnboarding es false */}
+            {status.stripeStatus === 'Rejected' && status.canRetryOnboarding === false && (
+                <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p className="text-sm text-gray-700">
+                        <span className="font-medium">Soporte técnico:</span>{' '}
+                        <a href="mailto:info@atrapo.io" className="text-blue-600 hover:text-blue-700 underline">
+                            info@atrapo.io
+                        </a>
+                    </p>
+                </div>
+            )}
             
             {(status.stripeAccountId || status.canCreateServices || status.rejectionReason || status.stripeStatus === 'NotRequested') && (
                 <div className="mt-8 pt-6 border-t border-gray-200">

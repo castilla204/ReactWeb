@@ -2,6 +2,50 @@
 
 export type StripeStatus = "NotRequested" | "Pending" | "Approved" | "Rejected" | "Deauthorized";
 
+// Disponibilidad horaria
+export interface CurrentExpertAvailabilityDto {
+    id: number;
+    daysOfWeek: string[];        // ["Monday", "Tuesday", "Wednesday", ...]
+    startTime: string;            // "09:00:00" (formato TimeSpan)
+    endTime: string;              // "18:00:00" (formato TimeSpan)
+    effectiveFrom: string;        // "2025-01-01T00:00:00Z" (ISO DateTime)
+}
+
+export interface ExpertAvailabilityDto {
+    id: number;
+    expertId: number;
+    daysOfWeek: string[];
+    startTime: string;
+    endTime: string;
+    effectiveFrom: string;
+    effectiveTo: string | null;   // null = disponibilidad actual activa
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export const VALID_DAYS_OF_WEEK = [
+    "Monday",
+    "Tuesday", 
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+] as const;
+
+export type DayOfWeek = typeof VALID_DAYS_OF_WEEK[number];
+
+export const DAY_NAMES_ES: Record<DayOfWeek, string> = {
+    'Monday': 'Lunes',
+    'Tuesday': 'Martes',
+    'Wednesday': 'Miércoles',
+    'Thursday': 'Jueves',
+    'Friday': 'Viernes',
+    'Saturday': 'Sábado',
+    'Sunday': 'Domingo'
+};
+
 // 1. GET /api/user/expert-profile response
 export interface ExpertProfileResponse {
     id: number;
@@ -14,6 +58,8 @@ export interface ExpertProfileResponse {
     stripeStatus: StripeStatus;
     stripeStatusDetails: string | null;
     onboardingCompleted: boolean;
+    isOnVacation?: boolean;
+    currentAvailability?: CurrentExpertAvailabilityDto | null;
 }
 
 // 2. POST /api/user/become-expert response

@@ -1,7 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CheckCircle, Loader2, XCircle, Upload, User, MapPin } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Upload, User, MapPin, X, Clock } from 'lucide-react';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
-import { useExpertProfile } from '../../hooks/useExpertProfile';
+import { useExpertProfile, AvailabilityFormData } from '../../hooks/useExpertProfile';
+import { VALID_DAYS_OF_WEEK, DAY_NAMES_ES, CurrentExpertAvailabilityDto } from '../../types/stripe';
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerClose,
+} from '../ui/drawer';
+import { Button } from '../ui/button';
+import { Label } from '../ui/label';
+import { Separator } from '../ui/separator';
 
 // Define a local type to match the Library enum values
 type GoogleMapLibrary = 'drawing' | 'geometry';
@@ -78,6 +89,7 @@ interface ProfileEditFormProps {
         createdAt: string;
         latitude?: number | string;
         longitude?: number | string;
+        currentAvailability?: CurrentExpertAvailabilityDto | null;
     };
     onProfileUpdated: () => void;
 }
@@ -96,6 +108,26 @@ export function ProfileEditForm({
         latitude: profile.latitude?.toString() || '',
         longitude: profile.longitude?.toString() || '',
     });
+
+    // Formatear tiempo de TimeSpan (HH:mm:ss) a HH:mm
+    const formatTimeFromTimeSpan = (timeSpan: string): string => {
+        if (!timeSpan) return '';
+        const parts = timeSpan.split(':');
+        return `${parts[0]}:${parts[1]}`;
+    };
+
+    // Inicializar disponibilidad desde el perfil
+    const initialAvailability: AvailabilityFormData = profile.currentAvailability ? {
+        daysOfWeek: profile.currentAvailability.daysOfWeek || [],
+        startTime: formatTimeFromTimeSpan(profile.currentAvailability.startTime),
+        endTime: formatTimeFromTimeSpan(profile.currentAvailability.endTime),
+    } : {
+        daysOfWeek: [],
+        startTime: '09:00',
+        endTime: '18:00',
+    };
+
+    const [availability, setAvailability] = useState<AvailabilityFormData>(initialAvailability);
 
     const [profilePicture, setProfilePicture] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -119,6 +151,18 @@ export function ProfileEditForm({
             setPreviewUrl(profile.profilePictureUrl || null);
             setFormErrors({});
             
+            // Actualizar disponibilidad
+            const newAvailability: AvailabilityFormData = profile.currentAvailability ? {
+                daysOfWeek: profile.currentAvailability.daysOfWeek || [],
+                startTime: formatTimeFromTimeSpan(profile.currentAvailability.startTime),
+                endTime: formatTimeFromTimeSpan(profile.currentAvailability.endTime),
+            } : {
+                daysOfWeek: [],
+                startTime: '09:00',
+                endTime: '18:00',
+            };
+            setAvailability(newAvailability);
+            
             // Actualizar la ubicación seleccionada en el mapa
             const newLocation = (profile.latitude && profile.longitude) 
                 ? { lat: Number(profile.latitude), lng: Number(profile.longitude) }
@@ -132,6 +176,18 @@ export function ProfileEditForm({
             }
         }
     }, [showEditForm, profile]);
+
+    // Prevenir scroll del body cuando el drawer está abierto
+    useEffect(() => {
+        if (showEditForm) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [showEditForm]);
 
     const validateForm = () => {
         const errors: { [key: string]: string } = {};
@@ -159,6 +215,23 @@ export function ProfileEditForm({
             const lng = parseFloat(formData.longitude);
             if (isNaN(lng) || lng < -180 || lng > 180) {
                 errors.longitude = 'La longitud debe estar entre -180 y 180';
+            }
+        }
+
+        // Validar disponibilidad solo si hay días seleccionados
+        if (availability.daysOfWeek.length > 0) {
+            if (!availability.startTime || !availability.endTime) {
+                errors.availability = 'Debes especificar hora de inicio y fin';
+            } else {
+                const [startH, startM] = availability.startTime.split(':').map(Number);
+                const [endH, endM] = availability.endTime.split(':').map(Number);
+                
+                const startMinutes = startH * 60 + startM;
+                const endMinutes = endH * 60 + endM;
+                
+                if (startMinutes >= endMinutes) {
+                    errors.availability = 'La hora de inicio debe ser anterior a la hora de fin';
+                }
             }
         }
 
@@ -239,11 +312,15 @@ export function ProfileEditForm({
         }
 
         try {
+            // Incluir disponibilidad solo si hay días seleccionados
+            const availabilityData = availability.daysOfWeek.length > 0 ? availability : undefined;
+            
             await updateExpertProfile({
                 description: formData.description.trim(),
                 latitude: formData.latitude,
                 longitude: formData.longitude,
                 profilePicture: profilePicture || undefined,
+                availability: availabilityData,
             });
 
             setShowEditForm(false);
@@ -271,6 +348,18 @@ export function ProfileEditForm({
         setPreviewUrl(null);
         setFormErrors({});
         
+        // Resetear disponibilidad
+        const resetAvailability: AvailabilityFormData = profile.currentAvailability ? {
+            daysOfWeek: profile.currentAvailability.daysOfWeek || [],
+            startTime: formatTimeFromTimeSpan(profile.currentAvailability.startTime),
+            endTime: formatTimeFromTimeSpan(profile.currentAvailability.endTime),
+        } : {
+            daysOfWeek: [],
+            startTime: '09:00',
+            endTime: '18:00',
+        };
+        setAvailability(resetAvailability);
+        
         // Resetear la ubicación del mapa
         const resetLocation = (profile.latitude && profile.longitude) 
             ? { lat: Number(profile.latitude), lng: Number(profile.longitude) }
@@ -288,56 +377,75 @@ export function ProfileEditForm({
         }
     };
 
-    if (!showEditForm) return null;
+    const toggleDay = (day: string) => {
+        setAvailability(prev => ({
+            ...prev,
+            daysOfWeek: prev.daysOfWeek.includes(day)
+                ? prev.daysOfWeek.filter(d => d !== day)
+                : [...prev.daysOfWeek, day]
+        }));
+    };
 
     return (
-        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 p-2 sm:p-4 pt-12 sm:pt-4">
-            <div className="bg-white rounded-xl pt-6 px-4 pb-4 sm:p-6 lg:p-8 max-w-2xl w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all duration-300 ease-in-out mt-6 sm:mt-0">
-                <div className="space-y-4 sm:space-y-6">
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 border-b pb-2">
-                        Editar Perfil de Experto
-                    </h3>
-
-                    <div className="space-y-4 sm:space-y-6">
+        <Drawer open={showEditForm} onOpenChange={setShowEditForm}>
+            <DrawerContent className="max-h-[96vh] flex flex-col md:max-h-[90vh] md:h-[90vh]">
+                <div className="mx-auto w-full max-w-7xl flex flex-col h-full max-h-[96vh] md:max-h-[90vh] md:h-[90vh]">
+                    <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
+                        <div className="flex items-center justify-between">
+                            <DrawerTitle className="text-lg sm:text-xl font-semibold">Editar Perfil de Experto</DrawerTitle>
+                            <DrawerClose asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </DrawerClose>
+                        </div>
+                    </DrawerHeader>
+                    {/* Contenido: móvil en columna única con scroll, desktop en dos columnas sin scroll */}
+                    <div className="px-4 sm:px-6 py-4 sm:py-6 md:py-5 flex-1 min-h-0 overflow-y-auto md:overflow-y-hidden">
+                        <div className="max-w-3xl mx-auto w-full md:max-w-none md:grid md:grid-cols-2 md:gap-6 lg:gap-8 md:items-start space-y-4 sm:space-y-5 md:space-y-0 md:h-full md:overflow-y-auto md:pr-2">
+                            {/* Columna izquierda - Información del perfil */}
+                            <div className="md:space-y-4 md:space-y-5 space-y-4 sm:space-y-5">
                         {/* Imagen de perfil */}
-                        <div>
-                            <label className="block text-xs font-normal text-gray-500 mb-2">Foto de perfil</label>
-                            <div className="flex items-center space-x-4">
+                                <div className="space-y-2">
+                                    <Label>Foto de perfil</Label>
+                                    <div className="flex items-center gap-4">
                                 <div className="flex-shrink-0">
                                     {previewUrl || profile.profilePictureUrl ? (
                                         <img
                                             src={previewUrl || profile.profilePictureUrl}
                                             alt="Profile"
-                                            className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                                                    className="w-20 h-20 rounded-full object-cover border-2 border-border"
                                         />
                                     ) : (
-                                        <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
-                                            <User className="w-8 h-8 text-blue-600" />
+                                                <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
+                                                    <User className="w-10 h-10 text-muted-foreground" />
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center space-x-2">
-                                        <button
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Button
                                             type="button"
+                                                    variant="outline"
+                                                    size="sm"
                                             onClick={() => fileInputRef.current?.click()}
-                                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded-lg transition-colors"
                                         >
-                                            <Upload className="w-3 h-3 inline mr-1" />
+                                                    <Upload className="w-4 h-4 mr-2" />
                                             Cambiar
-                                        </button>
+                                                </Button>
                                         {(previewUrl || profilePicture) && (
-                                            <button
+                                                    <Button
                                                 type="button"
+                                                        variant="outline"
+                                                        size="sm"
                                                 onClick={removeImage}
-                                                className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs rounded-lg transition-colors"
                                             >
-                                                <XCircle className="w-3 h-3 inline mr-1" />
+                                                        <XCircle className="w-4 h-4 mr-2" />
                                                 Quitar
-                                            </button>
+                                                    </Button>
                                         )}
                                     </div>
-                                    <p className="text-xs text-gray-400 mt-1">PNG, JPG (máx. 5MB)</p>
+                                            <p className="text-xs text-muted-foreground">PNG, JPG (máx. 5MB)</p>
                                     <input
                                         ref={fileInputRef}
                                         type="file"
@@ -348,20 +456,23 @@ export function ProfileEditForm({
                                 </div>
                             </div>
                             {formErrors.profilePicture && (
-                                <p className="mt-1 text-xs text-red-500">{formErrors.profilePicture}</p>
+                                        <p className="text-sm text-destructive">{formErrors.profilePicture}</p>
                             )}
                         </div>
 
+                                <Separator />
+
                         {/* Descripción */}
-                        <div>
-                            <label className="block text-xs font-normal text-gray-500 mb-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="description">
                                 Descripción ({formData.description.length}/500)
-                            </label>
+                                    </Label>
                             <textarea
+                                        id="description"
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-gray-300 focus:border-gray-400 focus:outline-none transition-colors resize-y ${
-                                    formErrors.description ? 'border-red-300' : 'border-gray-200 bg-gray-50/50'
+                                        className={`flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y ${
+                                            formErrors.description ? 'border-destructive' : ''
                                 }`}
                                 rows={4}
                                 maxLength={500}
@@ -369,29 +480,108 @@ export function ProfileEditForm({
                                 required
                             />
                             {formErrors.description && (
-                                <p className="mt-1 text-xs text-red-500">{formErrors.description}</p>
+                                        <p className="text-sm text-destructive">{formErrors.description}</p>
                             )}
                         </div>
 
-                        {/* Ubicación con mapa */}
-                        <div>
-                            <label className="block text-xs font-normal text-gray-500 mb-2">Ubicación del servicio</label>
-                            
-                            {loadError ? (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                                    <p className="text-sm text-red-600">Error al cargar el mapa. Por favor, recarga la página.</p>
+                                <Separator className="md:hidden" />
+
+                                {/* Disponibilidad horaria */}
+                                <div className="space-y-3">
+                                    <div className="space-y-1.5">
+                                        <Label className="flex items-center gap-2 text-sm font-semibold">
+                                            <Clock className="w-4 h-4 text-muted-foreground" />
+                                            Disponibilidad horaria
+                                            <span className="text-xs font-normal text-muted-foreground">(Opcional)</span>
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground pl-6">
+                                            Define los días y horarios en los que estarás disponible para recibir contrataciones.
+                                        </p>
+                                    </div>
+
+                                    {/* Días de la semana */}
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-medium text-muted-foreground">Días de trabajo</Label>
+                                        <div className="grid grid-cols-7 gap-1.5">
+                                            {VALID_DAYS_OF_WEEK.map(day => {
+                                                const isSelected = availability.daysOfWeek.includes(day);
+                                                return (
+                                                    <Button
+                                                        key={day}
+                                                        type="button"
+                                                        variant={isSelected ? "default" : "outline"}
+                                                        size="sm"
+                                                        onClick={() => toggleDay(day)}
+                                                        className={`text-xs font-medium transition-all ${
+                                                            isSelected 
+                                                                ? "bg-primary text-primary-foreground shadow-sm" 
+                                                                : "hover:bg-accent"
+                                                        }`}
+                                                    >
+                                                        {DAY_NAMES_ES[day as keyof typeof DAY_NAMES_ES].substring(0, 2)}
+                                                    </Button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Horario */}
+                                    {availability.daysOfWeek.length > 0 && (
+                                        <div className="grid grid-cols-2 gap-3 pt-1">
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="startTime" className="text-xs font-medium text-muted-foreground">Hora de inicio</Label>
+                                                <input
+                                                    id="startTime"
+                                                    type="time"
+                                                    value={availability.startTime}
+                                                    onChange={(e) => setAvailability(prev => ({ ...prev, startTime: e.target.value }))}
+                                                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    required={availability.daysOfWeek.length > 0}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="endTime" className="text-xs font-medium text-muted-foreground">Hora de fin</Label>
+                                                <input
+                                                    id="endTime"
+                                                    type="time"
+                                                    value={availability.endTime}
+                                                    onChange={(e) => setAvailability(prev => ({ ...prev, endTime: e.target.value }))}
+                                                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    required={availability.daysOfWeek.length > 0}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {formErrors.availability && (
+                                        <p className="text-sm text-destructive mt-1">{formErrors.availability}</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Columna derecha - Ubicación */}
+                            <div className="md:space-y-4 md:space-y-5 space-y-4 sm:space-y-5">
+                                <Separator className="md:hidden" />
+                                
+                                {/* Ubicación con mapa */}
+                                <div className="space-y-2">
+                                    <Label>Ubicación del servicio</Label>
+                                    
+                                    {loadError ? (
+                                        <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4">
+                                            <p className="text-sm text-destructive">Error al cargar el mapa. Por favor, recarga la página.</p>
                                 </div>
                             ) : !isLoaded ? (
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 flex items-center justify-center">
-                                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                                    <span className="ml-2 text-sm text-gray-500">Cargando mapa...</span>
+                                        <div className="bg-muted border border-border rounded-md p-8 flex items-center justify-center">
+                                            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                            <span className="ml-2 text-sm text-muted-foreground">Cargando mapa...</span>
                                 </div>
                             ) : (
-                                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                        <div className="border border-border rounded-lg overflow-hidden shadow-sm">
                                     <GoogleMap
                                         mapContainerStyle={{
                                             width: '100%',
-                                            height: '300px'
+                                                    height: '240px'
                                         }}
                                         center={selectedLocation}
                                         zoom={6}
@@ -402,10 +592,10 @@ export function ProfileEditForm({
                                             disableDefaultUI: false,
                                             zoomControl: true,
                                             mapTypeControl: false,
-                                            scaleControl: true,
+                                                    scaleControl: false,
                                             streetViewControl: false,
                                             rotateControl: false,
-                                            fullscreenControl: true,
+                                                    fullscreenControl: false,
                                         }}
                                     >
                                         <Marker
@@ -417,7 +607,7 @@ export function ProfileEditForm({
                             )}
                             
                             {/* Mostrar coordenadas seleccionadas */}
-                            <div className="mt-2 text-xs text-gray-500">
+                                    <div className="text-xs text-muted-foreground">
                                 <span>Ubicación seleccionada: </span>
                                 <span className="font-mono">
                                     {typeof selectedLocation.lat === 'number' ? selectedLocation.lat.toFixed(6) : '0.000000'}, {typeof selectedLocation.lng === 'number' ? selectedLocation.lng.toFixed(6) : '0.000000'}
@@ -425,64 +615,70 @@ export function ProfileEditForm({
                             </div>
                             
                             {(formErrors.latitude || formErrors.longitude) && (
-                                <p className="mt-1 text-xs text-red-500">
+                                        <p className="text-sm text-destructive">
                                     {formErrors.latitude || formErrors.longitude}
                                 </p>
                             )}
-                        </div>
 
                         {/* Información de ubicación */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div className="bg-muted/30 border border-border/50 rounded-md p-2.5">
                             <div className="flex items-start gap-2">
-                                <MapPin className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                                <div className="text-xs text-blue-800">
-                                    <p className="font-medium mb-1">Cómo seleccionar tu ubicación</p>
-                                    <p>Haz clic en el mapa para seleccionar tu ubicación de servicio. El área sombreada (círculo azul) representa un rango de 100km donde aparecerán tus servicios a los clientes.</p>
-                                </div>
+                                            <MapPin className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                                Haz clic en el mapa para seleccionar tu ubicación. El círculo azul representa un rango de 100km.
+                                            </p>
+                                        </div>
+                                    </div>
                             </div>
                         </div>
 
                         {formErrors.general && (
-                            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm">
+                                <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm border border-destructive/20 md:col-span-2">
                                 {formErrors.general}
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Botones de acción */}
-                <div className="border-t border-gray-200 pt-4 mt-6">
-                    <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4">
-                        <button
+                    <Separator className="flex-shrink-0" />
+
+                    {/* Botones de acción - Fijos en la parte inferior */}
+                    <div className="px-4 sm:px-6 pt-3 pb-4 sm:py-4 bg-background border-t border-border flex-shrink-0 flex flex-row justify-end gap-3 md:sticky md:bottom-0 md:z-10">
+                        <div className="max-w-3xl mx-auto w-full md:max-w-none md:flex md:justify-end md:w-full">
+                            <div className="flex flex-row gap-3 w-full md:ml-auto">
+                                <Button
                             type="button"
+                                    variant="outline"
                             onClick={() => {
                                 setShowEditForm(false);
                                 resetForm();
                             }}
-                            className="w-full sm:w-auto px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 hover:bg-gray-50 transition-colors font-medium rounded-lg"
+                                    className="flex-1 md:flex-none md:w-auto"
                         >
                             Cancelar
-                        </button>
-                        <button
+                                </Button>
+                                <Button
                             onClick={handleSubmit}
                             disabled={isUpdating}
-                            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white border border-blue-700 hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                                    className="flex-1 md:flex-none md:w-auto"
                         >
                             {isUpdating ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                     Actualizando...
                                 </>
                             ) : (
                                 <>
-                                    <CheckCircle className="w-4 h-4" />
+                                            <CheckCircle className="w-4 h-4 mr-2" />
                                     Actualizar Perfil
                                 </>
                             )}
-                        </button>
+                                </Button>
                     </div>
                 </div>
             </div>
         </div>
+            </DrawerContent>
+        </Drawer>
     );
 }
