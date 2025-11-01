@@ -4,11 +4,18 @@ import { useAuth } from '../contexts/AuthContext';
 import { UpdateExpertProfileResponse } from '../types/stripe';
 import { API_CONFIG } from '../config/api';
 
+export interface AvailabilityFormData {
+    daysOfWeek: string[];         // ["Monday", "Tuesday", ...]
+    startTime: string;            // "09:00" (formato "HH:mm")
+    endTime: string;              // "18:00" (formato "HH:mm")
+}
+
 interface UpdateExpertProfileData {
     description: string;
     latitude: string;
     longitude: string;
     profilePicture?: File;
+    availability?: AvailabilityFormData;  // Opcional: solo se actualiza si se incluye
 }
 
 export function useExpertProfile() {
@@ -34,11 +41,22 @@ export function useExpertProfile() {
                 formData.append('profilePicture', data.profilePicture);
             }
 
+            // Si se incluye disponibilidad, agregar todos los campos
+            if (data.availability) {
+                data.availability.daysOfWeek.forEach(day => {
+                    formData.append('AvailabilityDaysOfWeek', day);
+                });
+                formData.append('AvailabilityStartTime', data.availability.startTime);
+                formData.append('AvailabilityEndTime', data.availability.endTime);
+            }
+
             console.log('Updating expert profile with data:', {
                 description: data.description,
                 latitude: data.latitude,
                 longitude: data.longitude,
-                hasProfilePicture: !!data.profilePicture
+                hasProfilePicture: !!data.profilePicture,
+                hasAvailability: !!data.availability,
+                availability: data.availability
             });
 
             const response = await fetch(`${API_CONFIG.baseUrl}/api/User/expert-profile`, {

@@ -1,8 +1,10 @@
 ﻿import { useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Upload, Shield, CheckCircle, Loader2, MapPin, Star, Users, TrendingUp, Award, Clock, DollarSign, UserPlus, Bell } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, UserPlus, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleMap, useLoadScript, Marker, DrawingManager } from '@react-google-maps/api';
 import { useBecomeExpert } from '../hooks/useBecomeExpert';
+import { VALID_DAYS_OF_WEEK, DAY_NAMES_ES } from '../types/stripe';
+import { AvailabilityFormData } from '../hooks/useExpertProfile';
 
 // Define a local type to match the Library enum values
 type GoogleMapLibrary = 'drawing' | 'geometry' | 'places';
@@ -85,11 +87,33 @@ function BecomeExpertPage() {
     const [selectedLocation, setSelectedLocation] = useState(defaultCenter);
     const [circle, setCircle] = useState<google.maps.Circle | null>(null);
     const [searchAddress, setSearchAddress] = useState<string>('');
-    const [selectedAddress, setSelectedAddress] = useState<string>('');
     const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [acceptTerms, setAcceptTerms] = useState<boolean>(false);
     const [acceptNotifications, setAcceptNotifications] = useState<boolean>(false);
+    const [availability, setAvailability] = useState<AvailabilityFormData>({
+        daysOfWeek: [],
+        startTime: '09:00',
+        endTime: '18:00',
+    });
+
+    const toggleDay = (day: string) => {
+        setAvailability(prev => ({
+            ...prev,
+            daysOfWeek: prev.daysOfWeek.includes(day)
+                ? prev.daysOfWeek.filter(d => d !== day)
+                : [...prev.daysOfWeek, day]
+        }));
+    };
+
+    // Actualizar disponibilidad en formData cuando cambie
+    useEffect(() => {
+        setFormData(prev => ({
+            ...prev,
+            availability: availability.daysOfWeek.length > 0 ? availability : undefined
+        }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [availability]);
 
     const onLoad = (mapInstance: google.maps.Map) => {
         setMap(mapInstance);
@@ -153,7 +177,6 @@ function BecomeExpertPage() {
     const updateLocationAndMap = (newLocation: { lat: number; lng: number }, address: string) => {
         console.log('Actualizando ubicación:', newLocation, address);
         setSelectedLocation(newLocation);
-        setSelectedAddress(address);
         setFormData((prev) => {
             const newFormData = {
                 ...prev,
@@ -227,48 +250,58 @@ function BecomeExpertPage() {
 
     return (
         <div className="relative min-h-screen bg-white">
-            {/* Líneas decorativas de fondo */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {/* Líneas para desktop */}
-                <div className="absolute top-1/4 left-0 w-80 h-1 bg-gradient-to-r from-blue-500 to-transparent transform -translate-x-20 hidden sm:block"></div>
-                <div className="absolute top-1/2 right-0 w-72 h-1 bg-gradient-to-l from-green-400 to-transparent transform translate-x-16 hidden sm:block"></div>
-                <div className="absolute bottom-1/4 left-0 w-64 h-1 bg-gradient-to-r from-purple-500 to-transparent transform -translate-x-12 hidden sm:block"></div>
-                
-            </div>
             
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-16">
                 {/* Header con botón de volver */}
-                <div className="mb-8">
+                <div className="mb-4 sm:mb-6 lg:mb-8">
                 <button
                     onClick={() => navigate('/')}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 group"
+                        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-all duration-200 group px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg hover:bg-white/60"
                 >
-                        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-medium">Volver al inicio</span>
+                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-xs sm:text-sm font-medium">Volver al inicio</span>
                 </button>
                 </div>
 
                 {/* Layout principal de dos columnas */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16">
                     {/* Columna izquierda - Contenido informativo */}
-                    <div className="space-y-8">
+                    <div className="space-y-6 sm:space-y-8 lg:space-y-10">
                         {/* Header principal */}
-                        <div className="space-y-4">
+                        <div className="space-y-4 sm:space-y-6 lg:space-y-8">
                             <div>
-                                <h1 className="text-3xl font-semibold text-gray-900">
+                                <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight mb-3 sm:mb-4">
+                                    <span className="bg-gradient-to-r from-gray-900 via-blue-700 to-blue-600 bg-clip-text text-transparent">
                                     Conviértete en Buscador Experto
+                                    </span>
                                 </h1>
-                                <p className="text-lg text-gray-600 mt-2">
-                                    Ayuda a otros usuarios a encontrar lo que buscan
+                                <p className="text-sm sm:text-base lg:text-lg text-gray-600 leading-relaxed max-w-xl">
+                                    Ayuda a otros usuarios a encontrar lo que buscan y genera ingresos trabajando desde casa
                                 </p>
+                            </div>
+                            
+                            {/* Estadísticas */}
+                            <div className="grid grid-cols-3 gap-4 sm:gap-6 pt-4 sm:pt-6 border-t border-gray-200">
+                                <div className="text-center">
+                                    <div className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-1">Flexible</div>
+                                    <div className="text-xs text-gray-500">Horarios</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-1">100%</div>
+                                    <div className="text-xs text-gray-500">Remoto</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-1">Ingresos</div>
+                                    <div className="text-xs text-gray-500">Extra</div>
+                                </div>
                             </div>
                         </div>
 
                         {/* Información sobre ser freelancer */}
-                        <div className="space-y-4">
-                            <h2 className="text-xl font-medium text-gray-900">¿Qué significa ser un Buscador Experto?</h2>
+                        <div className="border-t border-gray-200 pt-6 sm:pt-8">
+                            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 lg:mb-5">¿Qué significa ser un Buscador Experto?</h2>
                             
-                            <div className="space-y-3 text-gray-700">
+                            <div className="space-y-3 sm:space-y-4 text-sm sm:text-base text-gray-600 leading-relaxed">
                                 <p>
                                     Como Buscador Experto, trabajas de forma independiente (freelancer) ayudando a otros usuarios 
                                     a encontrar vehículos o propiedades que se ajusten a sus necesidades específicas.
@@ -280,7 +313,7 @@ function BecomeExpertPage() {
                                 </p>
                                 
                                 <p>
-                                    Es un trabajo flexible que puedes realizar desde casa, eligiendo cuándo y cuántas 
+                                    Es un trabajo <strong className="text-gray-900 font-semibold">flexible</strong> que puedes realizar desde casa, eligiendo cuándo y cuántas 
                                     búsquedas quieres hacer según tu disponibilidad.
                                 </p>
                             </div>
@@ -288,20 +321,32 @@ function BecomeExpertPage() {
 
 
                         {/* Requisitos */}
-                        <div className="space-y-4">
-                            <h2 className="text-xl font-medium text-gray-900">¿Qué necesitas para empezar?</h2>
-                            <ul className="space-y-2 text-gray-700">
-                                <li>• Conocimiento en vehículos o inmobiliario</li>
-                                <li>• Tiempo disponible para realizar búsquedas</li>
-                                <li>• Compromiso con la calidad del trabajo</li>
-                                <li>• Buena comunicación con los usuarios</li>
+                        <div className="border-t border-gray-200 pt-6 sm:pt-8">
+                            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 lg:mb-5">¿Qué necesitas para empezar?</h2>
+                            <ul className="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-600">
+                                <li className="flex items-start gap-2 sm:gap-3">
+                                    <span className="text-blue-600 mt-1 font-bold">•</span>
+                                    <span>Conocimiento en vehículos o inmobiliario</span>
+                                </li>
+                                <li className="flex items-start gap-2 sm:gap-3">
+                                    <span className="text-blue-600 mt-1 font-bold">•</span>
+                                    <span>Tiempo disponible para realizar búsquedas</span>
+                                </li>
+                                <li className="flex items-start gap-2 sm:gap-3">
+                                    <span className="text-blue-600 mt-1 font-bold">•</span>
+                                    <span>Compromiso con la calidad del trabajo</span>
+                                </li>
+                                <li className="flex items-start gap-2 sm:gap-3">
+                                    <span className="text-blue-600 mt-1 font-bold">•</span>
+                                    <span>Buena comunicación con los usuarios</span>
+                                </li>
                             </ul>
                         </div>
 
                         {/* Información adicional */}
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                            <h3 className="font-medium text-gray-900 mb-2">¿Cómo funciona?</h3>
-                            <p className="text-sm text-gray-600">
+                        <div className="border-t border-gray-200 pt-6 sm:pt-8">
+                            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">¿Cómo funciona?</h3>
+                            <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                                 Una vez registrado, recibirás notificaciones cuando haya búsquedas 
                                 disponibles en tu área. Puedes aceptar las que te interesen y trabajar a tu ritmo.
                             </p>
@@ -310,73 +355,85 @@ function BecomeExpertPage() {
 
                     {/* Columna derecha - Formulario */}
                     <div className="lg:sticky lg:top-8 lg:h-fit">
-                        <div className="bg-white border border-gray-200 shadow-lg rounded-lg p-6">
-                            <div className="mb-6">
+                        <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 lg:p-6 shadow-sm">
+                            {/* Header del formulario */}
+                            <div className="mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-gray-200">
+                                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-1.5">Completa tu Registro</h2>
+                                <p className="text-xs text-gray-600">Solo te tomará unos minutos</p>
+                            </div>
+                            
                                 {/* Indicador de progreso */}
-                                <div className="mt-4">
-                                    <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                                        <span>Progreso</span>
-                                        <span>
+                            <div className="mb-4 sm:mb-6">
+                                <div className="flex items-center justify-between text-xs text-gray-700 mb-2 sm:mb-2.5">
+                                    <span className="font-medium">Progreso</span>
+                                    <span className="font-semibold text-gray-900">
                                             {[
                                                 formData.profilePicture,
                                                 formData.description.length >= 50,
-                                                formData.latitude && formData.longitude && acceptTerms
-                                            ].filter(Boolean).length}/3 completado
+                                            formData.latitude && formData.longitude
+                                        ].filter(Boolean).length}/3
                                         </span>
                                     </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                                         <div 
-                                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
                                             style={{
                                                 width: `${([
                                                     formData.profilePicture,
                                                     formData.description.length >= 50,
-                                                    formData.latitude && formData.longitude && acceptTerms
+                                                formData.latitude && formData.longitude
                                                 ].filter(Boolean).length / 3) * 100}%`
                                             }}
                                         ></div>
-                                    </div>
                         </div>
                     </div>
 
-                            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-4 sm:space-y-6">
+                            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-4 sm:space-y-5">
                                 {/* Paso 1: Foto de perfil */}
                         <div>
-                                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                                        <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
+                                    <div className="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
+                                        <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-semibold transition-all ${
                                             formData.profilePicture 
-                                                ? 'bg-blue-500 text-white' 
-                                                : 'bg-gray-200 text-gray-600'
+                                                ? 'bg-blue-600 text-white' 
+                                                : 'bg-gray-200 text-gray-500'
                                         }`}>
-                                            1
+                                            {formData.profilePicture ? '✓' : '1'}
                                         </div>
-                                        <label className="text-xs sm:text-sm font-medium text-gray-700">
+                                        <label className="text-xs font-semibold text-gray-900">
                                 Foto de Perfil <span className="text-red-500">*</span>
                             </label>
                                     </div>
                             <div
-                                        className="border-2 border-dashed border-gray-300 hover:border-blue-500 transition-colors duration-200 p-3 sm:p-4 text-center cursor-pointer rounded-lg focus:outline-none"
+                                        className={`border-2 border-dashed rounded-lg p-4 sm:p-5 text-center cursor-pointer transition-all ${
+                                            formData.profilePicture 
+                                                ? 'border-blue-200 bg-blue-50/50' 
+                                                : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                                        }`}
                                 onClick={() => fileInputRef.current?.click()}
                             >
                                 {previewUrl ? (
-                                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full overflow-hidden">
+                                            <div className="relative w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-full overflow-hidden">
                                         <img
                                             src={previewUrl}
                                             alt="Preview"
                                             className="w-full h-full object-cover"
                                         />
                                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200">
-                                                    <Upload className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                                    <Upload className="w-3 h-3 text-white" />
                                         </div>
                                     </div>
                                 ) : (
-                                            <div className="space-y-1 sm:space-y-2">
-                                                <Upload className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 mx-auto" />
-                                                <div className="text-xs sm:text-sm text-gray-600">
+                                            <div className="space-y-2">
+                                                <div className="inline-flex p-2 bg-gray-100 rounded-lg">
+                                                    <Upload className="w-5 h-5 text-gray-500" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-medium text-gray-700 mb-0.5">
                                                     Haz clic para subir foto
                                         </div>
-                                        <div className="text-xs text-gray-400">
+                                                    <div className="text-xs text-gray-500">
                                             PNG o JPG (máx. 5MB)
+                                                    </div>
                                         </div>
                                     </div>
                                 )}
@@ -388,66 +445,81 @@ function BecomeExpertPage() {
                                     className="hidden"
                                 />
                             </div>
-                                    <p className="text-xs text-gray-500 mt-1">Esta será la foto que verán todos los usuarios</p>
+                                    <p className="text-xs text-gray-500 mt-1.5 sm:mt-2">
+                                        Esta será la foto que verán todos los usuarios
+                                    </p>
                         </div>
 
                                 {/* Paso 2: Descripción */}
                         <div>
-                                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                                        <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
+                                    <div className="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
+                                        <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-semibold transition-all ${
                                             formData.description.length >= 50 
-                                                ? 'bg-blue-500 text-white' 
-                                                : 'bg-gray-200 text-gray-600'
+                                                ? 'bg-blue-600 text-white' 
+                                                : 'bg-gray-200 text-gray-500'
                                         }`}>
-                                            2
+                                            {formData.description.length >= 50 ? '✓' : '2'}
                                         </div>
-                                        <label className="text-xs sm:text-sm font-medium text-gray-700">
+                                        <label className="text-xs font-semibold text-gray-900">
                                             Descripción de Perfil <span className="text-red-500">*</span>
                             </label>
                                     </div>
                             <textarea
                                 value={formData.description}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 transition-colors duration-200 resize-none"
+                                        className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none text-sm ${
+                                            formData.description.length >= 50 
+                                                ? 'border-blue-200 bg-blue-50/50' 
+                                                : 'border-gray-300'
+                                        }`}
                                 rows={4}
                                         placeholder="Describe tu experiencia y especialidad en vehículos o inmobiliario..."
                                 required
                                 minLength={50}
                             />
-                                    <div className="flex justify-between items-center mt-1">
-                                        <p className="text-xs text-gray-500">Descripción general de tu perfil independiente de tus servicios</p>
-                                        <span className="text-xs text-gray-400">{formData.description.length}/50</span>
+                                    <div className="flex justify-between items-center mt-1.5 sm:mt-2">
+                                        <p className="text-xs text-gray-500">Mínimo 50 caracteres</p>
+                                        <span className={`text-xs font-medium ${
+                                            formData.description.length >= 50 ? 'text-blue-600' : 
+                                            formData.description.length > 0 ? 'text-gray-600' : 'text-gray-400'
+                                        }`}>
+                                            {formData.description.length}/50
+                                        </span>
                                     </div>
                         </div>
 
                                 {/* Paso 3: Ubicación */}
                         <div>
-                                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                                        <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
-                                            formData.latitude && formData.longitude && acceptTerms
-                                                ? 'bg-blue-500 text-white' 
-                                                : 'bg-gray-200 text-gray-600'
+                                    <div className="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
+                                        <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-semibold transition-all ${
+                                            formData.latitude && formData.longitude
+                                                ? 'bg-blue-600 text-white' 
+                                                : 'bg-gray-200 text-gray-500'
                                         }`}>
-                                            3
+                                            {formData.latitude && formData.longitude ? '✓' : '3'}
                                         </div>
-                                        <label className="text-xs sm:text-sm font-medium text-gray-700">
+                                        <label className="text-xs font-semibold text-gray-900">
                                             Área de Trabajo <span className="text-red-500">*</span>
                             </label>
                                     </div>
                                     {/* Buscador de direcciones */}
-                                    <div className="mb-3">
+                                    <div className="mb-2 sm:mb-3">
                                         <input
                                             ref={searchInputRef}
                                             type="text"
-                                            placeholder="Buscar dirección..."
+                                            placeholder="Buscar dirección o ciudad..."
                                             value={searchAddress}
                                             onChange={(e) => setSearchAddress(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 transition-colors duration-200 text-sm"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
                                         />
                                     </div>
 
-                                    <div className="border border-gray-300 rounded-md overflow-hidden">
-                                        <div className="relative h-[200px] sm:h-[250px]">
+                                    <div className={`border-2 rounded-lg overflow-hidden transition-all ${
+                                        formData.latitude && formData.longitude 
+                                            ? 'border-blue-200' 
+                                            : 'border-gray-300'
+                                    }`}>
+                                        <div className="relative h-[180px] sm:h-[200px] lg:h-[220px]">
                                     {!isLoaded ? (
                                         <div className="h-full flex items-center justify-center bg-gray-50">
                                                     <div className="flex items-center gap-2 text-gray-500">
@@ -498,39 +570,105 @@ function BecomeExpertPage() {
                                     )}
                                 </div>
                             </div>
-                                    <p className="text-xs text-gray-500 mt-1">Área donde te encontrarán los usuarios y donde se te encargarán los trabajos de revisión o búsqueda</p>
+                                    <p className="text-xs text-gray-500 mt-1.5 sm:mt-2">
+                                        Área donde te encontrarán los usuarios y donde se te encargarán los trabajos de revisión o búsqueda
+                                    </p>
+                                </div>
+
+                                {/* Paso 4: Disponibilidad horaria (Opcional) */}
+                                <div>
+                                    <div className="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
+                                        <div className="w-6 h-6 rounded flex items-center justify-center text-xs font-semibold bg-gray-200 text-gray-500">
+                                            4
+                                        </div>
+                                        <label className="text-xs font-semibold text-gray-900 flex items-center gap-2">
+                                            <Clock className="w-4 h-4" />
+                                            Disponibilidad Horaria <span className="text-gray-500 font-normal">(Opcional)</span>
+                                        </label>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-3">
+                                        Define los días y horarios en los que estarás disponible para recibir contrataciones.
+                                    </p>
+
+                                    {/* Días de la semana */}
+                                    <div className="space-y-2 mb-4">
+                                        <label className="text-xs font-medium text-gray-700">Días de trabajo</label>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            {VALID_DAYS_OF_WEEK.map(day => (
+                                                <button
+                                                    key={day}
+                                                    type="button"
+                                                    onClick={() => toggleDay(day)}
+                                                    className={`px-3 py-2 text-xs sm:text-sm font-medium rounded-lg border transition-all ${
+                                                        availability.daysOfWeek.includes(day)
+                                                            ? 'bg-blue-600 text-white border-blue-600'
+                                                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300 hover:bg-blue-50'
+                                                    }`}
+                                                >
+                                                    {DAY_NAMES_ES[day as keyof typeof DAY_NAMES_ES]}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Horario */}
+                                    {availability.daysOfWeek.length > 0 && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                                    Hora de inicio
+                                                </label>
+                                                <input
+                                                    type="time"
+                                                    value={availability.startTime}
+                                                    onChange={(e) => setAvailability(prev => ({ ...prev, startTime: e.target.value }))}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                                    Hora de fin
+                                                </label>
+                                                <input
+                                                    type="time"
+                                                    value={availability.endTime}
+                                                    onChange={(e) => setAvailability(prev => ({ ...prev, endTime: e.target.value }))}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                         </div>
 
                                 {/* Casillas de verificación */}
-                                <div className="space-y-3">
-                                    <div className="flex items-start gap-2">
+                                <div className="space-y-2 sm:space-y-2.5 pt-1 sm:pt-2">
+                                    <div className="flex items-start gap-2.5">
                                         <input
                                             type="checkbox"
                                             id="acceptTerms"
                                             checked={acceptTerms}
                                             onChange={(e) => setAcceptTerms(e.target.checked)}
-                                            className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:outline-none"
+                                            className="mt-0.5 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-1 focus:ring-gray-400 cursor-pointer"
                                             required
                                         />
-                                        <label htmlFor="acceptTerms" className="text-xs text-gray-700 leading-relaxed">
+                                        <label htmlFor="acceptTerms" className="text-xs text-gray-600 leading-relaxed cursor-pointer">
                                             Acepto las{' '}
-                                            <a href="/privacy-policy.html" target="_blank" className="text-blue-600 hover:text-blue-800 underline">
+                                            <a href="/privacy-policy.html" target="_blank" className="text-gray-900 hover:underline font-medium">
                                                 condiciones de uso de atrapo.io
                                             </a>
                                             {' '}y confirmo que he leído la política de privacidad
                                         </label>
                                     </div>
 
-                                    <div className="flex items-start gap-2">
+                                    <div className="flex items-start gap-2.5">
                                         <input
                                             type="checkbox"
                                             id="acceptNotifications"
                                             checked={acceptNotifications}
                                             onChange={(e) => setAcceptNotifications(e.target.checked)}
-                                            className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:outline-none"
+                                            className="mt-0.5 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-1 focus:ring-gray-400 cursor-pointer"
                                         />
-                                        <label htmlFor="acceptNotifications" className="text-xs text-gray-700 leading-relaxed flex items-center gap-1">
-                                            <Bell className="w-3 h-3" />
+                                        <label htmlFor="acceptNotifications" className="text-xs text-gray-600 leading-relaxed cursor-pointer">
                                             Acepto recibir notificaciones sobre nuevas búsquedas
                                         </label>
                                     </div>
@@ -538,7 +676,7 @@ function BecomeExpertPage() {
 
                                 {/* Error message */}
                         {error && (
-                                    <div className="bg-red-50 text-red-600 px-3 py-2 border border-red-200 text-sm rounded-md">
+                                    <div className="bg-red-50 text-red-700 px-3 py-2 border border-red-200 rounded text-sm">
                                 {error}
                             </div>
                         )}
@@ -547,17 +685,17 @@ function BecomeExpertPage() {
                         <button
                             type="submit"
                                     disabled={isSubmitting || !formData.profilePicture || formData.description.length < 50 || !acceptTerms}
-                                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium transition-colors duration-200 focus:outline-none"
+                                    className="w-full flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm sm:text-base rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm hover:shadow touch-manipulation"
                         >
                             {isSubmitting ? (
                                 <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            Registrando...
+                                            <span>Registrando...</span>
                                 </>
                             ) : (
                                 <>
                                             <UserPlus className="w-4 h-4" />
-                                            Registrarme
+                                            <span>Completar Registro</span>
                                 </>
                             )}
                         </button>

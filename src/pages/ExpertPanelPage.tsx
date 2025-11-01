@@ -1,6 +1,14 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Separator } from '../components/ui/separator';
+import {
+    Dialog,
+    DialogContent,
+} from '../components/ui/dialog';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
@@ -66,6 +74,7 @@ export function ExpertPanelPage() {
 
     const [activeTab, setActiveTab] = useState<'services' | 'hires'>('services');
     const [hireTab, setHireTab] = useState<'active' | 'inactive'>('active');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [showServiceForm, setShowServiceForm] = useState(false);
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
@@ -653,6 +662,7 @@ export function ExpertPanelPage() {
 
                         <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[calc(100vh-300px)]">
                         <StripeStatusCard
+                        isLoadingOnboarding={isStartingOnboarding || isRestartingOnboarding}
                         onSetupStripe={async () => {
                             console.log('ExpertPanelPage: onSetupStripe called');
                             if (isStartingOnboarding || isRestartingOnboarding) return;
@@ -660,7 +670,7 @@ export function ExpertPanelPage() {
                                 if (stripeStatus?.stripeStatus === 'Rejected') {
                                     await restartAndStartOnboarding();
                                 } else {
-                                    await startOnboarding();
+                                await startOnboarding();
                                 }
                             } catch (error: any) {
                                 console.error('Error starting Stripe onboarding:', error);
@@ -702,77 +712,125 @@ export function ExpertPanelPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <div>
-                {/* Header compacto */}
-                <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between h-14">
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => navigate('/')}
-                                    className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition-colors duration-200"
-                                >
-                                    <ArrowLeft className="w-3.5 h-3.5" />
-                                    <span className="text-sm font-medium">Volver</span>
-                                </button>
-                                <div className="h-4 w-px bg-slate-200"></div>
-                                <div>
-                                    <h1 className="text-base font-semibold text-slate-900">Panel de Experto</h1>
-                                </div>
+        <div className="min-h-screen bg-background flex">
+            {/* Sidebar fijo - Estilo Dashboard-01 */}
+            <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-background border-r border-border transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+                sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+            }`}>
+                <div className="flex flex-col h-full">
+                    {/* Sidebar Header */}
+                    <div className="flex h-16 items-center justify-between border-b border-border px-6">
+                        <h2 className="text-lg font-semibold text-foreground">inspecciono.com</h2>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="lg:hidden h-8 w-8"
+                            onClick={() => setSidebarOpen(false)}
+                        >
+                            <X className="w-4 h-4" />
+                        </Button>
                             </div>
                             
-                            {/* Estadísticas compactas */}
-                            <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="flex items-center gap-1 px-2 py-1 bg-slate-50 rounded-md">
-                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                    <span className="text-xs font-medium text-slate-700">{services.length}</span>
-                                    <span className="text-xs text-slate-500 hidden sm:inline">Servicios</span>
+                    {/* Sidebar Content */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {/* Botón Quick Create */}
+                        <div className="px-2">
+                            <Button 
+                                className="w-full bg-foreground text-background hover:bg-foreground/90 h-10"
+                                onClick={() => setShowServiceForm(true)}
+                            >
+                                Nuevo Servicio
+                            </Button>
                                 </div>
-                                <div className="flex items-center gap-1 px-2 py-1 bg-slate-50 rounded-md">
-                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                                    <span className="text-xs font-medium text-slate-700">{activeHires.length}</span>
-                                    <span className="text-xs text-slate-500 hidden sm:inline">Activos</span>
-                                </div>
-                                <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
-                                <div className="flex items-center gap-2">
-                                    {profile?.profilePictureUrl ? (
+
+                        {/* Navegación */}
+                        <nav className="px-2 space-y-1">
+                            <Button
+                                variant={activeTab === 'services' ? 'secondary' : 'ghost'}
+                                className="w-full justify-start"
+                                onClick={() => setActiveTab('services')}
+                            >
+                                <Package className="w-4 h-4 mr-2" />
+                                Servicios
+                            </Button>
+                            <Button
+                                variant={activeTab === 'hires' ? 'secondary' : 'ghost'}
+                                className="w-full justify-start"
+                                onClick={() => setActiveTab('hires')}
+                            >
+                                <Briefcase className="w-4 h-4 mr-2" />
+                                Contrataciones
+                                {hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0) > 0 && (
+                                    <Badge variant="destructive" className="ml-auto">
+                                        {hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0)}
+                                    </Badge>
+                                )}
+                            </Button>
+                        </nav>
+
+                        <Separator />
+
+                        {/* Perfil compacto */}
+                        {profile && (
+                            <div className="px-2 space-y-2">
+                                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent">
+                                    {profile.profilePictureUrl ? (
                                         <img
                                             src={profile.profilePictureUrl}
                                             alt="Profile"
-                                            className="w-6 h-6 rounded-full object-cover"
+                                            className="w-8 h-8 rounded-full object-cover"
                                         />
                                     ) : (
-                                        <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                                            <User className="w-3 h-3 text-white" />
+                                        <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                                            <User className="w-4 h-4" />
                                         </div>
                                     )}
-                                    <div className="hidden sm:block">
-                                        <p className="text-xs font-medium text-slate-900">{user?.name}</p>
-                                        <p className="text-xs text-slate-500">Experto</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate">{user?.name}</p>
+                                        <p className="text-xs text-muted-foreground truncate">Experto</p>
                                     </div>
                                 </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1 text-xs"
+                                        onClick={() => setShowProfileEditForm(true)}
+                                    >
+                                        <User className="w-3 h-3 mr-1" />
+                                        Editar
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1 text-xs"
+                                        onClick={() => setShowVacationModal(true)}
+                                    >
+                                        {profile.isOnVacation ? (
+                                            <PlaneTakeoff className="w-3 h-3 mr-1" />
+                                        ) : (
+                                            <Plane className="w-3 h-3 mr-1" />
+                                        )}
+                                        {profile.isOnVacation ? 'Activar' : 'Vacaciones'}
+                                    </Button>
                             </div>
                         </div>
-                    </div>
-                </header>
+                        )}
 
-                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
-                    {/* Layout principal - móvil optimizado */}
-                    <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-12 lg:gap-4">
-                        
-                        {/* Información móvil - solo visible en móvil */}
-                        <div className="lg:hidden space-y-3">
-                            {/* Estado de pagos y perfil en una fila */}
-                            <div className="grid grid-cols-2 gap-3">
-                                {/* Estado de pagos compacto */}
-                                <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                    <div className="flex items-center gap-1 mb-1">
-                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        <span className="text-xs text-emerald-600 font-medium">Activo</span>
+                        <Separator />
+
+                        {/* Estado de Pagos compacto */}
+                        <div className="px-2 space-y-2">
+                            <div className="flex items-center justify-between p-2">
+                                <span className="text-xs text-muted-foreground">Estado de Pagos</span>
+                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                                    Activo
+                                </Badge>
                                     </div>
-                                    <p className="text-xs text-slate-500 mb-2">Cuenta verificada</p>
-                                    <button
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-xs"
                                         onClick={async () => {
                                             try {
                                                 await openAccountLink();
@@ -786,72 +844,91 @@ export function ExpertPanelPage() {
                                                 }));
                                             }
                                         }}
-                                        className="w-full px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs rounded transition-colors flex items-center justify-center gap-1 border border-emerald-200"
-                                    >
-                                        <CheckCircle className="w-3 h-3" />
-                                        Panel
-                                    </button>
+                            >
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Acceder al Panel
+                            </Button>
                                 </div>
 
-                                {/* Perfil compacto */}
-                                {profile && (
-                                    <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            {profile.profilePictureUrl ? (
-                                                <img
-                                                    src={profile.profilePictureUrl}
-                                                    alt="Profile"
-                                                    className="w-5 h-5 rounded-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
-                                                    <User className="w-2.5 h-2.5 text-white" />
+                        <Separator />
+
+                        {/* Estadísticas compactas */}
+                        <div className="px-2 space-y-1">
+                            <div className="text-xs font-medium text-muted-foreground px-2 py-1">Estadísticas</div>
+                            <div className="space-y-1">
+                                <div className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-accent">
+                                    <span className="text-sm">Servicios</span>
+                                    <Badge variant="secondary">{services.length}</Badge>
                                                 </div>
-                                            )}
-                                            <span className="text-xs font-semibold text-slate-900">{user?.name}</span>
+                                <div className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-accent">
+                                    <span className="text-sm">Contrataciones</span>
+                                    <Badge variant="secondary">{hires.length}</Badge>
                                         </div>
-                                        <p className="text-xs text-slate-500 mb-2 line-clamp-1">{profile.description}</p>
-                                        <div className="space-y-1.5">
-                                            <button
-                                                onClick={() => setShowProfileEditForm(true)}
-                                                className="w-full px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs rounded transition-colors flex items-center justify-center gap-1 border border-slate-200"
-                                            >
-                                                <User className="w-3 h-3" />
-                                                Editar
-                                            </button>
-                                            <button
-                                                onClick={() => setShowVacationModal(true)}
-                                                className={`w-full px-2 py-1.5 text-xs rounded transition-colors flex items-center justify-center gap-1 border ${
-                                                    profile.isOnVacation 
-                                                        ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200' 
-                                                        : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
-                                                }`}
-                                            >
-                                                {profile.isOnVacation ? (
-                                                    <PlaneTakeoff className="w-3 h-3" />
-                                                ) : (
-                                                    <Plane className="w-3 h-3" />
-                                                )}
-                                                {profile.isOnVacation ? 'Activar' : 'Vacaciones'}
-                                            </button>
+                                <div className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-accent">
+                                    <span className="text-sm">Activos</span>
+                                    <Badge>{activeHires.length}</Badge>
                                         </div>
                                     </div>
-                                )}
-                            </div>
                         </div>
-                        
-                        {/* Sidebar - solo visible en desktop */}
-                        <div className="hidden lg:block lg:col-span-3 space-y-3">
-                            {/* Estado de cuenta de pagos muy discreto */}
-                            <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h3 className="text-xs font-medium text-slate-700">Estado de Pagos</h3>
-                                    <div className="flex items-center gap-1">
+                    </div>
+                </div>
+            </aside>
+
+            {/* Overlay para móvil */}
+            {sidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
+            {/* Contenido principal */}
+            <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
+                {/* Header limpio */}
+                <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                    <div className="flex h-14 items-center gap-4 px-4 sm:px-6">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="lg:hidden"
+                            onClick={() => setSidebarOpen(true)}
+                        >
+                            <Menu className="w-5 h-5" />
+                        </Button>
+                        <div className="flex items-center gap-4 flex-1">
+                            <h1 className="text-lg font-semibold">
+                                {activeTab === 'services' ? 'Servicios' : 'Contrataciones'}
+                            </h1>
+                            </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate('/')}
+                            className="hidden sm:flex"
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Volver
+                        </Button>
+                        </div>
+                </header>
+
+                {/* Main Content */}
+                <main className="flex-1 overflow-y-auto">
+                    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+                        {/* Información móvil - solo visible en móvil */}
+                        <div className="lg:hidden space-y-3">
+                            {/* Estado de pagos y perfil en una fila */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Estado de pagos compacto con Card */}
+                                <Card>
+                                    <CardContent className="p-3 space-y-2">
+                                        <div className="flex items-center gap-1.5">
                                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                        <span className="text-xs text-emerald-600 font-medium">Activo</span>
+                                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-1.5 py-0">
+                                                Activo
+                                            </Badge>
                                     </div>
-                                </div>
-                                <p className="text-xs text-slate-500 mb-3">Cuenta verificada y lista para recibir pagos</p>
+                                        <p className="text-xs text-slate-500">Cuenta verificada</p>
                                 <button
                                     onClick={async () => {
                                         try {
@@ -866,48 +943,49 @@ export function ExpertPanelPage() {
                                             }));
                                         }
                                     }}
-                                    className="w-full px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs rounded-md transition-colors flex items-center justify-center gap-1.5 border border-emerald-200"
+                                            className="w-full px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs rounded-md transition-colors flex items-center justify-center gap-1.5 border border-emerald-200 font-medium"
                                 >
                                     <CheckCircle className="w-3 h-3" />
-                                    Acceder al Panel
+                                            Panel
                                 </button>
-                                <p className="text-xs text-slate-400 mt-2 text-center">ID: acct_1RpcTWJCITS8kRex</p>
-                            </div>
+                                    </CardContent>
+                                </Card>
 
-                            {/* Perfil muy compacto */}
+                                {/* Perfil compacto con Card */}
                             {profile && (
-                                <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                    <div className="flex items-center gap-2 mb-2">
+                                    <Card>
+                                        <CardContent className="p-3 space-y-2">
+                                            <div className="flex items-center gap-2">
                                         {profile.profilePictureUrl ? (
                                             <img
                                                 src={profile.profilePictureUrl}
                                                 alt="Profile"
-                                                className="w-6 h-6 rounded-full object-cover"
+                                                        className="w-8 h-8 rounded-full object-cover border border-slate-200"
                                             />
                                         ) : (
-                                            <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                                                <User className="w-3 h-3 text-white" />
+                                                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center border border-slate-200">
+                                                        <User className="w-4 h-4 text-white" />
                                             </div>
                                         )}
-                                        <div>
-                                            <h3 className="text-xs font-semibold text-slate-900">{user?.name}</h3>
-                                            <span className="inline-flex items-center px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded">
-                                                ✓
-                                            </span>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-semibold text-slate-900 truncate">{user?.name}</p>
+                                                    <Badge variant="outline" className="mt-0.5 bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-1.5 py-0">
+                                                        ✓
+                                                    </Badge>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-slate-500 mb-2 line-clamp-2">{profile.description}</p>
+                                            <p className="text-xs text-slate-500 line-clamp-1">{profile.description}</p>
                                     <div className="space-y-1.5">
                                         <button
                                             onClick={() => setShowProfileEditForm(true)}
-                                            className="w-full px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs rounded transition-colors flex items-center justify-center gap-1 border border-slate-200"
+                                                    className="w-full px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs rounded-md transition-colors flex items-center justify-center gap-1.5 border border-slate-200 font-medium"
                                         >
                                             <User className="w-3 h-3" />
                                             Editar
                                         </button>
                                         <button
                                             onClick={() => setShowVacationModal(true)}
-                                            className={`w-full px-2 py-1.5 text-xs rounded transition-colors flex items-center justify-center gap-1 border ${
+                                                    className={`w-full px-2 py-1.5 text-xs rounded-md transition-colors flex items-center justify-center gap-1.5 border font-medium ${
                                                 profile.isOnVacation 
                                                     ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200' 
                                                     : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
@@ -921,66 +999,58 @@ export function ExpertPanelPage() {
                                             {profile.isOnVacation ? 'Activar' : 'Vacaciones'}
                                         </button>
                                     </div>
-                                </div>
+                                        </CardContent>
+                                    </Card>
                             )}
+                            </div>
                         </div>
 
-                        {/* Contenido principal */}
-                        <div className="lg:col-span-9">
-                            {/* Navegación de pestañas - móvil optimizada */}
-                            <div className="bg-white rounded-lg border border-slate-200 mb-3">
-                                <nav className="flex">
-                                    <button
-                                        onClick={() => setActiveTab('services')}
-                                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 font-medium text-sm transition-colors ${
-                                            activeTab === 'services' 
-                                                ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' 
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        <CheckCircle className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Servicios</span>
-                                        <span className="sm:hidden">Serv.</span>
-                                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
-                                            activeTab === 'services' 
-                                                ? 'bg-blue-100 text-blue-700' 
-                                                : 'bg-slate-100 text-slate-600'
-                                        }`}>
-                                            {services.length}
-                                        </span>
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('hires')}
-                                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 font-medium text-sm transition-colors ${
-                                            activeTab === 'hires' 
-                                                ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' 
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        <User className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Contrataciones</span>
-                                        <span className="sm:hidden">Contr.</span>
-                                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
-                                            activeTab === 'hires' 
-                                                ? 'bg-blue-100 text-blue-700' 
-                                                : 'bg-slate-100 text-slate-600'
-                                        }`}>
-                                            {hires.length}
-                                        </span>
-                                        {(() => {
-                                            const totalUnreadMessages = hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0);
-                                            return totalUnreadMessages > 0 && (
-                                                <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
-                                                    {totalUnreadMessages}
-                                                </span>
-                                            );
-                                        })()}
-                                    </button>
-                                </nav>
+                        {/* Contenido principal - Estilo Dashboard-01 */}
+                        <div className="space-y-6">
+                            {/* Cards de métricas */}
+                            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                                        <CardTitle className="text-xs sm:text-sm font-medium">Total Servicios</CardTitle>
+                                        <Package className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                    </CardHeader>
+                                    <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                                        <div className="text-lg sm:text-2xl font-bold">{services.length}</div>
+                                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
+                                            Servicios activos en tu cuenta
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                                        <CardTitle className="text-xs sm:text-sm font-medium">Contrataciones</CardTitle>
+                                        <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                    </CardHeader>
+                                    <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                                        <div className="text-lg sm:text-2xl font-bold">{hires.length}</div>
+                                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
+                                            Total de contrataciones recibidas
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                                        <CardTitle className="text-xs sm:text-sm font-medium">Activos</CardTitle>
+                                        <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                    </CardHeader>
+                                    <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                                        <div className="text-lg sm:text-2xl font-bold">{activeHires.length}</div>
+                                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
+                                            Contrataciones en curso
+                                        </p>
+                                    </CardContent>
+                                </Card>
                             </div>
 
                             {/* Contenido de pestañas */}
-                            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                            <Card className="border-border">
+                                <CardContent className="p-0">
+                                    {activeTab === 'services' ? (
                                 <ServicesTab
                                     activeTab={activeTab}
                                     services={services}
@@ -1001,6 +1071,7 @@ export function ExpertPanelPage() {
                                     isDeletingService={isDeletingService}
                                     onEditService={handleEditService}
                                 />
+                                    ) : (
                                 <HiresTab
                                     activeTab={activeTab}
                                     hireTab={hireTab}
@@ -1013,9 +1084,12 @@ export function ExpertPanelPage() {
                                     handleViewHire={handleViewHire}
                                     categories={categories}
                                 />
+                                    )}
+                                </CardContent>
+                            </Card>
                             </div>
                         </div>
-                    </div>
+                </main>
                     
                     {/* Formularios modales */}
                     <ServiceForm
@@ -1053,7 +1127,6 @@ export function ExpertPanelPage() {
                             onProfileUpdated={fetchProfile}
                         />
                     )}
-                </div>
             </div>
             
             {/* Modal de estado de Stripe */}
@@ -1069,11 +1142,14 @@ export function ExpertPanelPage() {
                 onAction={modalState.onAction}
             />
             
-            {/* Modal de confirmación de modo vacaciones */}
-            {showVacationModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
-                        <div className="flex items-center gap-3 mb-4">
+            {/* Modal de confirmación de modo vacaciones con Sidebar */}
+            <Dialog open={showVacationModal} onOpenChange={setShowVacationModal}>
+                <DialogContent className="p-0 max-w-4xl h-[80vh] flex flex-col">
+                    <div className="flex flex-1 overflow-hidden">
+                        {/* Sidebar */}
+                        <aside className="w-64 border-r border-border bg-muted/30 flex flex-col">
+                            <div className="p-6 border-b border-border">
+                                <div className="flex items-center gap-3">
                             {profile?.isOnVacation ? (
                                 <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                                     <PlaneTakeoff className="w-5 h-5 text-orange-600" />
@@ -1084,66 +1160,140 @@ export function ExpertPanelPage() {
                                 </div>
                             )}
                             <div>
-                                <h3 className="text-lg font-semibold text-slate-900">
+                                        <h3 className="text-base font-semibold">
                                     {profile?.isOnVacation ? 'Activar cuenta' : 'Modo vacaciones'}
                                 </h3>
-                                <p className="text-sm text-slate-500">
+                                        <p className="text-xs text-muted-foreground">
                                     {profile?.isOnVacation ? 'Volver a recibir contrataciones' : 'Pausar temporalmente'}
                                 </p>
                             </div>
                         </div>
+                            </div>
+                            <div className="flex-1 p-4 space-y-4">
+                                <div>
+                                    <h4 className="text-sm font-medium mb-2">Configuración</h4>
+                                    <div className="space-y-2 text-sm text-muted-foreground">
+                                        <div className="flex items-start gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5"></div>
+                                            <span>Estado de tu perfil</span>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 mt-1.5"></div>
+                                            <span>Visibilidad en búsquedas</span>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 mt-1.5"></div>
+                                            <span>Recepción de contrataciones</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </aside>
                         
-                        <div className="mb-6">
+                        {/* Contenido principal */}
+                        <div className="flex-1 flex flex-col overflow-hidden">
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="max-w-2xl">
+                                    <div className="space-y-4">
                             {profile?.isOnVacation ? (
-                                <div className="space-y-2">
-                                    <p className="text-sm text-slate-600">
+                                            <>
+                                                <div>
+                                                    <h4 className="text-sm font-medium mb-2">¿Qué sucederá?</h4>
+                                                    <p className="text-sm text-muted-foreground">
                                         Al activar tu cuenta, volverás a aparecer en las búsquedas de clientes y podrás recibir nuevas contrataciones.
                                     </p>
-                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                        <p className="text-sm text-green-700 font-medium">✓ Volverás a ser visible para los clientes</p>
                                     </div>
+                                                <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+                                                        <div>
+                                                            <p className="text-sm font-medium text-green-900 dark:text-green-100">Volverás a ser visible</p>
+                                                            <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                                                                Los clientes podrán encontrarte nuevamente en sus búsquedas
+                                                            </p>
                                 </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <p className="text-sm text-slate-600">
+                                                    </div>
+                                                </div>
+                                                <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+                                                        <div>
+                                                            <p className="text-sm font-medium text-green-900 dark:text-green-100">Podrás recibir contrataciones</p>
+                                                            <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                                                                Estarás disponible para nuevos servicios inmediatamente
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div>
+                                                    <h4 className="text-sm font-medium mb-2">¿Qué sucederá?</h4>
+                                                    <p className="text-sm text-muted-foreground">
                                         Al activar el modo vacaciones, tu perfil no aparecerá en las búsquedas de clientes y no recibirás nuevas contrataciones.
                                     </p>
-                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                                        <p className="text-sm text-orange-700 font-medium">⚠️ No aparecerás en búsquedas de clientes</p>
+                                    </div>
+                                                <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-md p-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <Plane className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
+                                                        <div>
+                                                            <p className="text-sm font-medium text-orange-900 dark:text-orange-100">No aparecerás en búsquedas</p>
+                                                            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                                                Los clientes no podrán encontrarte temporalmente
+                                                            </p>
+                                </div>
+                                                    </div>
+                                                </div>
+                                                <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-md p-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <Plane className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
+                                                        <div>
+                                                            <p className="text-sm font-medium text-orange-900 dark:text-orange-100">Pausar nuevas contrataciones</p>
+                                                            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                                                Las contrataciones existentes permanecerán activas
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
-                            )}
                         </div>
                         
-                        <div className="flex gap-3">
-                            <button
+                            {/* Footer con botones */}
+                            <div className="border-t border-border p-6">
+                                <div className="flex justify-end gap-3">
+                                    <Button
+                                        variant="outline"
                                 onClick={() => setShowVacationModal(false)}
-                                className="flex-1 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                             >
                                 Cancelar
-                            </button>
-                            <button
+                                    </Button>
+                                    <Button
                                 onClick={handleVacationModeToggle}
                                 disabled={isToggling}
-                                className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                                    profile?.isOnVacation 
+                                        className={profile?.isOnVacation 
                                         ? 'bg-green-600 hover:bg-green-700' 
                                         : 'bg-orange-600 hover:bg-orange-700'
-                                }`}
+                                        }
                             >
                                 {isToggling ? (
-                                    <div className="flex items-center justify-center gap-2">
-                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                         Procesando...
-                                    </div>
+                                            </>
                                 ) : (
                                     profile?.isOnVacation ? 'Activar cuenta' : 'Activar vacaciones'
                                 )}
-                            </button>
+                                    </Button>
                         </div>
                     </div>
                 </div>
-            )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

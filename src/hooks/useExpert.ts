@@ -2,7 +2,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
-import { ExpertProfileResponse, OnboardingStatusResponse } from '../types/stripe';
+import { ExpertProfileResponse, OnboardingStatusResponse, CurrentExpertAvailabilityDto } from '../types/stripe';
 
 interface ExpertProfile {
     id: number;
@@ -18,6 +18,7 @@ interface ExpertProfile {
     isOnVacation: boolean;
     latitude?: string;
     longitude?: string;
+    currentAvailability?: CurrentExpertAvailabilityDto | null;
 }
 
 interface Search {
@@ -107,7 +108,8 @@ export function useExpert() {
                 createdAt: data.createdAt,
                 isOnVacation: data.isOnVacation || false,
                 latitude: data.latitude,
-                longitude: data.longitude
+                longitude: data.longitude,
+                currentAvailability: data.currentAvailability || null
             };
             
             setProfile(mappedProfile);
@@ -277,13 +279,14 @@ export function useExpert() {
                 console.log('🆕 Iniciando configuración de cuenta Stripe...');
             }
             
+            // No resetear el estado de loading antes de redirigir - se mantendrá visible hasta que se abra Stripe
             window.location.href = url;
         } catch (error) {
             console.error('❌ useExpert: Error starting onboarding:', error);
-            throw error;
-        } finally {
             setIsStartingOnboarding(false);
+            throw error;
         }
+        // No usar finally aquí - queremos mantener el loading activo durante la redirección
     };
 
     // Helper para parsear errores del backend y devolver mensaje claro
@@ -320,10 +323,14 @@ export function useExpert() {
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             });
 
+            // No resetear el estado de loading antes de redirigir - se mantendrá visible hasta que se abra Stripe
             window.location.href = url;
-        } finally {
+        } catch (error) {
+            // Solo resetear el estado si hay un error
             setIsStartingOnboarding(false);
+            throw error;
         }
+        // No usar finally aquí - queremos mantener el loading activo durante la redirección
     };
 
     const checkOnboardingStatus = async (force = false) => {
