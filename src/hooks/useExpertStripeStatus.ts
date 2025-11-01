@@ -40,7 +40,7 @@ export interface StatusInfo {
     bgColor: string;
 }
 
-const getStatusInfo = (status: string, rejectionReason?: string, stripeStatusDetails?: string | null): StatusInfo => {
+const getStatusInfo = (status: string, rejectionReason?: string, stripeStatusDetails?: string | null, canRetryOnboarding?: boolean): StatusInfo => {
     const getRejectionMessage = (reason: string) => {
         switch (reason) {
             case "rejected.fraud":
@@ -94,12 +94,26 @@ const getStatusInfo = (status: string, rejectionReason?: string, stripeStatusDet
             };
         
         case STRIPE_STATUS.REJECTED:
+            // Si canRetryOnboarding es false, no mostrar botón de reintentar
+            const cannotRetry = canRetryOnboarding === false;
+            let rejectedMessage = "Tu cuenta de pagos fue rechazada por Stripe.";
+            
+            // Agregar motivo del rechazo si está disponible
+            if (rejectionReason) {
+                rejectedMessage += `\n${getRejectionMessage(rejectionReason)}`;
+            }
+            
+            // Si no puede reintentar, agregar mensaje de contacto con soporte
+            if (cannotRetry) {
+                rejectedMessage += "\nPor favor, contacta al soporte técnico para revisar tu situación.";
+            }
+            
             return {
                 canCreateServices: false,
-                canRetry: true,
-                message: getMessage(rejectionReason ? getRejectionMessage(rejectionReason) : "Tu solicitud de cuenta de pagos fue rechazada. Por favor, revisa la información proporcionada e intenta nuevamente."),
-                action: "retry",
-                buttonText: "Reintentar Solicitud",
+                canRetry: canRetryOnboarding !== false, // false solo si explícitamente es false
+                message: getMessage(rejectedMessage),
+                action: cannotRetry ? "contact" : "retry",
+                buttonText: cannotRetry ? "Contactar Soporte" : "Reintentar Solicitud",
                 color: "#ef4444",
                 bgColor: "#fef2f2"
             };
@@ -415,7 +429,7 @@ export const useExpertStripeStatus = () => {
         error,
         refetch: () => fetchStatus(true),
         syncStatus,
-        statusInfo: status ? getStatusInfo(status.stripeStatus, status.rejectionReason || undefined, status.stripeStatusDetails) : null,
+        statusInfo: status ? getStatusInfo(status.stripeStatus, status.rejectionReason || undefined, status.stripeStatusDetails, status.canRetryOnboarding) : null,
         isPolling
     };
 };
@@ -433,7 +447,7 @@ export const validateBeforeCreatingService = async (cachedStatus?: ExpertStatusR
         }
         
         if (!status.canCreateServices) {
-            const statusInfo = getStatusInfo(status.stripeStatus, status.rejectionReason || undefined, status.stripeStatusDetails);
+            const statusInfo = getStatusInfo(status.stripeStatus, status.rejectionReason || undefined, status.stripeStatusDetails, status.canRetryOnboarding);
             
             // Disparar evento para mostrar modal de estado
             window.dispatchEvent(new CustomEvent('showStripeStatusModal', {
@@ -466,7 +480,7 @@ export const validateBeforeCreatingService = async (cachedStatus?: ExpertStatusR
 // Función para manejar errores específicos de Stripe
 export const handleStripeServiceError = (error: any) => {
     if (error.stripeStatus) {
-        const statusInfo = getStatusInfo(error.stripeStatus);
+        const statusInfo = getStatusInfo(error.stripeStatus, error.rejectionReason, error.stripeStatusDetails, error.canRetryOnboarding);
         
         window.dispatchEvent(new CustomEvent('showStripeStatusModal', {
             detail: {

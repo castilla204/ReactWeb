@@ -1,7 +1,18 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { CheckCircle, Loader2, XCircle, Upload, FileText, Video } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Upload, FileText, Video, X } from 'lucide-react';
 import { useDeliverableTypes } from '../../hooks/useDeliverableTypes';
 import { DeliverableType } from '../../types/deliverable';
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerClose,
+} from '../ui/drawer';
+import { Button } from '../ui/button';
+import { Label } from '../ui/label';
+import { Separator } from '../ui/separator';
+import { Badge } from '../ui/badge';
 
 interface ServiceFormProps {
     showServiceForm: boolean;
@@ -132,8 +143,6 @@ export function ServiceForm({
         }
     }, [showServiceForm, editingService]);
 
-    if (!showServiceForm) return null;
-
     const handleCategorySelect = (id: string) => {
         const newSelected = selectedCategoryIds.includes(id)
             ? selectedCategoryIds.filter(catId => catId !== id)
@@ -191,317 +200,358 @@ export function ServiceForm({
         return getCurrentExistingImages().length + selectedImages.length;
     };
 
-    return (
-        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 p-2 sm:p-4 pt-12 sm:pt-4">
-            <div className="bg-white rounded-xl pt-6 px-4 pb-4 sm:p-6 lg:p-8 max-w-4xl w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all duration-300 ease-in-out grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mt-6 sm:mt-0">
-                <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 border-b pb-2">
-                        {editingService ? 'Editar Servicio' : 'Nuevo Servicio de Búsqueda'}
-                    </h3>
-                    <div className="space-y-4 sm:space-y-6">
-                        <div>
-                            <label className="block text-xs font-normal text-gray-500 mb-2">Categorías</label>
-                            <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2">
-                                {categories?.map(category => (
-                                    <button
-                                        key={category.id}
+    // Función para renderizar el contenido del formulario (reutilizable)
+    const renderFormContent = () => (
+        <>
+            <div>
+                <div className="space-y-6">
+                    <div>
+                        <Label className="text-sm font-medium mb-3 block">Categorías</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {categories?.map(category => (
+                                <Button
+                                    key={category.id}
+                                    type="button"
+                                    variant={selectedCategoryIds.includes(category.id.toString()) ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => handleCategorySelect(category.id.toString())}
+                                    className={selectedCategoryIds.includes(category.id.toString())
+                                        ? ''
+                                        : 'hover:bg-accent'
+                                    }
+                                >
+                                    {category.name}
+                                </Button>
+                            ))}
+                        </div>
+                        {formErrors.categoryId && (
+                            <p className="mt-2 text-sm text-destructive">{formErrors.categoryId}</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <Label className="text-sm font-medium mb-3 block">Tipo de Servicio</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {isLoadingServiceTypes ? (
+                                <span className="text-sm text-muted-foreground">Cargando...</span>
+                            ) : Array.isArray(serviceTypes) ? (
+                                serviceTypes.map(serviceType => (
+                                    <Button
+                                        key={serviceType.id}
                                         type="button"
-                                        onClick={() => handleCategorySelect(category.id.toString())}
-                                        className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 ${selectedCategoryIds.includes(category.id.toString())
-                                                ? 'bg-green-500 text-white'
-                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
+                                        variant={selectedServiceTypeIds.includes(serviceType.id.toString()) ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => handleServiceTypeSelect(serviceType.id.toString())}
+                                        className={selectedServiceTypeIds.includes(serviceType.id.toString())
+                                            ? ''
+                                            : 'hover:bg-accent'
+                                        }
                                     >
-                                        {category.name}
-                                    </button>
-                                ))}
-                            </div>
-                            {formErrors.categoryId && (
-                                <p className="mt-1 text-xs text-red-500">{formErrors.categoryId}</p>
+                                        {serviceType.name}
+                                    </Button>
+                                ))
+                            ) : (
+                                <span className="text-sm text-destructive">Error al cargar tipos de servicio</span>
                             )}
                         </div>
+                        {formErrors.serviceTypeId && (
+                            <p className="mt-2 text-sm text-destructive">{formErrors.serviceTypeId}</p>
+                        )}
+                    </div>
 
-                        <div>
-                            <label className="block text-xs font-normal text-gray-500 mb-2">Tipo de Servicio</label>
-                            <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2">
-                                {isLoadingServiceTypes ? (
-                                    <span className="text-sm text-gray-500">Cargando...</span>
-                                ) : Array.isArray(serviceTypes) ? (
-                                    serviceTypes.map(serviceType => (
-                                        <button
-                                            key={serviceType.id}
-                                            type="button"
-                                            onClick={() => handleServiceTypeSelect(serviceType.id.toString())}
-                                            className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 ${selectedServiceTypeIds.includes(serviceType.id.toString())
-                                                    ? 'bg-purple-500 text-white'
-                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                                }`}
-                                        >
-                                            {serviceType.name}
-                                        </button>
-                                    ))
-                                ) : (
-                                    <span className="text-sm text-red-500">Error al cargar tipos de servicio</span>
-                                )}
-                            </div>
-                            {formErrors.serviceTypeId && (
-                                <p className="mt-1 text-xs text-red-500">{formErrors.serviceTypeId}</p>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                            <div>
-                                <label className="block text-xs font-normal text-gray-500 mb-2">Precio (€)</label>
-                                <input
-                                    type="number"
-                                    value={formData.price}
-                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                    className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-gray-300 focus:border-gray-400 focus:outline-none transition-colors ${formErrors.price ? 'border-red-300' : 'border-gray-200 bg-gray-50/50'
-                                        }`}
-                                    placeholder="0.00"
-                                    step="0.01"
-                                    required
-                                />
-                                {formErrors.price && <p className="mt-1 text-xs text-red-500">{formErrors.price}</p>}
-                            </div>
-                            {parseInt(formData.serviceTypeId) === 1 && (
-                                <div>
-                                    <label className="block text-xs font-normal text-gray-500 mb-2">Duración (horas)</label>
-                                    <input
-                                        type="number"
-                                        value={formData.durationInHours}
-                                        onChange={(e) => setFormData({ ...formData, durationInHours: e.target.value })}
-                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-gray-300 focus:border-gray-400 focus:outline-none transition-colors ${formErrors.durationInHours ? 'border-red-300' : 'border-gray-200 bg-gray-50/50'
-                                            }`}
-                                        min="1"
-                                        required
-                                    />
-                                    {formErrors.durationInHours && (
-                                        <p className="mt-1 text-xs text-red-500">{formErrors.durationInHours}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-normal text-gray-500 mb-2">Condiciones</label>
-                            <textarea
-                                value={formData.conditions}
-                                onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-gray-300 focus:border-gray-400 focus:outline-none transition-colors resize-y ${formErrors.conditions ? 'border-red-300' : 'border-gray-200 bg-gray-50/50'
-                                    }`}
-                                rows={4}
-                                placeholder="Describe las condiciones de tu servicio..."
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="price">Precio (€)</Label>
+                            <input
+                                id="price"
+                                type="number"
+                                value={formData.price}
+                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                                    formErrors.price ? 'border-destructive' : ''
+                                }`}
+                                placeholder="0.00"
+                                step="0.01"
                                 required
                             />
-                            {formErrors.conditions && (
-                                <p className="mt-1 text-xs text-red-500">{formErrors.conditions}</p>
-                            )}
+                            {formErrors.price && <p className="text-sm text-destructive">{formErrors.price}</p>}
                         </div>
-
-                        {formErrors.general && (
-                            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm">
-                                {formErrors.general}
+                        {parseInt(formData.serviceTypeId) === 1 && (
+                            <div className="space-y-2">
+                                <Label htmlFor="duration">Duración (horas)</Label>
+                                <input
+                                    id="duration"
+                                    type="number"
+                                    value={formData.durationInHours}
+                                    onChange={(e) => setFormData({ ...formData, durationInHours: e.target.value })}
+                                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                                        formErrors.durationInHours ? 'border-destructive' : ''
+                                    }`}
+                                    min="1"
+                                    required
+                                />
+                                {formErrors.durationInHours && (
+                                    <p className="text-sm text-destructive">{formErrors.durationInHours}</p>
+                                )}
                             </div>
                         )}
                     </div>
-                </div>
-                <div className="space-y-4 lg:border-l lg:border-gray-200 lg:pl-6">
-                    <label className="block text-xs font-normal text-gray-500 mb-2">Imágenes</label>
-                    <div className="space-y-4">
-                        <div
-                            className="border-2 border-dashed border-gray-200 rounded-lg p-4 sm:p-6 text-center hover:border-gray-300 transition-all bg-gray-50/30 cursor-pointer"
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-gray-300 mx-auto mb-2" />
-                            <p className="text-xs text-gray-500">Haz clic para subir imágenes</p>
-                            <p className="text-xs text-gray-400 mt-1">PNG o JPG (máx. 5MB)</p>
-                            <input
-                                id="image-input"
-                                type="file"
-                                accept="image/jpeg,image/png"
-                                multiple
-                                onChange={handleImageSelect}
-                                className="hidden"
-                                ref={fileInputRef}
-                            />
-                        </div>
-                        {formErrors.images && (
-                            <p className="mt-1 text-xs text-red-500">{formErrors.images}</p>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="conditions">Condiciones</Label>
+                        <textarea
+                            id="conditions"
+                            value={formData.conditions}
+                            onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
+                            className={`flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y ${
+                                formErrors.conditions ? 'border-destructive' : ''
+                            }`}
+                            rows={4}
+                            placeholder="Describe las condiciones de tu servicio..."
+                            required
+                        />
+                        {formErrors.conditions && (
+                            <p className="text-sm text-destructive">{formErrors.conditions}</p>
                         )}
-                        
-                        {/* Sistema unificado de imágenes */}
-                        {(getCurrentExistingImages().length > 0 || selectedImages.length > 0) && (
-                            <div className="space-y-3">
-                                <p className="text-xs font-normal text-gray-500">
-                                    Imágenes del servicio ({getTotalImagesCount()})
-                                </p>
-                                {/* Mensaje informativo cuando hay cambios */}
-                                {(getCurrentExistingImages().length !== (editingService?.imageUrls?.length || 0) || selectedImages.length > 0) && editingService && (
-                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
-                                        <div className="flex items-start gap-2">
-                                            <div className="text-amber-600 mt-0.5">⚠️</div>
-                                            <div className="text-sm text-amber-800">
-                                                <p className="font-medium mb-1">Cambios en las imágenes:</p>
-                                                {selectedImages.length > 0 ? (
-                                                    <p>Las nuevas imágenes reemplazarán todas las existentes.</p>
-                                                ) : (
-                                                    <p>Se eliminarán las imágenes seleccionadas.</p>
-                                                )}
-                                            </div>
+                    </div>
+
+                    {formErrors.general && (
+                        <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm border border-destructive/20">
+                            {formErrors.general}
+                        </div>
+                    )}
+                </div>
+            </div>
+            <div className="space-y-6 lg:border-l lg:border-border lg:pl-6">
+                <div className="space-y-2">
+                    <Label>Imágenes</Label>
+                    <div
+                        className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors bg-muted/30 cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm font-medium text-foreground">Haz clic para subir imágenes</p>
+                        <p className="text-xs text-muted-foreground mt-1">PNG o JPG (máx. 5MB)</p>
+                        <input
+                            id="image-input"
+                            type="file"
+                            accept="image/jpeg,image/png"
+                            multiple
+                            onChange={handleImageSelect}
+                            className="hidden"
+                            ref={fileInputRef}
+                        />
+                    </div>
+                    {formErrors.images && (
+                        <p className="text-sm text-destructive">{formErrors.images}</p>
+                    )}
+                    
+                    {/* Sistema unificado de imágenes */}
+                    {(getCurrentExistingImages().length > 0 || selectedImages.length > 0) && (
+                        <div className="space-y-3">
+                            <p className="text-sm font-medium text-muted-foreground">
+                                Imágenes del servicio ({getTotalImagesCount()})
+                            </p>
+                            {/* Mensaje informativo cuando hay cambios */}
+                            {(getCurrentExistingImages().length !== (editingService?.imageUrls?.length || 0) || selectedImages.length > 0) && editingService && (
+                                <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md p-3">
+                                    <div className="flex items-start gap-2">
+                                        <div className="text-amber-600 dark:text-amber-400 mt-0.5">⚠️</div>
+                                        <div className="text-sm text-amber-800 dark:text-amber-200">
+                                            <p className="font-medium mb-1">Cambios en las imágenes:</p>
+                                            {selectedImages.length > 0 ? (
+                                                <p>Las nuevas imágenes reemplazarán todas las existentes.</p>
+                                            ) : (
+                                                <p>Se eliminarán las imágenes seleccionadas.</p>
+                                            )}
                                         </div>
                                     </div>
-                                )}
-                                
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                                    {/* Imágenes existentes */}
-                                    {getCurrentExistingImages().map((imageUrl, index) => (
-                                        <div key={`existing-${index}`} className="relative group">
-                                            <img
-                                                src={imageUrl}
-                                                alt={`Imagen ${index + 1}`}
-                                                className="w-full h-20 sm:h-24 object-cover rounded-lg border border-gray-200 shadow-sm group-hover:shadow-md transition-shadow"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => removeExistingImage(index)}
-                                                className="absolute -top-1 -right-1 bg-white shadow-md text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-full p-1 transition-all duration-200 opacity-0 group-hover:opacity-100"
-                                            >
-                                                <XCircle className="w-4 h-4" />
-                                            </button>
-                                            <div className="absolute bottom-1 left-1 bg-blue-500/90 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-full">
-                                                Actual
-                                            </div>
-                                        </div>
-                                    ))}
-                                    
-                                    {/* Imágenes nuevas */}
-                                    {selectedImages.map((image, index) => (
-                                        <div key={`new-${index}`} className="relative group">
-                                            <img
-                                                src={URL.createObjectURL(image)}
-                                                alt={`Nueva imagen ${index + 1}`}
-                                                className="w-full h-20 sm:h-24 object-cover rounded-lg border border-green-200 shadow-sm group-hover:shadow-md transition-shadow"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => removeImage(index)}
-                                                className="absolute -top-1 -right-1 bg-white shadow-md text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-full p-1 transition-all duration-200 opacity-0 group-hover:opacity-100"
-                                            >
-                                                <XCircle className="w-4 h-4" />
-                                            </button>
-                                            <div className="absolute bottom-1 left-1 bg-green-500/90 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-full">
-                                                Nueva
-                                            </div>
-                                        </div>
-                                    ))}
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Sección de Tipos de Entregables */}
-                <div className="col-span-1 lg:col-span-2">
-                    <div>
-                        <label className="block text-xs font-normal text-gray-500 mb-2">
-                            Tipos de Informes a Entregar
-                        </label>
-                        {isLoadingDeliverableTypes ? (
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Cargando tipos de entregables...
-                            </div>
-                        ) : deliverableTypesError ? (
-                            <div className="text-sm text-red-500">
-                                Error cargando tipos de entregables: {deliverableTypesError.message}
-                            </div>
-                        ) : deliverableTypes && deliverableTypes.length > 0 ? (
-                            <div className="space-y-3">
-                                {deliverableTypes.map((deliverableType) => {
-                                    const isSelected = formData.selectedDeliverableTypes.includes(deliverableType.id);
-                                    const isPdf = deliverableType.name === 'PDF';
-                                    const isRequired = deliverableType.isRequired || isPdf; // PDF siempre es obligatorio
-                                    
-                                    console.log(`🔍 Rendering deliverableType ${deliverableType.id} (${deliverableType.name}):`, {
-                                        isSelected,
-                                        isRequired,
-                                        isPdf,
-                                        selectedDeliverableTypes: formData.selectedDeliverableTypes
-                                    });
-                                    
-                                    return (
-                                        <div
-                                            key={deliverableType.id}
-                                            className={`p-3 rounded-lg border transition-all duration-200 ${
-                                                isSelected
-                                                    ? 'border-blue-200 bg-blue-50'
-                                                    : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
-                                            } ${isPdf ? 'cursor-not-allowed opacity-75 bg-red-50 border-red-200' : 'cursor-pointer'}`}
-                                            onClick={() => !isPdf && handleDeliverableTypeSelect(deliverableType.id)}
+                            )}
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Imágenes existentes */}
+                                {getCurrentExistingImages().map((imageUrl, index) => (
+                                    <div key={`existing-${index}`} className="relative group">
+                                        <img
+                                            src={imageUrl}
+                                            alt={`Imagen ${index + 1}`}
+                                            className="w-full h-24 object-cover rounded-md border border-border shadow-sm group-hover:shadow-md transition-shadow"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            onClick={() => removeExistingImage(index)}
+                                            className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
-                                            <div className="flex items-start gap-3">
-                                                <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                                                    isSelected
-                                                        ? isPdf 
-                                                            ? 'border-red-500 bg-red-500'
-                                                            : 'border-blue-500 bg-blue-500'
-                                                        : 'border-gray-300'
-                                                }`}>
-                                                    {isSelected && (
-                                                        <CheckCircle className="w-3 h-3 text-white" />
-                                                    )}
-                                                </div>
-                                                
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        {isPdf ? (
-                                                            <FileText className="w-4 h-4 text-red-500" />
-                                                        ) : (
-                                                            <Video className="w-4 h-4 text-blue-500" />
-                                                        )}
-                                                        <span className={`text-sm font-medium ${
-                                                            isSelected ? (isPdf ? 'text-red-900' : 'text-blue-900') : 'text-gray-900'
-                                                        }`}>
-                                                            {deliverableType.displayName}
-                                                        </span>
-                                                        {isPdf ? (
-                                                            <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">
-                                                                Siempre Incluido
-                                                            </span>
-                                                        ) : isRequired && (
-                                                            <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
-                                                                Obligatorio
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <p className={`text-xs ${
-                                                        isSelected ? (isPdf ? 'text-red-700' : 'text-blue-700') : 'text-gray-600'
-                                                    }`}>
-                                                        {isPdf ? 'El informe en PDF siempre se incluye en todos los servicios' : deliverableType.description}
-                                                    </p>
-                                                </div>
-                                            </div>
+                                            <X className="w-3 h-3" />
+                                        </Button>
+                                        <div className="absolute bottom-1 left-1 bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                                            Actual
                                         </div>
-                                    );
-                                })}
+                                    </div>
+                                ))}
+                                
+                                {/* Imágenes nuevas */}
+                                {selectedImages.map((image, index) => (
+                                    <div key={`new-${index}`} className="relative group">
+                                        <img
+                                            src={URL.createObjectURL(image)}
+                                            alt={`Nueva imagen ${index + 1}`}
+                                            className="w-full h-24 object-cover rounded-md border border-border shadow-sm group-hover:shadow-md transition-shadow"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            onClick={() => removeImage(index)}
+                                            className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </Button>
+                                        <div className="absolute bottom-1 left-1 bg-emerald-500/90 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-full">
+                                            Nueva
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        ) : (
-                            <div className="text-sm text-yellow-600">
-                                No se encontraron tipos de entregables disponibles
-                            </div>
-                        )}
-                        {formErrors.selectedDeliverableTypes && (
-                            <p className="mt-1 text-xs text-red-500">{formErrors.selectedDeliverableTypes}</p>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
-                
-                {/* Botones de acción al final del modal */}
-                <div className="col-span-1 lg:col-span-2 border-t border-gray-200 pt-4 mt-6">
-                    <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4">
-                        <button
+            </div>
+            <div className="col-span-1 lg:col-span-2 space-y-6">
+                <div>
+                    <Label className="text-sm font-medium mb-3 block">
+                        Tipos de Informes a Entregar
+                    </Label>
+                    {isLoadingDeliverableTypes ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Cargando tipos de entregables...
+                        </div>
+                    ) : deliverableTypesError ? (
+                        <div className="text-sm text-destructive">
+                            Error cargando tipos de entregables: {deliverableTypesError.message}
+                        </div>
+                    ) : deliverableTypes && deliverableTypes.length > 0 ? (
+                        <div className="space-y-2">
+                            {deliverableTypes.map((deliverableType) => {
+                                const isSelected = formData.selectedDeliverableTypes.includes(deliverableType.id);
+                                const isPdf = deliverableType.name === 'PDF';
+                                const isRequired = deliverableType.isRequired || isPdf;
+                                
+                                return (
+                                    <div
+                                        key={deliverableType.id}
+                                        className={`flex items-start gap-3 p-3 rounded-md border transition-all ${
+                                            isSelected
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-border bg-muted/30 hover:bg-muted/50'
+                                        } ${isPdf ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
+                                        onClick={() => !isPdf && handleDeliverableTypeSelect(deliverableType.id)}
+                                    >
+                                        <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors mt-0.5 ${
+                                            isSelected
+                                                ? isPdf 
+                                                    ? 'border-destructive bg-destructive'
+                                                    : 'border-primary bg-primary'
+                                                : 'border-muted-foreground/25'
+                                        }`}>
+                                            {isSelected && (
+                                                <CheckCircle className="w-3 h-3 text-primary-foreground" />
+                                            )}
+                                        </div>
+                                        
+                                        <div className="flex-1 min-w-0 space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                {isPdf ? (
+                                                    <FileText className="w-4 h-4 text-destructive" />
+                                                ) : (
+                                                    <Video className="w-4 h-4 text-primary" />
+                                                )}
+                                                <span className="text-sm font-medium">
+                                                    {deliverableType.displayName}
+                                                </span>
+                                                {isPdf && (
+                                                    <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-xs">
+                                                        Siempre Incluido
+                                                    </Badge>
+                                                )}
+                                                {!isPdf && isRequired && (
+                                                    <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-xs">
+                                                        Obligatorio
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                {isPdf ? 'El informe en PDF siempre se incluye en todos los servicios' : deliverableType.description}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="text-sm text-muted-foreground">
+                            No se encontraron tipos de entregables disponibles
+                        </div>
+                    )}
+                    {formErrors.selectedDeliverableTypes && (
+                        <p className="mt-2 text-sm text-destructive">{formErrors.selectedDeliverableTypes}</p>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+
+    // Prevenir scroll del body cuando el drawer está abierto
+    useEffect(() => {
+        if (showServiceForm) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [showServiceForm]);
+
+    // Usar Drawer en ambos casos, como en el ejemplo de shadcn/ui
+
+    return (
+        <Drawer 
+            open={showServiceForm} 
+            onOpenChange={setShowServiceForm}
+        >
+            <DrawerContent className="max-h-[96vh] flex flex-col h-[96vh]">
+                <div className="mx-auto w-full max-w-7xl flex flex-col h-full max-h-[96vh]">
+                    <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
+                        <div className="flex items-center justify-between">
+                            <DrawerTitle className="text-lg sm:text-xl font-semibold">
+                                {editingService ? 'Editar Servicio' : 'Nuevo Servicio de Búsqueda'}
+                            </DrawerTitle>
+                            <DrawerClose asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </DrawerClose>
+                        </div>
+                    </DrawerHeader>
+                    {/* Contenido scrollable */}
+                    <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                            {renderFormContent()}
+                        </div>
+                    </div>
+
+                    <Separator className="flex-shrink-0" />
+
+                    {/* Botones de acción - Fijos en la parte inferior */}
+                    <div className="px-4 sm:px-6 pt-3 pb-4 sm:py-4 bg-background border-t border-border flex-shrink-0 flex flex-row justify-end gap-3">
+                        <Button
                             type="button"
+                            variant="outline"
                             onClick={() => {
                                 setShowServiceForm(false);
                                 setSelectedImages([]);
@@ -509,11 +559,11 @@ export function ServiceForm({
                                     fileInputRef.current.value = '';
                                 }
                             }}
-                            className="w-full sm:w-auto px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 hover:bg-gray-50 transition-colors font-medium rounded-lg"
+                            className="flex-1 md:flex-none md:w-auto"
                         >
                             Cancelar
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             onClick={(e) => {
                                 e.preventDefault();
                                 if (editingService) {
@@ -523,23 +573,23 @@ export function ServiceForm({
                                 }
                             }}
                             disabled={(editingService ? isUpdatingService : isCreatingService) || isLoadingServiceTypes}
-                            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white border border-blue-700 hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                            className="flex-1 md:flex-none md:w-auto"
                         >
                             {(editingService ? isUpdatingService : isCreatingService) ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                     {editingService ? 'Actualizando...' : 'Creando...'}
                                 </>
                             ) : (
                                 <>
-                                    <CheckCircle className="w-4 h-4" />
+                                    <CheckCircle className="w-4 h-4 mr-2" />
                                     {editingService ? 'Actualizar Servicio' : 'Crear Servicio'}
                                 </>
                             )}
-                        </button>
+                        </Button>
                     </div>
                 </div>
-            </div>
-        </div>
+            </DrawerContent>
+        </Drawer>
     );
 }

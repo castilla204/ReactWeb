@@ -4,12 +4,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { setAuthToken } from '../lib/auth';
 import { BecomeExpertResponse } from '../types/stripe';
 import { API_CONFIG } from '../config/api';
+import { AvailabilityFormData } from './useExpertProfile';
 
 interface FormData {
     description: string;
     profilePicture: File | null;
     latitude: string;
     longitude: string;
+    availability?: AvailabilityFormData;
 }
 
 interface UseBecomeExpertResult {
@@ -32,6 +34,7 @@ export function useBecomeExpert(): UseBecomeExpertResult {
         profilePicture: null,
         latitude: '',
         longitude: '',
+        availability: undefined,
     });
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,11 +115,21 @@ export function useBecomeExpert(): UseBecomeExpertResult {
             data.append('Latitude', formData.latitude);
             data.append('Longitude', formData.longitude);
 
+            // Incluir disponibilidad si está presente
+            if (formData.availability && formData.availability.daysOfWeek.length > 0) {
+                formData.availability.daysOfWeek.forEach(day => {
+                    data.append('AvailabilityDaysOfWeek', day);
+                });
+                data.append('AvailabilityStartTime', formData.availability.startTime);
+                data.append('AvailabilityEndTime', formData.availability.endTime);
+            }
+
             console.log('Enviando datos:', {
                 description: formData.description.trim(),
                 profilePicture: formData.profilePicture.name,
                 latitude: formData.latitude,
-                longitude: formData.longitude
+                longitude: formData.longitude,
+                availability: formData.availability
             });
 
             const response = await fetch(`${API_CONFIG.baseUrl}/api/User/become-expert`, {
