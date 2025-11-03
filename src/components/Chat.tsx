@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-import { Send, Smile, Paperclip, MapPin, Download } from 'lucide-react';
+import { Send, Smile, Paperclip, MapPin, Download, MessageCircle, X, Loader2 } from 'lucide-react';
+import { ScrollArea } from './ui/scroll-area';
+import { Card } from './ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Button } from './ui/button';
 import { NotificationType } from './Notification';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
@@ -356,132 +360,213 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
     }, []) || [];
 
     return (
-        <div className="relative flex flex-col h-full bg-gray-50">
+        <div className="relative flex flex-col h-full bg-background divide-y divide-border/50">
             {/* Header - Hidden on mobile (info shown in parent header) */}
             {!hideHeader && (
-                <div className="hidden lg:block bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
+                <div className="hidden lg:flex bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden">
-                        {getAvatarImage('other') ? (
-                            <img 
-                                src={getAvatarImage('other')} 
+                        <Avatar className="h-10 w-10 border-2 border-border">
+                            <AvatarImage 
+                                src={getAvatarImage('other') || undefined} 
                                 alt="Avatar"
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                    // Fallback to initials if image fails to load
-                                    (e.currentTarget as HTMLImageElement).style.display = 'none';
-                                    ((e.currentTarget.nextElementSibling as HTMLElement)).style.display = 'flex';
-                                }}
+                                className="object-cover"
                             />
-                        ) : null}
-                        <div className={`w-full h-full flex items-center justify-center text-white font-medium ${getAvatarColor('other')} ${getAvatarImage('other') ? 'hidden' : ''}`}>
+                            <AvatarFallback className={`${getAvatarColor('other')} text-white font-semibold`}>
                             {getAvatarInitials('other')}
-                        </div>
-                    </div>
+                            </AvatarFallback>
+                        </Avatar>
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
+                            <h3 className="text-base font-semibold text-foreground">
                             {isClient ? (expertData?.name || 'Experto') : 'Cliente'}
                         </h3>
-                        {/* Removed "En línea" status */}
+                            <p className="text-xs text-muted-foreground">Conversación activa</p>
                     </div>
                 </div>
             </div>
             )}
 
             {/* Messages Container - Fixed height with internal scroll */}
-            <div className="h-[calc(100vh-400px)] lg:h-[calc(100vh-350px)] overflow-y-auto px-4 py-4 lg:px-6 space-y-6 pb-24 lg:pb-32" data-chat-messages>
+            <ScrollArea className="h-[calc(100vh-400px)] lg:h-[calc(100vh-350px)] flex-1 px-4 lg:px-6">
+                <div className="space-y-6 pb-24 lg:pb-32" data-chat-messages ref={messagesEndRef}>
                 {conversation.messages?.length === 0 && isExpert ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                        <div className="bg-white rounded-2xl p-6 shadow-sm max-w-md border border-gray-100">
-                            <Smile className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-                            <p className="text-gray-700 font-medium mb-2">
-                                ¡Bienvenido al chat!
-                            </p>
-                            <p className="text-gray-500 text-sm">
-                                Estoy aquí para ayudarte con la búsqueda. Escribe un mensaje para comenzar.
-                            </p>
+                        <div className="flex flex-col items-center justify-center h-[calc(100vh-450px)] lg:h-[calc(100vh-400px)] text-center px-4 py-8">
+                            <div className="max-w-2xl w-full space-y-4">
+                                {/* Primer mensaje de bienvenida - Experto */}
+                                <div className="flex gap-3 justify-start">
+                                    <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-border ring-1 ring-primary/10">
+                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Sistema" />
+                                        <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs">
+                                            AI
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 flex justify-start">
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted text-foreground rounded-2xl px-4 py-3 shadow-sm">
+                                            <p className="text-sm text-foreground leading-relaxed">
+                                                ¡Hola! 👋 Bienvenido al chat de este servicio. El cliente te ha contratado y está esperando poder comunicarse contigo.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Segundo mensaje de bienvenida - Experto */}
+                                <div className="flex gap-3 justify-start">
+                                    <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-border ring-1 ring-primary/10">
+                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Sistema" />
+                                        <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs">
+                                            AI
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 flex justify-start">
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted text-foreground rounded-2xl px-4 py-3 shadow-sm">
+                                            <div className="space-y-2">
+                                                <p className="text-sm text-foreground leading-relaxed mb-2">
+                                                    Aquí tienes algunas cosas que puedes hacer:
+                                                </p>
+                                                <ul className="space-y-1.5 text-xs text-muted-foreground">
+                                                    <li className="flex items-start gap-2">
+                                                        <span className="text-primary mt-0.5">•</span>
+                                                        <span>Responder preguntas sobre el servicio</span>
+                                                    </li>
+                                                    <li className="flex items-start gap-2">
+                                                        <span className="text-primary mt-0.5">•</span>
+                                                        <span>Coordinar detalles de la inspección</span>
+                                                    </li>
+                                                    <li className="flex items-start gap-2">
+                                                        <span className="text-primary mt-0.5">•</span>
+                                                        <span>Compartir archivos e imágenes</span>
+                                                    </li>
+                                                </ul>
+                                                <p className="text-xs text-muted-foreground italic mt-3 pt-2 border-t border-border/50">
+                                                    Escribe un mensaje para comenzar la conversación con el cliente.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                         </div>
                     </div>
                 ) : conversation.messages?.length === 0 && !isExpert ? (
-                    <div className="flex items-center justify-center h-full text-gray-500">
-                        <p className="text-sm">Aún no hay mensajes. Escribe algo para comenzar.</p>
+                        <div className="flex flex-col items-center justify-center h-[calc(100vh-450px)] lg:h-[calc(100vh-400px)] text-center px-4 py-8">
+                            <div className="max-w-2xl w-full space-y-4">
+                                {/* Primer mensaje de bienvenida - Cliente */}
+                                <div className="flex gap-3 justify-start">
+                                    <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-border ring-1 ring-primary/10">
+                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Experto" />
+                                        <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs">
+                                            {expertData?.name?.charAt(0).toUpperCase() || 'E'}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 flex justify-start">
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted text-foreground rounded-2xl px-4 py-3 shadow-sm">
+                                            <p className="text-sm text-foreground leading-relaxed">
+                                                ¡Hola! 👋 Soy {expertData?.name || 'tu experto'}. Estoy aquí para ayudarte con tu búsqueda. Puedes preguntarme cualquier cosa sobre el servicio.
+                                            </p>
                     </div>
-                ) : (
-                    groupedMessages.map((group, groupIndex) => (
-                        <div key={groupIndex} className="w-full">
-                            {/* Message group - Sin avatar en header, solo texto */}
-                            <div className="space-y-1">
-                                {/* Subtítulo descriptivo: Explicación clara de quién es cada participante */}
-                                <div className={`flex ${group.isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
-                                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                        group.isOwn 
-                                            ? 'bg-blue-100 text-blue-700' 
-                                            : 'bg-gray-100 text-gray-700'
-                                    }`}>
-                                        {group.isOwn 
-                                            ? (isExpert ? '👨‍🔧 Tú (Experto)' : '👤 Tú (Cliente)')
-                                            : (isExpert ? '👤 Cliente' : '👨‍🔧 Experto')
-                                        }
                                     </div>
                                 </div>
 
-                                {/* Messages in group - Con avatar en cada mensaje */}
-                                {group.messages.map((message: any) => (
-                                    <div key={message.id} className={`flex gap-2 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'} mb-1.5`}>
-                                        {/* Avatar en cada mensaje */}
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white font-medium text-xs flex-shrink-0 overflow-hidden ${getAvatarColor(group.senderId)}`}>
-                                            {getAvatarImage(group.senderId) ? (
-                                                <img 
-                                                    src={getAvatarImage(group.senderId)} 
-                                                    alt="Avatar"
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => {
-                                                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                                                        ((e.currentTarget.nextElementSibling as HTMLElement)).style.display = 'flex';
-                                                    }}
-                                                />
-                                            ) : null}
-                                            <span 
-                                                className={`w-full h-full flex items-center justify-center ${getAvatarImage(group.senderId) ? 'hidden' : ''}`}
-                                            >
-                                                {getAvatarInitials(group.senderId)}
-                                            </span>
+                                {/* Segundo mensaje de bienvenida - Cliente con sugerencias */}
+                                <div className="flex gap-3 justify-start">
+                                    <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-border ring-1 ring-primary/10">
+                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Experto" />
+                                        <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs">
+                                            {expertData?.name?.charAt(0).toUpperCase() || 'E'}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 flex justify-start">
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted text-foreground rounded-2xl px-4 py-3 shadow-sm">
+                                            <div className="space-y-3">
+                                                <p className="text-sm text-foreground leading-relaxed mb-2">
+                                                    ¿En qué puedo ayudarte hoy?
+                                                </p>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setNewMessage("¿Podrías explicarme cómo funciona el servicio?");
+                                                        }}
+                                                        className="text-left px-3 py-2 rounded-lg bg-background border border-border hover:bg-muted hover:border-primary/50 transition-all text-xs text-foreground group"
+                                                    >
+                                                        <span className="font-medium">💡</span> Explicación del servicio
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setNewMessage("¿Cuándo podemos coordinar la cita?");
+                                                        }}
+                                                        className="text-left px-3 py-2 rounded-lg bg-background border border-border hover:bg-muted hover:border-primary/50 transition-all text-xs text-foreground group"
+                                                    >
+                                                        <span className="font-medium">📅</span> Coordinar cita
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setNewMessage("¿Qué documentos necesito?");
+                                                        }}
+                                                        className="text-left px-3 py-2 rounded-lg bg-background border border-border hover:bg-muted hover:border-primary/50 transition-all text-xs text-foreground group"
+                                                    >
+                                                        <span className="font-medium">📄</span> Documentos necesarios
+                                                    </button>
                                         </div>
+                                                <p className="text-xs text-muted-foreground italic mt-3 pt-2 border-t border-border/50">
+                                                    O simplemente escribe tu pregunta y te responderé lo antes posible.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                    groupedMessages.map((group, groupIndex) => (
+                        <div key={groupIndex} className="w-full">
+                            {/* Message group - Inspirado en Vercel AI SDK Chatbot */}
+                            <div className="space-y-2">
+                                {group.messages.map((message: any, msgIndex: number) => (
+                                    <div key={message.id} className={`flex gap-3 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'} ${msgIndex === 0 ? 'mt-3' : 'mt-1'}`}>
+                                        {/* Avatar solo en el primer mensaje del grupo */}
+                                        {msgIndex === 0 && (
+                                            <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-border ring-1 ring-primary/10">
+                                                <AvatarImage 
+                                                    src={getAvatarImage(group.senderId) || undefined} 
+                                                    alt="Avatar"
+                                                    className="object-cover"
+                                                />
+                                                <AvatarFallback className={`text-xs font-semibold ${getAvatarColor(group.senderId)} text-white`}>
+                                                    {getAvatarInitials(group.senderId)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        )}
+                                        {msgIndex > 0 && <div className="w-8" />}
 
-                                        {/* Text content - Mejorado con fecha/hora dentro y color menos agresivo */}
-                                        {message.content && (
+                                        {/* Message Content - Diseño más limpio inspirado en Vercel */}
                                             <div className={`flex-1 ${group.isOwn ? 'flex justify-end' : 'flex justify-start'}`}>
-                                                <div className={`relative inline-block px-2.5 py-1.5 max-w-xs ${
+                                            {message.content && (
+                                                <div className={`group relative max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] ${
                                                     group.isOwn 
-                                                        ? 'bg-blue-400 text-white' 
-                                                        : 'bg-gray-50 text-gray-900 border border-gray-200'
-                                                } shadow-sm`}
+                                                        ? 'bg-primary text-primary-foreground' 
+                                                        : 'bg-muted text-foreground'
+                                                } rounded-2xl px-4 py-2.5 shadow-sm hover:shadow-md transition-shadow`}
                                                 style={{
                                                     borderRadius: group.isOwn 
-                                                        ? '16px 16px 4px 16px' 
-                                                        : '16px 16px 16px 4px'
+                                                        ? '1.125rem 1.125rem 0.25rem 1.125rem' 
+                                                        : '1.125rem 1.125rem 1.125rem 0.25rem'
                                                 }}>
-                                                    <p className="text-sm leading-tight whitespace-pre-wrap break-words">
+                                                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                                                         {message.content}
                                                     </p>
-                                                    {/* Fecha y hora dentro del bocadillo */}
-                                                    <div className={`text-xs mt-1 ${
+                                                    {/* Timestamp más discreto */}
+                                                    <div className={`text-xs mt-1.5 pt-1.5 border-t ${
                                                         group.isOwn 
-                                                            ? 'text-blue-100' 
-                                                            : 'text-gray-500'
+                                                            ? 'border-primary-foreground/20 text-primary-foreground/70' 
+                                                            : 'border-border text-muted-foreground'
                                                     }`}>
                                                         {(() => {
                                                             const date = new Date(message.sentAt);
                                                             return isNaN(date.getTime()) 
-                                                                ? 'Fecha no disponible'
-                                                                : date.toLocaleDateString('es-ES', {
-                                                                    day: 'numeric',
-                                                                    month: 'short',
+                                                                ? 'Ahora'
+                                                                : date.toLocaleTimeString('es-ES', {
                                                                     hour: '2-digit',
                                                                     minute: '2-digit'
                                                                 });
                                                         })()}
-                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -646,6 +731,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                                 </div>
                                             </div>
                                         )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -654,59 +740,73 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                 )}
                 <div ref={messagesEndRef} />
             </div>
+            </ScrollArea>
 
-            {/* Fixed Input Area at Bottom */}
-            <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10 lg:rounded-b-xl">
-                {/* Selected files preview */}
-                {selectedFiles.length > 0 && (
-                    <div className="px-4 py-3 lg:px-6 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-100">
-                        <div className="text-xs text-blue-700 font-semibold uppercase tracking-wide mb-3 flex items-center gap-2">
-                            <Paperclip className="w-3 h-3" />
-                            ARCHIVOS SELECCIONADOS
-                        </div>
-                        <div className="flex gap-2 overflow-x-auto pb-1">
+            {/* Fixed Input Area at Bottom - Inspirado en Vercel AI SDK */}
+            <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-10">
+                {/* Attachments Preview - Mejorado */}
+                {(selectedFiles.length > 0 || location) && (
+                    <div className="px-4 py-3 border-b border-border bg-muted/30">
+                        <div className="flex flex-wrap gap-2 max-w-4xl mx-auto">
                             {selectedFiles.map((file, index) => (
-                                <div key={index} className="bg-white rounded-xl p-3 border border-blue-200 min-w-0 flex-shrink-0 shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="text-xs font-semibold text-gray-800 truncate max-w-[120px] mb-1">
+                                <Card key={index} className="p-2 flex items-center gap-2 border-border/50">
+                                    <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-medium text-foreground truncate max-w-[120px]">
                                         {file.name}
-                                    </div>
-                                    <div className="text-xs text-blue-600 font-medium">
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
                                         {formatFileSize(file.size)}
+                                        </p>
                                     </div>
-                                </div>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() => {
+                                            const newFiles = [...selectedFiles];
+                                            newFiles.splice(index, 1);
+                                            setSelectedFiles(newFiles);
+                                        }}
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </Button>
+                                </Card>
                             ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Selected location preview */}
                 {location && (
-                    <div className="px-4 py-3 lg:px-6 bg-gradient-to-r from-green-50 to-blue-50 border-b border-green-100">
-                        <div className="text-xs text-green-700 font-semibold uppercase tracking-wide mb-3 flex items-center gap-2">
-                            <MapPin className="w-3 h-3" />
-                            UBICACIÓN SELECCIONADA
-                        </div>
-                        <div className="bg-white rounded-xl p-3 border border-green-200 inline-block shadow-sm hover:shadow-md transition-shadow">
-                            <div className="text-xs font-semibold text-gray-800 flex items-center gap-2">
-                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <Card className="p-2 flex items-center gap-2 border-green-500/20 bg-green-50/50">
+                                    <MapPin className="w-4 h-4 text-green-600" />
+                                    <div className="text-xs font-medium text-green-700">
                                 {parseFloat(location.latitude).toFixed(4)}, {parseFloat(location.longitude).toFixed(4)}
                             </div>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() => setLocation(null)}
+                                    >
+                                        <X className="w-3 h-3 text-green-700" />
+                                    </Button>
+                                </Card>
+                            )}
                         </div>
                     </div>
                 )}
 
-                {/* Input area */}
-                <div className="px-4 py-3 lg:px-6 lg:py-4 bg-white border-t border-gray-100">
-                    <div className="flex items-center gap-3 max-w-4xl mx-auto">
+                {/* Input area - Diseño inspirado en Vercel */}
+                <div className="px-4 py-4 lg:px-6">
+                    <div className="flex items-end gap-2 max-w-4xl mx-auto">
                         <div className="flex-1 relative">
-                            <div className="relative bg-gray-50 rounded-3xl border border-gray-200 hover:border-gray-300 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 transition-all duration-200">
+                            <div className="relative bg-muted rounded-2xl border border-border hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
                                 <textarea
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     placeholder="Escribe un mensaje..."
-                                    className="w-full px-4 py-3 bg-transparent rounded-3xl resize-none text-gray-900 placeholder-gray-500 text-sm leading-5 focus:outline-none"
+                                    className="w-full px-4 py-3 bg-transparent rounded-2xl resize-none text-foreground placeholder:text-muted-foreground text-sm leading-relaxed focus:outline-none"
                                     rows={1}
-                                    style={{ minHeight: '44px', maxHeight: '120px' }}
+                                    style={{ minHeight: '48px', maxHeight: '160px' }}
                                     onKeyPress={(e) => {
                                         if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
                                             e.preventDefault();
@@ -718,17 +818,30 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <button
+                        <div className="flex items-center gap-1.5 pb-1">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
                                 onClick={handleOpenMapModal}
-                                className="p-3 rounded-full bg-blue-50 hover:bg-blue-100 transition-all duration-200 group"
+                                className="h-9 w-9 rounded-lg hover:bg-muted"
                                 title="Seleccionar ubicación"
                             >
-                                <MapPin className="w-5 h-5 text-blue-600 group-hover:text-blue-700" />
-                            </button>
+                                <MapPin className="w-4 h-4" />
+                            </Button>
 
-                            <label className="p-3 rounded-full bg-purple-50 hover:bg-purple-100 cursor-pointer transition-all duration-200 group">
-                                <Paperclip className="w-5 h-5 text-purple-600 group-hover:text-purple-700" />
+                            <label>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    asChild
+                                    className="h-9 w-9 rounded-lg hover:bg-muted cursor-pointer"
+                                >
+                                    <span>
+                                        <Paperclip className="w-4 h-4" />
+                                    </span>
+                                </Button>
                                 <input
                                     type="file"
                                     multiple
@@ -739,16 +852,23 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                 />
                             </label>
 
-                            <button
+                            <Button
+                                type="button"
                                 onClick={handleSendMessage}
-                                className={`p-3 rounded-full transition-all duration-200 transform hover:scale-105 ${isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
-                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed hover:scale-100'
-                                        : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl'
+                                size="icon"
+                                className={`h-9 w-9 rounded-lg transition-all ${
+                                    isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
+                                        ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                                        : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md'
                                     }`}
                                 disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
                             >
-                                <Send className="w-5 h-5" />
-                            </button>
+                                {isSending ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Send className="w-4 h-4" />
+                                )}
+                            </Button>
                         </div>
                     </div>
                 </div>
