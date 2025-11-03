@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-import { Send, Smile, Paperclip, MapPin, Download, MessageCircle, X, Loader2 } from 'lucide-react';
+import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { Card } from './ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -89,6 +89,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
     const [location, setLocation] = useState<{ latitude: string; longitude: string } | null>(null);
     const [isMapModalOpen, setIsMapModalOpen] = useState(false);
     const [selectedMapLocation, setSelectedMapLocation] = useState(defaultCenter);
+    const [messageSent, setMessageSent] = useState(false);
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
         libraries,
@@ -234,6 +235,9 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
             setNewMessage('');
             setSelectedFiles([]);
             setLocation(null);
+            // Feedback visual
+            setMessageSent(true);
+            setTimeout(() => setMessageSent(false), 2000);
         } else {
             setNotifications((prev) => [
                 ...prev,
@@ -363,15 +367,15 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
         <div className="relative flex flex-col h-full bg-background divide-y divide-border/50">
             {/* Header - Hidden on mobile (info shown in parent header) */}
             {!hideHeader && (
-                <div className="hidden lg:flex bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4 flex-shrink-0">
+                <div className="hidden lg:flex bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-orange-50/20 dark:from-blue-950/20 dark:via-indigo-950/15 dark:to-orange-950/10 backdrop-blur-sm border-b border-blue-200/50 dark:border-blue-800/30 px-6 py-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 border-2 border-border">
+                        <Avatar className="h-10 w-10 border border-border/50">
                             <AvatarImage 
                                 src={getAvatarImage('other') || undefined} 
                                 alt="Avatar"
                                 className="object-cover"
                             />
-                            <AvatarFallback className={`${getAvatarColor('other')} text-white font-semibold`}>
+                            <AvatarFallback className="bg-muted text-muted-foreground font-medium">
                             {getAvatarInitials('other')}
                             </AvatarFallback>
                         </Avatar>
@@ -379,28 +383,32 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                             <h3 className="text-base font-semibold text-foreground">
                             {isClient ? (expertData?.name || 'Experto') : 'Cliente'}
                         </h3>
-                            <p className="text-xs text-muted-foreground">Conversación activa</p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500/60 animate-pulse"></span>
+                                Conversación activa
+                            </p>
                     </div>
                 </div>
             </div>
             )}
 
             {/* Messages Container - Fixed height with internal scroll */}
-            <ScrollArea className="h-[calc(100vh-400px)] lg:h-[calc(100vh-350px)] flex-1 px-4 lg:px-6">
+            <ScrollArea className="h-[calc(100vh-400px)] lg:h-[calc(100vh-350px)] flex-1 px-4 lg:px-6 chat-scroll-area">
                 <div className="space-y-6 pb-24 lg:pb-32" data-chat-messages ref={messagesEndRef}>
-                {conversation.messages?.length === 0 && isExpert ? (
-                        <div className="flex flex-col items-center justify-center h-[calc(100vh-450px)] lg:h-[calc(100vh-400px)] text-center px-4 py-8">
+                    {/* Mensajes de bienvenida - Siempre se muestran */}
+                    {isExpert ? (
+                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-6 lg:pt-8' : 'pt-6'} pb-8 text-center px-4`}>
                             <div className="max-w-2xl w-full space-y-4">
                                 {/* Primer mensaje de bienvenida - Experto */}
-                                <div className="flex gap-3 justify-start">
-                                    <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-border ring-1 ring-primary/10">
+                                <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    <Avatar className="w-8 h-8 flex-shrink-0 border border-border/50">
                                         <AvatarImage src={expertData?.profilePictureUrl} alt="Sistema" />
-                                        <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs">
+                                        <AvatarFallback className="bg-muted text-muted-foreground font-medium text-xs">
                                             AI
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted text-foreground rounded-2xl px-4 py-3 shadow-sm">
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted/60 border border-border/50 text-foreground rounded-xl px-4 py-3 shadow-sm">
                                             <p className="text-sm text-foreground leading-relaxed">
                                                 ¡Hola! 👋 Bienvenido al chat de este servicio. El cliente te ha contratado y está esperando poder comunicarse contigo.
                                             </p>
@@ -408,106 +416,39 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                     </div>
                                 </div>
                                 
-                                {/* Segundo mensaje de bienvenida - Experto */}
-                                <div className="flex gap-3 justify-start">
-                                    <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-border ring-1 ring-primary/10">
+                                {/* Segundo mensaje de bienvenida - Experto con sugerencias */}
+                                <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300 delay-100">
+                                    <Avatar className="w-8 h-8 flex-shrink-0 border border-border/50">
                                         <AvatarImage src={expertData?.profilePictureUrl} alt="Sistema" />
-                                        <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs">
+                                        <AvatarFallback className="bg-muted text-muted-foreground font-medium text-xs">
                                             AI
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted text-foreground rounded-2xl px-4 py-3 shadow-sm">
-                                            <div className="space-y-2">
-                                                <p className="text-sm text-foreground leading-relaxed mb-2">
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted/60 border border-border/50 text-foreground rounded-xl px-4 py-3 shadow-sm">
+                                            <div className="space-y-2.5">
+                                                <p className="text-sm text-foreground leading-relaxed mb-2.5 font-medium">
                                                     Aquí tienes algunas cosas que puedes hacer:
                                                 </p>
-                                                <ul className="space-y-1.5 text-xs text-muted-foreground">
-                                                    <li className="flex items-start gap-2">
-                                                        <span className="text-primary mt-0.5">•</span>
-                                                        <span>Responder preguntas sobre el servicio</span>
+                                                <ul className="space-y-2 text-xs">
+                                                    <li className="flex items-start gap-2.5">
+                                                        <MessageSquare className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                                        <span className="text-foreground">Responder preguntas sobre el servicio</span>
                                                     </li>
-                                                    <li className="flex items-start gap-2">
-                                                        <span className="text-primary mt-0.5">•</span>
-                                                        <span>Coordinar detalles de la inspección</span>
+                                                    <li className="flex items-start gap-2.5">
+                                                        <Calendar className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                                        <span className="text-foreground">Coordinar detalles de la inspección</span>
                                                     </li>
-                                                    <li className="flex items-start gap-2">
-                                                        <span className="text-primary mt-0.5">•</span>
-                                                        <span>Compartir archivos e imágenes</span>
+                                                    <li className="flex items-start gap-2.5">
+                                                        <Paperclip className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                                        <span className="text-foreground">Compartir archivos e imágenes</span>
                                                     </li>
                                                 </ul>
-                                                <p className="text-xs text-muted-foreground italic mt-3 pt-2 border-t border-border/50">
-                                                    Escribe un mensaje para comenzar la conversación con el cliente.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                        </div>
-                    </div>
-                ) : conversation.messages?.length === 0 && !isExpert ? (
-                        <div className="flex flex-col items-center justify-center h-[calc(100vh-450px)] lg:h-[calc(100vh-400px)] text-center px-4 py-8">
-                            <div className="max-w-2xl w-full space-y-4">
-                                {/* Primer mensaje de bienvenida - Cliente */}
-                                <div className="flex gap-3 justify-start">
-                                    <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-border ring-1 ring-primary/10">
-                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Experto" />
-                                        <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs">
-                                            {expertData?.name?.charAt(0).toUpperCase() || 'E'}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted text-foreground rounded-2xl px-4 py-3 shadow-sm">
-                                            <p className="text-sm text-foreground leading-relaxed">
-                                                ¡Hola! 👋 Soy {expertData?.name || 'tu experto'}. Estoy aquí para ayudarte con tu búsqueda. Puedes preguntarme cualquier cosa sobre el servicio.
-                                            </p>
-                    </div>
-                                    </div>
-                                </div>
-
-                                {/* Segundo mensaje de bienvenida - Cliente con sugerencias */}
-                                <div className="flex gap-3 justify-start">
-                                    <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-border ring-1 ring-primary/10">
-                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Experto" />
-                                        <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-xs">
-                                            {expertData?.name?.charAt(0).toUpperCase() || 'E'}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted text-foreground rounded-2xl px-4 py-3 shadow-sm">
-                                            <div className="space-y-3">
-                                                <p className="text-sm text-foreground leading-relaxed mb-2">
-                                                    ¿En qué puedo ayudarte hoy?
-                                                </p>
-                                                <div className="grid grid-cols-1 gap-2">
-                                                    <button 
-                                                        onClick={() => {
-                                                            setNewMessage("¿Podrías explicarme cómo funciona el servicio?");
-                                                        }}
-                                                        className="text-left px-3 py-2 rounded-lg bg-background border border-border hover:bg-muted hover:border-primary/50 transition-all text-xs text-foreground group"
-                                                    >
-                                                        <span className="font-medium">💡</span> Explicación del servicio
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => {
-                                                            setNewMessage("¿Cuándo podemos coordinar la cita?");
-                                                        }}
-                                                        className="text-left px-3 py-2 rounded-lg bg-background border border-border hover:bg-muted hover:border-primary/50 transition-all text-xs text-foreground group"
-                                                    >
-                                                        <span className="font-medium">📅</span> Coordinar cita
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => {
-                                                            setNewMessage("¿Qué documentos necesito?");
-                                                        }}
-                                                        className="text-left px-3 py-2 rounded-lg bg-background border border-border hover:bg-muted hover:border-primary/50 transition-all text-xs text-foreground group"
-                                                    >
-                                                        <span className="font-medium">📄</span> Documentos necesarios
-                                                    </button>
-                                        </div>
-                                                <p className="text-xs text-muted-foreground italic mt-3 pt-2 border-t border-border/50">
-                                                    O simplemente escribe tu pregunta y te responderé lo antes posible.
-                                                </p>
+                                                {conversation.messages?.length === 0 && (
+                                                    <p className="text-xs text-muted-foreground italic mt-3 pt-2.5 border-t border-border/40">
+                                                        Escribe un mensaje para comenzar la conversación con el cliente.
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -515,12 +456,101 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                             </div>
                         </div>
                     ) : (
-                    groupedMessages.map((group, groupIndex) => (
+                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-6 lg:pt-8' : 'pt-6'} pb-8 text-center px-4`}>
+                            <div className="max-w-2xl w-full space-y-4">
+                                {/* Primer mensaje de bienvenida - Cliente */}
+                                <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-3 duration-500">
+                                    <Avatar className="w-10 h-10 flex-shrink-0 border-2 border-blue-500/30 ring-2 ring-blue-500/20 shadow-lg shadow-blue-500/20">
+                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Experto" />
+                                        <AvatarFallback className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold text-sm shadow-lg">
+                                            {expertData?.name?.charAt(0).toUpperCase() || 'E'}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 flex justify-start">
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-gradient-to-br from-blue-50 via-indigo-50 to-orange-50/30 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-orange-950/20 border border-blue-200/50 dark:border-blue-800/50 text-foreground rounded-2xl px-5 py-4 shadow-lg shadow-blue-500/10 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 relative overflow-hidden">
+                                            {/* Efecto de brillo sutil */}
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]"></div>
+                                            <p className="text-sm text-foreground leading-relaxed relative z-10 font-medium">
+                                                ¡Hola! 👋 Soy <span className="font-semibold bg-gradient-to-r from-blue-600 to-orange-500 dark:from-blue-400 dark:to-orange-400 bg-clip-text text-transparent">{expertData?.name || 'tu experto'}</span>. Estoy aquí para ayudarte con tu búsqueda. Puedes preguntarme cualquier cosa sobre el servicio.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Segundo mensaje de bienvenida - Cliente con sugerencias */}
+                                <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-3 duration-500 delay-150">
+                                    <Avatar className="w-10 h-10 flex-shrink-0 border-2 border-blue-500/30 ring-2 ring-blue-500/20 shadow-lg shadow-blue-500/20">
+                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Experto" />
+                                        <AvatarFallback className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold text-sm shadow-lg">
+                                            {expertData?.name?.charAt(0).toUpperCase() || 'E'}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 flex justify-start">
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-gradient-to-br from-blue-50 via-indigo-50 to-orange-50/30 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-orange-950/20 border border-blue-200/50 dark:border-blue-800/50 text-foreground rounded-2xl px-5 py-4 shadow-lg shadow-blue-500/10 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 relative overflow-hidden">
+                                            {/* Efecto de brillo sutil */}
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]"></div>
+                                            <div className="space-y-3 relative z-10">
+                                                <p className="text-sm text-foreground leading-relaxed mb-3 font-semibold">
+                                                    ¿En qué puedo ayudarte hoy?
+                                                </p>
+                                                {conversation.messages?.length === 0 && (
+                                                    <>
+                                                        <div className="grid grid-cols-1 gap-2.5">
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setNewMessage("¿Podrías explicarme cómo funciona el servicio?");
+                                                                }}
+                                                                className="text-left px-4 py-3 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/50 hover:bg-white hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md hover:scale-[1.02] transition-all duration-200 text-sm text-foreground group flex items-center gap-3 font-medium"
+                                                            >
+                                                                <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm group-hover:scale-110 transition-transform">
+                                                                    <HelpCircle className="w-4 h-4" />
+                                                                </div>
+                                                                <span>Explicación del servicio</span>
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setNewMessage("¿Cuándo podemos coordinar la cita?");
+                                                                }}
+                                                                className="text-left px-4 py-3 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-orange-200/50 dark:border-orange-700/50 hover:bg-white hover:border-orange-400 dark:hover:border-orange-500 hover:shadow-md hover:scale-[1.02] transition-all duration-200 text-sm text-foreground group flex items-center gap-3 font-medium"
+                                                            >
+                                                                <div className="p-1.5 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-sm group-hover:scale-110 transition-transform">
+                                                                    <Calendar className="w-4 h-4" />
+                                                                </div>
+                                                                <span>Coordinar cita</span>
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setNewMessage("¿Qué documentos necesito?");
+                                                                }}
+                                                                className="text-left px-4 py-3 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/50 hover:bg-white hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md hover:scale-[1.02] transition-all duration-200 text-sm text-foreground group flex items-center gap-3 font-medium"
+                                                            >
+                                                                <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-sm group-hover:scale-110 transition-transform">
+                                                                    <FileText className="w-4 h-4" />
+                                                                </div>
+                                                                <span>Documentos necesarios</span>
+                                                            </button>
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground italic mt-4 pt-3 border-t border-blue-200/50 dark:border-blue-800/50">
+                                                            O simplemente escribe tu pregunta y te responderé lo antes posible.
+                                                        </p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Mensajes reales de la conversación */}
+                    {groupedMessages && groupedMessages.length > 0 && (
+                        groupedMessages.map((group, groupIndex) => (
                         <div key={groupIndex} className="w-full">
                             {/* Message group - Inspirado en Vercel AI SDK Chatbot */}
                             <div className="space-y-2">
                                 {group.messages.map((message: any, msgIndex: number) => (
-                                    <div key={message.id} className={`flex gap-3 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'} ${msgIndex === 0 ? 'mt-3' : 'mt-1'}`}>
+                                    <div key={message.id} className={`flex gap-3 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'} ${msgIndex === 0 ? 'mt-3' : 'mt-1'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                                         {/* Avatar solo en el primer mensaje del grupo */}
                                         {msgIndex === 0 && (
                                             <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-border ring-1 ring-primary/10">
@@ -737,7 +767,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                             </div>
                         </div>
                     ))
-                )}
+                    )}
                 <div ref={messagesEndRef} />
             </div>
             </ScrollArea>
@@ -795,80 +825,97 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                     </div>
                 )}
 
-                {/* Input area - Diseño inspirado en Vercel */}
-                <div className="px-4 py-4 lg:px-6">
-                    <div className="flex items-end gap-2 max-w-4xl mx-auto">
-                        <div className="flex-1 relative">
-                            <div className="relative bg-muted rounded-2xl border border-border hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
-                                <textarea
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    placeholder="Escribe un mensaje..."
-                                    className="w-full px-4 py-3 bg-transparent rounded-2xl resize-none text-foreground placeholder:text-muted-foreground text-sm leading-relaxed focus:outline-none"
-                                    rows={1}
-                                    style={{ minHeight: '48px', maxHeight: '160px' }}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
-                                            e.preventDefault();
-                                            handleSendMessage();
-                                        }
-                                    }}
-                                    disabled={isSending}
-                                />
+                {/* Input area - Diseño moderno mejorado */}
+                <div className="px-4 py-4 lg:px-6 border-t border-border/50 bg-background/95 backdrop-blur-sm">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="flex items-end gap-2">
+                            {/* Contenedor del input con diseño cuadrado y moderno */}
+                            <div className="flex-1 relative">
+                                <div className="relative flex items-center gap-2 bg-background border border-border rounded-lg shadow-sm hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
+                                    {/* Botones dentro del input (izquierda) */}
+                                    <div className="flex items-center gap-0.5 pl-2">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={handleOpenMapModal}
+                                            className="h-8 w-8 rounded-md hover:bg-muted/80 transition-colors"
+                                            title="Seleccionar ubicación"
+                                        >
+                                            <MapPin className="w-4 h-4 text-muted-foreground" />
+                                        </Button>
+
+                                        <label className="cursor-pointer">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                asChild
+                                                className="h-8 w-8 rounded-md hover:bg-muted/80 transition-colors"
+                                            >
+                                                <span>
+                                                    <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                                </span>
+                                            </Button>
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept=".jpg,.jpeg,.png,.mp4"
+                                                onChange={handleFileChange}
+                                                className="hidden"
+                                                disabled={isSending}
+                                            />
+                                        </label>
+                                    </div>
+
+                                    {/* Textarea */}
+                                    <textarea
+                                        value={newMessage}
+                                        onChange={(e) => {
+                                            setNewMessage(e.target.value);
+                                            // Auto-resize
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+                                        }}
+                                        placeholder="Escribe un mensaje..."
+                                        className="flex-1 px-3 py-3 bg-transparent resize-none text-foreground placeholder:text-muted-foreground text-sm leading-relaxed focus:outline-none border-0"
+                                        rows={1}
+                                        style={{ minHeight: '44px', maxHeight: '160px' }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
+                                                e.preventDefault();
+                                                handleSendMessage();
+                                            }
+                                        }}
+                                        disabled={isSending}
+                                    />
+
+                                    {/* Botón de envío dentro del input (derecha) */}
+                                    <div className="pr-1 pb-1">
+                                        <Button
+                                            type="button"
+                                            onClick={handleSendMessage}
+                                            size="icon"
+                                            className={`h-8 w-8 rounded-md transition-all duration-200 ${
+                                                isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
+                                                    ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
+                                                    : messageSent
+                                                    ? 'bg-green-500 text-white hover:bg-green-600 shadow-md'
+                                                    : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md'
+                                            }`}
+                                            disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
+                                        >
+                                            {isSending ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : messageSent ? (
+                                                <CheckCircle2 className="w-4 h-4 animate-in zoom-in duration-200" />
+                                            ) : (
+                                                <Send className="w-4 h-4" />
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 pb-1">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleOpenMapModal}
-                                className="h-9 w-9 rounded-lg hover:bg-muted"
-                                title="Seleccionar ubicación"
-                            >
-                                <MapPin className="w-4 h-4" />
-                            </Button>
-
-                            <label>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    asChild
-                                    className="h-9 w-9 rounded-lg hover:bg-muted cursor-pointer"
-                                >
-                                    <span>
-                                        <Paperclip className="w-4 h-4" />
-                                    </span>
-                                </Button>
-                                <input
-                                    type="file"
-                                    multiple
-                                    accept=".jpg,.jpeg,.png,.mp4"
-                                    onChange={handleFileChange}
-                                    className="hidden"
-                                    disabled={isSending}
-                                />
-                            </label>
-
-                            <Button
-                                type="button"
-                                onClick={handleSendMessage}
-                                size="icon"
-                                className={`h-9 w-9 rounded-lg transition-all ${
-                                    isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
-                                        ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                                        : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md'
-                                    }`}
-                                disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
-                            >
-                                {isSending ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Send className="w-4 h-4" />
-                                )}
-                            </Button>
                         </div>
                     </div>
                 </div>
