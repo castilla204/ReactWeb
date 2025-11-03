@@ -127,6 +127,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     // Estado para el sistema de citas
     const [showAppointmentForm, setShowAppointmentForm] = useState(false);
+    const [appointmentFormError, setAppointmentFormError] = useState<string | null>(null);
     const [appointmentData, setAppointmentData] = useState<any>(null);
     const [timeRemaining, setTimeRemaining] = useState<string>('00:00:00');
     const [showRejectModal, setShowRejectModal] = useState(false);
@@ -886,6 +887,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     const handleProposalSubmit = async (data: ProposeAppointmentDto) => {
         try {
+            setAppointmentFormError(null); // Limpiar errores previos
             if (appointmentData) {
                 if (!canProposeAppointment()) {
                     const currentHireStatus = search?.searchHire?.status;
@@ -898,6 +900,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         errorMessage += ` Estado de contratación actual: ${currentHireStatus}. Estados válidos: pending`;
                     }
                     
+                    setAppointmentFormError(errorMessage);
                     setNotifications(prev => [...prev, {
                         id: uuidv4(),
                         type: 'error',
@@ -915,6 +918,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 invalidateAll();
                 setShowAppointmentForm(false);
                 setAppointmentData(null);
+                setAppointmentFormError(null);
             }
         } catch (error: any) {
             console.error('Error al proponer cita:', error);
@@ -941,6 +945,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 }
             }
             
+            setAppointmentFormError(errorMessage);
             setNotifications(prev => [...prev, {
                 id: uuidv4(),
                 type: 'error',
@@ -1054,16 +1059,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 
                         {/* Details Content - Mobile - Misma información que Desktop */}
                                 {activeTab === 'details' && (
-                            <div className="flex-1 overflow-y-auto bg-background p-4 space-y-4">
+                            <div className="flex-1 flex flex-col bg-background">
+                                <div className="flex-1 overflow-y-auto p-5 space-y-5 pb-24 lg:pb-5">
                                 {/* Service Info */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-sm font-semibold text-foreground">Servicio</h3>
-                                            <StatusBadge 
-                                                statusInfo={searchHireStatusInfo} 
-                                                size="sm"
-                                            />
-                                                    </div>
+                                <div className="bg-card rounded-xl border border-border/50 p-4 space-y-3 shadow-sm transition-shadow hover:shadow-md">
+                                    <h3 className="text-sm font-semibold text-foreground">Servicio</h3>
                                     <div className="space-y-2.5">
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Tag className="w-4 h-4" />
@@ -1287,102 +1287,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             </Accordion>
                                         )}
 
-                                            {(userRole === 'expert' && appointment.status === 'appointment_proposed') || appointment.status === 'appointment_confirmed' ? (
-                                                <div className="flex gap-2 pt-2">
-                                            {userRole === 'expert' && appointment.status === 'appointment_proposed' && (
-                                                <>
-                                                            <Button
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            handleAppointmentAction('confirm', appointment);
-                                                        }}
-                                                                className="flex-1"
-                                                                size="sm"
-                                                    >
-                                                                <CheckCircle className="w-4 h-4 mr-2" />
-                                                        Confirmar
-                                                            </Button>
-                                                            <Button
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            setAppointmentToReject(appointment);
-                                                    setModalActionType('reject');
-                                                    setShowRejectModal(true);
-                                                        }}
-                                                                variant="destructive"
-                                                                className="flex-1"
-                                                                size="sm"
-                                                    >
-                                                                <XCircle className="w-4 h-4 mr-2" />
-                                                        Rechazar
-                                                            </Button>
-                                                </>
-                                            )}
-                                            {appointment.status === 'appointment_confirmed' && (
-                                                        <Button
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setAppointmentToReject(appointment);
-                                                    setModalActionType('cancel');
-                                                    setShowRejectModal(true);
-                                                    }}
-                                                            variant="outline"
-                                                            className="w-full"
-                                                            size="sm"
-                                                >
-                                                            <XCircle className="w-4 h-4 mr-2" />
-                                                            Cancelar
-                                                        </Button>
-                                            )}
-                                        </div>
-                                            ) : null}
                                     </div>
                                     </>
                                 )}
                                 
-                                {/* Acciones Principales */}
-                                {(canDispute || canApprove || canExpertRespond) && (
-                                    <>
-                                        <Separator />
-                                    <div className="space-y-2">
-                                            {canApprove && (
-                                                <Button
-                                                    onClick={handleApproveService}
-                                                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                                                    size="sm"
-                                                >
-                                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                                    Aprobar Servicio
-                                                </Button>
-                                            )}
-                                            {canDispute && (
-                                                <Button
-                                                    onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
-                                                    variant="outline"
-                                                    className="w-full border-destructive text-destructive hover:bg-destructive/10"
-                                                    size="sm"
-                                                >
-                                                    <AlertTriangle className="w-4 h-4 mr-2" />
-                                                    Disputar
-                                                </Button>
-                                            )}
-                                            {canExpertRespond && (
-                                                <Button
-                                                    onClick={() => setShowExpertResponseModal(true)}
-                                                    variant="outline"
-                                                    className="w-full"
-                                                    size="sm"
-                                                >
-                                                    <MessageCircle className="w-4 h-4 mr-2" />
-                                                    Responder Disputa
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
 
                                 {/* Subir Informe */}
                                 {isExpert && appointment?.status === 'appointment_awaiting_report' && (
@@ -1476,14 +1384,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                                                 <h3 className="text-sm font-semibold text-foreground">Reseña</h3>
                                             </div>
-                                            <Button
-                                            onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                                className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
-                                                size="sm"
-                                            >
-                                                <Star className="w-4 h-4 mr-2" />
-                                                Escribir Reseña
-                                            </Button>
                                     </div>
                                     </>
                                 )}
@@ -1508,10 +1408,133 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </>
                                 )}
 
-                                {/* Programar Cita - Al final si es necesario */}
-                                {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
-                                    <>
-                                        <Separator />
+                                        </div>
+                                
+                                {/* Botones de acción fijos en móvil */}
+                                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 p-4 space-y-2 shadow-lg">
+                                    {/* Botones de cita - Confirmar/Rechazar/Cancelar */}
+                                    {(userRole === 'expert' && appointment?.status === 'appointment_proposed') || appointment?.status === 'appointment_confirmed' ? (
+                                        <div className="flex gap-2">
+                                            {userRole === 'expert' && appointment.status === 'appointment_proposed' && (
+                                                <>
+                                                    <Button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleAppointmentAction('confirm', appointment);
+                                                        }}
+                                                        className="flex-1"
+                                                        size="sm"
+                                                    >
+                                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                                        Confirmar
+                                                    </Button>
+                                                    <Button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setAppointmentToReject(appointment);
+                                                            setModalActionType('reject');
+                                                            setShowRejectModal(true);
+                                                        }}
+                                                        variant="destructive"
+                                                        className="flex-1"
+                                                        size="sm"
+                                                    >
+                                                        <XCircle className="w-4 h-4 mr-2" />
+                                                        Rechazar
+                                                    </Button>
+                                                </>
+                                            )}
+                                            {appointment.status === 'appointment_confirmed' && (
+                                                <Button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setAppointmentToReject(appointment);
+                                                        setModalActionType('cancel');
+                                                        setShowRejectModal(true);
+                                                    }}
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    size="sm"
+                                                >
+                                                    <XCircle className="w-4 h-4 mr-2" />
+                                                    Cancelar
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ) : null}
+                                    
+                                    {/* Acciones Principales */}
+                                    {(canDispute || canApprove || canExpertRespond) && (
+                                        <div className="space-y-2">
+                                            {canApprove && (
+                                                <Button
+                                                    onClick={handleApproveService}
+                                                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                                                    size="sm"
+                                                >
+                                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                                    Aprobar Servicio
+                                                </Button>
+                                            )}
+                                            {canDispute && (
+                                                <Button
+                                                    onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
+                                                    variant="outline"
+                                                    className="w-full border-destructive text-destructive hover:bg-destructive/10"
+                                                    size="sm"
+                                                >
+                                                    <AlertTriangle className="w-4 h-4 mr-2" />
+                                                    Disputar
+                                                </Button>
+                                            )}
+                                            {canExpertRespond && (
+                                                <Button
+                                                    onClick={() => setShowExpertResponseModal(true)}
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    size="sm"
+                                                >
+                                                    <MessageCircle className="w-4 h-4 mr-2" />
+                                                    Responder Disputa
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    {/* Enviar Reporte */}
+                                    {isExpert && appointment?.status === 'appointment_awaiting_report' && (
+                                        <Button
+                                            onClick={handleSubmitReport}
+                                            className={`w-full ${
+                                                fileValidation && !fileValidation.canSubmit
+                                                    ? 'bg-muted cursor-not-allowed'
+                                                    : 'bg-green-600 hover:bg-green-700'
+                                            }`}
+                                            disabled={fileValidation ? !fileValidation.canSubmit : false}
+                                            size="sm"
+                                        >
+                                            <CheckCircle className="w-4 h-4 mr-2" />
+                                            Enviar Reporte
+                                        </Button>
+                                    )}
+                                    
+                                    {/* Escribir Reseña */}
+                                    {canReview && (
+                                        <Button
+                                            onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
+                                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                                            size="sm"
+                                        >
+                                            <Star className="w-4 h-4 mr-2" />
+                                            Escribir Reseña
+                                        </Button>
+                                    )}
+                                    
+                                    {/* Programar Cita */}
+                                    {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
                                         <Button
                                             onClick={() => handleAppointmentAction('propose', { 
                                                 id: 0, 
@@ -1519,21 +1542,20 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 status: 'awaiting_appointment',
                                                 amount: serviceInfo?.price || 0
                                             } as Appointment)}
-                                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                                            size="sm"
+                                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] rounded-lg"
+                                            size="lg"
                                         >
-                                            <Calendar className="w-4 h-4 mr-2" />
+                                            <Calendar className="w-5 h-5 mr-2" />
                                             {appointment && appointment.status === 'appointment_cancelled_by_expert' 
                                                 ? 'Proponer Nueva Cita'
                                                 : 'Programar Cita'
                                             }
                                         </Button>
-                                    </>
-                                )}
-
-                                        </div>
-                                )}
-                                    </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 {/* Sidebar - Desktop Only - Diseño Profesional */}
@@ -1542,14 +1564,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         <div className="p-5 space-y-6">
                             
                             {/* Resumen del Servicio */}
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold text-foreground">Servicio</h3>
-                                    <StatusBadge 
-                                        statusInfo={searchHireStatusInfo} 
-                                        size="sm"
-                                    />
-                                </div>
+                            <div className="bg-card rounded-xl border border-border/50 p-5 space-y-3 shadow-sm transition-shadow hover:shadow-md">
+                                <h3 className="text-sm font-semibold text-foreground">Servicio</h3>
                                 <div className="space-y-2.5">
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                         <Tag className="w-4 h-4" />
@@ -2011,10 +2027,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             status: 'awaiting_appointment',
                                             amount: serviceInfo?.price || 0
                                         } as Appointment)}
-                                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                                        size="sm"
+                                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] rounded-lg"
+                                        size="lg"
                                     >
-                                        <Calendar className="w-4 h-4 mr-2" />
+                                        <Calendar className="w-5 h-5 mr-2" />
                                         {appointment && appointment.status === 'appointment_cancelled_by_expert' 
                                             ? 'Proponer Nueva Cita'
                                             : 'Programar Cita'
@@ -2038,7 +2054,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     <AppointmentForm
                     searchHireId={search?.searchHire?.id || 0}
                         onSubmit={handleProposalSubmit}
-                    onCancel={() => setShowAppointmentForm(false)}
+                    onCancel={() => {
+                        setShowAppointmentForm(false);
+                        setAppointmentFormError(null);
+                    }}
+                    error={appointmentFormError}
+                    expertAvailability={expertProfile?.currentAvailability || null}
                 />
             )}
 
