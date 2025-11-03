@@ -41,6 +41,7 @@ export const useSearchDetailsOptimized = (
     moneyDistribution: searchDetailsQuery.data?.moneyDistribution || undefined,
     category: searchDetailsQuery.data?.category || undefined, // ✅ NUEVO: Categoría incluida
     review: searchDetailsQuery.data?.review || undefined, // ✅ NUEVO: Review incluida
+    expertProfile: searchDetailsQuery.data?.expertProfile || undefined, // ✅ NUEVO: Perfil del experto con disponibilidad
     
     // Datos adicionales (ahora incluidos en la misma respuesta)
     conversations: [], // Las conversaciones siguen siendo un endpoint separado

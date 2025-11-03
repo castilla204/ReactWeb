@@ -93,6 +93,7 @@ export interface SearchDetailsCompleteDto {
   appointment: AppointmentDto | null;
   deliverables: DeliverableDto[];
   disputes: DisputeDto[];
+  expertProfile: ExpertProfileDto | null; // ✅ NUEVO: Perfil completo del experto con disponibilidad
 }
 
 // ✅ NUEVOS DTOs SEGÚN BACKEND ACTUALIZADO
@@ -225,6 +226,7 @@ export interface UseSearchDetailsOptimizedReturn {
   moneyDistribution: MoneyDistributionConfigDto | undefined;
   category: CategoryDto | undefined; // ✅ NUEVO: Categoría incluida
   review: ReviewDto | undefined; // ✅ NUEVO: Review incluida
+  expertProfile: ExpertProfileDto | undefined; // ✅ NUEVO: Perfil del experto con disponibilidad
   
   // Datos adicionales
   conversations: ConversationDto[];
@@ -248,4 +250,30 @@ export interface UseSearchDetailsOptions {
   staleTime?: number;
   gcTime?: number; // Antes cacheTime
   refetchOnWindowFocus?: boolean;
+}
+
+// ✅ NUEVOS TIPOS PARA DISPONIBILIDAD DEL EXPERTO
+export interface CurrentExpertAvailabilityDto {
+  id: number;
+  daysOfWeek: string[]; // Ej: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+  startTime: string; // Formato: "HH:mm:ss" (ej: "09:00:00")
+  endTime: string; // Formato: "HH:mm:ss" (ej: "18:00:00")
+  effectiveFrom: string; // ISO 8601 date (ej: "2025-01-15T00:00:00Z")
+}
+
+export interface ExpertProfileDto {
+  id: number;
+  profilePictureUrl: string;
+  description: string;
+  stripeAccountId: string | null;
+  createdAt: string;
+  user: UserDto | null;
+  reviews: ReviewDto[];
+  latitude: string;
+  longitude: string;
+  stripeStatus: number;
+  stripeStatusDetails: string | null;
+  onboardingCompleted: boolean;
+  isOnVacation: boolean;
+  currentAvailability: CurrentExpertAvailabilityDto | null; // ✅ NUEVO CAMPO
 }

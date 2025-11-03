@@ -6,9 +6,14 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Separator } from '../components/ui/separator';
 import {
-    Dialog,
-    DialogContent,
-} from '../components/ui/dialog';
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerClose,
+} from '../components/ui/drawer';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
@@ -714,13 +719,12 @@ export function ExpertPanelPage() {
     return (
         <div className="min-h-screen bg-background flex">
             {/* Sidebar fijo - Estilo Dashboard-01 */}
-            <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-background border-r border-border transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+            <aside className={`fixed inset-y-0 left-0 z-[60] w-64 bg-background border-r border-border transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
             }`}>
                 <div className="flex flex-col h-full">
                     {/* Sidebar Header */}
-                    <div className="flex h-16 items-center justify-between border-b border-border px-6">
-                        <h2 className="text-lg font-semibold text-foreground">inspecciono.com</h2>
+                    <div className="flex h-16 items-center justify-end border-b border-border px-6">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -729,7 +733,7 @@ export function ExpertPanelPage() {
                         >
                             <X className="w-4 h-4" />
                         </Button>
-                            </div>
+                    </div>
                             
                     {/* Sidebar Content */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -1142,158 +1146,139 @@ export function ExpertPanelPage() {
                 onAction={modalState.onAction}
             />
             
-            {/* Modal de confirmación de modo vacaciones con Sidebar */}
-            <Dialog open={showVacationModal} onOpenChange={setShowVacationModal}>
-                <DialogContent className="p-0 max-w-4xl h-[80vh] flex flex-col">
-                    <div className="flex flex-1 overflow-hidden">
-                        {/* Sidebar */}
-                        <aside className="w-64 border-r border-border bg-muted/30 flex flex-col">
-                            <div className="p-6 border-b border-border">
-                                <div className="flex items-center gap-3">
-                            {profile?.isOnVacation ? (
-                                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                                    <PlaneTakeoff className="w-5 h-5 text-orange-600" />
-                                </div>
-                            ) : (
-                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <Plane className="w-5 h-5 text-blue-600" />
-                                </div>
-                            )}
-                            <div>
-                                        <h3 className="text-base font-semibold">
-                                    {profile?.isOnVacation ? 'Activar cuenta' : 'Modo vacaciones'}
-                                </h3>
-                                        <p className="text-xs text-muted-foreground">
-                                    {profile?.isOnVacation ? 'Volver a recibir contrataciones' : 'Pausar temporalmente'}
-                                </p>
-                            </div>
-                        </div>
-                            </div>
-                            <div className="flex-1 p-4 space-y-4">
-                                <div>
-                                    <h4 className="text-sm font-medium mb-2">Configuración</h4>
-                                    <div className="space-y-2 text-sm text-muted-foreground">
-                                        <div className="flex items-start gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5"></div>
-                                            <span>Estado de tu perfil</span>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 mt-1.5"></div>
-                                            <span>Visibilidad en búsquedas</span>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 mt-1.5"></div>
-                                            <span>Recepción de contrataciones</span>
-                                        </div>
+            {/* Drawer de confirmación de modo vacaciones */}
+            <Drawer open={showVacationModal} onOpenChange={setShowVacationModal}>
+                <DrawerContent className="max-h-[96vh] flex flex-col">
+                    <div className="mx-auto w-full max-w-4xl flex flex-col h-full max-h-[96vh]">
+                        <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
+                            <div className="flex items-center gap-3">
+                                {profile?.isOnVacation ? (
+                                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                        <PlaneTakeoff className="w-5 h-5 text-orange-600" />
                                     </div>
-                                </div>
-                            </div>
-                        </aside>
-                        
-                        {/* Contenido principal */}
-                        <div className="flex-1 flex flex-col overflow-hidden">
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <div className="max-w-2xl">
-                                    <div className="space-y-4">
-                            {profile?.isOnVacation ? (
-                                            <>
-                                                <div>
-                                                    <h4 className="text-sm font-medium mb-2">¿Qué sucederá?</h4>
-                                                    <p className="text-sm text-muted-foreground">
-                                        Al activar tu cuenta, volverás a aparecer en las búsquedas de clientes y podrás recibir nuevas contrataciones.
-                                    </p>
+                                ) : (
+                                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <Plane className="w-5 h-5 text-blue-600" />
                                     </div>
-                                                <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-4">
-                                                    <div className="flex items-start gap-3">
-                                                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
-                                                        <div>
-                                                            <p className="text-sm font-medium text-green-900 dark:text-green-100">Volverás a ser visible</p>
-                                                            <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                                                                Los clientes podrán encontrarte nuevamente en sus búsquedas
-                                                            </p>
+                                )}
+                                <div className="flex-1">
+                                    <DrawerTitle className="text-lg sm:text-xl font-semibold">
+                                        {profile?.isOnVacation ? 'Activar cuenta' : 'Modo vacaciones'}
+                                    </DrawerTitle>
+                                    <DrawerDescription className="text-sm">
+                                        {profile?.isOnVacation ? 'Volver a recibir contrataciones' : 'Pausar temporalmente'}
+                                    </DrawerDescription>
                                 </div>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-4">
-                                                    <div className="flex items-start gap-3">
-                                                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
-                                                        <div>
-                                                            <p className="text-sm font-medium text-green-900 dark:text-green-100">Podrás recibir contrataciones</p>
-                                                            <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                                                                Estarás disponible para nuevos servicios inmediatamente
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div>
-                                                    <h4 className="text-sm font-medium mb-2">¿Qué sucederá?</h4>
-                                                    <p className="text-sm text-muted-foreground">
-                                        Al activar el modo vacaciones, tu perfil no aparecerá en las búsquedas de clientes y no recibirás nuevas contrataciones.
-                                    </p>
-                                    </div>
-                                                <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-md p-4">
-                                                    <div className="flex items-start gap-3">
-                                                        <Plane className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
-                                                        <div>
-                                                            <p className="text-sm font-medium text-orange-900 dark:text-orange-100">No aparecerás en búsquedas</p>
-                                                            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
-                                                                Los clientes no podrán encontrarte temporalmente
-                                                            </p>
-                                </div>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-md p-4">
-                                                    <div className="flex items-start gap-3">
-                                                        <Plane className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
-                                                        <div>
-                                                            <p className="text-sm font-medium text-orange-900 dark:text-orange-100">Pausar nuevas contrataciones</p>
-                                                            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
-                                                                Las contrataciones existentes permanecerán activas
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                        </div>
-                        
-                            {/* Footer con botones */}
-                            <div className="border-t border-border p-6">
-                                <div className="flex justify-end gap-3">
-                                    <Button
-                                        variant="outline"
-                                onClick={() => setShowVacationModal(false)}
-                            >
-                                Cancelar
+                                <DrawerClose asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <X className="h-4 w-4" />
                                     </Button>
-                                    <Button
-                                onClick={handleVacationModeToggle}
-                                disabled={isToggling}
-                                        className={profile?.isOnVacation 
+                                </DrawerClose>
+                            </div>
+                        </DrawerHeader>
+
+                        {/* Contenido scrollable */}
+                        <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto">
+                            <div className="max-w-2xl space-y-4">
+                                {profile?.isOnVacation ? (
+                                    <>
+                                        <div>
+                                            <h4 className="text-sm font-medium mb-2">¿Qué sucederá?</h4>
+                                            <p className="text-sm text-muted-foreground">
+                                                Al activar tu cuenta, volverás a aparecer en las búsquedas de clientes y podrás recibir nuevas contrataciones.
+                                            </p>
+                                        </div>
+                                        <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-4">
+                                            <div className="flex items-start gap-3">
+                                                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-green-900 dark:text-green-100">Volverás a ser visible</p>
+                                                    <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                                                        Los clientes podrán encontrarte nuevamente en sus búsquedas
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-4">
+                                            <div className="flex items-start gap-3">
+                                                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-green-900 dark:text-green-100">Podrás recibir contrataciones</p>
+                                                    <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                                                        Estarás disponible para nuevos servicios inmediatamente
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <h4 className="text-sm font-medium mb-2">¿Qué sucederá?</h4>
+                                            <p className="text-sm text-muted-foreground">
+                                                Al activar el modo vacaciones, tu perfil no aparecerá en las búsquedas de clientes y no recibirás nuevas contrataciones.
+                                            </p>
+                                        </div>
+                                        <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-md p-4">
+                                            <div className="flex items-start gap-3">
+                                                <Plane className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-orange-900 dark:text-orange-100">No aparecerás en búsquedas</p>
+                                                    <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                                        Los clientes no podrán encontrarte temporalmente
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-md p-4">
+                                            <div className="flex items-start gap-3">
+                                                <Plane className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-orange-900 dark:text-orange-100">Pausar nuevas contrataciones</p>
+                                                    <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                                        Las contrataciones existentes permanecerán activas
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <Separator className="flex-shrink-0" />
+
+                        {/* Footer con botones */}
+                        <DrawerFooter className="flex-shrink-0">
+                            <div className="flex justify-end gap-3 w-full">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowVacationModal(false)}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={handleVacationModeToggle}
+                                    disabled={isToggling}
+                                    className={profile?.isOnVacation 
                                         ? 'bg-green-600 hover:bg-green-700' 
                                         : 'bg-orange-600 hover:bg-orange-700'
-                                        }
-                            >
-                                {isToggling ? (
-                                            <>
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        Procesando...
-                                            </>
-                                ) : (
-                                    profile?.isOnVacation ? 'Activar cuenta' : 'Activar vacaciones'
-                                )}
-                                    </Button>
-                        </div>
+                                    }
+                                >
+                                    {isToggling ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Procesando...
+                                        </>
+                                    ) : (
+                                        profile?.isOnVacation ? 'Activar cuenta' : 'Activar vacaciones'
+                                    )}
+                                </Button>
+                            </div>
+                        </DrawerFooter>
                     </div>
-                </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+                </DrawerContent>
+            </Drawer>
         </div>
     );
 }
