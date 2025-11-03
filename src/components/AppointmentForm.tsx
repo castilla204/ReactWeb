@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, FileText } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { MapPin, FileText, Clock, AlertCircle, CalendarIcon } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { ProposeAppointmentDto } from '../types/appointment';
 import AppointmentMap from './AppointmentMap';
 import {
@@ -12,18 +15,25 @@ import {
     DrawerClose,
 } from './ui/drawer';
 import { Button } from './ui/button';
-import { Label } from './ui/label';
+import { Input } from './ui/input';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from './ui/form';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { CurrentExpertAvailabilityDto, formatDaysOfWeek, formatTimeSpan, isDayAvailable } from '../utils/availability';
+import ExpertAvailability from './ExpertAvailability';
 
 interface AppointmentFormProps {
   searchHireId: number;
   onSubmit: (data: ProposeAppointmentDto) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  error?: string | null;
   expertLocation?: {
     latitude: number;
     longitude: number;
   } | null;
   expertRange?: number | null;
+  expertAvailability?: CurrentExpertAvailabilityDto | null;
 }
 
 const AppointmentForm: React.FC<AppointmentFormProps> = ({ 
@@ -31,10 +41,25 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   onSubmit, 
   onCancel,
   isLoading = false,
+  error: externalError = null,
   expertLocation,
-  expertRange
+  expertRange,
+  expertAvailability
 }) => {
   console.log('AppointmentForm initialized for searchHireId:', searchHireId);
+  
+  const form = useForm<ProposeAppointmentDto>({
+    defaultValues: {
+      proposedDate: '',
+      proposedTime: '',
+      location: '',
+      latitude: null,
+      longitude: null,
+      doorNumber: null,
+      ownerPhone: null,
+      siteDetails: null
+    }
+  });
   
   const [formData, setFormData] = useState<ProposeAppointmentDto>({
     proposedDate: '',
@@ -46,7 +71,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     ownerPhone: null,
     siteDetails: null
   });
-
   const [selectedLocation, setSelectedLocation] = useState<{
     address: string;
     latitude: number;
@@ -54,6 +78,32 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   } | null>(null);
   
   const [errors, setErrors] = useState<string[]>([]);
+
+  // Función para validar si una fecha/hora está dentro del horario del experto
+  const isDateTimeWithinAvailability = (date: string, time: string): boolean => {
+    if (!expertAvailability || !date || !time) return true; // Si no hay disponibilidad, no validar
+    
+    // Obtener el día de la semana en inglés (Monday, Tuesday, etc.)
+    const appointmentDate = new Date(date);
+    const dayName = appointmentDate.toLocaleDateString('en-US', { weekday: 'long' });
+    
+    // Verificar si el día está disponible
+    if (!isDayAvailable(expertAvailability, dayName)) {
+      return false;
+    }
+    
+    // Verificar si la hora está dentro del rango
+    const timeOnly = time.split(':')[0] + ':' + time.split(':')[1]; // HH:mm
+    const [selectedHour, selectedMinute] = timeOnly.split(':').map(Number);
+    const [startHour, startMinute] = expertAvailability.startTime.split(':').map(Number);
+    const [endHour, endMinute] = expertAvailability.endTime.split(':').map(Number);
+    
+    const selectedMinutes = selectedHour * 60 + selectedMinute;
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+    
+    return selectedMinutes >= startMinutes && selectedMinutes <= endMinutes;
+  };
 
   const validateForm = (): boolean => {
     const newErrors: string[] = [];
@@ -68,6 +118,15 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       } else if (appointmentDateTime <= twentyFourHoursFromNow) {
         const hoursRemaining = Math.ceil((twentyFourHoursFromNow.getTime() - now.getTime()) / (1000 * 60 * 60));
         newErrors.push(`La cita debe ser al menos 24 horas en el futuro (faltan ${hoursRemaining} horas)`);
+      }
+      
+      // Validar horario del experto
+      if (expertAvailability) {
+        if (!isDateTimeWithinAvailability(formData.proposedDate, formData.proposedTime)) {
+          const daysFormatted = formatDaysOfWeek(expertAvailability.daysOfWeek);
+          const timeRange = `${formatTimeSpan(expertAvailability.startTime)} - ${formatTimeSpan(expertAvailability.endTime)}`;
+          newErrors.push(`La fecha/hora seleccionada no está dentro del horario del experto. Disponible: ${daysFormatted}, ${timeRange}`);
+        }
       }
     }
     
@@ -157,6 +216,15 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
       newErrors.push(`La cita debe ser al menos 24 horas en el futuro (faltan ${hoursRemaining} horas)`);
     }
     
+    // Validar horario del experto
+    if (expertAvailability && date && time) {
+      if (!isDateTimeWithinAvailability(date, time)) {
+        const daysFormatted = formatDaysOfWeek(expertAvailability.daysOfWeek);
+        const timeRange = `${formatTimeSpan(expertAvailability.startTime)} - ${formatTimeSpan(expertAvailability.endTime)}`;
+        newErrors.push(`La fecha/hora no está dentro del horario del experto (${daysFormatted}, ${timeRange})`);
+      }
+    }
+    
     setErrors(newErrors);
   };
 
@@ -200,157 +268,374 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     console.log('🔄 Estado actualizado correctamente');
   };
 
-  const today = new Date().toISOString().split('T')[0];
 
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onCancel()}>
       <DrawerContent className="max-h-[96vh]">
-        <DrawerHeader>
-          <DrawerTitle>Proponer Cita</DrawerTitle>
-          <DrawerDescription>
+        <DrawerHeader className="border-b border-border/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <DrawerTitle className="text-xl font-semibold">Proponer Cita</DrawerTitle>
+              <DrawerDescription className="mt-1.5">
             Completa los datos para programar una cita con el experto
           </DrawerDescription>
-          <DrawerClose />
+            </div>
+            <DrawerClose className="absolute right-4 top-4" />
+          </div>
         </DrawerHeader>
         
-        <form id="appointment-form" onSubmit={handleSubmit} className="px-4 pb-4 overflow-y-auto flex-1">
-          
+        <Form {...form}>
+          <form id="appointment-form" onSubmit={handleSubmit} autoComplete="off" className="overflow-y-auto flex-1">
+            <div className="p-6 max-w-7xl mx-auto space-y-6">
           {/* Errores */}
+          {(errors.length > 0 || externalError) && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                {externalError && (
+                  <p className="font-medium mb-2">
+                    {externalError}
+                  </p>
+                )}
           {errors.length > 0 && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 mb-4">
-              <div className="text-sm text-destructive">
+                  <ul className="list-disc list-inside space-y-1">
                 {errors.map((error, index) => (
-                  <p key={index} className="mb-1 last:mb-0">• {error}</p>
-                ))}
-              </div>
-            </div>
+                      <li key={index}>
+                        {error}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </AlertDescription>
+            </Alert>
           )}
           
           {/* Layout de dos columnas en desktop */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Columna izquierda */}
-            <div className="space-y-6">
-              {/* 1. Fecha y Hora */}
-              <div>
-                <h4 className="text-sm font-medium text-foreground flex items-center mb-3">
-                  <Calendar className="w-4 h-4 mr-2 text-primary" />
-                  Fecha y Hora
-                </h4>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="date">Fecha</Label>
-                    <input
-                      id="date"
-                      type="date"
-                      value={formData.proposedDate}
-                      onChange={handleDateChange}
-                      min={today}
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                      required
-                      disabled={isLoading}
+            <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8">
+              
+              {/* Columna izquierda - Formulario */}
+              <div className="space-y-8">
+                {/* Fecha y Hora */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-primary/10">
+                      <CalendarIcon className="w-4 h-4 text-primary" />
+                    </div>
+                    <h3 className="text-base font-semibold">Fecha y Hora</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="proposedDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fecha</FormLabel>
+                          <FormControl>
+                            <DatePicker
+                              selected={formData.proposedDate ? new Date(formData.proposedDate + 'T00:00:00') : null}
+                              onChange={(date: Date | null) => {
+                                if (date) {
+                                  const formattedDate = date.toISOString().split('T')[0];
+                                  field.onChange(formattedDate);
+                                  handleDateChange({ target: { value: formattedDate } } as React.ChangeEvent<HTMLInputElement>);
+                                }
+                              }}
+                              dateFormat="dd/MM/yyyy"
+                              placeholderText="Selecciona una fecha"
+                              minDate={new Date()}
+                              disabled={isLoading}
+                              autoComplete="off"
+                              className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              wrapperClassName="w-full"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
+                    
+                    <div className="space-y-2">
+                      <label htmlFor="time" className="text-sm font-medium">Hora</label>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <select
+                            id="hour"
+                            value={formData.proposedTime ? formData.proposedTime.split(':')[0] : ''}
+                            onChange={(e) => {
+                              const hour = e.target.value;
+                              const minutes = formData.proposedTime ? formData.proposedTime.split(':')[1] || '00' : '00';
+                              handleTimeChange({ target: { value: hour + ':' + minutes } } as React.ChangeEvent<HTMLInputElement>);
+                            }}
+                      disabled={isLoading}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none cursor-pointer"
+                            style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 4l4 4 4-4'/%3E%3C/svg%3E")`,
+                              backgroundRepeat: 'no-repeat',
+                              backgroundPosition: 'right 0.75rem center',
+                              paddingRight: '2.5rem'
+                            }}
+                          >
+                            <option value="" disabled>Hora</option>
+                            {Array.from({ length: 24 }, (_, i) => {
+                              const hour = i.toString().padStart(2, '0');
+                              const hourStr = hour + ':00:00';
+                              const isDisabled = expertAvailability ? 
+                                (hourStr < expertAvailability.startTime || hourStr > expertAvailability.endTime) : false;
+                              if (isDisabled) return null;
+                              return (
+                                <option key={hour} value={hour}>
+                                  {hour}:00
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                        <div className="flex-1">
+                          <select
+                            id="minutes"
+                            value={formData.proposedTime ? formData.proposedTime.split(':')[1] || '00' : ''}
+                            onChange={(e) => {
+                              const minutes = e.target.value;
+                              const hour = formData.proposedTime ? formData.proposedTime.split(':')[0] : '00';
+                              handleTimeChange({ target: { value: hour + ':' + minutes } } as React.ChangeEvent<HTMLInputElement>);
+                            }}
+                            disabled={isLoading || !formData.proposedTime}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none cursor-pointer"
+                            style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 4l4 4 4-4'/%3E%3C/svg%3E")`,
+                              backgroundRepeat: 'no-repeat',
+                              backgroundPosition: 'right 0.75rem center',
+                              paddingRight: '2.5rem'
+                            }}
+                          >
+                            <option value="" disabled>Min</option>
+                            {[0, 15, 30, 45].map((min) => {
+                              const minutes = min.toString().padStart(2, '0');
+                              return (
+                                <option key={minutes} value={minutes}>
+                                  {minutes}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div>
-                    <Label htmlFor="time">Hora</Label>
-                    <input
-                      id="time"
-                      type="time"
-                      value={formData.proposedTime.replace(':00', '')}
-                      onChange={handleTimeChange}
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                      required
-                      disabled={isLoading}
-                    />
+                  {/* Accordion con horario del experto */}
+                  {expertAvailability && (
+                    <Accordion type="single" defaultValue="schedule-info" collapsible className="w-full">
+                      <AccordionItem value="schedule-info" className="border-none">
+                        <AccordionTrigger className="text-sm font-medium py-2 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-primary" />
+                            <span>Horario disponible del experto</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-2">
+                          <div className="space-y-3 text-sm">
+                            <ExpertAvailability availability={expertAvailability} compact={false} />
+                            <p className="text-xs text-muted-foreground pt-2 border-t border-border/50">
+                              Asegúrate de seleccionar una fecha y hora dentro de este horario. De lo contrario, no podrás enviar la propuesta.
+                            </p>
                   </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  )}
                 </div>
-              </div>
 
-              {/* 2. Dirección */}
-              <div>
-                <h4 className="text-sm font-medium text-foreground flex items-center mb-3">
-                  <MapPin className="w-4 h-4 mr-2 text-primary" />
-                  Dirección
-                </h4>
-                
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="location">Dirección completa</Label>
-                    <input
-                      id="location"
+                {/* Dirección */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-primary/10">
+                      <MapPin className="w-4 h-4 text-primary" />
+                    </div>
+                    <h3 className="text-base font-semibold">Dirección</h3>
+              </div>
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dirección completa</FormLabel>
+                          <FormControl>
+                            <Input
                       type="text"
+                              {...field}
                       value={formData.location || ''}
                       onChange={(e) => {
+                                field.onChange(e);
                         setFormData({ ...formData, location: e.target.value });
                       }}
                       placeholder="Escribe la dirección o selecciona en el mapa..."
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       disabled={isLoading}
+                              autoComplete="off"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </div>
 
-                  <div>
-                    <Label htmlFor="doorNumber">Número de puerta/garaje</Label>
-                    <input
-                      id="doorNumber"
+                    <FormField
+                      control={form.control}
+                      name="doorNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Número de puerta/garaje</FormLabel>
+                          <FormControl>
+                            <Input
                       type="text"
+                              {...field}
                       value={formData.doorNumber || ''}
-                      onChange={handleDoorNumberChange}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                handleDoorNumberChange(e);
+                              }}
                       placeholder="Portal A, 2ºB, Garaje 15..."
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       disabled={isLoading}
+                              autoComplete="off"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* 3. Información Adicional */}
-              <div>
-                <h4 className="text-sm font-medium text-foreground flex items-center mb-3">
-                  <FileText className="w-4 h-4 mr-2 text-primary" />
-                  Información Adicional
-                </h4>
-                
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="ownerPhone">Teléfono del propietario</Label>
-                    <input
-                      id="ownerPhone"
+                {/* Información Adicional */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-primary/10">
+                      <FileText className="w-4 h-4 text-primary" />
+                    </div>
+                    <h3 className="text-base font-semibold">Información Adicional</h3>
+              </div>
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="ownerPhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Teléfono del propietario</FormLabel>
+                          <FormControl>
+                            <Input
                       type="tel"
+                              {...field}
                       value={formData.ownerPhone || ''}
-                      onChange={handleOwnerPhoneChange}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                handleOwnerPhoneChange(e);
+                              }}
                       placeholder="+34 666 123 456"
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       disabled={isLoading}
+                              autoComplete="tel"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </div>
 
-                  <div>
-                    <Label htmlFor="siteDetails">Detalles específicos del sitio</Label>
+                    <FormField
+                      control={form.control}
+                      name="siteDetails"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Detalles específicos del sitio</FormLabel>
+                          <FormControl>
                     <textarea
-                      id="siteDetails"
+                              {...field}
                       value={formData.siteDetails || ''}
-                      onChange={handleSiteDetailsChange}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                handleSiteDetailsChange(e);
+                              }}
                       placeholder="Entrada por el garaje, timbre roto, código de acceso..."
-                      rows={3}
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                              rows={4}
+                              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
                       disabled={isLoading}
+                              autoComplete="off"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
                 </div>
+
+                {/* Accordion con información */}
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="info" className="border-none">
+                    <AccordionTrigger className="text-sm font-medium py-2 hover:no-underline">
+                      Información importante
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4">
+                      <div className="space-y-4 text-sm text-muted-foreground">
+                        {/* Horario del experto */}
+                        {expertAvailability && (
+                          <div className="pb-3 border-b border-border/50">
+                            <p className="text-xs font-medium text-foreground mb-2">Horario del experto:</p>
+                            <ExpertAvailability availability={expertAvailability} compact={true} />
+                          </div>
+                        )}
+                        
+                        {/* Reglas importantes */}
+                        <ul className="space-y-2">
+                          <li className="flex items-start gap-2">
+                            <span className="text-foreground">•</span>
+                            <span>La cita debe ser al menos 24 horas en el futuro</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-foreground">•</span>
+                            <span>El experto tendrá 48 horas para confirmar o rechazar</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-foreground">•</span>
+                            <span>Una vez confirmada, no se podrán hacer cambios 12h antes</span>
+                          </li>
+                          {expertAvailability && (
+                            <li className="flex items-start gap-2">
+                              <span className="text-foreground">•</span>
+                              <span>La fecha y hora deben estar dentro del horario disponible del experto</span>
+                            </li>
+                          )}
+                        </ul>
+                        
+                        {/* Leyenda del mapa */}
+                        <div className="pt-3 border-t border-border/50 space-y-2">
+                          <p className="text-xs font-medium text-foreground">Leyenda del mapa:</p>
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span>Ubicación del experto</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span>Tu selección</span>
+                  </div>
+                </div>
               </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
             </div>
 
             {/* Columna derecha - Mapa */}
-            <div>
-              <h4 className="text-sm font-medium text-foreground flex items-center mb-3">
-                <MapPin className="w-4 h-4 mr-2 text-primary" />
-                Ubicación en el Mapa
-              </h4>
-              
-              <div className="h-96 border border-border rounded-md">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-md bg-primary/10">
+                    <MapPin className="w-4 h-4 text-primary" />
+                  </div>
+                    <h3 className="text-base font-semibold">Selecciona la ubicación</h3>
+                  </div>
+
+                  <div className="h-[500px] rounded-lg overflow-hidden border border-border relative">
                 <AppointmentMap
                   onLocationSelect={handleLocationSelect}
                   initialLocation={selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude } : undefined}
@@ -361,39 +646,31 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 />
               </div>
             </div>
-          </div>
-
-          {/* Información importante */}
-          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3 mt-6">
-            <div className="text-sm text-blue-800 dark:text-blue-200">
-              <p className="font-medium mb-2">Información importante</p>
-              <ul className="text-xs space-y-1">
-                <li>• La cita debe ser al menos 24 horas en el futuro</li>
-                <li>• El experto tendrá 48 horas para confirmar o rechazar</li>
-                <li>• Una vez confirmada, no se podrán hacer cambios 12h antes</li>
-              </ul>
             </div>
           </div>
         </form>
+        </Form>
         
-        <DrawerFooter className="flex-col gap-2 sm:flex-row">
-          <Button
-            type="submit"
-            form="appointment-form"
-            className="w-full sm:flex-1"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Proponiendo...' : 'Proponer Cita'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isLoading}
-            className="w-full sm:w-auto"
-          >
-            Cancelar
-          </Button>
+        <DrawerFooter className="border-t border-border/50 bg-muted/30">
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-7xl mx-auto px-6">
+            <Button
+              type="submit"
+              form="appointment-form"
+              className="w-full sm:flex-1"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Proponiendo...' : 'Proponer Cita'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isLoading}
+              className="w-full sm:w-auto sm:min-w-[120px]"
+            >
+              Cancelar
+            </Button>
+          </div>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

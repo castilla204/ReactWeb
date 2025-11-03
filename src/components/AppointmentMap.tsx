@@ -407,37 +407,31 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
     );
   }
 
-  return (
-    <div className={`${className} rounded-lg border border-gray-200 shadow-sm`}>
-      {/* Leyenda del mapa */}
-      <div className="p-3 border-b border-gray-200 bg-gray-50">
-        <div className="flex items-center space-x-6 text-sm">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-gray-700">Ubicación del experto</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-            <span className="text-gray-700">Tu selección</span>
-          </div>
-        </div>
-      </div>
-      
-      {/* Barra de búsqueda */}
-      <div className="p-3 border-b border-gray-200">
-        <input
-          type="text"
-          placeholder="Buscar dirección en el mapa..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-          id={searchInputId}
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          Busca una dirección o haz clic en el mapa dentro del rango de {coordinates.radius}km
-        </p>
-      </div>
-      <div ref={mapRef} className="w-full h-full rounded-b-lg" />
-    </div>
-  );
+  return (
+    <div className={`${className} rounded-lg border border-border overflow-hidden bg-background`}>
+      <div ref={mapRef} className="w-full h-full" />
+      
+      {/* Input de búsqueda minimalista flotante */}
+      <div className="absolute top-4 left-4 right-4 z-10">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Buscar dirección..."
+            className="w-full px-4 py-2.5 pr-10 bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-sm text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 transition-all"
+            id={searchInputId}
+          />
+          <svg 
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default AppointmentMap;
