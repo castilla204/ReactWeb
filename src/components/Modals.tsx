@@ -1,9 +1,21 @@
 ﻿import { useState, useRef } from 'react';
-import { Star, Trash2, XCircle, Send } from 'lucide-react';
+import { Star, Trash2, X, Send, Upload, AlertTriangle } from 'lucide-react';
 import { useReview } from '../hooks/useReview.hooks';
 import { useExpertReport } from '../hooks/useExpertReport';
 import { NotificationType } from './Notification';
 import { Appointment } from '../types/appointment';
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerClose,
+} from './ui/drawer';
+import { Button } from './ui/button';
+import { Separator } from './ui/separator';
+import { Label } from './ui/label';
 
 interface ReviewModalProps {
     isOpen: boolean;
@@ -70,127 +82,136 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
         }));
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100 animate-in slide-in-from-bottom-4 duration-300">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-                            <Star className="w-5 h-5 text-white" fill="currentColor" />
+        <Drawer open={isOpen} onOpenChange={onClose}>
+            <DrawerContent className="max-h-[96vh] flex flex-col">
+                <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96vh]">
+                    <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                                <Star className="w-5 h-5 text-white" fill="currentColor" />
+                            </div>
+                            <div className="flex-1">
+                                <DrawerTitle className="text-lg sm:text-xl font-semibold">Enviar Reseña</DrawerTitle>
+                                <DrawerDescription className="text-sm">Comparte tu experiencia</DrawerDescription>
+                            </div>
+                            <DrawerClose asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </DrawerClose>
                         </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-900">Enviar Reseña</h3>
-                            <p className="text-sm text-gray-500">Comparte tu experiencia</p>
+                    </DrawerHeader>
+                    {/* Contenido scrollable */}
+                    <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto">
+                        <div className="space-y-6">
+                            <div>
+                                <Label className="text-sm font-semibold mb-3 block">Calificación</Label>
+                                <div className="flex gap-1 justify-center p-4 bg-muted rounded-xl">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <Button
+                                            key={star}
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setReviewForm((prev) => ({ ...prev, score: star }))}
+                                            className={`h-12 w-12 rounded-full transition-all duration-200 transform hover:scale-110 ${
+                                                reviewForm.score >= star 
+                                                    ? 'text-yellow-500 bg-yellow-50 shadow-md' 
+                                                    : 'text-muted-foreground hover:text-yellow-400 hover:bg-yellow-50'
+                                            }`}
+                                        >
+                                            <Star className="w-7 h-7" fill={reviewForm.score >= star ? "currentColor" : "none"} />
+                                        </Button>
+                                    ))}
+                                </div>
+                                {reviewForm.score > 0 && (
+                                    <p className="text-center text-sm text-muted-foreground mt-2">
+                                        {reviewForm.score === 5 ? '¡Excelente!' : 
+                                         reviewForm.score === 4 ? 'Muy bueno' :
+                                         reviewForm.score === 3 ? 'Bueno' :
+                                         reviewForm.score === 2 ? 'Regular' : 'Necesita mejorar'}
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <Label className="text-sm font-semibold mb-3 block">Descripción</Label>
+                                <textarea
+                                    value={reviewForm.description}
+                                    onChange={(e) => setReviewForm((prev) => ({ ...prev, description: e.target.value }))}
+                                    className="w-full px-4 py-3 border border-input rounded-xl focus:ring-2 focus:ring-ring focus:border-primary transition-all duration-200 bg-background resize-none"
+                                    rows={4}
+                                    placeholder="Comparte tu experiencia con este servicio..."
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-sm font-semibold mb-3 block">Imágenes (Opcional)</Label>
+                                <div className="space-y-3">
+                                    {reviewForm.images.filter((image) => image instanceof File).map((image, index) => (
+                                        <div key={index} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                                            <div className="flex-1">
+                                                <span className="text-sm font-medium text-foreground truncate block">{image.name}</span>
+                                                <span className="text-xs text-muted-foreground">{(image.size / 1024).toFixed(1)} KB</span>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => removeImage(index)}
+                                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    <label className="block">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleImageChange}
+                                            className="hidden"
+                                        />
+                                        <div className="w-full px-4 py-6 border-2 border-dashed border-input rounded-xl text-center hover:border-primary hover:bg-primary/5 transition-all duration-200 cursor-pointer">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Upload className="w-8 h-8 text-muted-foreground" />
+                                                <span className="text-sm font-medium text-foreground">Agregar imágenes</span>
+                                                <span className="text-xs text-muted-foreground">PNG, JPG hasta 5MB</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <button 
-                        onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
-                    >
-                        <XCircle className="w-5 h-5 text-gray-400" />
-                    </button>
-                </div>
-                <div className="mb-6">
-                    <label className="block text-sm font-semibold text-gray-900 mb-3">Calificación</label>
-                    <div className="flex gap-1 justify-center p-4 bg-gray-50 rounded-xl">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                                key={star}
+
+                    <Separator className="flex-shrink-0" />
+
+                    {/* Footer con botones */}
+                    <DrawerFooter className="flex-shrink-0">
+                        <div className="flex gap-3 w-full">
+                            <Button
                                 type="button"
-                                onClick={() => setReviewForm((prev) => ({ ...prev, score: star }))}
-                                className={`p-2 rounded-full transition-all duration-200 transform hover:scale-110 ${
-                                    reviewForm.score >= star 
-                                        ? 'text-yellow-500 bg-yellow-50 shadow-md' 
-                                        : 'text-gray-300 hover:text-yellow-400 hover:bg-yellow-50'
-                                }`}
+                                variant="outline"
+                                onClick={onClose}
+                                className="flex-1"
                             >
-                                <Star className="w-7 h-7" fill="currentColor" />
-                            </button>
-                        ))}
-                    </div>
-                    {reviewForm.score > 0 && (
-                        <p className="text-center text-sm text-gray-600 mt-2">
-                            {reviewForm.score === 5 ? '¡Excelente!' : 
-                             reviewForm.score === 4 ? 'Muy bueno' :
-                             reviewForm.score === 3 ? 'Bueno' :
-                             reviewForm.score === 2 ? 'Regular' : 'Necesita mejorar'}
-                        </p>
-                    )}
+                                Cancelar
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={isCreatingReview || reviewForm.score === 0}
+                                className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
+                            >
+                                {isCreatingReview ? 'Enviando...' : 'Enviar Reseña'}
+                            </Button>
+                        </div>
+                    </DrawerFooter>
                 </div>
-                <div className="mb-6">
-                    <label className="block text-sm font-semibold text-gray-900 mb-3">Descripción</label>
-                    <textarea
-                        value={reviewForm.description}
-                        onChange={(e) => setReviewForm((prev) => ({ ...prev, description: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 bg-gray-50 focus:bg-white resize-none"
-                        rows={4}
-                        placeholder="Comparte tu experiencia con este servicio..."
-                        required
-                    />
-                </div>
-                <div className="mb-6">
-                    <label className="block text-sm font-semibold text-gray-900 mb-3">Imágenes (Opcional)</label>
-                    <div className="space-y-3">
-                        {reviewForm.images.filter((image) => image instanceof File).map((image, index) => (
-                            <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                <div className="flex-1">
-                                    <span className="text-sm font-medium text-gray-700 truncate block">{image.name}</span>
-                                    <span className="text-xs text-gray-500">{(image.size / 1024).toFixed(1)} KB</span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => removeImage(index)}
-                                    className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors duration-200"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
-                        <label className="block">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleImageChange}
-                                className="hidden"
-                            />
-                            <div className="w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-xl text-center hover:border-yellow-400 hover:bg-yellow-50/50 transition-all duration-200 cursor-pointer">
-                                <div className="flex flex-col items-center gap-2">
-                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                    </svg>
-                                    <span className="text-sm font-medium text-gray-600">Agregar imágenes</span>
-                                    <span className="text-xs text-gray-500">PNG, JPG hasta 5MB</span>
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-                <div className="flex gap-3 pt-4 border-t border-gray-100">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors duration-200"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleSubmit}
-                        disabled={isCreatingReview || reviewForm.score === 0}
-                        className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                            isCreatingReview || reviewForm.score === 0
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600 shadow-lg hover:shadow-xl'
-                        }`}
-                    >
-                        {isCreatingReview ? 'Enviando...' : 'Enviar Reseña'}
-                    </button>
-                </div>
-            </div>
-        </div>
+            </DrawerContent>
+        </Drawer>
     );
 }
 
@@ -288,180 +309,184 @@ export function DisputeModal({
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full sm:max-w-md shadow-2xl border border-gray-100 animate-in slide-in-from-bottom-4 duration-300 max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-900">Iniciar Disputa</h3>
-                            <p className="text-sm text-gray-500">Reportar un problema con evidencia</p>
-                        </div>
-                    </div>
-                    <button 
-                        onClick={onClose}
-                        disabled={isSubmitting}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200 disabled:opacity-50"
-                    >
-                        <XCircle className="w-5 h-5 text-gray-400" />
-                    </button>
-                </div>
-                
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                    <p className="text-sm text-red-800">
-                        <strong>Importante:</strong> Una disputa iniciará un proceso de mediación. Por favor, explique claramente el problema y adjunte evidencia para una resolución rápida.
-                    </p>
-                </div>
-                
-                <div className="mb-6">
-                    <label className="block text-sm font-semibold text-gray-900 mb-3">
-                        Motivo de la disputa <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                        value={disputeReason}
-                        onChange={(e) => setDisputeReason(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all duration-200 bg-gray-50 focus:bg-white resize-none"
-                        rows={4}
-                        placeholder="Describe detalladamente el problema que has experimentado con este servicio..."
-                        required
-                        disabled={isSubmitting}
-                        maxLength={1000}
-                    />
-                    <div className="text-right text-xs text-gray-500 mt-1">
-                        {disputeReason.length}/1000 caracteres
-                    </div>
-                </div>
-
-                {/* File Upload Section */}
-                <div className="mb-6">
-                    <label className="block text-sm font-semibold text-gray-900 mb-3">
-                        Archivos de evidencia (opcional)
-                    </label>
-                    
-                    {/* Drop Zone */}
-                    <div
-                        className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors duration-200 ${
-                            dragActive 
-                                ? 'border-red-400 bg-red-50' 
-                                : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                        onDragEnter={(e) => {
-                            e.preventDefault();
-                            setDragActive(true);
-                        }}
-                        onDragLeave={(e) => {
-                            e.preventDefault();
-                            setDragActive(false);
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                            e.preventDefault();
-                            setDragActive(false);
-                            handleFileSelect(e.dataTransfer.files);
-                        }}
-                    >
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
+        <Drawer open={isOpen} onOpenChange={onClose}>
+            <DrawerContent className="max-h-[96vh] flex flex-col">
+                <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96vh]">
+                    <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                                <AlertTriangle className="w-5 h-5 text-white" />
                             </div>
+                            <div className="flex-1">
+                                <DrawerTitle className="text-lg sm:text-xl font-semibold">Iniciar Disputa</DrawerTitle>
+                                <DrawerDescription className="text-sm">Reportar un problema con evidencia</DrawerDescription>
+                            </div>
+                            <DrawerClose asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isSubmitting}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </DrawerClose>
+                        </div>
+                    </DrawerHeader>
+
+                    {/* Contenido scrollable */}
+                    <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto">
+                        <div className="space-y-6">
+                            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
+                                <p className="text-sm text-destructive-foreground">
+                                    <strong>Importante:</strong> Una disputa iniciará un proceso de mediación. Por favor, explique claramente el problema y adjunte evidencia para una resolución rápida.
+                                </p>
+                            </div>
+                
                             <div>
-                                <p className="text-sm font-medium text-gray-900">
-                                    Arrastra archivos aquí o{' '}
-                                    <button
-                                        type="button"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        disabled={isSubmitting}
-                                        className="text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
-                                    >
-                                        selecciona archivos
-                                    </button>
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    JPG, PNG, GIF, PDF, DOC, DOCX, MP4, AVI, MOV • Máximo 10MB por archivo
-                                </p>
+                                <Label className="text-sm font-semibold mb-3 block">
+                                    Motivo de la disputa <span className="text-destructive">*</span>
+                                </Label>
+                                <textarea
+                                    value={disputeReason}
+                                    onChange={(e) => setDisputeReason(e.target.value)}
+                                    className="w-full px-4 py-3 border border-input rounded-xl focus:ring-2 focus:ring-ring focus:border-destructive transition-all duration-200 bg-background resize-none"
+                                    rows={4}
+                                    placeholder="Describe detalladamente el problema que has experimentado con este servicio..."
+                                    required
+                                    disabled={isSubmitting}
+                                    maxLength={1000}
+                                />
+                                <div className="text-right text-xs text-muted-foreground mt-1">
+                                    {disputeReason.length}/1000 caracteres
+                                </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.mp4,.avi,.mov"
-                        onChange={(e) => handleFileSelect(e.target.files)}
-                        className="hidden"
-                        disabled={isSubmitting}
-                    />
-
-                    {/* File List */}
-                    {files.length > 0 && (
-                        <div className="mt-4 space-y-2">
-                            <h4 className="text-sm font-medium text-gray-900">Archivos seleccionados:</h4>
-                            {files.map((file, index) => (
-                                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-lg">{getFileIcon(file)}</span>
+                            {/* File Upload Section */}
+                            <div>
+                                <Label className="text-sm font-semibold mb-3 block">
+                                    Archivos de evidencia (opcional)
+                                </Label>
+                                
+                                {/* Drop Zone */}
+                                <div
+                                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors duration-200 ${
+                                        dragActive 
+                                            ? 'border-destructive bg-destructive/10' 
+                                            : 'border-input hover:border-primary'
+                                    }`}
+                                    onDragEnter={(e) => {
+                                        e.preventDefault();
+                                        setDragActive(true);
+                                    }}
+                                    onDragLeave={(e) => {
+                                        e.preventDefault();
+                                        setDragActive(false);
+                                    }}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setDragActive(false);
+                                        handleFileSelect(e.dataTransfer.files);
+                                    }}
+                                >
+                                    <div className="flex flex-col items-center gap-3">
+                                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                                            <Upload className="w-6 h-6 text-muted-foreground" />
+                                        </div>
                                         <div>
-                                            <p className="text-sm font-medium text-gray-900 truncate max-w-48">
-                                                {file.name}
+                                            <p className="text-sm font-medium text-foreground">
+                                                Arrastra archivos aquí o{' '}
+                                                <Button
+                                                    type="button"
+                                                    variant="link"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    disabled={isSubmitting}
+                                                    className="h-auto p-0 text-destructive hover:text-destructive"
+                                                >
+                                                    selecciona archivos
+                                                </Button>
                                             </p>
-                                            <p className="text-xs text-gray-500">
-                                                {formatFileSize(file.size)}
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                JPG, PNG, GIF, PDF, DOC, DOCX, MP4, AVI, MOV • Máximo 10MB por archivo
                                             </p>
                                         </div>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeFile(index)}
-                                        disabled={isSubmitting}
-                                        className="p-1 hover:bg-gray-200 rounded-full transition-colors duration-200 disabled:opacity-50"
-                                    >
-                                        <XCircle className="w-4 h-4 text-gray-400" />
-                                    </button>
                                 </div>
-                            ))}
+
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.mp4,.avi,.mov"
+                                    onChange={(e) => handleFileSelect(e.target.files)}
+                                    className="hidden"
+                                    disabled={isSubmitting}
+                                />
+
+                                {/* File List */}
+                                {files.length > 0 && (
+                                    <div className="mt-4 space-y-2">
+                                        <h4 className="text-sm font-medium text-foreground">Archivos seleccionados:</h4>
+                                        {files.map((file, index) => (
+                                            <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-lg">{getFileIcon(file)}</span>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-foreground truncate max-w-48">
+                                                            {file.name}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {formatFileSize(file.size)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => removeFile(index)}
+                                                    disabled={isSubmitting}
+                                                    className="h-8 w-8"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    )}
+                    </div>
+
+                    <Separator className="flex-shrink-0" />
+
+                    {/* Footer con botones */}
+                    <DrawerFooter className="flex-shrink-0">
+                        <div className="flex gap-3 w-full">
+                            <Button
+                                variant="outline"
+                                onClick={onClose}
+                                disabled={isSubmitting}
+                                className="flex-1"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={onSubmit}
+                                disabled={!disputeReason.trim() || isSubmitting}
+                                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                        Enviando...
+                                    </>
+                                ) : (
+                                    'Enviar Disputa'
+                                )}
+                            </Button>
+                        </div>
+                    </DrawerFooter>
                 </div>
-                
-                <div className="flex gap-3 pt-4 border-t border-gray-100">
-                    <button
-                        onClick={onClose}
-                        disabled={isSubmitting}
-                        className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors duration-200 disabled:opacity-50"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        onClick={onSubmit}
-                        disabled={!disputeReason.trim() || isSubmitting}
-                        className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                            !disputeReason.trim() || isSubmitting
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl'
-                        }`}
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Enviando...
-                            </>
-                        ) : (
-                            'Enviar Disputa'
-                        )}
-                    </button>
-                </div>
-            </div>
-        </div>
+            </DrawerContent>
+        </Drawer>
     );
 }
 

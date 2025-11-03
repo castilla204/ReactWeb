@@ -1,6 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info } from 'lucide-react';
+import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Button } from './ui/button';
+import { Separator } from './ui/separator';
+import { Badge } from './ui/badge';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { ScrollArea } from './ui/scroll-area';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { SearchHire } from '../hooks/useSearch.hooks';
 import { useAuth } from '../contexts/AuthContext';
 import { useChat } from '../hooks/useChat';
@@ -16,6 +24,9 @@ import { v4 as uuidv4 } from 'uuid';
 // Imports para el sistema de citas
 import { useAppointments } from '../hooks/useAppointments';
 import { useAppointmentStatuses, getAppointmentStatusIcon } from '../hooks/useAppointmentStatuses';
+import { useSearchHireStatuses } from '../hooks/useSearchHireStatuses';
+import StatusTimeline from './StatusTimeline';
+import ExpertAvailability from './ExpertAvailability';
 import AppointmentForm from './AppointmentForm';
 import RejectAppointmentModal from './RejectAppointmentModal';
 import { Appointment, ProposeAppointmentDto, ConfirmAppointmentDto, RejectAppointmentDto, CancelAppointmentDto } from '../types/appointment';
@@ -161,6 +172,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         moneyDistribution,
         category,
         review,
+        expertProfile,
         conversations,
         appointment,
         deliverables,
@@ -632,6 +644,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     
     // ✅ HOOK DINÁMICO PARA ESTADOS
     const { data: appointmentStatuses } = useAppointmentStatuses();
+    const { data: searchHireStatuses } = useSearchHireStatuses();
     
     // ✅ FUNCIÓN PARA OBTENER EL ICONO DEL ESTADO (mantenida para compatibilidad)
     const getStatusIcon = (status: string) => {
@@ -968,75 +981,60 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="min-h-screen bg-background">
+            {/* Header - Mejorado con más información */}
+            <header className="bg-background/95 backdrop-blur-md border-b border-border/50 sticky top-0 z-50 shadow-sm">
                 <div className="px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                            <button
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                            <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={onBack || (() => navigate('/busquedas'))}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="h-10 w-10 hover:bg-muted rounded-lg"
                             >
-                                <ArrowLeft className="w-5 h-5 text-gray-600" />
-                            </button>
-                            <div>
-                                <h1 className="text-xl font-semibold text-gray-900">
+                                <ArrowLeft className="w-5 h-5" />
+                            </Button>
+                            <div className="flex flex-col min-w-0 flex-1">
+                                <h1 className="text-xl font-semibold text-foreground tracking-tight truncate">
                                     {search?.title || 'Cargando...'}
                                 </h1>
-                                <p className="text-sm text-gray-500">
-                                    {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
-                                </p>
                             </div>
                         </div>
                         
-                        <div className="flex items-center space-x-2">
-                            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                <Share2 className="w-5 h-5 text-gray-600" />
-                            </button>
-                            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                <MessageCircle className="w-5 h-5 text-gray-600" />
-                            </button>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-muted rounded-lg" title="Compartir">
+                                <Share2 className="w-5 h-5" />
+                            </Button>
+                            {canViewChat && (
+                                <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-muted rounded-lg" title="Mensajes">
+                                    <MessageCircle className="w-5 h-5" />
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* Main Layout */}
-            <div className="flex h-[calc(100vh-80px)]">
-                {/* Chat Section */}
+            {/* Main Layout - Mejorado */}
+            <div className="flex h-[calc(100vh-80px)] bg-background">
+                {/* Chat Section - Mejorado */}
                 {canViewChat && (
-                    <div className="flex-1 lg:w-2/3 bg-white flex flex-col">
-                        {/* Mobile Tabs */}
-                        <div className="lg:hidden border-b border-gray-200 bg-white">
-                            <nav className="flex">
-                                <button
-                                    onClick={() => setActiveTab('chat')}
-                                    className={`flex-1 py-4 px-6 text-sm font-medium transition-colors border-b-2 ${
-                                        activeTab === 'chat'
-                                            ? 'text-blue-600 border-blue-600 bg-blue-50' 
-                                            : 'text-gray-600 border-transparent hover:text-gray-800 hover:bg-gray-50'
-                                    }`}
-                                >
-                                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex-1 lg:w-2/3 bg-background flex flex-col border-r border-border/50">
+                        {/* Mobile Tabs - Mejorado */}
+                        <div className="lg:hidden border-b border-border bg-background/95 backdrop-blur-sm p-2 sticky top-[80px] z-40">
+                            <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')}>
+                                <TabsList className="w-full grid grid-cols-2 h-10">
+                                    <TabsTrigger value="chat" className="flex items-center gap-2 text-sm font-medium">
                                     <MessageSquare className="w-4 h-4" />
                                     Chat
-                                    </div>
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('details')}
-                                    className={`flex-1 py-4 px-6 text-sm font-medium transition-colors border-b-2 ${
-                                        activeTab === 'details'
-                                            ? 'text-blue-600 border-blue-600 bg-blue-50' 
-                                            : 'text-gray-600 border-transparent hover:text-gray-800 hover:bg-gray-50'
-                                    }`}
-                                >
-                                    <div className="flex items-center justify-center gap-2">
+                                    </TabsTrigger>
+                                    <TabsTrigger value="details" className="flex items-center gap-2 text-sm font-medium">
                                     <FileText className="w-4 h-4" />
                                     Detalles
-                                    </div>
-                                </button>
-                            </nav>
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
 
                         {/* Chat Content */}
@@ -1054,136 +1052,258 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
                                 )}
                                 
-                        {/* Details Content - Mobile */}
+                        {/* Details Content - Mobile - Misma información que Desktop */}
                                 {activeTab === 'details' && (
-                            <div className="flex-1 overflow-y-auto bg-gray-50 p-4 space-y-4">
+                            <div className="flex-1 overflow-y-auto bg-background p-4 space-y-4">
                                 {/* Service Info */}
-                                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Información del Servicio</h3>
-                                    <div className="space-y-2">
-                                                    <div className="flex justify-between">
-                                            <span className="text-gray-600">Categoría:</span>
-                                            <span className="font-medium">{serviceInfo?.categoryName}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                            <span className="text-gray-600">Precio:</span>
-                                            <span className="font-medium">€{serviceInfo?.price}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                            <span className="text-gray-600">Estado:</span>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-semibold text-foreground">Servicio</h3>
                                             <StatusBadge 
                                                 statusInfo={searchHireStatusInfo} 
                                                 size="sm"
                                             />
                                                     </div>
+                                    <div className="space-y-2.5">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Tag className="w-4 h-4" />
+                                            <span>{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
+                                                </div>
+                                        {serviceInfo?.serviceTypeName && (
+                                            <div className="text-sm">
+                                                <span className="text-muted-foreground">Tipo: </span>
+                                                <span className="text-foreground font-medium">{serviceInfo.serviceTypeName}</span>
+                                            </div>
+                                        )}
+                                        {search?.description && (
+                                            <div className="text-sm">
+                                                <span className="text-muted-foreground">Descripción: </span>
+                                                <span className="text-foreground">{search.description}</span>
+                                            </div>
+                                        )}
+                                        {serviceInfo?.locationRange && (
+                                            <div className="text-xs text-muted-foreground">
+                                                Radio de servicio: {serviceInfo.locationRange} km
+                                            </div>
+                                        )}
+                                        {serviceInfo?.price && (
+                                            <div className="text-sm text-muted-foreground">
+                                                <span>Precio: </span>
+                                                <span className="text-foreground font-medium">
+                                                    {new Intl.NumberFormat('es-ES', {
+                                                        style: 'currency',
+                                                        currency: 'EUR',
+                                                        minimumFractionDigits: 0,
+                                                        maximumFractionDigits: 0,
+                                                    }).format(serviceInfo.price)}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Accordion para explicar el estado - Múltiples desplegables */}
+                                    {searchHireStatusInfo && (
+                                        <Accordion type="multiple" className="w-full">
+                                            <AccordionItem value="status-info" className="border-none">
+                                                <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                    ¿Qué significa este estado?
+                                                </AccordionTrigger>
+                                                <AccordionContent className="text-xs text-muted-foreground pt-2 pb-0">
+                                                    <p className="leading-relaxed">
+                                                        {searchHireStatusInfo.description || 'Estado del servicio contratado.'}
+                                                    </p>
+                                                    {searchHireStatusInfo.statusValue === 'pending' && (
+                                                        <p className="mt-2 pt-2 border-t border-border/50">
+                                                            El experto aún no ha aceptado la contratación. Puedes comunicarte con él a través del chat.
+                                                        </p>
+                                                    )}
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                            {searchHireStatuses && Array.isArray(searchHireStatuses) && searchHireStatuses.length > 0 && (
+                                                <AccordionItem value="status-timeline" className="border-none">
+                                                    <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                        Timeline del estado
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="pt-2 pb-0">
+                                                        <StatusTimeline
+                                                            currentStatus={searchHireStatusInfo}
+                                                            allStatuses={searchHireStatuses}
+                                                            statusType="SearchHireStatus"
+                                                        />
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            )}
+                                        </Accordion>
+                                    )}
+                                </div>
+
+                                <Separator />
+
+                                {/* Cliente */}
+                                {search?.user && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-sm font-semibold text-foreground">Cliente</h3>
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-10 w-10">
+                                                <AvatarImage 
+                                                    src={search.user.profilePictureUrl || undefined} 
+                                                    alt={search.user.name}
+                                                />
+                                                <AvatarFallback className="bg-muted text-foreground text-sm font-medium">
+                                                    {search.user.name?.charAt(0).toUpperCase() || 'C'}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-foreground truncate">{search.user.name}</p>
+                                                <p className="text-xs text-muted-foreground truncate">{search.user.email}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Experto */}
+                                {expertData && (
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-3">
+                                            <h3 className="text-sm font-semibold text-foreground">Experto</h3>
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-11 w-11">
+                                                    <AvatarImage 
+                                                        src={expertData.profilePictureUrl || undefined} 
+                                                        alt={expertData.name}
+                                                    />
+                                                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                        {expertData.name?.charAt(0).toUpperCase()}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-foreground truncate">{expertData.name}</p>
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                                                        <span className="text-xs text-muted-foreground">Verificado</span>
+                                                    </div>
                                                 </div>
                                             </div>
-
-                                {/* Expert Info */}
-                                {expertData && (
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Experto</h3>
-                                        <div className="flex items-center gap-3">
-                                            {/* ✅ CORREGIDO: Usar expertData que incluye datos del usuario actual si es experto */}
-                                            {expertData.profilePictureUrl ? (
-                                                <img 
-                                                    src={expertData.profilePictureUrl} 
-                                                    alt={expertData.name}
-                                                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                                                />
-                                            ) : (
-                                                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                                                    {expertData.name?.charAt(0)}
+                                            {/* ✅ Disponibilidad del experto en móvil */}
+                                            {expertProfile?.currentAvailability && (
+                                                <div className="pl-14">
+                                                    <ExpertAvailability 
+                                                        availability={expertProfile.currentAvailability}
+                                                        compact={true}
+                                                    />
                                                 </div>
                                             )}
-                                                        <div>
-                                                <h4 className="font-medium text-gray-900">{expertData.name}</h4>
-                                                <p className="text-sm text-gray-600">Experto verificado</p>
-                                                        </div>
-                                                    </div>
-                                                        </div>
-                                                    )}
+                                        </div>
+                                    </>
+                                )}
 
-                                {/* Appointment Section */}
+                                {/* Cita */}
                                 {appointment && (
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-                                        {/* Header con estado - Minimalista */}
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center space-x-2">
-                                                {getStatusIcon(appointment.status)}
-                                                <h3 className="text-lg font-semibold text-gray-900">Cita Programada</h3>
-                                            </div>
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-sm font-semibold text-foreground">Cita</h3>
                                             <StatusBadge 
                                                 statusInfo={appointmentStatusInfo} 
                                                 size="sm"
                                             />
                                         </div>
-                                        
-                                        {/* Appointment Details */}
-                                        <div className="space-y-3">
-                                            <div className="flex items-center space-x-3">
-                                                <Calendar className="w-5 h-5 text-blue-600" />
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-900">
+                                            <div className="space-y-2.5 text-sm">
+                                                <div className="flex items-center gap-2.5">
+                                                    <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                    <span className="text-foreground">
                                                         {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
-                                                            weekday: 'long',
-                                                            year: 'numeric',
-                                                            month: 'long',
-                                                            day: 'numeric'
-                                                        })}
-                                                    </p>
-                                                    <p className="text-sm text-gray-600">
-                                                        {appointment.proposedTime}
-                                                    </p>
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                        })} {appointment.proposedTime}
+                                                    </span>
                                                 </div>
-                                            </div>
-                                            
                                             {appointment.location && (
-                                                <div className="flex items-center space-x-3">
-                                                    <MapPin className="w-5 h-5 text-green-600" />
-                                                    <div>
-                                                        <p className="text-sm font-medium text-gray-900">Ubicación</p>
-                                                        <p className="text-sm text-gray-600">{appointment.location}</p>
-                                                    </div>
+                                                    <div className="flex items-start gap-2.5">
+                                                        <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                        <span className="text-foreground leading-relaxed">{appointment.location}</span>
                                                 </div>
                                             )}
-                                            
                                             {appointment.doorNumber && (
-                                                <div className="flex items-center space-x-3">
-                                                    <Home className="w-5 h-5 text-purple-600" />
-                                                    <div>
-                                                        <p className="text-sm font-medium text-gray-900">Puerta</p>
-                                                        <p className="text-sm text-gray-600">{appointment.doorNumber}</p>
-                                                    </div>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <Home className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                        <span className="text-foreground">Puerta {appointment.doorNumber}</span>
                                                 </div>
                                             )}
+                                                    </div>
                                             
-                                            {appointment.phoneNumber && (
-                                                <div className="flex items-center space-x-3">
-                                                    <Phone className="w-5 h-5 text-orange-600" />
-                                                    <div>
-                                                        <p className="text-sm font-medium text-gray-900">Teléfono</p>
-                                                        <p className="text-sm text-gray-600">{appointment.phoneNumber}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                                        {/* Accordion para explicar el estado de la cita */}
+                                        {appointmentStatusInfo && (
+                                            <Accordion type="multiple" className="w-full">
+                                                <AccordionItem value="appointment-status" className="border-none">
+                                                    <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                        ¿Qué significa este estado?
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="text-xs text-muted-foreground pt-2 pb-0">
+                                                        <p className="leading-relaxed">
+                                                            {appointmentStatusInfo.description || 'Estado de la cita programada.'}
+                                                        </p>
+                                                        {appointment.status === 'appointment_proposed' && (
+                                                            <p className="mt-2 pt-2 border-t border-border/50">
+                                                                El cliente ha propuesto esta cita. Como experto, debes confirmarla o rechazarla.
+                                                            </p>
+                                                        )}
+                                                        {appointment.status === 'appointment_confirmed' && (
+                                                            <p className="mt-2 pt-2 border-t border-border/50">
+                                                                La cita está confirmada. Puedes cancelarla si es necesario.
+                                                            </p>
+                                                        )}
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                                {appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
+                                                    <AccordionItem value="appointment-timeline" className="border-none">
+                                                        <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                            Timeline del estado
+                                                        </AccordionTrigger>
+                                                        <AccordionContent className="pt-2 pb-0">
+                                                            <StatusTimeline
+                                                                currentStatus={appointmentStatusInfo}
+                                                                allStatuses={appointmentStatuses.map(s => ({
+                                                                    id: s.id,
+                                                                    statusType: 'AppointmentStatus' as const,
+                                                                    statusName: s.statusValue,
+                                                                    statusValue: s.statusValue,
+                                                                    displayName: s.displayName,
+                                                                    description: s.description || null,
+                                                                    color: null,
+                                                                    isActive: true,
+                                                                    isFinalizationStatus: s.isFinalizationStatus,
+                                                                    sortOrder: s.sortOrder,
+                                                                    createdAt: s.createdAt,
+                                                                    updatedAt: s.updatedAt,
+                                                                }))}
+                                                                statusType="AppointmentStatus"
+                                                            />
+                                                        </AccordionContent>
+                                                    </AccordionItem>
+                                                )}
+                                            </Accordion>
+                                        )}
 
-                                        {/* Action Buttons */}
-                                        <div className="flex flex-wrap gap-2 pt-3">
+                                            {(userRole === 'expert' && appointment.status === 'appointment_proposed') || appointment.status === 'appointment_confirmed' ? (
+                                                <div className="flex gap-2 pt-2">
                                             {userRole === 'expert' && appointment.status === 'appointment_proposed' && (
                                                 <>
-                                                    <button
+                                                            <Button
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
                                                             handleAppointmentAction('confirm', appointment);
                                                         }}
-                                                        className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
+                                                                className="flex-1"
+                                                                size="sm"
                                                     >
+                                                                <CheckCircle className="w-4 h-4 mr-2" />
                                                         Confirmar
-                                                    </button>
-                                                    <button
+                                                            </Button>
+                                                            <Button
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
@@ -1191,15 +1311,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     setModalActionType('reject');
                                                     setShowRejectModal(true);
                                                         }}
-                                                        className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm"
+                                                                variant="destructive"
+                                                                className="flex-1"
+                                                                size="sm"
                                                     >
+                                                                <XCircle className="w-4 h-4 mr-2" />
                                                         Rechazar
-                                                    </button>
+                                                            </Button>
                                                 </>
                                             )}
-                                            
                                             {appointment.status === 'appointment_confirmed' && (
-                                                <button
+                                                        <Button
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
@@ -1207,150 +1329,96 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     setModalActionType('cancel');
                                                     setShowRejectModal(true);
                                                     }}
-                                                    className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors text-sm"
+                                                            variant="outline"
+                                                            className="w-full"
+                                                            size="sm"
                                                 >
-                                                    Cancelar Cita
-                                                </button>
+                                                            <XCircle className="w-4 h-4 mr-2" />
+                                                            Cancelar
+                                                        </Button>
                                             )}
                                         </div>
+                                            ) : null}
                                     </div>
+                                    </>
                                 )}
                                 
-                                {/* Propose Appointment Button - Mobile */}
-                                {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
-                                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                                                <Calendar className="w-5 h-5 text-white" />
-                                                </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-gray-900 text-sm">
-                                                    {appointment && appointment.status === 'appointment_cancelled_by_expert' 
-                                                        ? '¿Nueva cita?' 
-                                                        : '¿Programar cita?'
-                                                    }
-                                                </h4>
-                                                <p className="text-gray-600 text-xs mt-1">
-                                                    {appointment && appointment.status === 'appointment_cancelled_by_expert'
-                                                        ? 'El experto canceló. Proponer nueva fecha.'
-                                                        : 'Servicio requiere cita presencial.'
-                                                    }
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleAppointmentAction('propose', { 
-                                                        id: 0, 
-                                                        searchHireId: search?.searchHire?.id || 0,
-                                                        status: 'awaiting_appointment',
-                                                        amount: serviceInfo?.price || 0
-                                                    } as Appointment)}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                                                >
-                                                <Calendar className="w-4 h-4" />
-                                                Proponer
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                {/* Money Distribution */}
-                                {appointment && shouldShowMoneyDistribution(moneyDistributionConfig, appointment.status, appointmentStatuses) && (
-                                    <MoneyDistributionInfo 
-                                        config={moneyDistributionConfig}
-                                        status={appointment.status}
-                                        isLoading={isLoadingMoneyConfig}
-                                        error={moneyConfigError}
-                                    />
-                                )}
-
-                                {/* Action Buttons - Mobile - Approve/Dispute */}
+                                {/* Acciones Principales */}
                                 {(canDispute || canApprove || canExpertRespond) && (
+                                    <>
+                                        <Separator />
                                     <div className="space-y-2">
-                                        <div className="flex gap-2">
-                                            {canDispute && (
-                                                <button
-                                                    onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
-                                                    className="flex-1 px-3 py-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg hover:bg-red-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
+                                            {canApprove && (
+                                                <Button
+                                                    onClick={handleApproveService}
+                                                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                                                    size="sm"
                                                 >
-                                                    <AlertTriangle className="w-4 h-4" />
+                                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                                    Aprobar Servicio
+                                                </Button>
+                                            )}
+                                            {canDispute && (
+                                                <Button
+                                                    onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
+                                                    variant="outline"
+                                                    className="w-full border-destructive text-destructive hover:bg-destructive/10"
+                                                    size="sm"
+                                                >
+                                                    <AlertTriangle className="w-4 h-4 mr-2" />
                                                     Disputar
-                                                </button>
+                                                </Button>
                                             )}
                                             {canExpertRespond && (
-                                                <button
+                                                <Button
                                                     onClick={() => setShowExpertResponseModal(true)}
-                                                    className="flex-1 px-3 py-2 bg-orange-50 border border-orange-200 text-orange-700 text-sm rounded-lg hover:bg-orange-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    size="sm"
                                                 >
-                                                    <MessageCircle className="w-4 h-4" />
+                                                    <MessageCircle className="w-4 h-4 mr-2" />
                                                     Responder Disputa
-                                                </button>
-                                            )}
-                                            {canApprove && (
-                                                <button
-                                                    onClick={handleApproveService}
-                                                    className="flex-1 px-3 py-2 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg hover:bg-green-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    Aprobar
-                                                </button>
+                                                </Button>
                                             )}
                                         </div>
-                                    </div>
+                                    </>
                                 )}
 
-                                {/* Deliverables Upload - Mobile - Solo para expertos cuando está esperando reporte */}
+                                {/* Subir Informe */}
                                 {isExpert && appointment?.status === 'appointment_awaiting_report' && (
-                                    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                            <Upload className="w-5 h-5 text-blue-600" />
-                                            Subir Informe del Experto
-                                        </h3>
-                                        
-                                        {/* Validación de archivos */}
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-3">
+                                            <h3 className="text-sm font-semibold text-foreground">Subir Informe</h3>
                                         {fileValidation && (
-                                            <div className={`mb-4 p-3 rounded-lg border ${
+                                                <div className={`p-2.5 rounded-md text-xs ${
                                                 fileValidation.canSubmit 
-                                                    ? 'bg-green-50 border-green-200 text-green-800' 
-                                                    : 'bg-blue-50 border-blue-200 text-blue-800'
-                                            }`}>
-                                                <div className="flex items-center gap-2">
-                                                    {fileValidation.canSubmit ? (
-                                                        <CheckCircle className="w-4 h-4" />
-                                                    ) : (
-                                                        <Info className="w-4 h-4" />
-                                                    )}
-                                                    <span className="text-sm font-medium">{fileValidation.message}</span>
-                                                </div>
+                                                        ? 'bg-green-50 border border-green-200 text-green-800' 
+                                                        : 'bg-blue-50 border border-blue-200 text-blue-800'
+                                                }`}>
+                                                    {fileValidation.message}
                                             </div>
                                         )}
-
-                                        {/* Archivos ya subidos */}
                                         {uploadedFiles.length > 0 && (
-                                            <div className="mb-4">
-                                                <h4 className="text-sm font-medium text-gray-700 mb-2">Archivos Subidos:</h4>
-                                                <div className="space-y-2">
+                                                <div className="space-y-1.5">
                                                     {uploadedFiles.map((file) => (
-                                                        <div key={file.id} className="flex items-center justify-between bg-gray-50 p-2 rounded border">
+                                                        <div key={file.id} className="flex items-center justify-between p-2 bg-background rounded-md border text-xs">
                                                             <div className="flex items-center gap-2">
-                                                                <FileText className="w-4 h-4 text-gray-500" />
-                                                                <span className="text-sm text-gray-600">{file.fileName}</span>
-                                                                <span className="text-xs text-gray-500">({file.fileType})</span>
+                                                                <FileText className="w-3.5 h-3.5" />
+                                                                <span className="truncate">{file.fileName}</span>
                                                             </div>
-                                                            <button 
+                                                            <Button
                                                                 onClick={() => handleDeleteFile(file.id)}
-                                                                className="text-red-600 hover:text-red-800 text-xs font-medium"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-6 w-6 p-0"
                                                             >
-                                                                Eliminar
-                                                            </button>
+                                                                <X className="w-3 h-3" />
+                                                            </Button>
                                                         </div>
                                                     ))}
-                                                </div>
                                             </div>
                                         )}
-
-                                        <div className="space-y-3">
                                             <label className="block">
                                                 <input
                                                     type="file"
@@ -1359,198 +1427,375 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     onChange={handleDeliverableFileChange}
                                                     className="hidden"
                                                 />
-                                                <div className="w-full p-4 border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 cursor-pointer rounded-lg hover:bg-blue-100 transition-colors text-center">
-                                                    <Upload className="w-6 h-6 mx-auto mb-2" />
-                                                    <p className="font-medium text-sm">Seleccionar archivos</p>
-                                                    <p className="text-xs">PDF o MP4 (máx. 10MB)</p>
+                                                <div className="w-full p-4 border-2 border-dashed border-border rounded-md cursor-pointer hover:bg-muted/50 transition-colors text-center">
+                                                    <Upload className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
+                                                    <p className="text-sm font-medium text-foreground mb-1">Seleccionar archivos</p>
+                                                    <p className="text-xs text-muted-foreground">PDF o MP4 (máx. 10MB)</p>
                                                 </div>
                                             </label>
                                             {selectedDeliverableFiles.length > 0 && (
-                                                <div className="space-y-2">
-                                                    <p className="text-sm font-medium text-gray-700">Archivos seleccionados:</p>
+                                                <div className="space-y-1.5">
                                             {selectedDeliverableFiles.map((file, index) => (
-                                                <div key={index} className="flex items-center justify-between bg-white p-2 rounded border">
-                                                    <div className="flex items-center gap-2">
-                                                        <FileText className="w-4 h-4 text-gray-500" />
-                                                        <span className="text-sm text-gray-600">{file.name}</span>
-                                                        <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(1)}MB</span>
-                                                    </div>
-                                                    <button 
+                                                        <div key={index} className="flex items-center justify-between p-2 bg-background rounded-md border text-xs">
+                                                            <span className="truncate">{file.name}</span>
+                                                            <Button
                                                         onClick={() => removeSelectedFile(index)}
-                                                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-6 w-6 p-0"
                                                     >
-                                                        Eliminar
-                                                    </button>
+                                                                <X className="w-3 h-3" />
+                                                            </Button>
                                                 </div>
                                             ))}
                                                 </div>
                                             )}
-                                            <div className="flex gap-2">
-                                                <button
+                                            <Button
                                                     onClick={handleSubmitReport}
-                                                    className={`flex-1 py-3 text-sm rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${
+                                                className={`w-full ${
                                                         fileValidation && !fileValidation.canSubmit
-                                                            ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                                                            : 'bg-green-600 hover:bg-green-700 text-white'
+                                                        ? 'bg-muted cursor-not-allowed'
+                                                        : 'bg-green-600 hover:bg-green-700'
                                                     }`}
                                                     disabled={fileValidation ? !fileValidation.canSubmit : false}
+                                                size="sm"
                                                 >
-                                                    <CheckCircle className="w-4 h-4" />
+                                                <CheckCircle className="w-4 h-4 mr-2" />
                                                     Enviar Reporte
-                                                </button>
+                                            </Button>
                                             </div>
-                                        </div>
-                                    </div>
+                                    </>
                                 )}
 
-                                {/* Review Button - Mobile */}
+                                {/* Reseña */}
                                 {canReview && (
-                                    <div className="mt-4">
-                                        <button
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                                <h3 className="text-sm font-semibold text-foreground">Reseña</h3>
+                                            </div>
+                                            <Button
                                             onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                            className="w-full px-3 py-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm rounded-lg hover:bg-blue-100 font-medium transition-colors duration-200 flex items-center justify-center gap-1.5"
-                                        >
-                                            <Star className="w-4 h-4" />
-                                            Enviar Reseña
-                                        </button>
+                                                className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                                                size="sm"
+                                            >
+                                                <Star className="w-4 h-4 mr-2" />
+                                                Escribir Reseña
+                                            </Button>
                                     </div>
+                                    </>
                                 )}
+
+                                {review && (
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                                    <span className="text-sm font-semibold text-foreground">Reseña</span>
                                     </div>
+                                                <Badge variant="secondary">{review.score}/5</Badge>
+                                            </div>
+                                            {review.description && (
+                                                <p className="text-sm text-foreground leading-relaxed bg-background p-3 rounded-md border">
+                                                    {review.description}
+                                                </p>
                                         )}
                                     </div>
+                                    </>
                                 )}
 
-                {/* Sidebar - Desktop Only */}
-                <aside className="hidden lg:flex lg:w-1/3 bg-white border-l border-gray-200 flex-col">
-                    <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-6">
-                    <div className="p-6 space-y-6">
-                        {/* Service Details */}
-                                <div className="bg-gray-50 rounded-lg p-4">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalles</h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Categoría:</span>
-                                    <span className="font-medium">{serviceInfo?.categoryName}</span>
+                                {/* Programar Cita - Al final si es necesario */}
+                                {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
+                                    <>
+                                        <Separator />
+                                        <Button
+                                            onClick={() => handleAppointmentAction('propose', { 
+                                                id: 0, 
+                                                searchHireId: search?.searchHire?.id || 0,
+                                                status: 'awaiting_appointment',
+                                                amount: serviceInfo?.price || 0
+                                            } as Appointment)}
+                                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                                            size="sm"
+                                        >
+                                            <Calendar className="w-4 h-4 mr-2" />
+                                            {appointment && appointment.status === 'appointment_cancelled_by_expert' 
+                                                ? 'Proponer Nueva Cita'
+                                                : 'Programar Cita'
+                                            }
+                                        </Button>
+                                    </>
+                                )}
+
                                         </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Precio:</span>
-                                    <span className="font-medium">€{serviceInfo?.price}</span>
+                                )}
                                     </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Estado:</span>
+                )}
+
+                {/* Sidebar - Desktop Only - Diseño Profesional */}
+                <aside className="hidden lg:flex lg:w-1/3 border-l border-border flex-col bg-muted/30">
+                    <ScrollArea className="flex-1">
+                        <div className="p-5 space-y-6">
+                            
+                            {/* Resumen del Servicio */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold text-foreground">Servicio</h3>
                                     <StatusBadge 
                                         statusInfo={searchHireStatusInfo} 
                                         size="sm"
                                     />
                                 </div>
+                                <div className="space-y-2.5">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Tag className="w-4 h-4" />
+                                        <span>{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
                                 </div>
-                            </div>
-                            
-                        {/* Expert Info - Desktop */}
-                        {expertData && (
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Experto</h3>
-                                    <div className="flex items-center gap-3">
-                                    {/* ✅ CORREGIDO: Usar expertData que incluye datos del usuario actual si es experto */}
-                                    {expertData.profilePictureUrl ? (
-                                        <img 
-                                            src={expertData.profilePictureUrl} 
-                                            alt={expertData.name}
-                                            className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                                        />
-                                    ) : (
-                                        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                                            {expertData.name?.charAt(0)}
+                                    {serviceInfo?.serviceTypeName && (
+                                        <div className="text-sm">
+                                            <span className="text-muted-foreground">Tipo: </span>
+                                            <span className="text-foreground font-medium">{serviceInfo.serviceTypeName}</span>
                                         </div>
                                     )}
-                                        <div>
-                                        <h4 className="font-medium text-gray-900">{expertData.name}</h4>
-                                        <p className="text-sm text-gray-600">Experto verificado</p>
+                                    {search?.description && (
+                                        <div className="text-sm">
+                                            <span className="text-muted-foreground">Descripción: </span>
+                                            <span className="text-foreground">{search.description}</span>
+                                        </div>
+                                    )}
+                                    {search?.createdAt && (
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <Clock className="w-3.5 h-3.5" />
+                                            <span>Creado el {new Date(search.createdAt).toLocaleDateString('es-ES', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric'
+                                            })}</span>
+                                        </div>
+                                    )}
+                                    {serviceInfo?.locationRange && (
+                                        <div className="text-xs text-muted-foreground">
+                                            Radio de servicio: {serviceInfo.locationRange} km
+                                        </div>
+                                    )}
+                                    {serviceInfo?.price && (
+                                        <div className="text-sm text-muted-foreground">
+                                            <span>Precio: </span>
+                                            <span className="text-foreground font-medium">
+                                                {new Intl.NumberFormat('es-ES', {
+                                                    style: 'currency',
+                                                    currency: 'EUR',
+                                                    minimumFractionDigits: 0,
+                                                    maximumFractionDigits: 0,
+                                                }).format(serviceInfo.price)}
+                                            </span>
+                                        </div>
+                                    )}
+                            </div>
+                            
+                                {/* Accordion para explicar el estado */}
+                                {searchHireStatusInfo && (
+                                    <Accordion type="single" collapsible className="w-full">
+                                        <AccordionItem value="status-info" className="border-none">
+                                            <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                ¿Qué significa este estado?
+                                            </AccordionTrigger>
+                                            <AccordionContent className="text-xs text-muted-foreground pt-2 pb-0">
+                                                <p className="leading-relaxed">
+                                                    {searchHireStatusInfo.description || 'Estado del servicio contratado.'}
+                                                </p>
+                                                {searchHireStatusInfo.statusValue === 'pending' && (
+                                                    <p className="mt-2 pt-2 border-t border-border/50">
+                                                        El experto aún no ha aceptado la contratación. Puedes comunicarte con él a través del chat.
+                                                    </p>
+                                                )}
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        {searchHireStatuses && Array.isArray(searchHireStatuses) && searchHireStatuses.length > 0 && (
+                                            <AccordionItem value="status-timeline" className="border-none">
+                                                <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                    Timeline del estado
+                                                </AccordionTrigger>
+                                                <AccordionContent className="pt-2 pb-0">
+                                                    <StatusTimeline
+                                                        currentStatus={searchHireStatusInfo}
+                                                        allStatuses={searchHireStatuses}
+                                                        statusType="SearchHireStatus"
+                                                    />
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        )}
+                                    </Accordion>
+                                )}
+                            </div>
+
+                            <Separator />
+
+                            {/* Cliente */}
+                            {search?.user && (
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-semibold text-foreground">Cliente</h3>
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-10 w-10">
+                                            <AvatarImage 
+                                                src={search.user.profilePictureUrl || undefined} 
+                                                alt={search.user.name}
+                                            />
+                                            <AvatarFallback className="bg-muted text-foreground text-sm font-medium">
+                                                {search.user.name?.charAt(0).toUpperCase() || 'C'}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-foreground truncate">{search.user.name}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{search.user.email}</p>
                                         </div>
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Experto */}
+                        {expertData && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-3">
+                                        <h3 className="text-sm font-semibold text-foreground">Experto</h3>
+                                    <div className="flex items-center gap-3">
+                                            <Avatar className="h-11 w-11">
+                                                <AvatarImage 
+                                                    src={expertData.profilePictureUrl || undefined} 
+                                            alt={expertData.name}
+                                                />
+                                                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                    {expertData.name?.charAt(0).toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-foreground truncate">{expertData.name}</p>
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                                                    <span className="text-xs text-muted-foreground">Verificado</span>
                                         </div>
+                                        </div>
+                                    </div>
+                                        {/* ✅ NUEVO: Mostrar disponibilidad del experto en desktop */}
+                                        {expertProfile?.currentAvailability && (
+                                            <div className="pl-14">
+                                                <ExpertAvailability 
+                                                    availability={expertProfile.currentAvailability}
+                                                    compact={true}
+                                                />
+                                        </div>
+                                        )}
+                                    </div>
+                                </>
                         )}
 
-                        {/* Appointment Info - Desktop */}
+                            {/* Cita */}
                         {appointment && (
-                            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                                {/* Header con estado - Minimalista */}
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center space-x-2">
-                                        {getStatusIcon(appointment.status)}
-                                        <h3 className="text-lg font-semibold text-gray-900">Cita</h3>
-                                    </div>
+                                <>
+                                    <Separator />
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-sm font-semibold text-foreground">Cita</h3>
                                     <StatusBadge 
                                         statusInfo={appointmentStatusInfo} 
                                         size="sm"
                                     />
                                 </div>
-                                
-                                {/* Appointment Details */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center space-x-3">
-                                        <Calendar className="w-5 h-5 text-blue-600" />
-                                    <div>
-                                            <p className="text-sm font-medium text-gray-900">
+                                        <div className="space-y-2.5 text-sm">
+                                            <div className="flex items-center gap-2.5">
+                                                <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                <span className="text-foreground">
                                                 {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
-                                                    weekday: 'long',
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
-                                            </p>
-                                            <p className="text-sm text-gray-600">
-                                                {appointment.proposedTime}
-                                            </p>
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                    })} {appointment.proposedTime}
+                                                </span>
                                         </div>
-                                    </div>
-                                    
                                     {appointment.location && (
-                                        <div className="flex items-center space-x-3">
-                                            <MapPin className="w-5 h-5 text-green-600" />
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">Ubicación</p>
-                                                <p className="text-sm text-gray-600">{appointment.location}</p>
-                                            </div>
+                                                <div className="flex items-start gap-2.5">
+                                                    <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                    <span className="text-foreground leading-relaxed">{appointment.location}</span>
                                         </div>
                                     )}
-                                    
                                     {appointment.doorNumber && (
-                                        <div className="flex items-center space-x-3">
-                                            <Home className="w-5 h-5 text-purple-600" />
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">Puerta</p>
-                                                <p className="text-sm text-gray-600">{appointment.doorNumber}</p>
-                                            </div>
+                                                <div className="flex items-center gap-2.5">
+                                                    <Home className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                    <span className="text-foreground">Puerta {appointment.doorNumber}</span>
                                         </div>
                                     )}
-                                    
-                                    {appointment.phoneNumber && (
-                                        <div className="flex items-center space-x-3">
-                                            <Phone className="w-5 h-5 text-orange-600" />
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">Teléfono</p>
-                                                <p className="text-sm text-gray-600">{appointment.phoneNumber}</p>
                                             </div>
-                                        </div>
+                                        
+                                        {/* Accordion para timeline del estado de la cita */}
+                                        {appointmentStatusInfo && (
+                                            <Accordion type="multiple" className="w-full">
+                                                <AccordionItem value="appointment-status" className="border-none">
+                                                    <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                        Timeline del estado
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="pt-2 pb-0">
+                                                        {appointmentStatuses && appointmentStatuses.length > 0 ? (
+                                                            <StatusTimeline
+                                                                currentStatus={appointmentStatusInfo}
+                                                                allStatuses={appointmentStatuses.map(s => ({
+                                                                    id: s.id,
+                                                                    statusType: 'AppointmentStatus' as const,
+                                                                    statusName: s.statusValue,
+                                                                    statusValue: s.statusValue,
+                                                                    displayName: s.displayName,
+                                                                    description: s.description || null,
+                                                                    color: null,
+                                                                    isActive: true,
+                                                                    isFinalizationStatus: s.isFinalizationStatus,
+                                                                    sortOrder: s.sortOrder,
+                                                                    createdAt: s.createdAt,
+                                                                    updatedAt: s.updatedAt,
+                                                                }))}
+                                                                statusType="AppointmentStatus"
+                                                            />
+                                                        ) : (
+                                                            <div className="text-xs text-muted-foreground space-y-2">
+                                                                <p className="leading-relaxed">
+                                                                    {appointmentStatusInfo.description || 'Estado de la cita programada.'}
+                                                                </p>
+                                                                {appointment.status === 'appointment_proposed' && (
+                                                                    <p className="pt-2 border-t border-border/50">
+                                                                        El cliente ha propuesto esta cita. Como experto, debes confirmarla o rechazarla.
+                                                                    </p>
+                                                                )}
+                                                                {appointment.status === 'appointment_confirmed' && (
+                                                                    <p className="pt-2 border-t border-border/50">
+                                                                        La cita está confirmada. Puedes cancelarla si es necesario.
+                                                                    </p>
                                     )}
                                 </div>
+                                                        )}
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            </Accordion>
+                                        )}
 
-                                {/* Action Buttons */}
-                                <div className="flex flex-wrap gap-2 pt-3">
+                                        {(userRole === 'expert' && appointment.status === 'appointment_proposed') || appointment.status === 'appointment_confirmed' ? (
+                                            <div className="flex gap-2 pt-2">
                                     {userRole === 'expert' && appointment.status === 'appointment_proposed' && (
                                         <>
-                                            <button
+                                                        <Button
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
                                                     handleAppointmentAction('confirm', appointment);
                                                 }}
-                                                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
+                                                            className="flex-1"
+                                                            size="sm"
                                             >
+                                                            <CheckCircle className="w-4 h-4 mr-2" />
                                                 Confirmar
-                                            </button>
-                                            <button
+                                                        </Button>
+                                                        <Button
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
@@ -1558,15 +1803,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             setModalActionType('reject');
                                             setShowRejectModal(true);
                                                 }}
-                                                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm"
+                                                            variant="destructive"
+                                                            className="flex-1"
+                                                            size="sm"
                                             >
+                                                            <XCircle className="w-4 h-4 mr-2" />
                                                 Rechazar
-                                            </button>
+                                                        </Button>
                                         </>
                                     )}
-                                    
                                     {appointment.status === 'appointment_confirmed' && (
-                                        <button
+                                                    <Button
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
@@ -1574,103 +1821,96 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             setModalActionType('cancel');
                                             setShowRejectModal(true);
                                             }}
-                                            className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors text-sm"
+                                                        variant="outline"
+                                                        className="w-full"
+                                                        size="sm"
                                         >
-                                            Cancelar Cita
-                                        </button>
+                                                        <XCircle className="w-4 h-4 mr-2" />
+                                                        Cancelar
+                                                    </Button>
                                     )}
                                 </div>
+                                        ) : null}
                                     </div>
-                                )}
+                                </>
+                            )}
 
-                        {/* Propose Appointment Button - Desktop */}
-                        {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
-                            <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                                        <Calendar className="w-5 h-5 text-white" />
-                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-semibold text-gray-900 text-sm">
-                                            {appointment && appointment.status === 'appointment_cancelled_by_expert' 
-                                                ? '¿Nueva cita?' 
-                                                : '¿Programar cita?'
-                                            }
-                                        </h4>
-                                        <p className="text-gray-600 text-xs mt-1">
-                                            {appointment && appointment.status === 'appointment_cancelled_by_expert'
-                                                ? 'El experto canceló. Proponer nueva fecha.'
-                                                : 'Servicio requiere cita presencial.'
-                                            }
-                                        </p>
-                </div>
-                                    <button
-                                        onClick={() => handleAppointmentAction('propose', { 
-                                            id: 0, 
-                                            searchHireId: search?.searchHire?.id || 0,
-                                            status: 'awaiting_appointment',
-                                            amount: serviceInfo?.price || 0
-                                        } as Appointment)}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                                    >
-                                        <Calendar className="w-4 h-4" />
-                                        Proponer
-                                    </button>
+                            {/* Acciones Principales */}
+                            {(canDispute || canApprove || canExpertRespond) && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-2">
+                                        {canApprove && (
+                                            <Button
+                                                onClick={handleApproveService}
+                                                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                                                size="sm"
+                                            >
+                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                Aprobar Servicio
+                                            </Button>
+                                        )}
+                                        {canDispute && (
+                                            <Button
+                                                onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
+                                                variant="outline"
+                                                className="w-full border-destructive text-destructive hover:bg-destructive/10"
+                                                size="sm"
+                                            >
+                                                <AlertTriangle className="w-4 h-4 mr-2" />
+                                                Disputar
+                                            </Button>
+                                        )}
+                                        {canExpertRespond && (
+                                            <Button
+                                                onClick={() => setShowExpertResponseModal(true)}
+                                                variant="outline"
+                                                className="w-full"
+                                                size="sm"
+                                            >
+                                                <MessageCircle className="w-4 h-4 mr-2" />
+                                                Responder Disputa
+                                            </Button>
+                                        )}
                                 </div>
-                            </div>
+                                </>
                         )}
 
-                        {/* Deliverables Upload - Desktop - Solo para expertos cuando está esperando reporte */}
+                            {/* Subir Informe */}
                         {isExpert && appointment?.status === 'appointment_awaiting_report' && (
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                    <Upload className="w-5 h-5 text-blue-600" />
-                                    Subir Informe del Experto
-                                </h3>
-                                
-                                {/* Validación de archivos */}
+                                <>
+                                    <Separator />
+                                    <div className="space-y-3">
+                                        <h3 className="text-sm font-semibold text-foreground">Subir Informe</h3>
                                 {fileValidation && (
-                                    <div className={`mb-4 p-3 rounded-lg border ${
+                                            <div className={`p-2.5 rounded-md text-xs ${
                                         fileValidation.canSubmit 
-                                            ? 'bg-green-50 border-green-200 text-green-800' 
-                                            : 'bg-blue-50 border-blue-200 text-blue-800'
-                                    }`}>
-                                        <div className="flex items-center gap-2">
-                                            {fileValidation.canSubmit ? (
-                                                <CheckCircle className="w-4 h-4" />
-                                            ) : (
-                                                <Info className="w-4 h-4" />
-                                            )}
-                                            <span className="text-sm font-medium">{fileValidation.message}</span>
-                                        </div>
+                                                    ? 'bg-green-50 border border-green-200 text-green-800' 
+                                                    : 'bg-blue-50 border border-blue-200 text-blue-800'
+                                            }`}>
+                                                {fileValidation.message}
                                     </div>
                                 )}
-
-                                {/* Archivos ya subidos */}
                                 {uploadedFiles.length > 0 && (
-                                    <div className="mb-4">
-                                        <h4 className="text-sm font-medium text-gray-700 mb-2">Archivos Subidos:</h4>
-                                        <div className="space-y-2">
+                                            <div className="space-y-1.5">
                                             {uploadedFiles.map((file) => (
-                                                <div key={file.id} className="flex items-center justify-between bg-white p-2 rounded border">
+                                                    <div key={file.id} className="flex items-center justify-between p-2 bg-background rounded-md border text-xs">
                                                     <div className="flex items-center gap-2">
-                                                        <FileText className="w-4 h-4 text-gray-500" />
-                                                        <span className="text-sm text-gray-600">{file.fileName}</span>
-                                                        <span className="text-xs text-gray-500">({file.fileType})</span>
+                                                            <FileText className="w-3.5 h-3.5" />
+                                                            <span className="truncate">{file.fileName}</span>
                                                     </div>
-                                                    <button 
+                                                        <Button
                                                         onClick={() => handleDeleteFile(file.id)}
-                                                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-6 w-6 p-0"
                                                     >
-                                                        Eliminar
-                                                    </button>
+                                                            <X className="w-3 h-3" />
+                                                        </Button>
                                                 </div>
                                             ))}
-                                        </div>
                                     </div>
                                 )}
-
-                                <div className="space-y-3">
                                     <label className="block">
                                         <input
                                             type="file"
@@ -1679,103 +1919,117 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             onChange={handleDeliverableFileChange}
                                             className="hidden"
                                         />
-                                        <div className="w-full p-4 border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 cursor-pointer rounded-lg hover:bg-blue-100 transition-colors text-center">
-                                            <Upload className="w-6 h-6 mx-auto mb-2" />
-                                            <p className="font-medium text-sm">Seleccionar archivos</p>
-                                            <p className="text-xs">PDF o MP4 (máx. 10MB)</p>
+                                            <div className="w-full p-4 border-2 border-dashed border-border rounded-md cursor-pointer hover:bg-muted/50 transition-colors text-center">
+                                                <Upload className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
+                                                <p className="text-sm font-medium text-foreground mb-1">Seleccionar archivos</p>
+                                                <p className="text-xs text-muted-foreground">PDF o MP4 (máx. 10MB)</p>
                                         </div>
                                     </label>
                                     {selectedDeliverableFiles.length > 0 && (
-                                        <div className="space-y-2">
-                                            <p className="text-sm font-medium text-gray-700">Archivos seleccionados:</p>
+                                            <div className="space-y-1.5">
                                             {selectedDeliverableFiles.map((file, index) => (
-                                                <div key={index} className="flex items-center justify-between bg-white p-2 rounded border">
-                                                    <div className="flex items-center gap-2">
-                                                        <FileText className="w-4 h-4 text-gray-500" />
-                                                        <span className="text-sm text-gray-600">{file.name}</span>
-                                                        <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(1)}MB</span>
-                                                    </div>
-                                                    <button 
+                                                    <div key={index} className="flex items-center justify-between p-2 bg-background rounded-md border text-xs">
+                                                        <span className="truncate">{file.name}</span>
+                                                        <Button
                                                         onClick={() => removeSelectedFile(index)}
-                                                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-6 w-6 p-0"
                                                     >
-                                                        Eliminar
-                                                    </button>
+                                                            <X className="w-3 h-3" />
+                                                        </Button>
                                                 </div>
                                             ))}
                                         </div>
                                     )}
-                                    <div className="flex gap-2">
-                                        <button
+                                        <Button
                                             onClick={handleSubmitReport}
-                                            className={`flex-1 py-3 text-sm rounded-lg flex items-center justify-center gap-2 font-medium transition-colors ${
+                                            className={`w-full ${
                                                 fileValidation && !fileValidation.canSubmit
-                                                    ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                                                    : 'bg-green-600 hover:bg-green-700 text-white'
+                                                    ? 'bg-muted cursor-not-allowed'
+                                                    : 'bg-green-600 hover:bg-green-700'
                                             }`}
                                             disabled={fileValidation ? !fileValidation.canSubmit : false}
+                                            size="sm"
                                         >
-                                            <CheckCircle className="w-4 h-4" />
+                                            <CheckCircle className="w-4 h-4 mr-2" />
                                             Enviar Reporte
-                                        </button>
+                                        </Button>
                                     </div>
+                                </>
+                            )}
+
+                            {/* Reseña */}
+                            {canReview && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                            <h3 className="text-sm font-semibold text-foreground">Reseña</h3>
                                 </div>
+                                        <Button
+                                            onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
+                                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                                            size="sm"
+                                        >
+                                            <Star className="w-4 h-4 mr-2" />
+                                            Escribir Reseña
+                                        </Button>
                             </div>
-                        )}
+                                </>
+                            )}
 
-                        {/* Action Buttons - Desktop - Approve/Dispute */}
-                        {(canDispute || canApprove || canExpertRespond) && (
-                            <div className="mt-4 flex gap-2">
-                                {canDispute && (
-                                    <button
-                                        onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
-                                        className="flex-1 px-3 py-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg hover:bg-red-100 font-medium transition-colors duration-200 flex items-center justify-center gap-2"
-                                    >
-                                        <AlertTriangle className="w-4 h-4" />
-                                        Disputar
-                                    </button>
-                                )}
-                                {canExpertRespond && (
-                                    <button
-                                        onClick={() => setShowExpertResponseModal(true)}
-                                        className="flex-1 px-3 py-2 bg-orange-50 border border-orange-200 text-orange-700 text-sm rounded-lg hover:bg-orange-100 font-medium transition-colors duration-200 flex items-center justify-center gap-2"
-                                    >
-                                        <MessageCircle className="w-4 h-4" />
-                                        Responder Disputa
-                                    </button>
-                                )}
-                                {canApprove && (
-                                    <button
-                                        onClick={handleApproveService}
-                                        className="flex-1 px-3 py-2 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg hover:bg-green-100 font-medium transition-colors duration-200 flex items-center justify-center gap-2"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        Aprobar
-                                    </button>
+                            {review && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                                <span className="text-sm font-semibold text-foreground">Reseña</span>
+                                            </div>
+                                            <Badge variant="secondary">{review.score}/5</Badge>
+                                        </div>
+                                        {review.description && (
+                                            <p className="text-sm text-foreground leading-relaxed bg-background p-3 rounded-md border">
+                                                {review.description}
+                                            </p>
                                 )}
                             </div>
-                        )}
+                                </>
+                            )}
 
-                        {/* Review Button - Desktop */}
-                        {canReview && (
-                            <div className="mt-4">
-                                <button
-                                    onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                    className="w-full mt-3 bg-yellow-500 text-white py-3 rounded-lg hover:bg-yellow-600 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
-                                >
-                                    <Star className="w-4 h-4" />
-                                    Enviar Reseña
-                                </button>
-                            </div>
-                        )}
+                            {/* Programar Cita - Al final si es necesario */}
+                            {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
+                                <>
+                                    <Separator />
+                                    <Button
+                                        onClick={() => handleAppointmentAction('propose', { 
+                                            id: 0, 
+                                            searchHireId: search?.searchHire?.id || 0,
+                                            status: 'awaiting_appointment',
+                                            amount: serviceInfo?.price || 0
+                                        } as Appointment)}
+                                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                                        size="sm"
+                                    >
+                                        <Calendar className="w-4 h-4 mr-2" />
+                                        {appointment && appointment.status === 'appointment_cancelled_by_expert' 
+                                            ? 'Proponer Nueva Cita'
+                                            : 'Programar Cita'
+                                        }
+                                    </Button>
+                                </>
+                            )}
+
+                            <div className="h-6"></div>
+
 
                         {/* Espacio adicional para asegurar que todos los botones sean visibles */}
                         <div className="h-8"></div>
-
                     </div>
-                </div>
+                    </ScrollArea>
                 </aside>
             </div>
 

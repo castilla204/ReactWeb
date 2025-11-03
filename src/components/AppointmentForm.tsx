@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, X, FileText } from 'lucide-react';
+import { Calendar, MapPin, FileText } from 'lucide-react';
 import { ProposeAppointmentDto } from '../types/appointment';
 import AppointmentMap from './AppointmentMap';
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerClose,
+} from './ui/drawer';
+import { Button } from './ui/button';
+import { Label } from './ui/label';
 
 interface AppointmentFormProps {
   searchHireId: number;
@@ -192,34 +203,22 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-end justify-center p-0 text-center sm:items-center sm:p-0">
-        <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300" onClick={onCancel}></div>
-        <div className="relative transform overflow-hidden rounded-t-lg bg-white text-left shadow-xl transition-all duration-500 ease-out translate-y-0 sm:my-8 sm:w-full sm:max-w-4xl sm:rounded-lg sm:translate-y-0 sm:duration-300 sm:ease-out">
+    <Drawer open={true} onOpenChange={(open) => !open && onCancel()}>
+      <DrawerContent className="max-h-[96vh]">
+        <DrawerHeader>
+          <DrawerTitle>Proponer Cita</DrawerTitle>
+          <DrawerDescription>
+            Completa los datos para programar una cita con el experto
+          </DrawerDescription>
+          <DrawerClose />
+        </DrawerHeader>
         
-        {/* Swipe indicator - Mobile only */}
-        <div className="sm:hidden flex justify-center pt-3 pb-2">
-          <div className="w-12 h-1 bg-gray-400 rounded-full shadow-sm"></div>
-        </div>
-        
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">Proponer Cita</h3>
-          <button
-            onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600"
-            disabled={isLoading}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="px-4 pb-4 pt-5 sm:p-6 max-h-[75vh] overflow-y-auto">
+        <form id="appointment-form" onSubmit={handleSubmit} className="px-4 pb-4 overflow-y-auto flex-1">
           
           {/* Errores */}
           {errors.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-              <div className="text-sm text-red-600">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 mb-4">
+              <div className="text-sm text-destructive">
                 {errors.map((error, index) => (
                   <p key={index} className="mb-1 last:mb-0">• {error}</p>
                 ))}
@@ -234,36 +233,34 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             <div className="space-y-6">
               {/* 1. Fecha y Hora */}
               <div>
-                <h4 className="text-sm font-medium text-gray-900 flex items-center mb-3">
-                  <Calendar className="w-4 h-4 mr-2 text-blue-600" />
+                <h4 className="text-sm font-medium text-foreground flex items-center mb-3">
+                  <Calendar className="w-4 h-4 mr-2 text-primary" />
                   Fecha y Hora
                 </h4>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha
-                    </label>
+                    <Label htmlFor="date">Fecha</Label>
                     <input
+                      id="date"
                       type="date"
                       value={formData.proposedDate}
                       onChange={handleDateChange}
                       min={today}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       required
                       disabled={isLoading}
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Hora
-                    </label>
+                    <Label htmlFor="time">Hora</Label>
                     <input
+                      id="time"
                       type="time"
                       value={formData.proposedTime.replace(':00', '')}
                       onChange={handleTimeChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       required
                       disabled={isLoading}
                     />
@@ -273,38 +270,36 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
               {/* 2. Dirección */}
               <div>
-                <h4 className="text-sm font-medium text-gray-900 flex items-center mb-3">
-                  <MapPin className="w-4 h-4 mr-2 text-orange-600" />
+                <h4 className="text-sm font-medium text-foreground flex items-center mb-3">
+                  <MapPin className="w-4 h-4 mr-2 text-primary" />
                   Dirección
                 </h4>
                 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Dirección completa
-                    </label>
+                    <Label htmlFor="location">Dirección completa</Label>
                     <input
+                      id="location"
                       type="text"
                       value={formData.location || ''}
                       onChange={(e) => {
                         setFormData({ ...formData, location: e.target.value });
                       }}
                       placeholder="Escribe la dirección o selecciona en el mapa..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       disabled={isLoading}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Número de puerta/garaje
-                    </label>
+                    <Label htmlFor="doorNumber">Número de puerta/garaje</Label>
                     <input
+                      id="doorNumber"
                       type="text"
                       value={formData.doorNumber || ''}
                       onChange={handleDoorNumberChange}
                       placeholder="Portal A, 2ºB, Garaje 15..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       disabled={isLoading}
                     />
                   </div>
@@ -313,36 +308,34 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
               {/* 3. Información Adicional */}
               <div>
-                <h4 className="text-sm font-medium text-gray-900 flex items-center mb-3">
-                  <FileText className="w-4 h-4 mr-2 text-purple-600" />
+                <h4 className="text-sm font-medium text-foreground flex items-center mb-3">
+                  <FileText className="w-4 h-4 mr-2 text-primary" />
                   Información Adicional
                 </h4>
                 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Teléfono del propietario
-                    </label>
+                    <Label htmlFor="ownerPhone">Teléfono del propietario</Label>
                     <input
+                      id="ownerPhone"
                       type="tel"
                       value={formData.ownerPhone || ''}
                       onChange={handleOwnerPhoneChange}
                       placeholder="+34 666 123 456"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       disabled={isLoading}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Detalles específicos del sitio
-                    </label>
+                    <Label htmlFor="siteDetails">Detalles específicos del sitio</Label>
                     <textarea
+                      id="siteDetails"
                       value={formData.siteDetails || ''}
                       onChange={handleSiteDetailsChange}
                       placeholder="Entrada por el garaje, timbre roto, código de acceso..."
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                       disabled={isLoading}
                     />
                   </div>
@@ -352,12 +345,12 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
             {/* Columna derecha - Mapa */}
             <div>
-              <h4 className="text-sm font-medium text-gray-900 flex items-center mb-3">
-                <MapPin className="w-4 h-4 mr-2 text-green-600" />
+              <h4 className="text-sm font-medium text-foreground flex items-center mb-3">
+                <MapPin className="w-4 h-4 mr-2 text-primary" />
                 Ubicación en el Mapa
               </h4>
               
-              <div className="h-96 border border-gray-300 rounded-md">
+              <div className="h-96 border border-border rounded-md">
                 <AppointmentMap
                   onLocationSelect={handleLocationSelect}
                   initialLocation={selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude } : undefined}
@@ -371,8 +364,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           </div>
 
           {/* Información importante */}
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-6">
-            <div className="text-sm text-blue-800">
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3 mt-6">
+            <div className="text-sm text-blue-800 dark:text-blue-200">
               <p className="font-medium mb-2">Información importante</p>
               <ul className="text-xs space-y-1">
                 <li>• La cita debe ser al menos 24 horas en el futuro</li>
@@ -381,29 +374,29 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               </ul>
             </div>
           </div>
-          
-          {/* Botones */}
-          <div className="flex space-x-3 pt-4">
-            <button
-              type="submit"
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Proponiendo...' : 'Proponer Cita'}
-            </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              Cancelar
-            </button>
-          </div>
         </form>
-        </div>
-      </div>
-    </div>
+        
+        <DrawerFooter className="flex-col gap-2 sm:flex-row">
+          <Button
+            type="submit"
+            form="appointment-form"
+            className="w-full sm:flex-1"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Proponiendo...' : 'Proponer Cita'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="w-full sm:w-auto"
+          >
+            Cancelar
+          </Button>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 };
 
