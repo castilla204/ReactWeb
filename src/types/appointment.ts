@@ -34,45 +34,43 @@ export interface Appointment {
   proposedDate: string;        // ISO 8601: "2024-01-15"
   proposedTime: string;        // TimeSpan: "14:30:00"
   location: string;            // "Calle Mayor 123, Madrid"
-  latitude?: number;           // 40.4168
-  longitude?: number;          // -3.7038
-  doorNumber?: string;         // "Portal A, 2ºB"
-  ownerPhone?: string;         // "+34 666 123 456"
-  siteDetails?: string;        // "Entrada por el garaje, timbre roto"
-  
-  // Información de disputas
-  disputeReason?: string;      // Razón de la disputa
-  
-  // Información de finalización
-  completedAt?: string;        // Cuándo se completó
-  completedBy?: number;        // Quién la completó
+  latitude?: number | null;           // 40.4168
+  longitude?: number | null;          // -3.7038
+  doorNumber?: string | null;         // "Portal A, 2ºB"
+  ownerPhone?: string | null;         // "+34 666 123 456"
+  siteDetails?: string | null;        // "Entrada por el garaje, timbre roto"
   
   // Contadores y control
   rejectionCount: number;      // Veces que el experto rechazó
   cancellationCount: number;   // Veces que se canceló
   
-  // 🆕 NUEVOS CAMPOS DE RECHAZOS SEPARADOS:
+  // 🆕 CAMPOS DE RECHAZOS SEPARADOS:
   clientCancellationCount: number;        // Número de cancelaciones del cliente
   expertCancellationCount: number;        // Número de cancelaciones del experto
-  lastClientCancellationAt?: string;      // Última cancelación del cliente
-  lastExpertCancellationAt?: string;      // Última cancelación del experto
+  lastClientCancellationAt: string | null;      // Última cancelación del cliente
+  lastExpertCancellationAt: string | null;      // Última cancelación del experto
   
   // Timestamps de actividad
-  lastRejectionAt?: string;    // Última vez que se rechazó
-  lastProposalAt?: string;     // Última vez que se propuso
-  lastResponseAt?: string;     // Última vez que se respondió
-  
-  // Control de bloqueo
-  isLocked: boolean;           // Bloqueado 12h antes de la cita
+  lastRejectionAt: string | null;    // Última vez que se rechazó
+  lastProposalAt: string | null;     // Última vez que se propuso
+  lastResponseAt: string | null;     // Última vez que se respondió
   
   // Timestamps del sistema
   createdAt: string;
   updatedAt: string;
   
   // Información adicional (viene del SearchHire)
-  clientName?: string;         // Nombre del cliente
-  expertName?: string;         // Nombre del experto
+  clientName?: string | null;         // Nombre del cliente
+  expertName?: string | null;         // Nombre del experto
   amount: number;              // Monto del servicio
+  
+  // Información de ubicación del experto (opcional, viene del endpoint details-complete)
+  expertLatitude?: number | null;
+  expertLongitude?: number | null;
+  locationRange?: number | null;
+  
+  // Información de estado (opcional, viene del endpoint details-complete)
+  statusInfo?: any; // SystemStatusDto - definido en searchDetails.ts
   
   // Timers activos
   timers: AppointmentTimer[];

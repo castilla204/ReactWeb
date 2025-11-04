@@ -3,7 +3,7 @@ import React from 'react';
 const Background: React.FC = () => (
     <div className="absolute inset-0 z-0 overflow-hidden">
         {/* Base gradient layer */}
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50 via-white to-blue-50" />
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-50 via-background to-blue-50 dark:from-slate-950 dark:via-background dark:to-slate-950" />
 
         {/* Animated gradient spheres */}
         <div className="absolute top-0 -right-1/4 w-full h-full">
@@ -43,8 +43,8 @@ const Background: React.FC = () => (
         <div className="absolute bottom-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
 
         {/* Overlay gradients */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-transparent to-white/80" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_20%,white_70%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-transparent to-background/80" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_20%,hsl(var(--background))_70%)]" />
     </div>
 );
 

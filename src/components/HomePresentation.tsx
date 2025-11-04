@@ -80,7 +80,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     }, []);
 
     return (
-        <div className="relative w-full bg-white overflow-hidden">
+        <div className="relative w-full bg-background overflow-hidden">
             {/* Professional subtle background */}
             <div className="absolute inset-0 overflow-hidden">
                 {/* Minimal gradient overlay */}

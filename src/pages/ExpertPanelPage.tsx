@@ -637,7 +637,7 @@ export function ExpertPanelPage() {
 
     if (!canAccessPanel) {
         return (
-            <div className="min-h-screen bg-white relative overflow-hidden">
+            <div className="min-h-screen bg-background relative overflow-hidden">
                 {/* Fondo decorativo sutil para PC */}
                 <div className="hidden lg:block absolute inset-0">
                     {/* Patrón de puntos sutiles */}
