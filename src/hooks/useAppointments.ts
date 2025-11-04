@@ -345,12 +345,28 @@ export const useAppointmentLock = (appointment: Appointment | null) => {
 };
 
 /**
+ * Utilidad para calcular si una cita está bloqueada (12 horas antes de la cita)
+ */
+const calculateIsLocked = (appointment: Appointment): boolean => {
+  if (appointment.status !== 'appointment_confirmed') {
+    return false;
+  }
+  
+  try {
+    const appointmentDateTime = new Date(`${appointment.proposedDate}T${appointment.proposedTime}`);
+    const twelveHoursBefore = new Date(appointmentDateTime.getTime() - 12 * 60 * 60 * 1000);
+    return new Date() >= twelveHoursBefore;
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Utilidad para obtener las acciones disponibles según el estado de la cita
  */
 export const getAvailableActions = (
   appointment: Appointment | null, 
-  userRole: 'client' | 'expert', 
-  isLocked: boolean
+  userRole: 'client' | 'expert'
 ): AppointmentActions => {
   if (!appointment) {
     return {
@@ -361,6 +377,8 @@ export const getAvailableActions = (
       canMarkCompleted: false,
     };
   }
+
+  const isLocked = calculateIsLocked(appointment);
 
   if (isLocked) {
     return {

@@ -333,10 +333,14 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                           <FormLabel>Fecha</FormLabel>
                           <FormControl>
                             <DatePicker
-                              selected={formData.proposedDate ? new Date(formData.proposedDate + 'T00:00:00') : null}
+                              selected={formData.proposedDate ? new Date(formData.proposedDate + 'T12:00:00') : null}
                               onChange={(date: Date | null) => {
                                 if (date) {
-                                  const formattedDate = date.toISOString().split('T')[0];
+                                  // Usar métodos locales para evitar problemas de zona horaria
+                                  const year = date.getFullYear();
+                                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                                  const day = String(date.getDate()).padStart(2, '0');
+                                  const formattedDate = `${year}-${month}-${day}`;
                                   field.onChange(formattedDate);
                                   handleDateChange({ target: { value: formattedDate } } as React.ChangeEvent<HTMLInputElement>);
                                 }

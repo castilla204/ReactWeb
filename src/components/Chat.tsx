@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2, CheckCircle, XCircle, AlertCircle, Clock, FileCheck } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
-import { Card } from './ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { NotificationType } from './Notification';
@@ -21,7 +20,6 @@ interface ChatProps {
         name?: string;
         profilePictureUrl?: string;
     };
-    hideHeader?: boolean; // Nueva prop para ocultar el header
 }
 
 const libraries: ("drawing" | "geometry")[] = ['drawing', 'geometry'];
@@ -74,7 +72,124 @@ const defaultCenter = {
     lng: -3.7038,
 };
 
-const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, expertData, hideHeader = false }) => {
+// Funciones para detectar y manejar mensajes de cambio de estado de cita
+const isAppointmentStatusChangeMessage = (content: string): boolean => {
+    return content?.startsWith("APPointmentStatusChange:") ?? false;
+};
+
+const extractStatusValue = (content: string): string | null => {
+    if (!isAppointmentStatusChangeMessage(content)) {
+        return null;
+    }
+    return content.replace("APPointmentStatusChange:", "");
+};
+
+interface StatusDisplay {
+    message: string;
+    icon: React.ReactNode;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+}
+
+const statusDisplayMap: Record<string, StatusDisplay> = {
+    "appointment_proposed": {
+        message: "Cita propuesta",
+        icon: <Calendar className="w-4 h-4" />,
+        color: "text-blue-700 dark:text-blue-300",
+        bgColor: "bg-blue-50 dark:bg-blue-950/30",
+        borderColor: "border-blue-200 dark:border-blue-800"
+    },
+    "appointment_confirmed": {
+        message: "✅ Cita aceptada",
+        icon: <CheckCircle className="w-4 h-4" />,
+        color: "text-green-700 dark:text-green-300",
+        bgColor: "bg-green-50 dark:bg-green-950/30",
+        borderColor: "border-green-200 dark:border-green-800"
+    },
+    "appointment_rejected": {
+        message: "❌ Cita rechazada",
+        icon: <XCircle className="w-4 h-4" />,
+        color: "text-red-700 dark:text-red-300",
+        bgColor: "bg-red-50 dark:bg-red-950/30",
+        borderColor: "border-red-200 dark:border-red-800"
+    },
+    "appointment_cancelled_by_client": {
+        message: "Cita cancelada por el cliente",
+        icon: <AlertCircle className="w-4 h-4" />,
+        color: "text-orange-700 dark:text-orange-300",
+        bgColor: "bg-orange-50 dark:bg-orange-950/30",
+        borderColor: "border-orange-200 dark:border-orange-800"
+    },
+    "appointment_cancelled_by_expert": {
+        message: "Cita cancelada por el experto",
+        icon: <AlertCircle className="w-4 h-4" />,
+        color: "text-orange-700 dark:text-orange-300",
+        bgColor: "bg-orange-50 dark:bg-orange-950/30",
+        borderColor: "border-orange-200 dark:border-orange-800"
+    },
+    "appointment_cancelled_by_client_second": {
+        message: "Cita cancelada por el cliente (segunda cancelación)",
+        icon: <AlertCircle className="w-4 h-4" />,
+        color: "text-orange-700 dark:text-orange-300",
+        bgColor: "bg-orange-50 dark:bg-orange-950/30",
+        borderColor: "border-orange-200 dark:border-orange-800"
+    },
+    "appointment_cancelled_by_expert_second": {
+        message: "Cita cancelada por el experto (segunda cancelación)",
+        icon: <AlertCircle className="w-4 h-4" />,
+        color: "text-orange-700 dark:text-orange-300",
+        bgColor: "bg-orange-50 dark:bg-orange-950/30",
+        borderColor: "border-orange-200 dark:border-orange-800"
+    },
+    "appointment_cancelled_by_no_response": {
+        message: "Cita cancelada - sin respuesta",
+        icon: <Clock className="w-4 h-4" />,
+        color: "text-gray-700 dark:text-gray-300",
+        bgColor: "bg-gray-50 dark:bg-gray-950/30",
+        borderColor: "border-gray-200 dark:border-gray-800"
+    },
+    "appointment_cancelled_by_no_report": {
+        message: "Cita cancelada - sin reporte",
+        icon: <FileText className="w-4 h-4" />,
+        color: "text-gray-700 dark:text-gray-300",
+        bgColor: "bg-gray-50 dark:bg-gray-950/30",
+        borderColor: "border-gray-200 dark:border-gray-800"
+    },
+    "appointment_report_sent": {
+        message: "📄 Reporte enviado",
+        icon: <FileCheck className="w-4 h-4" />,
+        color: "text-green-700 dark:text-green-300",
+        bgColor: "bg-green-50 dark:bg-green-950/30",
+        borderColor: "border-green-200 dark:border-green-800"
+    },
+    "appointment_awaiting_report": {
+        message: "Esperando reporte del experto",
+        icon: <Clock className="w-4 h-4" />,
+        color: "text-yellow-700 dark:text-yellow-300",
+        bgColor: "bg-yellow-50 dark:bg-yellow-950/30",
+        borderColor: "border-yellow-200 dark:border-yellow-800"
+    },
+    "appointment_cancelled_by_expert_rejection": {
+        message: "Cita cancelada por rechazo del experto",
+        icon: <XCircle className="w-4 h-4" />,
+        color: "text-red-700 dark:text-red-300",
+        bgColor: "bg-red-50 dark:bg-red-950/30",
+        borderColor: "border-red-200 dark:border-red-800"
+    }
+};
+
+const getStatusDisplay = (statusValue: string): StatusDisplay => {
+    return statusDisplayMap[statusValue] ?? {
+        message: `Estado: ${statusValue}`,
+        icon: <HelpCircle className="w-4 h-4" />,
+        color: "text-gray-700 dark:text-gray-300",
+        bgColor: "bg-gray-50 dark:bg-gray-950/30",
+        borderColor: "border-gray-200 dark:border-gray-800"
+    };
+};
+
+const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, expertData }) => {
     const { user } = useAuth();
     const { conversation, loading, error, newMessage, setNewMessage, sendMessage, isSending } = useChat(
         searchId,
@@ -364,37 +479,10 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
     }, []) || [];
 
     return (
-        <div className="relative flex flex-col h-full bg-background divide-y divide-border/50">
-            {/* Header - Hidden on mobile (info shown in parent header) */}
-            {!hideHeader && (
-                <div className="hidden lg:flex bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-orange-50/20 dark:from-blue-950/20 dark:via-indigo-950/15 dark:to-orange-950/10 backdrop-blur-sm border-b border-blue-200/50 dark:border-blue-800/30 px-6 py-4 flex-shrink-0">
-                <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 border border-border/50">
-                            <AvatarImage 
-                                src={getAvatarImage('other') || undefined} 
-                                alt="Avatar"
-                                className="object-cover"
-                            />
-                            <AvatarFallback className="bg-muted text-muted-foreground font-medium">
-                            {getAvatarInitials('other')}
-                            </AvatarFallback>
-                        </Avatar>
-                    <div>
-                            <h3 className="text-base font-semibold text-foreground">
-                            {isClient ? (expertData?.name || 'Experto') : 'Cliente'}
-                        </h3>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500/60 animate-pulse"></span>
-                                Conversación activa
-                            </p>
-                    </div>
-                </div>
-            </div>
-            )}
-
+        <div className="relative flex flex-col h-full bg-background">
             {/* Messages Container - Fixed height with internal scroll */}
             <ScrollArea className="h-[calc(100vh-400px)] lg:h-[calc(100vh-350px)] flex-1 px-4 lg:px-6 chat-scroll-area">
-                <div className="space-y-6 pb-24 lg:pb-32" data-chat-messages ref={messagesEndRef}>
+                <div className="space-y-6 pb-32 lg:pb-40" data-chat-messages ref={messagesEndRef}>
                     {/* Mensajes de bienvenida - Siempre se muestran */}
                     {isExpert ? (
                         <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-6 lg:pt-8' : 'pt-6'} pb-8 text-center px-4`}>
@@ -549,7 +637,31 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                         <div key={groupIndex} className="w-full">
                             {/* Message group - Inspirado en Vercel AI SDK Chatbot */}
                             <div className="space-y-2">
-                                {group.messages.map((message: any, msgIndex: number) => (
+                                {group.messages.map((message: any, msgIndex: number) => {
+                                    const isStatusMessage = message.content && isAppointmentStatusChangeMessage(message.content);
+                                    
+                                    // Si es mensaje de estado, renderizar de forma especial sin avatar
+                                    if (isStatusMessage) {
+                                        const statusValue = extractStatusValue(message.content);
+                                        const display = statusValue ? getStatusDisplay(statusValue) : null;
+                                        if (!display) return null;
+                                        
+                                        return (
+                                            <div key={message.id} className="w-full flex justify-center my-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                                <div className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 ${display.bgColor} ${display.borderColor} ${display.color} shadow-md max-w-[85%] sm:max-w-[75%] lg:max-w-[65%]`}>
+                                                    <div className={`${display.color} flex-shrink-0`}>
+                                                        {display.icon}
+                                                    </div>
+                                                    <p className="text-sm font-medium">
+                                                        {display.message}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    
+                                    // Mensaje normal con avatar
+                                    return (
                                     <div key={message.id} className={`flex gap-3 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'} ${msgIndex === 0 ? 'mt-3' : 'mt-1'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                                         {/* Avatar solo en el primer mensaje del grupo */}
                                         {msgIndex === 0 && (
@@ -566,8 +678,9 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                         )}
                                         {msgIndex > 0 && <div className="w-8" />}
 
+                                        <div className="flex-1 space-y-2">
                                         {/* Message Content - Diseño más limpio inspirado en Vercel */}
-                                            <div className={`flex-1 ${group.isOwn ? 'flex justify-end' : 'flex justify-start'}`}>
+                                            <div className={`${group.isOwn ? 'flex justify-end' : 'flex justify-start'}`}>
                                             {message.content && (
                                                 <div className={`group relative max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] ${
                                                     group.isOwn 
@@ -600,6 +713,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                                 </div>
                                             </div>
                                         )}
+                                            </div>
 
                                         {/* Attachments - Redesigned */}
                                         {message.attachmentUrls && message.attachmentUrls.length > 0 && (
@@ -714,7 +828,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
 
                                         {/* Location */}
                                         {(message.locationLatitude || message.locationLongitude) && isLoaded && !loadError && (
-                                            <div className={`w-full ${group.isOwn ? 'flex justify-end' : 'flex justify-start'} mb-3`}>
+                                                <div className={`w-full ${group.isOwn ? 'flex justify-end' : 'flex justify-start'}`}>
                                                 <div className={`relative w-32 ${group.isOwn ? 'ml-auto' : 'mr-auto'}`}>
                                                     <div className="bg-white border border-gray-200 shadow-lg overflow-hidden"
                                                          style={{
@@ -763,7 +877,8 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                         )}
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     ))
@@ -772,89 +887,106 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
             </div>
             </ScrollArea>
 
-            {/* Fixed Input Area at Bottom - Inspirado en Vercel AI SDK */}
-            <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-10">
-                {/* Attachments Preview - Mejorado */}
+            {/* Fixed Input Area at Bottom - Inspirado en PromptInput de AI Elements */}
+            <div className="absolute bottom-0 left-0 right-0 bg-background z-10 border-t border-border/50">
+                <div className="w-full px-3 pt-3 pb-3 sm:px-4 sm:pt-4 sm:pb-4 lg:px-6 lg:pt-6" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+                    <div className="max-w-4xl mx-auto">
+                        {/* PromptInput Container - Estilo moderno con colores tutifruti sutiles */}
+                        <div className="relative bg-white dark:bg-gray-900 border-2 border-gray-300/70 dark:border-gray-600/60 rounded-xl shadow-lg overflow-hidden">
+                            {/* Borde decorativo con gradiente tutifruti */}
+                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/15 via-indigo-400/15 via-purple-400/15 to-orange-400/15 dark:from-blue-500/12 dark:via-indigo-500/12 dark:via-purple-500/12 dark:to-orange-500/12 -z-10 blur-sm"></div>
+                            {/* Fondo con gradiente sutil */}
+                            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-50/35 via-indigo-50/30 to-orange-50/30 dark:from-blue-950/25 dark:via-indigo-950/20 dark:to-orange-950/18 -z-10"></div>
+                            <div className="relative bg-white dark:bg-gray-900 rounded-xl">
+                                {/* Header - Attachments */}
                 {(selectedFiles.length > 0 || location) && (
-                    <div className="px-4 py-3 border-b border-border bg-muted/30">
-                        <div className="flex flex-wrap gap-2 max-w-4xl mx-auto">
+                                    <div className="px-2.5 py-2 sm:px-3 sm:py-2.5 border-b border-gray-200/60 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/30 via-indigo-50/25 to-orange-50/25 dark:from-blue-950/18 dark:via-indigo-950/15 dark:to-orange-950/12">
+                                        <div className="flex flex-wrap gap-2">
                             {selectedFiles.map((file, index) => (
-                                <Card key={index} className="p-2 flex items-center gap-2 border-border/50">
-                                    <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                                <div
+                                                    key={index}
+                                                    className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-background border border-border/50 text-xs"
+                                                >
+                                                    <Paperclip className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium text-foreground truncate max-w-[120px]">
+                                                        <p className="font-medium text-foreground truncate max-w-[120px]">
                                         {file.name}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">
+                                                        <p className="text-muted-foreground">
                                         {formatFileSize(file.size)}
                                         </p>
                                     </div>
-                                    <Button
+                                                    <button
                                         type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6"
                                         onClick={() => {
                                             const newFiles = [...selectedFiles];
                                             newFiles.splice(index, 1);
                                             setSelectedFiles(newFiles);
                                         }}
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </Button>
-                                </Card>
+                                                        className="ml-1 p-0.5 rounded hover:bg-muted transition-colors"
+                                                    >
+                                                        <X className="w-3.5 h-3.5 text-muted-foreground" />
+                                                    </button>
+                                                </div>
                             ))}
                 {location && (
-                                <Card className="p-2 flex items-center gap-2 border-green-500/20 bg-green-50/50">
-                                    <MapPin className="w-4 h-4 text-green-600" />
-                                    <div className="text-xs font-medium text-green-700">
+                                                <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-green-50/50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/50 text-xs">
+                                                    <MapPin className="w-3.5 h-3.5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                                    <div className="font-medium text-green-700 dark:text-green-400">
                                 {parseFloat(location.latitude).toFixed(4)}, {parseFloat(location.longitude).toFixed(4)}
                             </div>
-                                    <Button
+                                                    <button
                                         type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6"
                                         onClick={() => setLocation(null)}
-                                    >
-                                        <X className="w-3 h-3 text-green-700" />
-                                    </Button>
-                                </Card>
+                                                        className="ml-1 p-0.5 rounded hover:bg-green-100/50 dark:hover:bg-green-900/30 transition-colors"
+                                                    >
+                                                        <X className="w-3.5 h-3.5 text-green-700 dark:text-green-400" />
+                                                    </button>
+                                                </div>
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* Input area - Diseño moderno mejorado */}
-                <div className="px-4 py-4 lg:px-6 border-t border-border/50 bg-background/95 backdrop-blur-sm">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="flex items-end gap-2">
-                            {/* Contenedor del input con diseño cuadrado y moderno */}
-                            <div className="flex-1 relative">
-                                <div className="relative flex items-center gap-2 bg-background border border-border rounded-lg shadow-sm hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-200">
-                                    {/* Botones dentro del input (izquierda) */}
-                                    <div className="flex items-center gap-0.5 pl-2">
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={handleOpenMapModal}
-                                            className="h-8 w-8 rounded-md hover:bg-muted/80 transition-colors"
-                                            title="Seleccionar ubicación"
-                                        >
-                                            <MapPin className="w-4 h-4 text-muted-foreground" />
-                                        </Button>
+                                {/* Body - Textarea */}
+                                <div className="px-2.5 py-2.5 sm:px-3 sm:py-3">
+                                    <textarea
+                                        value={newMessage}
+                                        onChange={(e) => {
+                                            setNewMessage(e.target.value);
+                                            // Auto-resize
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+                                        }}
+                                        placeholder="Escribe un mensaje..."
+                                        className="w-full bg-transparent resize-none text-foreground placeholder:text-muted-foreground text-sm leading-relaxed focus:outline-none border-0"
+                                        rows={1}
+                                        style={{ minHeight: '44px', maxHeight: '160px' }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
+                                                e.preventDefault();
+                                                handleSendMessage();
+                                            }
+                                        }}
+                                        disabled={isSending}
+                                    />
+                                </div>
 
+                                {/* Footer - Tools and Submit */}
+                                <div className="px-2.5 py-2 sm:px-3 sm:py-2.5 border-t border-gray-200/60 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/30 via-indigo-50/25 to-orange-50/25 dark:from-blue-950/18 dark:via-indigo-950/15 dark:to-orange-950/12 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0">
+                                    {/* Tools - Left side */}
+                                    <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                                         <label className="cursor-pointer">
                                             <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon"
                                                 asChild
-                                                className="h-8 w-8 rounded-md hover:bg-muted/80 transition-colors"
+                                                className="h-7 w-7 sm:h-8 sm:w-8 rounded-md hover:bg-muted transition-colors"
                                             >
                                                 <span>
-                                                    <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                                    <Paperclip className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                                                    <span className="sr-only">Adjuntar archivo</span>
                                                 </span>
                                             </Button>
                                             <input
@@ -866,37 +998,25 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                                 disabled={isSending}
                                             />
                                         </label>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={handleOpenMapModal}
+                                            className="h-7 w-7 sm:h-8 sm:w-8 rounded-md hover:bg-muted transition-colors"
+                                            title="Seleccionar ubicación"
+                                        >
+                                            <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+                                            <span className="sr-only">Ubicación</span>
+                                        </Button>
                                     </div>
 
-                                    {/* Textarea */}
-                                    <textarea
-                                        value={newMessage}
-                                        onChange={(e) => {
-                                            setNewMessage(e.target.value);
-                                            // Auto-resize
-                                            e.target.style.height = 'auto';
-                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
-                                        }}
-                                        placeholder="Escribe un mensaje..."
-                                        className="flex-1 px-3 py-3 bg-transparent resize-none text-foreground placeholder:text-muted-foreground text-sm leading-relaxed focus:outline-none border-0"
-                                        rows={1}
-                                        style={{ minHeight: '44px', maxHeight: '160px' }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
-                                                e.preventDefault();
-                                                handleSendMessage();
-                                            }
-                                        }}
-                                        disabled={isSending}
-                                    />
-
-                                    {/* Botón de envío dentro del input (derecha) */}
-                                    <div className="pr-1 pb-1">
+                                    {/* Submit Button - Right side */}
                                         <Button
                                             type="button"
                                             onClick={handleSendMessage}
                                             size="icon"
-                                            className={`h-8 w-8 rounded-md transition-all duration-200 ${
+                                        className={`h-7 w-7 sm:h-8 sm:w-8 rounded-md transition-all duration-200 shrink-0 ${
                                                 isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
                                                     ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
                                                     : messageSent
@@ -906,14 +1026,14 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                             disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
                                         >
                                             {isSending ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
                                             ) : messageSent ? (
-                                                <CheckCircle2 className="w-4 h-4 animate-in zoom-in duration-200" />
+                                            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                             ) : (
-                                                <Send className="w-4 h-4" />
+                                            <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                             )}
+                                        <span className="sr-only">Enviar mensaje</span>
                                         </Button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
