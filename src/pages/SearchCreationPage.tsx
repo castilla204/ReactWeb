@@ -196,7 +196,7 @@ const SearchCreationPage: React.FC = () => {
     };
 
     return (
-        <div className="relative w-full bg-white" style={{ transition: 'none', minHeight: '100vh' }}>
+        <div className="relative w-full bg-background" style={{ transition: 'none', minHeight: '100vh' }}>
             {currentStep === 0 ? (
                 <>
                     <HomePresentation onScrollToForm={scrollToForm} />
@@ -207,10 +207,10 @@ const SearchCreationPage: React.FC = () => {
                         >
                             {/* Header */}
                             <div className="mb-6">
-                                <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2">
+                                <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-2">
                                     Crea tu búsqueda personalizada
                                 </h2>
-                                <p className="text-sm md:text-base text-gray-600">
+                                <p className="text-sm md:text-base text-muted-foreground">
                                     Define tus preferencias y déjanos encontrar exactamente lo que buscas.
                                 </p>
                             </div>
@@ -220,9 +220,9 @@ const SearchCreationPage: React.FC = () => {
                                     <div className="mb-4">
                                         <div className="flex items-center gap-3 mb-2">
                                             <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-medium">1</span>
-                                            <h3 className="text-lg font-semibold text-gray-900">Tipo de servicio</h3>
+                                            <h3 className="text-lg font-semibold text-foreground">Tipo de servicio</h3>
                                         </div>
-                                        <p className="text-sm text-gray-600 ml-9">Elige cómo quieres que realicemos tu búsqueda</p>
+                                        <p className="text-sm text-muted-foreground ml-9">Elige cómo quieres que realicemos tu búsqueda</p>
                                     </div>
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 ml-9">
                                         {serviceTypesLoading ? (
@@ -268,8 +268,8 @@ const SearchCreationPage: React.FC = () => {
                                                 <label 
                                                     key={serviceType.id}
                                                     className={`cursor-pointer p-4 border rounded-lg transition-all ${searchParameters.serviceTypeId === serviceType.id
-                                                        ? 'border-blue-600 bg-blue-50'
-                                                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                        ? 'border-primary bg-primary/10'
+                                                        : 'border-border hover:border-border/80 bg-background'
                                                         }`}
                                                 >
                                                     <input
@@ -291,7 +291,7 @@ const SearchCreationPage: React.FC = () => {
                                                             : 'border-gray-300'
                                                             }`}>
                                                             {searchParameters.serviceTypeId === serviceType.id && (
-                                                                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                                                <div className="w-1.5 h-1.5 bg-background rounded-full"></div>
                                                             )}
                                                         </div>
                                                         <div className="flex-1">
@@ -350,8 +350,8 @@ const SearchCreationPage: React.FC = () => {
                                                     setSearchParameters((prev) => ({ ...prev, category: category.id }))
                                                 }
                                                 className={`text-left p-4 border rounded-lg transition-all ${searchParameters.category === category.id
-                                                    ? 'border-blue-600 bg-blue-50'
-                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                    ? 'border-primary bg-primary/10'
+                                                    : 'border-border hover:border-border/80 bg-background'
                                                     }`}
                                             >
                                                 <div className={`w-10 h-10 mb-3 rounded-lg flex items-center justify-center ${searchParameters.category === category.id
@@ -504,7 +504,7 @@ const SearchCreationPage: React.FC = () => {
                         </div>
 
                     </div>
-                    <footer className="mt-16 bg-white border-t border-gray-100">
+                    <footer className="mt-16 bg-background border-t border-border">
                         <div className="w-full px-4 sm:px-6 mx-auto max-w-7xl">
                             <div className="py-6 sm:py-8">
                                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">

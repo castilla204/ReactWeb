@@ -12,6 +12,7 @@ import { AdDetails } from './components/AdDetails';
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 import { PaymentCancelPage } from './pages/PaymentCancelPage';
 import { Notification, NotificationType } from './components/Notification';
+import { AnimatedThemeToggler } from './components/ui/animated-theme-toggler';
 
 import SearchesPage from './pages/SearchesPage';
 import SearchCreationPage from './pages/SearchCreationPage';
@@ -97,12 +98,12 @@ const App: React.FC = React.memo(() => {
 
     return (
         <Router>
-            <div className="min-h-screen bg-white text-gray-900 relative overflow-x-hidden">
+            <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
                 {/* Header */}
-                <header className="h-16 bg-white border-b border-gray-200 shadow-sm relative z-50">
+                <header className="h-16 bg-background border-b border-border shadow-sm relative z-50">
                     <div className="max-w-7xl mx-auto h-full px-4 lg:px-6 flex items-center justify-between">
                         {/* Marca inspecciono.com */}
-                        <h1 className="text-lg font-medium text-gray-700 tracking-tight cursor-pointer hover:text-gray-900 transition-colors">
+                        <h1 className="text-lg font-medium text-foreground tracking-tight cursor-pointer hover:text-foreground/80 transition-colors">
                             inspecciono.com
                         </h1>
 
@@ -112,24 +113,24 @@ const App: React.FC = React.memo(() => {
                             <div className="hidden md:flex items-center">
                                 <button
                                     onClick={() => isAuthenticated ? window.location.href = '/busquedas' : handleRequireAuth('Ver tus búsquedas')}
-                                    className="flex items-center gap-1.5 px-2 py-1 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                                    className="flex items-center gap-1.5 px-2 py-1 text-sm text-foreground hover:text-primary transition-colors"
                                 >
                                     <Search className="w-4 h-4" />
                                     <span>Búsquedas</span>
                                 </button>
-                                <span className="text-gray-300 mx-2">|</span>
+                                <span className="text-muted-foreground/50 mx-2">|</span>
                                 <button
                                     onClick={() => isAuthenticated ? setShowFavorites(true) : handleRequireAuth('Ver tus favoritos')}
-                                    className="flex items-center gap-1.5 px-2 py-1 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                                    className="flex items-center gap-1.5 px-2 py-1 text-sm text-foreground hover:text-primary transition-colors"
                                 >
                                     <Heart className="w-4 h-4" />
                                     <span>Favoritos</span>
                                 </button>
-                                <span className="text-gray-300 mx-2">|</span>
+                                <span className="text-muted-foreground/50 mx-2">|</span>
                                 <button
                                     type="button"
                                     onClick={() => isAuthenticated ? setShowNotifications(true) : handleRequireAuth('Ver tus notificaciones')}
-                                    className="relative flex items-center gap-1.5 px-2 py-1 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                                    className="relative flex items-center gap-1.5 px-2 py-1 text-sm text-foreground hover:text-primary transition-colors"
                                 >
                                     {isAuthenticated && unreadCount > 0 && (
                                         <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border border-white">
@@ -140,13 +141,19 @@ const App: React.FC = React.memo(() => {
                                     <span>Notificaciones</span>
                                 </button>
                                 
+                                {/* Theme Toggle */}
+                                <span className="text-muted-foreground/50 mx-2">|</span>
+                                <div className="flex items-center">
+                                    <AnimatedThemeToggler />
+                                </div>
+                                
                                 {/* Panel de experto integrado - solo para expertos autenticados */}
                                 {isAuthenticated && isExpert && (
                                     <>
-                                        <span className="text-gray-300 mx-2">|</span>
+                                        <span className="text-muted-foreground/50 mx-2">|</span>
                                         <a
                                             href="/expert-panel"
-                                            className="flex items-center gap-1.5 px-2 py-1 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                                            className="flex items-center gap-1.5 px-2 py-1 text-sm text-foreground hover:text-primary transition-colors"
                                         >
                                             <Briefcase className="w-4 h-4" />
                                             <span>Panel</span>
@@ -156,12 +163,12 @@ const App: React.FC = React.memo(() => {
                             </div>
 
                             {/* Separador antes del avatar/login */}
-                            <span className="text-gray-300 mx-3">|</span>
+                            <span className="text-muted-foreground/50 mx-3">|</span>
 
                             {/* Botón menú móvil */}
                             <button
                                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="md:hidden p-1 text-gray-600 hover:text-gray-900 rounded transition-colors mr-2"
+                                className="md:hidden p-1 text-foreground hover:text-foreground/80 rounded transition-colors mr-2"
                             >
                                 <Menu className="w-5 h-5" />
                             </button>
@@ -177,11 +184,11 @@ const App: React.FC = React.memo(() => {
                                     </button>
 
                                     {showProfileMenu && (
-                                        <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
-                                            <div className="px-4 py-3 border-b border-gray-100">
-                                                <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
-                                                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                                                <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                                        <div className="absolute right-0 mt-2 w-52 bg-popover rounded-xl shadow-xl border border-border py-2 z-50">
+                                            <div className="px-4 py-3 border-b border-border">
+                                                <p className="text-sm font-semibold text-popover-foreground truncate">{user?.name}</p>
+                                                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                                                <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full">
                                                     {isExpert ? 'Experto' : 'Usuario'}
                                                 </span>
                                             </div>
@@ -190,9 +197,9 @@ const App: React.FC = React.memo(() => {
                                                     setShowAccountSettings(true);
                                                     setShowProfileMenu(false);
                                                 }}
-                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
                                             >
-                                                <Settings className="w-4 h-4 text-gray-600" />
+                                                <Settings className="w-4 h-4 text-muted-foreground" />
                                                 Configuración
                                             </button>
                                             <button
@@ -221,7 +228,7 @@ const App: React.FC = React.memo(() => {
                                 googleButton.click();
                             }
                         }}
-                        className="px-3 py-1.5 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                        className="px-3 py-1.5 text-sm text-foreground hover:text-primary transition-colors"
                     >
                         Iniciar Sesión
                     </button>
@@ -234,10 +241,10 @@ const App: React.FC = React.memo(() => {
 
 
                 {/* Sidebar - Always visible */}
-                <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-white shadow-xl transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden`}>
+                <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-background shadow-xl transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden`}>
                         <div className="flex flex-col h-full">
-                            <div className="p-4 border-b border-gray-100">
-                                <h1 className="text-xl font-bold text-gray-900">ATRAPO</h1>
+                            <div className="p-4 border-b border-border">
+                                <h1 className="text-xl font-bold text-foreground">ATRAPO</h1>
                             </div>
                             <nav className="flex-1 overflow-y-auto p-4">
                                 <div className="space-y-1">
@@ -250,9 +257,9 @@ const App: React.FC = React.memo(() => {
                                             }
                                             setSidebarOpen(false);
                                         }}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors"
                                     >
-                                        <Search className="w-4 h-4 text-blue-600" />
+                                        <Search className="w-4 h-4 text-primary" />
                                         Mis Búsquedas
                                     </button>
                                     <button
@@ -264,18 +271,18 @@ const App: React.FC = React.memo(() => {
                                             }
                                             setSidebarOpen(false);
                                         }}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors"
                                     >
-                                        <Heart className="w-4 h-4 text-blue-600" />
+                                        <Heart className="w-4 h-4 text-primary" />
                                         Favoritos
                                     </button>
                                     {isAuthenticated && isExpert ? (
                                         <a
                                             href="/expert-panel"
-                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors"
                                             onClick={() => setSidebarOpen(false)}
                                         >
-                                            <Briefcase className="w-4 h-4 text-blue-600" />
+                                            <Briefcase className="w-4 h-4 text-primary" />
                                             Panel de Experto
                                         </a>
                                     ) : (
@@ -288,9 +295,9 @@ const App: React.FC = React.memo(() => {
                                                 }
                                                 setSidebarOpen(false);
                                             }}
-                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors"
                                         >
-                                            <UserPlus className="w-4 h-4 text-blue-600" />
+                                            <UserPlus className="w-4 h-4 text-primary" />
                                             Hazte Buscador
                                         </button>
                                     )}
@@ -298,37 +305,37 @@ const App: React.FC = React.memo(() => {
                                 <div className="mt-8 space-y-1">
                                     <button
                                         onClick={() => setSidebarOpen(false)}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors"
                                     >
-                                        <Settings className="w-4 h-4 text-gray-500" />
+                                        <Settings className="w-4 h-4 text-muted-foreground" />
                                         Configuración
                                     </button>
                                     <button
                                         onClick={() => setSidebarOpen(false)}
-                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-accent rounded-lg transition-colors"
                                     >
-                                        <HelpCircle className="w-4 h-4 text-gray-500" />
+                                        <HelpCircle className="w-4 h-4 text-muted-foreground" />
                                         Centro de Ayuda
                                     </button>
                                 </div>
                             </nav>
-                            <div className="p-4 border-t border-gray-100">
+                            <div className="p-4 border-t border-border">
                                 {isAuthenticated ? (
                                     <>
                                         <div className="flex items-center gap-3 mb-3">
-                                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                                <span className="text-sm font-medium text-blue-400">
+                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                <span className="text-sm font-medium text-primary">
                                                     {user?.name?.[0]?.toUpperCase()}
                                                 </span>
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-                                                <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                                                <p className="text-sm font-medium text-foreground truncate">{user?.name}</p>
+                                                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                                             </div>
                                         </div>
                                         <button
                                             onClick={handleSignOut}
-                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                                         >
                                             <LogOut className="w-4 h-4" />
                                             Cerrar Sesión
@@ -337,7 +344,7 @@ const App: React.FC = React.memo(() => {
                                 ) : (
                                     /* Botón de login con GoogleAuth integrado */
                                     <div className="space-y-3">
-                                        <p className="text-sm text-gray-600 text-center">Inicia sesión para acceder a todas las funciones</p>
+                                        <p className="text-sm text-muted-foreground text-center">Inicia sesión para acceder a todas las funciones</p>
                                         <div className="relative">
                                             {/* GoogleAuth oculto */}
                                             <div className="absolute opacity-0 pointer-events-none">
@@ -353,7 +360,7 @@ const App: React.FC = React.memo(() => {
                                                     }
                                                     setSidebarOpen(false);
                                                 }}
-                                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:text-blue-600 border border-gray-300 rounded-lg transition-colors"
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-foreground hover:text-primary border border-border rounded-lg transition-colors"
                                             >
                                                 Iniciar Sesión
                                             </button>

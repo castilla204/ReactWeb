@@ -30,6 +30,16 @@ import ExpertAvailability from './ExpertAvailability';
 import AppointmentForm from './AppointmentForm';
 import RejectAppointmentModal from './RejectAppointmentModal';
 import { Appointment, ProposeAppointmentDto, ConfirmAppointmentDto, RejectAppointmentDto, CancelAppointmentDto } from '../types/appointment';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from './ui/alert-dialog';
 
 // Imports para distribución de dinero
 import MoneyDistributionInfo from './MoneyDistributionInfo';
@@ -133,6 +143,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [appointmentToReject, setAppointmentToReject] = useState<Appointment | null>(null);
     const [modalActionType, setModalActionType] = useState<'reject' | 'cancel'>('reject');
+    const [showConfirmAppointmentDialog, setShowConfirmAppointmentDialog] = useState(false);
+    const [appointmentToConfirm, setAppointmentToConfirm] = useState<Appointment | null>(null);
     
     // Estado para mostrar información de porcentajes
     const [showMoneyDistribution, setShowMoneyDistribution] = useState(false);
@@ -861,6 +873,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         message: 'Cita confirmada exitosamente'
                     }]);
                     invalidateAll();
+                    setShowConfirmAppointmentDialog(false);
+                    setAppointmentToConfirm(null);
                     break;
                     
                 case 'reject':
@@ -1137,6 +1151,85 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     )}
                                 </div>
 
+                                {/* Sección de Cita - Móvil - Siempre visible si necesita cita */}
+                                {needsAppointment && (
+                                    <div className="mt-4 pt-4 border-t border-border/50 lg:hidden">
+                                        <div className="relative bg-gradient-to-br from-blue-50/50 via-indigo-50/40 to-orange-50/35 dark:from-blue-950/30 dark:via-indigo-950/25 dark:to-orange-950/20 border-2 border-blue-300/70 dark:border-blue-700/60 rounded-xl p-4 space-y-3 shadow-md overflow-hidden">
+                                            {/* Borde decorativo con gradiente */}
+                                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/40 via-indigo-400/40 via-purple-400/40 to-orange-400/40 dark:from-blue-500/35 dark:via-indigo-500/35 dark:via-purple-500/35 dark:to-orange-500/35 -z-10 blur-sm"></div>
+                                            <div className="relative">
+                                                <h3 className="text-sm font-semibold text-foreground mb-3">
+                                                    {appointment ? (
+                                                        appointmentStatusInfo?.displayName || 
+                                                        (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
+                                                         appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
+                                                         'Cita')
+                                                    ) : 'Cita Pendiente'}
+                                                </h3>
+                                                <div className="space-y-2.5">
+                                                    {appointment ? (
+                                                        <>
+                                                            {appointment.proposedDate && appointment.proposedTime && (
+                                                                <div className="flex items-center gap-2 text-sm text-foreground">
+                                                                    <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                                    <span className="font-medium">
+                                                                        {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
+                                                                            day: 'numeric',
+                                                                            month: 'short',
+                                                                            year: 'numeric'
+                                                                        })} {appointment.proposedTime.substring(0, 5)}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            {appointment.location && (
+                                                                <div className="flex items-start gap-2 text-sm text-foreground">
+                                                                    <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                                    <span className="leading-relaxed">{appointment.location}</span>
+                                                                </div>
+                                                            )}
+                                                            {appointment.doorNumber && (
+                                                                <div className="text-sm text-foreground ml-6">
+                                                                    <span className="text-muted-foreground">Puerta: </span>
+                                                                    <span className="font-medium">{appointment.doorNumber}</span>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <div className="space-y-2">
+                                                            <div className="flex items-center gap-2 text-sm text-foreground">
+                                                                <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                                <span>Debes proponer una cita</span>
+                                                            </div>
+                                                            {timeRemaining && timeRemaining !== '00:00:00' && (
+                                                                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 ml-6">
+                                                                    <Clock className="w-4 h-4 flex-shrink-0" />
+                                                                    <span className="font-medium">Tiempo restante: {timeRemaining}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
+                                                    <Accordion type="single" collapsible className="w-full mt-3">
+                                                        <AccordionItem value="appointment-timeline" className="border-none">
+                                                            <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                                Timeline del estado
+                                                            </AccordionTrigger>
+                                                            <AccordionContent className="pt-2 pb-0">
+                                                                <StatusTimeline
+                                                                    currentStatus={appointmentStatusInfo}
+                                                                    allStatuses={appointmentStatuses}
+                                                                    statusType="AppointmentStatus"
+                                                                />
+                                                            </AccordionContent>
+                                                        </AccordionItem>
+                                                    </Accordion>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <Separator />
 
                                 {/* Cliente */}
@@ -1194,99 +1287,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     />
                                                 </div>
                                             )}
-                                        </div>
-                                    </>
-                                )}
-
-                                {/* Cita */}
-                                {appointment && (
-                                    <>
-                                        <Separator />
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-sm font-semibold text-foreground">Cita</h3>
-                                            <StatusBadge 
-                                                statusInfo={appointmentStatusInfo} 
-                                                size="sm"
-                                            />
-                                        </div>
-                                            <div className="space-y-2.5 text-sm">
-                                                <div className="flex items-center gap-2.5">
-                                                    <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                    <span className="text-foreground">
-                                                        {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
-                                                            day: 'numeric',
-                                                            month: 'short',
-                                                        })} {appointment.proposedTime}
-                                                    </span>
-                                                </div>
-                                            {appointment.location && (
-                                                    <div className="flex items-start gap-2.5">
-                                                        <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                                                        <span className="text-foreground leading-relaxed">{appointment.location}</span>
-                                                </div>
-                                            )}
-                                            {appointment.doorNumber && (
-                                                    <div className="flex items-center gap-2.5">
-                                                        <Home className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                        <span className="text-foreground">Puerta {appointment.doorNumber}</span>
-                                                </div>
-                                            )}
-                                                    </div>
-                                            
-                                        {/* Accordion para explicar el estado de la cita */}
-                                        {appointmentStatusInfo && (
-                                            <Accordion type="multiple" className="w-full">
-                                                <AccordionItem value="appointment-status" className="border-none">
-                                                    <AccordionTrigger className="text-xs py-2 hover:no-underline">
-                                                        ¿Qué significa este estado?
-                                                    </AccordionTrigger>
-                                                    <AccordionContent className="text-xs text-muted-foreground pt-2 pb-0">
-                                                        <p className="leading-relaxed">
-                                                            {appointmentStatusInfo.description || 'Estado de la cita programada.'}
-                                                        </p>
-                                                        {appointment.status === 'appointment_proposed' && (
-                                                            <p className="mt-2 pt-2 border-t border-border/50">
-                                                                El cliente ha propuesto esta cita. Como experto, debes confirmarla o rechazarla.
-                                                            </p>
-                                                        )}
-                                                        {appointment.status === 'appointment_confirmed' && (
-                                                            <p className="mt-2 pt-2 border-t border-border/50">
-                                                                La cita está confirmada. Puedes cancelarla si es necesario.
-                                                            </p>
-                                                        )}
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                                {appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
-                                                    <AccordionItem value="appointment-timeline" className="border-none">
-                                                        <AccordionTrigger className="text-xs py-2 hover:no-underline">
-                                                            Timeline del estado
-                                                        </AccordionTrigger>
-                                                        <AccordionContent className="pt-2 pb-0">
-                                                            <StatusTimeline
-                                                                currentStatus={appointmentStatusInfo}
-                                                                allStatuses={appointmentStatuses.map(s => ({
-                                                                    id: s.id,
-                                                                    statusType: 'AppointmentStatus' as const,
-                                                                    statusName: s.statusValue,
-                                                                    statusValue: s.statusValue,
-                                                                    displayName: s.displayName,
-                                                                    description: s.description || null,
-                                                                    color: null,
-                                                                    isActive: true,
-                                                                    isFinalizationStatus: s.isFinalizationStatus,
-                                                                    sortOrder: s.sortOrder,
-                                                                    createdAt: s.createdAt,
-                                                                    updatedAt: s.updatedAt,
-                                                                }))}
-                                                                statusType="AppointmentStatus"
-                                                            />
-                                                        </AccordionContent>
-                                                    </AccordionItem>
-                                                )}
-                                            </Accordion>
-                                        )}
-
                                     </div>
                                     </>
                                 )}
@@ -1421,7 +1421,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
-                                                            handleAppointmentAction('confirm', appointment);
+                                                            setAppointmentToConfirm(appointment as Appointment);
+                                                            setShowConfirmAppointmentDialog(true);
                                                         }}
                                                         className="flex-1"
                                                         size="sm"
@@ -1433,7 +1434,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
-                                                            setAppointmentToReject(appointment);
+                                                            setAppointmentToReject(appointment as Appointment);
                                                             setModalActionType('reject');
                                                             setShowRejectModal(true);
                                                         }}
@@ -1451,7 +1452,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
-                                                        setAppointmentToReject(appointment);
+                                                        setAppointmentToReject(appointment as Appointment);
                                                         setModalActionType('cancel');
                                                         setShowRejectModal(true);
                                                     }}
@@ -1460,7 +1461,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     size="sm"
                                                 >
                                                     <XCircle className="w-4 h-4 mr-2" />
-                                                    Cancelar
+                                                    Cancelar Cita
                                                 </Button>
                                             )}
                                         </div>
@@ -1647,6 +1648,163 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         )}
                                     </Accordion>
                                 )}
+
+                                {/* Sección de Cita - Desktop - Siempre visible si necesita cita */}
+                                {needsAppointment && (
+                                    <div className="mt-6 hidden lg:block">
+                                        <div className="relative bg-gradient-to-br from-blue-50/50 via-indigo-50/40 to-orange-50/35 dark:from-blue-950/30 dark:via-indigo-950/25 dark:to-orange-950/20 border-2 border-blue-300/70 dark:border-blue-700/60 rounded-xl p-5 space-y-3 shadow-md overflow-hidden">
+                                            {/* Borde decorativo con gradiente */}
+                                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/40 via-indigo-400/40 via-purple-400/40 to-orange-400/40 dark:from-blue-500/35 dark:via-indigo-500/35 dark:via-purple-500/35 dark:to-orange-500/35 -z-10 blur-sm"></div>
+                                            <div className="relative">
+                                                <h3 className="text-sm font-semibold text-foreground mb-3">
+                                                    {appointment ? (
+                                                        appointmentStatusInfo?.displayName || 
+                                                        (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
+                                                         appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
+                                                         'Cita')
+                                                    ) : 'Cita Pendiente'}
+                                                </h3>
+                                                <div className="space-y-2.5">
+                                                    {appointment ? (
+                                                        <>
+                                                            {appointment.proposedDate && appointment.proposedTime && (
+                                                                <div className="flex items-center gap-2 text-sm text-foreground">
+                                                                    <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                                    <span className="font-medium">
+                                                {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                                            year: 'numeric'
+                                                                        })} {appointment.proposedTime.substring(0, 5)}
+                                                </span>
+                                        </div>
+                                                            )}
+                                    {appointment.location && (
+                                                                <div className="flex items-start gap-2 text-sm text-foreground">
+                                                    <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                                                    <span className="leading-relaxed">{appointment.location}</span>
+                                        </div>
+                                    )}
+                                    {appointment.doorNumber && (
+                                                                <div className="text-sm text-foreground ml-6">
+                                                                    <span className="text-muted-foreground">Puerta: </span>
+                                                                    <span className="font-medium">{appointment.doorNumber}</span>
+                                        </div>
+                                    )}
+                                                        </>
+                                                    ) : (
+                                                        <div className="space-y-2">
+                                                            <div className="flex items-center gap-2 text-sm text-foreground">
+                                                                <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                                <span>Debes proponer una cita</span>
+                                            </div>
+                                                            {timeRemaining && timeRemaining !== '00:00:00' && (
+                                                                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 ml-6">
+                                                                    <Clock className="w-4 h-4 flex-shrink-0" />
+                                                                    <span className="font-medium">Tiempo restante: {timeRemaining}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
+                                                    <Accordion type="single" collapsible className="w-full mt-3">
+                                                        <AccordionItem value="appointment-timeline" className="border-none">
+                                                    <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                        Timeline del estado
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="pt-2 pb-0">
+                                                            <StatusTimeline
+                                                                currentStatus={appointmentStatusInfo}
+                                                                    allStatuses={appointmentStatuses}
+                                                                statusType="AppointmentStatus"
+                                                            />
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            </Accordion>
+                                        )}
+
+                                                {/* Botones de acción para desktop */}
+                                                {((appointment && ((userRole === 'expert' && appointment.status === 'appointment_proposed') || appointment.status === 'appointment_confirmed')) || 
+                                                  (isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')))) && (
+                                                    <div className="flex gap-2 mt-4 pt-3 border-t border-border/50">
+                                                        {userRole === 'expert' && appointment && appointment.status === 'appointment_proposed' && (
+                                        <>
+                                                        <Button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                                        setAppointmentToConfirm(appointment as Appointment);
+                                                                        setShowConfirmAppointmentDialog(true);
+                                                }}
+                                                            className="flex-1"
+                                                            size="sm"
+                                            >
+                                                            <CheckCircle className="w-4 h-4 mr-2" />
+                                                                    Aceptar
+                                                        </Button>
+                                                        <Button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                                        setAppointmentToReject(appointment as Appointment);
+                                            setModalActionType('reject');
+                                            setShowRejectModal(true);
+                                                }}
+                                                            variant="destructive"
+                                                            className="flex-1"
+                                                            size="sm"
+                                            >
+                                                            <XCircle className="w-4 h-4 mr-2" />
+                                                Rechazar
+                                                        </Button>
+                                        </>
+                                    )}
+                                                        {appointment && appointment.status === 'appointment_confirmed' && (
+                                                    <Button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                                    setAppointmentToReject(appointment as Appointment);
+                                            setModalActionType('cancel');
+                                            setShowRejectModal(true);
+                                            }}
+                                                        variant="outline"
+                                                        className="w-full"
+                                                        size="sm"
+                                        >
+                                                        <XCircle className="w-4 h-4 mr-2" />
+                                                                Cancelar Cita
+                                                            </Button>
+                                                        )}
+                                                        {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
+                                                            <Button
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    handleAppointmentAction('propose', { 
+                                                                        id: 0, 
+                                                                        searchHireId: search?.searchHire?.id || 0,
+                                                                        status: 'awaiting_appointment',
+                                                                        amount: serviceInfo?.price || 0
+                                                                    } as Appointment);
+                                                                }}
+                                                                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                                                                size="sm"
+                                                            >
+                                                                <Calendar className="w-4 h-4 mr-2" />
+                                                                {appointment && appointment.status === 'appointment_cancelled_by_expert' 
+                                                                    ? 'Proponer Nueva Cita'
+                                                                    : 'Programar Cita'
+                                                                }
+                                                    </Button>
+                                    )}
+                                </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <Separator />
@@ -1708,148 +1866,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         )}
                                     </div>
                                 </>
-                        )}
-
-                            {/* Cita */}
-                        {appointment && (
-                                <>
-                                    <Separator />
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-semibold text-foreground">Cita</h3>
-                                    <StatusBadge 
-                                        statusInfo={appointmentStatusInfo} 
-                                        size="sm"
-                                    />
-                                </div>
-                                        <div className="space-y-2.5 text-sm">
-                                            <div className="flex items-center gap-2.5">
-                                                <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                <span className="text-foreground">
-                                                {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
-                                                        day: 'numeric',
-                                                        month: 'short',
-                                                    })} {appointment.proposedTime}
-                                                </span>
-                                        </div>
-                                    {appointment.location && (
-                                                <div className="flex items-start gap-2.5">
-                                                    <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                                                    <span className="text-foreground leading-relaxed">{appointment.location}</span>
-                                        </div>
-                                    )}
-                                    {appointment.doorNumber && (
-                                                <div className="flex items-center gap-2.5">
-                                                    <Home className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                    <span className="text-foreground">Puerta {appointment.doorNumber}</span>
-                                        </div>
-                                    )}
-                                            </div>
-                                        
-                                        {/* Accordion para timeline del estado de la cita */}
-                                        {appointmentStatusInfo && (
-                                            <Accordion type="multiple" className="w-full">
-                                                <AccordionItem value="appointment-status" className="border-none">
-                                                    <AccordionTrigger className="text-xs py-2 hover:no-underline">
-                                                        Timeline del estado
-                                                    </AccordionTrigger>
-                                                    <AccordionContent className="pt-2 pb-0">
-                                                        {appointmentStatuses && appointmentStatuses.length > 0 ? (
-                                                            <StatusTimeline
-                                                                currentStatus={appointmentStatusInfo}
-                                                                allStatuses={appointmentStatuses.map(s => ({
-                                                                    id: s.id,
-                                                                    statusType: 'AppointmentStatus' as const,
-                                                                    statusName: s.statusValue,
-                                                                    statusValue: s.statusValue,
-                                                                    displayName: s.displayName,
-                                                                    description: s.description || null,
-                                                                    color: null,
-                                                                    isActive: true,
-                                                                    isFinalizationStatus: s.isFinalizationStatus,
-                                                                    sortOrder: s.sortOrder,
-                                                                    createdAt: s.createdAt,
-                                                                    updatedAt: s.updatedAt,
-                                                                }))}
-                                                                statusType="AppointmentStatus"
-                                                            />
-                                                        ) : (
-                                                            <div className="text-xs text-muted-foreground space-y-2">
-                                                                <p className="leading-relaxed">
-                                                                    {appointmentStatusInfo.description || 'Estado de la cita programada.'}
-                                                                </p>
-                                                                {appointment.status === 'appointment_proposed' && (
-                                                                    <p className="pt-2 border-t border-border/50">
-                                                                        El cliente ha propuesto esta cita. Como experto, debes confirmarla o rechazarla.
-                                                                    </p>
-                                                                )}
-                                                                {appointment.status === 'appointment_confirmed' && (
-                                                                    <p className="pt-2 border-t border-border/50">
-                                                                        La cita está confirmada. Puedes cancelarla si es necesario.
-                                                                    </p>
-                                    )}
-                                </div>
-                                                        )}
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            </Accordion>
-                                        )}
-
-                                        {(userRole === 'expert' && appointment.status === 'appointment_proposed') || appointment.status === 'appointment_confirmed' ? (
-                                            <div className="flex gap-2 pt-2">
-                                    {userRole === 'expert' && appointment.status === 'appointment_proposed' && (
-                                        <>
-                                                        <Button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    handleAppointmentAction('confirm', appointment);
-                                                }}
-                                                            className="flex-1"
-                                                            size="sm"
-                                            >
-                                                            <CheckCircle className="w-4 h-4 mr-2" />
-                                                Confirmar
-                                                        </Button>
-                                                        <Button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setAppointmentToReject(appointment);
-                                            setModalActionType('reject');
-                                            setShowRejectModal(true);
-                                                }}
-                                                            variant="destructive"
-                                                            className="flex-1"
-                                                            size="sm"
-                                            >
-                                                            <XCircle className="w-4 h-4 mr-2" />
-                                                Rechazar
-                                                        </Button>
-                                        </>
-                                    )}
-                                    {appointment.status === 'appointment_confirmed' && (
-                                                    <Button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                setAppointmentToReject(appointment);
-                                            setModalActionType('cancel');
-                                            setShowRejectModal(true);
-                                            }}
-                                                        variant="outline"
-                                                        className="w-full"
-                                                        size="sm"
-                                        >
-                                                        <XCircle className="w-4 h-4 mr-2" />
-                                                        Cancelar
-                                                    </Button>
-                                    )}
-                                </div>
-                                        ) : null}
-                                    </div>
-                                </>
                             )}
+
 
                             {/* Acciones Principales */}
                             {(canDispute || canApprove || canExpertRespond) && (
@@ -2016,7 +2034,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </>
                             )}
 
-                            {/* Programar Cita - Al final si es necesario */}
+                            {/* Programar Cita - Solo en móvil (en desktop está dentro de la card) */}
+                            <div className="lg:hidden">
                             {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
                                 <>
                                     <Separator />
@@ -2038,6 +2057,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </Button>
                                 </>
                             )}
+                            </div>
 
                             <div className="h-6"></div>
 
@@ -2077,6 +2097,51 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 userRole={userRole}
                 />
             )}
+
+            {/* Alert Dialog para confirmar cita */}
+            <AlertDialog open={showConfirmAppointmentDialog} onOpenChange={setShowConfirmAppointmentDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmar cita</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            ¿Estás seguro de que quieres aceptar esta cita? Una vez confirmada, no podrás cancelarla.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    {appointmentToConfirm && (
+                        <div className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Calendar className="w-4 h-4" />
+                                <span>
+                                    {new Date(appointmentToConfirm.proposedDate).toLocaleDateString('es-ES', {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    })} {appointmentToConfirm.proposedTime?.substring(0, 5)}
+                                </span>
+                            </div>
+                            {appointmentToConfirm.location && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <MapPin className="w-4 h-4" />
+                                    <span>{appointmentToConfirm.location}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                if (appointmentToConfirm) {
+                                    handleAppointmentAction('confirm', appointmentToConfirm);
+                                }
+                            }}
+                        >
+                            Confirmar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Review Modal */}
             {modalState.showReviewModal && (

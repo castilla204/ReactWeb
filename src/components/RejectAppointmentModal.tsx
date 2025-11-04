@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, AlertTriangle, Send, Calendar, Clock, MapPin, Phone, DoorOpen } from 'lucide-react';
+import { X, AlertTriangle, Send, Calendar, MapPin, Phone, DoorOpen } from 'lucide-react';
 import { Appointment } from '../types/appointment';
 import {
     Drawer,
@@ -13,7 +13,10 @@ import {
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { Label } from './ui/label';
-import { Card } from './ui/card';
+import { Textarea } from './ui/textarea';
+import { Badge } from './ui/badge';
+import { Alert, AlertTitle, AlertDescription } from './ui/alert';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 interface RejectAppointmentModalProps {
   isOpen: boolean;
@@ -63,19 +66,13 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
   return (
     <Drawer open={isOpen} onOpenChange={handleClose}>
       <DrawerContent className="max-h-[96vh] flex flex-col">
-        <div className="mx-auto w-full max-w-2xl flex flex-col h-full max-h-[96vh]">
-          <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-destructive/10 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-destructive" />
-              </div>
-              <div className="flex-1">
+        <div className="mx-auto w-full max-w-2xl lg:max-w-3xl flex flex-col h-full max-h-[96vh]">
+          <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 border-b border-border flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
                 <DrawerTitle className="text-lg sm:text-xl font-semibold">
                   {actionType === 'cancel' ? 'Cancelar Cita' : 'Rechazar Cita'}
                 </DrawerTitle>
-                <DrawerDescription className="text-sm">
-                  {actionType === 'cancel' ? 'Proporciona una razón para cancelar esta cita' : 'Proporciona una razón para rechazar esta cita'}
-                </DrawerDescription>
               </div>
               <DrawerClose asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isLoading}>
@@ -83,131 +80,144 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
                 </Button>
               </DrawerClose>
             </div>
+            <DrawerDescription className="text-sm text-muted-foreground mt-1.5">
+              {actionType === 'cancel' ? 'Proporciona una razón para cancelar esta cita' : 'Proporciona una razón para rechazar esta cita'}
+            </DrawerDescription>
           </DrawerHeader>
 
           {/* Contenido scrollable */}
           <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto">
-
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Información de la cita */}
               {appointment && (
-                <Card className="p-4 bg-muted">
-                  <h4 className="text-sm font-medium text-foreground mb-4">Detalles de la cita</h4>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <span className="text-muted-foreground">Fecha:</span>
-                        <span className="ml-2 text-foreground font-medium">
-                          {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <span className="text-muted-foreground">Hora:</span>
-                        <span className="ml-2 text-foreground font-medium">{appointment.proposedTime.substring(0, 5)}</span>
-                      </div>
-                    </div>
-                    <div className="lg:col-span-2 flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <span className="text-muted-foreground">Ubicación:</span>
-                        <span className="ml-2 text-foreground font-medium">{appointment.location}</span>
-                      </div>
-                    </div>
-                    {appointment.doorNumber && (
-                      <div className="flex items-center gap-2">
-                        <DoorOpen className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <span className="text-muted-foreground">Puerta:</span>
-                          <span className="ml-2 text-foreground font-medium">{appointment.doorNumber}</span>
-                        </div>
-                      </div>
-                    )}
-                    {appointment.ownerPhone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <span className="text-muted-foreground">Teléfono:</span>
-                          <span className="ml-2 text-foreground font-medium">{appointment.ownerPhone}</span>
-                        </div>
-                      </div>
-                    )}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    <span className="font-medium text-foreground">
+                      {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })} {appointment.proposedTime.substring(0, 5)}
+                    </span>
                   </div>
-                </Card>
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span className="text-foreground">{appointment.location}</span>
+                  </div>
+                  {appointment.doorNumber && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <DoorOpen className="w-4 h-4" />
+                      <span className="text-foreground">Puerta: {appointment.doorNumber}</span>
+                    </div>
+                  )}
+                  {appointment.ownerPhone && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="w-4 h-4" />
+                      <span className="text-foreground">{appointment.ownerPhone}</span>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Advertencia sobre rechazos/cancelaciones */}
-              <Card className="p-4 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
-                <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                  <p className="font-semibold text-amber-900 dark:text-amber-100">
-                    {actionType === 'cancel' ? 'Cancelaciones' : 'Rechazos'} realizadas: {actionType === 'cancel' ? (userRole === 'client' ? (appointment?.clientCancellationCount || 0) : (appointment?.expertCancellationCount || 0)) : (appointment?.rejectionCount || 0)} de 2 máximo
-                  </p>
-                </div>
-                <p className="text-amber-700 dark:text-amber-300 leading-relaxed text-sm">
-                  {actionType === 'cancel' ? (
-                    userRole === 'client' ? (
-                      appointment && (appointment.clientCancellationCount || 0) >= 1 ? (
-                        <>
-                          <strong className="text-amber-900 dark:text-amber-100">⚠️ Última cancelación:</strong> Si cancelas esta cita, el servicio se cancelará definitivamente y se aplicarán las políticas de reembolso correspondientes.
-                        </>
-                      ) : (
-                        <>Si cancelas esta cita, podrás proponer una nueva fecha y hora.</>
-                      )
-                    ) : (
-                      appointment && (appointment.expertCancellationCount || 0) >= 1 ? (
-                        <>
-                          <strong className="text-amber-900 dark:text-amber-100">⚠️ Última cancelación:</strong> Si cancelas esta cita, el servicio se cancelará definitivamente y se aplicarán las políticas de reembolso correspondientes.
-                        </>
-                      ) : (
-                        <>Si cancelas esta cita, podrás proponer una nueva fecha y hora.</>
-                      )
-                    )
-                  ) : (
-                    appointment && appointment.rejectionCount >= 1 ? (
-                      <>
-                        <strong className="text-amber-900 dark:text-amber-100">⚠️ Último rechazo:</strong> Si rechazas esta cita, el servicio se cancelará automáticamente y el cliente recibirá el reembolso completo.
-                      </>
-                    ) : (
-                      <>Si rechazas esta cita, el cliente podrá proponer una nueva fecha y hora.</>
-                    )
-                  )}
-                </p>
-              </Card>
+              <Alert variant="warning">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle className="flex items-center gap-2">
+                  {actionType === 'cancel' ? 'Cancelaciones' : 'Rechazos'} realizadas
+                  <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-100 border-amber-300 dark:border-amber-700 text-xs font-normal">
+                    {actionType === 'cancel' 
+                      ? (userRole === 'client' ? (appointment?.clientCancellationCount || 0) : (appointment?.expertCancellationCount || 0))
+                      : (appointment?.rejectionCount || 0)
+                    } / 2
+                  </Badge>
+                </AlertTitle>
+                <AlertDescription className="mt-2">
+                  <Accordion type="single" collapsible defaultValue="warning-details" className="w-full">
+                    <AccordionItem value="warning-details" className="border-none">
+                      <AccordionTrigger className="py-1.5 text-xs hover:no-underline text-amber-800 dark:text-amber-200">
+                        {actionType === 'cancel' ? (
+                          userRole === 'client' ? (
+                            appointment && (appointment.clientCancellationCount || 0) >= 1 ? (
+                              '⚠️ Última cancelación'
+                            ) : (
+                              'Ver detalles'
+                            )
+                          ) : (
+                            appointment && (appointment.expertCancellationCount || 0) >= 1 ? (
+                              '⚠️ Última cancelación'
+                            ) : (
+                              'Ver detalles'
+                            )
+                          )
+                        ) : (
+                          appointment && appointment.rejectionCount >= 1 ? (
+                            '⚠️ Último rechazo'
+                          ) : (
+                            'Ver detalles'
+                          )
+                        )}
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-1 pb-0">
+                        <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-200">
+                          {actionType === 'cancel' ? (
+                            userRole === 'client' ? (
+                              appointment && (appointment.clientCancellationCount || 0) >= 1 ? (
+                                <>Si cancelas esta cita, el servicio se cancelará definitivamente y se aplicarán las políticas de reembolso correspondientes.</>
+                              ) : (
+                                <>Si cancelas esta cita, podrás proponer una nueva fecha y hora.</>
+                              )
+                            ) : (
+                              appointment && (appointment.expertCancellationCount || 0) >= 1 ? (
+                                <>Si cancelas esta cita, el servicio se cancelará definitivamente y se aplicarán las políticas de reembolso correspondientes.</>
+                              ) : (
+                                <>Si cancelas esta cita, podrás proponer una nueva fecha y hora.</>
+                              )
+                            )
+                          ) : (
+                            appointment && appointment.rejectionCount >= 1 ? (
+                              <>Si rechazas esta cita, el servicio se cancelará automáticamente y el cliente recibirá el reembolso completo.</>
+                            ) : (
+                              <>Si rechazas esta cita, el cliente podrá proponer una nueva fecha y hora.</>
+                            )
+                          )}
+                        </p>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </AlertDescription>
+              </Alert>
 
               {/* Formulario */}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="reason" className="text-sm font-medium mb-3 block">
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="reason" className="text-sm font-medium">
                     Razón de la {actionType === 'cancel' ? 'cancelación' : 'rechazo'} *
                   </Label>
-                  <textarea
+                  <Textarea
                     id="reason"
                     value={reason}
-                    onChange={(e) => setReason(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                      setReason(e.target.value);
+                      setError('');
+                    }}
                     placeholder={actionType === 'cancel' 
                       ? "Explica por qué necesitas cancelar esta cita (mínimo 10 caracteres)..."
                       : "Explica por qué no puedes aceptar esta cita (mínimo 10 caracteres)..."
                     }
-                    className="w-full px-4 py-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-destructive resize-none bg-background"
+                    className="min-h-[100px] resize-none"
                     rows={4}
                     disabled={isLoading}
                     maxLength={500}
                   />
-                  <div className="flex justify-between items-center mt-2">
+                  <div className="flex justify-between items-center">
                     <span className="text-xs text-muted-foreground">
                       {reason.length}/500 caracteres
                     </span>
                     {error && (
-                      <span className="text-xs text-destructive">
+                      <span className="text-xs text-destructive font-medium flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
                         {error}
                       </span>
                     )}
@@ -220,7 +230,7 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
           <Separator className="flex-shrink-0" />
 
           {/* Footer con botones */}
-          <DrawerFooter className="flex-shrink-0">
+          <DrawerFooter className="flex-shrink-0 px-4 sm:px-6 py-4 gap-3">
             <div className="flex gap-3 w-full">
               <Button
                 type="button"
@@ -234,12 +244,13 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
               <Button
                 type="submit"
                 onClick={handleSubmit}
-                disabled={isLoading || !reason.trim()}
-                className="flex-1 bg-destructive hover:bg-destructive/90"
+                disabled={isLoading || !reason.trim() || reason.trim().length < 10}
+                variant="destructive"
+                className="flex-1"
               >
                 {isLoading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin mr-2" />
                     <span>{actionType === 'cancel' ? 'Cancelando...' : 'Rechazando...'}</span>
                   </>
                 ) : (
