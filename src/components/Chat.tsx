@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2, CheckCircle, XCircle, AlertCircle, Clock, FileCheck } from 'lucide-react';
+import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2, CheckCircle, XCircle, AlertCircle, Clock, FileCheck, Info } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
@@ -86,6 +87,7 @@ const extractStatusValue = (content: string): string | null => {
 
 interface StatusDisplay {
     message: string;
+    description?: string;
     icon: React.ReactNode;
     color: string;
     bgColor: string;
@@ -95,6 +97,7 @@ interface StatusDisplay {
 const statusDisplayMap: Record<string, StatusDisplay> = {
     "appointment_proposed": {
         message: "Cita propuesta",
+        description: "El cliente ha propuesto una fecha y hora para la cita. El experto puede aceptarla o rechazarla.",
         icon: <Calendar className="w-4 h-4" />,
         color: "text-blue-700 dark:text-blue-300",
         bgColor: "bg-blue-50 dark:bg-blue-950/30",
@@ -102,6 +105,7 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
     },
     "appointment_confirmed": {
         message: "✅ Cita aceptada",
+        description: "La cita ha sido confirmada por ambas partes. El servicio puede proceder según lo acordado.",
         icon: <CheckCircle className="w-4 h-4" />,
         color: "text-green-700 dark:text-green-300",
         bgColor: "bg-green-50 dark:bg-green-950/30",
@@ -109,6 +113,7 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
     },
     "appointment_rejected": {
         message: "❌ Cita rechazada",
+        description: "El experto ha rechazado la propuesta de cita. El cliente puede proponer una nueva fecha y hora.",
         icon: <XCircle className="w-4 h-4" />,
         color: "text-red-700 dark:text-red-300",
         bgColor: "bg-red-50 dark:bg-red-950/30",
@@ -116,6 +121,7 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
     },
     "appointment_cancelled_by_client": {
         message: "Cita cancelada por el cliente",
+        description: "El cliente ha cancelado la cita. Puede proponer una nueva fecha si lo desea.",
         icon: <AlertCircle className="w-4 h-4" />,
         color: "text-orange-700 dark:text-orange-300",
         bgColor: "bg-orange-50 dark:bg-orange-950/30",
@@ -123,6 +129,7 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
     },
     "appointment_cancelled_by_expert": {
         message: "Cita cancelada por el experto",
+        description: "El experto ha cancelado la cita. El cliente puede proponer una nueva fecha.",
         icon: <AlertCircle className="w-4 h-4" />,
         color: "text-orange-700 dark:text-orange-300",
         bgColor: "bg-orange-50 dark:bg-orange-950/30",
@@ -130,6 +137,7 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
     },
     "appointment_cancelled_by_client_second": {
         message: "Cita cancelada por el cliente (segunda cancelación)",
+        description: "Segunda cancelación del cliente. Se aplicarán políticas de reembolso según los términos del servicio.",
         icon: <AlertCircle className="w-4 h-4" />,
         color: "text-orange-700 dark:text-orange-300",
         bgColor: "bg-orange-50 dark:bg-orange-950/30",
@@ -137,6 +145,7 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
     },
     "appointment_cancelled_by_expert_second": {
         message: "Cita cancelada por el experto (segunda cancelación)",
+        description: "Segunda cancelación del experto. El cliente puede proponer una nueva fecha.",
         icon: <AlertCircle className="w-4 h-4" />,
         color: "text-orange-700 dark:text-orange-300",
         bgColor: "bg-orange-50 dark:bg-orange-950/30",
@@ -144,6 +153,7 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
     },
     "appointment_cancelled_by_no_response": {
         message: "Cita cancelada - sin respuesta",
+        description: "La cita fue cancelada automáticamente porque no se recibió respuesta en el tiempo establecido.",
         icon: <Clock className="w-4 h-4" />,
         color: "text-gray-700 dark:text-gray-300",
         bgColor: "bg-gray-50 dark:bg-gray-950/30",
@@ -151,6 +161,7 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
     },
     "appointment_cancelled_by_no_report": {
         message: "Cita cancelada - sin reporte",
+        description: "La cita fue cancelada automáticamente porque el experto no envió el reporte en el tiempo establecido.",
         icon: <FileText className="w-4 h-4" />,
         color: "text-gray-700 dark:text-gray-300",
         bgColor: "bg-gray-50 dark:bg-gray-950/30",
@@ -158,6 +169,7 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
     },
     "appointment_report_sent": {
         message: "📄 Reporte enviado",
+        description: "El experto ha enviado el reporte de la cita. El cliente puede revisarlo y aprobar el servicio.",
         icon: <FileCheck className="w-4 h-4" />,
         color: "text-green-700 dark:text-green-300",
         bgColor: "bg-green-50 dark:bg-green-950/30",
@@ -165,6 +177,7 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
     },
     "appointment_awaiting_report": {
         message: "Esperando reporte del experto",
+        description: "La cita ha finalizado. El experto debe enviar el reporte con los detalles del servicio realizado.",
         icon: <Clock className="w-4 h-4" />,
         color: "text-yellow-700 dark:text-yellow-300",
         bgColor: "bg-yellow-50 dark:bg-yellow-950/30",
@@ -172,6 +185,7 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
     },
     "appointment_cancelled_by_expert_rejection": {
         message: "Cita cancelada por rechazo del experto",
+        description: "El experto rechazó la cita. El cliente puede proponer una nueva fecha y hora.",
         icon: <XCircle className="w-4 h-4" />,
         color: "text-red-700 dark:text-red-300",
         bgColor: "bg-red-50 dark:bg-red-950/30",
@@ -647,14 +661,54 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
                                         if (!display) return null;
                                         
                                         return (
-                                            <div key={message.id} className="w-full flex justify-center my-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                                <div className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 ${display.bgColor} ${display.borderColor} ${display.color} shadow-md max-w-[85%] sm:max-w-[75%] lg:max-w-[65%]`}>
-                                                    <div className={`${display.color} flex-shrink-0`}>
-                                                        {display.icon}
+                                            <div key={message.id} className="w-full flex justify-center my-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                                <div className={`w-full max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] rounded-lg border-2 ${display.borderColor} ${display.bgColor} shadow-md overflow-hidden`}>
+                                                    {/* Header con icono, mensaje e info */}
+                                                    <div className="flex items-start gap-2 px-3 py-2">
+                                                        <div className={`${display.color} flex-shrink-0 mt-0.5`}>
+                                                            {display.icon}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 mb-0.5">
+                                                                <p className={`text-sm font-semibold ${display.color}`}>
+                                                                    {display.message}
+                                                                </p>
+                                                            </div>
+                                                            {/* Timestamp */}
+                                                            <div className={`text-xs ${display.color} opacity-70`}>
+                                                                {(() => {
+                                                                    const date = new Date(message.sentAt);
+                                                                    return isNaN(date.getTime()) 
+                                                                        ? 'Ahora'
+                                                                        : date.toLocaleTimeString('es-ES', {
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit'
+                                                                        });
+                                                                })()}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <p className="text-sm font-medium">
-                                                        {display.message}
-                                                    </p>
+                                                    
+                                                    {/* Accordion con información adicional */}
+                                                    {display.description && (
+                                                        <div className="px-3 pb-2">
+                                                            <Accordion type="single" collapsible className="w-full">
+                                                                <AccordionItem value="status-info" className="border-none">
+                                                                    <AccordionTrigger className={`py-1 hover:no-underline ${display.color} opacity-80 hover:opacity-100`}>
+                                                                        <div className="flex items-center gap-1.5 text-xs">
+                                                                            <Info className="w-3 h-3" />
+                                                                            <span>Más información</span>
+                                                                        </div>
+                                                                    </AccordionTrigger>
+                                                                    <AccordionContent className="pt-0.5 pb-0">
+                                                                        <p className={`text-xs ${display.color} opacity-90 leading-relaxed`}>
+                                                                            {display.description}
+                                                                        </p>
+                                                                    </AccordionContent>
+                                                                </AccordionItem>
+                                                            </Accordion>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         );

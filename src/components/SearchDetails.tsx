@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity } from 'lucide-react';
+import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
@@ -1193,6 +1193,30 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                     <span className="font-medium">{appointment.doorNumber}</span>
                                                                 </div>
                                                             )}
+                                                            {/* Reportes del Experto - Dentro del cuadro de cita */}
+                                                            {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
+                                                                <div className="mt-3 pt-3 border-t border-border/30">
+                                                                    <div className="flex items-center gap-2 text-sm text-foreground mb-2">
+                                                                        <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                                                        <span className="font-medium">Informe Enviado</span>
+                                                                    </div>
+                                                                    <div className="space-y-1.5 ml-6">
+                                                                        {deliverables.map((deliverable) => {
+                                                                            const fileName = deliverable.url.split('/').pop() || 'archivo';
+                                                                            return (
+                                                                                <button
+                                                                                    key={deliverable.id}
+                                                                                    onClick={() => window.open(deliverable.url, '_blank')}
+                                                                                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+                                                                                >
+                                                                                    <FileText className="w-3 h-3 flex-shrink-0" />
+                                                                                    <span className="truncate">{fileName}</span>
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </>
                                                     ) : (
                                                         <div className="space-y-2">
@@ -1287,9 +1311,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     />
                                                 </div>
                                             )}
-                                    </div>
+                                        </div>
                                     </>
                                 )}
+
                                 
 
                                 {/* Subir Informe */}
@@ -1683,30 +1708,54 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                 <div className="flex items-start gap-2 text-sm text-foreground">
                                                     <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                                                                     <span className="leading-relaxed">{appointment.location}</span>
-                                        </div>
+                                    </div>
                                     )}
                                     {appointment.doorNumber && (
                                                                 <div className="text-sm text-foreground ml-6">
                                                                     <span className="text-muted-foreground">Puerta: </span>
                                                                     <span className="font-medium">{appointment.doorNumber}</span>
+                                </div>
+                            )}
+                                                            {/* Reportes del Experto - Dentro del cuadro de cita (Desktop) */}
+                                                            {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
+                                                                <div className="mt-3 pt-3 border-t border-border/30">
+                                                                    <div className="flex items-center gap-2 text-sm text-foreground mb-2">
+                                                                        <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                                                        <span className="font-medium">Informe Enviado</span>
                                         </div>
-                                    )}
+                                                                    <div className="space-y-1.5 ml-6">
+                                                                        {deliverables.map((deliverable) => {
+                                                                            const fileName = deliverable.url.split('/').pop() || 'archivo';
+                                                                            return (
+                                                                                <button
+                                                                                    key={deliverable.id}
+                                                                                    onClick={() => window.open(deliverable.url, '_blank')}
+                                                                                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+                                                                                >
+                                                                                    <FileText className="w-3 h-3 flex-shrink-0" />
+                                                                                    <span className="truncate">{fileName}</span>
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                        </div>
+                                        </div>
+                                        )}
                                                         </>
                                                     ) : (
                                                         <div className="space-y-2">
                                                             <div className="flex items-center gap-2 text-sm text-foreground">
-                                                                <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                                                                 <span>Debes proponer una cita</span>
-                                            </div>
+                                        </div>
                                                             {timeRemaining && timeRemaining !== '00:00:00' && (
                                                                 <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 ml-6">
                                                                     <Clock className="w-4 h-4 flex-shrink-0" />
                                                                     <span className="font-medium">Tiempo restante: {timeRemaining}</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
+                                        </div>
+                                    )}
+                                        </div>
+                                    )}
+                                            </div>
                                                 {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
                                                     <Accordion type="single" collapsible className="w-full mt-3">
                                                         <AccordionItem value="appointment-timeline" className="border-none">
@@ -1909,6 +1958,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </div>
                                 </>
                         )}
+
 
                             {/* Subir Informe */}
                         {isExpert && appointment?.status === 'appointment_awaiting_report' && (
