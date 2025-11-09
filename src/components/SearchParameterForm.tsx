@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Search, X, Star, CheckCircle, User, Info, MapPin } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin } from 'lucide-react';
 import { ImageCarousel } from './ui/image-carousel';
 import { useLoadScript } from '@react-google-maps/api';
 import { useServices } from '../hooks/useServices';
@@ -7,6 +7,7 @@ import { useMapExperts } from '../hooks/useMapExperts';
 import { LocationMap } from './LocationMap';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
+import { Separator } from './ui/separator';
 import { Input } from './ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from './ui/drawer';
@@ -31,7 +32,7 @@ interface SearchParameterFormProps {
     initialUserSearch: string;
     serviceTypeId: number | null;
 }
-export function SearchParameterForm({ onComplete, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId }: SearchParameterFormProps) {
+export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId }: SearchParameterFormProps) {
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
         libraries
@@ -56,6 +57,23 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
     };
     const [formData, setFormData] = useState(initialFormState);
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+   
+    // Sincronizar selectedLocation con formData cuando hay coordenadas
+    useEffect(() => {
+        if (formData.latitude && formData.longitude) {
+            const lat = parseFloat(formData.latitude);
+            const lng = parseFloat(formData.longitude);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                const location = { lat, lng };
+                // Solo actualizar si es diferente para evitar loops
+                if (!selectedLocation || 
+                    Math.abs(selectedLocation.lat - lat) > 0.0001 || 
+                    Math.abs(selectedLocation.lng - lng) > 0.0001) {
+                    setSelectedLocation(location);
+                }
+            }
+        }
+    }, [formData.latitude, formData.longitude]);
    
     // Estados para servicios
     const [selectedService, setSelectedService] = useState<number | null>(null);
@@ -382,25 +400,37 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
             <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b flex-shrink-0">
                 <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setCurrentStep(0)}
+                                className="text-muted-foreground hover:text-foreground"
+                            >
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                Volver
+                            </Button>
+                            <Separator orientation="vertical" className="h-6" />
                         <div>
-                            <h1 className="text-lg font-semibold text-foreground mb-2">
-                                {serviceTypeId === 1 ? 'Inspector especializado' : 'Experto en búsquedas'}
+                                <h1 className="text-lg font-semibold text-foreground mb-2">
+                                    {serviceTypeId === 1 ? 'Inspector especializado' : 'Experto en búsquedas'}
                             </h1>
-                            {/* Timeline del proceso */}
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <div className={`flex items-center gap-1 ${formData.latitude && formData.longitude ? 'text-primary' : ''}`}>
-                                    <div className={`w-2 h-2 rounded-full ${formData.latitude && formData.longitude ? 'bg-primary' : 'bg-muted'}`} />
-                                    <span>Ubicación</span>
+                                {/* Timeline del proceso */}
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <div className={`flex items-center gap-1 ${formData.latitude && formData.longitude ? 'text-primary' : ''}`}>
+                                        <div className={`w-2 h-2 rounded-full ${formData.latitude && formData.longitude ? 'bg-primary' : 'bg-muted'}`} />
+                                        <span>Ubicación</span>
                         </div>
-                                <ArrowRight className="w-3 h-3" />
-                                <div className={`flex items-center gap-1 ${selectedService ? 'text-primary' : ''}`}>
-                                    <div className={`w-2 h-2 rounded-full ${selectedService ? 'bg-primary' : 'bg-muted'}`} />
-                                    <span>Experto</span>
-                                </div>
-                                <ArrowRight className="w-3 h-3" />
-                                <div className="flex items-center gap-1">
-                                    <div className="w-2 h-2 rounded-full bg-muted" />
-                                    <span>Pago</span>
+                                    <ArrowRight className="w-3 h-3" />
+                                    <div className={`flex items-center gap-1 ${selectedService ? 'text-primary' : ''}`}>
+                                        <div className={`w-2 h-2 rounded-full ${selectedService ? 'bg-primary' : 'bg-muted'}`} />
+                                        <span>Experto</span>
+                                    </div>
+                                    <ArrowRight className="w-3 h-3" />
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-2 h-2 rounded-full bg-muted" />
+                                        <span>Pago</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -473,7 +503,12 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
                                     <Popover>
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className="h-8 text-xs px-3">
-                                                {filters.rating > 0 ? `${filters.rating}+ ⭐` : 'Valoración'}
+                                                {filters.rating > 0 ? (
+                                                    <span className="flex items-center gap-1">
+                                                        {filters.rating}+
+                                                        <Star className="w-3 h-3 fill-muted-foreground/40 text-muted-foreground" />
+                                                    </span>
+                                                ) : 'Valoración'}
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-80 p-4" align="start">
@@ -489,9 +524,18 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
                                                         className="w-full"
                                                     />
                                                     <div className="flex justify-between text-xs text-muted-foreground">
-                                                        <span>0 ⭐</span>
-                                                        <span>{filters.rating > 0 ? `${filters.rating} ⭐` : 'Todas'}</span>
-                                                        <span>5 ⭐</span>
+                                                        <span className="flex items-center gap-0.5">
+                                                            0
+                                                            <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />
+                                                        </span>
+                                                        <span className="flex items-center gap-0.5">
+                                                            {filters.rating > 0 ? `${filters.rating}` : 'Todas'}
+                                                            {filters.rating > 0 && <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />}
+                                                        </span>
+                                                        <span className="flex items-center gap-0.5">
+                                                            5
+                                                            <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -597,7 +641,7 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
                                                                 {/* Rating y precio en la misma línea */}
                                                                 <div className="flex items-center justify-between pt-2 border-t border-border/50">
                                                                     <div className="flex items-center gap-1.5">
-                                                                        <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                                                                        <Star className="w-3.5 h-3.5 fill-muted-foreground/30 text-muted-foreground" />
                                                                         <span className="text-sm font-semibold text-foreground">
                                                                             {service.averageRating?.toFixed(1) || '0.0'}
                                                                         </span>
@@ -753,15 +797,23 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
                                 )}
                                 
                                 {/* Floating Button to Open Drawer */}
-                                {formData.latitude && formData.longitude && services.length > 0 && (
+                                {formData.latitude && formData.longitude && (
                                     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
                                         <Button
                                             onClick={() => setIsDrawerOpen(true)}
                                             size="lg"
-                                            className="shadow-lg"
+                                            className={`shadow-2xl border-2 ${
+                                                services.length === 0 
+                                                    ? 'bg-background/95 backdrop-blur-sm border-muted-foreground/30 text-muted-foreground' 
+                                                    : 'bg-primary border-primary text-primary-foreground hover:bg-primary/90'
+                                            }`}
+                                            disabled={services.length === 0}
                                         >
                                             <MapPin className="w-4 h-4 mr-2" />
-                                            Ver {services.length} {services.length === 1 ? 'resultado' : 'resultados'}
+                                            {services.length > 0 
+                                                ? `Ver ${services.length} ${services.length === 1 ? 'resultado' : 'resultados'}`
+                                                : 'Ver resultados'
+                                            }
                                         </Button>
                                     </div>
                                 )}
@@ -900,7 +952,12 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
                                     <Popover>
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className="h-9 flex-1 text-sm">
-                                                {filters.rating > 0 ? `${filters.rating}+ ⭐` : 'Valoración'}
+                                                {filters.rating > 0 ? (
+                                                    <span className="flex items-center gap-1">
+                                                        {filters.rating}+
+                                                        <Star className="w-3 h-3 fill-muted-foreground/40 text-muted-foreground" />
+                                                    </span>
+                                                ) : 'Valoración'}
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-80 p-4" align="start">
@@ -916,9 +973,18 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
                                                         className="w-full"
                                                     />
                                                     <div className="flex justify-between text-xs text-muted-foreground">
-                                                        <span>0 ⭐</span>
-                                                        <span>{filters.rating > 0 ? `${filters.rating} ⭐` : 'Todas'}</span>
-                                                        <span>5 ⭐</span>
+                                                        <span className="flex items-center gap-0.5">
+                                                            0
+                                                            <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />
+                                                        </span>
+                                                        <span className="flex items-center gap-0.5">
+                                                            {filters.rating > 0 ? `${filters.rating}` : 'Todas'}
+                                                            {filters.rating > 0 && <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />}
+                                                        </span>
+                                                        <span className="flex items-center gap-0.5">
+                                                            5
+                                                            <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -996,7 +1062,7 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
                                                                     </p>
                                                                     <div className="flex items-center gap-2 mt-1">
                                                                         <div className="flex items-center gap-0.5">
-                                                                            <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                                                                            <Star className="w-2.5 h-2.5 fill-muted-foreground/30 text-muted-foreground" />
                                                                             <span className="text-xs font-semibold text-foreground">
                                                                                 {service.averageRating?.toFixed(1) || '0.0'}
                                                                             </span>

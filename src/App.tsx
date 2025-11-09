@@ -5,14 +5,14 @@ import { useAuth } from './contexts/AuthContext';
 import { NotificationCenter } from './components/NotificationCenter';
 import { useNotifications } from './hooks/useNotifications';
 import { FavoritesModal } from './components/FavoritesModal';
-import { PhoneVerification as PhoneVerificationPage } from './pages/PhoneVerificationPage';
+// Verificación de teléfono desactivada temporalmente
+// import { PhoneVerification as PhoneVerificationPage } from './pages/PhoneVerificationPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { AdDetails } from './components/AdDetails';
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 import { PaymentCancelPage } from './pages/PaymentCancelPage';
 import { Notification, NotificationType } from './components/Notification';
-import { AnimatedThemeToggler } from './components/ui/animated-theme-toggler';
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -189,13 +189,6 @@ const AppContent: React.FC = () => {
                                             </NavigationMenuLink>
                                         </NavigationMenuItem>
                                         
-                                        {/* Theme Toggle */}
-                                        <NavigationMenuItem>
-                                            <div className="flex items-center px-3 py-2">
-                                                <AnimatedThemeToggler />
-                                            </div>
-                                        </NavigationMenuItem>
-                                        
                                         {/* Panel de experto integrado - solo para expertos autenticados */}
                                         {isAuthenticated && isExpert && (
                                             <NavigationMenuItem>
@@ -294,7 +287,7 @@ const AppContent: React.FC = () => {
                 <div className={`fixed inset-y-0 left-0 z-40 w-72 bg-background shadow-xl transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden`}>
                         <div className="flex flex-col h-full">
                             <div className="p-4 border-b border-border">
-                                <h1 className="text-xl font-bold text-foreground">ATRAPO</h1>
+                                <h1 className="text-xl font-bold text-foreground">INSPECCIONO</h1>
                             </div>
                             <nav className="flex-1 overflow-y-auto p-4">
                                 <div className="space-y-1">
@@ -432,7 +425,8 @@ const AppContent: React.FC = () => {
                     <Background />
                     <section className="w-full min-h-screen flex flex-col relative z-10">
                         <Routes>
-                            <Route path="/verify-phone" element={<PhoneVerificationPage />} />
+                            {/* Verificación de teléfono desactivada temporalmente */}
+                            {/* <Route path="/verify-phone" element={<PhoneVerificationPage />} /> */}
                             <Route path="/privacy-policy.html" element={<PrivacyPolicy />} />
                             <Route path="/success" element={<PaymentSuccessPage />} />
                             <Route path="/cancel" element={<PaymentCancelPage />} />

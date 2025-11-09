@@ -659,23 +659,6 @@ const SearchCreationPage: React.FC = () => {
                 </>
             ) : (
                 <div className="w-full h-screen flex flex-col bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto">
-                    {/* Barra superior minimalista */}
-                                {currentStep > 0 && currentStep < 2 && (
-                        <div className="w-full bg-background border-b flex-shrink-0">
-                            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-                                        <button
-                                            onClick={() => setCurrentStep(currentStep - 1)}
-                                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                            </svg>
-                                            Volver
-                                        </button>
-                            </div>
-                        </div>
-                    )}
-                    
                     {currentStep === 1 && searchParameters.category && searchParameters.serviceTypeId && (
                         <div className="flex-1 min-h-0 overflow-hidden">
                             <SearchParameterForm
