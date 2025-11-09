@@ -227,7 +227,16 @@ export function useServices({
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || `Failed to create service: ${response.statusText}`);
+                // Crear un error personalizado con información adicional
+                const error = new Error(errorData.message || `Failed to create service: ${response.statusText}`) as any;
+                // Si es un error 400 con información de servicio existente (combinación categoría + tipo)
+                if (response.status === 400 && errorData.existingServiceId && errorData.categoryName && errorData.serviceTypeName) {
+                    error.existingServiceId = errorData.existingServiceId;
+                    error.categoryName = errorData.categoryName;
+                    error.serviceTypeName = errorData.serviceTypeName;
+                    error.isDuplicateComboError = true;
+                }
+                throw error;
             }
 
             return await response.json();

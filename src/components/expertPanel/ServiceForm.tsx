@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { CheckCircle, Loader2, XCircle, Upload, FileText, Video, X } from 'lucide-react';
+import { CheckCircle, Loader2, Upload, FileText, Video, X, ChevronDown, ChevronRight, FolderTree } from 'lucide-react';
 import { useDeliverableTypes } from '../../hooks/useDeliverableTypes';
-import { DeliverableType } from '../../types/deliverable';
+import { CategoryWithDetailsDto } from '../../types/category';
 import {
     Drawer,
     DrawerContent,
@@ -29,7 +29,7 @@ interface ServiceFormProps {
     serviceTypes: { id: number; name: string }[];
     isLoadingServiceTypes: boolean;
     isCreatingService: boolean;
-    categories: { id: number; name: string }[] | undefined;
+    categories: CategoryWithDetailsDto[] | undefined;
     editingService?: { id: number; categoryId: number; serviceTypeId: number; price: number; conditions: string; durationInHours: number | null; imageUrls: string[] } | null;
     handleUpdateService?: (e: React.FormEvent) => void;
     isUpdatingService?: boolean;
@@ -71,6 +71,7 @@ export function ServiceForm({
     const [selectedServiceTypeIds, setSelectedServiceTypeIds] = useState<string[]>(formData.serviceTypeId ? [formData.serviceTypeId] : []);
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [hasInitializedDeliverableTypes, setHasInitializedDeliverableTypes] = useState(false);
+    const [expandedCategoryIds, setExpandedCategoryIds] = useState<number[]>([]);
 
     // Actualizar las selecciones cuando cambie formData o editingService
     useEffect(() => {
@@ -117,15 +118,12 @@ export function ServiceForm({
                 
                 if (!hasPdf) {
                     console.log('🔍 ServiceForm useEffect - Adding PDF to selected types with ID:', pdfType.id);
-                    setFormData(prev => {
-                        console.log('🔍 ServiceForm useEffect - Previous formData:', prev);
                         const newFormData = {
-                            ...prev,
-                            selectedDeliverableTypes: [...prev.selectedDeliverableTypes, pdfType.id]
+                        ...formData,
+                        selectedDeliverableTypes: [...formData.selectedDeliverableTypes, pdfType.id]
                         };
                         console.log('🔍 ServiceForm useEffect - New formData:', newFormData);
-                        return newFormData;
-                    });
+                    setFormData(newFormData);
                 }
                 
                 // Solo marcar como inicializado si no estamos editando
@@ -149,6 +147,26 @@ export function ServiceForm({
             : [id];
         setSelectedCategoryIds(newSelected);
         setFormData({ ...formData, categoryId: newSelected[0] || '' });
+    };
+
+    const toggleCategoryExpand = (categoryId: number) => {
+        setExpandedCategoryIds(prev => 
+            prev.includes(categoryId)
+                ? prev.filter(id => id !== categoryId)
+                : [...prev, categoryId]
+        );
+    };
+
+    // Filtrar solo categorías padre
+    const parentCategories = categories?.filter(cat => {
+        // Calcular isParent si no viene del backend
+        const isParent = cat.isParent !== undefined ? cat.isParent : cat.parentId === null;
+        return isParent;
+    }) || [];
+
+    // Obtener subcategorías de una categoría padre
+    const getSubcategories = (parentId: number) => {
+        return categories?.filter(cat => cat.parentId === parentId) || [];
     };
 
     const handleServiceTypeSelect = (id: string) => {
@@ -207,22 +225,107 @@ export function ServiceForm({
                 <div className="space-y-6">
                     <div>
                         <Label className="text-sm font-medium mb-3 block">Categorías</Label>
-                        <div className="flex flex-wrap gap-2">
-                            {categories?.map(category => (
-                                <Button
-                                    key={category.id}
+                        <div className="space-y-3">
+                            {parentCategories.map(parentCategory => {
+                                const subcategories = getSubcategories(parentCategory.id);
+                                const hasSubcategories = subcategories.length > 0;
+                                const isExpanded = expandedCategoryIds.includes(parentCategory.id);
+                                const isSelected = selectedCategoryIds.includes(parentCategory.id.toString());
+                                
+                                return (
+                                    <div key={parentCategory.id} className="space-y-2">
+                                        <div className={`group relative border rounded-lg transition-all ${
+                                            isSelected
+                                                ? 'border-primary bg-primary/5 shadow-sm'
+                                                : 'border-border hover:border-primary/50 bg-background'
+                                        }`}>
+                                            <div className="flex items-center gap-3 p-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCategorySelect(parentCategory.id.toString())}
+                                                    className={`flex-1 flex items-center gap-3 text-left ${
+                                                        isSelected ? 'text-primary font-semibold' : 'text-foreground'
+                                                    }`}
+                                                >
+                                                    <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                                                        isSelected
+                                                            ? 'bg-primary text-primary-foreground'
+                                                            : 'bg-muted text-muted-foreground group-hover:bg-primary/10'
+                                                    }`}>
+                                                        <FolderTree className="w-5 h-5" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium">{parentCategory.name}</span>
+                                                            {hasSubcategories && (
+                                                                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                                                    General
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {hasSubcategories && (
+                                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                                {subcategories.length} {subcategories.length === 1 ? 'subcategoría' : 'subcategorías'} disponible{subcategories.length === 1 ? '' : 's'}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    {isSelected && (
+                                                        <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                                                    )}
+                                                </button>
+                                                {hasSubcategories && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleCategoryExpand(parentCategory.id)}
+                                                        className={`flex-shrink-0 p-2 rounded-md transition-colors ${
+                                                            isExpanded
+                                                                ? 'bg-primary/10 text-primary'
+                                                                : 'text-muted-foreground hover:bg-muted'
+                                                        }`}
+                                                    >
+                                                        {isExpanded ? (
+                                                            <ChevronDown className="w-5 h-5" />
+                                                        ) : (
+                                                            <ChevronRight className="w-5 h-5" />
+                                                        )}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {isExpanded && hasSubcategories && (
+                                            <div className="ml-6 space-y-2 border-l-2 border-border pl-4">
+                                                {subcategories.map(subcategory => {
+                                                    const isSubSelected = selectedCategoryIds.includes(subcategory.id.toString());
+                                                    return (
+                                                        <button
+                                                            key={subcategory.id}
                                     type="button"
-                                    variant={selectedCategoryIds.includes(category.id.toString()) ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => handleCategorySelect(category.id.toString())}
-                                    className={selectedCategoryIds.includes(category.id.toString())
-                                        ? ''
-                                        : 'hover:bg-accent'
-                                    }
-                                >
-                                    {category.name}
-                                </Button>
-                            ))}
+                                                            onClick={() => handleCategorySelect(subcategory.id.toString())}
+                                                            className={`w-full flex items-center gap-3 p-2.5 rounded-lg border transition-all text-left ${
+                                                                isSubSelected
+                                                                    ? 'border-primary bg-primary/5 text-primary font-medium'
+                                                                    : 'border-border hover:border-primary/50 bg-background text-foreground'
+                                                            }`}
+                                                        >
+                                                            <div className={`flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
+                                                                isSubSelected
+                                                                    ? 'bg-primary text-primary-foreground'
+                                                                    : 'bg-muted text-muted-foreground'
+                                                            }`}>
+                                                                <FileText className="w-4 h-4" />
+                                                            </div>
+                                                            <span className="flex-1 text-sm">{subcategory.name}</span>
+                                                            {isSubSelected && (
+                                                                <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                         {formErrors.categoryId && (
                             <p className="mt-2 text-sm text-destructive">{formErrors.categoryId}</p>
@@ -520,6 +623,7 @@ export function ServiceForm({
     // Usar Drawer en ambos casos, como en el ejemplo de shadcn/ui
 
     return (
+        <>
         <Drawer 
             open={showServiceForm} 
             onOpenChange={setShowServiceForm}
@@ -591,5 +695,6 @@ export function ServiceForm({
                 </div>
             </DrawerContent>
         </Drawer>
+        </>
     );
 }

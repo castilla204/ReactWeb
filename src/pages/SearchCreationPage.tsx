@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { Car, Home, Bike, ArrowRight, Shield, Eye, Search, Settings, Users, FileText } from 'lucide-react';
+import { Car, Home, Bike, ArrowRight, Shield, Eye, Search, FileText, ChevronDown, ChevronRight, CheckCircle, FolderTree } from 'lucide-react';
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
-import { ServiceSelection } from '../components/ServiceSelection';
-import { ProgressBar } from '../components/ProgressBar';
 import { useAuth } from '../contexts/AuthContext';
 import { Notification, NotificationType } from '../components/Notification';
 import HomePresentation from '../components/HomePresentation';
 import { useServiceTypes } from '../hooks/useServiceTypes';
+import { Button } from '../components/ui/button';
 
 
 interface SearchParameters {
@@ -32,6 +31,17 @@ const SearchCreationPage: React.FC = () => {
     const { serviceTypes, isLoading: serviceTypesLoading, error: serviceTypesError } = useServiceTypes();
     const [notification, setNotification] = useState<{ type: NotificationType; message: string } | null>(null);
     const [currentStep, setCurrentStep] = useState(0);
+    
+    // Notificar a App.tsx cuando estamos en un formulario (step 1 o 2) para ocultar el header en móvil
+    React.useEffect(() => {
+        if (currentStep === 1 || currentStep === 2) {
+            sessionStorage.setItem('isInFormStep', 'true');
+        } else {
+            sessionStorage.removeItem('isInFormStep');
+        }
+        // Disparar evento para que App.tsx pueda reaccionar
+        window.dispatchEvent(new CustomEvent('formStepChanged', { detail: { step: currentStep } }));
+    }, [currentStep]);
     const [searchParameters, setSearchParameters] = useState<Partial<SearchParameters>>({
         keywords: '',
         userSearch: '',
@@ -46,36 +56,40 @@ const SearchCreationPage: React.FC = () => {
     const [serviceImageUrls, setServiceImageUrls] = useState<string[]>([]);
 
     const safeCategories = Array.isArray(categories) ? categories : [];
+    const [expandedCategoryIds, setExpandedCategoryIds] = useState<number[]>([]);
 
-    // Definición de los pasos del formulario
-    const formSteps = [
-        {
-            id: 1,
-            title: 'Categoría',
-            description: 'Selecciona el tipo de servicio',
-            icon: <Search className="w-4 h-4" />
-        },
-        {
-            id: 2,
-            title: 'Configuración',
-            description: 'Define los parámetros de tu búsqueda',
-            icon: <Settings className="w-4 h-4" />
-        },
-        {
-            id: 3,
-            title: 'Selección',
-            description: 'Elige el experto ideal',
-            icon: <Users className="w-4 h-4" />
-        },
-        {
-            id: 4,
-            title: 'Contratación',
-            description: 'Finaliza tu solicitud',
-            icon: <FileText className="w-4 h-4" />
-        }
-    ];
+    // Filtrar solo categorías padre
+    const parentCategories = safeCategories.filter(cat => {
+        // Calcular isParent si no viene del backend
+        const isParent = cat.isParent !== undefined ? cat.isParent : cat.parentId === null;
+        return isParent;
+    });
 
-    const handleParametersComplete = (parameters: SearchParameters & { latitude: string; longitude: string; locationRange: number }) => {
+    // Obtener subcategorías de una categoría padre
+    const getSubcategories = (parentId: number) => {
+        return safeCategories.filter(cat => cat.parentId === parentId);
+    };
+
+    const toggleCategoryExpand = (categoryId: number) => {
+        setExpandedCategoryIds(prev => 
+            prev.includes(categoryId)
+                ? prev.filter(id => id !== categoryId)
+                : [...prev, categoryId]
+        );
+    };
+
+
+    const handleParametersComplete = (parameters: SearchParameters & { 
+        latitude: string; 
+        longitude: string; 
+        locationRange: number;
+        serviceId?: number;
+        expertProfilePicture?: string;
+        expertName?: string;
+        servicePrice?: number;
+        serviceDescription?: string;
+        serviceImageUrls?: string[];
+    }) => {
         if (!isAuthenticated) {
             setNotification({
                 type: 'error',
@@ -88,40 +102,22 @@ const SearchCreationPage: React.FC = () => {
         // Ensure strictMatchOnly is always false
         const updatedParameters = { ...parameters, strictMatchOnly: false };
         setSearchParameters(updatedParameters);
-        setCurrentStep(2);
+        
+        // Si viene el servicio seleccionado, guardarlo y pasar al siguiente paso
+        if (parameters.serviceId) {
+            setSelectedServiceId(parameters.serviceId);
+            setExpertProfilePicture(parameters.expertProfilePicture);
+            setExpertName(parameters.expertName);
+            setServicePrice(parameters.servicePrice);
+            setServiceDescription(parameters.serviceDescription);
+            setServiceImageUrls(parameters.serviceImageUrls || []);
+            setCurrentStep(2); // Ahora el paso 2 es Contratación (antes era 3)
+        } else {
+            // Si no viene servicio, quedarse en el paso actual
+            setCurrentStep(1);
+        }
     };
 
-    const handleServiceSelectionComplete = (
-        serviceId: number,
-        expertProfilePicture?: string,
-        expertName?: string,
-        servicePrice?: number,
-        serviceDescription?: string,
-        serviceImageUrls?: string[]
-    ) => {
-        console.log('SearchCreationPage - Service selection complete:', {
-            serviceId,
-            expertProfilePicture,
-            expertName,
-            servicePrice,
-            serviceDescription,
-            serviceImageUrls,
-        });
-        if (!expertName || servicePrice === undefined) {
-            setNotification({
-                type: 'error',
-                message: '❌ Error: Los datos del servicio están incompletos (falta el nombre del experto o el precio).',
-            });
-            return;
-        }
-        setSelectedServiceId(serviceId);
-        setExpertProfilePicture(expertProfilePicture);
-        setExpertName(expertName);
-        setServicePrice(servicePrice);
-        setServiceDescription(serviceDescription);
-        setServiceImageUrls(serviceImageUrls || []);
-        setCurrentStep(3);
-    };
 
     const handleSearchComplete = () => {
         setNotification({
@@ -342,34 +338,164 @@ const SearchCreationPage: React.FC = () => {
                                         </div>
                                         <p className="text-sm text-gray-600 ml-9">¿Qué tipo de producto o servicio buscas?</p>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 ml-9">
-                                        {safeCategories.map((category) => (
+                                    <div className="ml-9 space-y-6">
+                                        {/* Categorías Padre */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                            {parentCategories.map((parentCategory) => {
+                                                const subcategories = getSubcategories(parentCategory.id);
+                                                const hasSubcategories = subcategories.length > 0;
+                                                const isExpanded = expandedCategoryIds.includes(parentCategory.id);
+                                                const isSelected = searchParameters.category === parentCategory.id;
+                                                
+                                                return (
+                                                    <div key={parentCategory.id}>
+                                                        <div className={`group relative border-2 rounded-xl transition-all overflow-hidden ${
+                                                            isSelected
+                                                                ? 'border-primary bg-primary/5 shadow-md'
+                                                                : 'border-border hover:border-primary/50 bg-background hover:shadow-sm'
+                                                        }`}>
+                                                            <div className="p-5">
+                                                                <button
+                                                                    onClick={() =>
+                                                                        setSearchParameters((prev) => ({ ...prev, category: parentCategory.id }))
+                                                                    }
+                                                                    className="w-full flex flex-col items-center text-center space-y-3"
+                                                                >
+                                                                    <div className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all ${
+                                                                        isSelected
+                                                                            ? 'bg-primary text-primary-foreground shadow-lg scale-105'
+                                                                            : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 group-hover:from-primary/10 group-hover:to-primary/20'
+                                                                    }`}>
+                                                                        {parentCategory.id === 1 && <Car className="w-8 h-8" />}
+                                                                        {parentCategory.id === 2 && <Bike className="w-8 h-8" />}
+                                                                        {parentCategory.id === 3 && <Home className="w-8 h-8" />}
+                                                                        {![1, 2, 3].includes(parentCategory.id) && <FolderTree className="w-8 h-8" />}
+                                                                    </div>
+                                                                    <div className="w-full">
+                                                                        <div className="flex items-center justify-center gap-2 mb-1">
+                                                                            <h4 className={`font-semibold text-base ${
+                                                                                isSelected ? 'text-primary' : 'text-gray-900'
+                                                                            }`}>
+                                                                                {parentCategory.name}
+                                                                            </h4>
+                                                                            {isSelected && (
+                                                                                <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                                                                            )}
+                                                                        </div>
+                                                                        <p className="text-sm text-gray-500 mb-2">
+                                                                            {parentCategory.id === 1 && 'Coches, motos y vehículos'}
+                                                                            {parentCategory.id === 2 && 'Motocicletas y ciclomotores'}
+                                                                            {parentCategory.id === 3 && 'Inmuebles y propiedades'}
+                                                                            {![1, 2, 3].includes(parentCategory.id) && 'Selecciona esta categoría'}
+                                                                        </p>
+                                                                        {hasSubcategories && (
+                                                                            <div className="flex items-center justify-center gap-2">
+                                                                                <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium">
+                                                                                    General
+                                                                                </span>
+                                                                                <span className="text-xs text-muted-foreground">
+                                                                                    {subcategories.length} {subcategories.length === 1 ? 'subcategoría' : 'subcategorías'}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </button>
+                                                                {hasSubcategories && (
+                                                                    <div className="mt-3 pt-3 border-t border-border">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => toggleCategoryExpand(parentCategory.id)}
+                                                                            className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg transition-all ${
+                                                                                isExpanded
+                                                                                    ? 'bg-primary/10 text-primary'
+                                                                                    : 'text-muted-foreground hover:bg-muted'
+                                                                            }`}
+                                                                        >
+                                                                            {isExpanded ? (
+                                                                                <>
+                                                                                    <ChevronDown className="w-4 h-4" />
+                                                                                    <span className="text-xs font-medium">Ocultar subcategorías</span>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <ChevronRight className="w-4 h-4" />
+                                                                                    <span className="text-xs font-medium">Ver subcategorías</span>
+                                                                                </>
+                                                                            )}
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Subcategorías - Nueva fila debajo */}
+                                        {expandedCategoryIds.length > 0 && (
+                                            <div className="space-y-4">
+                                                {expandedCategoryIds.map((expandedCategoryId) => {
+                                                    const parentCategory = parentCategories.find(cat => cat.id === expandedCategoryId);
+                                                    if (!parentCategory) return null;
+                                                    
+                                                    const subcategories = getSubcategories(parentCategory.id);
+                                                    if (subcategories.length === 0) return null;
+                                                    
+                                                    return (
+                                                        <div key={expandedCategoryId} className="space-y-3">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                                                    {parentCategory.id === 1 && <Car className="w-4 h-4 text-primary" />}
+                                                                    {parentCategory.id === 2 && <Bike className="w-4 h-4 text-primary" />}
+                                                                    {parentCategory.id === 3 && <Home className="w-4 h-4 text-primary" />}
+                                                                    {![1, 2, 3].includes(parentCategory.id) && <FolderTree className="w-4 h-4 text-primary" />}
+                                                                </div>
+                                                                <h3 className="text-sm font-semibold text-gray-700">
+                                                                    Subcategorías de {parentCategory.name}
+                                                                </h3>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                                                {subcategories.map((subcategory) => {
+                                                                    const isSubSelected = searchParameters.category === subcategory.id;
+                                                                    return (
                                             <button
-                                                key={category.id}
+                                                                            key={subcategory.id}
                                                 onClick={() =>
-                                                    setSearchParameters((prev) => ({ ...prev, category: category.id }))
-                                                }
-                                                className={`text-left p-4 border rounded-lg transition-all ${searchParameters.category === category.id
-                                                    ? 'border-primary bg-primary/10'
-                                                    : 'border-border hover:border-border/80 bg-background'
-                                                    }`}
-                                            >
-                                                <div className={`w-10 h-10 mb-3 rounded-lg flex items-center justify-center ${searchParameters.category === category.id
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gray-100 text-gray-600'
-                                                    }`}>
-                                                    {category.id === 1 && <Car className="w-5 h-5" />}
-                                                    {category.id === 2 && <Bike className="w-5 h-5" />}
-                                                    {category.id === 3 && <Home className="w-5 h-5" />}
+                                                                                setSearchParameters((prev) => ({ ...prev, category: subcategory.id }))
+                                                                            }
+                                                                            className={`group/sub flex items-center gap-3 p-4 border-2 rounded-xl transition-all ${
+                                                                                isSubSelected
+                                                                                    ? 'border-primary bg-primary/5 shadow-md'
+                                                                                    : 'border-border hover:border-primary/50 bg-background hover:shadow-sm'
+                                                                            }`}
+                                                                        >
+                                                                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all flex-shrink-0 ${
+                                                                                isSubSelected
+                                                                                    ? 'bg-primary text-primary-foreground shadow-lg'
+                                                                                    : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 group-hover/sub:from-primary/10 group-hover/sub:to-primary/20'
+                                                                            }`}>
+                                                                                <FileText className="w-6 h-6" />
+                                                                            </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <h4 className={`font-semibold text-sm ${
+                                                                                    isSubSelected ? 'text-primary' : 'text-gray-900'
+                                                                                }`}>
+                                                                                    {subcategory.name}
+                                                                                </h4>
                                                 </div>
-                                                <h4 className="font-semibold text-gray-900 mb-1 text-sm">{category.name}</h4>
-                                                <p className="text-xs text-gray-500">
-                                                    {category.id === 1 && 'Coches, motos y vehículos'}
-                                                    {category.id === 2 && 'Motocicletas y ciclomotores'}
-                                                    {category.id === 3 && 'Inmuebles y propiedades'}
-                                                </p>
+                                                                            {isSubSelected && (
+                                                                                <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                                                                            )}
                                             </button>
-                                        ))}
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -472,8 +598,8 @@ const SearchCreationPage: React.FC = () => {
                                 </div>
 
                                 {/* Submit Button */}
-                                <div className="pt-6">
-                                    <button
+                                <div className="pt-6 flex justify-end">
+                                    <Button
                                         onClick={handleStartSearch}
                                         disabled={
                                             serviceTypesLoading ||
@@ -486,14 +612,11 @@ const SearchCreationPage: React.FC = () => {
                                                        !searchParameters.serviceTypeId;
                                             })()
                                         }
-                                        className="w-full px-8 py-4 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        size="lg"
                                     >
-                                        <span>Crear mi búsqueda personalizada</span>
-                                        <ArrowRight className="w-5 h-5" />
-                                    </button>
-                                    <p className="text-center text-sm text-gray-500 mt-3">
-                                        Configuración rápida en menos de 2 minutos
-                                    </p>
+                                        Crear mi búsqueda personalizada
+                                        <ArrowRight className="w-5 h-5 ml-2" />
+                                    </Button>
                                 </div>
                             </div>
                             {isAuthenticated && (
@@ -535,56 +658,38 @@ const SearchCreationPage: React.FC = () => {
                     </footer>
                 </>
             ) : (
-                <div className="w-full min-h-screen flex flex-col bg-gray-50">
-                    {/* Botón Volver y Barra de progreso integrados */}
-                    {currentStep >= 0 && (
-                        <div className="w-full bg-gray-50 pt-6 pb-2">
-                            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                                {/* Botón Volver arriba de la barra de progreso */}
-                                {currentStep > 0 && (
-                                    <div className="mb-4">
+                <div className="w-full h-screen flex flex-col bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto">
+                    {/* Barra superior minimalista */}
+                                {currentStep > 0 && currentStep < 2 && (
+                        <div className="w-full bg-background border-b flex-shrink-0">
+                            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                                         <button
                                             onClick={() => setCurrentStep(currentStep - 1)}
-                                            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-100"
+                                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
                                         >
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                             </svg>
                                             Volver
                                         </button>
-                                    </div>
-                                )}
-                                <ProgressBar 
-                                    currentStep={currentStep + 1}
-                                    totalSteps={formSteps.length}
-                                    steps={formSteps}
-                                />
                             </div>
                         </div>
                     )}
                     
                     {currentStep === 1 && searchParameters.category && searchParameters.serviceTypeId && (
-                        <SearchParameterForm
-                            onComplete={handleParametersComplete}
-                            setCurrentStep={setCurrentStep}
-                            selectedCategory={searchParameters.category}
-                            initialKeywords={searchParameters.keywords || ''}
-                            initialUserSearch={searchParameters.userSearch || ''}
-                            serviceTypeId={searchParameters.serviceTypeId}
-                        />
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                            <SearchParameterForm
+                                onComplete={handleParametersComplete}
+                                setCurrentStep={setCurrentStep}
+                                selectedCategory={searchParameters.category}
+                                initialKeywords={searchParameters.keywords || ''}
+                                initialUserSearch={searchParameters.userSearch || ''}
+                                serviceTypeId={searchParameters.serviceTypeId}
+                            />
+                        </div>
                     )}
-                    {currentStep === 2 && searchParameters.category && searchParameters.serviceTypeId && searchParameters.latitude && searchParameters.longitude && searchParameters.locationRange && (
-                        <ServiceSelection
-                            onBack={() => setCurrentStep(1)}
-                            onComplete={handleServiceSelectionComplete}
-                            selectedCategory={searchParameters.category}
-                            selectedServiceTypeId={searchParameters.serviceTypeId}
-                            latitude={searchParameters.latitude}
-                            longitude={searchParameters.longitude}
-                            locationRange={searchParameters.locationRange}
-                        />
-                    )}
-                    {currentStep === 3 && selectedServiceId && (
+                    {currentStep === 2 && selectedServiceId && (
+                        <div className="flex-1 overflow-y-auto">
                             <SearchForm
                                 parameters={searchParameters as SearchParameters & { latitude: string; longitude: string; locationRange: number }}
                                 setCurrentStep={setCurrentStep}
@@ -597,6 +702,7 @@ const SearchCreationPage: React.FC = () => {
                                 serviceDescription={serviceDescription}
                                 serviceImageUrls={serviceImageUrls}
                             />
+                        </div>
                     )}
                 </div>
             )}
