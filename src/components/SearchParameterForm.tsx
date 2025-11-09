@@ -1,80 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Search, X, Radar, DollarSign, Settings, Star } from 'lucide-react';
-import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowRight, Search, X, Star, CheckCircle, User, Info, MapPin } from 'lucide-react';
+import { ImageCarousel } from './ui/image-carousel';
+import { useLoadScript } from '@react-google-maps/api';
+import { useServices } from '../hooks/useServices';
 import { useMapExperts } from '../hooks/useMapExperts';
+import { LocationMap } from './LocationMap';
+import { Card, CardContent } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from './ui/drawer';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Slider } from './ui/slider';
+import { Label } from './ui/label';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
-
-const getDrawingManagerOptions = () => ({
-    drawingControl: false,
-    circleOptions: {
-        fillColor: 'rgba(59, 130, 246, 0.1)',
-        fillOpacity: 0.15,
-        strokeColor: 'rgba(59, 130, 246, 0.5)',
-        strokeOpacity: 1,
-        strokeWeight: 2,
-        clickable: false,
-        editable: true,
-        zIndex: 1
-    }
-});
-
-const markerIcon = {
-    path: "M -4,0 A 4,4 0 1,0 4,0 A 4,4 0 1,0 -4,0",
-    fillColor: '#3b82f6',
-    fillOpacity: 1,
-    strokeColor: '#ffffff',
-    strokeWeight: 1.5,
-    scale: 1.5,
-    zIndex: 3
-};
-
-// Icono simple que siempre se ve
-const expertMarkerIcon = {
-  path: "M 0,-8 A 8,8 0 1,0 0,8 A 8,8 0 1,0 0,-8", // Círculo simple
-  fillColor: '#10b981', 
-  fillOpacity: 1,
-  strokeColor: '#ffffff',
-  strokeWeight: 2,
-  scale: 1.2,
-  zIndex: 2
-};
-
-const circleOptions = {
-    fillColor: '#3b82f6',
-    fillOpacity: 0.15,
-    strokeColor: '#3b82f6',
-    strokeOpacity: 0.5,
-    strokeWeight: 2,
-    zIndex: 1,
-    clickable: false,
-    editable: false,
-    draggable: false
-};
-
 const getZoomLevel = (radius: number) => {
     const radiusInMeters = radius * 1000;
     return Math.min(14, Math.max(4, Math.floor(14 - Math.log2(radiusInMeters / 500))));
 };
-
-const mapStyles = [
-    {
-        featureType: 'poi',
-        elementType: 'labels',
-        stylers: [{ visibility: 'off' }]
-    },
-    {
-        featureType: 'transit',
-        elementType: 'labels',
-        stylers: [{ visibility: 'off' }]
-    }
-];
-
 const defaultCenter = {
     lat: 40.4168,
     lng: -3.7038
 };
-
 interface SearchParameterFormProps {
     onComplete: (parameters: any) => void;
     setCurrentStep: (step: number) => void;
@@ -83,62 +31,118 @@ interface SearchParameterFormProps {
     initialUserSearch: string;
     serviceTypeId: number | null;
 }
-
-// Interfaz para el estado del experto seleccionado en el InfoWindow
-interface ExpertInfo {
-    id: number;
-    lat: number;
-    lng: number;
-    name: string;
-    profilePictureUrl?: string;
-    averageRating: number;
-    completedSearches: number;
-}
-
 export function SearchParameterForm({ onComplete, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId }: SearchParameterFormProps) {
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
         libraries
     });
-
     const [error, setError] = useState<string | null>(null);
     const [map, setMap] = useState<google.maps.Map | null>(null);
-    // Removed subscription limits - no longer needed
     const [searchAddress, setSearchAddress] = useState<string>('');
     const [selectedAddress, setSelectedAddress] = useState<string>('');
     const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
-    
-    // Estados para expertos en el mapa
-    const { experts, totalCount, loading: expertsLoading } = useMapExperts(selectedCategory, serviceTypeId);
-    // Cambio clave: Ahora almacena el objeto de experto para el InfoWindow
-    const [selectedExpert, setSelectedExpert] = useState<ExpertInfo | null>(null);
-    const [showInfoWindow, setShowInfoWindow] = useState<boolean>(false);
-    
-    // Debug: Log cuando cambie selectedExpert
-    useEffect(() => {
-        console.log('🔍 selectedExpert changed:', selectedExpert);
-        setShowInfoWindow(!!selectedExpert);
-    }, [selectedExpert]);
 
     const initialFormState = {
         keywords: initialKeywords,
         userSearch: initialUserSearch,
         latitude: '',
         longitude: '',
-        locationRange: '25',
+        locationRange: '25', // Fijo a 25km
         frequency: '1', // Default to 1 hour
-        minPrice: '',
-        maxPrice: '',
         address: '',
         locationName: '', // ✅ NUEVO: Nombre de la ubicación
     };
-
     const [formData, setFormData] = useState(initialFormState);
-    const [selectedLocation, setSelectedLocation] = useState(defaultCenter);
-    const [circle, setCircle] = useState<google.maps.Circle | null>(null);
-    const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager | null>(null);
+    const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+   
+    // Estados para servicios
+    const [selectedService, setSelectedService] = useState<number | null>(null);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [filters, setFilters] = useState({
+        priceRange: [0, 1000] as [number, number], // [min, max] en euros
+        rating: 0 as number, // Mínimo de estrellas (0-5)
+    });
+   
+    // Cargar servicios cuando hay ubicación seleccionada
+    const { services: allServices, isLoading: isLoadingServices } = useServices({
+        categoryId: selectedCategory || undefined,
+        serviceTypeId: serviceTypeId || undefined,
+        latitude: formData.latitude || undefined,
+        longitude: formData.longitude || undefined,
+        locationRange: formData.locationRange ? parseInt(formData.locationRange) : undefined,
+    });
+   
+    // Cargar posiciones de expertos para el mapa
+    const { experts: mapExperts } = useMapExperts(
+        selectedCategory,
+        serviceTypeId
+    );
+   
+    // Aplicar filtros a servicios
+    const services = allServices.filter(service => {
+            const price = service.price || 0;
+        if (price < filters.priceRange[0] || price > filters.priceRange[1]) return false;
+        
+            const rating = service.averageRating || 0;
+        if (rating < filters.rating) return false;
+        
+        return true;
+    });
+    
+    // Ref para rastrear si ya se abrió el drawer para esta ubicación
+    const lastLocationRef = useRef<string>('');
+    const hasOpenedDrawerRef = useRef<boolean>(false);
+    
+    // Abrir drawer automáticamente cuando hay servicios disponibles en móvil (solo una vez por ubicación)
+    useEffect(() => {
+        const locationKey = `${formData.latitude}-${formData.longitude}`;
+        const isMobile = window.innerWidth < 1024;
+        
+        if (
+            formData.latitude && 
+            formData.longitude && 
+            allServices.length > 0 && 
+            isMobile &&
+            locationKey !== lastLocationRef.current &&
+            !hasOpenedDrawerRef.current
+        ) {
+            lastLocationRef.current = locationKey;
+            hasOpenedDrawerRef.current = true;
+            // No abrir automáticamente, solo marcar que se puede abrir
+        }
+        
+        // Reset cuando cambia la ubicación
+        if (locationKey !== lastLocationRef.current) {
+            hasOpenedDrawerRef.current = false;
+        }
+    }, [formData.latitude, formData.longitude, allServices.length]);
+    // Logs para debugging
+    useEffect(() => {
+        console.log('📍 [DEBUG] Estado de ubicación:', {
+            selectedLocation,
+            formDataLatitude: formData.latitude,
+            formDataLongitude: formData.longitude,
+            hasSelectedLocation: !!selectedLocation,
+            hasCoordinates: !!(formData.latitude && formData.longitude)
+        });
+    }, [selectedLocation, formData.latitude, formData.longitude]);
+    useEffect(() => {
+        console.log('🔍 [DEBUG] Servicios cargados:', {
+            totalServices: allServices.length,
+            filteredServices: services.length,
+            isLoading: isLoadingServices,
+            services: services.map(s => ({
+                id: s.id,
+                name: s.expert?.user?.name,
+                price: s.price,
+                categoryName: s.categoryName,
+                serviceTypeName: s.serviceTypeName
+            }))
+        });
+    }, [allServices, services, isLoadingServices]);
+   
     
     // Función para extraer ciudad y código postal de la dirección
     const extractCityAndPostalCode = (address: string): string => {
@@ -193,7 +197,6 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
             return 'Ubicación'; // Fallback a "Ubicación"
         }
     };
-
     // Función para actualizar la ubicación y sincronizar todos los elementos del mapa
     const updateLocationAndMap = (newLocation: { lat: number; lng: number }, address?: string) => {
         setSelectedLocation(newLocation);
@@ -215,31 +218,21 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
             ...(address && { address }),
             locationName // ✅ NUEVO: Rellenar automáticamente el nombre de ubicación
         }));
-
         // Actualizar mapa
         if (map) {
             map.panTo(newLocation);
-            const radius = parseInt(formData.locationRange);
+            const radius = 25; // Fijo a 25km
             const zoom = getZoomLevel(radius);
             map.setZoom(zoom);
         }
-
-        // Actualizar círculo
-        if (circle) {
-            circle.setCenter(newLocation);
-            const radius = parseInt(formData.locationRange) * 1000;
-            circle.setRadius(radius);
-        }
+        // El círculo se actualiza automáticamente con el componente Circle de React
     };
-
     useEffect(() => {
         setFormData(prev => ({
             ...prev,
             frequency: '1' // Default to 1 hour
         }));
     }, []);
-
-
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -271,29 +264,14 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
                     }));
                     if (map) {
                         map.panTo(defaultCenter);
-                        const radius = parseInt(formData.locationRange);
+                        const radius = 25; // Fijo a 25km
                         const zoom = getZoomLevel(radius);
                         map.setZoom(zoom);
-
-                        if (circle) {
-                            circle.setCenter(defaultCenter);
-                            circle.setRadius(radius * 1000);
-                        }
                     }
                 }
             );
         }
-    }, [map, circle]);
-
-    useEffect(() => {
-        if (map && circle) {
-            const radius = parseInt(formData.locationRange);
-            const zoom = getZoomLevel(radius);
-            map.setZoom(zoom);
-            circle.setRadius(radius * 1000);
-        }
-    }, [formData.locationRange, map, circle]);
-
+    }, [map]);
     // Inicializar Google Places Autocomplete
     useEffect(() => {
         if (isLoaded && searchInputRef.current && !autocomplete) {
@@ -302,7 +280,6 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
                 componentRestrictions: { country: 'es' }, // Restringir a España
                 fields: ['formatted_address', 'geometry', 'name']
             });
-
             autoCompleteInstance.addListener('place_changed', () => {
                 const place = autoCompleteInstance.getPlace();
                 if (place.geometry && place.geometry.location) {
@@ -324,25 +301,16 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
                     }, 150);
                 }
             });
-
             setAutocomplete(autoCompleteInstance);
         }
-    }, [isLoaded, autocomplete, map, circle, formData.locationRange]);
-
-    // Efecto para asegurar que el mapa y círculo se actualicen cuando cambie la ubicación
+    }, [isLoaded, autocomplete, map, formData.locationRange]);
+    // Efecto para asegurar que el mapa se actualice cuando cambie la ubicación
     useEffect(() => {
-        if (map && selectedLocation) {
+        if (map && selectedLocation && formData.latitude && formData.longitude) {
             map.panTo(selectedLocation);
         }
-        if (circle && selectedLocation) {
-            circle.setCenter(selectedLocation);
-        }
-    }, [selectedLocation, map, circle]);
-
+    }, [selectedLocation, map, formData.latitude, formData.longitude]);
     const handleMapClick = (e: google.maps.MapMouseEvent) => {
-        setSelectedExpert(null); // Cerrar cualquier InfoWindow abierto
-        setShowInfoWindow(false);
-        
         if (e.latLng) {
             const newLocation = {
                 lat: e.latLng.lat(),
@@ -369,112 +337,373 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
             }
         }
     };
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        window.scrollTo(0, 0);
-
-        if (!formData.latitude || !formData.longitude) {
-            const errorMessage = 'Por favor, selecciona una ubicación usando el buscador de direcciones o haciendo clic en el mapa';
-            setError(errorMessage);
-            if (typeof window !== 'undefined' && window.dispatchEvent) {
-                window.dispatchEvent(new CustomEvent('showNotification', {
-                    detail: {
-                        type: 'error',
-                        message: `📍 ${errorMessage}`
-                    }
-                }));
-            }
+    const handleServiceSelect = (serviceId: number) => {
+        setSelectedService(serviceId);
+    };
+    const handleContinue = () => {
+        if (!selectedService) {
+            setError('Por favor, selecciona un servicio antes de continuar.');
             return;
         }
-
+        if (!formData.latitude || !formData.longitude) {
+            setError('Por favor, selecciona una ubicación usando el buscador de direcciones o haciendo clic en el mapa');
+            return;
+        }
+        const selectedServiceData = services.find((s) => s.id === selectedService);
+        if (!selectedServiceData) {
+            setError('Error: No se encontró el servicio seleccionado.');
+            return;
+        }
         const searchParameterData = {
             category: selectedCategory,
             keywords: formData.keywords || initialKeywords,
             userSearch: formData.userSearch || initialUserSearch,
-            latitude: selectedLocation.lat.toString(),
-            longitude: selectedLocation.lng.toString(),
-            locationRange: formData.locationRange ? parseInt(formData.locationRange) : null,
-            frequency: formData.frequency ? parseInt(formData.frequency) : 1, // Default to 1 hour
-            minPrice: formData.minPrice ? parseInt(formData.minPrice) : null,
-            maxPrice: formData.maxPrice ? parseInt(formData.maxPrice) : null,
+            latitude: selectedLocation?.lat.toString() || formData.latitude,
+            longitude: selectedLocation?.lng.toString() || formData.longitude,
+            locationRange: 25,
+            frequency: formData.frequency ? parseInt(formData.frequency) : 1,
             brandId: null,
             modelId: null,
             platformIds: [1, 2],
             serviceTypeId,
-            locationName: formData.locationName || selectedAddress // ✅ NUEVO: Incluir nombre de ubicación
+            locationName: formData.locationName || selectedAddress,
+            serviceId: selectedService,
+            expertProfilePicture: selectedServiceData.expert?.profilePictureUrl,
+            expertName: selectedServiceData.expert?.user?.name,
+            servicePrice: selectedServiceData.price,
+            serviceDescription: selectedServiceData.conditions,
+            serviceImageUrls: selectedServiceData.imageUrls || []
         };
-
-        console.log('🚀 Sending search data:', { 
-            locationName: searchParameterData.locationName,
-            formDataLocationName: formData.locationName,
-            selectedAddress 
-        }); // Debug log
-
         onComplete(searchParameterData);
     };
-
-    // const handleBack = (e: React.MouseEvent) => {
-    //     e.preventDefault();
-    //     setCurrentStep(0);
-    // };
-
     return (
-        <div className="w-full max-w-6xl mx-auto px-4 pt-2">
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Combined Container - Map + Settings */}
-                <div className="bg-white rounded-none md:rounded-2xl overflow-hidden shadow-xl border border-gray-100/50">
-                    {/* Header with instructions */}
-                    <div className="p-2 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/30">
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex-shrink-0 shadow-md">
-                                <Settings className="w-3 h-3 text-white" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                                        <h2 className="text-sm md:text-base font-semibold text-gray-900">
-                                                            {serviceTypeId === 1 ? 'Ubicación del vehículo' : 'Área de búsqueda'}
-                                                        </h2>
-                                                        <p className="text-xs text-gray-600 mt-0.5">
-                                                            {serviceTypeId === 1 
-                                                                ? 'Seleccione la ubicación aproximada donde se encuentra el coche y el rango de precio del vehículo'
-                                                                : 'Especifique el área donde está buscando el vehículo y el rango de precio que está dispuesto a pagar'
-                                                            }
-                                                        </p>
+        <div className="bg-background h-screen flex flex-col overflow-hidden fixed inset-0 lg:relative lg:h-auto lg:min-h-screen">
+            {/* Header Section - Fixed */}
+            <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b flex-shrink-0">
+                <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-lg font-semibold text-foreground mb-2">
+                                {serviceTypeId === 1 ? 'Inspector especializado' : 'Experto en búsquedas'}
+                            </h1>
+                            {/* Timeline del proceso */}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <div className={`flex items-center gap-1 ${formData.latitude && formData.longitude ? 'text-primary' : ''}`}>
+                                    <div className={`w-2 h-2 rounded-full ${formData.latitude && formData.longitude ? 'bg-primary' : 'bg-muted'}`} />
+                                    <span>Ubicación</span>
+                        </div>
+                                <ArrowRight className="w-3 h-3" />
+                                <div className={`flex items-center gap-1 ${selectedService ? 'text-primary' : ''}`}>
+                                    <div className={`w-2 h-2 rounded-full ${selectedService ? 'bg-primary' : 'bg-muted'}`} />
+                                    <span>Experto</span>
+                                </div>
+                                <ArrowRight className="w-3 h-3" />
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 rounded-full bg-muted" />
+                                    <span>Pago</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+                   
+            {/* Main Layout - Split View */}
+            <div className="flex flex-1 min-h-0 overflow-hidden">
+                {/* Left Side - Form & Results (Desktop only) */}
+                <div className="hidden lg:flex flex-1 overflow-y-auto">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                        {/* Accordion con instrucciones - Siempre visible */}
+                        <Accordion type="single" collapsible defaultValue="instructions" className="mb-6">
+                            <AccordionItem value="instructions" className="border-border">
+                                <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-3">
+                                    <div className="flex items-center gap-2">
+                                        <Info className="w-4 h-4 text-primary" />
+                                        <span>¿Qué hacer en esta página?</span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="text-sm text-muted-foreground leading-relaxed pt-2 pb-4">
+                                    <p className="mb-2">
+                                        Selecciona una ubicación en el mapa usando la barra de búsqueda o haciendo clic directamente en el mapa.
+                                        Una vez seleccionada la ubicación, aparecerán los servicios disponibles en un radio de 25 km.
+                                    </p>
+                                    <p className="mb-2">
+                                        Puedes filtrar los servicios por precio y valoración usando los menús desplegables.
+                                        Haz clic en una tarjeta de servicio para seleccionarla y luego presiona "Continuar" para proceder.
+                                    </p>
+                                    <p>
+                                        Las imágenes de los servicios se pueden pasar deslizando o usando las flechas.
+                                        Revisa la descripción y los detalles de cada servicio antes de seleccionar.
+                                    </p>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                        {/* Services Results - Only show when location is selected */}
+                        {formData.latitude && formData.longitude && (
+                            <>
+                                {/* Filters compactos */}
+                                <div className="flex items-center gap-2 mb-4 flex-wrap">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" className="h-8 text-xs px-3">
+                                                {filters.priceRange[0] === 0 && filters.priceRange[1] === 1000 ? 'Precio' : `€${filters.priceRange[0]}-€${filters.priceRange[1]}`}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80 p-4" align="start">
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm font-medium">Rango de Precio</Label>
+                                                    <Slider
+                                                        value={filters.priceRange}
+                                                        onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
+                                                        min={0}
+                                                        max={1000}
+                                                        step={10}
+                                                        className="w-full"
+                                                    />
+                                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                                        <span>€{filters.priceRange[0]}</span>
+                                                        <span>€{filters.priceRange[1]}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                    
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" className="h-8 text-xs px-3">
+                                                {filters.rating > 0 ? `${filters.rating}+ ⭐` : 'Valoración'}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80 p-4" align="start">
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm font-medium">Valoración Mínima</Label>
+                                                    <Slider
+                                                        value={[filters.rating]}
+                                                        onValueChange={(value) => setFilters({...filters, rating: value[0]})}
+                                                        min={0}
+                                                        max={5}
+                                                        step={0.5}
+                                                        className="w-full"
+                                                    />
+                                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                                        <span>0 ⭐</span>
+                                                        <span>{filters.rating > 0 ? `${filters.rating} ⭐` : 'Todas'}</span>
+                                                        <span>5 ⭐</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                            </div>
+                                {/* Services List */}
+                                {isLoadingServices ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="text-muted-foreground">Cargando servicios...</div>
+                        </div>
+                                ) : services.length > 0 ? (
+                                    <div className="space-y-6 mb-6">
+                                        {services.map((service) => {
+                                            const isPro = (service.completedSearches || 0) > 5;
+                                            const allImages = service.imageUrls && service.imageUrls.length > 0
+                                                ? service.imageUrls
+                                                : (service.expert?.profilePictureUrl ? [service.expert.profilePictureUrl] : []);
+    return (
+                                                <div
+                                                    key={service.id}
+                                                    className={`group cursor-pointer transition-all border rounded-xl overflow-hidden ${
+                                                        selectedService === service.id
+                                                            ? 'border-primary/60 bg-primary/5 shadow-sm'
+                                                            : 'border-border/50 hover:border-border hover:shadow-sm'
+                                                    }`}
+                                                    onClick={() => handleServiceSelect(service.id)}
+                                                >
+                                                    <div className="flex">
+                                                        {/* Imagen a la izquierda - estilo Airbnb con carousel */}
+                                                        <div
+                                                            className="w-64 h-48 flex-shrink-0"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            {allImages.length > 0 ? (
+                                                                <div className="relative w-full h-full">
+                                                                    <ImageCarousel
+                                                                        images={allImages}
+                                                                        alt={service.expert?.user?.name || 'Experto'}
+                                                                        className="w-full h-full rounded-l-xl"
+                                                                    />
+                                                                    {isPro && (
+                                                                        <div className="absolute top-2 left-2 bg-primary text-white text-[10px] font-semibold px-2 py-1 rounded-md shadow-sm z-20">
+                                                                            Pro
+                    </div>
+                                                                    )}
+                                                                    {selectedService === service.id && (
+                                                                        <div className="absolute top-2 right-2 z-20">
+                                                                            <div className="bg-primary/90 backdrop-blur-sm text-white rounded-full p-1 shadow-md">
+                                                                                <CheckCircle className="w-3.5 h-3.5" />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center rounded-l-xl relative">
+                                                                    <User className="w-12 h-12 text-muted-foreground/50" />
+                                                                    {selectedService === service.id && (
+                                                                        <div className="absolute top-2 right-2 z-20">
+                                                                            <div className="bg-primary/90 backdrop-blur-sm text-white rounded-full p-1 shadow-md">
+                                                                                <CheckCircle className="w-3.5 h-3.5" />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {/* Información a la derecha - estilo Airbnb */}
+                                                        <div className="flex-1 p-5 flex flex-col justify-between min-w-0">
+                                                            <div className="flex-1 space-y-2.5">
+                                                                {/* Categoría */}
+                                                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                                    {service.categoryName || 'Servicio'} · {service.serviceTypeName || 'Revisión'}
+                                                                </p>
+                                                               
+                                                                {/* Título */}
+                                                                <h3 className="text-lg font-semibold text-foreground leading-tight">
+                                                                    {service.expert?.user?.name || 'Experto'}
+                                                                </h3>
+                                                               
+                                                                {/* Descripción */}
+                                                                {service.conditions && (
+                                                                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                        {service.conditions.length > 120
+                                                                            ? `${service.conditions.substring(0, 120)}...`
+                                                                            : service.conditions}
+                                                                    </p>
+                                                                )}
+                                                               
+                                                                {/* Detalles en una línea */}
+                                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+                                                                    {service.selectedDeliverableTypes?.slice(0, 3).map((deliverable, idx) => (
+                                                                        <span key={deliverable.id}>
+                                                                            {deliverable.displayName}
+                                                                            {idx < Math.min(2, (service.selectedDeliverableTypes?.length || 0) - 1) && ' · '}
+                                                                        </span>
+                                                                    ))}
+                                                                    {service.selectedDeliverableTypes && service.selectedDeliverableTypes.length > 3 && (
+                                                                        <span> · +{service.selectedDeliverableTypes.length - 3} más</span>
+                                                                    )}
+                            </div>
+                                                               
+                                                                {/* Rating y precio en la misma línea */}
+                                                                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                                                                        <span className="text-sm font-semibold text-foreground">
+                                                                            {service.averageRating?.toFixed(1) || '0.0'}
+                                                                        </span>
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            ({service.expert?.reviews?.length || 0})
+                                                                        </span>
+                        </div>
+                                                                    <div className="text-right">
+                                                                        <span className="text-lg font-bold text-foreground">
+                                                                            €{service.price || 72}
+                                                                        </span>
+                                                                        <span className="text-xs text-muted-foreground ml-1 font-normal">
+                                                                            /servicio
+                                                                        </span>
+                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <Card className="p-8 text-center">
+                                        <p className="text-muted-foreground">No hay servicios disponibles en esta ubicación.</p>
+                                    </Card>
+                                )}
+                                {/* Continue Button */}
+                                {services.length > 0 && (
+                                    <div className="mt-6 pb-6">
+                                        <Button
+                                            onClick={handleContinue}
+                                            disabled={!selectedService}
+                                            size="lg"
+                                            className="w-full h-11 text-base font-medium shadow-lg"
+                                        >
+                                            Continuar
+                                            <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        {error && (
+                            <Card className="mb-6 border-destructive/50 bg-destructive/5">
+                                <CardContent className="p-4">
+                                    <p className="text-sm text-destructive">{error}</p>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                </div>
+                
+                {/* Mobile: Map View */}
+                <div className="lg:hidden flex flex-col h-full w-full min-h-0">
+                    {/* Accordion con instrucciones - Mobile */}
+                    <div className="px-4 pt-4 pb-2 flex-shrink-0">
+                        <Accordion type="single" collapsible defaultValue="instructions" className="mb-2">
+                            <AccordionItem value="instructions" className="border-border">
+                                <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-2">
+                                    <div className="flex items-center gap-2">
+                                        <Info className="w-4 h-4 text-primary" />
+                                        <span>¿Qué hacer en esta página?</span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="text-sm text-muted-foreground leading-relaxed pt-2 pb-3">
+                                    <p>
+                                        Selecciona una ubicación en el mapa. Una vez seleccionada, aparecerán los servicios disponibles en un radio de 25 km.
+                                        Puedes filtrar por precio y valoración, y seleccionar un servicio para continuar.
+                                    </p>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    </div>
                     
-                    {/* Map Section */}
-                    <div className="relative h-[200px] md:h-[250px]">
+                    {/* Map Container */}
+                    <div className="flex-1 relative min-h-0 w-full">
                         {!isLoaded ? (
-                            <div className="h-full flex items-center justify-center bg-gray-50">
-                                <div className="text-gray-500">Cargando mapa...</div>
+                            <div className="h-full flex items-center justify-center bg-muted">
+                                <div className="text-muted-foreground">Cargando mapa...</div>
                             </div>
                         ) : loadError ? (
-                            <div className="h-full flex items-center justify-center bg-gray-50">
-                                <div className="text-red-400">Error al cargar el mapa</div>
+                            <div className="h-full flex items-center justify-center bg-muted">
+                                <div className="text-destructive">Error al cargar el mapa</div>
                             </div>
                         ) : (
                             <>
-                                {/* Buscador de direcciones integrado sobre el mapa */}
-                                <div className="absolute top-2 left-2 right-2 md:top-4 md:left-4 md:right-4 z-10">
-                                    <div className="relative max-w-sm md:max-w-md mx-auto">
+                                {/* Search Bar */}
+                                <div className="absolute top-4 left-4 right-4 z-20">
                                         <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 {isGeocoding ? (
-                                                    <div className="h-3.5 w-3.5 md:h-4 md:w-4 border-2 border-blue-400/30 border-t-blue-500 rounded-full animate-spin"></div>
+                                                <div className="h-3.5 w-3.5 border-2 border-primary/40 border-t-primary rounded-full animate-spin"></div>
                                                 ) : (
-                                                    <Search className="h-3.5 w-3.5 md:h-4 md:w-4 text-gray-400" />
+                                                <Search className="h-4 w-4 text-muted-foreground/60" />
                                                 )}
                                             </div>
-                                            <input
+                                        <Input
                                                 ref={searchInputRef}
                                                 type="text"
                                                 value={searchAddress}
                                                 onChange={(e) => setSearchAddress(e.target.value)}
                                                 placeholder={isGeocoding ? "Buscando..." : "Buscar dirección..."}
                                                 disabled={isGeocoding}
-                                                className={`w-full pl-9 pr-8 py-2.5 md:pl-11 md:pr-10 md:py-3 bg-white/95 backdrop-blur-md border border-gray-200/60 rounded-lg md:rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 text-xs md:text-sm font-medium placeholder-gray-500 transition-all duration-200 hover:shadow-xl focus:bg-white ${isGeocoding ? 'cursor-not-allowed opacity-75' : ''}`}
+                                            className="w-full pl-9 pr-8 h-9 text-sm bg-background/95 backdrop-blur-md border-border/50 shadow-sm"
                                             />
                                             {searchAddress && (
                                                 <button
@@ -485,404 +714,340 @@ export function SearchParameterForm({ onComplete, selectedCategory, initialKeywo
                                                             searchInputRef.current.focus();
                                                         }
                                                     }}
-                                                    className="absolute inset-y-0 right-0 pr-3 md:pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
                                                 >
-                                                    <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                                                <X className="h-3.5 w-3.5" />
                                                 </button>
                                             )}
-                                        </div>
                                     </div>
                                 </div>
                                 
-                                {/* Indicador de estado en la esquina */}
-                                <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 z-10 flex items-center gap-1.5 md:gap-2 px-2.5 py-1 md:px-3 md:py-1.5 bg-white/90 backdrop-blur-sm rounded-full border border-gray-200/40 shadow-sm">
-                                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                    <span className="text-xs text-gray-600 font-medium hidden md:inline">
-                                        {formData.latitude && formData.longitude ? 'Ubicación seleccionada' : 'Selecciona ubicación'}
-                                    </span>
-                                    <span className="text-xs text-gray-600 font-medium md:hidden">
-                                        {formData.latitude && formData.longitude ? 'Seleccionada' : 'Ubicación'}
-                                    </span>
-                                </div>
-                                
-                                {/* Indicador de expertos en la esquina superior derecha */}
-                                {!expertsLoading && totalCount > 0 && (
-                                    <div className="absolute top-2 right-2 md:top-4 md:right-4 z-10 flex items-center gap-1.5 md:gap-2 px-2.5 py-1 md:px-3 md:py-1.5 bg-white/90 backdrop-blur-sm rounded-full border border-gray-200/40 shadow-sm">
-                                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full"></div>
-                                        <span className="text-xs text-gray-600 font-medium">
-                                            {totalCount} experto{totalCount !== 1 ? 's' : ''} disponible{totalCount !== 1 ? 's' : ''}
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {/* Indicador de carga de expertos */}
-                                {expertsLoading && (
-                                    <div className="absolute top-2 right-2 md:top-4 md:right-4 z-10 flex items-center gap-1.5 md:gap-2 px-2.5 py-1 md:px-3 md:py-1.5 bg-white/90 backdrop-blur-sm rounded-full border border-gray-200/40 shadow-sm">
-                                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 border border-green-400/30 border-t-green-500 rounded-full animate-spin"></div>
-                                        <span className="text-xs text-gray-600 font-medium">Cargando expertos...</span>
-                                    </div>
-                                )}
-                                <GoogleMap
-                                    mapContainerStyle={{ width: '100%', height: '100%' }}
-                                    zoom={getZoomLevel(parseInt(formData.locationRange))}
-                                    center={selectedLocation}
-                                    onClick={handleMapClick}
-                                    onLoad={async (map) => {
-                                        setMap(map);
-                                        const radius = parseInt(formData.locationRange);
-                                        const zoom = getZoomLevel(radius);
-                                        map.setZoom(zoom);
-
-                                        const manager = new google.maps.drawing.DrawingManager(getDrawingManagerOptions());
-                                        manager.setMap(map);
-                                        setDrawingManager(manager);
-
-                                        const initialCircle = new google.maps.Circle({
-                                            map,
-                                            center: selectedLocation,
-                                            radius: radius * 1000,
-                                            ...circleOptions
-                                        });
-                                        setCircle(initialCircle);
-
-                                        google.maps.event.addListener(manager, 'circlecomplete', (newCircle: google.maps.Circle) => {
-                                            if (circle) {
-                                                circle.setMap(null);
-                                            }
-
-                                            setCircle(newCircle);
-                                            const center = newCircle.getCenter();
-                                            if (center) {
-                                                setSelectedLocation({
-                                                    lat: center.lat(),
-                                                    lng: center.lng()
-                                                });
+                                {/* Map */}
+                                {isLoaded && (
+                                    <LocationMap
+                                        selectedLocation={selectedLocation}
+                                        mapExperts={mapExperts}
+                                        services={services}
+                                        selectedService={selectedService}
+                                        onMapClick={(e) => {
+                                            if (e.latLng) {
+                                                const lat = e.latLng.lat();
+                                                const lng = e.latLng.lng();
+                                                const newLocation = { lat, lng };
+                                                setSelectedLocation(newLocation);
                                                 setFormData(prev => ({
                                                     ...prev,
-                                                    latitude: center.lat().toString(),
-                                                    longitude: center.lng().toString(),
-                                                    locationRange: Math.round(newCircle.getRadius() / 1000).toString()
+                                                    latitude: lat.toString(),
+                                                    longitude: lng.toString(),
                                                 }));
                                             }
-
-                                            google.maps.event.addListener(newCircle, 'radius_changed', () => {
-                                                setFormData(prev => ({
-                                                    ...prev,
-                                                    locationRange: Math.round(newCircle.getRadius() / 1000).toString()
-                                                }));
-                                            });
-
-                                            google.maps.event.addListener(newCircle, 'center_changed', () => {
-                                                const newCenter = newCircle.getCenter();
-                                                if (newCenter) {
-                                                    setSelectedLocation({
-                                                        lat: newCenter.lat(),
-                                                        lng: newCenter.lng()
-                                                    });
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        latitude: newCenter.lat().toString(),
-                                                        longitude: newCenter.lng().toString()
-                                                    }));
-                                                }
-                                            });
-                                        });
-                                    }}
-                                    onUnmount={() => {
-                                        if (circle) {
-                                            circle.setMap(null);
-                                            setCircle(null);
-                                        }
-                                        if (drawingManager) {
-                                            drawingManager.setMap(null);
-                                            setDrawingManager(null);
-                                        }
-                                    }}
-                                    options={{
-                                        disableDefaultUI: false,
-                                        zoomControl: true,
-                                        mapTypeControl: false,
-                                        scaleControl: true,
-                                        streetViewControl: false,
-                                        rotateControl: false,
-                                        fullscreenControl: false,
-                                        styles: mapStyles
-                                    }}
-                                >
-                                    {/* Marcador de ubicación seleccionada */}
-                                    {selectedLocation && formData.latitude && formData.longitude && (
-                                        <Marker
-                                            position={selectedLocation}
-                                            icon={markerIcon}
-                                            zIndex={3}
-                                            animation={google.maps.Animation.DROP}
-                                        />
-                                    )}
-                                    
-                                    {/* Marcadores de expertos */}
-                                    {experts.map((expert) => (
-                                        <Marker
-                                            key={`expert-${expert.id}`}
-                                            position={{
-                                                lat: parseFloat(expert.latitude),
-                                                lng: parseFloat(expert.longitude)
-                                            }}
-                                            icon={expertMarkerIcon}
-                                            zIndex={2}
-                                            onClick={() => {
-                                                console.log('🎯 Click en experto:', expert.name);
-                                                setSelectedExpert({
-                                                    id: expert.id,
-                                                    lat: parseFloat(expert.latitude),
-                                                    lng: parseFloat(expert.longitude),
-                                                    name: expert.name,
-                                                    profilePictureUrl: expert.profilePictureUrl,
-                                                    averageRating: expert.averageRating,
-                                                    completedSearches: expert.completedSearches,
-                                                });
-                                            }}
-                                        />
-                                    ))}
-                                    
-                                </GoogleMap>
+                                        }}
+                                        onMapLoad={(mapInstance) => {
+                                            setMap(mapInstance);
+                                        }}
+                                        onServiceSelect={handleServiceSelect}
+                                        locationRange={parseInt(formData.locationRange)}
+                                        isMobile={true}
+                                        isLoaded={isLoaded}
+                                    />
+                                )}
+                                
+                                {/* Floating Button to Open Drawer */}
+                                {formData.latitude && formData.longitude && services.length > 0 && (
+                                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                                        <Button
+                                            onClick={() => setIsDrawerOpen(true)}
+                                            size="lg"
+                                            className="shadow-lg"
+                                        >
+                                            <MapPin className="w-4 h-4 mr-2" />
+                                            Ver {services.length} {services.length === 1 ? 'resultado' : 'resultados'}
+                                        </Button>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
-                    
-                    {/* Modal personalizado para información del experto */}
-                    {selectedExpert && selectedExpert.id && showInfoWindow && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                            <div className="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4">
-                                <div className="p-4">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900">Información del Experto</h3>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedExpert(null);
-                                                setShowInfoWindow(false);
-                                            }}
-                                            className="text-gray-400 hover:text-gray-600"
-                                        >
-                                            <X className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                    
-                                    <div className="flex items-center space-x-3 mb-4">
-                                        {/* Foto/Avatar */}
-                                        {selectedExpert.profilePictureUrl ? (
-                                            <img 
-                                                src={selectedExpert.profilePictureUrl} 
-                                                alt={selectedExpert.name}
-                                                className="w-16 h-16 rounded-full object-cover border-2 border-green-500 flex-shrink-0"
-                                            />
-                                        ) : (
-                                            <div className="w-16 h-16 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-2xl border-2 border-white shadow">
-                                                {selectedExpert.name.charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-                                        
-                                        {/* Nombre y Rating */}
-                                        <div>
-                                            <h4 className="font-semibold text-gray-900 text-lg">{selectedExpert.name}</h4>
-                                            <p className="text-yellow-600 font-medium flex items-center">
-                                                <Star className="w-4 h-4 mr-1" fill="#facc15" stroke="#facc15" />
-                                                {selectedExpert.averageRating.toFixed(1)} 
-                                                <span className="text-sm text-gray-500 ml-1">({selectedExpert.completedSearches} búsquedas)</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Botón de Contacto/Acción */}
-                                    <button 
-                                        className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                                        onClick={() => { /* Implementar navegación a perfil del experto */ }}
-                                    >
-                                        Ver Perfil <ArrowRight className="ml-2 w-4 h-4" />
-                                    </button>
-                                </div>
+                </div>
+                
+                {/* Desktop: Right Side - Map */}
+                <div className="hidden lg:block w-1/2 border-l bg-muted/30">
+                    <div className="h-full sticky top-[73px]">
+                        {!isLoaded ? (
+                            <div className="h-full flex items-center justify-center bg-muted">
+                                <div className="text-muted-foreground">Cargando mapa...</div>
                             </div>
-                        </div>
-                    )}
-                    
-                    {/* Settings Grid - Connected directly to map */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 border-t border-gray-100">
-                        <div className="p-3 border-r border-gray-100 lg:border-r-gray-100">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Radar className="w-4 h-4 text-gray-500" />
-                                <h3 className="text-sm font-semibold text-gray-900">
-                                    {serviceTypeId === 1 ? 'Radio de Revisión' : 'Radio de Búsqueda'}
-                                </h3>
+                        ) : loadError ? (
+                            <div className="h-full flex items-center justify-center bg-muted">
+                                <div className="text-destructive">Error al cargar el mapa</div>
                             </div>
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
-                                    <span className="text-xs text-gray-600">Radio actual</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-semibold text-gray-900">
-                                            {Math.min(parseInt(formData.locationRange), 100)} km
-                                        </span>
-                                        {parseInt(formData.locationRange) > 100 && (
-                                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">
-                                                Máximo
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="relative">
-                                    {/* Background track */}
-                                    <div className="w-full h-2 bg-gray-100 rounded-lg relative border border-gray-200/50 shadow-inner">
-                                        {/* Progress fill */}
-                                        <div 
-                                            className="absolute top-0 left-0 h-2 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-lg transition-all duration-300 ease-out shadow-sm"
-                                            style={{ 
-                                                width: `${((Math.min(parseInt(formData.locationRange), 100) - 1) / (100 - 1)) * 100}%` 
-                                            }}
-                                        ></div>
-                                        {/* Subtle inner shadow for depth */}
-                                        <div className="absolute inset-0 rounded-lg shadow-inner pointer-events-none"></div>
-                                    </div>
-                                    {/* Range input */}
-                                    <input
-                                        type="range"
-                                        min="1"
-                                        max="100"
-                                        value={Math.min(parseInt(formData.locationRange), 100)}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, locationRange: e.target.value });
-                                            if (map) {
-                                                const radius = parseInt(e.target.value);
-                                                const zoom = getZoomLevel(radius);
-                                                map.setZoom(zoom);
-                                            }
-                                        }}
-                                        className="absolute top-0 left-0 w-full h-2 bg-transparent appearance-none cursor-pointer focus:outline-none rounded-lg
-                                        [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:hover:shadow-lg [&::-webkit-slider-thumb]:hover:scale-105 [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:ease-out
-                                        [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-blue-500 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:hover:shadow-lg [&::-moz-range-thumb]:transition-all [&::-moz-range-thumb]:duration-200 [&::-moz-range-thumb]:ease-out [&::-moz-range-thumb]:border-none
-                                        [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-runnable-track]:rounded-lg
-                                        [&::-moz-range-track]:bg-transparent [&::-moz-range-track]:rounded-lg [&::-moz-range-track]:border-none"
-                                    />
-                                    <div className="flex justify-between text-xs text-gray-500 mt-2">
-                                        <span>1km</span>
-                                        <span>50km</span>
-                                        <span>100km</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-3">
-                            <div className="mb-2">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <DollarSign className="w-4 h-4 text-gray-500" />
-                                    <h3 className="text-sm font-semibold text-gray-900">
-                                    Rango de Precio
-                                </h3>
-                                </div>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
-                                        <span className="text-xs text-gray-600">Precio mínimo</span>
-                                        <span className="text-sm font-medium text-gray-900">
-                                            {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(parseInt(formData.minPrice || '0'))}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
-                                        <span className="text-xs text-gray-600">Precio máximo</span>
-                                        <span className="text-sm font-medium text-gray-900">
-                                            {formData.maxPrice ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(parseInt(formData.maxPrice)) : 'Sin límite'}
-                                        </span>
-                                    </div>
-                                    <div className="relative h-2 mt-3">
-                                        <div className="absolute inset-0 bg-gray-100 rounded-full border border-gray-200/50 shadow-inner"></div>
-                                        <div
-                                            className="absolute inset-y-0 bg-gradient-to-r from-green-500 via-green-600 to-green-700 rounded-full shadow-sm transition-all duration-300 ease-out"
-                                            style={{
-                                                left: `${(parseInt(formData.minPrice || '0') / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)) * 100}%`,
-                                                right: `${100 - ((parseInt(formData.maxPrice || (selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000')) / (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)) * 100)}%`,
-                                                height: '8px'
-                                            }}
-                                        ></div>
-                                        {/* Subtle inner shadow for depth */}
-                                        <div className="absolute inset-0 rounded-full shadow-inner pointer-events-none"></div>
+                        ) : (
+                            <>
+                                {/* Search Bar */}
+                                <div className="absolute top-4 left-4 right-4 z-10 max-w-sm">
                                         <div className="relative">
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000'}
-                                                step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '250' : '5000'}
-                                                value={formData.minPrice || 0}
-                                                onChange={(e) => {
-                                                    const value = parseInt(e.target.value);
-                                                    const maxValue = selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000;
-                                                    const max = parseInt(formData.maxPrice || maxValue.toString());
-                                                    if (value <= max) {
-                                                        setFormData({ ...formData, minPrice: value.toString() });
-                                                    }
-                                                }}
-                                                className="absolute top-[-8px] left-0 w-full pointer-events-none appearance-none bg-transparent focus:outline-none rounded-lg
-                                                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-green-500 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:hover:shadow-lg [&::-webkit-slider-thumb]:hover:scale-105 [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:ease-out
-                                                [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-green-500 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:hover:shadow-lg [&::-moz-range-thumb]:transition-all [&::-moz-range-thumb]:duration-200 [&::-moz-range-thumb]:ease-out [&::-moz-range-thumb]:border-none"
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                {isGeocoding ? (
+                                                <div className="h-3.5 w-3.5 border-2 border-primary/40 border-t-primary rounded-full animate-spin"></div>
+                                                ) : (
+                                                <Search className="h-4 w-4 text-muted-foreground/60" />
+                                                )}
+                                            </div>
+                                        <Input
+                                                ref={searchInputRef}
+                                                type="text"
+                                                value={searchAddress}
+                                                onChange={(e) => setSearchAddress(e.target.value)}
+                                                placeholder={isGeocoding ? "Buscando..." : "Buscar dirección..."}
+                                                disabled={isGeocoding}
+                                            className="w-full pl-9 pr-8 h-9 text-sm bg-background/95 backdrop-blur-md border-border/50 shadow-sm"
                                             />
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max={selectedCategory === 1 ? '100000' : selectedCategory === 2 ? '50000' : '2000000'}
-                                                step={selectedCategory === 1 ? '500' : selectedCategory === 2 ? '250' : '5000'}
-                                                value={formData.maxPrice || (selectedCategory === 1 ? 100000 : selectedCategory === 2 ? 50000 : 2000000)}
-                                                onChange={(e) => {
-                                                    const value = parseInt(e.target.value);
-                                                    const min = parseInt(formData.minPrice || '0');
-                                                    if (value >= min) {
-                                                        setFormData({ ...formData, maxPrice: value.toString() });
-                                                    }
-                                                }}
-                                                className="absolute top-[-8px] left-0 w-full pointer-events-none appearance-none bg-transparent focus:outline-none rounded-lg
-                                                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-green-500 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:hover:shadow-lg [&::-webkit-slider-thumb]:hover:scale-105 [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:ease-out
-                                                [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-green-500 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:hover:shadow-lg [&::-moz-range-thumb]:transition-all [&::-moz-range-thumb]:duration-200 [&::-moz-range-thumb]:ease-out [&::-moz-range-thumb]:border-none"
-                                            />
-                                        </div>
+                                            {searchAddress && (
+                                                <button
+                                                    onClick={() => {
+                                                        setSearchAddress('');
+                                                        setSelectedAddress('');
+                                                        if (searchInputRef.current) {
+                                                            searchInputRef.current.focus();
+                                                        }
+                                                    }}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                                                >
+                                                <X className="h-3.5 w-3.5" />
+                                                </button>
+                                            )}
                                     </div>
                                 </div>
-                                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                                    <span>0€</span>
-                                    <span>
-                                        {selectedCategory === 1 ? '50k€' : 
-                                         selectedCategory === 2 ? '25k€' : 
-                                         '1M€'}
-                                    </span>
-                                    <span>
-                                        {selectedCategory === 1 ? '100k€' : 
-                                         selectedCategory === 2 ? '50k€' : 
-                                         '2M€'}
-                                    </span>
+                                
+                                {isLoaded && (
+                                    <LocationMap
+                                        selectedLocation={selectedLocation}
+                                        mapExperts={mapExperts}
+                                        services={services}
+                                        selectedService={selectedService}
+                                        onMapClick={handleMapClick}
+                                        onMapLoad={async (mapInstance) => {
+                                            setMap(mapInstance);
+                                        const radius = 25;
+                                        const zoom = getZoomLevel(radius);
+                                            mapInstance.setZoom(zoom);
+                                        }}
+                                        onServiceSelect={handleServiceSelect}
+                                        locationRange={25}
+                                        isMobile={false}
+                                        isLoaded={isLoaded}
+                                    />
+                                )}
+                            </>
+                        )}
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Mobile Drawer with Services */}
+                <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+                    <DrawerContent className="max-h-[95vh] flex flex-col">
+                        <DrawerHeader className="border-b px-4 py-3 flex-shrink-0">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                    <DrawerTitle className="text-base font-semibold">
+                                        {services.length} {services.length === 1 ? 'resultado' : 'resultados'} disponibles
+                                    </DrawerTitle>
+                                    <DrawerDescription className="text-xs mt-1 flex items-center gap-1">
+                                        <MapPin className="w-3 h-3" />
+                                        <span className="truncate">{formData.locationName || 'Ubicación seleccionada'}</span>
+                                    </DrawerDescription>
+                                </div>
+                                <DrawerClose asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </DrawerClose>
+                            </div>
+                        </DrawerHeader>
+                        
+                        <div className="flex-1 overflow-y-auto">
+                            {/* Filters - Sticky */}
+                            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" className="h-9 flex-1 text-sm">
+                                                {filters.priceRange[0] === 0 && filters.priceRange[1] === 1000 ? 'Precio' : `€${filters.priceRange[0]}-€${filters.priceRange[1]}`}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80 p-4" align="start">
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm font-medium">Rango de Precio</Label>
+                                                    <Slider
+                                                        value={filters.priceRange}
+                                                        onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
+                                                        min={0}
+                                                        max={1000}
+                                                        step={10}
+                                                        className="w-full"
+                                                    />
+                                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                                        <span>€{filters.priceRange[0]}</span>
+                                                        <span>€{filters.priceRange[1]}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                    
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" className="h-9 flex-1 text-sm">
+                                                {filters.rating > 0 ? `${filters.rating}+ ⭐` : 'Valoración'}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80 p-4" align="start">
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm font-medium">Valoración Mínima</Label>
+                                                    <Slider
+                                                        value={[filters.rating]}
+                                                        onValueChange={(value) => setFilters({...filters, rating: value[0]})}
+                                                        min={0}
+                                                        max={5}
+                                                        step={0.5}
+                                                        className="w-full"
+                                                    />
+                                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                                        <span>0 ⭐</span>
+                                                        <span>{filters.rating > 0 ? `${filters.rating} ⭐` : 'Todas'}</span>
+                                                        <span>5 ⭐</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
                             </div>
+                            
+                            {/* Services List */}
+                            <div className="px-4 py-4">
+                                {isLoadingServices ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="text-muted-foreground text-sm">Cargando servicios...</div>
+                                    </div>
+                                ) : services.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {services.map((service) => {
+                                            const isPro = (service.completedSearches || 0) > 5;
+                                            const allImages = service.imageUrls && service.imageUrls.length > 0
+                                                ? service.imageUrls
+                                                : (service.expert?.profilePictureUrl ? [service.expert.profilePictureUrl] : []);
+                                                return (
+                                                <div
+                                                    key={service.id}
+                                                    className={`group cursor-pointer transition-all border rounded-lg overflow-hidden ${
+                                                        selectedService === service.id
+                                                            ? 'border-primary bg-primary/5 shadow-sm'
+                                                            : 'border-border/50 hover:border-border'
+                                                    }`}
+                                                    onClick={() => handleServiceSelect(service.id)}
+                                                >
+                                                    {/* Layout horizontal compacto tipo lista */}
+                                                    <div className="flex items-center gap-3 p-3">
+                                                        {/* Imagen pequeña */}
+                                                        <div className="relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden">
+                                                            {allImages.length > 0 ? (
+                                                                <>
+                                                                    <img
+                                                                        src={allImages[0]}
+                                                                        alt={service.expert?.user?.name || 'Experto'}
+                                                                        className="w-full h-full object-cover"
+                                                                    />
+                                                                    {isPro && (
+                                                                        <div className="absolute top-0.5 left-0.5 bg-primary text-white text-[8px] font-semibold px-1 py-0.5 rounded z-20">
+                                                                            Pro
+                                                                        </div>
+                                                                    )}
+                                                                    {selectedService === service.id && (
+                                                                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center z-10">
+                                                                            <CheckCircle className="w-5 h-5 text-primary" />
+                                                                        </div>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center relative">
+                                                                    <User className="w-6 h-6 text-muted-foreground/50" />
+                                                                    {selectedService === service.id && (
+                                                                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center z-10">
+                                                                            <CheckCircle className="w-5 h-5 text-primary" />
+                                                                        </div>
+                        )}
+                        </div>
+                                                            )}
+                    </div>
+                                                        
+                                                        {/* Información compacta */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
+                                                                        {service.expert?.user?.name || 'Experto'}
+                                                                    </h3>
+                                                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">
+                                                                        {service.categoryName || 'Servicio'} · {service.serviceTypeName || 'Revisión'}
+                                                                    </p>
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        <div className="flex items-center gap-0.5">
+                                                                            <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                                                                            <span className="text-xs font-semibold text-foreground">
+                                                                                {service.averageRating?.toFixed(1) || '0.0'}
+                                                                            </span>
+                </div>
+                                                                        <span className="text-[10px] text-muted-foreground">
+                                                                            ({service.expert?.reviews?.length || 0})
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-right flex-shrink-0">
+                                                                    <span className="text-sm font-bold text-foreground">
+                                                                        €{service.price || 72}
+                                                                    </span>
+                                                                    <span className="text-[10px] text-muted-foreground block">
+                                                                        /servicio
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <Card className="p-8 text-center">
+                                        <p className="text-sm text-muted-foreground">No hay servicios disponibles en esta ubicación.</p>
+                                    </Card>
+                        )}
                         </div>
                     </div>
+                        
+                        {/* Continue Button - Fixed at bottom */}
+                        {services.length > 0 && (
+                            <div className="border-t bg-background px-4 py-3 flex-shrink-0">
+                                <Button
+                                    onClick={() => {
+                                        handleContinue();
+                                        setIsDrawerOpen(false);
+                                    }}
+                                    disabled={!selectedService}
+                                    size="lg"
+                                    className="w-full h-11 text-base font-medium"
+                                >
+                                    {selectedService ? 'Continuar' : 'Selecciona un experto'}
+                                    {selectedService && <ArrowRight className="ml-2 h-4 w-4" />}
+                                </Button>
                 </div>
-
-
-                {error && (
-                    <div className="text-red-600 text-sm bg-red-50 border border-red-200 px-4 py-3 rounded-lg flex items-center gap-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                        {error}
-                    </div>
-                )}
-
-                <div className="bg-gradient-to-r from-gray-50 to-blue-50/30 border-t border-gray-100 p-3 mt-3">
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-2 md:gap-0">
-                        <div className="text-xs text-gray-600 font-medium order-2 md:order-1">
-                            Configuración completada
-                        </div>
-                        <button
-                            type="submit"
-                            className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white text-sm font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 order-1 md:order-2"
-                        >
-                            <span>Continuar</span>
-                            <ArrowRight className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-            </form>
+                        )}
+                    </DrawerContent>
+                </Drawer>
         </div>
     );
 }

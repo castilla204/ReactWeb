@@ -1,18 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
-
-interface Category {
-    id: number;
-    name: string;
-    parentId: number | null;
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
-}
+import { CategoryWithDetailsDto } from '../types/category';
 
 interface CategoryContextType {
-    categories: Category[];
+    categories: CategoryWithDetailsDto[];
     loading: boolean;
     error: string | null;
 }
@@ -24,35 +16,48 @@ const CategoryContext = createContext<CategoryContextType>({
 });
 
 export function CategoryProvider({ children }: { children: ReactNode }) {
-    const [categories, setCategories] = useState<Category[]>([]);
+    const [categories, setCategories] = useState<CategoryWithDetailsDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.categories.list}`;
-                const response = await fetch(url, {
-                    headers: getAuthToken() ? {
-                        'Authorization': `Bearer ${getAuthToken()}`
-                    } : {}
-                });
+    const fetchCategories = async () => {
+        try {
+            setLoading(true);
+            const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.categories.list}`;
+            const response = await fetch(url, {
+                headers: getAuthToken() ? {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                } : {}
+            });
 
-                if (!response.ok) {
-                    throw new Error('Failed to fetch categories');
-                }
-
-                const data = await response.json();
-                setCategories(data);
-            } catch (err) {
-                console.error('Error fetching categories:', err);
-                setError(err instanceof Error ? err.message : 'Failed to load categories');
-            } finally {
-                setLoading(false);
+            if (!response.ok) {
+                throw new Error('Failed to fetch categories');
             }
-        };
 
+            const data = await response.json();
+            setCategories(data);
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching categories:', err);
+            setError(err instanceof Error ? err.message : 'Failed to load categories');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchCategories();
+        
+        // Escuchar eventos de creación de categoría
+        const handleCategoryCreated = () => {
+            fetchCategories();
+        };
+        
+        window.addEventListener('categoryCreated', handleCategoryCreated);
+        
+        return () => {
+            window.removeEventListener('categoryCreated', handleCategoryCreated);
+        };
     }, []);
 
     return (

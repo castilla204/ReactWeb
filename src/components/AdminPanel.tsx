@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Plus, Edit, Trash2, Search, Save, X } from 'lucide-react';
+import { Settings, Plus, Edit, Trash2, Search, Save, X, FolderTree } from 'lucide-react';
 import { useAppointmentStatusConfigs, useServiceTypeCategoryConfigs, useCategoryServiceTypeConfigs, useMoneyDistributionQuery, useConfigValidation, useAppointmentStatusManagement } from '../hooks/useAdminConfig';
 import { useAppointmentStatuses } from '../hooks/useAppointmentStatuses';
 import { useStatusMappings } from '../hooks/useStatusMappings';
@@ -7,9 +7,11 @@ import { ConfigFormData } from '../types/admin';
 import PriorityInfo from './PriorityInfo';
 import PriorityBadge from './PriorityBadge';
 import { API_CONFIG } from '../config/api';
+import { useCategories } from '../contexts/CategoryContext';
+import { CreateCategoryDialog } from './CreateCategoryDialog';
 
 const AdminPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'status' | 'category' | 'granular' | 'query' | 'mappings'>('status');
+  const [activeTab, setActiveTab] = useState<'status' | 'category' | 'granular' | 'query' | 'mappings' | 'categories'>('status');
   const [showForm, setShowForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [formData, setFormData] = useState<ConfigFormData>({
@@ -37,6 +39,10 @@ const AdminPanel: React.FC = () => {
     targetStatusId: 0,
     isActive: true
   });
+
+  // Estados para gestión de categorías
+  const [showCreateCategoryDialog, setShowCreateCategoryDialog] = useState(false);
+  const { categories: allCategories, loading: categoriesLoading, error: categoriesError } = useCategories();
 
   // Hooks
   const appointmentStatusConfigs = useAppointmentStatusConfigs();
@@ -621,6 +627,7 @@ const AdminPanel: React.FC = () => {
 
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -751,6 +758,16 @@ const AdminPanel: React.FC = () => {
                 }`}
               >
                 🔗 Mapeos de Estado
+              </button>
+              <button
+                onClick={() => setActiveTab('categories')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'categories'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📁 Gestión de Categorías
               </button>
             </nav>
           </div>
@@ -2041,8 +2058,159 @@ const AdminPanel: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Pestaña de Gestión de Categorías */}
+        {activeTab === 'categories' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Gestión de Categorías</h2>
+              <button
+                onClick={() => setShowCreateCategoryDialog(true)}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Crear Nueva Categoría
+              </button>
+            </div>
+
+            {categoriesLoading ? (
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p className="mt-2 text-gray-600">Cargando categorías...</p>
+              </div>
+            ) : categoriesError ? (
+              <div className="text-center py-8">
+                <div className="text-red-600 mb-4">
+                  <p className="text-lg font-semibold">Error al cargar categorías</p>
+                  <p className="text-sm">{categoriesError}</p>
+                </div>
+              </div>
+            ) : allCategories.length === 0 ? (
+              <div className="text-center py-8">
+                <FolderTree className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">No hay categorías disponibles</p>
+                <p className="text-sm text-gray-500 mt-2">Crea tu primera categoría usando el botón de arriba</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Nombre
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tipo
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Categoría Padre
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Subcategorías
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Estado
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Creada
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {allCategories.map((category) => {
+                      // Calcular isParent basándose en parentId si no viene del backend
+                      const isParent = category.isParent !== undefined 
+                        ? category.isParent 
+                        : category.parentId === null;
+                      
+                      const parentCategory = category.parentId 
+                        ? allCategories.find(c => c.id === category.parentId)
+                        : null;
+                      
+                      return (
+                        <tr key={category.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {category.id}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div className="flex items-center">
+                              <FolderTree className={`w-4 h-4 mr-2 ${isParent ? 'text-blue-500' : 'text-gray-400'}`} />
+                              <span className={isParent ? 'font-semibold' : ''}>
+                                {isParent ? category.name : `└── ${category.name}`}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              isParent
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-purple-100 text-purple-800'
+                            }`}>
+                              {isParent ? 'Categoría Padre' : 'Subcategoría'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {parentCategory ? (
+                              <span className="inline-flex items-center">
+                                <FolderTree className="w-3 h-3 mr-1 text-blue-500" />
+                                {parentCategory.name}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {isParent ? (
+                              <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+                                {category.subcategoriesCount || 0} {(category.subcategoriesCount || 0) === 1 ? 'subcategoría' : 'subcategorías'}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              category.isActive
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {category.isActive ? 'Activa' : 'Inactiva'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(category.createdAt).toLocaleDateString('es-ES', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
+
+    {/* Diálogo de Crear Categoría */}
+    <CreateCategoryDialog
+      open={showCreateCategoryDialog}
+      onOpenChange={setShowCreateCategoryDialog}
+      onCategoryCreated={() => {
+        // El contexto se actualizará automáticamente gracias al evento 'categoryCreated'
+        setShowCreateCategoryDialog(false);
+      }}
+    />
+    </>
   );
 };
 

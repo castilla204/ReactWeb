@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Heart, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase } from 'lucide-react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { NotificationCenter } from './components/NotificationCenter';
 import { useNotifications } from './hooks/useNotifications';
@@ -13,6 +13,12 @@ import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 import { PaymentCancelPage } from './pages/PaymentCancelPage';
 import { Notification, NotificationType } from './components/Notification';
 import { AnimatedThemeToggler } from './components/ui/animated-theme-toggler';
+import {
+    NavigationMenu,
+    NavigationMenuItem,
+    NavigationMenuLink,
+    NavigationMenuList,
+} from './components/ui/navigation-menu';
 
 import SearchesPage from './pages/SearchesPage';
 import SearchCreationPage from './pages/SearchCreationPage';
@@ -37,11 +43,42 @@ const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     );
 };
 
-const App: React.FC = React.memo(() => {
+const AppContent: React.FC = () => {
+    const location = useLocation();
     const { user, isAuthenticated, signOut } = useAuth();
     const [showFavorites, setShowFavorites] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [showAccountSettings, setShowAccountSettings] = useState(false);
+    
+    // Ocultar header en móvil cuando se está en las páginas del formulario (SearchParameterForm o SearchForm)
+    // Estas páginas están dentro de SearchCreationPage cuando currentStep es 1 o 2
+    const isSearchCreationPage = location.pathname === '/crear-busqueda' || location.pathname === '/';
+    const [isInFormStep, setIsInFormStep] = useState(false);
+    
+    // Escuchar cambios en el paso del formulario
+    useEffect(() => {
+        const checkFormStep = () => {
+            const inFormStep = sessionStorage.getItem('isInFormStep') === 'true';
+            setIsInFormStep(inFormStep);
+        };
+        
+        // Verificar al cargar
+        checkFormStep();
+        
+        // Escuchar eventos de cambio de paso
+        const handleFormStepChange = () => {
+            checkFormStep();
+        };
+        
+        window.addEventListener('formStepChanged', handleFormStepChange);
+        
+        return () => {
+            window.removeEventListener('formStepChanged', handleFormStepChange);
+        };
+    }, []);
+    
+    // Solo ocultar header en móvil cuando estamos en la página de creación Y en un paso de formulario (1 o 2)
+    const shouldHideHeaderOnMobile = isSearchCreationPage && isInFormStep;
 
     const [notification, setNotification] = useState<{
         type: NotificationType;
@@ -97,10 +134,9 @@ const App: React.FC = React.memo(() => {
     const isExpert = user?.role === 'Expert';
 
     return (
-        <Router>
-            <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
-                {/* Header */}
-                <header className="h-16 bg-background border-b border-border shadow-sm relative z-50">
+        <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
+            {/* Header - Oculto en móvil cuando se está en creación de búsqueda */}
+            <header className={`h-16 bg-background border-b border-border shadow-sm relative z-50 ${shouldHideHeaderOnMobile ? 'hidden lg:block' : ''}`}>
                     <div className="max-w-7xl mx-auto h-full px-4 lg:px-6 flex items-center justify-between">
                         {/* Marca inspecciono.com */}
                         <h1 className="text-lg font-medium text-foreground tracking-tight cursor-pointer hover:text-foreground/80 transition-colors">
@@ -111,55 +147,69 @@ const App: React.FC = React.memo(() => {
                         <div className="flex items-center">
                             {/* Navegación principal - siempre visible */}
                             <div className="hidden md:flex items-center">
-                                <button
-                                    onClick={() => isAuthenticated ? window.location.href = '/busquedas' : handleRequireAuth('Ver tus búsquedas')}
-                                    className="flex items-center gap-1.5 px-2 py-1 text-sm text-foreground hover:text-primary transition-colors"
-                                >
-                                    <Search className="w-4 h-4" />
-                                    <span>Búsquedas</span>
-                                </button>
-                                <span className="text-muted-foreground/50 mx-2">|</span>
-                                <button
-                                    onClick={() => isAuthenticated ? setShowFavorites(true) : handleRequireAuth('Ver tus favoritos')}
-                                    className="flex items-center gap-1.5 px-2 py-1 text-sm text-foreground hover:text-primary transition-colors"
-                                >
-                                    <Heart className="w-4 h-4" />
-                                    <span>Favoritos</span>
-                                </button>
-                                <span className="text-muted-foreground/50 mx-2">|</span>
-                                <button
-                                    type="button"
-                                    onClick={() => isAuthenticated ? setShowNotifications(true) : handleRequireAuth('Ver tus notificaciones')}
-                                    className="relative flex items-center gap-1.5 px-2 py-1 text-sm text-foreground hover:text-primary transition-colors"
-                                >
-                                    {isAuthenticated && unreadCount > 0 && (
-                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border border-white">
-                                            {unreadCount > 9 ? '9+' : unreadCount}
-                                        </div>
-                                    )}
-                                    <Bell className="w-4 h-4" />
-                                    <span>Notificaciones</span>
-                                </button>
-                                
-                                {/* Theme Toggle */}
-                                <span className="text-muted-foreground/50 mx-2">|</span>
-                                <div className="flex items-center">
-                                    <AnimatedThemeToggler />
-                                </div>
-                                
-                                {/* Panel de experto integrado - solo para expertos autenticados */}
-                                {isAuthenticated && isExpert && (
-                                    <>
-                                        <span className="text-muted-foreground/50 mx-2">|</span>
-                                        <a
-                                            href="/expert-panel"
-                                            className="flex items-center gap-1.5 px-2 py-1 text-sm text-foreground hover:text-primary transition-colors"
-                                        >
-                                            <Briefcase className="w-4 h-4" />
-                                            <span>Panel</span>
-                                        </a>
-                                    </>
-                                )}
+                                <NavigationMenu>
+                                    <NavigationMenuList className="gap-1">
+                                        <NavigationMenuItem>
+                                            <NavigationMenuLink asChild>
+                                                <button
+                                                    onClick={() => isAuthenticated ? window.location.href = '/busquedas' : handleRequireAuth('Ver tus búsquedas')}
+                                                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 rounded-md cursor-pointer"
+                                                >
+                                                    <Search className="w-4 h-4" />
+                                                    <span>Búsquedas</span>
+                                                </button>
+                                            </NavigationMenuLink>
+                                        </NavigationMenuItem>
+                                        <NavigationMenuItem>
+                                            <NavigationMenuLink asChild>
+                                                <button
+                                                    onClick={() => isAuthenticated ? setShowFavorites(true) : handleRequireAuth('Ver tus favoritos')}
+                                                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 rounded-md cursor-pointer"
+                                                >
+                                                    <Heart className="w-4 h-4" />
+                                                    <span>Favoritos</span>
+                                                </button>
+                                            </NavigationMenuLink>
+                                        </NavigationMenuItem>
+                                        <NavigationMenuItem>
+                                            <NavigationMenuLink asChild>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => isAuthenticated ? setShowNotifications(true) : handleRequireAuth('Ver tus notificaciones')}
+                                                    className="relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 rounded-md cursor-pointer"
+                                                >
+                                                    {isAuthenticated && unreadCount > 0 && (
+                                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border border-white">
+                                                            {unreadCount > 9 ? '9+' : unreadCount}
+                                                        </div>
+                                                    )}
+                                                    <Bell className="w-4 h-4" />
+                                                    <span>Notificaciones</span>
+                                                </button>
+                                            </NavigationMenuLink>
+                                        </NavigationMenuItem>
+                                        
+                                        {/* Theme Toggle */}
+                                        <NavigationMenuItem>
+                                            <div className="flex items-center px-3 py-2">
+                                                <AnimatedThemeToggler />
+                                            </div>
+                                        </NavigationMenuItem>
+                                        
+                                        {/* Panel de experto integrado - solo para expertos autenticados */}
+                                        {isAuthenticated && isExpert && (
+                                            <NavigationMenuItem>
+                                                <NavigationMenuLink
+                                                    href="/expert-panel"
+                                                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 rounded-md"
+                                                >
+                                                    <Briefcase className="w-4 h-4" />
+                                                    <span>Panel</span>
+                                                </NavigationMenuLink>
+                                            </NavigationMenuItem>
+                                        )}
+                                    </NavigationMenuList>
+                                </NavigationMenu>
                             </div>
 
                             {/* Separador antes del avatar/login */}
@@ -412,7 +462,14 @@ const App: React.FC = React.memo(() => {
                         />
                     </div>
                 )}
-            </div>
+        </div>
+    );
+};
+
+const App: React.FC = React.memo(() => {
+    return (
+        <Router>
+            <AppContent />
         </Router>
     );
 });

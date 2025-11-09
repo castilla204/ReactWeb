@@ -11,6 +11,8 @@ export const API_CONFIG = {
         },
         categories: {
             list: `${API_PATH}/Categories`,
+            create: `${API_PATH}/Categories`,
+            parents: `${API_PATH}/Categories/parents`,
         },
         serviceTypes: {
             list: `${API_PATH}/ServiceType/public`,
