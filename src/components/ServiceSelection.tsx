@@ -1,10 +1,21 @@
 import { useState } from 'react';
-import { ArrowRight, Clock, Star, CheckCircle, User, StarHalf, X, MapPin, DollarSign, Eye, Search, FileText, Video, XCircle } from 'lucide-react';
-import { GoogleMap, useLoadScript, Circle } from '@react-google-maps/api';
+import { ArrowRight, Star, CheckCircle, User, StarHalf, X, Eye, FileText, Video, XCircle, MapPin } from 'lucide-react';
+import { GoogleMap, useLoadScript, Circle, Marker } from '@react-google-maps/api';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServices } from '../hooks/useServices';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { EnhancedReviewsList } from './EnhancedReviewCard';
+import { Button } from './ui/button';
+import { Card, CardContent } from './ui/card';
+import { Badge } from './ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { Separator } from './ui/separator';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from './ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from './ui/drawer';
 
 const libraries: ("geometry" | "places")[] = ['geometry', 'places'];
 
@@ -33,6 +44,7 @@ export function ServiceSelection({
     const [detailServiceId, setDetailServiceId] = useState<number | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [carouselIndices, setCarouselIndices] = useState<{ [key: number]: number }>({});
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [filters, setFilters] = useState({
         priceRange: 'all' as 'all' | 'low' | 'medium' | 'high',
         rating: 'all' as 'all' | '4+' | '4.5+',
@@ -95,7 +107,6 @@ export function ServiceSelection({
     });
 
 
-    // Helper function to truncate text to 600 characters
     const truncateText = (text: string, maxLength: number = 120): string => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
@@ -106,7 +117,6 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
     return text.substring(0, maxLength) + '...';
 };
 
-    // Depuración: Mostrar los servicios recibidos
     console.log('ServiceSelection - Services received:', services);
     services.forEach((service, index) => {
         console.log(`ServiceSelection - Service ${index} (${service.id}):`, {
@@ -119,101 +129,21 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50">
-                <div className="max-w-7xl mx-auto px-6 py-8">
-                    {/* Header Skeleton */}
-                    <div className="mb-6 bg-white border border-gray-100/50 rounded-2xl p-3 md:p-6 shadow-lg animate-pulse">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
-                            <div className="h-6 bg-gray-200 rounded w-64"></div>
+            <div className="min-h-screen bg-background">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-8 bg-muted rounded w-1/3"></div>
+                        <div className="flex flex-col lg:flex-row gap-6">
+                            <div className="lg:w-80 space-y-4">
+                                <div className="h-40 bg-muted rounded"></div>
+                                <div className="h-64 bg-muted rounded"></div>
                         </div>
-                        <div className="space-y-2">
-                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                            <div className="flex-1 space-y-4">
+                                <div className="h-32 bg-muted rounded"></div>
+                                <div className="h-32 bg-muted rounded"></div>
+                                <div className="h-32 bg-muted rounded"></div>
                         </div>
                     </div>
-
-                    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-                        {/* Sidebar Skeleton */}
-                        <div className="hidden lg:block w-80 flex-shrink-0">
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-8 overflow-hidden animate-pulse">
-                                <div className="p-4 border-b border-gray-200">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-32"></div>
-                                    </div>
-                                </div>
-                                <div className="p-4 space-y-6">
-                                    {[1, 2, 3, 4].map((i) => (
-                                        <div key={i}>
-                                            <div className="h-3 bg-gray-200 rounded w-20 mb-2"></div>
-                                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-4 h-4 bg-gray-200 rounded"></div>
-                                                    <div className="h-4 bg-gray-200 rounded flex-1"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Services Skeleton */}
-                        <div className="flex-1">
-                            <div className="space-y-6">
-                                {[1, 2, 3].map((i) => (
-                                    <div key={i} className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200/60 animate-pulse">
-                                        {/* Mobile Layout Skeleton */}
-                                        <div className="lg:hidden">
-                                            <div className="flex items-center gap-3 p-4 bg-gray-50 border-b border-gray-100">
-                                                <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
-                                                <div className="flex-1">
-                                                    <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
-                                                    <div className="h-3 bg-gray-200 rounded w-24"></div>
-                                                </div>
-                                            </div>
-                                            <div className="p-4 space-y-3">
-                                                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                                                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                                                <div className="flex gap-2 mt-4">
-                                                    <div className="h-8 bg-gray-200 rounded flex-1"></div>
-                                                    <div className="h-8 bg-gray-200 rounded w-20"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Desktop Layout Skeleton */}
-                                        <div className="hidden lg:flex">
-                                            <div className="w-24 bg-gray-50 flex items-center justify-center p-4">
-                                                <div className="w-16 h-16 bg-gray-200 rounded-xl"></div>
-                                            </div>
-                                            <div className="flex-1 p-6">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="flex-1">
-                                                        <div className="h-5 bg-gray-200 rounded w-48 mb-2"></div>
-                                                        <div className="h-3 bg-gray-200 rounded w-32"></div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="h-6 bg-gray-200 rounded w-20 mb-1"></div>
-                                                        <div className="h-3 bg-gray-200 rounded w-16"></div>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2 mb-4">
-                                                    <div className="h-4 bg-gray-200 rounded w-full"></div>
-                                                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                                                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                                                </div>
-                                                <div className="flex gap-3">
-                                                    <div className="h-9 bg-gray-200 rounded flex-1"></div>
-                                                    <div className="h-9 bg-gray-200 rounded w-20"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -223,15 +153,10 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
     if (error) {
         const errorMessage = `Error al cargar los servicios: ${error.message}`;
         return (
-            <div className="max-w-4xl mx-auto px-6 py-12">
-                <div className="bg-red-50 text-red-600 p-6 rounded-sm shadow-sm text-center">
-                    <p className="text-lg">{errorMessage}</p>
-                    <button
-                        onClick={onBack}
-                        className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
-                    >
-                        Volver
-                    </button>
+            <div className="max-w-4xl mx-auto px-4 py-12">
+                <div className="bg-destructive/10 border border-destructive p-6 rounded-lg text-center">
+                    <p className="text-destructive mb-4">{errorMessage}</p>
+                    <Button onClick={onBack} variant="outline">Volver</Button>
                 </div>
             </div>
         );
@@ -240,15 +165,10 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
     if (selectedCategory <= 0 || !selectedServiceTypeId || selectedServiceTypeId <= 0 || services.length === 0) {
         const serviceTypeName = serviceTypes.find((st) => st.id === selectedServiceTypeId)?.name || 'Servicios';
         return (
-            <div className="max-w-4xl mx-auto px-6 py-12">
-                <div className="bg-red-50 text-red-600 p-6 rounded-sm shadow-sm text-center">
-                    <p className="text-lg">No hay servicios disponibles para {serviceTypeName} en la ubicación seleccionada.</p>
-                    <button
-                        onClick={onBack}
-                        className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
-                    >
-                        Volver
-                    </button>
+            <div className="max-w-4xl mx-auto px-4 py-12">
+                <div className="bg-muted/50 p-6 rounded-lg text-center">
+                    <p className="text-muted-foreground mb-4">No hay servicios disponibles para {serviceTypeName} en la ubicación seleccionada.</p>
+                    <Button onClick={onBack} variant="outline">Volver</Button>
                 </div>
             </div>
         );
@@ -316,51 +236,65 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
         const stars = [];
         for (let i = 0; i < 5; i++) {
             if (i < fullStars) {
-                stars.push(<Star key={i} className="w-4 h-4 fill-current text-yellow-500" />);
+                stars.push(<Star key={i} className="w-3 h-3 fill-current text-yellow-500" />);
             } else if (i === fullStars && hasHalfStar) {
-                stars.push(<StarHalf key={i} className="w-4 h-4 fill-current text-yellow-500" />);
+                stars.push(<StarHalf key={i} className="w-3 h-3 fill-current text-yellow-500" />);
             } else {
-                stars.push(<Star key={i} className="w-4 h-4 text-gray-300" />);
+                stars.push(<Star key={i} className="w-3 h-3 text-gray-300" />);
             }
         }
         return stars;
     };
 
-    const renderDeliverableTypes = (service: any) => {
+    const renderDeliverableTypes = (service: any, isOnColoredBg = false) => {
+        if (!service) return null;
         const deliverableTypes = service.selectedDeliverableTypes || [];
         const hasPdf = deliverableTypes.some((dt: any) => dt.name === 'PDF');
         const hasVideo = deliverableTypes.some((dt: any) => dt.name === 'Video');
         
-        console.log(`🔍 renderDeliverableTypes for service ${service.id}:`, {
-            deliverableTypes,
-            hasPdf,
-            hasVideo,
-            deliverableTypesLength: deliverableTypes.length
-        });
+        if (isOnColoredBg) {
+        return (
+                <div className="flex items-center gap-1.5">
+                    {hasPdf && (
+                        <Badge className="bg-white/20 text-white border-white/30 text-xs px-2 py-0.5 gap-1">
+                        <FileText className="w-3 h-3" />
+                            PDF
+                        </Badge>
+                    )}
+                    {hasVideo ? (
+                        <Badge className="bg-white/20 text-white border-white/30 text-xs px-2 py-0.5 gap-1">
+                            <Video className="w-3 h-3" />
+                            Video
+                        </Badge>
+                    ) : (
+                        <Badge className="bg-white/10 text-white/70 border-white/20 text-xs px-2 py-0.5 gap-1">
+                            <XCircle className="w-3 h-3" />
+                            Sin Video
+                        </Badge>
+                    )}
+                        </div>
+            );
+        }
         
         return (
-            <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs text-gray-500 font-medium">Incluye:</span>
-                <div className="flex items-center gap-1">
-                    {/* PDF - Siempre incluido */}
-                    <div className="flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-200">
-                        <FileText className="w-3 h-3" />
-                        <span className="text-xs font-medium">PDF</span>
-                    </div>
-                    
-                    {/* Video - Condicional */}
-                    {hasVideo ? (
-                        <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full border border-blue-200">
-                            <Video className="w-3 h-3" />
-                            <span className="text-xs font-medium">Video</span>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-1 bg-gray-50 text-gray-500 px-2 py-1 rounded-full border border-gray-200">
-                            <XCircle className="w-3 h-3" />
-                            <span className="text-xs font-medium">Sin Video</span>
-                        </div>
-                    )}
-                </div>
+            <div className="flex items-center gap-1">
+                {hasPdf && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+                        <FileText className="w-2.5 h-2.5" />
+                        PDF
+                    </Badge>
+                )}
+                {hasVideo ? (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
+                        <Video className="w-2.5 h-2.5" />
+                        Video
+                    </Badge>
+                ) : (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 text-muted-foreground">
+                        <XCircle className="w-2.5 h-2.5" />
+                        Sin Video
+                    </Badge>
+                )}
             </div>
         );
     };
@@ -369,794 +303,684 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
     const categoryName = categories.find((c) => c.id === selectedCategory)?.name || 'Categoría';
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-6 pt-2 pb-4">
-                                {/* Simplified Header */}
-                <div className="flex items-center justify-end mb-4">
-                    <span className="text-sm text-gray-500">
-                        {services.length} resultado{services.length !== 1 ? 's' : ''}
-                    </span>
-                </div>
-
-                {/* Main Content with Sidebar */}
-                <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-                    {/* Left Sidebar - Hidden on mobile */}
-                    <div className="hidden lg:block w-80 flex-shrink-0">
-                        <div className="bg-white rounded-lg shadow-xl border border-gray-200/60 sticky top-8 overflow-hidden">
-                            {/* Sidebar Header */}
-                            <div className="p-6 bg-gradient-to-br from-blue-50 via-indigo-50/50 to-purple-50/30 border-b border-gray-200/50">
+        <div className="min-h-screen bg-background">
+            {/* Header Section - Fixed */}
+            <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+                <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-md bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
-                                        <Search className="w-6 h-6 text-white" />
-                                    </div>
+                            <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={onBack}
+                                className="h-9 w-9"
+                            >
+                                <ArrowRight className="h-4 w-4 rotate-180" />
+                            </Button>
                                     <div>
-                                        <h3 className="text-lg font-bold text-gray-900">
-                                            Criterios de Búsqueda
-                                        </h3>
-                                        <p className="text-sm text-blue-600/80 mt-1 font-medium">Configuración aplicada</p>
+                                <h1 className="text-xl font-semibold text-foreground">
+                                    {selectedServiceTypeId === 1 ? 'Inspector especializado' : 'Experto en búsquedas'}
+                                </h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    {services.length} {services.length === 1 ? 'resultado' : 'resultados'} en {categoryName}
+                                </p>
                                     </div>
                                 </div>
-                            </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                            <div className="p-6 space-y-6">
-                                {/* Main Info - Clean Layout */}
+            {/* Main Layout - Split View */}
+            <div className="flex h-[calc(100vh-73px)]">
+                {/* Mobile: Map First, Desktop: Results First */}
+                {/* Left Side - Results & Filters */}
+                <div className="hidden lg:flex flex-1 overflow-y-auto">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                        {/* Mobile Filters */}
+                        <Card className="lg:hidden mb-6">
+                            <Accordion type="single" collapsible>
+                                <AccordionItem value="filters" className="border-0">
+                                    <AccordionTrigger className="px-5 py-4 font-semibold">Filtros</AccordionTrigger>
+                                    <AccordionContent className="px-5 pb-5">
                                 <div className="space-y-4">
-                                    {/* Service Type and Category */}
-                                    <div className="space-y-3">
                                         <div>
-                                            <div className="text-xs text-gray-500 mb-1 font-medium">Tipo de servicio</div>
-                                            <div className="text-sm font-semibold text-gray-800">
-                                                {selectedServiceTypeId === 1 ? 'Solo revisión' : 'Búsqueda web + revisión'}
+                                                <Label className="text-sm font-medium text-foreground mb-2 block">Precio</Label>
+                                                <Select value={filters.priceRange} onValueChange={(value: 'all' | 'low' | 'medium' | 'high') => setFilters({...filters, priceRange: value})}>
+                                                    <SelectTrigger className="h-9">
+                                                        <SelectValue placeholder="Todos" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">Todos</SelectItem>
+                                                        <SelectItem value="low">Hasta €50</SelectItem>
+                                                        <SelectItem value="medium">€50 - €150</SelectItem>
+                                                        <SelectItem value="high">Más de €150</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                        </div>
+                                        <div>
+                                                <Label className="text-sm font-medium text-foreground mb-2 block">Valoración</Label>
+                                                <Select value={filters.rating} onValueChange={(value: 'all' | '4+' | '4.5+') => setFilters({...filters, rating: value})}>
+                                                    <SelectTrigger className="h-9">
+                                                        <SelectValue placeholder="Todas" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">Todas</SelectItem>
+                                                        <SelectItem value="4+">4+ ⭐</SelectItem>
+                                                        <SelectItem value="4.5+">4.5+ ⭐</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         </div>
-                                        <div>
-                                            <div className="text-xs text-gray-500 mb-1 font-medium">Categoría</div>
-                                            <div className="text-sm font-semibold text-gray-800">
-                                                {categoryName}
-                                            </div>
-                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        </Card>
+
+                        {/* Desktop Filters - Horizontal */}
+                        <div className="hidden lg:flex items-center gap-3 mb-6 flex-wrap">
+                            <Label className="text-sm font-medium text-foreground">Filtros:</Label>
+                            <Select value={filters.priceRange} onValueChange={(value: 'all' | 'low' | 'medium' | 'high') => setFilters({...filters, priceRange: value})}>
+                                <SelectTrigger className="h-9 w-[140px]">
+                                    <SelectValue placeholder="Precio" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos</SelectItem>
+                                    <SelectItem value="low">Hasta €50</SelectItem>
+                                    <SelectItem value="medium">€50 - €150</SelectItem>
+                                    <SelectItem value="high">Más de €150</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={filters.rating} onValueChange={(value: 'all' | '4+' | '4.5+') => setFilters({...filters, rating: value})}>
+                                <SelectTrigger className="h-9 w-[140px]">
+                                    <SelectValue placeholder="Valoración" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todas</SelectItem>
+                                    <SelectItem value="4+">4+ ⭐</SelectItem>
+                                    <SelectItem value="4.5+">4.5+ ⭐</SelectItem>
+                                </SelectContent>
+                            </Select>
                                     </div>
 
-                                    {/* Location and Price */}
-                                    <div className="space-y-3">
-                                        <div>
-                                            <div className="text-xs text-gray-500 mb-1 font-medium">Ubicación</div>
-                                            <div className="text-sm font-semibold text-gray-800">
-                                                Radio: {locationRange} km
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="text-xs text-gray-500 mb-1 font-medium">Rango de precios</div>
-                                            <div className="text-sm font-semibold text-gray-800">
-                                                {selectedCategory === 1 ? 'Hasta €100.000' : 
-                                                 selectedCategory === 2 ? 'Hasta €50.000' : 
-                                                 'Hasta €2.000.000'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                        
-                                {/* Map - Full Width */}
-                                <div className="group">
-                                    <div className="text-sm text-gray-600 mb-3 font-medium">
-                                        Mapa de ubicación
-                                    </div>
-                                    <div className="h-32 rounded-md border border-indigo-200/60 relative overflow-hidden bg-gradient-to-br from-indigo-50/50 to-slate-50 shadow-sm group-hover:shadow-md transition-all duration-200">
-                                            {isLoaded ? (
-                                                <GoogleMap
-                                                    mapContainerStyle={{ width: '100%', height: '100%' }}
-                                                    zoom={getZoomLevel(locationRange)}
-                                                    center={mapCenter}
-                                                    options={{
-                                                        disableDefaultUI: true,
-                                                        gestureHandling: 'none',
-                                                        zoomControl: false,
-                                                        scrollwheel: false,
-                                                        disableDoubleClickZoom: true,
-                                                        draggable: false,
-                                                        styles: [
-                                                            {
-                                                                featureType: 'poi',
-                                                                elementType: 'labels',
-                                                                stylers: [{ visibility: 'off' }]
-                                                            }
-                                                        ]
-                                                    }}
-                                                >
-                                                    <Circle
-                                                        center={mapCenter}
-                                                        radius={locationRange * 1000}
-                                                        options={{
-                                                        fillColor: '#6366F1',
-                                                        fillOpacity: 0.15,
-                                                        strokeColor: '#6366F1',
-                                                            strokeOpacity: 0.8,
-                                                            strokeWeight: 2,
-                                                        zIndex: 1,
-                                                        clickable: false,
-                                                        editable: false,
-                                                        draggable: false
-                                                        }}
-                                                    />
-                                                </GoogleMap>
-                                            ) : (
-                                            <div className="h-full bg-gradient-to-br from-indigo-100 to-slate-100 flex items-center justify-center">
-                                                <div className="text-xs font-medium text-indigo-600">Cargando mapa...</div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                {/* Filters */}
-                                <div className="pt-6 border-t border-gray-200/60">
-                                    <div className="text-sm text-gray-600 mb-4 font-medium">
-                                        Filtros adicionales
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {/* Price Range Filter */}
-                                        <div>
-                                            <label className="text-xs text-gray-500 mb-2 block font-medium">Precio</label>
-                                            <select 
-                                                value={filters.priceRange}
-                                                onChange={(e) => setFilters(prev => ({ ...prev, priceRange: e.target.value as any }))}
-                                                className="w-full text-xs border border-gray-200 rounded-md px-3 py-2.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all duration-200 shadow-sm"
-                                            >
-                                                <option value="all">Todos</option>
-                                                <option value="low">Hasta €50</option>
-                                                <option value="medium">€50-€150</option>
-                                                <option value="high">+€150</option>
-                                            </select>
-                                        </div>
-
-                                        {/* Rating Filter */}
-                                        <div>
-                                            <label className="text-xs text-gray-500 mb-2 block font-medium">Valoración</label>
-                                            <select 
-                                                value={filters.rating}
-                                                onChange={(e) => setFilters(prev => ({ ...prev, rating: e.target.value as any }))}
-                                                className="w-full text-xs border border-gray-200 rounded-md px-3 py-2.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all duration-200 shadow-sm"
-                                            >
-                                                <option value="all">Todas</option>
-                                                <option value="4+">4+ ⭐</option>
-                                                <option value="4.5+">4.5+ ⭐</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Search Stats */}
-                                <div className="pt-6 border-t border-gray-200/60">
-                                    <div className="text-sm text-gray-600 mb-4 font-medium">
-                                        Resumen
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="bg-gradient-to-br from-blue-50/80 to-blue-100/50 border border-blue-200/60 rounded-md p-4 text-center hover:shadow-lg transition-all duration-200">
-                                            <div className="text-2xl font-bold text-blue-900">{services.length}</div>
-                                            <div className="text-xs font-semibold text-blue-700 mt-1">Resultados</div>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-green-50/80 to-green-100/50 border border-green-200/60 rounded-md p-4 text-center hover:shadow-lg transition-all duration-200">
-                                            <div className="text-2xl font-bold text-green-900">
-                                                €{Math.round(services.reduce((acc, s) => acc + (s.price || 0), 0) / services.length || 0)}
-                                            </div>
-                                            <div className="text-xs font-semibold text-green-700 mt-1">Precio medio</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-            </div>
-
-                    {/* Right Content - Services */}
-                    <div className="flex-1">
-                        {/* Instructions Header */}
-                        <div className="mb-6 bg-gradient-to-r from-blue-50/50 to-indigo-50/30 border border-blue-200/50 rounded-lg p-4 md:p-6 shadow-lg">
-                            <div className="flex items-start gap-4">
-                                <div className="flex items-center justify-center w-10 h-10 rounded-md bg-gradient-to-br from-blue-500 to-blue-600 flex-shrink-0 shadow-lg">
-                                    <User className="w-5 h-5 text-white" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
-                                        {selectedServiceTypeId === 1 ? 'Selección de inspector especializado' : 'Selección de experto en búsquedas'}
-                                    </h2>
-                                    <p className="text-sm md:text-base text-gray-600 leading-relaxed mb-3">
-                                        {selectedServiceTypeId === 1 
-                                            ? 'Profesionales certificados que realizarán la inspección en la ubicación especificada.'
-                                            : 'Especialistas que ejecutarán búsquedas automatizadas e inspecciones presenciales.'
-                                        }
-                                    </p>
-                                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 font-medium">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                            <span>Certificados</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                            <span>Verificados</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                                            <span>Pago seguro</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Auto-Refund Guarantee */}
-                        <div className="mb-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200/60 rounded-lg p-3 shadow-sm">
-                            <div className="flex items-center gap-2">
-                                <div className="flex items-center justify-center w-5 h-5 rounded-md bg-emerald-100 flex-shrink-0">
-                                    <svg className="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-xs font-semibold text-emerald-900 mb-1">Garantía de Respuesta Rápida</h3>
-                                    <p className="text-xs text-emerald-700 leading-relaxed">
-                                        Devolución automática en 24h si el experto no responde
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
+                        {/* Results Grid */}
                         {errorMessage && (
-                            <div className="mb-6 bg-red-50 text-red-600 p-4 rounded-lg shadow-sm text-center">
-                                <p className="text-lg">{errorMessage}</p>
-                            </div>
+                            <Card className="mb-6 border-destructive/50 bg-destructive/5">
+                                <CardContent className="p-4">
+                                    <p className="text-sm text-destructive">{errorMessage}</p>
+                                </CardContent>
+                            </Card>
                         )}
 
-                        <div className="space-y-6">
+                        {/* Results List - Vertical */}
+                        <div className="space-y-4">
                 {services.map((service) => {
-                    const savings = Math.floor(Math.random() * 500) + 300;
-                    const currentImageIndex = carouselIndices[service.id] || 0;
-                    const isTopRated = (service.averageRating || 0) >= 4.8;
-                    const isChoice = (service.completedSearches || 0) > 10;
                     const isPro = (service.completedSearches || 0) > 5;
+                                 const geometricColors = [
+                                     { shapes: ['#fb923c', '#f472b6', '#facc15'] }, // orange, pink, yellow
+                                     { shapes: ['#60a5fa', '#22d3ee', '#a78bfa'] }, // blue, cyan, purple
+                                     { shapes: ['#facc15', '#fb923c', '#f87171'] }, // yellow, orange, red
+                                     { shapes: ['#f472b6', '#a78bfa', '#60a5fa'] }, // pink, purple, blue
+                                     { shapes: ['#22d3ee', '#60a5fa', '#818cf8'] }, // cyan, blue, indigo
+                                     { shapes: ['#fb923c', '#f87171', '#f472b6'] }, // orange, red, pink
+                                 ];
+                                 const colorIndex = service.id % geometricColors.length;
+                                 const colorScheme = geometricColors[colorIndex];
 
                     return (
-                        <div
+                                     <Card 
                             key={service.id}
-                            className={`bg-white rounded-lg shadow-xl overflow-hidden border transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${
-                                selectedService === service.id ? 'border-emerald-500 ring-2 ring-emerald-200/50 shadow-2xl bg-gradient-to-br from-emerald-50/50 to-emerald-100/30' : 'border-gray-200/60 hover:border-gray-300'
-                            }`}
-                        >
-                                                        {/* Mobile Layout */}
-                            <div className="lg:hidden">
-                                {/* Header with Expert Profile */}
-                                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-blue-50/30 border-b border-gray-100">
-                                    <div className="flex-shrink-0">
-                                        {service.expert && service.expert.profilePictureUrl ? (
-                                            <div className="relative">
-                                            <img
-                                                src={service.expert.profilePictureUrl}
-                                                alt={service.expert.user?.name || 'Experto'}
-                                                    className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-lg"
-                                                onError={(e) => {
-                                                        console.error(`Failed to load profile picture for service ${service.id}: ${service.expert?.profilePictureUrl}`);
-                                                    e.currentTarget.style.display = 'none';
-                                                        (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'flex';
-                                                    }}
-                                                />
-                                                {isPro && (
-                                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center border-2 border-white">
-                                                        <CheckCircle className="w-3 h-3 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center border-2 border-white shadow-lg">
-                                                <User className="w-6 h-6 text-white" />
-                                            </div>
-                                        )}
-                                        <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center border-2 border-white shadow-lg" style={{ display: 'none' }}>
-                                            <User className="w-6 h-6 text-white" />
-                                        </div>
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="text-base font-bold text-gray-900">
-                                                {service.expert?.user?.name || 'Experto desconocido'}
-                                            </h3>
-                                            {isPro && (
-                                                <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-sm">
-                                                    Pro
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <div className="flex">
-                                                {renderStars(service.averageRating || 0)}
-                                            </div>
-                                            <span className="text-xs font-bold text-gray-900">
-                                                {(service.averageRating || 0).toFixed(1)}
-                                            </span>
-                                            <span className="text-xs text-gray-500 font-medium">
-                                                ({service.expert?.reviews?.length || 0} reseñas)
-                                            </span>
-                                        </div>
-                                    </div>
-                                                                </div>
-
-                                {/* Service Info */}
-                                <div className="p-4">
-                                    <p className="text-gray-900 text-sm mb-2 leading-snug">
-                                        {truncateTextMobile(service.conditions || 'Servicio profesional personalizado.')}
-                                    </p>
-
-                                    {/* Deliverable Types */}
-                                    {console.log(`🔍 About to render deliverable types for service ${service.id}`) || renderDeliverableTypes(service)}
-
-                                    <div className="flex flex-wrap gap-1 mb-3">
-                                        {['Revisión completa', 'Análisis detallado'].map((tag) => (
-                                            <span key={tag} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-
-                                                                                                            {/* Portfolio Images - Moved Below Description */}
-                                    {service.imageUrls && service.imageUrls.length > 0 && (
-                                        <div className="flex gap-1 mb-3">
-                                            {service.imageUrls.slice(0, 3).map((url, index) => (
-                                                <div key={index} className="relative rounded overflow-hidden flex-1 h-20">
-                                                    <img
-                                                        src={url}
-                                                        alt={`Portfolio ${index + 1}`}
-                                            className="w-full h-full object-cover"
-                                        />
-                                                    {service.imageUrls.length > 3 && index === 2 && (
-                                                        <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                                                            <span className="text-white font-semibold text-sm">+{service.imageUrls.length - 3}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                            {/* Empty placeholders to maintain 1/3 width for single images */}
-                                            {service.imageUrls.length === 1 && (
-                                                <>
-                                                    <div className="flex-1"></div>
-                                                    <div className="flex-1"></div>
-                                            </>
-                                        )}
-                                            {service.imageUrls.length === 2 && (
-                                                <div className="flex-1"></div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    <div className="mb-4">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div>
-                                                <div className="text-sm text-gray-600 mb-1">Desde</div>
-                                                <div className="text-lg text-gray-900">
-                                                    <span className="font-bold">
-                                                        {service.price
-                                                            ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(service.price)
-                                                            : '€72'}
-                                                    </span>/servicio
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                                <button
-                                                onClick={() => setSelectedService(service.id)}
-                                                className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 shadow-lg hover:shadow-xl ${
+                                         className={`group cursor-pointer transition-all hover:scale-[1.01] hover:shadow-xl overflow-hidden border rounded-2xl ${
                                                     selectedService === service.id
-                                                        ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800'
-                                                        : 'bg-gradient-to-r from-gray-900 to-gray-800 text-white hover:from-gray-800 hover:to-gray-700'
-                                                }`}
-                                            >
-                                                {selectedService === service.id ? '✓ Seleccionado' : 'Seleccionar'}
-                                                </button>
-                                                <button
-                                                onClick={() => setDetailServiceId(service.id)}
-                                                className="px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md"
-                                                >
-                                                Ver
-                                                </button>
-                                        </div>
+                                                 ? 'border-primary/60 shadow-lg' 
+                                                 : 'border-border/50'
+                                         }`}
+                                         onClick={() => setSelectedService(service.id)}
+                                     >
+                                         {/* Background Section - Full Card Background with soft gradient */}
+                                         <div className="relative overflow-hidden rounded-2xl" style={{ 
+                                             minHeight: '300px',
+                                             background: `linear-gradient(135deg, ${colorScheme.shapes[0]}20 0%, ${colorScheme.shapes[1]}25 50%, ${colorScheme.shapes[2]}20 100%)`
+                                         }}>
+                                             {/* Geometric Shapes - Blurred Background */}
+                                             <div className="absolute inset-0">
+                                                 <div 
+                                                     className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-60"
+                                                     style={{ backgroundColor: colorScheme.shapes[0] }}
+                                                 ></div>
+                                                 <div 
+                                                     className="absolute bottom-0 left-0 w-40 h-40 rounded-full blur-3xl opacity-60"
+                                                     style={{ backgroundColor: colorScheme.shapes[1] }}
+                                                 ></div>
+                                                 <div 
+                                                     className="absolute top-1/2 right-1/4 w-28 h-28 rounded-full blur-2xl opacity-60"
+                                                     style={{ backgroundColor: colorScheme.shapes[2] }}
+                                                 ></div>
+                                                 {/* Additional smaller shapes for depth */}
+                                                 <div 
+                                                     className="absolute top-1/3 left-1/4 w-20 h-20 rounded-full blur-xl opacity-40"
+                                                     style={{ backgroundColor: colorScheme.shapes[0] }}
+                                                 ></div>
+                                                 {/* Star patterns - scattered white dots */}
+                                                 <div className="absolute top-4 left-4 w-1 h-1 bg-white rounded-full opacity-80"></div>
+                                                 <div className="absolute top-8 right-8 w-1.5 h-1.5 bg-white rounded-full opacity-80"></div>
+                                                 <div className="absolute bottom-16 left-10 w-1 h-1 bg-white rounded-full opacity-80"></div>
+                                                 <div className="absolute top-16 left-1/3 w-1 h-1 bg-white rounded-full opacity-80"></div>
+                                                 <div className="absolute bottom-8 right-16 w-1.5 h-1.5 bg-white rounded-full opacity-80"></div>
+                                                 <div className="absolute top-12 right-1/4 w-1 h-1 bg-white rounded-full opacity-80"></div>
                                     </div>
 
-                                    {selectedService === service.id && (
-                                        <div className="flex items-center justify-center gap-1 text-emerald-600 text-xs">
-                                            <CheckCircle className="w-3 h-3" />
-                                            <span>¡Seleccionado!</span>
-                                    </div>
-                                )}
-                                </div>
-                            </div>
-
-                            {/* Desktop Layout */}
-                            <div className="hidden lg:flex">
-                                {/* Left Side - Expert Profile */}
-                                <div className="flex-shrink-0 p-4 w-20">
+                                             {/* Avatar Section - Centered, overlapping with panel */}
+                                             <div className="relative z-10 flex items-center justify-center pt-8 pb-2">
                                     <div className="relative">
-                                    {service.expert && service.expert.profilePictureUrl ? (
-                                        <img
-                                            src={service.expert.profilePictureUrl}
-                                            alt={service.expert.user?.name || 'Experto'}
-                                                className="w-12 h-12 rounded-full object-cover"
-                                            onError={(e) => {
-                                                console.error(`Failed to load profile picture for service ${service.id}: ${service.expert?.profilePictureUrl}`);
-                                                e.currentTarget.style.display = 'none';
-                                                    (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'flex';
-                                            }}
-                                        />
-                                    ) : (
-                                            <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                                                <User className="w-6 h-6 text-gray-500" />
+                                                     <Avatar className="h-20 w-20 border-3 border-white/40 shadow-2xl ring-2 ring-white/30">
+                                                         <AvatarImage src={service.expert?.profilePictureUrl} />
+                                                         <AvatarFallback className="bg-slate-200 text-slate-700 border-white/40">
+                                                             <User className="h-10 w-10" />
+                                                         </AvatarFallback>
+                                                     </Avatar>
+                                                     {isPro && (
+                                                         <div className="absolute -top-1 -right-1 bg-primary text-white text-xs font-semibold px-2 py-0.5 rounded-full border border-primary/40 shadow-xl">
+                                                             Pro
                                         </div>
                                     )}
-                                        <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center" style={{ display: 'none' }}>
-                                            <User className="w-6 h-6 text-gray-500" />
-                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Center - Content */}
-                                <div className="flex-1 p-4">
-                                    {/* Header with name and badges */}
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-lg font-bold text-gray-900">
-                                                    {service.expert?.user?.name || 'Experto desconocido'}
+                                             {/* Glassmorphism Panel - Overlapping avatar, more integrated */}
+                                             <div className="relative z-20 -mt-10">
+                                                 <div className="bg-white/80 backdrop-blur-2xl rounded-2xl border border-white/60 mx-4 mb-4 pt-12 pb-4 px-4 shadow-2xl" style={{ 
+                                                     background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.75) 100%)',
+                                                     boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.15)'
+                                                 }}>
+                                                     {/* Name - Large, bold, dark, centered */}
+                                                     <h3 className="text-xl font-bold text-slate-900 mb-1 text-center tracking-tight">
+                                                         {service.expert?.user?.name || 'Experto'}
                                                 </h3>
-                                                {isPro && (
-                                                    <span className="bg-orange-500 text-white px-2 py-1 rounded text-xs font-medium">
-                                                        Vetted Pro
-                                                    </span>
-                                                )}
-                                                {isChoice && (
-                                                    <span className="bg-gray-800 text-white px-2 py-1 rounded text-xs font-medium">
-                                                        Fiverr's Choice
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-1 mb-2">
-                                                <div className="flex">
-                                                    {renderStars(service.averageRating || 0)}
-                                                </div>
-                                                <span className="text-sm font-semibold text-gray-900">
-                                                    {(service.averageRating || 0).toFixed(1)}
-                                                </span>
-                                                <span className="text-sm text-gray-500">
-                                                    ({service.expert?.reviews?.length || 0})
-                                                </span>
-                                    </div>
-                                </div>
-                            </div>
+                                                     
+                                                     {/* Email/Price - Smaller, lighter, centered */}
+                                                     <p className="text-xs text-slate-700 text-center mb-2 font-medium">
+                                                         {service.expert?.user?.email || `${service.price ? `€${service.price}` : '€72'} por servicio`}
+                                                     </p>
 
-                                    {/* Service Description */}
-                                    <p className="text-gray-900 text-sm mb-2 leading-snug">
-                                        {truncateText(service.conditions || 'Servicio profesional personalizado.')}
-                                    </p>
-
-                                    {/* Deliverable Types */}
-                                    {console.log(`🔍 About to render deliverable types for service ${service.id} (desktop)`) || renderDeliverableTypes(service)}
-
-                                    {/* Location and Stats */}
-                                    <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                                        <span>🇪🇸 España</span>
-                                        <span className="mx-2">•</span>
-                                        <Clock className="w-3 h-3" />
-                                        <span>Tarifas por horas</span>
+                                                     {/* Rating - Centered */}
+                                                     <div className="flex items-center justify-center gap-1.5 mb-2">
+                                                         {renderStars(service.averageRating || 0)}
+                                                         <span className="text-xs text-slate-600 font-medium">({service.expert?.reviews?.length || 0})</span>
                                     </div>
 
-                                    {/* Service Tags */}
-                                    <div className="flex flex-wrap gap-1 mb-3">
-                                        {['Revisión completa', 'Análisis detallado'].map((tag) => (
-                                            <span key={tag} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                                                {tag}
-                                            </span>
-                                        ))}
+                                                     {/* Deliverables - Centered */}
+                                                     <div className="flex items-center justify-center gap-2 mb-3">
+                                                         {renderDeliverableTypes(service, true)}
                                     </div>
 
-                                    {/* Portfolio Images - Aligned with description in desktop */}
-                                    {service.imageUrls && service.imageUrls.length > 0 && (
-                                        <div className="flex gap-1 mb-4">
-                                            {service.imageUrls.slice(0, 3).map((url, index) => (
-                                                <div key={index} className="relative rounded overflow-hidden flex-1 h-40">
-                                                    <img
-                                                        src={url}
-                                                        alt={`Portfolio ${index + 1}`}
-                                                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                                    />
-                                                    {service.imageUrls.length > 3 && index === 2 && (
-                                                        <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                                                            <span className="text-white font-semibold text-lg">+{service.imageUrls.length - 3}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                            {/* Empty placeholders to maintain 1/3 width for single images */}
-                                            {service.imageUrls.length === 1 && (
-                                                <>
-                                                    <div className="flex-1"></div>
-                                                    <div className="flex-1"></div>
-                                                </>
-                                            )}
-                                            {service.imageUrls.length === 2 && (
-                                                <div className="flex-1"></div>
-                                            )}
-                                        </div>
-                                    )}
+                                                     {/* Action Buttons - Glassmorphism style */}
+                                                     <div className="flex items-center gap-2 pt-2.5 border-t border-slate-200">
+                                                         <Button
+                                                             variant={selectedService === service.id ? "default" : "secondary"}
+                                                             size="sm"
+                                                             className="flex-1 bg-slate-900 hover:bg-slate-800 text-white border-slate-700 font-medium shadow-lg transition-all text-xs h-8"
+                                                             onClick={(e) => {
+                                                                 e.stopPropagation();
+                                                                 setSelectedService(service.id);
+                                                             }}
+                                                         >
+                                                             {selectedService === service.id ? (
+                                                                 <>
+                                                                     <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                                                                     Seleccionado
+                                                                 </>
+                                                             ) : (
+                                                                 'Seleccionar'
+                                                             )}
+                                                         </Button>
+                                                         <Button
+                                                             variant="ghost"
+                                                             size="icon"
+                                                             className="bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200 rounded-lg shadow-sm h-8 w-8"
+                                                             onClick={(e) => {
+                                                                 e.stopPropagation();
+                                                                 setDetailServiceId(service.id);
+                                                             }}
+                                                         >
+                                                             <Eye className="w-3.5 h-3.5" />
+                                                         </Button>
                                 </div>
-
-                                {/* Right Side - Pricing Only */}
-                                <div className="flex-shrink-0 w-80 p-4">
-                                    {/* Pricing and Actions */}
-                                    <div className="text-right">
-                                        <div className="mb-3">
-                                            <div className="text-sm text-gray-600 mb-1">Desde</div>
-                                            <div className="text-lg text-gray-900">
-                                                <span className="font-bold">
-                                    {service.price
-                                        ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(service.price)
-                                                        : '€72'}
-                                                </span>/servicio
-                                </div>
-                                            <div className="text-xs text-gray-500">Garantía de satisfacción</div>
-                                </div>
-
-                                        {/* Action Buttons */}
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setSelectedService(service.id)}
-                                                className={`flex-1 py-2.5 px-4 rounded font-medium text-sm transition-all duration-200 ${
-                                                    selectedService === service.id
-                                                        ? 'bg-emerald-600 text-white shadow-md hover:bg-emerald-700'
-                                                        : 'bg-gray-900 text-white hover:bg-gray-800'
-                                                }`}
-                                            >
-                                                {selectedService === service.id ? 'Seleccionado' : 'Seleccionar'}
-                                    </button>
-                                    <button
-                                        onClick={() => setDetailServiceId(service.id)}
-                                                className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 text-sm font-medium"
-                                    >
-                                                Ver servicio
-                                    </button>
-                                </div>
-
-                                        {/* Selected Indicator */}
-                                {selectedService === service.id && (
-                                            <div className="flex items-center justify-center gap-1 mt-2 text-emerald-600 text-xs">
-                                                <CheckCircle className="w-3 h-3" />
-                                                <span>¡Seleccionado!</span>
                                     </div>
-                                )}
                             </div>
                                 </div>
-                            </div>
-
-
-                        </div>
+                                     </Card>
                     );
                 })}
             </div>
 
                         {/* Continue Button */}
-                        <div className="bg-gradient-to-r from-gray-50 to-blue-50/30 border-t border-gray-100 p-3 md:p-6 mt-6 md:mt-8 rounded-b-2xl">
-                            <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0">
-                                <div className="text-xs md:text-sm text-gray-600 font-medium order-2 md:order-1">
-                                    Paso 3 de 3 • Selecciona un servicio
-                                </div>
-                            <button
-                                    onClick={handleContinue}
-                                    disabled={selectedService === null}
-                                    className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 md:py-2.5 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-xl md:rounded-lg shadow-lg hover:shadow-xl disabled:shadow-sm transition-all duration-200 disabled:cursor-not-allowed order-1 md:order-2"
+                        <div className="mt-6 pb-6">
+                            <Button 
+                                onClick={handleContinue}
+                                disabled={!selectedService} 
+                                size="lg"
+                                className="w-full h-11 text-base font-medium shadow-lg"
                             >
-                                    <span>Continuar</span>
-                                    <ArrowRight className="w-4 h-4" />
-                            </button>
-                        </div>
+                                Continuar
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {detailService && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-20">
-                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-xl">
-                        {/* Scrollable Content - No Header */}
-                        <div className="overflow-y-auto max-h-[85vh]">
-                            {/* Map Section - Absolute top, full width, no margins */}
-                            <div className="relative h-32 bg-gradient-to-r from-gray-600 to-gray-800 overflow-hidden">
-                                {/* Close Button Floating Over Map */}
-                                                <button
-                                    onClick={() => setDetailServiceId(null)}
-                                    className="absolute top-4 right-4 z-10 text-white hover:text-gray-300 p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
-                                                >
-                                    <X className="w-5 h-5" />
-                                                </button>
+                {/* Mobile: Map View */}
+                <div className="lg:hidden flex-1 relative">
+                    <div className="h-full w-full">
+                        {isLoaded ? (
+                            <GoogleMap
+                                mapContainerStyle={{ width: '100%', height: '100%' }}
+                                center={mapCenter}
+                                zoom={getZoomLevel(locationRange)}
+                                options={{
+                                    disableDefaultUI: false,
+                                    zoomControl: true,
+                                    mapTypeControl: false,
+                                    scaleControl: true,
+                                    streetViewControl: false,
+                                    rotateControl: false,
+                                    fullscreenControl: true,
+                                }}
+                                onClick={(e) => {
+                                    if (e.latLng) {
+                                        setIsDrawerOpen(true);
+                                    }
+                                }}
+                            >
+                                {/* Circle for search range */}
+                                <Circle
+                                    center={mapCenter}
+                                    radius={locationRange * 1000}
+                                    options={{
+                                        fillColor: '#3B82F6',
+                                        fillOpacity: 0.1,
+                                        strokeColor: '#3B82F6',
+                                        strokeOpacity: 0.4,
+                                        strokeWeight: 2
+                                    }}
+                                />
+                                {/* Markers for each service */}
+                                {services.map((service, index) => {
+                                    const offset = index * 0.001;
+                                    return (
+                                        <Marker
+                                            key={service.id}
+                                            position={{
+                                                lat: mapCenter.lat + offset,
+                                                lng: mapCenter.lng + offset
+                                            }}
+                                            onClick={() => {
+                                                setSelectedService(service.id);
+                                                setIsDrawerOpen(true);
+                                            }}
+                                            icon={{
+                                                url: selectedService === service.id 
+                                                    ? 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                                            <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="#1E40AF" stroke-width="3"/>
+                                                            <circle cx="20" cy="20" r="8" fill="#FFFFFF"/>
+                                                            <circle cx="20" cy="20" r="4" fill="#3B82F6"/>
+                                                        </svg>
+                                                    `)
+                                                    : 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                                        <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                                                            <circle cx="16" cy="16" r="14" fill="#6B7280" stroke="#4B5563" stroke-width="2"/>
+                                                            <circle cx="16" cy="16" r="6" fill="#FFFFFF"/>
+                                                            <circle cx="16" cy="16" r="3" fill="#6B7280"/>
+                                                        </svg>
+                                                    `),
+                                                scaledSize: new window.google.maps.Size(
+                                                    selectedService === service.id ? 40 : 32,
+                                                    selectedService === service.id ? 40 : 32
+                                                ),
+                                                anchor: new window.google.maps.Point(
+                                                    selectedService === service.id ? 20 : 16,
+                                                    selectedService === service.id ? 20 : 16
+                                                )
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </GoogleMap>
+                        ) : (
+                            <div className="h-full flex items-center justify-center text-sm text-muted-foreground bg-muted">
+                                Cargando mapa...
+                            </div>
+                        )}
+                    </div>
+                    {/* Floating Button to Open Drawer */}
+                    {services.length > 0 && (
+                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                            <Button
+                                onClick={() => setIsDrawerOpen(true)}
+                                size="lg"
+                                className="shadow-lg"
+                            >
+                                <MapPin className="w-4 h-4 mr-2" />
+                                Ver {services.length} {services.length === 1 ? 'profesional' : 'profesionales'}
+                            </Button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Desktop: Right Side - Map */}
+                <div className="hidden lg:block w-1/2 border-l bg-muted/30">
+                    <div className="h-full sticky top-[73px]">
                                 {isLoaded ? (
                                     <GoogleMap
                                         mapContainerStyle={{ width: '100%', height: '100%' }}
-                                        zoom={getZoomLevel(locationRange)}
                                         center={mapCenter}
+                                zoom={getZoomLevel(locationRange)}
                                         options={{
-                                            disableDefaultUI: true,
-                                            gestureHandling: 'none',
-                                            zoomControl: false,
-                                            scrollwheel: false,
-                                            disableDoubleClickZoom: true,
-                                            draggable: false,
-                                            styles: [
-                                                {
-                                                    featureType: 'poi',
-                                                    elementType: 'labels',
-                                                    stylers: [{ visibility: 'off' }]
-                                                }
-                                            ]
-                                        }}
-                                    >
+                                    disableDefaultUI: false,
+                                    zoomControl: true,
+                                    mapTypeControl: false,
+                                    scaleControl: true,
+                                    streetViewControl: false,
+                                    rotateControl: false,
+                                    fullscreenControl: true,
+                                }}
+                            >
+                                {/* Circle for search range */}
                                         <Circle
                                             center={mapCenter}
                                             radius={locationRange * 1000}
                                             options={{
                                                 fillColor: '#3B82F6',
-                                                fillOpacity: 0.2,
-                                                strokeColor: '#FFFFFF',
-                                                strokeOpacity: 0.9,
-                                                strokeWeight: 3,
+                                        fillOpacity: 0.1,
+                                        strokeColor: '#3B82F6',
+                                        strokeOpacity: 0.4,
+                                        strokeWeight: 2
+                                    }}
+                                />
+                                {/* Markers for each service */}
+                                {services.map((service, index) => {
+                                    const offset = index * 0.001;
+                                    return (
+                                        <Marker
+                                            key={service.id}
+                                            position={{
+                                                lat: mapCenter.lat + offset,
+                                                lng: mapCenter.lng + offset
+                                            }}
+                                            onClick={() => setSelectedService(service.id)}
+                                            icon={{
+                                                url: selectedService === service.id 
+                                                    ? 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                                            <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="#1E40AF" stroke-width="3"/>
+                                                            <circle cx="20" cy="20" r="8" fill="#FFFFFF"/>
+                                                            <circle cx="20" cy="20" r="4" fill="#3B82F6"/>
+                                                        </svg>
+                                                    `)
+                                                    : 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                                        <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                                                            <circle cx="16" cy="16" r="14" fill="#6B7280" stroke="#4B5563" stroke-width="2"/>
+                                                            <circle cx="16" cy="16" r="6" fill="#FFFFFF"/>
+                                                            <circle cx="16" cy="16" r="3" fill="#6B7280"/>
+                                                        </svg>
+                                                    `),
+                                                scaledSize: new window.google.maps.Size(
+                                                    selectedService === service.id ? 40 : 32,
+                                                    selectedService === service.id ? 40 : 32
+                                                ),
+                                                anchor: new window.google.maps.Point(
+                                                    selectedService === service.id ? 20 : 16,
+                                                    selectedService === service.id ? 20 : 16
+                                                )
                                             }}
                                         />
+                                    );
+                                })}
                                     </GoogleMap>
                                 ) : (
-                                    <div className="h-full bg-gradient-to-br from-gray-500 to-gray-700 flex items-center justify-center">
-                                        <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full border-2 border-white flex items-center justify-center">
-                                            <MapPin className="w-6 h-6 text-white" />
-                                        </div>
+                            <div className="h-full flex items-center justify-center text-sm text-muted-foreground bg-muted">
+                                Cargando mapa...
                                     </div>
                                 )}
-                                {/* Overlay Info */}
-                                <div className="absolute bottom-2 left-2 bg-white bg-opacity-95 backdrop-blur-sm rounded px-2 py-1">
-                                    <div className="flex items-center gap-1">
-                                        <MapPin className="w-3 h-3 text-blue-600" />
-                                        <span className="text-xs font-medium text-gray-900">{locationRange}km</span>
                                     </div>
                                 </div>
+                                    </div>
+
+            {/* Mobile Drawer with Services */}
+            <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+                <DrawerContent className="max-h-[90vh]">
+                    <DrawerHeader className="border-b">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <DrawerTitle>Profesionales Disponibles</DrawerTitle>
+                                <DrawerDescription>
+                                    {services.length} {services.length === 1 ? 'resultado' : 'resultados'} en {categoryName}
+                                </DrawerDescription>
                             </div>
-                            
-                            {/* Content with padding and top margin */}
-                            <div className="px-6 pb-6 pt-6">
-                            {/* Service Details - Compact */}
-                            <div className="mb-6">
-                                <h4 className="text-sm font-medium text-gray-600 mb-3 uppercase tracking-wide">Detalles del Servicio</h4>
-                                
-                                {/* Service Type and Category */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                                    <div className="bg-blue-50 rounded p-3 border border-blue-200">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Eye className="w-4 h-4 text-blue-600" />
-                                            <span className="text-sm font-medium text-blue-900">Tipo de Servicio</span>
-                                        </div>
-                                        <p className="text-sm text-blue-700">
-                                            {selectedServiceTypeId === 1 ? 'Solo revisión' : 'Revisión completa'}
-                                        </p>
-                                    </div>
-                                    <div className="bg-green-50 rounded p-3 border border-green-200">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <DollarSign className="w-4 h-4 text-green-600" />
-                                            <span className="text-sm font-medium text-green-900">Categoría</span>
-                                        </div>
-                                        <p className="text-sm text-green-700">
-                                            {selectedCategory === 1 ? '🚗 Vehículos' : selectedCategory === 2 ? '🏍️ Motos' : '🏠 Inmuebles'}
-                                        </p>
-                                    </div>
+                            <DrawerClose asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </DrawerClose>
                         </div>
-                                
-                                {/* Service Description */}
-                                {detailService.conditions && (
-                                    <div className="bg-white rounded p-4 border border-gray-200">
-                                        <h5 className="font-medium text-gray-900 mb-2 text-sm">Descripción</h5>
-                                        <p className="text-gray-600 text-sm leading-relaxed mb-3">
-                                            {detailService.conditions}
-                                        </p>
-                                        
-                                        {/* Images within description */}
-                                        {detailService.imageUrls && detailService.imageUrls.length > 0 && (
-                                            <div className="mb-3">
-                                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                                                    {detailService.imageUrls.map((url, index) => (
-                                                        <div key={index} className="bg-white border border-gray-200 rounded overflow-hidden hover:shadow-sm transition-shadow duration-200">
-                                                            <img
-                                                                src={url}
-                                                                alt={`Imagen ${index + 1}`}
-                                                                className="w-full h-20 object-cover"
-                                                            />
+                    </DrawerHeader>
+                    <div className="overflow-y-auto flex-1 px-4 py-4">
+                        {/* Mobile Filters */}
+                        <Card className="mb-4">
+                            <Accordion type="single" collapsible>
+                                <AccordionItem value="filters" className="border-0">
+                                    <AccordionTrigger className="px-4 py-3 font-semibold">Filtros</AccordionTrigger>
+                                    <AccordionContent className="px-4 pb-4">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <Label className="text-sm font-medium text-foreground mb-2 block">Precio</Label>
+                                                <Select value={filters.priceRange} onValueChange={(value: 'all' | 'low' | 'medium' | 'high') => setFilters({...filters, priceRange: value})}>
+                                                    <SelectTrigger className="h-9">
+                                                        <SelectValue placeholder="Todos" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">Todos</SelectItem>
+                                                        <SelectItem value="low">Hasta €50</SelectItem>
+                                                        <SelectItem value="medium">€50 - €150</SelectItem>
+                                                        <SelectItem value="high">Más de €150</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div>
+                                                <Label className="text-sm font-medium text-foreground mb-2 block">Valoración</Label>
+                                                <Select value={filters.rating} onValueChange={(value: 'all' | '4+' | '4.5+') => setFilters({...filters, rating: value})}>
+                                                    <SelectTrigger className="h-9">
+                                                        <SelectValue placeholder="Todas" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">Todas</SelectItem>
+                                                        <SelectItem value="4+">4+ ⭐</SelectItem>
+                                                        <SelectItem value="4.5+">4.5+ ⭐</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        </Card>
+
+                        {/* Error Message */}
+                        {errorMessage && (
+                            <Card className="mb-4 border-destructive/50 bg-destructive/5">
+                                <CardContent className="p-4">
+                                    <p className="text-sm text-destructive">{errorMessage}</p>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Services List */}
+                        <div className="space-y-4">
+                            {services.map((service) => {
+                                const isPro = (service.completedSearches || 0) > 5;
+                                const geometricColors = [
+                                    { shapes: ['#fb923c', '#f472b6', '#facc15'] },
+                                    { shapes: ['#60a5fa', '#22d3ee', '#a78bfa'] },
+                                    { shapes: ['#facc15', '#fb923c', '#f87171'] },
+                                    { shapes: ['#f472b6', '#a78bfa', '#60a5fa'] },
+                                    { shapes: ['#22d3ee', '#60a5fa', '#818cf8'] },
+                                    { shapes: ['#fb923c', '#f87171', '#f472b6'] },
+                                ];
+                                const colorIndex = service.id % geometricColors.length;
+                                const colorScheme = geometricColors[colorIndex];
+
+                                return (
+                                    <Card 
+                                        key={service.id}
+                                        className={`group cursor-pointer transition-all hover:scale-[1.01] hover:shadow-xl overflow-hidden border rounded-2xl ${
+                                            selectedService === service.id
+                                            ? 'border-primary/60 shadow-lg' 
+                                            : 'border-border/50'
+                                        }`}
+                                        onClick={() => setSelectedService(service.id)}
+                                    >
+                                        <div className="relative overflow-hidden rounded-2xl" style={{ 
+                                            minHeight: '250px',
+                                            background: `linear-gradient(135deg, ${colorScheme.shapes[0]}20 0%, ${colorScheme.shapes[1]}25 50%, ${colorScheme.shapes[2]}20 100%)`
+                                        }}>
+                                            <div className="absolute inset-0">
+                                                <div 
+                                                    className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-60"
+                                                    style={{ backgroundColor: colorScheme.shapes[0] }}
+                                                ></div>
+                                                <div 
+                                                    className="absolute bottom-0 left-0 w-40 h-40 rounded-full blur-3xl opacity-60"
+                                                    style={{ backgroundColor: colorScheme.shapes[1] }}
+                                                ></div>
+                                            </div>
+
+                                            <div className="relative z-10 flex items-center justify-center pt-6 pb-2">
+                                                <div className="relative">
+                                                    <Avatar className="h-16 w-16 border-3 border-white/40 shadow-2xl ring-2 ring-white/30">
+                                                        <AvatarImage src={service.expert?.profilePictureUrl} />
+                                                        <AvatarFallback className="bg-slate-200 text-slate-700 border-white/40">
+                                                            <User className="h-8 w-8" />
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    {isPro && (
+                                                        <div className="absolute -top-1 -right-1 bg-primary text-white text-xs font-semibold px-2 py-0.5 rounded-full border border-primary/40 shadow-xl">
+                                                            Pro
                                                         </div>
-                                                    ))}
+                                                    )}
                                                 </div>
                                             </div>
+
+                                            <div className="relative z-20 -mt-8">
+                                                <div className="bg-white/80 backdrop-blur-2xl rounded-2xl border border-white/60 mx-4 mb-4 pt-10 pb-4 px-4 shadow-2xl">
+                                                    <h3 className="text-lg font-bold text-slate-900 mb-1 text-center tracking-tight">
+                                                        {service.expert?.user?.name || 'Experto'}
+                                                    </h3>
+                                                    
+                                                    <p className="text-xs text-slate-700 text-center mb-2 font-medium">
+                                                        {service.expert?.user?.email || `${service.price ? `€${service.price}` : '€72'} por servicio`}
+                                                    </p>
+
+                                                    <div className="flex items-center justify-center gap-1.5 mb-2">
+                                                        {renderStars(service.averageRating || 0)}
+                                                        <span className="text-xs text-slate-600 font-medium">({service.expert?.reviews?.length || 0})</span>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-center gap-2 mb-3">
+                                                        {renderDeliverableTypes(service, true)}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 pt-2.5 border-t border-slate-200">
+                                                        <Button
+                                                            variant={selectedService === service.id ? "default" : "secondary"}
+                                                            size="sm"
+                                                            className="flex-1 bg-slate-900 hover:bg-slate-800 text-white border-slate-700 font-medium shadow-lg transition-all text-xs h-8"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedService(service.id);
+                                                            }}
+                                                        >
+                                                            {selectedService === service.id ? (
+                                                                <>
+                                                                    <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                                                                    Seleccionado
+                                                                </>
+                                                            ) : (
+                                                                'Seleccionar'
+                                                            )}
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200 rounded-lg shadow-sm h-8 w-8"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setDetailServiceId(service.id);
+                                                            }}
+                                                        >
+                                                            <Eye className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+
+                        {/* Continue Button */}
+                        <div className="mt-6 pb-4">
+                            <Button 
+                                onClick={() => {
+                                    handleContinue();
+                                    setIsDrawerOpen(false);
+                                }}
+                                disabled={!selectedService} 
+                                size="lg"
+                                className="w-full h-11 text-base font-medium shadow-lg"
+                            >
+                                Continuar
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </DrawerContent>
+            </Drawer>
+                                
+            {/* Modal */}
+            {detailService && (
+                <Dialog open={!!detailServiceId} onOpenChange={() => setDetailServiceId(null)}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>{detailService.expert?.user?.name}</DialogTitle>
+                            <DialogClose asChild>
+                                <Button variant="ghost" className="absolute right-4 top-4"><X className="h-4 w-4" /></Button>
+                            </DialogClose>
+                        </DialogHeader>
+                        <Tabs defaultValue="details" className="relative mr-auto w-full">
+                            <TabsList className="w-full">
+                                <TabsTrigger value="details">Detalles</TabsTrigger>
+                                <TabsTrigger value="reviews">Reseñas</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="details" className="space-y-4">
+                                <p className="text-sm text-muted-foreground">{detailService.conditions}</p>
+                                        {detailService.imageUrls && detailService.imageUrls.length > 0 && (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {detailService.imageUrls.map((url, i) => (
+                                            <img key={i} src={url} alt="" className="rounded-md w-full h-24 object-cover" />
+                                        ))}
+                                            </div>
                                         )}
-                                        
-                                        {/* Deliverable Types */}
-                                        <div className="pt-2 border-t border-gray-100 mb-3">
-                                            <h5 className="font-medium text-gray-900 mb-2 text-sm">Entregables incluidos</h5>
+                                <div className="flex gap-2">
                                             {renderDeliverableTypes(detailService)}
                                         </div>
-
-                                        {/* Service Features */}
-                                        <div className="pt-2 border-t border-gray-100">
-                                            <div className="flex flex-wrap gap-1">
-                                                {selectedServiceTypeId === 1 ? (
-                                                    <>
-                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Revisión presencial</span>
-                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Informe detallado</span>
-                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Verificación directa</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Revisión completa</span>
-                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Análisis detallado</span>
-                                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">Informe profesional</span>
-                                            </>
-                                        )}
-                                    </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                                                        
-
-                            {/* Contact Information */}
-                            <div className="mb-6">
-                                <h4 className="text-sm font-medium text-gray-600 mb-3 uppercase tracking-wide">Información de Contacto</h4>
-                                <div className="bg-gray-50 rounded p-4 border border-gray-200">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                                <div>
-                                            <h5 className="text-sm font-medium text-gray-900 mb-1">Disponibilidad</h5>
-                                            <div className="space-y-1 text-xs text-gray-600">
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="w-3 h-3 text-green-500" />
-                                                    <span>Respuesta en 2-4h</span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="w-3 h-3 text-blue-500" />
-                                                    <span>Lun-Vie: 9:00-18:00</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <h5 className="text-sm font-medium text-gray-900 mb-1">Precio</h5>
-                                            <div className="text-lg font-bold text-blue-600">
-                                                {detailService.price ? `${detailService.price}€` : 'Consultar'}
-                                            </div>
-                                            <p className="text-xs text-gray-500">Precio base</p>
-                        </div>
-                                    </div>
-                            </div>
-                        </div>
-
-                            {/* Reviews Section */}
-                        <div className="mb-6">
-                            <EnhancedReviewsList 
-                                reviews={detailService.expert?.reviews || []}
-                                showReviewerInfo={true}
-                                showImages={true}
-                                maxImages={3}
-                                maxReviews={3}
-                            />
-                        </div>
-
-                                                                                                            {/* Action Buttons */}
-                            <div className="pt-4 border-t border-gray-200">
-                                <div className="flex justify-center">
-                        <button
-                            onClick={() => setDetailServiceId(null)}
-                                        className="px-6 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm font-medium"
-                        >
-                            Cerrar
-                        </button>
-                    </div>
-                </div>
-                            </div>
-                        </div>
-            </div>
-                </div>
+                            </TabsContent>
+                            <TabsContent value="reviews">
+                                <EnhancedReviewsList reviews={detailService.expert?.reviews || []} maxReviews={3} />
+                            </TabsContent>
+                        </Tabs>
+                    </DialogContent>
+                </Dialog>
             )}
         </div>
     );

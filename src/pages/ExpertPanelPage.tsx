@@ -14,11 +14,22 @@ import {
     DrawerFooter,
     DrawerClose,
 } from '../components/ui/drawer';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
 import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError } from '../hooks/useExpertStripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
+import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
 import { useExpertHires } from '../hooks/useExpertHires';
 import { useServices } from '../hooks/useServices';
@@ -135,8 +146,20 @@ export function ExpertPanelPage() {
     const { openAccountLink, isLoading: isAccountLinkLoading } = useStripeAccountLink();
     const { toggleVacationMode, isToggling } = useVacationMode();
     
+    // Estado para mostrar overlay de carga de Stripe
+    const [isStripeLoading, setIsStripeLoading] = useState(false);
+    
     // Estado para el modal de confirmación de modo vacaciones
     const [showVacationModal, setShowVacationModal] = useState(false);
+    
+    // Estado para el diálogo de servicio duplicado
+    const [duplicateServiceDialog, setDuplicateServiceDialog] = useState<{
+        open: boolean;
+        existingServiceId?: number;
+        categoryName?: string;
+        serviceTypeName?: string;
+        message?: string;
+    }>({ open: false });
 
     // Limpiar cache cuando el estado cambia a aprobado (solo una vez)
     const [hasClearedCache, setHasClearedCache] = useState(false);
@@ -488,7 +511,28 @@ export function ExpertPanelPage() {
             // Manejar errores específicos de Stripe
             if (error.stripeStatus) {
                 handleStripeServiceError(error);
+            } 
+            // Manejar error de combinación categoría + tipo duplicada
+            else if (error.isDuplicateComboError && error.existingServiceId && error.categoryName && error.serviceTypeName) {
+                console.log('🔴 Setting duplicate service dialog:', {
+                    open: true,
+                    existingServiceId: error.existingServiceId,
+                    categoryName: error.categoryName,
+                    serviceTypeName: error.serviceTypeName,
+                    message: error.message
+                });
+                // Limpiar errores del formulario para que no se muestre el error inline
+                setFormErrors({});
+                // Mostrar el AlertDialog
+                setDuplicateServiceDialog({
+                    open: true,
+                    existingServiceId: error.existingServiceId,
+                    categoryName: error.categoryName,
+                    serviceTypeName: error.serviceTypeName,
+                    message: error.message
+                });
             } else {
+                console.log('🔴 Error no es duplicate combo:', error);
                 setFormErrors({ general: error.message || 'Error al crear el servicio' });
             }
         }
@@ -637,82 +681,92 @@ export function ExpertPanelPage() {
 
     if (!canAccessPanel) {
         return (
-            <div className="min-h-screen bg-background relative overflow-hidden">
-                {/* Fondo decorativo sutil para PC */}
-                <div className="hidden lg:block absolute inset-0">
-                    {/* Patrón de puntos sutiles */}
-                    <div className="absolute inset-0 opacity-[0.02]" style={{
-                        backgroundImage: `radial-gradient(circle at 1px 1px, #000 1px, transparent 0)`,
-                        backgroundSize: '40px 40px'
-                    }}></div>
+            <>
+                <div className="min-h-screen bg-background relative overflow-hidden">
+                    {/* Fondo decorativo sutil para PC */}
+                    <div className="hidden lg:block absolute inset-0">
+                        {/* Patrón de puntos sutiles */}
+                        <div className="absolute inset-0 opacity-[0.02]" style={{
+                            backgroundImage: `radial-gradient(circle at 1px 1px, #000 1px, transparent 0)`,
+                            backgroundSize: '40px 40px'
+                        }}></div>
+                        
+                        {/* Gradientes sutiles */}
+                        <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-gray-50/30 to-transparent"></div>
+                        <div className="absolute bottom-0 right-0 w-full h-1/3 bg-gradient-to-t from-gray-50/20 to-transparent"></div>
+                        
+                        {/* Elementos decorativos muy sutiles */}
+                        <div className="absolute top-32 left-32 w-96 h-96 bg-gradient-to-br from-blue-50/40 to-transparent rounded-full filter blur-3xl"></div>
+                        <div className="absolute bottom-32 right-32 w-96 h-96 bg-gradient-to-tl from-indigo-50/30 to-transparent rounded-full filter blur-3xl"></div>
+                    </div>
                     
-                    {/* Gradientes sutiles */}
-                    <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-gray-50/30 to-transparent"></div>
-                    <div className="absolute bottom-0 right-0 w-full h-1/3 bg-gradient-to-t from-gray-50/20 to-transparent"></div>
-                    
-                    {/* Elementos decorativos muy sutiles */}
-                    <div className="absolute top-32 left-32 w-96 h-96 bg-gradient-to-br from-blue-50/40 to-transparent rounded-full filter blur-3xl"></div>
-                    <div className="absolute bottom-32 right-32 w-96 h-96 bg-gradient-to-tl from-indigo-50/30 to-transparent rounded-full filter blur-3xl"></div>
-                </div>
-                
-                <div className="relative z-10 px-6 py-8">
-                    <div className="max-w-4xl mx-auto">
-                        <button
-                            onClick={() => navigate('/')}
-                            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            <span className="text-sm">Volver</span>
-                        </button>
+                    <div className="relative z-10 px-6 py-8">
+                        <div className="max-w-4xl mx-auto">
+                            <button
+                                onClick={() => navigate('/')}
+                                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                <span className="text-sm">Volver</span>
+                            </button>
 
-                        <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[calc(100vh-300px)]">
-                        <StripeStatusCard
-                        isLoadingOnboarding={isStartingOnboarding || isRestartingOnboarding}
-                        onSetupStripe={async () => {
-                            console.log('ExpertPanelPage: onSetupStripe called');
-                            if (isStartingOnboarding || isRestartingOnboarding) return;
-                            try {
-                                if (stripeStatus?.stripeStatus === 'Rejected') {
-                                    await restartAndStartOnboarding();
-                                } else {
-                                await startOnboarding();
+                            <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[calc(100vh-300px)]">
+                            <StripeStatusCard
+                            isLoadingOnboarding={isStartingOnboarding || isRestartingOnboarding}
+                            onSetupStripe={async () => {
+                                console.log('ExpertPanelPage: onSetupStripe called');
+                                if (isStartingOnboarding || isRestartingOnboarding) return;
+                                setIsStripeLoading(true);
+                                try {
+                                    if (stripeStatus?.stripeStatus === 'Rejected') {
+                                        await restartAndStartOnboarding();
+                                    } else {
+                                    await startOnboarding();
+                                    }
+                                } catch (error: any) {
+                                    setIsStripeLoading(false);
+                                    console.error('Error starting Stripe onboarding:', error);
+                                    window.dispatchEvent(new CustomEvent('showNotification', {
+                                        detail: {
+                                            type: 'error',
+                                            message: error?.message || 'No se pudo iniciar el proceso en Stripe. Inténtalo de nuevo.',
+                                        },
+                                    }));
                                 }
-                            } catch (error: any) {
-                                console.error('Error starting Stripe onboarding:', error);
+                            }}
+                            onAccessDashboard={async () => {
+                                setIsStripeLoading(true);
+                                try {
+                                    await openAccountLink();
+                                } catch (error) {
+                                    setIsStripeLoading(false);
+                                    console.error('Error opening account link:', error);
+                                    window.dispatchEvent(new CustomEvent('showNotification', {
+                                        detail: {
+                                            type: 'error',
+                                            message: 'Error al abrir el enlace de actualización. Inténtalo de nuevo.',
+                                        },
+                                    }));
+                                }
+                            }}
+                            onContactSupport={() => {
                                 window.dispatchEvent(new CustomEvent('showNotification', {
                                     detail: {
-                                        type: 'error',
-                                        message: error?.message || 'No se pudo iniciar el proceso en Stripe. Inténtalo de nuevo.',
+                                        type: 'info',
+                                        message: 'Contacta soporte en info@atrapo.io',
                                     },
                                 }));
-                            }
-                        }}
-                        onAccessDashboard={async () => {
-                            try {
-                                await openAccountLink();
-                            } catch (error) {
-                                console.error('Error opening account link:', error);
-                                window.dispatchEvent(new CustomEvent('showNotification', {
-                                    detail: {
-                                        type: 'error',
-                                        message: 'Error al abrir el enlace de actualización. Inténtalo de nuevo.',
-                                    },
-                                }));
-                            }
-                        }}
-                        onContactSupport={() => {
-                            window.dispatchEvent(new CustomEvent('showNotification', {
-                                detail: {
-                                    type: 'info',
-                                    message: 'Contacta soporte en info@atrapo.io',
-                                },
-                            }));
-                        }}
-                    />
+                            }}
+                        />
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+                <StripeLoadingOverlay 
+                    isOpen={isStripeLoading || isStartingOnboarding || isRestartingOnboarding || isAccountLinkLoading}
+                    message={isAccountLinkLoading ? "Abriendo panel de Stripe..." : "Configurando Stripe..."}
+                />
+            </>
         );
     }
 
@@ -1279,6 +1333,62 @@ export function ExpertPanelPage() {
                     </div>
                 </DrawerContent>
             </Drawer>
+
+            {/* Diálogo de servicio duplicado (combinación categoría + tipo) */}
+            <AlertDialog 
+                open={duplicateServiceDialog.open} 
+                onOpenChange={(open: boolean) => {
+                    console.log('AlertDialog onOpenChange:', open);
+                    setDuplicateServiceDialog(prev => ({ ...prev, open }));
+                }}
+            >
+                <AlertDialogContent className="sm:max-w-[500px]">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-destructive">Servicio ya existe</AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm text-foreground">
+                            {duplicateServiceDialog.message || 
+                                `Ya tienes un servicio activo en la categoría '${duplicateServiceDialog.categoryName}' con el tipo de servicio '${duplicateServiceDialog.serviceTypeName}'.`}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    {duplicateServiceDialog.categoryName && duplicateServiceDialog.serviceTypeName && (
+                        <div className="py-3 px-4 bg-destructive/10 border border-destructive/20 rounded-md">
+                            <p className="text-xs text-muted-foreground mb-1.5 font-medium">Combinación existente:</p>
+                            <p className="text-sm font-semibold text-destructive">
+                                {duplicateServiceDialog.categoryName} + {duplicateServiceDialog.serviceTypeName}
+                            </p>
+                        </div>
+                    )}
+                    <AlertDialogFooter className="gap-2 sm:gap-0">
+                        <AlertDialogCancel 
+                            onClick={() => {
+                                console.log('Cancel clicked');
+                                setDuplicateServiceDialog({ open: false });
+                            }} 
+                            className="w-full sm:w-auto"
+                        >
+                            Cancelar
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                console.log('Update service clicked', duplicateServiceDialog.existingServiceId);
+                                if (duplicateServiceDialog.existingServiceId) {
+                                    // Buscar el servicio existente y abrirlo para edición
+                                    const existingService = services?.find(s => s.id === duplicateServiceDialog.existingServiceId);
+                                    if (existingService) {
+                                        // Usar handleEditService para cargar correctamente todos los datos
+                                        handleEditService(existingService);
+                                        setShowServiceForm(true);
+                                    }
+                                }
+                                setDuplicateServiceDialog({ open: false });
+                            }}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full sm:w-auto"
+                        >
+                            Actualizar servicio existente
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
