@@ -654,7 +654,7 @@ function BecomeExpertPage() {
                                         <label htmlFor="acceptTerms" className="text-xs text-gray-600 leading-relaxed cursor-pointer">
                                             Acepto las{' '}
                                             <a href="/privacy-policy.html" target="_blank" className="text-gray-900 hover:underline font-medium">
-                                                condiciones de uso de atrapo.io
+                                                condiciones de uso de inspecciono.io
                                             </a>
                                             {' '}y confirmo que he leído la política de privacidad
                                         </label>

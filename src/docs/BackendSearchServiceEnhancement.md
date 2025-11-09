@@ -265,8 +265,8 @@ GET /api/SearchService/expert/1
           "profilePictureUrl": "https://example.com/avatar.jpg"
         },
         "imageUrls": [
-          "https://storage.googleapis.com/atrapobucket/reviews/image1.jpg",
-          "https://storage.googleapis.com/atrapobucket/reviews/image2.jpg"
+          "https://storage.googleapis.com/inspeccionobucket/reviews/image1.jpg",
+          "https://storage.googleapis.com/inspeccionobucket/reviews/image2.jpg"
         ]
       }
     ]

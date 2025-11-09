@@ -200,7 +200,7 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                 <p className="text-gray-600 text-xs lg:text-sm">
                     {status.stripeStatus === 'NotRequested' 
                         ? 'Completa la configuración de tu cuenta de pagos para finalizar tu registro como experto'
-                        : 'Estado actual de tu cuenta de pagos de Atrapo'
+                        : 'Estado actual de tu cuenta de pagos de Inspecciono'
                     }
                 </p>
             </div>
@@ -238,8 +238,8 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                 <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                     <p className="text-sm text-gray-700">
                         <span className="font-medium">Soporte técnico:</span>{' '}
-                        <a href="mailto:info@atrapo.io" className="text-blue-600 hover:text-blue-700 underline">
-                            info@atrapo.io
+                        <a href="mailto:info@inspecciono.io" className="text-blue-600 hover:text-blue-700 underline">
+                            info@inspecciono.io
                         </a>
                     </p>
                 </div>

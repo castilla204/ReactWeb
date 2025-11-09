@@ -753,7 +753,7 @@ export function ExpertPanelPage() {
                                 window.dispatchEvent(new CustomEvent('showNotification', {
                                     detail: {
                                         type: 'info',
-                                        message: 'Contacta soporte en info@atrapo.io',
+                                        message: 'Contacta soporte en info@inspecciono.io',
                                     },
                                 }));
                             }}

@@ -52,12 +52,13 @@ export function GoogleAuth() {
                 decoded.sub
             );
 
-            if (!authResponse.user.phoneVerified) {
-                setAuthToken(authResponse.token);
-                setUser(authResponse.user);
-                navigate('/verify-phone');
-                return;
-            }
+            // Verificación de teléfono desactivada temporalmente
+            // if (!authResponse.user.phoneVerified) {
+            //     setAuthToken(authResponse.token);
+            //     setUser(authResponse.user);
+            //     navigate('/verify-phone');
+            //     return;
+            // }
 
             setAuthToken(authResponse.token);
             setUser(authResponse.user);

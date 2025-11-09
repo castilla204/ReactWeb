@@ -29,11 +29,11 @@ export function PrivacyPolicy() {
                     <div className="mb-6 pb-4 border-b border-gray-100">
                         <h2 className="text-sm font-medium text-gray-700 mb-3">Información de la Empresa</h2>
                         <div className="text-xs text-gray-600 space-y-1">
-                            <p><strong>Razón Social:</strong> Atrapo</p>
+                            <p><strong>Razón Social:</strong> Inspecciono</p>
                             <p><strong>Dirección:</strong> C/Pedro I de Aragón, 14, Soria 50003, España</p>
-                            <p><strong>Email:</strong> info@atrapo.io</p>
+                            <p><strong>Email:</strong> info@inspecciono.io</p>
                             <p><strong>Teléfono:</strong> 611962053</p>
-                            <p><strong>Sitio Web:</strong> https://atrapo.io</p>
+                            <p><strong>Sitio Web:</strong> https://inspecciono.io</p>
                         </div>
                     </div>
 
@@ -42,9 +42,9 @@ export function PrivacyPolicy() {
                         <section>
                             <h2 className="text-sm font-medium text-gray-700 mb-3">1. Introducción</h2>
                             <p className="text-sm text-gray-700 leading-relaxed mb-3">
-                                Esta Política de Privacidad describe las políticas de <strong>Atrapo</strong> sobre la recopilación, 
+                                Esta Política de Privacidad describe las políticas de <strong>Inspecciono</strong> sobre la recopilación, 
                                 uso y divulgación de su información que recopilamos cuando utiliza nuestro sitio web 
-                                (https://atrapo.io) y nuestros servicios (el "Servicio").
+                                (https://inspecciono.io) y nuestros servicios (el "Servicio").
                             </p>
                             <p className="text-sm text-gray-700 leading-relaxed">
                                 Al acceder o utilizar el Servicio, usted consiente la recopilación, uso y divulgación de su 
@@ -197,7 +197,7 @@ export function PrivacyPolicy() {
                                 activo de sus datos, y otros derechos relevantes según las leyes aplicables.
                             </p>
                             <p className="text-sm text-gray-700 leading-relaxed">
-                                <strong>Para ejercer sus derechos:</strong> Puede escribirnos a <strong>info@atrapo.io</strong>. 
+                                <strong>Para ejercer sus derechos:</strong> Puede escribirnos a <strong>info@inspecciono.io</strong>. 
                                 Responderemos a su solicitud de acuerdo con la ley aplicable.
                             </p>
                         </section>
@@ -221,7 +221,7 @@ export function PrivacyPolicy() {
                                 puede contactar a nuestro Oficial de Protección de Datos:
                             </p>
                             <div className="text-xs text-gray-700 space-y-1">
-                                <p><strong>Email:</strong> info@atrapo.io</p>
+                                <p><strong>Email:</strong> info@inspecciono.io</p>
                                 <p><strong>Dirección:</strong> C/Pedro I de Aragón, 14, Soria 50003, España</p>
                                 <p>Abordaremos sus preocupaciones de acuerdo con la ley aplicable.</p>
                             </div>
