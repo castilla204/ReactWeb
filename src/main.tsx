@@ -7,20 +7,11 @@ import { AuthProvider } from './contexts/AuthContext'
 import { CategoryProvider } from './contexts/CategoryContext'
 import './index.css'
 
-// Initialize theme on app load
-const initializeTheme = () => {
-  // Try to get theme from localStorage first (for immediate feedback)
-  // This prevents flash of wrong theme while settings load
-  const savedTheme = localStorage.getItem('theme') || 'light'
-  if (savedTheme === 'dark') {
-    document.documentElement.classList.add('dark')
-  } else {
-    document.documentElement.classList.remove('dark')
-  }
+// Ensure light mode is always active (dark mode removed)
+if (typeof document !== 'undefined') {
+  document.documentElement.classList.remove('dark')
+  localStorage.removeItem('theme')
 }
-
-// Run initialization
-initializeTheme()
 
 const queryClient = new QueryClient({
     defaultOptions: {

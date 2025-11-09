@@ -392,28 +392,44 @@ export function LocationMap({
             return;
         }
 
+        // Verificar que OverlayView esté disponible
         if (!window.google?.maps?.OverlayView) {
             console.warn('⚠️ OverlayView no disponible aún, reintentando en 200ms...');
             const retryTimer = setTimeout(() => {
-                if (selectedLocation && map && createRadarOverlay) {
+                if (selectedLocation && map && createRadarOverlay && window.google?.maps?.OverlayView) {
                     const newOverlay = createRadarOverlay(new google.maps.LatLng(selectedLocation.lat, selectedLocation.lng), locationRange);
                     if (newOverlay) {
                         newOverlay.setMap(map);
                         setRadarOverlay(newOverlay);
+                        // Forzar redibujado después de un pequeño delay
+                        setTimeout(() => {
+                            if (newOverlay.getMap()) {
+                                google.maps.event.trigger(newOverlay.getMap()!, 'resize');
+                            }
+                        }, 100);
                     }
                 }
             }, 200);
             return () => clearTimeout(retryTimer);
         }
 
+        // Si ya existe un radar overlay, verificar si necesita actualizarse
         if (radarOverlay && selectedLocation) {
             const currentMap = radarOverlay.getMap();
             if (currentMap !== map) {
+                // El mapa cambió, recrear el overlay
                 radarOverlay.setMap(null);
                 setRadarOverlay(null);
             } else {
+                // Actualizar posición del radar existente
                 const newPosition = new google.maps.LatLng(selectedLocation.lat, selectedLocation.lng);
                 radarOverlay.updatePosition(newPosition);
+                // Forzar redibujado
+                setTimeout(() => {
+                    if (radarOverlay.getMap()) {
+                        google.maps.event.trigger(radarOverlay.getMap()!, 'resize');
+                    }
+                }, 50);
                 return;
             }
         }
@@ -426,7 +442,17 @@ export function LocationMap({
             return;
         }
 
-        const createRadarWithRetry = (retries = 3, delay = 100) => {
+        // Crear nuevo radar overlay con retry logic
+        const createRadarWithRetry = (retries = 5, delay = 150) => {
+            if (!window.google?.maps?.OverlayView) {
+                if (retries > 0) {
+                    setTimeout(() => {
+                        createRadarWithRetry(retries - 1, delay * 1.2);
+                    }, delay);
+                }
+                return;
+            }
+
             const newOverlay = createRadarOverlay(new google.maps.LatLng(selectedLocation.lat, selectedLocation.lng), locationRange);
 
             if (newOverlay) {
@@ -434,23 +460,20 @@ export function LocationMap({
                 newOverlay.setMap(map);
                 setRadarOverlay(newOverlay);
 
-                setTimeout(() => {
-                    if (newOverlay && newOverlay.getMap()) {
-                        const mapInstance = newOverlay.getMap();
-                        if (mapInstance) {
-                            google.maps.event.trigger(mapInstance, 'resize');
+                // Múltiples intentos de resize para asegurar que se dibuje correctamente
+                const resizeAttempts = [50, 150, 300, 500];
+                resizeAttempts.forEach((delay, index) => {
+                    setTimeout(() => {
+                        if (newOverlay && newOverlay.getMap()) {
+                            const mapInstance = newOverlay.getMap();
+                            if (mapInstance) {
+                                google.maps.event.trigger(mapInstance, 'resize');
+                                // Forzar redibujado del overlay
+                                newOverlay.updatePosition(new google.maps.LatLng(selectedLocation.lat, selectedLocation.lng));
+                            }
                         }
-                    }
-                }, 100);
-
-                setTimeout(() => {
-                    if (newOverlay && newOverlay.getMap()) {
-                        const mapInstance = newOverlay.getMap();
-                        if (mapInstance) {
-                            google.maps.event.trigger(mapInstance, 'resize');
-                        }
-                    }
-                }, 300);
+                    }, delay);
+                });
             } else if (retries > 0) {
                 console.warn(`⚠️ No se pudo crear RadarOverlay, reintentando en ${delay}ms... (${retries} intentos restantes)`);
                 setTimeout(() => {
@@ -461,9 +484,10 @@ export function LocationMap({
             }
         };
 
+        // Iniciar creación con un pequeño delay para asegurar que el mapa esté completamente listo
         const initTimer = setTimeout(() => {
             createRadarWithRetry();
-        }, 50);
+        }, 100);
 
         return () => {
             clearTimeout(initTimer);
@@ -484,6 +508,10 @@ export function LocationMap({
         if (onMapLoad) {
             onMapLoad(mapInstance);
         }
+        // Forzar un resize después de que el mapa se carga para asegurar que el radar se dibuje correctamente
+        setTimeout(() => {
+            google.maps.event.trigger(mapInstance, 'resize');
+        }, 100);
     };
 
     const handleMapIdle = () => {
@@ -492,6 +520,12 @@ export function LocationMap({
             if (mapInstance) {
                 google.maps.event.trigger(mapInstance, 'resize');
             }
+        }
+        // Asegurar que el radar se dibuje cuando el mapa está idle
+        if (radarOverlay && selectedLocation) {
+            setTimeout(() => {
+                radarOverlay.updatePosition(new google.maps.LatLng(selectedLocation.lat, selectedLocation.lng));
+            }, 50);
         }
     };
 
@@ -523,37 +557,13 @@ export function LocationMap({
                             clickable={true}
                             icon={{
                                 url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                                    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                        <defs>
-                                            <filter id="glow-point-expert-${expert.id}">
-                                                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                                                <feMerge>
-                                                    <feMergeNode in="coloredBlur"/>
-                                                    <feMergeNode in="SourceGraphic"/>
-                                                </feMerge>
-                                            </filter>
-                                            <style>
-                                                @keyframes pulse-point-expert-${expert.id} {
-                                                    0% { opacity: 1; transform: scale(1); }
-                                                    50% { opacity: 0.7; transform: scale(1.4); }
-                                                    100% { opacity: 1; transform: scale(1); }
-                                                }
-                                                .pulse-point-expert-${expert.id} {
-                                                    animation: pulse-point-expert-${expert.id} 1.5s ease-in-out infinite;
-                                                }
-                                            </style>
-                                        </defs>
-                                        <circle cx="10" cy="10" r="6"
-                                                fill="#3B82F6"
-                                                stroke="#FFFFFF"
-                                                stroke-width="2"
-                                                filter="url(#glow-point-expert-${expert.id})"
-                                                class="pulse-point-expert-${expert.id}"/>
-                                        <circle cx="10" cy="10" r="3" fill="#FFFFFF" opacity="0.9"/>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="12" cy="12" r="8" fill="#3B82F6" stroke="#FFFFFF" stroke-width="2"/>
+                                        <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
                                     </svg>
                                 `),
-                                scaledSize: new window.google.maps.Size(20, 20),
-                                anchor: new window.google.maps.Point(10, 10)
+                                scaledSize: new window.google.maps.Size(24, 24),
+                                anchor: new window.google.maps.Point(12, 12)
                             }}
                         />
                     );
@@ -575,36 +585,15 @@ export function LocationMap({
                                 <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
                                     <!-- Área de clic invisible más grande -->
                                     <circle cx="20" cy="20" r="18" fill="transparent" />
-                                    <!-- Icono visible -->
-                                    <g transform="translate(10, 10)">
-                                    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                    <defs>
-                                        <filter id="glow-point-${service.id}">
-                                            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                                            <feMerge>
-                                                <feMergeNode in="coloredBlur"/>
-                                                <feMergeNode in="SourceGraphic"/>
-                                            </feMerge>
-                                        </filter>
-                                        <style>
-                                            @keyframes pulse-point-${service.id} {
-                                                0% { opacity: 1; transform: scale(1); }
-                                                50% { opacity: 0.7; transform: scale(1.4); }
-                                                100% { opacity: 1; transform: scale(1); }
-                                            }
-                                            .pulse-point-${service.id} {
-                                                animation: pulse-point-${service.id} 1.5s ease-in-out infinite;
-                                            }
-                                        </style>
-                                    </defs>
-                                    <circle cx="10" cy="10" r="6"
-                                            fill="${isSelected ? '#10B981' : '#3B82F6'}"
-                                            stroke="#FFFFFF"
-                                            stroke-width="2"
-                                            filter="url(#glow-point-${service.id})"
-                                            class="pulse-point-${service.id}"/>
-                                    <circle cx="10" cy="10" r="3" fill="#FFFFFF" opacity="0.9"/>
-                                    </svg>
+                                    <!-- Icono visible - Pin style -->
+                                    <g transform="translate(8, 8)">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M12 2 C8.13 2 5 5.13 5 9 C5 14.25 12 22 12 22 C12 22 19 14.25 19 9 C19 5.13 15.87 2 12 2 Z" 
+                                                  fill="${isSelected ? '#10B981' : '#3B82F6'}" 
+                                                  stroke="#FFFFFF" 
+                                                  stroke-width="2"/>
+                                            <circle cx="12" cy="9" r="3" fill="#FFFFFF"/>
+                                        </svg>
                                     </g>
                                 </svg>
                             `),

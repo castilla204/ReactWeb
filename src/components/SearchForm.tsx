@@ -165,12 +165,13 @@ export default function SearchForm({
                         setShowSubscriptions(true);
                     },
                 });
-            } else if (err.response?.status === 403 && errorMessage.includes("Phone verification required")) {
-                setNotification({
-                    type: 'error',
-                    message: '📱 Verificación de teléfono requerida para crear búsquedas.',
-                    action: () => setCurrentStep(0),
-                });
+            // Verificación de teléfono desactivada temporalmente
+            // } else if (err.response?.status === 403 && errorMessage.includes("Phone verification required")) {
+            //     setNotification({
+            //         type: 'error',
+            //         message: '📱 Verificación de teléfono requerida para crear búsquedas.',
+            //         action: () => setCurrentStep(0),
+            //     });
             } else {
                 setNotification({
                     type: 'error',
@@ -192,20 +193,41 @@ export default function SearchForm({
             {/* Header Section - Fixed */}
             <div className="sticky top-0 z-50 bg-background border-b">
                 <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center gap-3">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleBack}
-                            className="text-muted-foreground hover:text-foreground"
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Volver
-                        </Button>
-                        <Separator orientation="vertical" className="h-6" />
-                        <h1 className="text-xl font-bold text-foreground">
-                            Checkout
-                        </h1>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleBack}
+                                className="text-muted-foreground hover:text-foreground"
+                            >
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                Volver
+                            </Button>
+                            <Separator orientation="vertical" className="h-6" />
+                            <div>
+                                <h1 className="text-lg font-semibold text-foreground mb-2">
+                                    Checkout
+                                </h1>
+                                {/* Timeline del proceso */}
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-1 text-primary">
+                                        <div className="w-2 h-2 rounded-full bg-primary" />
+                                        <span>Ubicación</span>
+                                    </div>
+                                    <ArrowRight className="w-3 h-3" />
+                                    <div className="flex items-center gap-1 text-primary">
+                                        <div className="w-2 h-2 rounded-full bg-primary" />
+                                        <span>Experto</span>
+                                    </div>
+                                    <ArrowRight className="w-3 h-3" />
+                                    <div className="flex items-center gap-1 text-primary">
+                                        <div className="w-2 h-2 rounded-full bg-primary" />
+                                        <span>Pago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
