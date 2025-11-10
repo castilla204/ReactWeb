@@ -808,8 +808,8 @@ const SearchCreationPage: React.FC = () => {
                                         {/* Background Image */}
                                         <div className="absolute inset-0">
                                             <img 
-                                                src={new URL('../media/revisioncoche.jpg', import.meta.url).href}
-                                                alt="Inspección profesional"
+                                                src="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+                                                alt="Inspección profesional de vehículos"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
                                                     const img = e.target as HTMLImageElement;

@@ -47,62 +47,106 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
   const searchInputId = React.useMemo(() => `search-input-${Math.random().toString(36).substr(2, 9)}`, []);
   const mapRef = useRef<HTMLDivElement>(null);
   
-  const getCoordinates = () => {
-    if (expertLocation) {
-      return {
-        lat: expertLocation.latitude,
-        lng: expertLocation.longitude,
-        radius: expertRange || 25
-      };
-    }
-    
-    if (service?.searchHire?.service) {
-      const serviceData = service.searchHire.service;
-      const lat = parseFloat(serviceData.expertLatitude);
-      const lng = parseFloat(serviceData.expertLongitude);
-      return {
-        lat: lat || 40.4168,
-        lng: lng || -3.7038,
-        radius: serviceData.locationRange || 25
-      };
-    }
-    
-    if (initialLocation) {
-      return {
-        lat: initialLocation.latitude,
-        lng: initialLocation.longitude,
-        radius: radius || 500
-      };
-    }
-    
-    return {
-      lat: latitude || 40.4168,
-      lng: longitude || -3.7038,
-      radius: radius || 500
-    };
-  };
+  const getCoordinates = () => {
+    // Validar y convertir a número (maneja tanto strings como números)
+    const toValidNumber = (value: any): number | null => {
+      if (value === null || value === undefined) return null;
+      const num = typeof value === 'string' ? parseFloat(value) : Number(value);
+      return (typeof num === 'number' && !isNaN(num) && isFinite(num)) ? num : null;
+    };
+    
+    // Prioridad 1: expertLocation (puede venir como string o número)
+    if (expertLocation) {
+      const lat = toValidNumber(expertLocation.latitude);
+      const lng = toValidNumber(expertLocation.longitude);
+      if (lat !== null && lng !== null) {
+        const range = toValidNumber(expertRange);
+        console.log('[AppointmentMap] Usando expertLocation:', { lat, lng, range: range || 25 });
+        return {
+          lat: lat,
+          lng: lng,
+          radius: range !== null ? range : 25
+        };
+      }
+    }
+    
+    // Prioridad 2: service.searchHire.service (puede venir como string)
+    if (service?.searchHire?.service) {
+      const serviceData = service.searchHire.service;
+      const lat = toValidNumber(serviceData.expertLatitude);
+      const lng = toValidNumber(serviceData.expertLongitude);
+      if (lat !== null && lng !== null) {
+        const range = toValidNumber(serviceData.locationRange);
+        console.log('[AppointmentMap] Usando service.searchHire.service:', { lat, lng, range: range || 25 });
+        return {
+          lat: lat,
+          lng: lng,
+          radius: range !== null ? range : 25
+        };
+      }
+    }
+    
+    // Prioridad 3: initialLocation
+    if (initialLocation) {
+      const lat = toValidNumber(initialLocation.latitude);
+      const lng = toValidNumber(initialLocation.longitude);
+      if (lat !== null && lng !== null) {
+        const range = toValidNumber(radius);
+        console.log('[AppointmentMap] Usando initialLocation:', { lat, lng, range: range || 500 });
+        return {
+          lat: lat,
+          lng: lng,
+          radius: range !== null ? range : 500
+        };
+      }
+    }
+    
+    // Valores por defecto (Madrid) solo si no hay coordenadas válidas
+    const defaultLat = toValidNumber(latitude) ?? 40.4168;
+    const defaultLng = toValidNumber(longitude) ?? -3.7038;
+    const defaultRadius = toValidNumber(radius) ?? 500;
+    
+    return {
+      lat: defaultLat,
+      lng: defaultLng,
+      radius: defaultRadius
+    };
+  };
 
-  const coordinates = getCoordinates();
-  
-  useEffect(() => {
-    if (!isLoaded || loadError || !mapRef.current) return;
+  // Memoizar las coordenadas para evitar recálculos innecesarios
+  const memoizedCoordinates = React.useMemo(() => {
+    const coords = getCoordinates();
+    console.log('[AppointmentMap] Coordenadas calculadas:', coords, 'expertLocation:', expertLocation);
+    return coords;
+  }, [expertLocation?.latitude, expertLocation?.longitude, expertRange, initialLocation?.latitude, initialLocation?.longitude, service]);
+  
+  useEffect(() => {
+    if (!isLoaded || loadError || !mapRef.current) return;
 
-    mapRef.current.innerHTML = '';
+    // Validar coordenadas antes de crear el mapa
+    if (!isFinite(memoizedCoordinates.lat) || !isFinite(memoizedCoordinates.lng)) {
+      console.error('[AppointmentMap] Coordenadas inválidas:', memoizedCoordinates);
+      return;
+    }
+    
+    console.log('[AppointmentMap] Creando mapa con coordenadas:', memoizedCoordinates);
 
-    if (!(window as any).google || !(window as any).google.maps) {
-      console.error('Google Maps no está disponible');
-      return;
-    }
-    
-    if (!(window as any).google.maps.geometry || !(window as any).google.maps.geometry.spherical) {
-      console.error('Google Maps Geometry library no está disponible');
-      return;
-    }
+    mapRef.current.innerHTML = '';
 
-    try {
-      const map = new (window as any).google.maps.Map(mapRef.current, {
-        center: { lat: coordinates.lat, lng: coordinates.lng },
-        zoom:8,
+    if (!(window as any).google || !(window as any).google.maps) {
+      console.error('Google Maps no está disponible');
+      return;
+    }
+    
+    if (!(window as any).google.maps.geometry || !(window as any).google.maps.geometry.spherical) {
+      console.error('Google Maps Geometry library no está disponible');
+      return;
+    }
+
+    try {
+      const map = new (window as any).google.maps.Map(mapRef.current, {
+        center: { lat: memoizedCoordinates.lat, lng: memoizedCoordinates.lng },
+        zoom: 12,
         mapTypeId: 'roadmap',
         streetViewControl: false,
         fullscreenControl: true,
@@ -113,78 +157,119 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         clickableIcons: false
       });
 
-      new (window as any).google.maps.Marker({
-        position: { lat: coordinates.lat, lng: coordinates.lng },
-        map: map,
-        title: "Ubicación del experto",
-        icon: {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" fill="#10B981" stroke="#059669" stroke-width="2"/>
-              <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
-            </svg>
-          `),
-          scaledSize: new (window as any).google.maps.Size(24, 24),
-          anchor: new (window as any).google.maps.Point(12, 12)
-        }
-      });
+      // Solo crear marcador del experto si las coordenadas son válidas
+      if (isFinite(memoizedCoordinates.lat) && isFinite(memoizedCoordinates.lng)) {
+        new (window as any).google.maps.Marker({
+          position: { lat: memoizedCoordinates.lat, lng: memoizedCoordinates.lng },
+          map: map,
+          title: "Ubicación del experto",
+          icon: {
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="#10B981" stroke="#059669" stroke-width="2"/>
+                <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
+              </svg>
+            `),
+            scaledSize: new (window as any).google.maps.Size(24, 24),
+            anchor: new (window as any).google.maps.Point(12, 12)
+          }
+        });
+      }
 
-      const radiusInMeters = coordinates.radius * 1000;
+      const radiusInMeters = (memoizedCoordinates.radius && isFinite(memoizedCoordinates.radius)) ? memoizedCoordinates.radius * 1000 : 25000;
 
-      const createMask = () => {
-        // Calcular el antipode (punto opuesto en la Tierra)
-        const antipode = {
-          lat: -coordinates.lat,
-          lng: coordinates.lng > 0 ? coordinates.lng - 180 : coordinates.lng + 180
-        };
-        
-        // *** CORRECCIÓN: Usar un radio grande (20,000 km) para asegurar que la máscara cubra todo, 
+      const createMask = () => {
+        // Validar coordenadas antes de crear la máscara
+        if (!isFinite(memoizedCoordinates.lat) || !isFinite(memoizedCoordinates.lng)) {
+          return [];
+        }
+        
+        // Calcular el antipode (punto opuesto en la Tierra)
+        const antipode = {
+          lat: -memoizedCoordinates.lat,
+          lng: memoizedCoordinates.lng > 0 ? memoizedCoordinates.lng - 180 : memoizedCoordinates.lng + 180
+        };
+        
+        // Validar que el antipode también sea válido
+        if (!isFinite(antipode.lat) || !isFinite(antipode.lng)) {
+          return [];
+        }
+        
+        // *** CORRECCIÓN: Usar un radio grande (20,000 km) para asegurar que la máscara cubra todo, 
         // *** dejando el agujero del tamaño del círculo verde (25km).
-        const inverseRadius = 20000 * 1000.625; // 20,000 km en metros
-        
-        const maskCircle = new (window as any).google.maps.Circle({
-          center: antipode,
-          radius: inverseRadius, // Usar el radio muy grande
-          fillColor: '#EF4444',
-          fillOpacity: 0.4,
-          strokeColor: '#EF4444',
-          strokeOpacity: 0.1,
-          strokeWeight: 0,
-          map: map,
-          clickable: false // IMPORTANTE: Hacer la máscara no clickeable
-        });
+        const inverseRadius = 20000 * 1000.625; // 20,000 km en metros
+        
+        const maskCircle = new (window as any).google.maps.Circle({
+          center: antipode,
+          radius: inverseRadius, // Usar el radio muy grande
+          fillColor: '#EF4444',
+          fillOpacity: 0.4,
+          strokeColor: '#EF4444',
+          strokeOpacity: 0.1,
+          strokeWeight: 0,
+          map: map,
+          clickable: false // IMPORTANTE: Hacer la máscara no clickeable
+        });
 
-        return [maskCircle];
-      };
+        return [maskCircle];
+      };
 
-      let maskElements: any[] = [];
+      let maskElements: any[] = [];
+      let maskCreated = false;
+      let boundsChangedTimeout: NodeJS.Timeout | null = null;
 
-      const createMaskWhenReady = () => {
-        if (maskElements.length > 0) {
-          maskElements.forEach(element => element.setMap(null));
-        }
-        maskElements = createMask();
-      };
+      const createMaskWhenReady = () => {
+        if (maskElements.length > 0) {
+          maskElements.forEach(element => element.setMap(null));
+          maskElements = [];
+        }
+        const newMaskElements = createMask();
+        maskElements = newMaskElements;
+        maskCreated = true;
+      };
 
-      (window as any).google.maps.event.addListenerOnce(map, 'idle', () => {
-        createMaskWhenReady();
-      });
+      // Crear la máscara solo una vez cuando el mapa esté listo
+      (window as any).google.maps.event.addListenerOnce(map, 'idle', () => {
+        if (!maskCreated) {
+          createMaskWhenReady();
+        }
+      });
 
-      // El evento 'bounds_changed' es crucial para redibujar la máscara si el usuario se aleja mucho
-      map.addListener('bounds_changed', createMaskWhenReady);
+      // Redibujar la máscara solo si el usuario se aleja mucho (con debounce)
+      map.addListener('bounds_changed', () => {
+        if (boundsChangedTimeout) {
+          clearTimeout(boundsChangedTimeout);
+        }
+        boundsChangedTimeout = setTimeout(() => {
+          const bounds = map.getBounds();
+          if (bounds) {
+            const center = bounds.getCenter();
+            const distance = (window as any).google.maps.geometry.spherical.computeDistanceBetween(
+              new (window as any).google.maps.LatLng(memoizedCoordinates.lat, memoizedCoordinates.lng),
+              center
+            );
+            // Solo redibujar si el usuario se aleja más de 50km del centro original
+            if (distance > 50000) {
+              createMaskWhenReady();
+            }
+          }
+        }, 500);
+      });
 
-      // Add a transparent circle to define the boundary
-      new (window as any).google.maps.Circle({
-        strokeColor: '#10B981',
-        strokeOpacity: 0.8,
-        strokeWeight: 3,
-        fillColor: 'transparent',
-        fillOpacity: 0,
-        map: map,
-        center: { lat: coordinates.lat, lng: coordinates.lng },
-        radius: radiusInMeters,
-        clickable: false // IMPORTANTE: Hacer el círculo no clickeable
-      });
+      // Add a transparent circle to define the boundary (solo si las coordenadas son válidas)
+      if (isFinite(memoizedCoordinates.lat) && isFinite(memoizedCoordinates.lng) && isFinite(radiusInMeters)) {
+        new (window as any).google.maps.Circle({
+          strokeColor: '#10B981',
+          strokeOpacity: 0.8,
+          strokeWeight: 3,
+          fillColor: 'transparent',
+          fillOpacity: 0,
+          map: map,
+          center: { lat: memoizedCoordinates.lat, lng: memoizedCoordinates.lng },
+          radius: radiusInMeters,
+          clickable: false // IMPORTANTE: Hacer el círculo no clickeable
+        });
+      }
 
       let selectedMarker: any = null;
       let selectedInfoWindow: any = null;
@@ -197,7 +282,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
 
         try {
           const distance = (window as any).google.maps.geometry.spherical.computeDistanceBetween(
-            new (window as any).google.maps.LatLng(coordinates.lat, coordinates.lng),
+            new (window as any).google.maps.LatLng(memoizedCoordinates.lat, memoizedCoordinates.lng),
             new (window as any).google.maps.LatLng(lat, lng)
           );
           
@@ -377,14 +462,21 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
 
       // NO crear info window para el experto - solo mostrar en la leyenda
 
-      return () => {
-        maskElements.forEach(element => element.setMap(null));
-        (window as any).google.maps.event.clearInstanceListeners(map);
-      };
+      return () => {
+        if (boundsChangedTimeout) {
+          clearTimeout(boundsChangedTimeout);
+        }
+        if (maskElements.length > 0) {
+          maskElements.forEach(element => element.setMap(null));
+        }
+        if (map) {
+          (window as any).google.maps.event.clearInstanceListeners(map);
+        }
+      };
     } catch (error) {
       console.error('Error creando el mapa:', error);
     }
-  }, [isLoaded, loadError, coordinates.lat, coordinates.lng, coordinates.radius, address]);
+  }, [isLoaded, loadError, memoizedCoordinates.lat, memoizedCoordinates.lng, memoizedCoordinates.radius]);
 
   if (loadError) {
     return (
