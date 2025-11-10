@@ -80,7 +80,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     }, []);
 
     return (
-        <div className="relative w-full bg-background overflow-hidden">
+        <div className="relative w-full h-screen lg:h-auto bg-background overflow-hidden">
             {/* Professional subtle background */}
             <div className="absolute inset-0 overflow-hidden">
                 {/* Minimal gradient overlay */}
@@ -94,46 +94,17 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:24px_24px]"></div>
             </div>
 
-            <div className="relative z-10 w-full px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 md:py-16 lg:py-20">
-                <div className="max-w-6xl mx-auto">
+            <div className="relative z-10 w-full h-full lg:h-auto px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 md:py-16 lg:py-20 flex flex-col lg:block">
+                {/* Contenido principal centrado verticalmente en móvil, normal en desktop */}
+                <div className="flex-1 lg:flex-none flex items-center lg:block">
+                    <div className="max-w-6xl mx-auto w-full">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                         <div className="space-y-6 lg:space-y-7 text-left lg:text-left">
-                            {/* Versión móvil - diseño limpio */}
-                            <div className="lg:hidden">
-                                {/* Header con efecto degradado en dos filas */}
-                                <div className="relative w-full h-20 mb-4 overflow-visible">
-                                    {/* FILA 1: Arriba - más visible */}
-                                    <div className="absolute top-0 left-12 animate-fade-float animation-delay-800 z-20">
-                                        <Car className="w-5 h-5 text-blue-500 drop-shadow-lg transform rotate-12" />
-                                    </div>
-                                    <div className="absolute top-0 right-16 animate-fade-float animation-delay-1400 z-20">
-                                        <Bike className="w-5 h-5 text-purple-500 drop-shadow-lg transform -rotate-18" />
-                                    </div>
-                                    <div className="absolute top-1 left-1/2 transform -translate-x-1/2 animate-fade-float animation-delay-2000 z-20">
-                                        <Home className="w-4 h-4 text-violet-500 drop-shadow-md transform rotate-24" />
-                                    </div>
-                                    
-                                    {/* FILA 2: Abajo desordenada - degradado */}
-                                    <div className="absolute top-8 left-6 animate-fade-float animation-delay-2600 z-20" style={{ opacity: 0.6 }}>
-                                        <Car className="w-4 h-4 text-orange-500 drop-shadow-md transform -rotate-21" />
-                                    </div>
-                                    <div className="absolute top-10 right-8 animate-fade-float animation-delay-3200 z-20" style={{ opacity: 0.5 }}>
-                                        <Bike className="w-3 h-3 text-emerald-500 drop-shadow-sm transform rotate-45" />
-                                    </div>
-                                    <div className="absolute top-9 left-1/3 animate-fade-float animation-delay-3800 z-20" style={{ opacity: 0.4 }}>
-                                        <Home className="w-3 h-3 text-cyan-500 drop-shadow-sm transform -rotate-12" />
-                                    </div>
-                                    <div className="absolute top-11 right-1/3 animate-fade-float animation-delay-4400 z-20" style={{ opacity: 0.3 }}>
-                                        <Car className="w-2 h-2 text-pink-500 drop-shadow-sm transform rotate-30" />
-                                    </div>
-                                </div>
-                                
-                                {/* Contenido principal */}
-                                <div className="space-y-6">
-                                    {/* Título centrado */}
-                                    <div className="text-center">
-                                        <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-                                            <span className="block whitespace-nowrap">
+                                {/* Versión móvil - diseño limpio y profesional */}
+                                <div className="lg:hidden space-y-6">
+                                    {/* Título simple y claro */}
+                                    <div>
+                                        <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-3">
                                                 Inspecciona tu{' '}
                                                 <span className="relative inline-block">
                                                     <span 
@@ -143,18 +114,11 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                         {isGlitching ? glitchText : currentWord}
                                                     </span>
                                                 </span>
-                                            </span>
-                                            <span className="block">antes de comprar</span>
-                                            <span className="block text-gray-900 font-extrabold">gracias a expertos</span>
+                                            {' '}antes de comprar
                                         </h1>
-                                    </div>
-                                    
-                                    {/* Descripción centrada */}
-                                    <div className="text-center">
-                                        <p className="text-lg text-gray-600 leading-relaxed font-light">
-                                            Plataforma profesional de búsqueda y verificación de vehículos de segunda mano con tecnología avanzada y expertos certificados.
+                                        <p className="text-base text-gray-600 leading-relaxed">
+                                            Con expertos certificados que verifican cada detalle antes de tu compra.
                                         </p>
-                                    </div>
                                 </div>
                             </div>
                             
@@ -189,15 +153,15 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 </p>
                             </div>
                             
-                            {/* Botones móvil - diseño limpio */}
-                            <div className="lg:hidden space-y-3">
+                                {/* Botones móvil - diseño limpio con mejores prácticas móviles */}
+                                <div className="lg:hidden space-y-4">
                                 {isAuthenticated ? (
                                     <button
                                         onClick={onScrollToForm}
-                                        className="group w-full inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-lg font-semibold text-base hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                                            className="group w-full inline-flex items-center justify-center gap-2 bg-gray-900 text-white px-6 py-4 rounded-lg font-medium text-base hover:bg-gray-800 transition-colors min-h-[48px] active:bg-gray-700"
                                     >
                                         <span>Comenzar búsqueda</span>
-                                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>
                                     </button>
@@ -207,8 +171,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     </div>
                                 )}
                                 
-                                <button className="w-full inline-flex items-center justify-center gap-2 text-gray-700 px-5 py-3.5 rounded-lg font-medium text-base hover:bg-gray-50 transition-all duration-300 border border-gray-200 hover:border-gray-300">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <button className="w-full inline-flex items-center justify-center gap-2 text-gray-700 px-6 py-4 rounded-lg font-medium text-base hover:bg-gray-50 active:bg-gray-100 transition-colors border border-gray-200 min-h-[48px]">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v5a2 2 0 002 2z" />
                                     </svg>
                                     <span>Ver demo</span>
@@ -280,12 +244,16 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     alt="Verificación profesional de vehículos"
                                     className="w-full max-w-md object-cover relative z-10"
                                 />
+                                </div>
+                            </div>
                             </div>
                         </div>
                     </div>
                     
+                {/* Widget de reseñas - fuera del viewport inicial en móvil, normal en desktop */}
                     <div className="mt-4 lg:mt-24">
-                        <div id="widget-mount-point" className="w-full lg:w-full">
+                    <div className="w-full lg:max-w-[calc(80rem-2rem)] lg:mx-auto px-4 md:px-6 lg:px-8">
+                        <div id="widget-mount-point" className="w-full">
                             {/* Widget de reseñas se inyectará aquí dinámicamente */}
                         </div>
                     </div>
