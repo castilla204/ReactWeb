@@ -12,6 +12,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     const [currentWord, setCurrentWord] = useState('coche');
     const [isGlitching, setIsGlitching] = useState(false);
     const [glitchText, setGlitchText] = useState('coche');
+    const [isReviewsLoading, setIsReviewsLoading] = useState(true);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -68,6 +69,37 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
         if (mountPoint) {
             mountPoint.appendChild(widgetContainer);
         }
+
+        // Detectar cuando el widget está cargado
+        let checkCount = 0;
+        const maxChecks = 100; // Máximo 10 segundos (100 * 100ms)
+        
+        const checkWidgetLoaded = () => {
+            checkCount++;
+            const widgetElement = widgetContainer.querySelector('.elfsight-app-bcc2528d-c48e-48d1-b03d-f282be8b8c32');
+            const hasContent = widgetElement && (
+                widgetElement.children.length > 0 || 
+                widgetElement.innerHTML.trim().length > 0 ||
+                widgetElement.offsetHeight > 0
+            );
+            
+            if (hasContent) {
+                // Esperar un frame más para asegurar que el contenido está renderizado
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setIsReviewsLoading(false);
+                    });
+                });
+            } else if (checkCount < maxChecks) {
+                setTimeout(checkWidgetLoaded, 100);
+            } else {
+                // Si no se carga después de 10 segundos, ocultar skeleton
+                setIsReviewsLoading(false);
+            }
+        };
+
+        // Esperar un poco antes de empezar a verificar (dar tiempo a que el script se cargue)
+        setTimeout(checkWidgetLoaded, 1000);
 
         // Limpieza al desmontar el componente
         return () => {
@@ -253,8 +285,63 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 {/* Widget de reseñas - fuera del viewport inicial en móvil, normal en desktop */}
                     <div className="mt-4 lg:mt-24">
                     <div className="w-full lg:max-w-[calc(80rem-2rem)] lg:mx-auto px-4 md:px-6 lg:px-8">
-                        <div id="widget-mount-point" className="w-full">
+                        {/* Contenedor con altura mínima para evitar saltos */}
+                        <div className="relative min-h-[240px]">
+                            {/* Skeleton loader mientras carga - posición absoluta */}
+                            {isReviewsLoading && (
+                                <div className="absolute inset-0 w-full space-y-4 animate-pulse -top-2">
+                                    {/* Header skeleton */}
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="h-6 bg-gray-200 rounded w-40"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                    </div>
+                                    {/* Cards skeleton - horizontal scroll como el widget real */}
+                                    <div className="flex gap-4 overflow-x-hidden">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <div key={i} className="flex-shrink-0 w-[320px] bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                                                {/* Avatar y nombre */}
+                                                <div className="flex items-start gap-3 mb-3">
+                                                    <div className="relative flex-shrink-0">
+                                                        <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                                                        {/* Google G badge skeleton */}
+                                                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gray-300 rounded-full border-2 border-white"></div>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 mb-1">
+                                                            <div className="h-3.5 bg-gray-200 rounded w-24"></div>
+                                                            {/* Checkmark skeleton */}
+                                                            <div className="w-3.5 h-3.5 bg-gray-200 rounded-full flex-shrink-0"></div>
+                                                        </div>
+                                                        {/* Timestamp */}
+                                                        <div className="h-2.5 bg-gray-200 rounded w-16"></div>
+                                                    </div>
+                                                </div>
+                                                {/* Estrellas */}
+                                                <div className="flex gap-0.5 mb-2.5">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <div key={star} className="w-4 h-4 bg-gray-200 rounded"></div>
+                                                    ))}
+                                                </div>
+                                                {/* Texto de la reseña */}
+                                                <div className="space-y-1.5 mb-2">
+                                                    <div className="h-3 bg-gray-200 rounded w-full"></div>
+                                                    <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                                                </div>
+                                                {/* Read more link skeleton */}
+                                                <div className="h-3 bg-gray-200 rounded w-20"></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {/* Widget - se muestra cuando está listo, con opacidad para transición suave */}
+                            <div 
+                                id="widget-mount-point" 
+                                className={`w-full transition-opacity duration-300 ${isReviewsLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                                style={{ minHeight: isReviewsLoading ? '240px' : 'auto' }}
+                            >
                             {/* Widget de reseñas se inyectará aquí dinámicamente */}
+                            </div>
                         </div>
                     </div>
                 </div>
