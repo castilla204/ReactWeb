@@ -271,35 +271,35 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onCancel()}>
-      <DrawerContent className="max-h-[96vh]">
-        <DrawerHeader className="border-b border-border/50">
-          <div className="flex items-center justify-between">
-            <div>
-              <DrawerTitle className="text-xl font-semibold">Proponer Cita</DrawerTitle>
-              <DrawerDescription className="mt-1.5">
-            Completa los datos para programar una cita con el experto
-          </DrawerDescription>
+      <DrawerContent className="max-h-[96vh] bg-gradient-to-b from-gray-50 to-white">
+        <DrawerHeader className="border-b border-gray-200/80 bg-white/80 backdrop-blur-sm shadow-sm">
+          <div className="flex items-center justify-between max-w-7xl mx-auto w-full px-6 lg:px-8">
+            <div className="space-y-1">
+              <DrawerTitle className="text-2xl font-bold text-gray-900 tracking-tight">Proponer Cita</DrawerTitle>
+              <DrawerDescription className="text-sm text-gray-600 mt-1">
+                Completa los datos para programar una cita con el experto
+              </DrawerDescription>
             </div>
-            <DrawerClose className="absolute right-4 top-4" />
+            <DrawerClose className="absolute right-4 top-4 rounded-lg hover:bg-gray-100 transition-colors" />
           </div>
         </DrawerHeader>
         
         <Form {...form}>
-          <form id="appointment-form" onSubmit={handleSubmit} autoComplete="off" className="overflow-y-auto flex-1">
-            <div className="p-6 max-w-7xl mx-auto space-y-6">
+          <form id="appointment-form" onSubmit={handleSubmit} autoComplete="off" className="overflow-y-auto flex-1 bg-gray-50/50">
+            <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
           {/* Errores */}
           {(errors.length > 0 || externalError) && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="border-red-200 bg-red-50 shadow-sm">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
+              <AlertTitle className="font-semibold">Error</AlertTitle>
               <AlertDescription>
                 {externalError && (
-                  <p className="font-medium mb-2">
+                  <p className="font-medium mb-2 text-red-800">
                     {externalError}
                   </p>
                 )}
           {errors.length > 0 && (
-                  <ul className="list-disc list-inside space-y-1">
+                  <ul className="list-disc list-inside space-y-1 text-red-700">
                 {errors.map((error, index) => (
                       <li key={index}>
                         {error}
@@ -312,17 +312,17 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           )}
           
           {/* Layout de dos columnas en desktop */}
-            <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-8 lg:gap-10">
               
               {/* Columna izquierda - Formulario */}
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {/* Fecha y Hora */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-primary/10">
-                      <CalendarIcon className="w-4 h-4 text-primary" />
+                <div className="space-y-4 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-1.5 rounded-md bg-blue-50/50 border border-blue-200/50">
+                      <CalendarIcon className="w-4 h-4 text-blue-500/70 stroke-2" />
                     </div>
-                    <h3 className="text-base font-semibold">Fecha y Hora</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Fecha y Hora</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -330,7 +330,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                       name="proposedDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Fecha</FormLabel>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-1.5 block">Fecha</FormLabel>
                           <FormControl>
                             <DatePicker
                               selected={formData.proposedDate ? new Date(formData.proposedDate + 'T12:00:00') : null}
@@ -350,7 +350,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                               minDate={new Date()}
                               disabled={isLoading}
                               autoComplete="off"
-                              className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="w-full h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50"
                               wrapperClassName="w-full"
                             />
                           </FormControl>
@@ -360,7 +360,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                     />
                     
                     <div className="space-y-2">
-                      <label htmlFor="time" className="text-sm font-medium">Hora</label>
+                      <label htmlFor="time" className="text-sm font-medium text-gray-700 mb-1.5 block">Hora</label>
                       <div className="flex gap-2">
                         <div className="flex-1">
                           <select
@@ -372,7 +372,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                               handleTimeChange({ target: { value: hour + ':' + minutes } } as React.ChangeEvent<HTMLInputElement>);
                             }}
                       disabled={isLoading}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none cursor-pointer"
+                            className="flex h-11 w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50 appearance-none cursor-pointer"
                             style={{
                               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 4l4 4 4-4'/%3E%3C/svg%3E")`,
                               backgroundRepeat: 'no-repeat',
@@ -405,7 +405,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                               handleTimeChange({ target: { value: hour + ':' + minutes } } as React.ChangeEvent<HTMLInputElement>);
                             }}
                             disabled={isLoading || !formData.proposedTime}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none cursor-pointer"
+                            className="flex h-11 w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50 appearance-none cursor-pointer"
                             style={{
                               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 4l4 4 4-4'/%3E%3C/svg%3E")`,
                               backgroundRepeat: 'no-repeat',
@@ -430,18 +430,18 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   
                   {/* Accordion con horario del experto */}
                   {expertAvailability && (
-                    <Accordion type="single" defaultValue="schedule-info" collapsible className="w-full">
-                      <AccordionItem value="schedule-info" className="border-none">
-                        <AccordionTrigger className="text-sm font-medium py-2 hover:no-underline">
+                    <Accordion type="single" defaultValue="schedule-info" collapsible className="w-full mt-4">
+                      <AccordionItem value="schedule-info" className="border border-gray-200 rounded-lg bg-gray-50/50">
+                        <AccordionTrigger className="text-sm font-medium py-3 px-4 hover:no-underline hover:bg-gray-100/50 rounded-lg transition-colors">
                           <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-primary" />
-                            <span>Horario disponible del experto</span>
+                            <Clock className="w-4 h-4 text-blue-600" />
+                            <span className="text-gray-700">Horario disponible del experto</span>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent className="pb-2">
+                        <AccordionContent className="pb-4 px-4">
                           <div className="space-y-3 text-sm">
                             <ExpertAvailability availability={expertAvailability} compact={false} />
-                            <p className="text-xs text-muted-foreground pt-2 border-t border-border/50">
+                            <p className="text-xs text-gray-600 pt-3 border-t border-gray-200">
                               Asegúrate de seleccionar una fecha y hora dentro de este horario. De lo contrario, no podrás enviar la propuesta.
                             </p>
                   </div>
@@ -452,12 +452,12 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 </div>
 
                 {/* Dirección */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-primary/10">
-                      <MapPin className="w-4 h-4 text-primary" />
+                <div className="space-y-4 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-1.5 rounded-md bg-green-50/50 border border-green-200/50">
+                      <MapPin className="w-4 h-4 text-green-500/70 stroke-2" />
                     </div>
-                    <h3 className="text-base font-semibold">Dirección</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Dirección</h3>
               </div>
                   <div className="space-y-4">
                     <FormField
@@ -465,7 +465,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                       name="location"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Dirección completa</FormLabel>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-1.5 block">Dirección completa</FormLabel>
                           <FormControl>
                             <Input
                       type="text"
@@ -478,6 +478,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                       placeholder="Escribe la dirección o selecciona en el mapa..."
                       disabled={isLoading}
                               autoComplete="off"
+                              className="h-11 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all"
                             />
                           </FormControl>
                           <FormMessage />
@@ -490,7 +491,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                       name="doorNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Número de puerta/garaje</FormLabel>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-1.5 block">Número de puerta/garaje</FormLabel>
                           <FormControl>
                             <Input
                       type="text"
@@ -503,6 +504,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                       placeholder="Portal A, 2ºB, Garaje 15..."
                       disabled={isLoading}
                               autoComplete="off"
+                              className="h-11 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all"
                             />
                           </FormControl>
                           <FormMessage />
@@ -513,12 +515,12 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                 </div>
 
                 {/* Información Adicional */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-primary/10">
-                      <FileText className="w-4 h-4 text-primary" />
+                <div className="space-y-4 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-1.5 rounded-md bg-purple-50/50 border border-purple-200/50">
+                      <FileText className="w-4 h-4 text-purple-500/70 stroke-2" />
                     </div>
-                    <h3 className="text-base font-semibold">Información Adicional</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Información Adicional</h3>
               </div>
                   <div className="space-y-4">
                     <FormField
@@ -526,7 +528,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                       name="ownerPhone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Teléfono del propietario</FormLabel>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-1.5 block">Teléfono del propietario</FormLabel>
                           <FormControl>
                             <Input
                       type="tel"
@@ -539,6 +541,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                       placeholder="+34 666 123 456"
                       disabled={isLoading}
                               autoComplete="tel"
+                              className="h-11 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all"
                             />
                           </FormControl>
                           <FormMessage />
@@ -551,7 +554,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                       name="siteDetails"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Detalles específicos del sitio</FormLabel>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-1.5 block">Detalles específicos del sitio</FormLabel>
                           <FormControl>
                     <textarea
                               {...field}
@@ -562,7 +565,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                               }}
                       placeholder="Entrada por el garaje, timbre roto, código de acceso..."
                               rows={4}
-                              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                              className="flex w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm resize-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50"
                       disabled={isLoading}
                               autoComplete="off"
                             />
@@ -576,12 +579,12 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
                 {/* Accordion con información */}
                 <Accordion type="single" collapsible className="w-full">
-                  <AccordionItem value="info" className="border-none">
-                    <AccordionTrigger className="text-sm font-medium py-2 hover:no-underline">
+                  <AccordionItem value="info" className="border border-gray-200 rounded-lg bg-gray-50/50">
+                    <AccordionTrigger className="text-sm font-medium py-3 px-4 hover:no-underline hover:bg-gray-100/50 rounded-lg transition-colors text-gray-700">
                       Información importante
                     </AccordionTrigger>
-                    <AccordionContent className="pb-4">
-                      <div className="space-y-4 text-sm text-muted-foreground">
+                    <AccordionContent className="pb-4 px-4">
+                      <div className="space-y-4 text-sm text-gray-600">
                         {/* Horario del experto */}
                         {expertAvailability && (
                           <div className="pb-3 border-b border-border/50">
@@ -632,13 +635,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
             {/* Columna derecha - Mapa */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-md bg-primary/10">
-                    <MapPin className="w-4 h-4 text-primary" />
-                  </div>
-                    <h3 className="text-base font-semibold">Selecciona la ubicación</h3>
-                  </div>
-
                   <div className="h-[500px] rounded-lg overflow-hidden border border-border relative">
                 <AppointmentMap
                   onLocationSelect={handleLocationSelect}

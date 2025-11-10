@@ -2130,6 +2130,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     }}
                     error={appointmentFormError}
                     expertAvailability={expertProfile?.currentAvailability || null}
+                    expertLocation={
+                        serviceInfo?.expertLatitude && serviceInfo?.expertLongitude
+                            ? {
+                                latitude: typeof serviceInfo.expertLatitude === 'string' 
+                                    ? parseFloat(serviceInfo.expertLatitude) 
+                                    : Number(serviceInfo.expertLatitude),
+                                longitude: typeof serviceInfo.expertLongitude === 'string' 
+                                    ? parseFloat(serviceInfo.expertLongitude) 
+                                    : Number(serviceInfo.expertLongitude)
+                            }
+                            : null
+                    }
+                    expertRange={serviceInfo?.locationRange || null}
                 />
             )}
 
