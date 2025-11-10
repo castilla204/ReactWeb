@@ -398,7 +398,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         <div className="bg-background h-screen flex flex-col overflow-hidden fixed inset-0 lg:relative lg:h-auto lg:min-h-screen">
             {/* Header Section - Fixed */}
             <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b flex-shrink-0">
-                <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Button
@@ -439,10 +439,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             </div>
                    
             {/* Main Layout - Split View */}
-            <div className="flex flex-1 min-h-0 overflow-hidden">
+            <div className="flex flex-1 min-h-0 overflow-hidden max-w-7xl mx-auto">
                 {/* Left Side - Form & Results (Desktop only) */}
                 <div className="hidden lg:flex flex-1 overflow-y-auto">
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
                         {/* Accordion con instrucciones - Siempre visible */}
                         <Accordion type="single" collapsible defaultValue="instructions" className="mb-6">
                             <AccordionItem value="instructions" className="border-border">

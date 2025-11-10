@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Car, Home, Bike, ArrowRight, Shield, Eye, Search, FileText, ChevronDown, ChevronRight, CheckCircle, FolderTree } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Car, Home, Shield, CheckCircle, FolderTree, Wrench, ChevronRight, ArrowUp } from 'lucide-react';
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Notification, NotificationType } from '../components/Notification';
 import HomePresentation from '../components/HomePresentation';
 import { useServiceTypes } from '../hooks/useServiceTypes';
-import { Button } from '../components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 
 
 interface SearchParameters {
@@ -56,7 +56,18 @@ const SearchCreationPage: React.FC = () => {
     const [serviceImageUrls, setServiceImageUrls] = useState<string[]>([]);
 
     const safeCategories = Array.isArray(categories) ? categories : [];
-    const [expandedCategoryIds, setExpandedCategoryIds] = useState<number[]>([]);
+    const [showMoreCategories, setShowMoreCategories] = useState(false);
+    const [selectedThirdCategory, setSelectedThirdCategory] = useState<number | null>(null);
+    const [showBackToTop, setShowBackToTop] = useState(false);
+
+    // Mostrar/ocultar botón "back to top" basado en scroll
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowBackToTop(window.scrollY > 300);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // Filtrar solo categorías padre
     const parentCategories = safeCategories.filter(cat => {
@@ -68,14 +79,6 @@ const SearchCreationPage: React.FC = () => {
     // Obtener subcategorías de una categoría padre
     const getSubcategories = (parentId: number) => {
         return safeCategories.filter(cat => cat.parentId === parentId);
-    };
-
-    const toggleCategoryExpand = (categoryId: number) => {
-        setExpandedCategoryIds(prev => 
-            prev.includes(categoryId)
-                ? prev.filter(id => id !== categoryId)
-                : [...prev, categoryId]
-        );
     };
 
 
@@ -188,7 +191,16 @@ const SearchCreationPage: React.FC = () => {
 
     const scrollToForm = () => {
         const formSection = document.getElementById('form-section');
-        if (formSection) formSection.scrollIntoView({ behavior: 'smooth' });
+        if (formSection) {
+            // Obtener la posición exacta del elemento
+            const elementPosition = formSection.getBoundingClientRect().top + window.pageYOffset;
+            
+            // Scroll un poco antes del inicio del elemento
+            window.scrollTo({
+                top: elementPosition - 20,
+                behavior: 'smooth'
+            });
+        }
     };
 
     return (
@@ -199,28 +211,27 @@ const SearchCreationPage: React.FC = () => {
                     <div className="w-full py-6 md:py-8">
                         <div
                             id="form-section"
-                            className="w-full mx-auto max-w-4xl lg:max-w-6xl px-4 md:px-6 lg:px-8"
+                            className="w-full mx-auto max-w-7xl px-4 md:px-6 lg:px-8"
                         >
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+                                {/* Left Column - Form */}
+                                <div>
                             {/* Header */}
-                            <div className="mb-6">
-                                <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-2">
-                                    Crea tu búsqueda personalizada
+                                    <div className="mb-12">
+                                        <h2 className="text-2xl font-medium text-gray-900 mb-1">
+                                            Crea tu búsqueda
                                 </h2>
-                                <p className="text-sm md:text-base text-muted-foreground">
-                                    Define tus preferencias y déjanos encontrar exactamente lo que buscas.
-                                </p>
-                            </div>
-                            <div className="space-y-6 w-full">
-                                {/* Service Type Section */}
-                                <div className="border-b border-gray-200 pb-6">
-                                    <div className="mb-4">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-medium">1</span>
-                                            <h3 className="text-lg font-semibold text-foreground">Tipo de servicio</h3>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground ml-9">Elige cómo quieres que realicemos tu búsqueda</p>
+                                        <p className="text-sm text-gray-500">
+                                            Define tus preferencias
+                                        </p>
                                     </div>
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 ml-9">
+                                    <div className="space-y-8 w-full">
+                                        {/* Service Type Section */}
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-3 uppercase tracking-wide">
+                                                Tipo de servicio
+                                            </label>
+                                            <div className="space-y-3">
                                         {serviceTypesLoading ? (
                                             // Loading state
                                             <>
@@ -260,202 +271,396 @@ const SearchCreationPage: React.FC = () => {
                                             </div>
                                         ) : (
                                             // Dynamic service types
-                                            serviceTypes.map((serviceType) => (
+                                            serviceTypes.map((serviceType) => {
+                                                const isComingSoon = serviceType.id === 2;
+                                                const isSelected = searchParameters.serviceTypeId === serviceType.id;
+                                                
+                                                return (
                                                 <label 
                                                     key={serviceType.id}
-                                                    className={`cursor-pointer p-4 border rounded-lg transition-all ${searchParameters.serviceTypeId === serviceType.id
-                                                        ? 'border-primary bg-primary/10'
-                                                        : 'border-border hover:border-border/80 bg-background'
-                                                        }`}
+                                                        className={`relative cursor-pointer flex items-center gap-3 p-4 md:p-3 border rounded-md transition-all min-h-[48px] md:min-h-0 ${
+                                                            isSelected
+                                                                ? 'border-gray-900 bg-gray-50'
+                                                                : isComingSoon
+                                                                    ? 'border-gray-200 bg-gray-50/60'
+                                                                    : 'border-gray-200 bg-white hover:border-gray-300'
+                                                        } ${isComingSoon ? 'cursor-not-allowed' : ''}`}
                                                 >
                                                     <input
                                                         type="radio"
                                                         value={serviceType.id}
-                                                        checked={searchParameters.serviceTypeId === serviceType.id}
+                                                            checked={isSelected}
                                                         onChange={() => {
+                                                            if (!isComingSoon) {
                                                             setSearchParameters((prev) => ({ 
                                                                 ...prev, 
                                                                 serviceTypeId: serviceType.id,
                                                                 keywords: serviceType.id === 2 ? '' : 'revisión presencial'
                                                             }));
+                                                            }
                                                         }}
+                                                            disabled={isComingSoon}
                                                         className="sr-only"
                                                     />
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${searchParameters.serviceTypeId === serviceType.id
-                                                            ? 'border-blue-600 bg-blue-600'
+                                                        {isComingSoon && (
+                                                            <div className="absolute top-2.5 right-2.5 z-10">
+                                                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded text-[10px] font-semibold uppercase tracking-wide shadow-md">
+                                                                    <Wrench className="w-3 h-3" />
+                                                                    <span>Próximamente</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                                            isSelected
+                                                                ? 'border-gray-900 bg-gray-900'
+                                                            : isComingSoon
+                                                                ? 'border-gray-400 bg-gray-200'
                                                             : 'border-gray-300'
                                                             }`}>
-                                                            {searchParameters.serviceTypeId === serviceType.id && (
-                                                                <div className="w-1.5 h-1.5 bg-background rounded-full"></div>
+                                                            {isSelected && (
+                                                                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                                                             )}
                                                         </div>
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                {serviceType.id === 1 ? (
-                                                                    <Eye className="w-4 h-4 text-blue-600" />
-                                                                ) : (
-                                                                    <>
-                                                                        <Search className="w-4 h-4 text-blue-600" />
-                                                                        <Eye className="w-4 h-4 text-blue-600" />
-                                                                    </>
-                                                                )}
-                                                                <h4 className="font-semibold text-gray-900">{serviceType.name}</h4>
-                                                            </div>
-                                                            <p className="text-sm text-gray-600 mb-1">{serviceType.description}</p>
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {serviceType.serviceTypeCategoryName && (
-                                                                    <span className="px-2 py-0.5 text-xs bg-purple-50 text-purple-700 rounded-full">
-                                                                        {serviceType.serviceTypeCategoryName}
+                                                        <span className={`text-base md:text-sm ${
+                                                            isSelected 
+                                                                ? 'text-gray-900 font-medium' 
+                                                                : isComingSoon
+                                                                    ? 'text-gray-400 line-through'
+                                                                : 'text-gray-700'
+                                                        }`}>
+                                                            {serviceType.name.replace('2', '').trim()}
                                                                     </span>
-                                                                )}
-                                                                {serviceType.id === 1 ? (
-                                                                    <>
-                                                                        <span className="px-2 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-full">Directo</span>
-                                                                        <span className="px-2 py-0.5 text-xs bg-blue-50 text-blue-700 rounded-full">Presencial</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <span className="px-2 py-0.5 text-xs bg-green-50 text-green-700 rounded-full">Completo</span>
-                                                                        <span className="px-2 py-0.5 text-xs bg-green-50 text-green-700 rounded-full">Premium</span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
                                                 </label>
-                                            ))
+                                                );
+                                            })
                                         )}
                                     </div>
                                 </div>
 
                                 {/* Categories Section */}
-                                <div className="border-b border-gray-200 pb-6">
-                                    <div className="mb-4">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-medium">2</span>
-                                            <h3 className="text-lg font-semibold text-gray-900">Selecciona tu categoría</h3>
-                                        </div>
-                                        <p className="text-sm text-gray-600 ml-9">¿Qué tipo de producto o servicio buscas?</p>
-                                    </div>
-                                    <div className="ml-9 space-y-6">
-                                        {/* Categorías Padre */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                            {parentCategories.map((parentCategory) => {
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-3 uppercase tracking-wide">
+                                                Categoría
+                                            </label>
+                                            <div>
+                                        {/* Categorías Padre - Solo 3 principales + botón más categorías */}
+                                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-3">
+                                            {/* Mostrar solo 3 categorías principales */}
+                                            {(() => {
+                                                // Categorías principales: Coches (1), Motos (2), y la tercera (Inmobiliaria 3 o la seleccionada)
+                                                const mainCategories = parentCategories.filter(cat => {
+                                                    const isCoche = cat.id === 1;
+                                                    const isMoto = cat.id === 2;
+                                                    const isThird = selectedThirdCategory ? cat.id === selectedThirdCategory : cat.id === 3;
+                                                    return isCoche || isMoto || isThird;
+                                                }).sort((a, b) => {
+                                                    // Ordenar: Coches (1), Motos (2), Tercera (3 o selectedThirdCategory)
+                                                    if (a.id === 1) return -1;
+                                                    if (b.id === 1) return 1;
+                                                    if (a.id === 2) return -1;
+                                                    if (b.id === 2) return 1;
+                                                    return 0;
+                                                });
+                                                
+                                                return mainCategories.map((parentCategory) => {
                                                 const subcategories = getSubcategories(parentCategory.id);
                                                 const hasSubcategories = subcategories.length > 0;
-                                                const isExpanded = expandedCategoryIds.includes(parentCategory.id);
                                                 const isSelected = searchParameters.category === parentCategory.id;
+                                                
+                                                // Detectar si hay una subcategoría seleccionada de esta categoría padre
+                                                const selectedCategory = safeCategories.find(cat => cat.id === searchParameters.category);
+                                                const hasSubcategorySelected = selectedCategory && selectedCategory.parentId === parentCategory.id;
+                                                
+                                                const isMotoAgua = parentCategory.name.toLowerCase().includes('agua') || 
+                                                                  parentCategory.name.toLowerCase().includes('acuática') ||
+                                                                  parentCategory.name.toLowerCase().includes('water');
+                                                const isMoto = parentCategory.name.toLowerCase().includes('moto') || 
+                                                              parentCategory.id === 2;
+                                                const isCoche = parentCategory.name.toLowerCase().includes('coche') || 
+                                                               parentCategory.name.toLowerCase().includes('vehículo') ||
+                                                               parentCategory.id === 1;
+                                                const isCasa = parentCategory.name.toLowerCase().includes('inmobiliaria') || 
+                                                              parentCategory.name.toLowerCase().includes('inmueble') ||
+                                                              parentCategory.name.toLowerCase().includes('casa') ||
+                                                              parentCategory.id === 3;
+                                                const isMotoCategory = isMotoAgua || isMoto;
+                                                const isImageCategory = isMotoCategory || isCoche || isCasa;
                                                 
                                                 return (
                                                     <div key={parentCategory.id}>
-                                                        <div className={`group relative border-2 rounded-xl transition-all overflow-hidden ${
+                                                        <div className={`group relative rounded-xl transition-all ${
+                                                                    isImageCategory ? 'border border-gray-200 bg-white' : 'border border-gray-200'
+                                                                } ${
                                                             isSelected
-                                                                ? 'border-primary bg-primary/5 shadow-md'
-                                                                : 'border-border hover:border-primary/50 bg-background hover:shadow-sm'
+                                                                        ? isImageCategory 
+                                                                            ? 'border-gray-900 shadow-md ring-1 ring-gray-900/10' 
+                                                                            : 'border-gray-900 bg-gray-50'
+                                                                        : hasSubcategorySelected
+                                                                            ? isImageCategory
+                                                                                ? 'border-primary/40 bg-primary/5 opacity-75 backdrop-blur-sm'
+                                                                                : 'border-primary/40 bg-primary/5 opacity-75 backdrop-blur-sm'
+                                                                            : isImageCategory
+                                                                                ? 'hover:border-gray-300 hover:shadow-sm'
+                                                                                : 'hover:border-gray-300 bg-white'
                                                         }`}>
-                                                            <div className="p-5">
                                                                 <button
-                                                                    onClick={() =>
-                                                                        setSearchParameters((prev) => ({ ...prev, category: parentCategory.id }))
-                                                                    }
-                                                                    className="w-full flex flex-col items-center text-center space-y-3"
-                                                                >
-                                                                    <div className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all ${
+                                                                        onClick={() => {
+                                                                            const newCategoryId = parentCategory.id;
+                                                                            const currentCategory = searchParameters.category;
+                                                                            
+                                                                            // Si se hace clic en la misma categoría, deseleccionar
+                                                                            if (currentCategory === newCategoryId) {
+                                                                                setSearchParameters((prev) => ({ ...prev, category: undefined }));
+                                                                            } else {
+                                                                                // Seleccionar nueva categoría
+                                                                                setSearchParameters((prev) => ({ ...prev, category: newCategoryId }));
+                                                                            }
+                                                                        }}
+                                                                        className="w-full relative"
+                                                                    >
+                                                                        {isImageCategory ? (
+                                                                            // Diseño ordenado: texto arriba, imagen abajo
+                                                                            <div className={`relative h-32 md:h-40 overflow-hidden ${hasSubcategorySelected ? 'opacity-80' : ''}`}>
+                                                                                <div className="h-full flex flex-col p-3 md:p-4">
+                                                                                    {/* Título arriba - Altura fija para alinear imágenes */}
+                                                                                    <div className="flex items-center justify-between mb-auto min-h-[2rem] md:min-h-[2.5rem]">
+                                                                                        <h4 className={`font-semibold text-sm md:text-lg leading-tight ${
+                                                                                            isSelected ? 'text-gray-900' : hasSubcategorySelected ? 'text-primary' : 'text-gray-900'
+                                                                                        }`}>
+                                                                                            {parentCategory.name}
+                                                                                        </h4>
+                                                                                        {isSelected && (
+                                                                                            <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-gray-900 flex-shrink-0" />
+                                                                                        )}
+                                                                                    </div>
+                                                                                    
+                                                                                    {/* Imagen abajo a la derecha */}
+                                                                                    <div className="flex justify-end items-end mt-auto">
+                                                                                        <div className="w-20 h-20 md:w-28 md:h-28 flex items-center justify-center">
+                                                                                            <img 
+                                                                                                src={
+                                                                                                    isMotoAgua 
+                                                                                                        ? new URL('../media/motoagua.png', import.meta.url).href
+                                                                                                        : isMoto
+                                                                                                            ? new URL('../media/motopng.png', import.meta.url).href
+                                                                                                            : isCoche
+                                                                                                                ? new URL('../media/cochepng.png', import.meta.url).href
+                                                                                                                : isCasa
+                                                                                                                    ? new URL('../media/casapng.png', import.meta.url).href
+                                                                                                                    : ''
+                                                                                                }
+                                                                                                alt={
+                                                                                                    isMotoAgua ? "Moto de agua" 
+                                                                                                        : isMoto ? "Moto" 
+                                                                                                        : isCoche ? "Coche"
+                                                                                                        : isCasa ? "Casa"
+                                                                                                        : ""
+                                                                                                }
+                                                                                                className="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+                                                                                            />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            // Diseño estándar para otras categorías
+                                                                            <div className={`h-32 md:h-auto p-3 md:p-4 flex flex-col items-center text-center space-y-2 md:space-y-3 ${hasSubcategorySelected ? 'opacity-80' : ''}`}>
+                                                                    <div className={`w-12 h-12 md:w-16 md:h-16 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
                                                                         isSelected
-                                                                            ? 'bg-primary text-primary-foreground shadow-lg scale-105'
-                                                                            : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 group-hover:from-primary/10 group-hover:to-primary/20'
+                                                                                        ? 'bg-primary text-primary-foreground'
+                                                                                        : hasSubcategorySelected
+                                                                                            ? 'bg-primary/20 text-primary border border-primary/40'
+                                                                                            : 'bg-gray-100 text-gray-600'
                                                                     }`}>
-                                                                        {parentCategory.id === 1 && <Car className="w-8 h-8" />}
-                                                                        {parentCategory.id === 2 && <Bike className="w-8 h-8" />}
-                                                                        {parentCategory.id === 3 && <Home className="w-8 h-8" />}
-                                                                        {![1, 2, 3].includes(parentCategory.id) && <FolderTree className="w-8 h-8" />}
+                                                                        {parentCategory.id === 1 && <Car className="w-6 h-6 md:w-8 md:h-8" />}
+                                                                        {parentCategory.id === 3 && <Home className="w-6 h-6 md:w-8 md:h-8" />}
+                                                                        {![1, 2, 3].includes(parentCategory.id) && <FolderTree className="w-6 h-6 md:w-8 md:h-8" />}
                                                                     </div>
-                                                                    <div className="w-full">
-                                                                        <div className="flex items-center justify-center gap-2 mb-1">
-                                                                            <h4 className={`font-semibold text-base ${
-                                                                                isSelected ? 'text-primary' : 'text-gray-900'
+                                                                    <div className="w-full flex-1 flex flex-col justify-center">
+                                                                        <div className="flex items-center justify-center gap-1 md:gap-2 mb-0.5 md:mb-1">
+                                                                            <h4 className={`font-semibold text-sm md:text-base ${
+                                                                                isSelected ? 'text-primary' : hasSubcategorySelected ? 'text-primary' : 'text-gray-900'
                                                                             }`}>
                                                                                 {parentCategory.name}
                                                                             </h4>
                                                                             {isSelected && (
-                                                                                <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                                                                                <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-primary flex-shrink-0" />
+                                                                            )}
+                                                                            {hasSubcategorySelected && !isSelected && (
+                                                                                <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center flex-shrink-0">
+                                                                                    <div className="w-2 h-2 rounded-full bg-primary"></div>
+                                                                                </div>
                                                                             )}
                                                                         </div>
-                                                                        <p className="text-sm text-gray-500 mb-2">
+                                                                        <p className="text-xs md:text-sm text-gray-500 mb-1 md:mb-2 hidden md:block">
                                                                             {parentCategory.id === 1 && 'Coches, motos y vehículos'}
                                                                             {parentCategory.id === 2 && 'Motocicletas y ciclomotores'}
                                                                             {parentCategory.id === 3 && 'Inmuebles y propiedades'}
                                                                             {![1, 2, 3].includes(parentCategory.id) && 'Selecciona esta categoría'}
                                                                         </p>
                                                                         {hasSubcategories && (
-                                                                            <div className="flex items-center justify-center gap-2">
-                                                                                <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium">
+                                                                            <div className="flex items-center justify-center gap-1 md:gap-2">
+                                                                                            <span className="text-[10px] md:text-xs px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-full bg-gray-100 text-gray-600 font-medium">
                                                                                     General
                                                                                 </span>
-                                                                                <span className="text-xs text-muted-foreground">
+                                                                                            <span className="text-[10px] md:text-xs text-gray-500">
                                                                                     {subcategories.length} {subcategories.length === 1 ? 'subcategoría' : 'subcategorías'}
                                                                                 </span>
                                                                             </div>
                                                                         )}
                                                                     </div>
-                                                                </button>
-                                                                {hasSubcategories && (
-                                                                    <div className="mt-3 pt-3 border-t border-border">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => toggleCategoryExpand(parentCategory.id)}
-                                                                            className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg transition-all ${
-                                                                                isExpanded
-                                                                                    ? 'bg-primary/10 text-primary'
-                                                                                    : 'text-muted-foreground hover:bg-muted'
-                                                                            }`}
-                                                                        >
-                                                                            {isExpanded ? (
-                                                                                <>
-                                                                                    <ChevronDown className="w-4 h-4" />
-                                                                                    <span className="text-xs font-medium">Ocultar subcategorías</span>
-                                                                                </>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <ChevronRight className="w-4 h-4" />
-                                                                                    <span className="text-xs font-medium">Ver subcategorías</span>
-                                                                                </>
+                                                                            </div>
                                                                             )}
                                                                         </button>
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
                                                     </div>
                                                 );
-                                            })}
+                                                });
+                                            })()}
+                                            
+                                            {/* Botón "Más categorías" */}
+                                            <Sheet open={showMoreCategories} onOpenChange={setShowMoreCategories}>
+                                                <SheetTrigger asChild>
+                                                    <button className="group relative rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100 transition-all h-32 md:h-40 overflow-hidden">
+                                                        <div className="h-full flex flex-col items-center justify-center p-3 md:p-4 space-y-2 md:space-y-3">
+                                                            <div className="text-center">
+                                                                <h4 className="font-semibold text-sm md:text-base text-gray-900 mb-0.5 md:mb-1">
+                                                                    Más categorías
+                                                                </h4>
+                                                                <p className="text-[10px] md:text-xs text-gray-500">
+                                                                    Ver todas las opciones
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                </SheetTrigger>
+                                                <SheetContent side="right" className="w-full sm:max-w-md">
+                                                    <SheetHeader>
+                                                        <SheetTitle className="text-xl font-semibold">Todas las categorías</SheetTitle>
+                                                    </SheetHeader>
+                                                    <div className="mt-6 space-y-2 max-h-[calc(100vh-120px)] overflow-y-auto">
+                                                        {parentCategories
+                                                            .filter(cat => {
+                                                                // Excluir las 3 principales que ya se muestran
+                                                                const isCoche = cat.id === 1;
+                                                                const isMoto = cat.id === 2;
+                                                                const isThird = selectedThirdCategory ? cat.id === selectedThirdCategory : cat.id === 3;
+                                                                return !isCoche && !isMoto && !isThird;
+                                                            })
+                                                            .map((category) => {
+                                                                const isSelected = selectedThirdCategory === category.id;
+                                                                const isMotoAgua = category.name.toLowerCase().includes('agua') || 
+                                                                                  category.name.toLowerCase().includes('acuática');
+                                                                const isMoto = category.name.toLowerCase().includes('moto') && !isMotoAgua;
+                                                                const isCoche = category.name.toLowerCase().includes('coche') || 
+                                                                               category.name.toLowerCase().includes('vehículo');
+                                                                const isCasa = category.name.toLowerCase().includes('inmobiliaria') || 
+                                                                              category.name.toLowerCase().includes('inmueble') ||
+                                                                              category.name.toLowerCase().includes('casa');
+                                                                
+                                                                return (
+                                                                    <button
+                                                                        key={category.id}
+                                                                        onClick={() => {
+                                                                            setSelectedThirdCategory(category.id);
+                                                                            setSearchParameters((prev) => ({ ...prev, category: category.id }));
+                                                                            setShowMoreCategories(false);
+                                                                        }}
+                                                                        className={`w-full flex items-center gap-4 p-4 rounded-lg border transition-all text-left ${
+                                                                            isSelected
+                                                                                ? 'border-gray-900 bg-gray-50'
+                                                                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                                                        }`}
+                                                                    >
+                                                                        {/* Imagen o icono */}
+                                                                        <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                                                                            {isMotoAgua ? (
+                                                                                <img 
+                                                                                    src={new URL('../media/motoagua.png', import.meta.url).href}
+                                                                                    alt={category.name}
+                                                                                    className="w-full h-full object-contain"
+                                                                                />
+                                                                            ) : isMoto ? (
+                                                                                <img 
+                                                                                    src={new URL('../media/motopng.png', import.meta.url).href}
+                                                                                    alt={category.name}
+                                                                                    className="w-full h-full object-contain"
+                                                                                />
+                                                                            ) : isCoche ? (
+                                                                                <img 
+                                                                                    src={new URL('../media/cochepng.png', import.meta.url).href}
+                                                                                    alt={category.name}
+                                                                                    className="w-full h-full object-contain"
+                                                                                />
+                                                                            ) : isCasa ? (
+                                                                                <img 
+                                                                                    src={new URL('../media/casapng.png', import.meta.url).href}
+                                                                                    alt={category.name}
+                                                                                    className="w-full h-full object-contain"
+                                                                                />
+                                                                            ) : (
+                                                                                <FolderTree className="w-8 h-8 text-gray-600" />
+                                                                            )}
+                                                                        </div>
+                                                                        
+                                                                        {/* Nombre */}
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <h4 className={`font-semibold text-base ${
+                                                                                isSelected ? 'text-gray-900' : 'text-gray-900'
+                                                                            }`}>
+                                                                                {category.name}
+                                                                            </h4>
+                                                                        </div>
+                                                                        
+                                                                        {/* Checkmark o chevron */}
+                                                                        {isSelected ? (
+                                                                            <CheckCircle className="w-5 h-5 text-gray-900 flex-shrink-0" />
+                                                                        ) : (
+                                                                            <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                    </div>
+                                                </SheetContent>
+                                            </Sheet>
                                         </div>
 
-                                        {/* Subcategorías - Nueva fila debajo */}
-                                        {expandedCategoryIds.length > 0 && (
-                                            <div className="space-y-4">
-                                                {expandedCategoryIds.map((expandedCategoryId) => {
-                                                    const parentCategory = parentCategories.find(cat => cat.id === expandedCategoryId);
-                                                    if (!parentCategory) return null;
-                                                    
-                                                    const subcategories = getSubcategories(parentCategory.id);
-                                                    if (subcategories.length === 0) return null;
-                                                    
+                                        {/* Subcategorías - Minimalista debajo de las cards - Siempre ocupa el mismo espacio */}
+                                        <div className="mt-6 min-h-[60px] md:min-h-[50px]">
+                                            {searchParameters.category ? (() => {
+                                                // Buscar la categoría seleccionada en todas las categorías (no solo padre)
+                                                const selectedCategory = safeCategories.find(cat => cat.id === searchParameters.category);
+                                                
+                                                if (!selectedCategory) return null;
+                                                
+                                                // Determinar el ID de la categoría padre
+                                                let parentCategoryId: number;
+                                                
+                                                if (selectedCategory.parentId !== null) {
+                                                    // Es una subcategoría, usar su parentId
+                                                    parentCategoryId = selectedCategory.parentId;
+                                                } else {
+                                                    // Es una categoría padre, usar su propio ID
+                                                    parentCategoryId = selectedCategory.id;
+                                                }
+                                                
+                                                // Obtener las subcategorías del padre
+                                                const subcategories = getSubcategories(parentCategoryId);
+                                                
+                                                if (subcategories.length === 0) {
                                                     return (
-                                                        <div key={expandedCategoryId} className="space-y-3">
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                                                    {parentCategory.id === 1 && <Car className="w-4 h-4 text-primary" />}
-                                                                    {parentCategory.id === 2 && <Bike className="w-4 h-4 text-primary" />}
-                                                                    {parentCategory.id === 3 && <Home className="w-4 h-4 text-primary" />}
-                                                                    {![1, 2, 3].includes(parentCategory.id) && <FolderTree className="w-4 h-4 text-primary" />}
+                                                        <div className="flex items-center justify-center py-3">
+                                                            <p className="text-sm text-gray-500 text-center">
+                                                                Esta categoría no tiene subcategorías disponibles
+                                                            </p>
                                                                 </div>
-                                                                <h3 className="text-sm font-semibold text-gray-700">
-                                                                    Subcategorías de {parentCategory.name}
-                                                                </h3>
-                                                            </div>
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                                    );
+                                                }
+                                                
+                                                return (
+                                                    <div className="space-y-2">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2">
                                                                 {subcategories.map((subcategory) => {
                                                                     const isSubSelected = searchParameters.category === subcategory.id;
                                                                     return (
@@ -464,38 +669,32 @@ const SearchCreationPage: React.FC = () => {
                                                 onClick={() =>
                                                                                 setSearchParameters((prev) => ({ ...prev, category: subcategory.id }))
                                                                             }
-                                                                            className={`group/sub flex items-center gap-3 p-4 border-2 rounded-xl transition-all ${
+                                                                        className={`group/sub px-4 py-3 md:px-3 md:py-2 rounded-lg border transition-all text-left min-h-[48px] md:min-h-0 ${
                                                                                 isSubSelected
-                                                                                    ? 'border-primary bg-primary/5 shadow-md'
-                                                                                    : 'border-border hover:border-primary/50 bg-background hover:shadow-sm'
-                                                                            }`}
-                                                                        >
-                                                                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all flex-shrink-0 ${
-                                                                                isSubSelected
-                                                                                    ? 'bg-primary text-primary-foreground shadow-lg'
-                                                                                    : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 group-hover/sub:from-primary/10 group-hover/sub:to-primary/20'
-                                                                            }`}>
-                                                                                <FileText className="w-6 h-6" />
-                                                                            </div>
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <h4 className={`font-semibold text-sm ${
-                                                                                    isSubSelected ? 'text-primary' : 'text-gray-900'
-                                                                                }`}>
-                                                                                    {subcategory.name}
-                                                                                </h4>
-                                                </div>
+                                                                                ? 'border-primary bg-primary/5 text-primary font-medium'
+                                                                                : 'border-gray-200 bg-white hover:border-primary/50 hover:bg-gray-50 text-gray-700 active:bg-gray-100'
+                                                                        }`}
+                                                                    >
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <span className="text-base md:text-sm break-words">{subcategory.name}</span>
                                                                             {isSubSelected && (
-                                                                                <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
+                                                                                <CheckCircle className="w-5 h-5 md:w-4 md:h-4 text-primary flex-shrink-0" />
                                                                             )}
+                                                                        </div>
                                             </button>
                                                                     );
                                                                 })}
                                                             </div>
                                                         </div>
                                                     );
-                                                })}
+                                            })() : (
+                                                <div className="flex items-center justify-center py-3 h-full">
+                                                    <p className="text-sm text-gray-400 text-center">
+                                                        Selecciona una categoría para ver sus subcategorías
+                                                    </p>
                                             </div>
                                         )}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -505,23 +704,19 @@ const SearchCreationPage: React.FC = () => {
                                     const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
                                     return requiresKeywords && searchParameters.serviceTypeId;
                                 })() && (
-                                    <div className="border-b border-gray-200 pb-6">
-                                        <div className="mb-4">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-medium">3</span>
-                                                <h3 className="text-lg font-semibold text-gray-900">Palabras clave</h3>
-                                            </div>
-                                            <p className="text-sm text-gray-600 ml-9">Define qué estás buscando específicamente</p>
-                                        </div>
-                                        <div className="ml-9">
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-600 mb-3 uppercase tracking-wide">
+                                                    Palabras clave
+                                                </label>
+                                                <div>
                                             <input
                                                 type="text"
                                                 value={searchParameters.keywords || ''}
                                                 onChange={(e) =>
                                                     setSearchParameters((prev) => ({ ...prev, keywords: e.target.value }))
                                                 }
-                                                placeholder="Ej: Tesla Model 3, BMW M4, Piso en Madrid centro..."
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none transition-all"
+                                                placeholder="Ej: Tesla Model 3, BMW M4..."
+                                                className="w-full px-4 py-3 md:px-3 md:py-2 border border-gray-300 rounded-md text-base md:text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none transition-colors min-h-[48px] md:min-h-0"
                                             />
                                             <div className="mt-2 flex flex-wrap gap-1">
                                                 <span className="text-xs text-gray-500">Ejemplos:</span>
@@ -540,33 +735,15 @@ const SearchCreationPage: React.FC = () => {
                                 )}
 
                                 {/* Description Section */}
-                                <div className="border-b border-gray-200 pb-6">
-                                    <div className="mb-4">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-sm font-medium">
-                                                {(() => {
-                                                    const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
-                                                    const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
-                                                    return requiresKeywords ? '4' : '3';
-                                                })()}
-                                            </span>
-                                            <h3 className="text-lg font-semibold text-gray-900">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-3 uppercase tracking-wide">
                                                 {(() => {
                                                     const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
                                                     const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
                                                     return requiresKeywords ? 'Describe tu búsqueda' : 'URL del anuncio';
                                                 })()}
-                                            </h3>
-                                        </div>
-                                        <p className="text-sm text-gray-600 ml-9">
-                                            {(() => {
-                                                const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
-                                                const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
-                                                return requiresKeywords ? 'Detalles específicos para encontrar lo que buscas' : 'URL del anuncio o descripción si no está online';
-                                            })()}
-                                        </p>
-                                    </div>
-                                    <div className="ml-9">
+                                        </label>
+                                        <div>
                                         <textarea
                                             value={searchParameters.userSearch || ''}
                                             onChange={(e) =>
@@ -576,10 +753,10 @@ const SearchCreationPage: React.FC = () => {
                                                 const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
                                                 const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
                                                 return requiresKeywords 
-                                                    ? "Ej: Coche <15.000€, automático, pocos km, blanco/negro..."
-                                                    : "Ej: https://www.milanuncios.com/anuncio-123456 o describe: Coche particular, no está online...";
+                                                    ? "Ej: Coche <15.000€, automático, pocos km..."
+                                                    : "Ej: https://www.milanuncios.com/anuncio-123456...";
                                             })()}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 min-h-[80px] focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none transition-all resize-none"
+                                            className="w-full px-4 py-3 md:px-3 md:py-2 border border-gray-300 rounded-md text-base md:text-sm text-gray-900 placeholder-gray-400 min-h-[100px] md:min-h-[80px] focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none transition-colors resize-none"
                                         />
                                         {(() => {
                                             const selectedServiceType = serviceTypes.find(st => st.id === searchParameters.serviceTypeId);
@@ -598,8 +775,8 @@ const SearchCreationPage: React.FC = () => {
                                 </div>
 
                                 {/* Submit Button */}
-                                <div className="pt-6 flex justify-end">
-                                    <Button
+                                    <div className="pt-4">
+                                        <button
                                         onClick={handleStartSearch}
                                         disabled={
                                             serviceTypesLoading ||
@@ -612,20 +789,91 @@ const SearchCreationPage: React.FC = () => {
                                                        !searchParameters.serviceTypeId;
                                             })()
                                         }
-                                        size="lg"
+                                        className="w-full px-4 py-4 md:py-2.5 bg-gray-900 text-white text-base md:text-sm font-medium rounded-md hover:bg-gray-800 active:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px] md:min-h-0"
                                     >
-                                        Crear mi búsqueda personalizada
-                                        <ArrowRight className="w-5 h-5 ml-2" />
-                                    </Button>
+                                            Crear búsqueda
+                                        </button>
                                 </div>
                             </div>
                             {isAuthenticated && (
-                                <div className="mt-6 text-sm text-gray-500 flex items-center justify-center gap-2">
+                                        <div className="mt-6 text-sm text-gray-500">
                                     <span>Búsquedas ilimitadas disponibles</span>
                                 </div>
                             )}
                         </div>
 
+                                {/* Right Column - Visual Element */}
+                                <div className="hidden lg:block sticky top-8">
+                                    <div className="relative h-full min-h-[800px] rounded-2xl overflow-hidden">
+                                        {/* Background Image */}
+                                        <div className="absolute inset-0">
+                                            <img 
+                                                src={new URL('../media/revisioncoche.jpg', import.meta.url).href}
+                                                alt="Inspección profesional"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    const img = e.target as HTMLImageElement;
+                                                    img.style.display = 'none';
+                                                }}
+                                            />
+                                            {/* Fallback gradient if image fails */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-gray-400 to-gray-600"></div>
+                                        </div>
+                                        
+                                        {/* Dark Overlay at bottom - más pronunciado */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/20"></div>
+                                        
+                                        {/* Content */}
+                                        <div className="relative h-full flex flex-col justify-between p-8">
+                                            {/* Top badge */}
+                                            <div className="flex justify-end">
+                                                <div className="px-4 py-2 bg-white/95 backdrop-blur-sm rounded-full flex items-center gap-2 shadow-lg">
+                                                    <span className="text-sm font-medium text-gray-900">inspecciono.com</span>
+                                                    <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Bottom content */}
+                                            <div className="space-y-6">
+                                                <div className="space-y-3">
+                                                    <p className="text-white/90 text-sm font-medium">Descubriendo lo mejor</p>
+                                                    <h3 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+                                                        "Una elección inteligente. La mejor inspección profesional para tu compra"
+                                                    </h3>
+                                                </div>
+                                                
+                                                {/* Feature badges */}
+                                                <div className="flex gap-4">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center flex-shrink-0">
+                                                            <Shield className="w-3.5 h-3.5 text-white" />
+                                                        </div>
+                                                        <span className="text-sm font-medium text-white/95">100% Garantía</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center flex-shrink-0">
+                                                            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                        </div>
+                                                        <span className="text-sm font-medium text-white/95">Informe detallado</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Pagination dots */}
+                                                <div className="flex items-center justify-center gap-2 pt-2">
+                                                    <div className="w-10 h-1 bg-white rounded-full"></div>
+                                                    <div className="w-4 h-1 bg-white/40 rounded-full"></div>
+                                                    <div className="w-4 h-1 bg-white/40 rounded-full"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <footer className="mt-16 bg-background border-t border-border">
                         <div className="w-full px-4 sm:px-6 mx-auto max-w-7xl">
@@ -697,6 +945,17 @@ const SearchCreationPage: React.FC = () => {
                         onClose={() => setNotification(null)}
                     />
                 </div>
+            )}
+            
+            {/* Back to Top Button - Mobile only */}
+            {showBackToTop && (
+                <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="fixed bottom-6 right-6 lg:hidden z-50 w-12 h-12 bg-gray-900 text-white rounded-full shadow-lg hover:bg-gray-800 active:bg-gray-700 transition-all flex items-center justify-center"
+                    aria-label="Volver arriba"
+                >
+                    <ArrowUp className="w-5 h-5" />
+                </button>
             )}
         </div>
     );

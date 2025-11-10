@@ -192,7 +192,7 @@ export default function SearchForm({
         <div className="bg-background min-h-screen">
             {/* Header Section - Fixed */}
             <div className="sticky top-0 z-50 bg-background border-b">
-                <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Button
@@ -233,7 +233,7 @@ export default function SearchForm({
             </div>
 
             {/* Main Content */}
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-6">
                         {!isDataComplete && (
                     <Card className="mb-6 border-destructive/50 bg-destructive/5">
                         <CardContent className="p-4">
