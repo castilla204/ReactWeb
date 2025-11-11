@@ -796,24 +796,51 @@ const SearchCreationPage: React.FC = () => {
 
                                 {/* Right Column - Visual Element */}
                                 <div className="hidden lg:block sticky top-8">
-                                    <div className="relative h-full min-h-[800px] rounded-2xl overflow-hidden">
-                                        {/* Background Image */}
+                                    <div className="relative h-full min-h-[800px] rounded-2xl overflow-hidden shadow-2xl">
+                                        {/* Background Image - HD Real con fallback local */}
                                         <div className="absolute inset-0">
-                                            <img 
-                                                src="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
-                                                alt="Inspección profesional de vehículos"
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    const img = e.target as HTMLImageElement;
-                                                    img.style.display = 'none';
-                                                }}
-                                            />
-                                            {/* Fallback gradient if image fails */}
-                                            <div className="absolute inset-0 bg-gradient-to-br from-gray-400 to-gray-600"></div>
+                                            {/* Imagen HD principal - Inspección de vehículo profesional en alta calidad */}
+                                            <picture>
+                                                {/* Fuentes HD optimizadas para diferentes resoluciones */}
+                                                <source 
+                                                    media="(min-width: 1920px)" 
+                                                    srcSet="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2560&q=100 1x,
+                                                            https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=3840&q=100 2x"
+                                                />
+                                                <source 
+                                                    media="(min-width: 1280px)" 
+                                                    srcSet="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=100"
+                                                />
+                                                <img 
+                                                    src="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=100"
+                                                    alt="Inspección profesional de vehículos"
+                                                    className="w-full h-full object-cover"
+                                                    loading="eager"
+                                                    decoding="async"
+                                                    onError={(e) => {
+                                                        const img = e.target as HTMLImageElement;
+                                                        // Fallback a imagen HD alternativa de alta calidad
+                                                        img.src = "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=100";
+                                                        img.onerror = () => {
+                                                            // Si falla también, usar imagen local
+                                                            img.src = new URL('../media/landingimage.png', import.meta.url).href;
+                                                            img.onerror = () => {
+                                                                // Último fallback
+                                                                img.src = new URL('../media/fotohome.png', import.meta.url).href;
+                                                            };
+                                                        };
+                                                    }}
+                                                />
+                                            </picture>
+                                            {/* Fallback gradient elegante si todas las imágenes fallan */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-700 to-gray-800 opacity-0" id="gradient-fallback"></div>
                                         </div>
                                         
-                                        {/* Dark Overlay at bottom - más pronunciado */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/20"></div>
+                                        {/* Overlay sutil para mejorar legibilidad sin ocultar la imagen HD */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/10"></div>
+                                        
+                                        {/* Efecto de brillo sutil en la parte superior */}
+                                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 pointer-events-none"></div>
                                         
                                         {/* Content */}
                                         <div className="relative h-full flex flex-col justify-between p-8">
@@ -830,27 +857,27 @@ const SearchCreationPage: React.FC = () => {
                                             {/* Bottom content */}
                                             <div className="space-y-6">
                                                 <div className="space-y-3">
-                                                    <p className="text-white/90 text-sm font-medium">Descubriendo lo mejor</p>
-                                                    <h3 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+                                                    <p className="text-white text-sm font-semibold tracking-wide uppercase">Descubriendo lo mejor</p>
+                                                    <h3 className="text-3xl md:text-4xl font-bold text-white leading-tight drop-shadow-lg">
                                                         "Una elección inteligente. La mejor inspección profesional para tu compra"
                                                     </h3>
                                                 </div>
                                                 
                                                 {/* Feature badges */}
-                                                <div className="flex gap-4">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center flex-shrink-0">
+                                                <div className="flex flex-wrap gap-4">
+                                                    <div className="flex items-center gap-2.5 px-4 py-2 bg-white/25 backdrop-blur-md rounded-full border border-white/30">
+                                                        <div className="w-6 h-6 rounded-full bg-white/30 backdrop-blur-sm border border-white/50 flex items-center justify-center flex-shrink-0">
                                                             <Shield className="w-3.5 h-3.5 text-white" />
                                                         </div>
-                                                        <span className="text-sm font-medium text-white/95">100% Garantía</span>
+                                                        <span className="text-sm font-semibold text-white">100% Garantía</span>
                                                     </div>
-                                                    <div className="flex items-center gap-2.5">
-                                                        <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center flex-shrink-0">
+                                                    <div className="flex items-center gap-2.5 px-4 py-2 bg-white/25 backdrop-blur-md rounded-full border border-white/30">
+                                                        <div className="w-6 h-6 rounded-full bg-white/30 backdrop-blur-sm border border-white/50 flex items-center justify-center flex-shrink-0">
                                                             <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                             </svg>
                                                         </div>
-                                                        <span className="text-sm font-medium text-white/95">Informe detallado</span>
+                                                        <span className="text-sm font-semibold text-white">Informe detallado</span>
                                                     </div>
                                                 </div>
                                                 
