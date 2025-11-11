@@ -2,7 +2,7 @@
 import { Star, Trash2, X, Send, Upload, AlertTriangle } from 'lucide-react';
 import { useReview } from '../hooks/useReview.hooks';
 import { useExpertReport } from '../hooks/useExpertReport';
-import { NotificationType } from './Notification';
+import { showToast, NotificationType } from '../lib/toast';
 import { Appointment } from '../types/appointment';
 import {
     Drawer,
@@ -24,15 +24,13 @@ interface ReviewModalProps {
     reviewForm: { score: number; description: string; images: File[] };
     setReviewForm: React.Dispatch<React.SetStateAction<{ score: number; description: string; images: File[] }>>;
     onSubmit: () => void;
-    setNotifications: React.Dispatch<React.SetStateAction<{ id: string; type: NotificationType; message: string; duration?: number }[]>>;
 }
 
-export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setReviewForm, onSubmit, setNotifications }: ReviewModalProps) {
+export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setReviewForm, onSubmit }: ReviewModalProps) {
     const { createReview, isCreatingReview } = useReview();
 
     const addNotification = (type: NotificationType, message: string, duration?: number) => {
-        const id = Math.random().toString(36).substring(2, 9);
-        setNotifications((prev) => [...prev, { id, type, message, duration }]);
+        showToast(type, message, duration);
     };
 
     const handleSubmit = async () => {

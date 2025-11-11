@@ -14,6 +14,67 @@ import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
 
+// Componente para mostrar imagen de categoría
+const CategoryImage: React.FC<{ categoryName: string; size?: 'sm' | 'md' }> = ({ categoryName, size = 'sm' }) => {
+    const sizeClasses = {
+        sm: 'w-8 h-8',
+        md: 'w-10 h-10'
+    };
+
+    // Determinar qué imagen usar según el nombre de la categoría
+    const isMotoAgua = categoryName.toLowerCase().includes('moto') && categoryName.toLowerCase().includes('agua');
+    const isMoto = categoryName.toLowerCase().includes('moto') && !isMotoAgua;
+    const isCoche = categoryName.toLowerCase().includes('coche') || categoryName.toLowerCase().includes('vehículo');
+    const isCasa = categoryName.toLowerCase().includes('inmobiliaria') || categoryName.toLowerCase().includes('casa') || categoryName.toLowerCase().includes('inmueble');
+
+    if (isMotoAgua) {
+        return (
+            <img 
+                src={new URL('../../media/motoagua.png', import.meta.url).href}
+                alt="Moto de agua"
+                className={`${sizeClasses[size]} object-contain rounded-md`}
+            />
+        );
+    }
+    
+    if (isMoto) {
+        return (
+            <img 
+                src={new URL('../../media/motopng.png', import.meta.url).href}
+                alt="Moto"
+                className={`${sizeClasses[size]} object-contain rounded-md`}
+            />
+        );
+    }
+    
+    if (isCoche) {
+        return (
+            <img 
+                src={new URL('../../media/cochepng.png', import.meta.url).href}
+                alt="Coche"
+                className={`${sizeClasses[size]} object-contain rounded-md`}
+            />
+        );
+    }
+    
+    if (isCasa) {
+        return (
+            <img 
+                src={new URL('../../media/casapng.png', import.meta.url).href}
+                alt="Casa"
+                className={`${sizeClasses[size]} object-contain rounded-md`}
+            />
+        );
+    }
+
+    // Fallback: icono por defecto
+    return (
+        <div className={`${sizeClasses[size]} rounded-md bg-muted flex items-center justify-center`}>
+            <FolderTree className="w-4 h-4 text-muted-foreground" />
+        </div>
+    );
+};
+
 interface ServiceFormProps {
     showServiceForm: boolean;
     setShowServiceForm: (value: boolean) => void;
@@ -224,8 +285,8 @@ export function ServiceForm({
             <div>
                 <div className="space-y-6">
                     <div>
-                        <Label className="text-sm font-medium mb-3 block">Categorías</Label>
-                        <div className="space-y-3">
+                        <Label className="text-sm font-medium mb-2 block">Categorías</Label>
+                        <div className="grid grid-cols-2 gap-2">
                             {parentCategories.map(parentCategory => {
                                 const subcategories = getSubcategories(parentCategory.id);
                                 const hasSubcategories = subcategories.length > 0;
@@ -233,91 +294,73 @@ export function ServiceForm({
                                 const isSelected = selectedCategoryIds.includes(parentCategory.id.toString());
                                 
                                 return (
-                                    <div key={parentCategory.id} className="space-y-2">
-                                        <div className={`group relative border rounded-lg transition-all ${
-                                            isSelected
-                                                ? 'border-primary bg-primary/5 shadow-sm'
-                                                : 'border-border hover:border-primary/50 bg-background'
-                                        }`}>
-                                            <div className="flex items-center gap-3 p-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleCategorySelect(parentCategory.id.toString())}
-                                                    className={`flex-1 flex items-center gap-3 text-left ${
-                                                        isSelected ? 'text-primary font-semibold' : 'text-foreground'
-                                                    }`}
-                                                >
-                                                    <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                                                        isSelected
-                                                            ? 'bg-primary text-primary-foreground'
-                                                            : 'bg-muted text-muted-foreground group-hover:bg-primary/10'
-                                                    }`}>
-                                                        <FolderTree className="w-5 h-5" />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-medium">{parentCategory.name}</span>
-                                                            {hasSubcategories && (
-                                                                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                                                                    General
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        {hasSubcategories && (
-                                                            <p className="text-xs text-muted-foreground mt-0.5">
-                                                                {subcategories.length} {subcategories.length === 1 ? 'subcategoría' : 'subcategorías'} disponible{subcategories.length === 1 ? '' : 's'}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    {isSelected && (
-                                                        <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
-                                                    )}
-                                                </button>
-                                                {hasSubcategories && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => toggleCategoryExpand(parentCategory.id)}
-                                                        className={`flex-shrink-0 p-2 rounded-md transition-colors ${
-                                                            isExpanded
-                                                                ? 'bg-primary/10 text-primary'
-                                                                : 'text-muted-foreground hover:bg-muted'
-                                                        }`}
-                                                    >
-                                                        {isExpanded ? (
-                                                            <ChevronDown className="w-5 h-5" />
-                                                        ) : (
-                                                            <ChevronRight className="w-5 h-5" />
-                                                        )}
-                                                    </button>
+                                    <div key={parentCategory.id} className="space-y-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCategorySelect(parentCategory.id.toString())}
+                                            className={`w-full relative border rounded-md transition-all text-left overflow-hidden ${
+                                                isSelected
+                                                    ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
+                                                    : 'border-border hover:border-primary/50 bg-background'
+                                            }`}
+                                        >
+                                            <div className="flex flex-col items-center gap-1.5 p-2.5">
+                                                <CategoryImage categoryName={parentCategory.name} size="sm" />
+                                                <span className={`text-xs font-medium text-center leading-tight ${
+                                                    isSelected ? 'text-primary' : 'text-foreground'
+                                                }`}>
+                                                    {parentCategory.name}
+                                                </span>
+                                                {isSelected && (
+                                                    <CheckCircle className="w-3.5 h-3.5 text-primary absolute top-1.5 right-1.5" />
                                                 )}
                                             </div>
-                                        </div>
+                                        </button>
+                                        {hasSubcategories && (
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleCategoryExpand(parentCategory.id)}
+                                                className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1 py-0.5"
+                                            >
+                                                {isExpanded ? (
+                                                    <>
+                                                        <ChevronDown className="w-3 h-3" />
+                                                        <span>Ocultar</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ChevronRight className="w-3 h-3" />
+                                                        <span>{subcategories.length} subcategoría{subcategories.length !== 1 ? 's' : ''}</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
                                         {isExpanded && hasSubcategories && (
-                                            <div className="ml-6 space-y-2 border-l-2 border-border pl-4">
+                                            <div className="space-y-1.5 pt-1">
                                                 {subcategories.map(subcategory => {
                                                     const isSubSelected = selectedCategoryIds.includes(subcategory.id.toString());
                                                     return (
                                                         <button
                                                             key={subcategory.id}
-                                    type="button"
+                                                            type="button"
                                                             onClick={() => handleCategorySelect(subcategory.id.toString())}
-                                                            className={`w-full flex items-center gap-3 p-2.5 rounded-lg border transition-all text-left ${
+                                                            className={`w-full relative border rounded-md transition-all text-left overflow-hidden ${
                                                                 isSubSelected
-                                                                    ? 'border-primary bg-primary/5 text-primary font-medium'
-                                                                    : 'border-border hover:border-primary/50 bg-background text-foreground'
+                                                                    ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
+                                                                    : 'border-border hover:border-primary/50 bg-background'
                                                             }`}
                                                         >
-                                                            <div className={`flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
-                                                                isSubSelected
-                                                                    ? 'bg-primary text-primary-foreground'
-                                                                    : 'bg-muted text-muted-foreground'
-                                                            }`}>
-                                                                <FileText className="w-4 h-4" />
+                                                            <div className="flex flex-col items-center gap-1 p-2">
+                                                                <CategoryImage categoryName={subcategory.name} size="sm" />
+                                                                <span className={`text-xs font-medium text-center leading-tight ${
+                                                                    isSubSelected ? 'text-primary' : 'text-foreground'
+                                                                }`}>
+                                                                    {subcategory.name}
+                                                                </span>
+                                                                {isSubSelected && (
+                                                                    <CheckCircle className="w-3 h-3 text-primary absolute top-1 right-1" />
+                                                                )}
                                                             </div>
-                                                            <span className="flex-1 text-sm">{subcategory.name}</span>
-                                                            {isSubSelected && (
-                                                                <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
-                                                            )}
                                                         </button>
                                                     );
                                                 })}

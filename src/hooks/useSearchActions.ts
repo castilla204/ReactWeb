@@ -1,16 +1,15 @@
 ﻿import { useDisputes } from './useDisputes';
 import { useApi } from './useApi';
 import { useNavigate } from 'react-router-dom';
-import { NotificationType } from './Notification';
+import { showToast, NotificationType } from '../lib/toast';
 
-export function useSearchActions(setNotifications: React.Dispatch<React.SetStateAction<{ id: string; type: NotificationType; message: string; duration?: number }[]>>) {
+export function useSearchActions() {
     const { createDispute, resolveDispute } = useDisputes();
     const { fetchApi } = useApi();
     const navigate = useNavigate();
 
     const addNotification = (type: NotificationType, message: string, duration?: number) => {
-        const id = Math.random().toString(36).substring(2, 9);
-        setNotifications((prev) => [...prev, { id, type, message, duration }]);
+        showToast(type, message, duration);
     };
 
     const handleCancelService = async (searchHireId: number | undefined) => {

@@ -7,15 +7,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
-import { NotificationType } from './Notification';
-import { v4 as uuidv4 } from 'uuid';
+import { showToast } from '../lib/toast';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 
 interface ChatProps {
     searchId: number;
-    setNotifications: React.Dispatch<
-        React.SetStateAction<{ id: string; type: NotificationType; message: string; duration?: number }[]>
-    >;
     isExpert: boolean;
     expertData?: {
         name?: string;
@@ -203,11 +199,10 @@ const getStatusDisplay = (statusValue: string): StatusDisplay => {
     };
 };
 
-const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, expertData }) => {
+const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData }) => {
     const { user } = useAuth();
     const { conversation, loading, error, newMessage, setNewMessage, sendMessage, isSending } = useChat(
-        searchId,
-        setNotifications
+        searchId
     );
     
     // State for image modal
@@ -249,17 +244,9 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
 
     useEffect(() => {
         if (error) {
-            setNotifications((prev) => [
-                ...prev.filter((n) => !n.id.startsWith('chat-error-')),
-                {
-                    id: `chat-error-${uuidv4()}`,
-                    type: 'error' as NotificationType,
-                    message: error.includes('401') ? 'Sesión expirada. Por favor, inicia sesión de nuevo.' : error,
-                    duration: 5000,
-                },
-            ]);
+            showToast('error', error.includes('401') ? 'Sesión expirada. Por favor, inicia sesión de nuevo.' : error, 5000);
         }
-    }, [error, setNotifications]);
+    }, [error]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files ? Array.from(e.target.files) : [];
@@ -272,26 +259,10 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
         });
         console.log('[09:15 CEST] Selected message files:', validFiles.map((f) => ({ name: f.name, size: f.size })));
         if (validFiles.length > 0) {
-            setNotifications((prev) => [
-                ...prev,
-                {
-                    id: `file-selected-${uuidv4()}`,
-                    type: 'success' as NotificationType,
-                    message: `Archivos seleccionados: ${validFiles.map((f) => f.name).join(', ')}`,
-                    duration: 3000,
-                },
-            ]);
+            showToast('success', `Archivos seleccionados: ${validFiles.map((f) => f.name).join(', ')}`, 3000);
         }
         if (validFiles.length < files.length) {
-            setNotifications((prev) => [
-                ...prev,
-                {
-                    id: `file-error-${uuidv4()}`,
-                    type: 'error' as NotificationType,
-                    message: `Solo se permiten archivos JPG, PNG, MP4 con un tamaño máximo de ${maxMessageFileSize / 1024 / 1024}MB.`,
-                    duration: 5000,
-                },
-            ]);
+            showToast('error', `Solo se permiten archivos JPG, PNG, MP4 con un tamaño máximo de ${maxMessageFileSize / 1024 / 1024}MB.`, 5000);
         }
         setSelectedFiles(validFiles);
     };
@@ -331,15 +302,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
             longitude: selectedMapLocation.lng.toString(),
         });
         setIsMapModalOpen(false);
-        setNotifications((prev) => [
-            ...prev,
-            {
-                id: `location-selected-${uuidv4()}`,
-                type: 'success' as NotificationType,
-                message: `Ubicación seleccionada: ${selectedMapLocation.lat.toFixed(4)}, ${selectedMapLocation.lng.toFixed(4)}`,
-                duration: 3000,
-            },
-        ]);
+        showToast('success', `Ubicación seleccionada: ${selectedMapLocation.lat.toFixed(4)}, ${selectedMapLocation.lng.toFixed(4)}`, 3000);
     };
 
     const handleSendMessage = () => {
@@ -368,15 +331,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, setNotifications, isExpert, exper
             setMessageSent(true);
             setTimeout(() => setMessageSent(false), 2000);
         } else {
-            setNotifications((prev) => [
-                ...prev,
-                {
-                    id: `empty-message-${uuidv4()}`,
-                    type: 'error' as NotificationType,
-                    message: 'Escribe un mensaje, selecciona un archivo o comparte tu ubicación para enviar.',
-                    duration: 5000,
-                },
-            ]);
+            showToast('error', 'Escribe un mensaje, selecciona un archivo o comparte tu ubicación para enviar.', 5000);
         }
     };
 

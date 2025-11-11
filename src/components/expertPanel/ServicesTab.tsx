@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Loader2, Trash2, Edit3, MoreHorizontal, Image as ImageIcon, Euro } from 'lucide-react';
+import { Plus, Search, Loader2, Trash2, Edit3, MoreHorizontal, Image as ImageIcon, Euro, Package } from 'lucide-react';
 import { useCategories } from '../../contexts/CategoryContext';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -17,6 +17,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from '../ui/empty';
 
 interface Service {
     id: number;
@@ -100,11 +101,6 @@ export function ServicesTab({
                     <h2 className="text-base sm:text-lg font-semibold">Mis Servicios</h2>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1 hidden sm:block">Gestiona tus servicios activos</p>
                 </div>
-                <Button onClick={() => setShowServiceForm(true)} size="sm" className="text-xs sm:text-sm">
-                    <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                    <span className="hidden sm:inline">Nuevo Servicio</span>
-                    <span className="sm:hidden">Nuevo</span>
-                </Button>
             </div>
 
             {isLoadingServices ? (
@@ -116,11 +112,24 @@ export function ServicesTab({
                     <p>Error al cargar servicios: {servicesError.message}</p>
                 </div>
             ) : services.length === 0 ? (
-                <div className="text-center py-12">
-                    <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-foreground font-medium">No tienes servicios activos</p>
-                    <p className="text-sm text-muted-foreground mt-1">Crea tu primer servicio para empezar</p>
-                </div>
+                <Empty className="py-12">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <Package className="w-7 h-7 text-slate-500" />
+                        </EmptyMedia>
+                        <EmptyTitle>No tienes servicios activos</EmptyTitle>
+                        <EmptyDescription>Crea tu primer servicio para empezar a recibir solicitudes de clientes</EmptyDescription>
+                        <EmptyContent>
+                            <Button 
+                                onClick={() => setShowServiceForm(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Crear servicio
+                            </Button>
+                        </EmptyContent>
+                    </EmptyHeader>
+                </Empty>
             ) : (
                 <div className="border rounded-lg overflow-x-auto">
                     <Table>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Heart, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
@@ -12,13 +12,26 @@ import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { AdDetails } from './components/AdDetails';
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 import { PaymentCancelPage } from './pages/PaymentCancelPage';
-import { Notification, NotificationType } from './components/Notification';
+import { Toaster } from './components/ui/sonner';
+import { toast } from 'sonner';
 import {
     NavigationMenu,
     NavigationMenuItem,
     NavigationMenuLink,
     NavigationMenuList,
 } from './components/ui/navigation-menu';
+import { Button } from './components/ui/button';
+import { Avatar, AvatarFallback } from './components/ui/avatar';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from './components/ui/dropdown-menu';
+import { Separator } from './components/ui/separator';
+import { Badge } from './components/ui/badge';
 
 import SearchesPage from './pages/SearchesPage';
 import SearchCreationPage from './pages/SearchCreationPage';
@@ -80,31 +93,20 @@ const AppContent: React.FC = () => {
     // Solo ocultar header en móvil cuando estamos en la página de creación Y en un paso de formulario (1 o 2)
     const shouldHideHeaderOnMobile = isSearchCreationPage && isInFormStep;
 
-    const [notification, setNotification] = useState<{
-        type: NotificationType;
-        message: string;
-    } | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { unreadCount } = useNotifications();
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
-    const profileMenuRef = useRef<HTMLDivElement>(null);
-
-    const handleClickOutside = useCallback((event: MouseEvent) => {
-        if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
-            setShowProfileMenu(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [handleClickOutside]);
 
     // Listen for notification events
     useEffect(() => {
         const handleShowNotification = (event: CustomEvent) => {
             const { type, message } = event.detail;
-            setNotification({ type, message });
+            if (type === 'success') {
+                toast.success(message);
+            } else if (type === 'error') {
+                toast.error(message);
+            } else {
+                toast.info(message);
+            }
         };
 
         window.addEventListener('showNotification', handleShowNotification as EventListener);
@@ -115,20 +117,11 @@ const AppContent: React.FC = () => {
 
     const handleSignOut = () => {
         signOut();
-        setShowProfileMenu(false);
-        window.dispatchEvent(new CustomEvent('showNotification', {
-            detail: {
-                type: 'info',
-                message: '👋 ¡Hasta pronto!'
-            }
-        }));
+        toast.info('👋 ¡Hasta pronto!');
     };
 
     const handleRequireAuth = (action: string) => {
-        setNotification({
-            type: 'info',
-            message: `Para ${action.toLowerCase()} necesitas iniciar sesión primero`
-        });
+        toast.info(`Para ${action.toLowerCase()} necesitas iniciar sesión primero`);
     };
 
     const isExpert = user?.role === 'Expert';
@@ -144,60 +137,69 @@ const AppContent: React.FC = () => {
                         </h1>
 
                         {/* Navegación compacta */}
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
                             {/* Navegación principal - siempre visible */}
                             <div className="hidden md:flex items-center">
                                 <NavigationMenu>
                                     <NavigationMenuList className="gap-1">
                                         <NavigationMenuItem>
                                             <NavigationMenuLink asChild>
-                                                <button
-                                                    onClick={() => isAuthenticated ? window.location.href = '/busquedas' : handleRequireAuth('Ver tus búsquedas')}
-                                                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 rounded-md cursor-pointer"
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => isAuthenticated ? window.location.href = '/busquedas' : handleRequireAuth('Ver tus inspecciones')}
+                                                    className="flex items-center gap-1.5"
                                                 >
                                                     <Search className="w-4 h-4" />
-                                                    <span>Búsquedas</span>
-                                                </button>
+                                                    <span>Inspecciones</span>
+                                                </Button>
                                             </NavigationMenuLink>
                                         </NavigationMenuItem>
                                         <NavigationMenuItem>
                                             <NavigationMenuLink asChild>
-                                                <button
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
                                                     onClick={() => isAuthenticated ? setShowFavorites(true) : handleRequireAuth('Ver tus favoritos')}
-                                                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 rounded-md cursor-pointer"
+                                                    className="flex items-center gap-1.5"
                                                 >
                                                     <Heart className="w-4 h-4" />
                                                     <span>Favoritos</span>
-                                                </button>
+                                                </Button>
                                             </NavigationMenuLink>
                                         </NavigationMenuItem>
                                         <NavigationMenuItem>
                                             <NavigationMenuLink asChild>
-                                                <button
-                                                    type="button"
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
                                                     onClick={() => isAuthenticated ? setShowNotifications(true) : handleRequireAuth('Ver tus notificaciones')}
-                                                    className="relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 rounded-md cursor-pointer"
+                                                    className="relative flex items-center gap-1.5"
                                                 >
-                                                    {isAuthenticated && unreadCount > 0 && (
-                                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full border border-white">
-                                                            {unreadCount > 9 ? '9+' : unreadCount}
-                                                        </div>
-                                                    )}
                                                     <Bell className="w-4 h-4" />
                                                     <span>Notificaciones</span>
-                                                </button>
+                                                    {isAuthenticated && unreadCount > 0 && (
+                                                        <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] flex items-center justify-center">
+                                                            {unreadCount > 9 ? '9+' : unreadCount}
+                                                        </Badge>
+                                                    )}
+                                                </Button>
                                             </NavigationMenuLink>
                                         </NavigationMenuItem>
                                         
                                         {/* Panel de experto integrado - solo para expertos autenticados */}
                                         {isAuthenticated && isExpert && (
                                             <NavigationMenuItem>
-                                                <NavigationMenuLink
-                                                    href="/expert-panel"
-                                                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 rounded-md"
-                                                >
-                                                    <Briefcase className="w-4 h-4" />
-                                                    <span>Panel</span>
+                                                <NavigationMenuLink asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => window.location.href = '/expert-panel'}
+                                                        className="flex items-center gap-1.5"
+                                                    >
+                                                        <Briefcase className="w-4 h-4" />
+                                                        <span>Panel</span>
+                                                    </Button>
                                                 </NavigationMenuLink>
                                             </NavigationMenuItem>
                                         )}
@@ -206,77 +208,82 @@ const AppContent: React.FC = () => {
                             </div>
 
                             {/* Separador antes del avatar/login */}
-                            <span className="text-muted-foreground/50 mx-3">|</span>
+                            <Separator orientation="vertical" className="h-6 mx-2 hidden md:block" />
 
                             {/* Botón menú móvil */}
-                            <button
+                            <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="md:hidden p-1 text-foreground hover:text-foreground/80 rounded transition-colors mr-2"
+                                className="md:hidden"
                             >
                                 <Menu className="w-5 h-5" />
-                            </button>
+                            </Button>
 
                             {isAuthenticated ? (
                                 /* Avatar compacto para usuarios autenticados */
-                                <div className="relative" ref={profileMenuRef}>
-                                    <button
-                                        onClick={() => setShowProfileMenu(!showProfileMenu)}
-                                        className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-sm font-medium hover:bg-blue-200 transition-colors"
-                                    >
-                                        {user?.name?.[0]?.toUpperCase()}
-                                    </button>
-
-                                    {showProfileMenu && (
-                                        <div className="absolute right-0 mt-2 w-52 bg-popover rounded-xl shadow-xl border border-border py-2 z-50">
-                                            <div className="px-4 py-3 border-b border-border">
-                                                <p className="text-sm font-semibold text-popover-foreground truncate">{user?.name}</p>
-                                                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                                                <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarFallback className="bg-blue-100 text-blue-700 text-sm font-medium">
+                                                    {user?.name?.[0]?.toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-56">
+                                        <DropdownMenuLabel>
+                                            <div className="flex flex-col space-y-1">
+                                                <p className="text-sm font-semibold leading-none">{user?.name}</p>
+                                                <p className="text-xs leading-none text-muted-foreground truncate">{user?.email}</p>
+                                                <Badge variant="secondary" className="mt-1.5 w-fit text-xs">
                                                     {isExpert ? 'Experto' : 'Usuario'}
-                                                </span>
+                                                </Badge>
                                             </div>
-                                            <button
-                                                onClick={() => {
-                                                    setShowAccountSettings(true);
-                                                    setShowProfileMenu(false);
-                                                }}
-                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
-                                            >
-                                                <Settings className="w-4 h-4 text-muted-foreground" />
-                                                Configuración
-                                            </button>
-                                            <button
-                                                onClick={handleSignOut}
-                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                            >
-                                                <LogOut className="w-4 h-4" />
-                                                Cerrar Sesión
-                                            </button>
-                                        </div>
-                                    )}
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onClick={() => {
+                                                setShowAccountSettings(true);
+                                            }}
+                                        >
+                                            <Settings className="w-4 h-4 mr-2" />
+                                            Configuración
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onClick={handleSignOut}
+                                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                        >
+                                            <LogOut className="w-4 h-4 mr-2" />
+                                            Cerrar Sesión
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : (
+                                /* Botón de login con GoogleAuth integrado */
+                                <div className="relative">
+                                    {/* GoogleAuth oculto */}
+                                    <div className="absolute opacity-0 pointer-events-none">
+                                        <GoogleAuth />
+                                    </div>
+                                    {/* Botón visible que activa GoogleAuth */}
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            // Buscar y hacer clic en el botón de Google Auth
+                                            const googleButton = document.querySelector('#googleButton div[role="button"]') as HTMLElement;
+                                            if (googleButton) {
+                                                googleButton.click();
+                                            }
+                                        }}
+                                    >
+                                        Iniciar Sesión
+                                    </Button>
                                 </div>
-                                        ) : (
-                /* Botón de login con GoogleAuth integrado */
-                <div className="relative">
-                    {/* GoogleAuth oculto */}
-                    <div className="absolute opacity-0 pointer-events-none">
-                        <GoogleAuth />
-                    </div>
-                    {/* Botón visible que activa GoogleAuth */}
-                    <button
-                        onClick={() => {
-                            // Buscar y hacer clic en el botón de Google Auth
-                            const googleButton = document.querySelector('#googleButton div[role="button"]') as HTMLElement;
-                            if (googleButton) {
-                                googleButton.click();
-                            }
-                        }}
-                        className="px-3 py-1.5 text-sm text-foreground hover:text-primary transition-colors"
-                    >
-                        Iniciar Sesión
-                    </button>
-                </div>
-            )}
+                            )}
                         </div>
                     </div>
                 </header>
@@ -447,15 +454,7 @@ const AppContent: React.FC = () => {
                 {showFavorites && <FavoritesModal onClose={() => setShowFavorites(false)} />}
                 <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
                 <AccountSettingsModal isOpen={showAccountSettings} onClose={() => setShowAccountSettings(false)} />
-                {notification && (
-                    <div className="fixed top-4 right-4 z-[1000] flex flex-col items-end gap-2">
-                        <Notification
-                            type={notification.type}
-                            message={notification.message}
-                            onClose={() => setNotification(null)}
-                        />
-                    </div>
-                )}
+                <Toaster />
         </div>
     );
 };

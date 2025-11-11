@@ -4,7 +4,7 @@ import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
 import { useAuth } from '../contexts/AuthContext';
-import { Notification, NotificationType } from '../components/Notification';
+import { showToast } from '../lib/toast';
 import HomePresentation from '../components/HomePresentation';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
@@ -29,7 +29,6 @@ const SearchCreationPage: React.FC = () => {
     const { categories } = useCategories();
     // Removed subscription limits - no longer needed
     const { serviceTypes, isLoading: serviceTypesLoading, error: serviceTypesError } = useServiceTypes();
-    const [notification, setNotification] = useState<{ type: NotificationType; message: string } | null>(null);
     const [currentStep, setCurrentStep] = useState(0);
     
     // Notificar a App.tsx cuando estamos en un formulario (step 1 o 2) para ocultar el header en móvil
@@ -69,6 +68,17 @@ const SearchCreationPage: React.FC = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Scroll automático a la sección del formulario cuando se navega desde otra página
+    useEffect(() => {
+        const shouldScrollToForm = sessionStorage.getItem('scrollToFormSection');
+        if (shouldScrollToForm && currentStep === 0) {
+            sessionStorage.removeItem('scrollToFormSection');
+            setTimeout(() => {
+                scrollToForm();
+            }, 500);
+        }
+    }, [currentStep]);
+
     // Filtrar solo categorías padre
     const parentCategories = safeCategories.filter(cat => {
         // Calcular isParent si no viene del backend
@@ -94,10 +104,7 @@ const SearchCreationPage: React.FC = () => {
         serviceImageUrls?: string[];
     }) => {
         if (!isAuthenticated) {
-            setNotification({
-                type: 'error',
-                message: '🔒 Por favor, inicia sesión para crear una búsqueda',
-            });
+            showToast('error', '🔒 Por favor, inicia sesión para crear una búsqueda');
             return;
         }
         // Removed subscription limits - unlimited searches now available
@@ -123,10 +130,7 @@ const SearchCreationPage: React.FC = () => {
 
 
     const handleSearchComplete = () => {
-        setNotification({
-            type: 'success',
-            message: '🎉 ¡Búsqueda creada con éxito! Te notificaremos cuando encontremos coincidencias.',
-        });
+        showToast('success', '🎉 ¡Búsqueda creada con éxito! Te notificaremos cuando encontremos coincidencias.');
         setCurrentStep(0);
         setSearchParameters({
             keywords: '',
@@ -145,24 +149,15 @@ const SearchCreationPage: React.FC = () => {
 
     const handleStartSearch = () => {
         if (!isAuthenticated) {
-            setNotification({
-                type: 'error',
-                message: '🔒 Por favor, inicia sesión para crear una búsqueda',
-            });
+            showToast('error', '🔒 Por favor, inicia sesión para crear una búsqueda');
             return;
         }
         if (!searchParameters.serviceTypeId) {
-            setNotification({
-                type: 'error',
-                message: '📍 Por favor, selecciona un tipo de servicio',
-            });
+            showToast('error', '📍 Por favor, selecciona un tipo de servicio');
             return;
         }
         if (!searchParameters.category) {
-            setNotification({
-                type: 'error',
-                message: '📍 Por favor, selecciona una categoría',
-            });
+            showToast('error', '📍 Por favor, selecciona una categoría');
             return;
         }
         // Find the selected service type to check if it requires keywords
@@ -170,10 +165,7 @@ const SearchCreationPage: React.FC = () => {
         const requiresKeywords = selectedServiceType?.id === 2 || selectedServiceType?.name.toLowerCase().includes('búsqueda') || selectedServiceType?.name.toLowerCase().includes('search');
         
         if ((requiresKeywords && !searchParameters.keywords) || !searchParameters.userSearch) {
-            setNotification({
-                type: 'error',
-                message: '📍 Por favor, completa los campos de búsqueda',
-            });
+            showToast('error', '📍 Por favor, completa los campos de búsqueda');
             return;
         }
         console.log('SearchCreationPage - Starting search with parameters:', searchParameters);
@@ -219,7 +211,7 @@ const SearchCreationPage: React.FC = () => {
                             {/* Header */}
                                     <div className="mb-12">
                                         <h2 className="text-2xl font-medium text-gray-900 mb-1">
-                                            Crea tu búsqueda
+                                            Crea tu inspección
                                 </h2>
                                         <p className="text-sm text-gray-500">
                                             Define tus preferencias
@@ -935,15 +927,6 @@ const SearchCreationPage: React.FC = () => {
                             />
                         </div>
                     )}
-                </div>
-            )}
-            {notification && (
-                <div className="fixed top-4 right-4 z-[1000] flex flex-col items-end gap-2">
-                    <Notification
-                        type={notification.type}
-                        message={notification.message}
-                        onClose={() => setNotification(null)}
-                    />
                 </div>
             )}
             
