@@ -4,8 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 import { HubConnectionBuilder, HubConnection, LogLevel, HttpTransportType } from '@microsoft/signalr';
-import { NotificationType } from '../components/Notification';
-import { v4 as uuidv4 } from 'uuid';
+import { showToast, NotificationType } from '../lib/toast';
 import { getAuthToken } from '../lib/auth';
 
 interface Message {
@@ -41,12 +40,7 @@ interface Deliverable {
     createdAt: string;
 }
 
-export const useChat = (
-    searchId: number,
-    setNotifications: React.Dispatch<
-        React.SetStateAction<{ id: string; type: NotificationType; message: string; duration?: number }[]>
-    >
-) => {
+export const useChat = (searchId: number) => {
     const { user } = useAuth();
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
@@ -331,18 +325,10 @@ export const useChat = (
             setConnection(conn);
         } catch (err) {
             console.error('[10:45 CEST] SignalR connection error:', err);
-            setNotifications((prev) => [
-                ...prev,
-                {
-                    id: `signalr-error-${uuidv4()}`,
-                    type: 'error' as NotificationType,
-                    message: 'Error al conectar con el chat en tiempo real. Reintentando...',
-                    duration: 5000,
-                },
-            ]);
+            showToast('error', 'Error al conectar con el chat en tiempo real. Reintentando...', 5000);
             setTimeout(() => connectSignalR(), 1000);
         }
-    }, [user, conversation?.id, connection, searchId, queryClient, setNotifications]);
+    }, [user, conversation?.id, connection, searchId, queryClient]);
 
     const sendMessageMutation = useMutation({
         mutationFn: async ({
@@ -432,15 +418,7 @@ export const useChat = (
         },
         onError: (error: any, variables, context) => {
             console.error('[10:45 CEST] Failed to send message:', error.message, error, { variables, context });
-            setNotifications((prev) => [
-                ...prev,
-                {
-                    id: `message-error-${uuidv4()}`,
-                    type: 'error' as NotificationType,
-                    message: `Error al enviar el mensaje: ${error.message || 'Error desconocido'}`,
-                    duration: 5000,
-                },
-            ]);
+            showToast('error', `Error al enviar el mensaje: ${error.message || 'Error desconocido'}`, 5000);
             if (error.message.includes('400') || error.message.includes('404')) {
                 refetch();
             }
@@ -530,27 +508,11 @@ export const useChat = (
             // Actualizar el cache directamente para respuesta inmediata
             queryClient.setQueryData(['deliverables', conversation?.searchHireId, API_CONFIG.endpoints.chat.deliverable], deliverable);
             lastDeliverableFetch.current = Date.now();
-            setNotifications((prev) => [
-                ...prev,
-                {
-                    id: `deliverable-success-${uuidv4()}`,
-                    type: 'success' as NotificationType,
-                    message: 'Entregable subido con éxito.',
-                    duration: 5000,
-                },
-            ]);
+            showToast('success', 'Entregable subido con éxito.', 5000);
         },
         onError: (error: any) => {
             console.error('[10:45 CEST] Failed to upload deliverable:', error.message);
-            setNotifications((prev) => [
-                ...prev,
-                {
-                    id: `deliverable-error-${uuidv4()}`,
-                    type: 'error' as NotificationType,
-                    message: `Error al subir el entregable: ${error.message || 'Error desconocido'}`,
-                    duration: 5000,
-                },
-            ]);
+            showToast('error', `Error al subir el entregable: ${error.message || 'Error desconocido'}`, 5000);
         },
     });
 

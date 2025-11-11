@@ -192,7 +192,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                         onClick={onScrollToForm}
                                             className="group w-full inline-flex items-center justify-center gap-2 bg-gray-900 text-white px-6 py-4 rounded-lg font-medium text-base hover:bg-gray-800 transition-colors min-h-[48px] active:bg-gray-700"
                                     >
-                                        <span>Comenzar búsqueda</span>
+                                        <span>Comenzar inspección</span>
                                             <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>
@@ -218,7 +218,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                         onClick={onScrollToForm}
                                         className="group inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-lg font-semibold text-base hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl"
                                     >
-                                        <span>Comenzar búsqueda</span>
+                                        <span>Comenzar inspección</span>
                                         <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>

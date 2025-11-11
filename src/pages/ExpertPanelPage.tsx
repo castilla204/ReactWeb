@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Separator } from '../components/ui/separator';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
     Drawer,
     DrawerContent,
@@ -791,40 +792,32 @@ export function ExpertPanelPage() {
                             
                     {/* Sidebar Content */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        {/* Botón Quick Create */}
-                        <div className="px-2">
-                            <Button 
-                                className="w-full bg-foreground text-background hover:bg-foreground/90 h-10"
-                                onClick={() => setShowServiceForm(true)}
-                            >
-                                Nuevo Servicio
-                            </Button>
-                                </div>
-
-                        {/* Navegación */}
-                        <nav className="px-2 space-y-1">
-                            <Button
-                                variant={activeTab === 'services' ? 'secondary' : 'ghost'}
-                                className="w-full justify-start"
-                                onClick={() => setActiveTab('services')}
-                            >
-                                <Package className="w-4 h-4 mr-2" />
-                                Servicios
-                            </Button>
-                            <Button
-                                variant={activeTab === 'hires' ? 'secondary' : 'ghost'}
-                                className="w-full justify-start"
-                                onClick={() => setActiveTab('hires')}
-                            >
-                                <Briefcase className="w-4 h-4 mr-2" />
-                                Contrataciones
-                                {hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0) > 0 && (
-                                    <Badge variant="destructive" className="ml-auto">
-                                        {hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0)}
-                                    </Badge>
-                                )}
-                            </Button>
-                        </nav>
+                        {/* Navegación con Tabs */}
+                        <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as 'services' | 'hires')} className="w-full">
+                            <TabsList className="w-full grid grid-cols-2 h-auto p-1">
+                                <TabsTrigger 
+                                    value="services" 
+                                    className="flex items-center gap-2 justify-center text-sm font-medium data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground"
+                                >
+                                    <Package className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Servicios</span>
+                                    <span className="sm:hidden">Serv.</span>
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="hires" 
+                                    className="flex items-center gap-2 justify-center text-sm font-medium data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground relative"
+                                >
+                                    <Briefcase className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Contrataciones</span>
+                                    <span className="sm:hidden">Cont.</span>
+                                    {hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0) > 0 && (
+                                        <Badge variant="destructive" className="ml-1 h-5 min-w-[20px] px-1.5 text-xs">
+                                            {hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0)}
+                                        </Badge>
+                                    )}
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
 
                         <Separator />
 

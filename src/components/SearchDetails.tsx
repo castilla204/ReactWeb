@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { ScrollArea } from './ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
@@ -17,9 +17,8 @@ import { ReviewModal, DisputeModal } from './Modals';
 import { ExpertResponseModal } from './ExpertResponseModal';
 import { useSearchActions } from '../hooks/useSearchActions';
 import { useDisputes } from '../hooks/useDisputes';
-import { Notification, NotificationType } from './Notification';
 import { useParams, useNavigate } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
+import { showToast, NotificationType } from '../lib/toast';
 
 // Imports para el sistema de citas
 import { useAppointments } from '../hooks/useAppointments';
@@ -127,7 +126,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         sellerType: 'particular',
         platformId: 1,
     });
-    const [notifications, setNotifications] = useState<{ id: string; type: NotificationType; message: string; duration?: number }[]>([]);
     const [selectedDeliverableFiles, setSelectedDeliverableFiles] = useState<File[]>([]);
     const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
     const [fileValidation, setFileValidation] = useState<{canSubmit: boolean, message: string} | null>(null);
@@ -209,9 +207,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     console.log('[SearchDetails] user:', user);
 
     // ? HOOKS PARA ACCIONES
-    const { uploadDeliverable, isUploadingDeliverable } = useChat(searchId, setNotifications);
+    const { uploadDeliverable, isUploadingDeliverable } = useChat(searchId);
     const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit: submitDispute, handleResolveDispute, handleAddAd } =
-        useSearchActions(setNotifications);
+        useSearchActions();
     
     // Hook para obtener información de disputa
     const { expertResponse, debugDispute } = useDisputes();
@@ -395,10 +393,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 canSubmit: true, 
                 message: 'Todos los archivos requeridos están listos' 
             });
-            // Limpiar notificaciones de error cuando la validación es exitosa
-            setNotifications(prev => prev.filter(notif => 
-                !notif.message.includes('Para enviar el reporte necesitas subir')
-            ));
+            // Validación exitosa - no necesita notificación
         } else {
             const missing = [];
             if (!hasPDF) missing.push('PDF');
@@ -416,28 +411,16 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         try {
             const result = await deleteFile(appointment.id, deliverableId);
             if (result.success) {
-                setNotifications(prev => [...prev, {
-                    id: uuidv4(),
-                    type: 'success',
-                    message: 'Archivo eliminado exitosamente'
-                }]);
+                showToast('success', 'Archivo eliminado exitosamente');
                 // Recargar archivos y validación
                 await loadUploadedFiles();
                 await validateFilesAndUpdate();
             } else {
-                setNotifications(prev => [...prev, {
-                    id: uuidv4(),
-                    type: 'error',
-                    message: result.message
-                }]);
+                showToast('error', result.message);
             }
         } catch (error) {
             console.error('Error eliminando archivo:', error);
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: 'Error al eliminar archivo'
-            }]);
+            showToast('error', 'Error al eliminar archivo');
         }
     };
 
@@ -453,11 +436,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         });
         console.log('[SearchDetails] Selected deliverable files:', validFiles.map((f) => ({ name: f.name, size: f.size })));
         if (validFiles.length > 0) {
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'success',
-                message: `${validFiles.length} archivo(s) seleccionado(s) correctamente`
-            }]);
+            showToast('success', `${validFiles.length} archivo(s) seleccionado(s) correctamente`);
         }
         setSelectedDeliverableFiles(prev => [...prev, ...validFiles]);
         
@@ -484,11 +463,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 });
 
                 if (response.ok) {
-                    setNotifications(prev => [...prev, {
-                        id: uuidv4(),
-                        type: 'success',
-                        message: 'Archivos subidos exitosamente. Ahora puedes enviar el reporte.'
-                    }]);
+                    showToast('success', 'Archivos subidos exitosamente. Ahora puedes enviar el reporte.');
                     // No limpiar archivos aquí, se limpiarán al enviar el reporte
                     invalidateAll();
                 } else {
@@ -496,22 +471,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 }
             } catch (error) {
                 console.error('[SearchDetails] Error uploading deliverables:', error);
-                setNotifications(prev => [...prev, {
-                    id: uuidv4(),
-                    type: 'error',
-                    message: 'Error al subir los archivos'
-                }]);
+                showToast('error', 'Error al subir los archivos');
             }
         } else {
-            setNotifications((prev) => [
-                ...prev,
-                {
-                    id: `deliverable-empty-error-${uuidv4()}`,
-                    type: 'error' as NotificationType,
-                    message: 'Por favor, selecciona al menos un archivo para subir como entregable.',
-                    duration: 5000,
-                },
-            ]);
+            showToast('error', 'Por favor, selecciona al menos un archivo para subir como entregable.', 5000);
         }
     };
 
@@ -522,20 +485,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     const handleDisputeSubmit = async () => {
         if (!search?.searchHire?.id) {
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: 'No se encontró el ID del servicio'
-            }]);
+            showToast('error', 'No se encontró el ID del servicio');
             return;
         }
 
         if (!disputeReason.trim()) {
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: 'Por favor, describe el motivo de la disputa'
-            }]);
+            showToast('error', 'Por favor, describe el motivo de la disputa');
             return;
         }
 
@@ -546,11 +501,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 disputeFiles,
                 () => {
                     // Callback de éxito
-                    setNotifications(prev => [...prev, {
-                        id: uuidv4(),
-                        type: 'success',
-                        message: 'Disputa enviada exitosamente'
-                    }]);
+                    showToast('success', 'Disputa enviada exitosamente');
                     // Limpiar el formulario
                     setDisputeReason('');
                     setDisputeFiles([]);
@@ -562,21 +513,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             );
         } catch (error) {
             console.error('Error enviando disputa:', error);
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: 'Error al enviar la disputa'
-            }]);
+            showToast('error', 'Error al enviar la disputa');
         }
     };
 
     const handleExpertResponseSubmit = async (response: string, files: File[]) => {
         if (!disputes[0]?.id) {
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: 'No se encontró la disputa'
-            }]);
+            showToast('error', 'No se encontró la disputa');
             return;
         }
 
@@ -589,31 +532,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             
             await sendExpertResponse(disputes[0].id, response, files);
             
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'success',
-                message: 'Respuesta enviada exitosamente'
-            }]);
+            showToast('success', 'Respuesta enviada exitosamente');
             
             setShowExpertResponseModal(false);
             invalidateAll();
         } catch (error: any) {
             console.error('[SearchDetails] Error submitting expert response:', error);
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: error.message || 'Error al enviar la respuesta'
-            }]);
+            showToast('error', error.message || 'Error al enviar la respuesta');
         }
     };
 
     const handleSubmitReport = async () => {
         if (!appointment?.id) {
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: 'No se encontró el ID de la cita'
-            }]);
+            showToast('error', 'No se encontró el ID de la cita');
             return;
         }
 
@@ -623,29 +554,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             const result = await submitReportWithFiles(appointment.id, selectedDeliverableFiles, 'Reporte completado por el experto');
             
             if (result.success) {
-                setNotifications(prev => [...prev, {
-                    id: uuidv4(),
-                    type: 'success',
-                    message: 'Reporte enviado exitosamente'
-                }]);
+                showToast('success', 'Reporte enviado exitosamente');
                 // Limpiar archivos seleccionados
                 setSelectedDeliverableFiles([]);
                 // Refrescar datos
                 invalidateAll();
             } else {
-                setNotifications(prev => [...prev, {
-                    id: uuidv4(),
-                    type: 'error',
-                    message: result.message
-                }]);
+                showToast('error', result.message);
             }
         } catch (error) {
             console.error('[SearchDetails] Error submitting report:', error);
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: 'Error al enviar el reporte'
-            }]);
+            showToast('error', 'Error al enviar el reporte');
         }
     };
 
@@ -814,11 +733,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 
                 await cancelAppointment(cancelData);
                 
-                setNotifications(prev => [...prev, {
-                    id: uuidv4(),
-                    type: 'success',
-                    message: 'Cita cancelada exitosamente'
-                }]);
+                showToast('success', 'Cita cancelada exitosamente');
             } else {
             const rejectData: RejectAppointmentDto = {
                 appointmentId: appointmentToReject.id,
@@ -827,11 +742,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             
             await rejectAppointment(rejectData);
             
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'success',
-                message: 'Cita rechazada exitosamente'
-            }]);
+            showToast('success', 'Cita rechazada exitosamente');
             }
             
             setShowRejectModal(false);
@@ -840,11 +751,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             
         } catch (error) {
             console.error(`Error al ${modalActionType === 'cancel' ? 'cancelar' : 'rechazar'} cita:`, error);
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: `Error al ${modalActionType === 'cancel' ? 'cancelar' : 'rechazar'} la cita`
-            }]);
+            showToast('error', `Error al ${modalActionType === 'cancel' ? 'cancelar' : 'rechazar'} la cita`);
         }
     };
 
@@ -867,11 +774,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     console.log('[SearchDetails] Sending confirm data:', confirmData);
                     await confirmAppointment(confirmData);
                     console.log('[SearchDetails] Appointment confirmed successfully');
-                    setNotifications(prev => [...prev, {
-                        id: uuidv4(),
-                        type: 'success',
-                        message: 'Cita confirmada exitosamente'
-                    }]);
+                    showToast('success', 'Cita confirmada exitosamente');
                     invalidateAll();
                     setShowConfirmAppointmentDialog(false);
                     setAppointmentToConfirm(null);
@@ -891,11 +794,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             }
         } catch (error) {
             console.error('Error en acción de cita:', error);
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: 'Error al realizar la acción'
-            }]);
+            showToast('error', 'Error al realizar la acción');
         }
     };
 
@@ -915,20 +814,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     }
                     
                     setAppointmentFormError(errorMessage);
-                    setNotifications(prev => [...prev, {
-                        id: uuidv4(),
-                        type: 'error',
-                        message: errorMessage
-                    }]);
+                    showToast('error', errorMessage);
                     return;
                 }
                 
                 await proposeAppointment(appointmentData.searchHireId, data);
-                setNotifications(prev => [...prev, {
-                    id: uuidv4(),
-                    type: 'success',
-                    message: 'Cita propuesta exitosamente'
-                }]);
+                showToast('success', 'Cita propuesta exitosamente');
                 invalidateAll();
                 setShowAppointmentForm(false);
                 setAppointmentData(null);
@@ -960,11 +851,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             }
             
             setAppointmentFormError(errorMessage);
-            setNotifications(prev => [...prev, {
-                id: uuidv4(),
-                type: 'error',
-                message: errorMessage
-            }]);
+            showToast('error', errorMessage);
         }
     };
 
@@ -1037,44 +924,42 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
             {/* Main Layout - Mejorado */}
             <div className="flex h-[calc(100vh-80px)] bg-background">
-                {/* Chat Section - Mejorado */}
+                {/* Chat Section - Mejorado con Tabs */}
                 {canViewChat && (
-                    <div className="flex-1 lg:w-2/3 bg-background flex flex-col border-r border-border/50">
-                        {/* Mobile Tabs - Mejorado */}
-                        <div className="lg:hidden border-b border-border bg-background/95 backdrop-blur-sm p-2 sticky top-[80px] z-40">
-                            <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')}>
-                                <TabsList className="w-full grid grid-cols-2 h-10">
+                    <div className="flex-1 bg-background flex flex-col">
+                        {/* Tabs - Mobile y Desktop */}
+                        <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')} className="w-full flex flex-col flex-1">
+                            <div className="border-b border-border bg-background/95 backdrop-blur-sm p-2 sticky top-[80px] z-40">
+                                <TabsList className="w-full grid grid-cols-2 h-10 lg:w-auto lg:inline-flex">
                                     <TabsTrigger value="chat" className="flex items-center gap-2 text-sm font-medium">
-                                    <MessageSquare className="w-4 h-4" />
-                                    Chat
+                                        <MessageSquare className="w-4 h-4" />
+                                        Chat
                                     </TabsTrigger>
                                     <TabsTrigger value="details" className="flex items-center gap-2 text-sm font-medium">
-                                    <FileText className="w-4 h-4" />
-                                    Detalles
+                                        <FileText className="w-4 h-4" />
+                                        Detalles
                                     </TabsTrigger>
                                 </TabsList>
-                            </Tabs>
-                        </div>
+                            </div>
 
-                        {/* Chat Content */}
-                        {(activeTab === 'chat' || !activeTab) && (
-                            <div className="h-[calc(100vh-200px)] lg:h-[calc(100vh-140px)]">
-                                        <Chat 
-                                            searchId={searchId} 
-                                            setNotifications={setNotifications} 
-                                            isExpert={!!isExpert} 
-                                            expertData={{
-                                                name: expertData?.name, 
-                                                profilePictureUrl: expertData?.profilePictureUrl 
-                                            }}
-                                        />
-                                    </div>
-                                )}
-                                
-                        {/* Details Content - Mobile - Misma información que Desktop */}
-                                {activeTab === 'details' && (
-                            <div className="flex-1 flex flex-col bg-background">
-                                <div className="flex-1 overflow-y-auto p-5 space-y-5 pb-24 lg:pb-5">
+                            {/* Chat Content */}
+                            <TabsContent value="chat" className="mt-0 flex-1 flex flex-col">
+                                <div className="h-[calc(100vh-200px)] lg:h-[calc(100vh-140px)] flex-1">
+                                    <Chat 
+                                        searchId={searchId} 
+                                        isExpert={!!isExpert} 
+                                        expertData={{
+                                            name: expertData?.name, 
+                                            profilePictureUrl: expertData?.profilePictureUrl 
+                                        }}
+                                    />
+                                </div>
+                            </TabsContent>
+                                    
+                            {/* Details Content */}
+                            <TabsContent value="details" className="mt-0 flex-1 flex flex-col">
+                                <div className="flex-1 flex flex-col bg-background">
+                                    <div className="flex-1 overflow-y-auto p-5 space-y-5 pb-24 lg:pb-5">
                                 {/* Service Info */}
                                 <div className="bg-card rounded-xl border border-border/50 p-4 space-y-3 shadow-sm transition-shadow hover:shadow-md">
                                     <h3 className="text-sm font-semibold text-foreground">Servicio</h3>
@@ -1432,11 +1317,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
                                     </>
                                 )}
-
-                                        </div>
-                                
-                                {/* Botones de acción fijos en móvil */}
-                                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 p-4 space-y-2 shadow-lg">
+                                    </div>
+                                    
+                                    {/* Botones de acción fijos en móvil */}
+                                    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 p-4 space-y-2 shadow-lg">
                                     {/* Botones de cita - Confirmar/Rechazar/Cancelar */}
                                     {(userRole === 'expert' && appointment?.status === 'appointment_proposed') || appointment?.status === 'appointment_confirmed' ? (
                                         <div className="flex gap-2">
@@ -1578,14 +1462,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             }
                                         </Button>
                                     )}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            </TabsContent>
+                        </Tabs>
                     </div>
                 )}
 
-                {/* Sidebar - Desktop Only - Diseño Profesional */}
-                <aside className="hidden lg:flex lg:w-1/3 border-l border-border flex-col bg-muted/30">
+                {/* Sidebar - Desktop Only - Oculto ahora que usamos Tabs */}
+                <aside className="hidden">
                     <ScrollArea className="flex-1">
                         <div className="p-5 space-y-6">
                             
@@ -2218,7 +2103,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         invalidateAll();
                         setModalState((prev) => ({ ...prev, showReviewModal: false }));
                     }}
-                    setNotifications={setNotifications}
                 />
             )}
 
@@ -2246,26 +2130,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 />
             )}
 
-            {/* Notifications - Fixed Position */}
-            <div className="fixed top-24 right-6 z-[60] space-y-3 max-w-md">
-                {notifications.map((notification, index) => (
-                    <div 
-                        key={notification.id}
-                        className="transform transition-all duration-300 ease-out"
-                        style={{
-                            transform: `translateY(${index * 10}px)`,
-                            zIndex: 60 - index
-                        }}
-                    >
-                        <Notification
-                            type={notification.type}
-                            message={notification.message}
-                            onClose={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
-                            duration={notification.duration || 6000}
-                        />
-                    </div>
-                ))}
-            </div>
         </div>
     );
 }
