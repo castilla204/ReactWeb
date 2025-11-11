@@ -289,46 +289,57 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                         <div className="relative min-h-[240px]">
                             {/* Skeleton loader mientras carga - posición absoluta */}
                             {isReviewsLoading && (
-                                <div className="absolute inset-0 w-full space-y-4 animate-pulse -top-2">
+                                <div className="absolute inset-0 w-full space-y-4 -top-2">
                                     {/* Header skeleton */}
                                     <div className="flex items-center justify-between mb-3">
-                                        <div className="h-6 bg-gray-200 rounded w-40"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                        <div className="h-6 bg-gray-200 rounded-lg w-40 shimmer-animation"></div>
+                                        <div className="h-4 bg-gray-200 rounded-lg w-24 shimmer-animation shimmer-delay-1"></div>
                                     </div>
                                     {/* Cards skeleton - horizontal scroll como el widget real */}
                                     <div className="flex gap-4 overflow-x-hidden">
                                         {[1, 2, 3, 4].map((i) => (
-                                            <div key={i} className="flex-shrink-0 w-[320px] bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                                            <div 
+                                                key={i} 
+                                                className="flex-shrink-0 w-[320px] bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow"
+                                            >
                                                 {/* Avatar y nombre */}
-                                                <div className="flex items-start gap-3 mb-3">
+                                                <div className="flex items-start gap-3 mb-4">
                                                     <div className="relative flex-shrink-0">
-                                                        <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                                                        <div className="w-11 h-11 bg-gray-200 rounded-full shimmer-animation"></div>
                                                         {/* Google G badge skeleton */}
-                                                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gray-300 rounded-full border-2 border-white"></div>
+                                                        <div className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 bg-blue-200 rounded-full border-2 border-white shimmer-animation shimmer-delay-2"></div>
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-1.5 mb-1">
-                                                            <div className="h-3.5 bg-gray-200 rounded w-24"></div>
+                                                        <div className="flex items-center gap-2 mb-1.5">
+                                                            <div className="h-4 bg-gray-200 rounded-md w-28 shimmer-animation shimmer-delay-1"></div>
                                                             {/* Checkmark skeleton */}
-                                                            <div className="w-3.5 h-3.5 bg-gray-200 rounded-full flex-shrink-0"></div>
+                                                            <div className="w-4 h-4 bg-green-200 rounded-full flex-shrink-0 shimmer-animation shimmer-delay-3"></div>
                                                         </div>
                                                         {/* Timestamp */}
-                                                        <div className="h-2.5 bg-gray-200 rounded w-16"></div>
+                                                        <div className="h-3 bg-gray-200 rounded w-20 shimmer-animation shimmer-delay-1"></div>
                                                     </div>
                                                 </div>
                                                 {/* Estrellas */}
-                                                <div className="flex gap-0.5 mb-2.5">
+                                                <div className="flex gap-1 mb-3">
                                                     {[1, 2, 3, 4, 5].map((star) => (
-                                                        <div key={star} className="w-4 h-4 bg-gray-200 rounded"></div>
+                                                        <div 
+                                                            key={star} 
+                                                            className="w-4.5 h-4.5 bg-yellow-200 rounded-sm shimmer-animation"
+                                                            style={{ 
+                                                                animationDelay: `${star * 0.1}s`,
+                                                                clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+                                                            }}
+                                                        ></div>
                                                     ))}
                                                 </div>
                                                 {/* Texto de la reseña */}
-                                                <div className="space-y-1.5 mb-2">
-                                                    <div className="h-3 bg-gray-200 rounded w-full"></div>
-                                                    <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                                                <div className="space-y-2 mb-3">
+                                                    <div className="h-3.5 bg-gray-200 rounded-md w-full shimmer-animation"></div>
+                                                    <div className="h-3.5 bg-gray-200 rounded-md w-11/12 shimmer-animation shimmer-delay-1"></div>
+                                                    <div className="h-3.5 bg-gray-200 rounded-md w-4/5 shimmer-animation shimmer-delay-2"></div>
                                                 </div>
                                                 {/* Read more link skeleton */}
-                                                <div className="h-3 bg-gray-200 rounded w-20"></div>
+                                                <div className="h-3 bg-blue-200 rounded w-24 shimmer-animation shimmer-delay-2"></div>
                                             </div>
                                         ))}
                                     </div>
@@ -556,6 +567,55 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 }
                 .animation-delay-4000 {
                     animation-delay: 4s;
+                }
+                
+                /* Shimmer animation para skeleton - efecto moderno y suave */
+                @keyframes shimmer {
+                    0% {
+                        background-position: -2000px 0;
+                    }
+                    100% {
+                        background-position: 2000px 0;
+                    }
+                }
+                
+                .shimmer-animation {
+                    position: relative;
+                    overflow: hidden;
+                }
+                
+                .shimmer-animation::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    z-index: 1;
+                    background: linear-gradient(
+                        90deg,
+                        transparent 0%,
+                        rgba(255, 255, 255, 0.5) 20%,
+                        rgba(255, 255, 255, 0.7) 40%,
+                        rgba(255, 255, 255, 0.5) 60%,
+                        transparent 80%,
+                        transparent 100%
+                    );
+                    background-size: 2000px 100%;
+                    animation: shimmer 2.5s infinite ease-in-out;
+                    pointer-events: none;
+                }
+                
+                .shimmer-delay-1 {
+                    animation-delay: 0.15s;
+                }
+                
+                .shimmer-delay-2 {
+                    animation-delay: 0.3s;
+                }
+                
+                .shimmer-delay-3 {
+                    animation-delay: 0.45s;
                 }
             `}</style>
         </div>
