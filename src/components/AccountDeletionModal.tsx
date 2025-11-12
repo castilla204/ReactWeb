@@ -117,14 +117,14 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
             <div className="space-y-6">
               {/* Warning about active contracts */}
               {deletionStatus.hasActiveContracts && (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                   <div className="flex items-start">
-                    <AlertTriangle className="w-5 h-5 text-yellow-500 mr-3 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-gray-500 mr-3 mt-0.5" />
                     <div>
-                      <h3 className="font-semibold text-yellow-800 mb-2">
+                      <h3 className="font-semibold text-gray-800 mb-2">
                         Contrataciones Activas Detectadas
                       </h3>
-                      <p className="text-yellow-700 text-sm mb-3">
+                      <p className="text-gray-700 text-sm mb-3">
                         Tienes {deletionStatus.activeContractsCount} contratación(es) activa(s) que requieren atención.
                         Al eliminar tu cuenta, se crearán disputas automáticas para proteger a las partes afectadas.
                       </p>
@@ -243,14 +243,14 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
 // Componente para mostrar información de contratación activa
 const ActiveContractCard: React.FC<{ contract: ActiveContract }> = ({ contract }) => {
   return (
-    <div className="bg-white p-3 rounded border border-yellow-200">
+    <div className="bg-white p-3 rounded border border-gray-200">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center mb-2">
             <User className="w-4 h-4 text-gray-500 mr-2" />
             <span className="font-medium text-gray-900">{contract.serviceName}</span>
             <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
-              contract.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              contract.status === 'pending' ? 'bg-gray-100 text-gray-800' :
               contract.status === 'awaiting_client_decision' ? 'bg-blue-100 text-blue-800' :
               'bg-red-100 text-red-800'
             }`}>
