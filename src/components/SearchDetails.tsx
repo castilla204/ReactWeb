@@ -749,9 +749,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             setAppointmentToReject(null);
             invalidateAll();
             
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Error al ${modalActionType === 'cancel' ? 'cancelar' : 'rechazar'} cita:`, error);
-            showToast('error', `Error al ${modalActionType === 'cancel' ? 'cancelar' : 'rechazar'} la cita`);
+            // Extraer el mensaje del backend si está disponible
+            const errorMessage = error?.message || `Error al ${modalActionType === 'cancel' ? 'cancelar' : 'rechazar'} la cita`;
+            showToast('error', errorMessage);
         }
     };
 
@@ -792,9 +794,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         setShowRejectModal(true);
                     break;
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error en acción de cita:', error);
-            showToast('error', 'Error al realizar la acción');
+            // Extraer el mensaje del backend si está disponible
+            const errorMessage = error?.message || 'Error al realizar la acción';
+            showToast('error', errorMessage);
         }
     };
 
@@ -922,15 +926,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 </div>
             </header>
 
-            {/* Main Layout - Mejorado */}
-            <div className="flex h-[calc(100vh-80px)] bg-background">
-                {/* Chat Section - Mejorado con Tabs */}
+            {/* Main Layout - Dos columnas en desktop, tabs en móvil */}
+            <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)] bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-950 dark:to-gray-900 lg:gap-6 lg:p-6">
+                {/* Chat Section - Izquierda en desktop, tabs en móvil */}
                 {canViewChat && (
-                    <div className="flex-1 bg-background flex flex-col">
-                        {/* Tabs - Mobile y Desktop */}
-                        <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')} className="w-full flex flex-col flex-1">
-                            <div className="border-b border-border bg-background/95 backdrop-blur-sm p-2 sticky top-[80px] z-40">
-                                <TabsList className="w-full grid grid-cols-2 h-10 lg:w-auto lg:inline-flex">
+                    <div className="flex-1 lg:w-[60%] xl:w-[65%] bg-white dark:bg-gray-900 flex flex-col lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-200/50 dark:border-gray-800/50 lg:overflow-hidden flex-shrink-0">
+                        {/* Tabs - Solo en móvil */}
+                        <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')} className="w-full flex flex-col flex-1 min-h-0">
+                            <div className="border-b border-border bg-background/95 backdrop-blur-sm p-2 sticky top-[80px] z-40 lg:hidden">
+                                <TabsList className="w-full grid grid-cols-2 h-10">
                                     <TabsTrigger value="chat" className="flex items-center gap-2 text-sm font-medium">
                                         <MessageSquare className="w-4 h-4" />
                                         Chat
@@ -942,9 +946,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </TabsList>
                             </div>
 
-                            {/* Chat Content */}
-                            <TabsContent value="chat" className="mt-0 flex-1 flex flex-col">
-                                <div className="h-[calc(100vh-200px)] lg:h-[calc(100vh-140px)] flex-1">
+                            {/* Chat Content - Visible siempre en desktop, solo en tab chat en móvil */}
+                            <TabsContent value="chat" className="mt-0 flex-1 flex flex-col lg:mt-0 lg:flex min-h-0">
+                                <div className="h-full flex-1 min-h-0 relative flex flex-col">
                                     <Chat 
                                         searchId={searchId} 
                                         isExpert={!!isExpert} 
@@ -956,8 +960,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 </div>
                             </TabsContent>
                                     
-                            {/* Details Content */}
-                            <TabsContent value="details" className="mt-0 flex-1 flex flex-col">
+                            {/* Details Content - Solo visible en móvil (en desktop está en la columna derecha) */}
+                            <TabsContent value="details" className="mt-0 flex-1 flex flex-col lg:hidden">
                                 <div className="flex-1 flex flex-col bg-background">
                                     <div className="flex-1 overflow-y-auto p-5 space-y-5 pb-24 lg:pb-5">
                                 {/* Service Info */}
@@ -1469,33 +1473,38 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     </div>
                 )}
 
-                {/* Sidebar - Desktop Only - Oculto ahora que usamos Tabs */}
-                <aside className="hidden">
+                {/* Sidebar - Info + Acciones - Derecha en desktop, oculto en móvil (usa tabs) */}
+                <aside className="hidden lg:flex lg:flex-col lg:w-[40%] xl:w-[35%] bg-white dark:bg-gray-900 lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-200/50 dark:border-gray-800/50 lg:overflow-hidden">
                     <ScrollArea className="flex-1">
-                        <div className="p-5 space-y-6">
+                        <div className="p-6 space-y-5">
                             
                             {/* Resumen del Servicio */}
-                            <div className="bg-card rounded-xl border border-border/50 p-5 space-y-3 shadow-sm transition-shadow hover:shadow-md">
-                                <h3 className="text-sm font-semibold text-foreground">Servicio</h3>
-                                <div className="space-y-2.5">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <Tag className="w-4 h-4" />
-                                        <span>{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
+                            <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-gray-300/60 dark:hover:border-gray-700/60">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-1 h-5 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full"></div>
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Información del Servicio</h3>
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2.5 text-sm">
+                                        <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                                            <Tag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <span className="font-medium text-gray-700 dark:text-gray-300">{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
                                 </div>
                                     {serviceInfo?.serviceTypeName && (
-                                        <div className="text-sm">
-                                            <span className="text-muted-foreground">Tipo: </span>
-                                            <span className="text-foreground font-medium">{serviceInfo.serviceTypeName}</span>
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <span className="text-gray-500 dark:text-gray-400">Tipo:</span>
+                                            <span className="text-gray-900 dark:text-gray-100 font-semibold">{serviceInfo.serviceTypeName}</span>
                                         </div>
                                     )}
                                     {search?.description && (
-                                        <div className="text-sm">
-                                            <span className="text-muted-foreground">Descripción: </span>
-                                            <span className="text-foreground">{search.description}</span>
+                                        <div className="text-sm leading-relaxed">
+                                            <span className="text-gray-500 dark:text-gray-400 block mb-1">Descripción:</span>
+                                            <span className="text-gray-700 dark:text-gray-300">{search.description}</span>
                                         </div>
                                     )}
                                     {search?.createdAt && (
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg">
                                             <Clock className="w-3.5 h-3.5" />
                                             <span>Creado el {new Date(search.createdAt).toLocaleDateString('es-ES', {
                                                 day: 'numeric',
@@ -1505,14 +1514,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         </div>
                                     )}
                                     {serviceInfo?.locationRange && (
-                                        <div className="text-xs text-muted-foreground">
-                                            Radio de servicio: {serviceInfo.locationRange} km
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg">
+                                            Radio de servicio: <span className="font-medium text-gray-700 dark:text-gray-300">{serviceInfo.locationRange} km</span>
                                         </div>
                                     )}
                                     {serviceInfo?.price && (
-                                        <div className="text-sm text-muted-foreground">
-                                            <span>Precio: </span>
-                                            <span className="text-foreground font-medium">
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <span className="text-gray-500 dark:text-gray-400">Precio:</span>
+                                            <span className="text-gray-900 dark:text-gray-100 font-semibold">
                                                 {new Intl.NumberFormat('es-ES', {
                                                     style: 'currency',
                                                     currency: 'EUR',
@@ -1561,12 +1570,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                                 {/* Sección de Cita - Desktop - Siempre visible si necesita cita */}
                                 {needsAppointment && (
-                                    <div className="mt-6 hidden lg:block">
-                                        <div className="relative bg-gradient-to-br from-blue-50/50 via-indigo-50/40 to-orange-50/35 dark:from-blue-950/30 dark:via-indigo-950/25 dark:to-orange-950/20 border-2 border-blue-300/70 dark:border-blue-700/60 rounded-xl p-5 space-y-3 shadow-md overflow-hidden">
-                                            {/* Borde decorativo con gradiente */}
-                                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/40 via-indigo-400/40 via-purple-400/40 to-orange-400/40 dark:from-blue-500/35 dark:via-indigo-500/35 dark:via-purple-500/35 dark:to-orange-500/35 -z-10 blur-sm"></div>
-                                            <div className="relative">
-                                                <h3 className="text-sm font-semibold text-foreground mb-3">
+                                    <div className="mt-5 hidden lg:block">
+                                        <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <div className="w-1 h-5 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full"></div>
+                                                <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">
                                                     {appointment ? (
                                                         appointmentStatusInfo?.displayName || 
                                                         (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
@@ -1574,192 +1582,205 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                          'Cita')
                                                     ) : 'Cita Pendiente'}
                                                 </h3>
-                                                <div className="space-y-2.5">
-                                                    {appointment ? (
-                                                        <>
-                                                            {appointment.proposedDate && appointment.proposedTime && (
-                                                                <div className="flex items-center gap-2 text-sm text-foreground">
-                                                                    <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                                    <span className="font-medium">
-                                                {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
-                                                        day: 'numeric',
-                                                        month: 'short',
-                                                                            year: 'numeric'
-                                                                        })} {appointment.proposedTime.substring(0, 5)}
-                                                </span>
-                                        </div>
-                                                            )}
-                                    {appointment.location && (
-                                                                <div className="flex items-start gap-2 text-sm text-foreground">
-                                                    <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                                                                    <span className="leading-relaxed">{appointment.location}</span>
-                                    </div>
-                                    )}
-                                    {appointment.doorNumber && (
-                                                                <div className="text-sm text-foreground ml-6">
-                                                                    <span className="text-muted-foreground">Puerta: </span>
-                                                                    <span className="font-medium">{appointment.doorNumber}</span>
-                                </div>
-                            )}
-                                                            {/* Reportes del Experto - Dentro del cuadro de cita (Desktop) */}
-                                                            {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
-                                                                <div className="mt-3 pt-3 border-t border-border/30">
-                                                                    <div className="flex items-center gap-2 text-sm text-foreground mb-2">
-                                                                        <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                                                        <span className="font-medium">Informe Enviado</span>
-                                        </div>
-                                                                    <div className="space-y-1.5 ml-6">
-                                                                        {deliverables.map((deliverable) => {
-                                                                            const fileName = deliverable.url.split('/').pop() || 'archivo';
-                                                                            return (
-                                                                                <button
-                                                                                    key={deliverable.id}
-                                                                                    onClick={() => window.open(deliverable.url, '_blank')}
-                                                                                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-left"
-                                                                                >
-                                                                                    <FileText className="w-3 h-3 flex-shrink-0" />
-                                                                                    <span className="truncate">{fileName}</span>
-                                                                                </button>
-                                                                            );
-                                                                        })}
-                                        </div>
-                                        </div>
-                                        )}
-                                                        </>
-                                                    ) : (
-                                                        <div className="space-y-2">
-                                                            <div className="flex items-center gap-2 text-sm text-foreground">
-                                                <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                                <span>Debes proponer una cita</span>
-                                        </div>
-                                                            {timeRemaining && timeRemaining !== '00:00:00' && (
-                                                                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 ml-6">
-                                                                    <Clock className="w-4 h-4 flex-shrink-0" />
-                                                                    <span className="font-medium">Tiempo restante: {timeRemaining}</span>
-                                        </div>
-                                    )}
-                                        </div>
-                                    )}
                                             </div>
-                                                {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
-                                                    <Accordion type="single" collapsible className="w-full mt-3">
-                                                        <AccordionItem value="appointment-timeline" className="border-none">
-                                                    <AccordionTrigger className="text-xs py-2 hover:no-underline">
-                                                        Timeline del estado
-                                                    </AccordionTrigger>
-                                                    <AccordionContent className="pt-2 pb-0">
+                                            <div className="space-y-2.5">
+                                                {appointment ? (
+                                                    <>
+                                                        {appointment.proposedDate && appointment.proposedTime && (
+                                                            <div className="flex items-center gap-2.5 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl">
+                                                                <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                                                                    <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                                                </div>
+                                                                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                                                    {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
+                                                                        day: 'numeric',
+                                                                        month: 'short',
+                                                                        year: 'numeric'
+                                                                    })} {appointment.proposedTime.substring(0, 5)}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {appointment.location && (
+                                                            <div className="flex items-start gap-2.5 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                                                                <div className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700/50">
+                                                                    <MapPin className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <span className="leading-relaxed text-gray-700 dark:text-gray-300">{appointment.location}</span>
+                                                                    {appointment.doorNumber && (
+                                                                        <div className="text-sm text-gray-700 dark:text-gray-300 mt-2 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg">
+                                                                            <span className="text-gray-500 dark:text-gray-400">Puerta: </span>
+                                                                            <span className="font-semibold">{appointment.doorNumber}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {appointment.doorNumber && !appointment.location && (
+                                                            <div className="text-sm text-gray-700 dark:text-gray-300 ml-6 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg">
+                                                                <span className="text-gray-500 dark:text-gray-400">Puerta: </span>
+                                                                <span className="font-semibold">{appointment.doorNumber}</span>
+                                                            </div>
+                                                        )}
+                                                        {/* Reportes del Experto - Dentro del cuadro de cita (Desktop) */}
+                                                        {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
+                                                            <div className="mt-3 pt-3 border-t border-border/30">
+                                                                <div className="flex items-center gap-2 text-sm text-foreground mb-2">
+                                                                    <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                                                    <span className="font-medium">Informe Enviado</span>
+                                                                </div>
+                                                                <div className="space-y-1.5 ml-6">
+                                                                    {deliverables.map((deliverable) => {
+                                                                        const fileName = deliverable.url.split('/').pop() || 'archivo';
+                                                                        return (
+                                                                            <button
+                                                                                key={deliverable.id}
+                                                                                onClick={() => window.open(deliverable.url, '_blank')}
+                                                                                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+                                                                            >
+                                                                                <FileText className="w-3 h-3 flex-shrink-0" />
+                                                                                <span className="truncate">{fileName}</span>
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center gap-2 text-sm text-foreground">
+                                                            <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                            <span>Debes proponer una cita</span>
+                                                        </div>
+                                                        {timeRemaining && timeRemaining !== '00:00:00' && (
+                                                            <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 ml-6">
+                                                                <Clock className="w-4 h-4 flex-shrink-0" />
+                                                                <span className="font-medium">Tiempo restante: {timeRemaining}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
+                                                <Accordion type="single" collapsible className="w-full mt-3">
+                                                    <AccordionItem value="appointment-timeline" className="border-none">
+                                                        <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                            Timeline del estado
+                                                        </AccordionTrigger>
+                                                        <AccordionContent className="pt-2 pb-0">
                                                             <StatusTimeline
                                                                 currentStatus={appointmentStatusInfo}
-                                                                    allStatuses={appointmentStatuses}
+                                                                allStatuses={appointmentStatuses}
                                                                 statusType="AppointmentStatus"
                                                             />
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            </Accordion>
-                                        )}
+                                                        </AccordionContent>
+                                                    </AccordionItem>
+                                                </Accordion>
+                                            )}
 
-                                                {/* Botones de acción para desktop */}
-                                                {((appointment && ((userRole === 'expert' && appointment.status === 'appointment_proposed') || appointment.status === 'appointment_confirmed')) || 
-                                                  (isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')))) && (
-                                                    <div className="flex gap-2 mt-4 pt-3 border-t border-border/50">
-                                                        {userRole === 'expert' && appointment && appointment.status === 'appointment_proposed' && (
-                                        <>
-                                                        <Button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                                        setAppointmentToConfirm(appointment as Appointment);
-                                                                        setShowConfirmAppointmentDialog(true);
-                                                }}
-                                                            className="flex-1"
-                                                            size="sm"
-                                            >
-                                                            <CheckCircle className="w-4 h-4 mr-2" />
-                                                                    Aceptar
-                                                        </Button>
-                                                        <Button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                                        setAppointmentToReject(appointment as Appointment);
-                                            setModalActionType('reject');
-                                            setShowRejectModal(true);
-                                                }}
-                                                            variant="destructive"
-                                                            className="flex-1"
-                                                            size="sm"
-                                            >
-                                                            <XCircle className="w-4 h-4 mr-2" />
-                                                Rechazar
-                                                        </Button>
-                                        </>
-                                    )}
-                                                        {appointment && appointment.status === 'appointment_confirmed' && (
-                                                    <Button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                                    setAppointmentToReject(appointment as Appointment);
-                                            setModalActionType('cancel');
-                                            setShowRejectModal(true);
-                                            }}
-                                                        variant="outline"
-                                                        className="w-full"
-                                                        size="sm"
-                                        >
-                                                        <XCircle className="w-4 h-4 mr-2" />
-                                                                Cancelar Cita
-                                                            </Button>
-                                                        )}
-                                                        {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
+                                            {/* Botones de acción para desktop */}
+                                            {((appointment && ((userRole === 'expert' && appointment.status === 'appointment_proposed') || appointment.status === 'appointment_confirmed')) || 
+                                              (isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')))) && (
+                                                <div className="flex gap-2 mt-4 pt-3 border-t border-border/50">
+                                                    {userRole === 'expert' && appointment && appointment.status === 'appointment_proposed' && (
+                                                        <>
                                                             <Button
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
-                                                                    handleAppointmentAction('propose', { 
-                                                                        id: 0, 
-                                                                        searchHireId: search?.searchHire?.id || 0,
-                                                                        status: 'awaiting_appointment',
-                                                                        amount: serviceInfo?.price || 0
-                                                                    } as Appointment);
+                                                                    setAppointmentToConfirm(appointment as Appointment);
+                                                                    setShowConfirmAppointmentDialog(true);
                                                                 }}
-                                                                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                                                                className="flex-1"
                                                                 size="sm"
                                                             >
-                                                                <Calendar className="w-4 h-4 mr-2" />
-                                                                {appointment && appointment.status === 'appointment_cancelled_by_expert' 
-                                                                    ? 'Proponer Nueva Cita'
-                                                                    : 'Programar Cita'
-                                                                }
-                                                    </Button>
-                                    )}
-                                </div>
-                                                )}
-                                            </div>
+                                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                                Aceptar
+                                                            </Button>
+                                                            <Button
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    setAppointmentToReject(appointment as Appointment);
+                                                                    setModalActionType('reject');
+                                                                    setShowRejectModal(true);
+                                                                }}
+                                                                variant="destructive"
+                                                                className="flex-1"
+                                                                size="sm"
+                                                            >
+                                                                <XCircle className="w-4 h-4 mr-2" />
+                                                                Rechazar
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                    {appointment && appointment.status === 'appointment_confirmed' && (
+                                                        <Button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setAppointmentToReject(appointment as Appointment);
+                                                                setModalActionType('cancel');
+                                                                setShowRejectModal(true);
+                                                            }}
+                                                            variant="outline"
+                                                            className="w-full"
+                                                            size="sm"
+                                                        >
+                                                            <XCircle className="w-4 h-4 mr-2" />
+                                                            Cancelar Cita
+                                                        </Button>
+                                                    )}
+                                                    {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
+                                                        <Button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleAppointmentAction('propose', { 
+                                                                    id: 0, 
+                                                                    searchHireId: search?.searchHire?.id || 0,
+                                                                    status: 'awaiting_appointment',
+                                                                    amount: serviceInfo?.price || 0
+                                                                } as Appointment);
+                                                            }}
+                                                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                                                            size="sm"
+                                                        >
+                                                            <Calendar className="w-4 h-4 mr-2" />
+                                                            {appointment && appointment.status === 'appointment_cancelled_by_expert' 
+                                                                ? 'Proponer Nueva Cita'
+                                                                : 'Programar Cita'
+                                                            }
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
                             </div>
 
-                            <Separator />
-
                             {/* Cliente */}
                             {search?.user && (
-                                <div className="space-y-3">
-                                    <h3 className="text-sm font-semibold text-foreground">Cliente</h3>
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-10 w-10">
+                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-1 h-5 bg-gradient-to-b from-purple-500 to-pink-600 rounded-full"></div>
+                                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Cliente</h3>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Avatar className="h-14 w-14 ring-2 ring-gray-200 dark:ring-gray-700 ring-offset-2 ring-offset-white dark:ring-offset-gray-900">
                                             <AvatarImage 
                                                 src={search.user.profilePictureUrl || undefined} 
                                                 alt={search.user.name}
                                             />
-                                            <AvatarFallback className="bg-muted text-foreground text-sm font-medium">
+                                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-base font-bold">
                                                 {search.user.name?.charAt(0).toUpperCase() || 'C'}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-foreground truncate">{search.user.name}</p>
-                                            <p className="text-xs text-muted-foreground truncate">{search.user.email}</p>
+                                            <p className="text-base font-bold text-gray-900 dark:text-gray-100 truncate">{search.user.name}</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">{search.user.email}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1767,26 +1788,29 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                             {/* Experto */}
                         {expertData && (
-                                <>
-                                    <Separator />
-                                    <div className="space-y-3">
-                                        <h3 className="text-sm font-semibold text-foreground">Experto</h3>
-                                    <div className="flex items-center gap-3">
-                                            <Avatar className="h-11 w-11">
+                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-1 h-5 bg-gradient-to-b from-blue-500 to-cyan-600 rounded-full"></div>
+                                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Experto</h3>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                            <Avatar className="h-14 w-14 ring-2 ring-blue-200 dark:ring-blue-800 ring-offset-2 ring-offset-white dark:ring-offset-gray-900">
                                                 <AvatarImage 
                                                     src={expertData.profilePictureUrl || undefined} 
                                             alt={expertData.name}
                                                 />
-                                                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-base font-bold">
                                                     {expertData.name?.charAt(0).toUpperCase()}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-foreground truncate">{expertData.name}</p>
-                                                <div className="flex items-center gap-1.5 mt-1">
-                                                    <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                                                    <span className="text-xs text-muted-foreground">Verificado</span>
-                                        </div>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-base font-bold text-gray-900 dark:text-gray-100 truncate">{expertData.name}</p>
+                                                    <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded-full">
+                                                        <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                                                        <span className="text-xs font-medium text-green-700 dark:text-green-400">Verificado</span>
+                                                    </div>
+                                                </div>
                                         </div>
                                     </div>
                                         {/* ✅ NUEVO: Mostrar disponibilidad del experto en desktop */}
@@ -1799,22 +1823,24 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         </div>
                                         )}
                                     </div>
-                                </>
                             )}
 
 
                             {/* Acciones Principales */}
                             {(canDispute || canApprove || canExpertRespond) && (
-                                <>
-                                    <Separator />
-                                    <div className="space-y-2">
+                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-3 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="w-1 h-5 bg-gradient-to-b from-orange-500 to-red-600 rounded-full"></div>
+                                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Acciones</h3>
+                                    </div>
+                                    <div className="space-y-2.5">
                                         {canApprove && (
                                             <Button
                                                 onClick={handleApproveService}
-                                                className="w-full bg-green-600 hover:bg-green-700 text-white"
-                                                size="sm"
+                                                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 h-11"
+                                                size="lg"
                                             >
-                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                <CheckCircle className="w-5 h-5 mr-2" />
                                                 Aprobar Servicio
                                             </Button>
                                         )}
@@ -1822,10 +1848,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             <Button
                                                 onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
                                                 variant="outline"
-                                                className="w-full border-destructive text-destructive hover:bg-destructive/10"
-                                                size="sm"
+                                                className="w-full border-2 border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 font-semibold h-11"
+                                                size="lg"
                                             >
-                                                <AlertTriangle className="w-4 h-4 mr-2" />
+                                                <AlertTriangle className="w-5 h-5 mr-2" />
                                                 Disputar
                                             </Button>
                                         )}
@@ -1833,29 +1859,30 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             <Button
                                                 onClick={() => setShowExpertResponseModal(true)}
                                                 variant="outline"
-                                                className="w-full"
-                                                size="sm"
+                                                className="w-full border-2 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 font-semibold h-11"
+                                                size="lg"
                                             >
-                                                <MessageCircle className="w-4 h-4 mr-2" />
+                                                <MessageCircle className="w-5 h-5 mr-2" />
                                                 Responder Disputa
                                             </Button>
                                         )}
                                 </div>
-                                </>
+                                </div>
                         )}
 
 
                             {/* Subir Informe */}
                         {isExpert && appointment?.status === 'appointment_awaiting_report' && (
-                                <>
-                                    <Separator />
-                                    <div className="space-y-3">
-                                        <h3 className="text-sm font-semibold text-foreground">Subir Informe</h3>
+                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-1 h-5 bg-gradient-to-b from-green-500 to-emerald-600 rounded-full"></div>
+                                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Subir Informe</h3>
+                                    </div>
                                 {fileValidation && (
-                                            <div className={`p-2.5 rounded-md text-xs ${
+                                            <div className={`p-3 rounded-xl text-sm font-medium ${
                                         fileValidation.canSubmit 
-                                                    ? 'bg-green-50 border border-green-200 text-green-800' 
-                                                    : 'bg-blue-50 border border-blue-200 text-blue-800'
+                                                    ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50 text-green-800 dark:text-green-300' 
+                                                    : 'bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50 text-blue-800 dark:text-blue-300'
                                             }`}>
                                                 {fileValidation.message}
                                     </div>
@@ -1888,10 +1915,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             onChange={handleDeliverableFileChange}
                                             className="hidden"
                                         />
-                                            <div className="w-full p-4 border-2 border-dashed border-border rounded-md cursor-pointer hover:bg-muted/50 transition-colors text-center">
-                                                <Upload className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
-                                                <p className="text-sm font-medium text-foreground mb-1">Seleccionar archivos</p>
-                                                <p className="text-xs text-muted-foreground">PDF o MP4 (máx. 10MB)</p>
+                                            <div className="w-full p-6 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-200 text-center group">
+                                                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 w-fit mx-auto mb-3 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
+                                                    <Upload className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                                                </div>
+                                                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Seleccionar archivos</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">PDF o MP4 (máx. 10MB)</p>
                                         </div>
                                     </label>
                                     {selectedDeliverableFiles.length > 0 && (
@@ -1913,60 +1942,58 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     )}
                                         <Button
                                             onClick={handleSubmitReport}
-                                            className={`w-full ${
+                                            className={`w-full font-semibold shadow-md hover:shadow-lg transition-all duration-200 h-11 ${
                                                 fileValidation && !fileValidation.canSubmit
-                                                    ? 'bg-muted cursor-not-allowed'
-                                                    : 'bg-green-600 hover:bg-green-700'
+                                                    ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed text-gray-500'
+                                                    : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
                                             }`}
                                             disabled={fileValidation ? !fileValidation.canSubmit : false}
-                                            size="sm"
+                                            size="lg"
                                         >
-                                            <CheckCircle className="w-4 h-4 mr-2" />
+                                            <CheckCircle className="w-5 h-5 mr-2" />
                                             Enviar Reporte
                                         </Button>
-                                    </div>
-                                </>
+                                </div>
                             )}
 
                             {/* Reseña */}
                             {canReview && (
-                                <>
-                                    <Separator />
-                                    <div className="space-y-3">
+                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-1 h-5 bg-gradient-to-b from-yellow-500 to-orange-600 rounded-full"></div>
                                         <div className="flex items-center gap-2">
-                                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                            <h3 className="text-sm font-semibold text-foreground">Reseña</h3>
+                                            <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                                            <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Reseña</h3>
+                                        </div>
                                 </div>
                                         <Button
                                             onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
-                                            size="sm"
+                                            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 h-11"
+                                            size="lg"
                                         >
-                                            <Star className="w-4 h-4 mr-2" />
+                                            <Star className="w-5 h-5 mr-2" />
                                             Escribir Reseña
                                         </Button>
                             </div>
-                                </>
                             )}
 
                             {review && (
-                                <>
-                                    <Separator />
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                                <span className="text-sm font-semibold text-foreground">Reseña</span>
-                                            </div>
-                                            <Badge variant="secondary">{review.score}/5</Badge>
+                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                                            <span className="text-base font-bold text-gray-900 dark:text-gray-100">Reseña</span>
                                         </div>
-                                        {review.description && (
-                                            <p className="text-sm text-foreground leading-relaxed bg-background p-3 rounded-md border">
+                                        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold px-3 py-1 text-sm">{review.score}/5</Badge>
+                                    </div>
+                                    {review.description && (
+                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                                                 {review.description}
                                             </p>
+                                </div>
                                 )}
                             </div>
-                                </>
                             )}
 
                             {/* Programar Cita - Solo en móvil (en desktop está dentro de la card) */}

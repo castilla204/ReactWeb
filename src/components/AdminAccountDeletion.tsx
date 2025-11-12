@@ -158,14 +158,14 @@ export const AdminAccountDeletion: React.FC<AdminAccountDeletionProps> = ({
 
               {/* Warning about active contracts */}
               {deletionStatus.hasActiveContracts && (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                   <div className="flex items-start">
-                    <AlertTriangle className="w-5 h-5 text-yellow-500 mr-3 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-gray-500 mr-3 mt-0.5" />
                     <div>
-                      <h3 className="font-semibold text-yellow-800 mb-2">
+                      <h3 className="font-semibold text-gray-800 mb-2">
                         Contrataciones Activas Detectadas
                       </h3>
-                      <p className="text-yellow-700 text-sm">
+                      <p className="text-gray-700 text-sm">
                         El usuario tiene {deletionStatus.activeContractsCount} contratación(es) activa(s).
                         Al eliminar la cuenta, se crearán disputas automáticas.
                       </p>

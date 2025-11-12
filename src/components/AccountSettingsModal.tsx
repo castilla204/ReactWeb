@@ -207,31 +207,31 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               </div>
 
               {showDeleteButton && (
-                <div className="p-5 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <div className="p-5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg">
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0">
-                      <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900 rounded-full flex items-center justify-center">
-                        <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                        <AlertTriangle className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
                     </div>
                     <div className="flex-1">
-                      <h5 className="font-semibold text-amber-900 dark:text-amber-100 mb-3">Información Importante</h5>
+                      <h5 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Información Importante</h5>
                       <div className="space-y-2">
                         <div className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-sm text-amber-800 dark:text-amber-200">Se verificarán tus contrataciones activas</span>
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Se verificarán tus contrataciones activas</span>
                         </div>
                         <div className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-sm text-amber-800 dark:text-amber-200">Se crearán disputas automáticas si es necesario</span>
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Se crearán disputas automáticas si es necesario</span>
                         </div>
                         <div className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-sm text-amber-800 dark:text-amber-200">Todos tus datos personales serán eliminados permanentemente</span>
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">Todos tus datos personales serán eliminados permanentemente</span>
                         </div>
                         <div className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-sm text-amber-800 dark:text-amber-200">No podrás recuperar tu cuenta después de la eliminación</span>
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">No podrás recuperar tu cuenta después de la eliminación</span>
                         </div>
                       </div>
                     </div>

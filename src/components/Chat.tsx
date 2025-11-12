@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2, CheckCircle, XCircle, AlertCircle, Clock, FileCheck, Info } from 'lucide-react';
+import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2, CheckCircle, XCircle, AlertCircle, Clock, FileCheck, Info, Share2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import { ScrollArea } from './ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { showToast } from '../lib/toast';
@@ -448,13 +447,20 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData }) => {
     }, []) || [];
 
     return (
-        <div className="relative flex flex-col h-full bg-background">
+        <div className="relative flex flex-col h-full w-full bg-background overflow-hidden">
             {/* Messages Container - Fixed height with internal scroll */}
-            <ScrollArea className="h-[calc(100vh-400px)] lg:h-[calc(100vh-350px)] flex-1 px-4 lg:px-6 chat-scroll-area">
-                <div className="space-y-6 pb-32 lg:pb-40" data-chat-messages ref={messagesEndRef}>
+            <div 
+                className="w-full overflow-y-auto overflow-x-hidden px-4 lg:px-6 chat-scroll-area" 
+                style={{ 
+                    flex: '1 1 0%',
+                    minHeight: 0,
+                    height: 0
+                }}
+            >
+                <div className="space-y-6 pb-24 lg:pb-20 pt-4 lg:pt-8" data-chat-messages ref={messagesEndRef}>
                     {/* Mensajes de bienvenida - Siempre se muestran */}
                     {isExpert ? (
-                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-6 lg:pt-8' : 'pt-6'} pb-8 text-center px-4`}>
+                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-8 lg:pt-16' : 'pt-6 lg:pt-12'} pb-8 text-center px-4`}>
                             <div className="max-w-2xl w-full space-y-4">
                                 {/* Primer mensaje de bienvenida - Experto */}
                                 <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -513,7 +519,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData }) => {
                             </div>
                         </div>
                     ) : (
-                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-6 lg:pt-8' : 'pt-6'} pb-8 text-center px-4`}>
+                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-8 lg:pt-16' : 'pt-6 lg:pt-12'} pb-8 text-center px-4`}>
                             <div className="max-w-2xl w-full space-y-4">
                                 {/* Primer mensaje de bienvenida - Cliente */}
                                 <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-3 duration-500">
@@ -704,21 +710,62 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData }) => {
                                                     <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                                                         {message.content}
                                                     </p>
-                                                    {/* Timestamp más discreto */}
-                                                    <div className={`text-xs mt-1.5 pt-1.5 border-t ${
+                                                    {/* Timestamp y botón compartir */}
+                                                    <div className={`flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t ${
                                                         group.isOwn 
                                                             ? 'border-primary-foreground/20 text-primary-foreground/70' 
                                                             : 'border-border text-muted-foreground'
                                                     }`}>
-                                                        {(() => {
-                                                            const date = new Date(message.sentAt);
-                                                            return isNaN(date.getTime()) 
-                                                                ? 'Ahora'
-                                                                : date.toLocaleTimeString('es-ES', {
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit'
-                                                                });
-                                                        })()}
+                                                        <span className="text-xs">
+                                                            {(() => {
+                                                                const date = new Date(message.sentAt);
+                                                                return isNaN(date.getTime()) 
+                                                                    ? 'Ahora'
+                                                                    : date.toLocaleTimeString('es-ES', {
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit'
+                                                                    });
+                                                            })()}
+                                                        </span>
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                try {
+                                                                    const textToShare = message.content || '';
+                                                                    if (navigator.share) {
+                                                                        await navigator.share({
+                                                                            text: textToShare,
+                                                                            title: 'Mensaje del chat'
+                                                                        });
+                                                                    } else {
+                                                                        await navigator.clipboard.writeText(textToShare);
+                                                                        showToast('success', 'Mensaje copiado al portapapeles');
+                                                                    }
+                                                                } catch (error) {
+                                                                    // Si el usuario cancela el share, no mostrar error
+                                                                    if (error instanceof Error && error.name !== 'AbortError') {
+                                                                        try {
+                                                                            await navigator.clipboard.writeText(message.content || '');
+                                                                            showToast('success', 'Mensaje copiado al portapapeles');
+                                                                        } catch (clipboardError) {
+                                                                            showToast('error', 'No se pudo compartir el mensaje');
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className={`opacity-70 hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-black/10 ${
+                                                                group.isOwn 
+                                                                    ? 'hover:bg-primary-foreground/20' 
+                                                                    : 'hover:bg-muted-foreground/20'
+                                                            }`}
+                                                            title="Compartir mensaje"
+                                                        >
+                                                            <Share2 className={`w-3.5 h-3.5 ${
+                                                                group.isOwn 
+                                                                    ? 'text-primary-foreground/70' 
+                                                                    : 'text-muted-foreground'
+                                                            }`} />
+                                                        </button>
                                                 </div>
                                             </div>
                                         )}
@@ -892,13 +939,13 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData }) => {
                         </div>
                     ))
                     )}
-                <div ref={messagesEndRef} />
+                    <div ref={messagesEndRef} />
+                </div>
             </div>
-            </ScrollArea>
 
             {/* Fixed Input Area at Bottom - Inspirado en PromptInput de AI Elements */}
-            <div className="absolute bottom-0 left-0 right-0 bg-background z-10 border-t border-border/50">
-                <div className="w-full px-3 pt-3 pb-3 sm:px-4 sm:pt-4 sm:pb-4 lg:px-6 lg:pt-6" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <div className="sticky bottom-0 left-0 right-0 bg-background z-10 border-t border-border/50 shadow-lg lg:shadow-none">
+                <div className="w-full px-3 pt-2 pb-2 sm:px-4 sm:pt-2.5 sm:pb-2.5 lg:px-6 lg:pt-3 lg:pb-3" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
                     <div className="max-w-4xl mx-auto">
                         {/* PromptInput Container - Estilo moderno con colores tutifruti sutiles */}
                         <div className="relative bg-white dark:bg-gray-900 border-2 border-gray-300/70 dark:border-gray-600/60 rounded-xl shadow-lg overflow-hidden">

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 import { HubConnectionBuilder, HubConnection, LogLevel, HttpTransportType } from '@microsoft/signalr';
-import { showToast, NotificationType } from '../lib/toast';
+import { showToast } from '../lib/toast';
 import { getAuthToken } from '../lib/auth';
 
 interface Message {
@@ -55,17 +55,17 @@ export const useChat = (searchId: number) => {
         console.log('[10:45 CEST] Validating API_CONFIG.endpoints.chat.deliverable:', API_CONFIG.endpoints.chat.deliverable);
         if (!API_CONFIG.endpoints.chat.deliverable) {
             console.error('[10:45 CEST] API_CONFIG.endpoints.chat.deliverable is undefined');
-            setNotifications((prev) => [
-                ...prev,
-                {
-                    id: `config-error-${uuidv4()}`,
+            showToast('error', 'Error de configuración: Endpoint de entregables no definido. Contacta al soporte.', 5000);
+            // Removed setNotifications call
+            /*
                     type: 'error' as NotificationType,
                     message: 'Error de configuraci�n: Endpoint de entregables no definido. Contacta al soporte.',
                     duration: 5000,
                 },
             ]);
+            */
         }
-    }, [setNotifications]);
+    }, []);
 
     // Fetch conversation
     const { data: conversation, isLoading: loading, error, refetch } = useQuery<Conversation, Error>({
@@ -89,6 +89,8 @@ export const useChat = (searchId: number) => {
             } catch (err: any) {
                 console.error('[10:45 CEST] Fetch conversation error:', err.message, err.response || err);
                 if (err.message === 'Search hire not found') {
+                    showToast('error', 'No se encontró la conversación para este servicio. Verifica el ID del servicio.', 5000);
+                    /*
                     setNotifications((prev) => [
                         ...prev,
                         {
@@ -98,6 +100,7 @@ export const useChat = (searchId: number) => {
                             duration: 5000,
                         },
                     ]);
+                    */
                 }
                 throw err;
             }
@@ -203,6 +206,8 @@ export const useChat = (searchId: number) => {
         const token = getAuthToken();
         if (!token) {
             console.error('[10:45 CEST] No token available for SignalR');
+            showToast('error', 'No se pudo conectar al chat en tiempo real. Verifica tu sesión.', 5000);
+            /*
             setNotifications((prev) => [
                 ...prev,
                 {
@@ -212,6 +217,7 @@ export const useChat = (searchId: number) => {
                     duration: 5000,
                 },
             ]);
+            */
             return;
         }
 
@@ -406,6 +412,8 @@ export const useChat = (searchId: number) => {
                 };
             });
             setNewMessage('');
+            showToast('success', 'Mensaje enviado con éxito.', 3000);
+            /*
             setNotifications((prev) => [
                 ...prev,
                 {
@@ -415,6 +423,7 @@ export const useChat = (searchId: number) => {
                     duration: 3000,
                 },
             ]);
+            */
         },
         onError: (error: any, variables, context) => {
             console.error('[10:45 CEST] Failed to send message:', error.message, error, { variables, context });
@@ -537,6 +546,8 @@ export const useChat = (searchId: number) => {
         onError: (error: any, messageId) => {
             console.error('[10:45 CEST] Failed to mark message as read:', error.message, { messageId });
             failedMessageIds.current.add(messageId);
+            showToast('error', 'No se pudo marcar algunos mensajes como leídos. Por favor, intenta de nuevo más tarde.', 5000);
+            /*
             setNotifications((prev) => {
                 const exists = prev.some((n) => n.id === `mark-read-error-${messageId}`);
                 if (exists) return prev;
@@ -550,6 +561,7 @@ export const useChat = (searchId: number) => {
                     },
                 ];
             });
+            */
         },
     });
 
