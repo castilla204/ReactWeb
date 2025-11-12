@@ -124,8 +124,10 @@ export const useAppointments = () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointment'] });
     },
-    onError: (error) => {
-      setError(error instanceof Error ? error.message : 'Error al confirmar cita');
+    onError: (error: any) => {
+      // Extraer el mensaje del backend si está disponible
+      const errorMessage = error?.message || (error instanceof Error ? error.message : 'Error al confirmar cita');
+      setError(errorMessage);
     },
   });
 
@@ -139,8 +141,10 @@ export const useAppointments = () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointment'] });
     },
-    onError: (error) => {
-      setError(error instanceof Error ? error.message : 'Error al rechazar cita');
+    onError: (error: any) => {
+      // Extraer el mensaje del backend si está disponible
+      const errorMessage = error?.message || (error instanceof Error ? error.message : 'Error al rechazar cita');
+      setError(errorMessage);
     },
   });
 
@@ -154,8 +158,10 @@ export const useAppointments = () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointment'] });
     },
-    onError: (error) => {
-      setError(error instanceof Error ? error.message : 'Error al cancelar cita');
+    onError: (error: any) => {
+      // Extraer el mensaje del backend si está disponible
+      const errorMessage = error?.message || (error instanceof Error ? error.message : 'Error al cancelar cita');
+      setError(errorMessage);
     },
   });
 

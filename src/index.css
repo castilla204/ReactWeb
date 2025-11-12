@@ -235,60 +235,64 @@ input, textarea {
 }
 
 /* Chat scrollbar custom styles - Modern and elegant */
-.chat-scroll-area [data-radix-scroll-area-scrollbar] {
-    width: 18px !important;
+.chat-scroll-area {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.8) rgba(241, 245, 249, 0.4);
+    -webkit-overflow-scrolling: touch;
 }
 
-.chat-scroll-area [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
-    width: 18px !important;
-    padding: 8px 4px !important;
+/* Force chat to be visible on desktop */
+@media (min-width: 1024px) {
+    [role="tabpanel"][data-state] {
+        display: flex !important;
+    }
 }
 
-.chat-scroll-area [data-radix-scroll-area-thumb] {
+.chat-scroll-area::-webkit-scrollbar {
+    width: 12px;
+}
+
+.chat-scroll-area::-webkit-scrollbar-track {
+    background: rgba(241, 245, 249, 0.4);
+    border-radius: 12px;
+    margin: 8px 4px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.chat-scroll-area::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, 
         rgba(59, 130, 246, 0.9) 0%, 
         rgba(37, 99, 235, 0.95) 50%, 
-        rgba(29, 78, 216, 0.9) 100%) !important;
-    border-radius: 10px !important;
-    min-height: 60px !important;
-    width: 12px !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
+        rgba(29, 78, 216, 0.9) 100%);
+    border-radius: 10px;
+    min-height: 60px;
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
     box-shadow: 
         0 2px 8px rgba(59, 130, 246, 0.25),
         inset 0 1px 0 rgba(255, 255, 255, 0.4),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    position: relative !important;
-    cursor: pointer !important;
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
 }
 
-.chat-scroll-area [data-radix-scroll-area-thumb]:hover {
+.chat-scroll-area::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(180deg, 
         rgba(37, 99, 235, 0.95) 0%, 
         rgba(29, 78, 216, 1) 50%, 
-        rgba(30, 64, 175, 0.95) 100%) !important;
-    width: 14px !important;
+        rgba(30, 64, 175, 0.95) 100%);
     box-shadow: 
         0 4px 12px rgba(59, 130, 246, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.5),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.15) !important;
-    border-color: rgba(255, 255, 255, 0.4) !important;
+        inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
-.chat-scroll-area [data-radix-scroll-area-thumb]:active {
-    width: 16px !important;
+.chat-scroll-area::-webkit-scrollbar-thumb:active {
     background: linear-gradient(180deg, 
         rgba(29, 78, 216, 1) 0%, 
         rgba(30, 64, 175, 1) 50%, 
-        rgba(30, 58, 138, 1) 100%) !important;
-}
-
-.chat-scroll-area [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
-    background: rgba(241, 245, 249, 0.4) !important;
-    border-radius: 12px !important;
-    margin: 8px 4px !important;
-    backdrop-filter: blur(8px) !important;
-    border: 1px solid rgba(226, 232, 240, 0.5) !important;
+        rgba(30, 58, 138, 1) 100%);
 }
 
 /* React DatePicker styles */
