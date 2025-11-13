@@ -143,9 +143,17 @@ export function useSearchActions() {
 
             addNotification('success', '✅ Disputa resuelta exitosamente');
             onSuccess();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error resolving dispute:', error);
-            addNotification('error', '❌ Error al resolver la disputa');
+            // ✅ Extraer mensaje de error del servidor si está disponible
+            // El error puede venir en diferentes formatos: error.message, error.response.data.message, etc.
+            const errorMessage = error?.message || 
+                                error?.response?.data?.message || 
+                                error?.response?.data?.error || 
+                                error?.data?.message || 
+                                error?.data?.error ||
+                                (typeof error === 'string' ? error : 'Error al resolver la disputa');
+            addNotification('error', `❌ ${errorMessage}`);
         }
     };
 
