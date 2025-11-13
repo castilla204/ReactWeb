@@ -13,7 +13,7 @@ interface Hire {
     client: { name: string; email: string }; 
     service: { categoryId: number }; 
     serviceType: { name: string } | null; 
-    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved' | 'dispute-resolved-client' | 'dispute-resolved-expert'; 
+    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute_resolved' | 'dispute_resolved_client' | 'dispute_resolved_expert'; 
     createdAt: string; 
     amount: number;
     // NUEVOS CAMPOS DEL BACKEND
@@ -44,25 +44,27 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
 
     // ✅ NUEVA LÓGICA: Usar isFinalizationStatus del statusInfo del backend
     const activeHires = hires.filter((hire) => {
-        // Si no hay statusInfo, usar lógica de fallback
-        if (!hire.statusInfo) {
-            return ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status);
+        // Si hay statusInfo, usar isFinalizationStatus del backend
+        if (hire.statusInfo) {
+            return !hire.statusInfo.isFinalizationStatus;
         }
-        // Usar isFinalizationStatus del backend
-        return !hire.statusInfo.isFinalizationStatus;
+        // Fallback: usar status directamente (no hay statusInfo disponible)
+        return ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status);
     });
     
     const inactiveHires = hires.filter((hire) => {
-        // Si no hay statusInfo, usar lógica de fallback
-        if (!hire.statusInfo) {
-            return ['completed', 'cancelled', 'transfer_failed', 'dispute-resolved', 'dispute-resolved-client', 'dispute-resolved-expert'].includes(hire.status);
+        // Si hay statusInfo, usar isFinalizationStatus del backend
+        if (hire.statusInfo) {
+            return hire.statusInfo.isFinalizationStatus;
         }
-        // Usar isFinalizationStatus del backend
-        return hire.statusInfo.isFinalizationStatus;
+        // Fallback: usar status directamente (no hay statusInfo disponible)
+        return ['completed', 'cancelled', 'transfer_failed', 'dispute_resolved', 'dispute_resolved_client', 'dispute_resolved_expert'].includes(hire.status);
     });
     const filteredHires = (hireTab === 'active' ? activeHires : inactiveHires).filter((hire) => {
         const matchesClient = !filters.clientName || hire.client.name.toLowerCase().includes(filters.clientName.toLowerCase());
-        const matchesStatus = !filters.status || hire.status === filters.status;
+        // ✅ Usar statusInfo.statusValue cuando esté disponible para comparar con el filtro
+        const hireStatus = hire.statusInfo?.statusValue || hire.status;
+        const matchesStatus = !filters.status || hireStatus === filters.status;
         const hireDate = new Date(hire.createdAt);
         const fromDate = filters.dateFrom ? new Date(filters.dateFrom) : null;
         const toDate = filters.dateTo ? new Date(filters.dateTo) : null;
@@ -146,9 +148,9 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                 <option value="completed">Completado</option>
                                 <option value="cancelled">Cancelado</option>
                                 <option value="transfer_failed">Transferencia Fallida</option>
-                                <option value="dispute-resolved">Disputa Resuelta</option>
-                                <option value="dispute-resolved-client">Disputa Resuelta (Cliente)</option>
-                                <option value="dispute-resolved-expert">Disputa Resuelta (Experto)</option>
+                                <option value="dispute_resolved">Disputa Resuelta</option>
+                                <option value="dispute_resolved_client">Disputa Resuelta (Cliente)</option>
+                                <option value="dispute_resolved_expert">Disputa Resuelta (Experto)</option>
                             </select>
                         </div>
                         <div className="space-y-2">

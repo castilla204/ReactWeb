@@ -48,7 +48,7 @@ interface Hire {
     client: { name: string; email: string };
     service: { categoryId: number };
     serviceType: { id: number; name: string; description: string; isActive: boolean; createdAt: string; updatedAt: string } | null;
-    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved' | 'dispute-resolved-client' | 'dispute-resolved-expert';
+    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute_resolved' | 'dispute_resolved_client' | 'dispute_resolved_expert';
     createdAt: string;
     amount: number;
 }
@@ -108,7 +108,7 @@ export function ExpertPanelPage() {
     const [showProfileEditForm, setShowProfileEditForm] = useState(false);
     const [filters, setFilters] = useState<{
         clientName: string;
-        status: '' | 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute-resolved' | 'dispute-resolved-client' | 'dispute-resolved-expert';
+        status: '' | 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute_resolved' | 'dispute_resolved_client' | 'dispute_resolved_expert';
         dateFrom: string;
         dateTo: string;
     }>({

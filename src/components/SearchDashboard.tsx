@@ -292,14 +292,15 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
             return 'Activa'; // Sin contratación = activa
         }
         
-        // Si hay statusInfo, usar isFinalizationStatus
+        // ✅ Usar statusInfo cuando esté disponible (viene del backend)
         if (search.searchHire.statusInfo) {
             return search.searchHire.statusInfo.isFinalizationStatus ? 'Inactiva' : 'Activa';
         }
         
-        // Fallback: lógica hardcodeada anterior
-        const terminalStatuses = ['dispute-resolved', 'completed', 'cancelled'];
-        return !terminalStatuses.includes(search.searchHire.status) ? 'Activa' : 'Inactiva';
+        // Fallback: lógica hardcodeada anterior (usar statusInfo.statusValue si está disponible)
+        const currentStatus = search.searchHire.statusInfo?.statusValue || search.searchHire.status;
+        const terminalStatuses = ['dispute_resolved', 'completed', 'cancelled'];
+        return !terminalStatuses.includes(currentStatus) ? 'Activa' : 'Inactiva';
     };
 
     // ✅ HOOK DINÁMICO PARA ESTADOS
@@ -586,7 +587,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                             { value: 'completed', label: 'Completado' },
                                             { value: 'cancelled', label: 'Cancelado' },
                                             { value: 'transfer_failed', label: 'Transferencia fallida' },
-                                            { value: 'dispute-resolved', label: 'Disputa resuelta' },
+                                            { value: 'dispute_resolved', label: 'Disputa resuelta' },
                                         ].find(s => s.value === filters.searchHireStatus)?.label || 'Estado'
                                         : 'Todos los estados'
                                     }
@@ -608,7 +609,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                 { value: 'completed', label: 'Completado' },
                                 { value: 'cancelled', label: 'Cancelado' },
                                 { value: 'transfer_failed', label: 'Transferencia fallida' },
-                                { value: 'dispute-resolved', label: 'Disputa resuelta' },
+                                { value: 'dispute_resolved', label: 'Disputa resuelta' },
                             ].map((status) => {
                                 const isSelected = filters.searchHireStatus === status.value;
                                 return (

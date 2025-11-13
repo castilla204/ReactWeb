@@ -47,6 +47,7 @@ export const useSearchDetailsOptimized = (
     conversations: [], // Las conversaciones siguen siendo un endpoint separado
     appointment: searchDetailsQuery.data?.appointment || undefined,
     deliverables: searchDetailsQuery.data?.deliverables || [],
+    requiredDeliverableTypes: searchDetailsQuery.data?.requiredDeliverableTypes || [], // ✅ NUEVO: Tipos de reportes requeridos
     disputes: searchDetailsQuery.data?.disputes || [],
     
     // Estados de carga

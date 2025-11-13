@@ -95,3 +95,8 @@ export const getStatusPriority = (statusInfo: SystemStatusDto): 'low' | 'medium'
 export const getStatusInfo = (item: any): SystemStatusDto | null => {
   return item.statusInfo || null;
 };
+
+// ✅ NUEVA FUNCIÓN: Obtener el valor del estado correcto (usa statusInfo.statusValue si está disponible, sino usa status)
+export const getStatusValue = (item: { status: string; statusInfo?: SystemStatusDto }): string => {
+  return item.statusInfo?.statusValue || item.status;
+};
