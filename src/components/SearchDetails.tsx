@@ -187,6 +187,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         conversations,
         appointment,
         deliverables,
+        requiredDeliverableTypes, // ✅ NUEVO: Tipos de reportes requeridos
         disputes,
         isLoading,
         isError,
@@ -358,7 +359,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             // Si no hay archivos seleccionados, usar validación del servidor
             validateFilesAndUpdate();
         }
-    }, [uploadedFiles, selectedDeliverableFiles]);
+    }, [uploadedFiles, selectedDeliverableFiles, requiredDeliverableTypes]);
 
     const loadUploadedFiles = async () => {
         if (appointment?.id) {
@@ -388,20 +389,62 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             file.name?.toLowerCase().endsWith('.mp4')
         );
         
-        if (hasPDF && hasMP4) {
-            setFileValidation({ 
-                canSubmit: true, 
-                message: 'Todos los archivos requeridos están listos' 
-            });
-            // Validación exitosa - no necesita notificación
+        // ✅ Usar requiredDeliverableTypes del backend para validación dinámica
+        const requiredTypes = requiredDeliverableTypes || [];
+        
+        if (requiredTypes.length === 0) {
+            // Si no hay tipos requeridos definidos, usar validación por defecto (PDF y MP4)
+            if (hasPDF && hasMP4) {
+                setFileValidation({ 
+                    canSubmit: true, 
+                    message: 'Todos los archivos requeridos están listos' 
+                });
+            } else {
+                const missing = [];
+                if (!hasPDF) missing.push('PDF');
+                if (!hasMP4) missing.push('MP4');
+                setFileValidation({ 
+                    canSubmit: false, 
+                    message: `Para enviar el reporte necesitas subir: ${missing.join(' y ')}` 
+                });
+            }
         } else {
-            const missing = [];
-            if (!hasPDF) missing.push('PDF');
-            if (!hasMP4) missing.push('MP4');
-            setFileValidation({ 
-                canSubmit: false, 
-                message: `Para enviar el reporte necesitas subir: ${missing.join(' y ')}` 
+            // ✅ Validar usando los tipos requeridos del backend
+            const deliveredTypes = totalFiles.map(file => {
+                const fileName = (file as any).fileName || (file as any).name || '';
+                const extension = fileName.split('.').pop()?.toUpperCase() || '';
+                // Mapear extensiones a nombres de tipos del backend
+                if (extension === 'PDF') return 'PDF';
+                if (extension === 'MP4' || extension === 'VIDEO') return 'Video';
+                return extension;
             });
+            
+            const missing = requiredTypes
+                .filter(type => {
+                    const typeName = type.name.toUpperCase();
+                    // Verificar si el tipo está en los archivos entregados
+                    return !deliveredTypes.some(delivered => {
+                        if (typeName === 'PDF' && delivered === 'PDF') return true;
+                        if ((typeName === 'VIDEO' || typeName === 'MP4') && delivered === 'Video') return true;
+                        return delivered === typeName;
+                    });
+                })
+                .map(type => type.displayName || type.name);
+            
+            if (missing.length === 0) {
+                setFileValidation({ 
+                    canSubmit: true, 
+                    message: 'Todos los archivos requeridos están listos' 
+                });
+            } else {
+                const missingText = missing.length === 1 
+                    ? missing[0] 
+                    : missing.slice(0, -1).join(', ') + ' y ' + missing[missing.length - 1];
+                setFileValidation({ 
+                    canSubmit: false, 
+                    message: `Para enviar el reporte necesitas subir: ${missingText}` 
+                });
+            }
         }
     };
 
@@ -674,14 +717,16 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     
     // ✅ Usar la información de review del endpoint details-complete
     const hasReviewed = !!review;
+    // ✅ Usar statusInfo.statusValue cuando esté disponible (viene del backend con valores correctos)
+    const searchHireStatus = search?.searchHire?.statusInfo?.statusValue || search?.searchHire?.status;
     const canReview =
-        isClient && search?.searchHire && ['completed', 'dispute-resolved'].includes(search.searchHire.status) && !hasReviewed;
+        isClient && search?.searchHire && ['completed', 'dispute_resolved'].includes(searchHireStatus || '') && !hasReviewed;
     
-    const canDispute = isClient && search?.searchHire?.status === 'awaiting_client_decision';
-    const canApprove = isClient && search?.searchHire?.status === 'awaiting_client_decision';
-    const canCancel = isExpert && search?.searchHire && !['completed', 'canceled', 'disputed'].includes(search.searchHire.status);
-    const isDisputed = (isClient || isExpert) && search?.searchHire?.status === 'disputed';
-    const isDisputeResolved = (isClient || isExpert) && search?.searchHire?.status === 'dispute-resolved';
+    const canDispute = isClient && searchHireStatus === 'awaiting_client_decision';
+    const canApprove = isClient && searchHireStatus === 'awaiting_client_decision';
+    const canCancel = isExpert && search?.searchHire && !['completed', 'canceled', 'disputed'].includes(searchHireStatus || '');
+    const isDisputed = (isClient || isExpert) && searchHireStatus === 'disputed';
+    const isDisputeResolved = (isClient || isExpert) && searchHireStatus === 'dispute_resolved';
     
     // Determinar si el experto puede responder a la disputa
     // ✅ SOLO PARA EXPERTOS: Verificar que el usuario actual es el experto de la disputa
@@ -691,7 +736,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             : (isDisputeExpert && 
                disputes[0]?.status === 'pending' && 
                !disputes[0]?.expertResponse &&
-               search?.searchHire?.status === 'disputed'));
+               searchHireStatus === 'disputed'));
     
     // Validación más robusta para el chat
     const canViewChat = (isClient || isExpert || isAdmin) && !!search?.searchHire && !!search?.searchHire?.id;
@@ -1245,14 +1290,37 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 <input
                                                     type="file"
                                                     multiple
-                                                    accept=".pdf,.mp4"
+                                                    accept={(() => {
+                                                        // ✅ Generar accept dinámicamente basado en requiredDeliverableTypes
+                                                        if (requiredDeliverableTypes && requiredDeliverableTypes.length > 0) {
+                                                            const extensions = requiredDeliverableTypes.map(type => {
+                                                                const typeName = type.name.toUpperCase();
+                                                                if (typeName === 'PDF') return '.pdf';
+                                                                if (typeName === 'VIDEO' || typeName === 'MP4') return '.mp4';
+                                                                return '';
+                                                            }).filter(ext => ext !== '').join(',');
+                                                            return extensions || '.pdf,.mp4';
+                                                        }
+                                                        return '.pdf,.mp4';
+                                                    })()}
                                                     onChange={handleDeliverableFileChange}
                                                     className="hidden"
                                                 />
                                                 <div className="w-full p-4 border-2 border-dashed border-border rounded-md cursor-pointer hover:bg-muted/50 transition-colors text-center">
                                                     <Upload className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
                                                     <p className="text-sm font-medium text-foreground mb-1">Seleccionar archivos</p>
-                                                    <p className="text-xs text-muted-foreground">PDF o MP4 (máx. 10MB)</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {(() => {
+                                                            // ✅ Mostrar tipos requeridos dinámicamente
+                                                            if (requiredDeliverableTypes && requiredDeliverableTypes.length > 0) {
+                                                                const typesText = requiredDeliverableTypes
+                                                                    .map(type => type.displayName || type.name)
+                                                                    .join(' y ');
+                                                                return `${typesText} (máx. 10MB)`;
+                                                            }
+                                                            return 'PDF o MP4 (máx. 10MB)';
+                                                        })()}
+                                                    </p>
                                                 </div>
                                             </label>
                                             {selectedDeliverableFiles.length > 0 && (
@@ -1911,7 +1979,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         <input
                                             type="file"
                                             multiple
-                                            accept=".pdf,.mp4"
+                                            accept={(() => {
+                                                // ✅ Generar accept dinámicamente basado en requiredDeliverableTypes
+                                                if (requiredDeliverableTypes && requiredDeliverableTypes.length > 0) {
+                                                    const extensions = requiredDeliverableTypes.map(type => {
+                                                        const typeName = type.name.toUpperCase();
+                                                        if (typeName === 'PDF') return '.pdf';
+                                                        if (typeName === 'VIDEO' || typeName === 'MP4') return '.mp4';
+                                                        return '';
+                                                    }).filter(ext => ext !== '').join(',');
+                                                    return extensions || '.pdf,.mp4';
+                                                }
+                                                return '.pdf,.mp4';
+                                            })()}
                                             onChange={handleDeliverableFileChange}
                                             className="hidden"
                                         />
@@ -1920,7 +2000,18 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     <Upload className="w-6 h-6 text-gray-600 dark:text-gray-400" />
                                                 </div>
                                                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Seleccionar archivos</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">PDF o MP4 (máx. 10MB)</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {(() => {
+                                                        // ✅ Mostrar tipos requeridos dinámicamente
+                                                        if (requiredDeliverableTypes && requiredDeliverableTypes.length > 0) {
+                                                            const typesText = requiredDeliverableTypes
+                                                                .map(type => type.displayName || type.name)
+                                                                .join(' y ');
+                                                            return `${typesText} (máx. 10MB)`;
+                                                        }
+                                                        return 'PDF o MP4 (máx. 10MB)';
+                                                    })()}
+                                                </p>
                                         </div>
                                     </label>
                                     {selectedDeliverableFiles.length > 0 && (

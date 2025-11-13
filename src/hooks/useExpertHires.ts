@@ -15,9 +15,9 @@ interface ExpertHire {
     | 'completed'
     | 'cancelled'
     | 'transfer_failed'
-    | 'dispute-resolved'
-    | 'dispute-resolved-client'
-    | 'dispute-resolved-expert';
+    | 'dispute_resolved'
+    | 'dispute_resolved_client'
+    | 'dispute_resolved_expert';
     amount: number;
     createdAt: string;
     UpdatedAt: string | null;

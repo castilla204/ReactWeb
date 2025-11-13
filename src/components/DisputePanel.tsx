@@ -24,6 +24,7 @@ import {
 import { useDisputes } from '../hooks/useDisputes';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
+import { showToast } from '../lib/toast';
 import type { DisputeFilters, DisputeDto } from '../types/dispute';
 
 interface DisputePanelProps {
@@ -104,8 +105,17 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
       setSelectedDispute(null);
       // Refresh the list
       disputesQuery.refetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error resolving dispute:', error);
+      // ✅ Extraer mensaje de error del servidor si está disponible
+      // El error puede venir en diferentes formatos: error.message, error.response.data.message, etc.
+      const errorMessage = error?.message || 
+                          error?.response?.data?.message || 
+                          error?.response?.data?.error || 
+                          error?.data?.message || 
+                          error?.data?.error ||
+                          (typeof error === 'string' ? error : 'Error al resolver la disputa');
+      showToast('error', errorMessage);
     }
   };
 

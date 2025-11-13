@@ -84,6 +84,17 @@ export interface DisputeDto {
   createdAt: string;
 }
 
+// ✅ TIPO PARA DELIVERABLE TYPE (del backend)
+export interface DeliverableTypeDto {
+  id: number;                    // ID único del tipo de reporte
+  name: string;                  // Nombre técnico (ej: "PDF", "Video")
+  displayName: string;           // Nombre para mostrar (ej: "Informe PDF", "Video de Inspección")
+  description?: string;          // Descripción opcional del tipo de reporte
+  isRequired: boolean;          // Si este tipo de reporte es obligatorio
+  isActive: boolean;             // Si el tipo está activo
+  sortOrder: number;             // Orden de visualización (ya viene ordenado)
+}
+
 // ✅ DTO PRINCIPAL - Datos esenciales (ACTUALIZADO CON NUEVA ESTRUCTURA)
 export interface SearchDetailsCompleteDto {
   search: SearchListDto;
@@ -93,6 +104,7 @@ export interface SearchDetailsCompleteDto {
   appointment: AppointmentDto | null;
   deliverables: DeliverableDto[];
   disputes: DisputeDto[];
+  requiredDeliverableTypes: DeliverableTypeDto[]; // ✅ NUEVO: Tipos de reportes requeridos para el servicio
   expertProfile: ExpertProfileDto | null; // ✅ NUEVO: Perfil completo del experto con disponibilidad
 }
 
@@ -232,6 +244,7 @@ export interface UseSearchDetailsOptimizedReturn {
   conversations: ConversationDto[];
   appointment: AppointmentDto | undefined;
   deliverables: DeliverableDto[];
+  requiredDeliverableTypes: DeliverableTypeDto[]; // ✅ NUEVO: Tipos de reportes requeridos
   disputes: DisputeDto[];
   
   // Estados de carga
