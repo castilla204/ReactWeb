@@ -49,7 +49,7 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
             return !hire.statusInfo.isFinalizationStatus;
         }
         // Fallback: usar status directamente (no hay statusInfo disponible)
-        return ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status);
+            return ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status);
     });
     
     const inactiveHires = hires.filter((hire) => {

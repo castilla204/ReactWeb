@@ -13,6 +13,7 @@ import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '../ui/empty';
 
 // Componente para mostrar imagen de categoría
 const CategoryImage: React.FC<{ categoryName: string; size?: 'sm' | 'md' }> = ({ categoryName, size = 'sm' }) => {
@@ -472,12 +473,18 @@ export function ServiceForm({
                 <div className="space-y-2">
                     <Label>Imágenes</Label>
                     <div
-                        className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors bg-muted/30 cursor-pointer"
+                        className="cursor-pointer"
                         onClick={() => fileInputRef.current?.click()}
                     >
-                        <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm font-medium text-foreground">Haz clic para subir imágenes</p>
-                        <p className="text-xs text-muted-foreground mt-1">PNG o JPG (máx. 5MB)</p>
+                        <Empty className="py-8">
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <Upload className="w-8 h-8 text-muted-foreground" />
+                                </EmptyMedia>
+                                <EmptyTitle>Haz clic para subir imágenes</EmptyTitle>
+                                <EmptyDescription>PNG o JPG (máx. 5MB)</EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
                         <input
                             id="image-input"
                             type="file"

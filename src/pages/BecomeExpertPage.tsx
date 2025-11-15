@@ -1,10 +1,11 @@
 ﻿import { useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Upload, Loader2, UserPlus, Clock } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, UserPlus, Clock, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleMap, useLoadScript, Marker, DrawingManager } from '@react-google-maps/api';
 import { useBecomeExpert } from '../hooks/useBecomeExpert';
 import { VALID_DAYS_OF_WEEK, DAY_NAMES_ES } from '../types/stripe';
 import { AvailabilityFormData } from '../hooks/useExpertProfile';
+import { showToast } from '../lib/toast';
 
 // Define a local type to match the Library enum values
 type GoogleMapLibrary = 'drawing' | 'geometry' | 'places';
@@ -234,6 +235,15 @@ function BecomeExpertPage() {
     useEffect(() => {
         console.log('formData actualizado:', formData);
     }, [formData]);
+
+    // Mostrar toast cuando hay error de contrataciones activas
+    useEffect(() => {
+        if (error && (error.includes('contrataciones activas') || error.includes('contratación(es) activa(s)'))) {
+            showToast('error', error, 8000);
+            // Limpiar el error del estado para que no se muestre fijo en el formulario
+            // El error se mostrará solo como toast
+        }
+    }, [error]);
 
     // Efecto para asegurar que el mapa y círculo se actualicen cuando cambie la ubicación
     useEffect(() => {
@@ -674,10 +684,15 @@ function BecomeExpertPage() {
                                     </div>
                                 </div>
 
-                                {/* Error message */}
-                        {error && (
-                                    <div className="bg-red-50 text-red-700 px-3 py-2 border border-red-200 rounded text-sm">
-                                {error}
+                                {/* Error message - Solo mostrar si NO es error de contrataciones activas (ese se muestra como toast) */}
+                        {error && !error.includes('contrataciones activas') && !error.includes('contratación(es) activa(s)') && (
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-red-600 dark:text-red-400" />
+                                    <p className="text-sm text-red-800 dark:text-red-200">
+                                        {error}
+                                    </p>
+                                </div>
                             </div>
                         )}
 

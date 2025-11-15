@@ -122,7 +122,7 @@ export function ServicesTab({
                         <EmptyContent>
                             <Button 
                                 onClick={() => setShowServiceForm(true)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                                variant="default"
                             >
                                 <Plus className="w-4 h-4 mr-2" />
                                 Crear servicio
@@ -131,8 +131,21 @@ export function ServicesTab({
                     </EmptyHeader>
                 </Empty>
             ) : (
-                <div className="border rounded-lg overflow-x-auto">
-                    <Table>
+                <div className="space-y-4">
+                    {/* Header con botón de crear servicio */}
+                    <div className="flex items-center justify-between px-4 sm:px-6 pt-4">
+                        <h3 className="text-lg font-semibold text-foreground">Servicios</h3>
+                        <Button 
+                            onClick={() => setShowServiceForm(true)}
+                            variant="default"
+                            size="sm"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Crear servicio
+                        </Button>
+                    </div>
+                    <div className="border rounded-lg overflow-x-auto">
+                        <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-[40px] sm:w-[50px] hidden sm:table-cell">Imagen</TableHead>
@@ -240,6 +253,7 @@ export function ServicesTab({
                             })}
                         </TableBody>
                     </Table>
+                    </div>
                 </div>
             )}
 

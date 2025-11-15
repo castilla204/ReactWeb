@@ -2,7 +2,7 @@
 import { ArrowLeft, Wallet, ArrowRight, Shield, Check } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useUserSettings } from '../hooks/useUserSettings';
-import { Notification, NotificationType } from './Notification';
+import { showToast } from '../lib/toast';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
@@ -57,11 +57,6 @@ export default function SearchForm({
     const { createSearchWithHire } = useSearch();
     const { } = useUserSettings();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [notification, setNotification] = useState<{
-        type: NotificationType;
-        message: string;
-        action?: () => void;
-    } | null>(null);
 
     // Scroll to top when component loads
     useEffect(() => {
@@ -77,19 +72,13 @@ export default function SearchForm({
         console.log('SearchForm - Submitting with:', { serviceId, servicePrice });
 
         if (!isDataComplete) {
-            setNotification({
-                type: 'error',
-                message: '❌ Error: Los datos del servicio están incompletos. Por favor, selecciona un servicio válido.',
-            });
+            showToast('error', 'Error: Los datos del servicio están incompletos. Por favor, selecciona un servicio válido.');
             setIsSubmitting(false);
             return;
         }
 
         if (createSearchWithHire.isPending || isSubmitting) {
-            setNotification({
-                type: 'error',
-                message: '❌ Error: Procesando solicitud. Por favor, espera.',
-            });
+            showToast('error', 'Error: Procesando solicitud. Por favor, espera.');
             setIsSubmitting(false);
             return;
         }
@@ -147,36 +136,26 @@ export default function SearchForm({
                 return;
             }
 
-            setNotification({
-                type: 'success',
-                message: `✅ Búsqueda creada exitosamente para el servicio de ${expertName}.`,
-            });
+            showToast('success', `✅ Búsqueda creada exitosamente para el servicio de ${expertName}.`);
             onComplete();
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Error al crear la búsqueda';
             console.error('SearchForm - Error creating search:', err);
 
-            if (err.response?.status === 403 && errorMessage.includes("You've reached your plan's limit")) {
-                setNotification({
-                    type: 'error',
-                    message: `👑 ${errorMessage}`,
-                    action: () => {
-                        setCurrentStep(0);
-                        setShowSubscriptions(true);
-                    },
-                });
-            // Verificación de teléfono desactivada temporalmente
-            // } else if (err.response?.status === 403 && errorMessage.includes("Phone verification required")) {
-            //     setNotification({
-            //         type: 'error',
-            //         message: '📱 Verificación de teléfono requerida para crear búsquedas.',
-            //         action: () => setCurrentStep(0),
-            //     });
+            // Detectar error de experto que intenta crear contrataciones
+            if (errorMessage.includes('expertos no pueden') || 
+                errorMessage.includes('experto') && errorMessage.includes('contrataciones') ||
+                errorMessage.includes('Debes usar una cuenta distinta')) {
+                showToast('error', 'Los expertos no pueden crear contrataciones. Debes usar una cuenta distinta (no registrada como experto) para contratar servicios.', 8000);
+            } else if (err.response?.status === 403 && errorMessage.includes("You've reached your plan's limit")) {
+                showToast('error', `👑 ${errorMessage}`, 6000);
+                // Opcional: acción para ir a suscripciones
+                setTimeout(() => {
+                    setCurrentStep(0);
+                    setShowSubscriptions(true);
+                }, 2000);
             } else {
-                setNotification({
-                    type: 'error',
-                    message: `❌ ${errorMessage}`,
-                });
+                showToast('error', errorMessage, 5000);
             }
         } finally {
             setIsSubmitting(false);
@@ -430,16 +409,6 @@ export default function SearchForm({
                 </form>
             </div>
 
-            {notification && (
-                <div className="fixed top-8 sm:top-4 right-2 sm:right-4 z-[1000] flex flex-col items-end gap-2 max-w-[90%] sm:max-w-md">
-                    <Notification
-                        type={notification.type}
-                        message={notification.message}
-                        action={notification.action}
-                        onClose={() => setNotification(null)}
-                    />
-                </div>
-            )}
             <StripeLoadingOverlay 
                 isOpen={isSubmitting}
                 message="Procesando pago con Stripe..."

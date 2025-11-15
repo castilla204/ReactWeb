@@ -490,9 +490,94 @@ const AdminPanel: React.FC = () => {
       isActive: config.isActive
     });
     
+    // ✅ CORREGIDO: Buscar el statusId correcto si no viene directamente
+    // Usar statusManagement.statuses que incluye TODOS los estados (AppointmentStatus y SearchHireStatus)
+    // en lugar de solo appointmentStatuses que solo incluye AppointmentStatus
+    const allStatuses = statusManagement.statuses && statusManagement.statuses.length > 0 
+      ? statusManagement.statuses 
+      : appointmentStatuses || [];
+    
+    // Convertir a número si viene como string
+    let resolvedStatusId = config.statusId ? Number(config.statusId) : null;
+    
+    // Si no hay statusId, intentar convertir el campo 'status' (para configuraciones de tipo 'category')
+    if (!resolvedStatusId && config.status) {
+      const statusAsNumber = Number(config.status);
+      if (!isNaN(statusAsNumber) && statusAsNumber > 0) {
+        resolvedStatusId = statusAsNumber;
+        console.log('🔍 DEBUG - handleEditConfig - StatusId obtenido del campo status (string):', resolvedStatusId);
+      }
+    }
+    
+    // Verificar si el statusId existe en la lista de estados
+    if (resolvedStatusId && resolvedStatusId > 0 && allStatuses.length > 0) {
+      const statusExists = allStatuses.some(
+        (status: any) => status.id === resolvedStatusId
+      );
+      if (!statusExists) {
+        console.log('⚠️ DEBUG - handleEditConfig - StatusId no existe en la lista, buscando por statusValue/statusName');
+        resolvedStatusId = null; // Forzar búsqueda alternativa
+      }
+    }
+    
+    // Si statusId no está disponible o no existe en la lista, buscar por statusValue
+    if ((!resolvedStatusId || resolvedStatusId === 0) && (config.statusValue || config.status) && allStatuses.length > 0) {
+      const searchValue = config.statusValue || config.status;
+      const foundStatus = allStatuses.find(
+        (status: any) => status.statusValue === searchValue || status.id.toString() === searchValue
+      );
+      if (foundStatus) {
+        resolvedStatusId = foundStatus.id;
+        console.log('🔍 DEBUG - handleEditConfig - StatusId encontrado por statusValue/status:', {
+          searchValue: searchValue,
+          statusId: resolvedStatusId,
+          statusType: foundStatus.statusType
+        });
+      }
+    }
+    
+    // Si aún no se encontró, buscar por statusName
+    if ((!resolvedStatusId || resolvedStatusId === 0) && config.statusName && allStatuses.length > 0) {
+      const foundStatus = allStatuses.find(
+        (status: any) => status.statusName === config.statusName
+      );
+      if (foundStatus) {
+        resolvedStatusId = foundStatus.id;
+        console.log('🔍 DEBUG - handleEditConfig - StatusId encontrado por statusName:', {
+          statusName: config.statusName,
+          statusId: resolvedStatusId,
+          statusType: foundStatus.statusType
+        });
+      }
+    }
+    
+    // Si aún no se encontró, buscar por displayName o estado (nombre legible)
+    if ((!resolvedStatusId || resolvedStatusId === 0) && (config.estado || config.displayName) && allStatuses.length > 0) {
+      const searchName = config.estado || config.displayName;
+      const foundStatus = allStatuses.find(
+        (status: any) => status.displayName === searchName || status.statusName === searchName
+      );
+      if (foundStatus) {
+        resolvedStatusId = foundStatus.id;
+        console.log('🔍 DEBUG - handleEditConfig - StatusId encontrado por estado/displayName:', {
+          searchName: searchName,
+          statusId: resolvedStatusId,
+          statusType: foundStatus.statusType
+        });
+      }
+    }
+    
+    // Si aún no se encontró, usar 0 como fallback
+    if (!resolvedStatusId || resolvedStatusId === 0) {
+      resolvedStatusId = 0;
+      console.log('⚠️ DEBUG - handleEditConfig - No se pudo encontrar statusId, usando 0 como fallback');
+      console.log('⚠️ DEBUG - handleEditConfig - Config completa:', config);
+      console.log('⚠️ DEBUG - handleEditConfig - AllStatuses disponibles:', allStatuses.map((s: any) => ({ id: s.id, statusType: s.statusType, statusValue: s.statusValue, displayName: s.displayName })));
+    }
+    
     setEditingConfig(config);
     setFormData({
-      statusId: config.statusId || 0,
+      statusId: resolvedStatusId,
       categoryId: config.categoryId || null, // ✅ AGREGADO: Incluir categoryId
       serviceTypeCategoryId: config.serviceTypeCategoryId,
       clientPercentage: Number(config.cliente || config.clientPercentage || 0), // ✅ Asegurar que sea número
@@ -502,7 +587,7 @@ const AdminPanel: React.FC = () => {
     });
     
     console.log('🔍 DEBUG - handleEditConfig - FormData establecida:', {
-      statusId: config.statusId || 0,
+      statusId: resolvedStatusId,
       categoryId: config.categoryId || null,
       serviceTypeCategoryId: config.serviceTypeCategoryId,
       clientPercentage: Number(config.cliente || config.clientPercentage || 0),
@@ -881,8 +966,15 @@ const AdminPanel: React.FC = () => {
                                 
                                 {/* ✅ STATUS VALUE COMPACTO */}
                                 {status.statusValue && (
-                                  <p className="text-xs font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded mb-1 truncate">
+                                  <p className="text-xs font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded mb-1 break-all">
                                     {status.statusValue}
+                                  </p>
+                                )}
+                                
+                                {/* ✅ STATUS TYPE */}
+                                {status.statusType && (
+                                  <p className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mb-1 truncate">
+                                    {status.statusType}
                                   </p>
                                 )}
                                 
@@ -934,8 +1026,15 @@ const AdminPanel: React.FC = () => {
                                 
                                 {/* ✅ STATUS VALUE COMPACTO */}
                                 {status.statusValue && (
-                                  <p className="text-xs font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded mb-1 truncate">
+                                  <p className="text-xs font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded mb-1 break-all">
                                     {status.statusValue}
+                                  </p>
+                                )}
+                                
+                                {/* ✅ STATUS TYPE */}
+                                {status.statusType && (
+                                  <p className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mb-1 truncate">
+                                    {status.statusType}
                                   </p>
                                 )}
                                 
@@ -994,6 +1093,13 @@ const AdminPanel: React.FC = () => {
                                 </p>
                               )}
                               
+                              {/* ✅ STATUS TYPE */}
+                              {status.statusType && (
+                                <p className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mb-1 truncate">
+                                  {status.statusType}
+                                </p>
+                              )}
+                              
                               <div className="flex items-center justify-between">
                                 <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
                                   ⏳
@@ -1048,12 +1154,23 @@ const AdminPanel: React.FC = () => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {getConfigsForTab().map((config) => (
                         <tr key={config.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
                             <div>
                               <div>{getStatusLabel(config)}</div>
-                              <div className="text-xs text-gray-500 font-mono mt-1">
+                              <div className="text-xs text-gray-500 font-mono mt-1 break-all">
                                 {config.statusValue}
                               </div>
+                              {(() => {
+                                // Buscar el tipo de estado en la lista de todos los estados
+                                const statusInfo = (statusManagement.statuses || []).find(
+                                  (s: any) => s.statusValue === config.statusValue || s.id === config.statusId
+                                );
+                                return statusInfo?.statusType ? (
+                                  <div className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mt-1 inline-block">
+                                    {statusInfo.statusType}
+                                  </div>
+                                ) : null;
+                              })()}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -1168,7 +1285,20 @@ const AdminPanel: React.FC = () => {
                                 {categoryConfigs.map((config) => (
                                   <tr key={config.id}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                      {getStatusLabel(config)}
+                                      <div>
+                                        <div>{getStatusLabel(config)}</div>
+                                        {(() => {
+                                          // Buscar el tipo de estado en la lista de todos los estados
+                                          const statusInfo = (statusManagement.statuses || []).find(
+                                            (s: any) => s.statusValue === config.status || s.id === config.statusId || s.id.toString() === config.status
+                                          );
+                                          return statusInfo?.statusType ? (
+                                            <div className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mt-1 inline-block">
+                                              {statusInfo.statusType}
+                                            </div>
+                                          ) : null;
+                                        })()}
+                                      </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                       {config.cliente}%
@@ -1297,7 +1427,22 @@ const AdminPanel: React.FC = () => {
                              {granularConfigs.map((config) => (
                               <tr key={config.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{config.serviceTypeCategoryName || 'N/A'}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{config.estado}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  <div>
+                                    <div>{config.estado}</div>
+                                    {(() => {
+                                      // Buscar el tipo de estado en la lista de todos los estados
+                                      const statusInfo = (statusManagement.statuses || []).find(
+                                        (s: any) => s.statusValue === config.statusValue || s.id === config.statusId || s.displayName === config.estado
+                                      );
+                                      return statusInfo?.statusType ? (
+                                        <div className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mt-1 inline-block">
+                                          {statusInfo.statusType}
+                                        </div>
+                                      ) : null;
+                                    })()}
+                                  </div>
+                                </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{config.cliente}%</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{config.experto}%</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{config.plataforma}%</td>
@@ -1494,9 +1639,12 @@ const AdminPanel: React.FC = () => {
                       <option value={0}>
                         {loadingBasicData ? 'Cargando estados...' : 'Seleccionar estado...'}
                       </option>
-                      {appointmentStatuses?.map((status) => (
+                      {(statusManagement.statuses && statusManagement.statuses.length > 0 
+                        ? statusManagement.statuses 
+                        : appointmentStatuses || []
+                      )?.map((status: any) => (
                         <option key={status.id} value={status.id}>
-                          {status.displayName}
+                          {status.displayName} {status.statusType && `(${status.statusType})`}
                         </option>
                       ))}
                     </select>

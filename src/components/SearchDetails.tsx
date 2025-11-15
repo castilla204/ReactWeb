@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download } from 'lucide-react';
+import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
@@ -19,6 +19,7 @@ import { useSearchActions } from '../hooks/useSearchActions';
 import { useDisputes } from '../hooks/useDisputes';
 import { useParams, useNavigate } from 'react-router-dom';
 import { showToast, NotificationType } from '../lib/toast';
+import { useErrorHandler, isNetworkError } from '../hooks/useErrorHandler';
 
 // Imports para el sistema de citas
 import { useAppointments } from '../hooks/useAppointments';
@@ -225,7 +226,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         rejectAppointment, 
         cancelAppointment, 
         isProposing,
-        isRejecting
+        isConfirming,
+        isRejecting,
+        isCancelling
     } = useAppointments();
     
     // Funciones para los nuevos endpoints de gestión de archivos
@@ -585,12 +588,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         }
     };
 
+    const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
     const handleSubmitReport = async () => {
         if (!appointment?.id) {
             showToast('error', 'No se encontró el ID de la cita');
             return;
         }
 
+        setIsSubmittingReport(true);
         try {
             // Usar el endpoint unificado que maneja todo: subida + validación + envío
             console.log('[SearchDetails] Enviando reporte con archivos usando endpoint unificado...');
@@ -608,6 +614,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         } catch (error) {
             console.error('[SearchDetails] Error submitting report:', error);
             showToast('error', 'Error al enviar el reporte');
+        } finally {
+            setIsSubmittingReport(false);
         }
     };
 
@@ -917,6 +925,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         appointment?.status || ''
     );
 
+    // ✅ Manejo elegante de errores con toast (DEBE estar antes de cualquier return)
+    useErrorHandler(error, isError);
+
     // Only show loading for critical queries
     if (isLoading) {
         return (
@@ -926,11 +937,37 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         );
     }
 
-    // Only show error for critical failures
-    if (isError) {
+    // Verificar si es error de red
+    const isNetworkErr = isError && error && isNetworkError(error);
+    
+    // Solo mostrar pantalla de error si es crítico y no es un error de red (los de red se manejan con toast)
+    if (isError && error && !isNetworkErr) {
         return (
-            <div className="flex items-center justify-center h-screen bg-white text-black">
-                <p className="text-lg text-red-400">Error al cargar los datos</p>
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 p-4">
+                <div className="text-center max-w-md w-full">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 space-y-6">
+                        <div className="flex justify-center">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-orange-100 dark:bg-orange-900/20 rounded-full animate-ping opacity-75"></div>
+                                <AlertTriangle className="w-16 h-16 text-orange-500 dark:text-orange-400 relative" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Oops, algo salió mal</h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {error?.message || 'Ha ocurrido un error inesperado. Por favor, intenta nuevamente.'}
+                            </p>
+                        </div>
+                        <Button
+                            onClick={() => invalidateAll()}
+                            className="w-full"
+                            size="lg"
+                        >
+                            <Activity className="w-4 h-4 mr-2" />
+                            Reintentar
+                        </Button>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -971,7 +1008,36 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 </div>
             </header>
 
+            {/* ✅ Mensaje simple para errores de red */}
+            {isNetworkErr && (
+                <div className="flex flex-col items-center justify-center py-16 px-4 min-h-[60vh]">
+                    <div className="flex flex-col items-center gap-4 max-w-sm text-center">
+                        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                            <WifiOff className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                No se pudo conectar con el servidor
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500">
+                                Intenta nuevamente en unos minutos
+                            </p>
+                        </div>
+                        <Button
+                            onClick={() => invalidateAll()}
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                        >
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Reintentar
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Main Layout - Dos columnas en desktop, tabs en móvil */}
+            {!isNetworkErr && (
             <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)] bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-950 dark:to-gray-900 lg:gap-6 lg:p-6">
                 {/* Chat Section - Izquierda en desktop, tabs en móvil */}
                 {canViewChat && (
@@ -1347,11 +1413,23 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         ? 'bg-muted cursor-not-allowed'
                                                         : 'bg-green-600 hover:bg-green-700'
                                                     }`}
-                                                    disabled={fileValidation ? !fileValidation.canSubmit : false}
+                                                    disabled={(fileValidation ? !fileValidation.canSubmit : false) || isSubmittingReport}
                                                 size="sm"
                                                 >
-                                                <CheckCircle className="w-4 h-4 mr-2" />
-                                                    Enviar Reporte
+                                                {isSubmittingReport ? (
+                                                    <>
+                                                        <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                        </svg>
+                                                        Enviando...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                                        Enviar Reporte
+                                                    </>
+                                                )}
                                             </Button>
                                             </div>
                                     </>
@@ -1407,9 +1485,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         }}
                                                         className="flex-1"
                                                         size="sm"
+                                                        disabled={isConfirming || isRejecting}
                                                     >
-                                                        <CheckCircle className="w-4 h-4 mr-2" />
-                                                        Confirmar
+                                                        {isConfirming ? (
+                                                            <>
+                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                                </svg>
+                                                                Confirmando...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                                Confirmar
+                                                            </>
+                                                        )}
                                                     </Button>
                                                     <Button
                                                         onClick={(e) => {
@@ -1422,9 +1513,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         variant="destructive"
                                                         className="flex-1"
                                                         size="sm"
+                                                        disabled={isConfirming || isRejecting}
                                                     >
-                                                        <XCircle className="w-4 h-4 mr-2" />
-                                                        Rechazar
+                                                        {isRejecting ? (
+                                                            <>
+                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                                </svg>
+                                                                Rechazando...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <XCircle className="w-4 h-4 mr-2" />
+                                                                Rechazar
+                                                            </>
+                                                        )}
                                                     </Button>
                                                 </>
                                             )}
@@ -1440,9 +1544,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     variant="outline"
                                                     className="w-full"
                                                     size="sm"
+                                                    disabled={isCancelling}
                                                 >
-                                                    <XCircle className="w-4 h-4 mr-2" />
-                                                    Cancelar Cita
+                                                    {isCancelling ? (
+                                                        <>
+                                                            <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                            </svg>
+                                                            Cancelando...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <XCircle className="w-4 h-4 mr-2" />
+                                                            Cancelar Cita
+                                                        </>
+                                                    )}
                                                 </Button>
                                             )}
                                         </div>
@@ -1495,11 +1612,23 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     ? 'bg-muted cursor-not-allowed'
                                                     : 'bg-green-600 hover:bg-green-700'
                                             }`}
-                                            disabled={fileValidation ? !fileValidation.canSubmit : false}
+                                            disabled={fileValidation ? !fileValidation.canSubmit : false || isSubmittingReport}
                                             size="sm"
                                         >
-                                            <CheckCircle className="w-4 h-4 mr-2" />
-                                            Enviar Reporte
+                                            {isSubmittingReport ? (
+                                                <>
+                                                    <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                    </svg>
+                                                    Enviando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                                    Enviar Reporte
+                                                </>
+                                            )}
                                         </Button>
                                     )}
                                     
@@ -1526,12 +1655,25 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             } as Appointment)}
                                             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] rounded-lg"
                                             size="lg"
+                                            disabled={isProposing}
                                         >
-                                            <Calendar className="w-5 h-5 mr-2" />
-                                            {appointment && appointment.status === 'appointment_cancelled_by_expert' 
-                                                ? 'Proponer Nueva Cita'
-                                                : 'Programar Cita'
-                                            }
+                                            {isProposing ? (
+                                                <>
+                                                    <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                    </svg>
+                                                    Proponiendo...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Calendar className="w-5 h-5 mr-2" />
+                                                    {appointment && appointment.status === 'appointment_cancelled_by_expert' 
+                                                        ? 'Proponer Nueva Cita'
+                                                        : 'Programar Cita'
+                                                    }
+                                                </>
+                                            )}
                                         </Button>
                                     )}
                                     </div>
@@ -1762,9 +1904,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                 }}
                                                                 className="flex-1"
                                                                 size="sm"
+                                                                disabled={isConfirming || isRejecting}
                                                             >
-                                                                <CheckCircle className="w-4 h-4 mr-2" />
-                                                                Aceptar
+                                                                {isConfirming ? (
+                                                                    <>
+                                                                        <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                                        </svg>
+                                                                        Aceptando...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                                                        Aceptar
+                                                                    </>
+                                                                )}
                                                             </Button>
                                                             <Button
                                                                 onClick={(e) => {
@@ -1777,9 +1932,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                 variant="destructive"
                                                                 className="flex-1"
                                                                 size="sm"
+                                                                disabled={isConfirming || isRejecting}
                                                             >
-                                                                <XCircle className="w-4 h-4 mr-2" />
-                                                                Rechazar
+                                                                {isRejecting ? (
+                                                                    <>
+                                                                        <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                                        </svg>
+                                                                        Rechazando...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <XCircle className="w-4 h-4 mr-2" />
+                                                                        Rechazar
+                                                                    </>
+                                                                )}
                                                             </Button>
                                                         </>
                                                     )}
@@ -1795,9 +1963,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             variant="outline"
                                                             className="w-full"
                                                             size="sm"
+                                                            disabled={isCancelling}
                                                         >
-                                                            <XCircle className="w-4 h-4 mr-2" />
-                                                            Cancelar Cita
+                                                            {isCancelling ? (
+                                                                <>
+                                                                    <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                                    </svg>
+                                                                    Cancelando...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <XCircle className="w-4 h-4 mr-2" />
+                                                                    Cancelar Cita
+                                                                </>
+                                                            )}
                                                         </Button>
                                                     )}
                                                     {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
@@ -1814,12 +1995,25 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             }}
                                                             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                                                             size="sm"
+                                                            disabled={isProposing}
                                                         >
-                                                            <Calendar className="w-4 h-4 mr-2" />
-                                                            {appointment && appointment.status === 'appointment_cancelled_by_expert' 
-                                                                ? 'Proponer Nueva Cita'
-                                                                : 'Programar Cita'
-                                                            }
+                                                            {isProposing ? (
+                                                                <>
+                                                                    <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                                    </svg>
+                                                                    Proponiendo...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Calendar className="w-4 h-4 mr-2" />
+                                                                    {appointment && appointment.status === 'appointment_cancelled_by_expert' 
+                                                                        ? 'Proponer Nueva Cita'
+                                                                        : 'Programar Cita'
+                                                                    }
+                                                                </>
+                                                            )}
                                                         </Button>
                                                     )}
                                                 </div>
@@ -2038,11 +2232,23 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed text-gray-500'
                                                     : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
                                             }`}
-                                            disabled={fileValidation ? !fileValidation.canSubmit : false}
+                                            disabled={fileValidation ? !fileValidation.canSubmit : false || isSubmittingReport}
                                             size="lg"
                                         >
-                                            <CheckCircle className="w-5 h-5 mr-2" />
-                                            Enviar Reporte
+                                            {isSubmittingReport ? (
+                                                <>
+                                                    <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                    </svg>
+                                                    Enviando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle className="w-5 h-5 mr-2" />
+                                                    Enviar Reporte
+                                                </>
+                                            )}
                                         </Button>
                                 </div>
                             )}
@@ -2101,12 +2307,25 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         } as Appointment)}
                                         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] rounded-lg"
                                         size="lg"
+                                        disabled={isProposing}
                                     >
-                                        <Calendar className="w-5 h-5 mr-2" />
-                                        {appointment && appointment.status === 'appointment_cancelled_by_expert' 
-                                            ? 'Proponer Nueva Cita'
-                                            : 'Programar Cita'
-                                        }
+                                        {isProposing ? (
+                                            <>
+                                                <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                </svg>
+                                                Proponiendo...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Calendar className="w-5 h-5 mr-2" />
+                                                {appointment && appointment.status === 'appointment_cancelled_by_expert' 
+                                                    ? 'Proponer Nueva Cita'
+                                                    : 'Programar Cita'
+                                                }
+                                            </>
+                                        )}
                                     </Button>
                                 </>
                             )}
@@ -2121,6 +2340,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     </ScrollArea>
                 </aside>
             </div>
+            )}
 
             {/* Modals */}
             {showAppointmentForm && (
@@ -2132,6 +2352,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         setAppointmentFormError(null);
                     }}
                     error={appointmentFormError}
+                    isLoading={isProposing}
                     expertAvailability={expertProfile?.currentAvailability || null}
                     expertLocation={
                         serviceInfo?.expertLatitude && serviceInfo?.expertLongitude
@@ -2158,10 +2379,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 }}
                 onConfirm={handleRejectConfirm}
                 appointment={appointmentToReject}
-                isLoading={isRejecting}
+                isLoading={modalActionType === 'cancel' ? isCancelling : isRejecting}
                     actionType={modalActionType}
                 userRole={userRole}
-                />
+            />
             )}
 
             {/* Alert Dialog para confirmar cita */}
@@ -2195,15 +2416,26 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         </div>
                     )}
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isConfirming}>Cancelar</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => {
                                 if (appointmentToConfirm) {
                                     handleAppointmentAction('confirm', appointmentToConfirm);
                                 }
                             }}
+                            disabled={isConfirming}
                         >
-                            Confirmar
+                            {isConfirming ? (
+                                <>
+                                    <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    Confirmando...
+                                </>
+                            ) : (
+                                'Confirmar'
+                            )}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

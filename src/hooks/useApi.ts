@@ -1,5 +1,6 @@
 ﻿import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
+import { showToast } from '../lib/toast';
 
 interface RequestConfig extends RequestInit {
     requiresAuth?: boolean;
@@ -110,7 +111,7 @@ export const useApi = () => {
 
             // Parse JSON only if we have content
             return responseText ? JSON.parse(responseText) : undefined as T;
-        } catch (error) {
+        } catch (error: any) {
             console.error('API Error:', {
                 url,
                 method: fetchConfig.method,
@@ -118,6 +119,24 @@ export const useApi = () => {
                 response: responseText,
                 error
             });
+            
+            // ✅ Detectar errores de red y mostrar toast elegante
+            const isNetworkError = error?.message?.includes('Failed to fetch') || 
+                                 error?.message?.includes('NetworkError') ||
+                                 error?.name === 'TypeError' ||
+                                 error?.message?.includes('Network request failed');
+            
+            if (isNetworkError) {
+                // No mostrar toast aquí, dejar que los componentes lo manejen
+                // Pero sí mejorar el mensaje de error
+                const networkError = {
+                    ...error,
+                    message: 'Error de conexión. Por favor, verifica tu conexión a internet e intenta nuevamente.',
+                    isNetworkError: true
+                };
+                throw networkError;
+            }
+            
             throw error;
         }
     };
