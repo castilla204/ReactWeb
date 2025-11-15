@@ -13,6 +13,16 @@ import {
     DrawerClose,
     DrawerTrigger,
 } from './ui/drawer';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from './ui/alert-dialog';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { Label } from './ui/label';
@@ -40,6 +50,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [showDeletionModal, setShowDeletionModal] = useState(false);
   const [showDeleteButton, setShowDeleteButton] = useState(false);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
@@ -195,7 +206,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                           </Button>
                           <Button
                             variant="destructive"
-                            onClick={() => setShowDeletionModal(true)}
+                            onClick={() => setShowDeleteAlert(true)}
                           >
                             Confirmar Eliminación
                           </Button>
@@ -383,6 +394,49 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* Alert Dialog para confirmar eliminación de cuenta */}
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar cuenta permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Esta acción eliminará tu cuenta y todos los datos asociados de forma irreversible.
+              </p>
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-2">
+                    <p className="font-semibold text-orange-900 dark:text-orange-100 text-sm">
+                      Contrataciones activas
+                    </p>
+                    <p className="text-sm text-orange-800 dark:text-orange-200">
+                      Si tienes contrataciones activas, estas se cancelarán automáticamente a favor de la parte contraria. 
+                      Se crearán disputas automáticas para proteger a las partes afectadas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                ¿Estás seguro de que deseas continuar?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowDeleteAlert(false);
+                setShowDeletionModal(true);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Continuar con la eliminación
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AccountDeletionModal
         isOpen={showDeletionModal}

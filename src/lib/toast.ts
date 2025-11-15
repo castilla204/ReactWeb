@@ -7,20 +7,26 @@ export type NotificationType = 'success' | 'error' | 'info';
  * Replaces the old Notification component system
  */
 export const showToast = (type: NotificationType, message: string, duration?: number) => {
-  const options = duration ? { duration } : {};
+  const baseOptions: any = duration ? { duration } : {};
+  
+  // ✅ Mejorar opciones para errores de red
+  if (type === 'error' && message.includes('Error de conexión')) {
+    baseOptions.duration = duration || 6000;
+    baseOptions.description = 'Verifica tu conexión a internet';
+  }
   
   switch (type) {
     case 'success':
-      toast.success(message, options);
+      toast.success(message, baseOptions);
       break;
     case 'error':
-      toast.error(message, options);
+      toast.error(message, baseOptions);
       break;
     case 'info':
-      toast.info(message, options);
+      toast.info(message, baseOptions);
       break;
     default:
-      toast(message, options);
+      toast(message, baseOptions);
   }
 };
 
