@@ -1,8 +1,10 @@
 // ✅ COMPONENTE DE EJEMPLO USANDO LOS HOOKS OPTIMIZADOS
 
 import React, { useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { useSearchDetailsOptimized } from '../hooks/useSearchDetailsOptimized';
 import { useSearchDetailsWithLazyLoading } from '../hooks/useSearchDetailsOptimized';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 
 interface SearchDetailsOptimizedProps {
   searchId: number;
@@ -35,6 +37,9 @@ export const SearchDetailsOptimized: React.FC<SearchDetailsOptimizedProps> = ({
     invalidateAll
   } = useSearchDetailsOptimized(searchId);
 
+  // ✅ Manejo elegante de errores con toast
+  useErrorHandler(error, isError);
+
   // ✅ OPCIÓN 2: Hook con lazy loading (carga bajo demanda)
   // const {
   //   search,
@@ -59,20 +64,33 @@ export const SearchDetailsOptimized: React.FC<SearchDetailsOptimizedProps> = ({
     );
   }
 
-  // Estados de error
-  if (isError) {
+  // ✅ Estados de error - manejo elegante
+  // Los errores de red se manejan con toast, solo mostrar pantalla para errores críticos
+  if (isError && error && !error?.message?.includes('Failed to fetch') && !error?.message?.includes('NetworkError')) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <h3 className="text-red-800 font-medium">Error al cargar los datos</h3>
-        <p className="text-red-600 text-sm mt-1">
-          {error?.message || 'Ha ocurrido un error inesperado'}
-        </p>
-        <button
-          onClick={() => invalidateAll()}
-          className="mt-2 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-        >
-          Reintentar
-        </button>
+      <div className="flex items-center justify-center min-h-[400px] p-4">
+        <div className="text-center max-w-md w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 space-y-6">
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-orange-100 dark:bg-orange-900/20 rounded-full animate-ping opacity-75"></div>
+                <AlertTriangle className="w-16 h-16 text-orange-500 dark:text-orange-400 relative" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Error al cargar los datos</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {error?.message || 'Ha ocurrido un error inesperado'}
+              </p>
+            </div>
+            <button
+              onClick={() => invalidateAll()}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

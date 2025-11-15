@@ -3,6 +3,8 @@ import {
     Search,
     ChevronRight,
     AlertCircle,
+    AlertTriangle,
+    Activity,
     CheckCircle,
     ArrowLeft,
     LayoutGrid,
@@ -16,6 +18,8 @@ import {
     Filter,
     FolderTree,
     Plus,
+    WifiOff,
+    RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
@@ -28,6 +32,7 @@ import { Button } from './ui/button';
 // ✅ NUEVOS IMPORTS PARA SISTEMA DE ESTADOS
 import StatusBadge from './StatusBadge';
 import { getStatusInfoWithFallback } from '../utils/statusUtils';
+import { useErrorHandler, isNetworkError } from '../hooks/useErrorHandler';
 import type { SearchItem, SearchFilters, PaginationMetadata } from '../hooks/useSearch.hooks';
 import { useNavigate } from 'react-router-dom';
 
@@ -279,6 +284,9 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
 
     const loading = isLoading && currentSearches.length === 0;
 
+    // ✅ Manejo elegante de errores con toast (DEBE estar antes de cualquier return)
+    useErrorHandler(error instanceof Error ? error : null, !!error);
+
     // ✅ SIMPLIFICADO: El backend ya filtra, solo usamos los datos tal como vienen
     const filteredSearches = currentSearches;
 
@@ -413,12 +421,38 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
             </div>
         );
     }
-
-    if (error) {
+    
+    // Verificar si es error de red
+    const isNetworkErr = error && isNetworkError(error instanceof Error ? error : { message: String(error) });
+    
+    // Solo mostrar pantalla de error si es crítico y no es un error de red (los de red se manejan con toast)
+    if (error && !isNetworkErr) {
         return (
-            <div className="flex items-center justify-center min-h-[400px] text-red-500">
-                <AlertCircle className="w-5 h-5 mr-2" />
-                <span>{error instanceof Error ? error.message : 'An error occurred'}</span>
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 p-4">
+                <div className="text-center max-w-md w-full">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 space-y-6">
+                        <div className="flex justify-center">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-orange-100 dark:bg-orange-900/20 rounded-full animate-ping opacity-75"></div>
+                                <AlertTriangle className="w-16 h-16 text-orange-500 dark:text-orange-400 relative" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Oops, algo salió mal</h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {error instanceof Error ? error.message : 'Ha ocurrido un error inesperado. Por favor, intenta nuevamente.'}
+                            </p>
+                        </div>
+                        <Button
+                            onClick={() => searchesWithFiltersQuery.refetch()}
+                            className="w-full"
+                            size="lg"
+                        >
+                            <Activity className="w-4 h-4 mr-2" />
+                            Reintentar
+                        </Button>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -473,9 +507,37 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
             </div>
 
             <div className="max-w-7xl mx-auto px-8 py-10">
-
+                {/* ✅ Mensaje simple para errores de red */}
+                {isNetworkErr && (
+                    <div className="flex flex-col items-center justify-center py-16 px-4">
+                        <div className="flex flex-col items-center gap-4 max-w-sm text-center">
+                            <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                <WifiOff className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                    No se pudo conectar con el servidor
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-500">
+                                    Intenta nuevamente en unos minutos
+                                </p>
+                            </div>
+                            <Button
+                                onClick={() => searchesWithFiltersQuery.refetch()}
+                                variant="outline"
+                                size="sm"
+                                className="mt-2"
+                            >
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Reintentar
+                            </Button>
+                        </div>
+                    </div>
+                )}
 
             {/* Filters Bar - Simplificado */}
+            {!isNetworkErr && (
+            <>
             <div className="mb-6 flex items-center gap-3 flex-wrap sm:flex-nowrap">
                 {/* Search Bar */}
                 <div className="w-full sm:flex-1 sm:min-w-[200px] sm:max-w-md">
@@ -985,6 +1047,8 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                         Siguiente
                     </button>
                 </div>
+            )}
+            </>
             )}
             </div>
         </div>
