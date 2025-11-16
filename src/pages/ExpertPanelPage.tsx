@@ -28,6 +28,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
+import { ErrorDisplay } from '../components/ErrorDisplay';
 import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError } from '../hooks/useExpertStripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
 import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
@@ -587,14 +588,22 @@ export function ExpertPanelPage() {
     const handleViewHire = (hireId: number | null) => {
         if (hireId) {
             const hire = hires.find((h: Hire) => h.id === hireId);
-            if (hire && hire.searchId) {
-                navigate(`/busquedas/${hire.searchId}`);
+            if (hire) {
+                // ✅ Usar searchHireId directamente - funciona aunque Search sea null
+                if (hire.searchId) {
+                    // Si hay searchId, usar la ruta normal con searchHireId como query param
+                    navigate(`/detalles/${hire.searchId}?searchHireId=${hireId}`);
             } else {
-                console.error('Search ID not found for hire:', hireId);
+                    // Si no hay searchId (cliente eliminado), usar solo searchHireId
+                    // Necesitamos una ruta alternativa o usar searchId=0 con searchHireId
+                    navigate(`/detalles/0?searchHireId=${hireId}`);
+                }
+            } else {
+                console.error('Hire not found:', hireId);
                 window.dispatchEvent(new CustomEvent('showNotification', {
                     detail: {
                         type: 'error',
-                        message: 'No se pudo encontrar la búsqueda asociada',
+                        message: 'No se pudo encontrar la contratación',
                     },
                 }));
             }
@@ -655,11 +664,11 @@ export function ExpertPanelPage() {
 
     if (profileError) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center bg-red-50 text-red-600 px-4 py-3 rounded-xl max-w-md">
-                    <p>{profileError.message === 'No authentication token found' ? 'Sesión expirada. Por favor, inicia sesión nuevamente.' : `Error al cargar el perfil: ${profileError.message}`}</p>
-                    <button
-                        onClick={() => {
+            <ErrorDisplay
+                message={profileError.message === 'No authentication token found' 
+                    ? 'Sesión expirada. Por favor, inicia sesión nuevamente.' 
+                    : `Error al cargar el perfil: ${profileError.message}`}
+                onRetry={() => {
                             if (profileError.message === 'No authentication token found') {
                                 signOut();
                                 navigate('/');
@@ -667,12 +676,8 @@ export function ExpertPanelPage() {
                                 fetchProfile();
                             }
                         }}
-                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg"
-                    >
-                        {profileError.message === 'No authentication token found' ? 'Iniciar sesión' : 'Reintentar'}
-                    </button>
-                </div>
-            </div>
+                retryLabel={profileError.message === 'No authentication token found' ? 'Iniciar sesión' : 'Reintentar'}
+            />
         );
     }
 
@@ -719,9 +724,11 @@ export function ExpertPanelPage() {
                                 if (isStartingOnboarding || isRestartingOnboarding) return;
                                 setIsStripeLoading(true);
                                 try {
-                                    if (stripeStatus?.stripeStatus === 'Rejected') {
+                                    // Si es Rejected y puede reintentar, usar restart-onboarding
+                                    if (stripeStatus?.stripeStatus === 'Rejected' && stripeStatus?.canRetryOnboarding !== false) {
                                         await restartAndStartOnboarding();
                                     } else {
+                                        // Para NotRequested, Pending (onboardingCompleted=false), y Deauthorized
                                     await startOnboarding();
                                     }
                                 } catch (error: any) {

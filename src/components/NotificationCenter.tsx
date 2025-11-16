@@ -4,6 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { useNotifications, type Notification } from '../hooks/useNotifications';
 import { API_CONFIG } from '../config/api';
 import { useEffect, useRef } from 'react';
+import { ErrorDisplay } from './ErrorDisplay';
 
 export interface NotificationCenterProps {
     isOpen: boolean;
@@ -144,7 +145,12 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                     {isLoading ? (
                         <div className="text-center text-gray-500">Loading notifications...</div>
                     ) : error ? (
-                        <div className="text-center text-red-500">Error loading notifications</div>
+                        <ErrorDisplay
+                          message={error instanceof Error ? error.message : 'Error loading notifications'}
+                          fullScreen={false}
+                          noBackground={true}
+                          compact={true}
+                        />
                     ) : notifications.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-gray-500">
                             <Bell className="w-12 h-12 text-gray-300 mb-4" />

@@ -146,9 +146,29 @@ export function useServices({
             
             if (Array.isArray(data)) {
                 console.log('🔍 useServices: Services count:', data.length);
+                
+                // Buscar específicamente el servicio 154
+                const service154 = data.find((s: any) => s.id === 154);
+                if (service154) {
+                    console.log('✅ useServices: Service 154 FOUND in response:', {
+                        id: service154.id,
+                        isActive: service154.isActive,
+                        categoryId: service154.categoryId,
+                        serviceTypeId: service154.serviceTypeId,
+                        price: service154.price,
+                        expert: service154.expert ? {
+                            id: service154.expert.id,
+                            stripeAccountId: service154.expert.stripeAccountId
+                        } : null
+                    });
+                } else {
+                    console.warn('⚠️ useServices: Service 154 NOT FOUND in response');
+                }
+                
                 data.forEach((service, index) => {
-                    console.log(`🔍 useServices: Service ${index}:`, {
+                    console.log(`🔍 useServices: Service ${index} (ID: ${service.id}):`, {
                         id: service.id,
+                        isActive: service.isActive,
                         selectedDeliverableTypes: (service as any).selectedDeliverableTypes,
                         selectedDeliverableTypesLength: (service as any).selectedDeliverableTypes?.length || 0,
                         allKeys: Object.keys(service)
@@ -162,15 +182,29 @@ export function useServices({
                 });
             }
             
-            // Filtrar solo servicios activos para el panel de experto
-            const filteredData = expertProfileId 
-                ? (data as Service[]).filter(service => service.isActive !== false)
-                : data as Service[]; // Temporalmente incluir servicios inactivos para debuggear
+            // Filtrar solo servicios activos (tanto para panel de experto como para clientes)
+            const filteredData = (data as Service[]).filter(service => {
+                const isActive = service.isActive !== false;
+                if (service.id === 154) {
+                    console.log(`🔍 useServices: Filtering service 154 - isActive: ${service.isActive}, will pass: ${isActive}`);
+                }
+                return isActive;
+            });
+            
+            console.log('🔍 useServices: Filtered services count:', filteredData.length);
+            const service154AfterFilter = filteredData.find(s => s.id === 154);
+            if (service154AfterFilter) {
+                console.log('✅ useServices: Service 154 PASSED filter');
+            } else {
+                console.warn('⚠️ useServices: Service 154 FILTERED OUT');
+            }
+            
             return filteredData;
         },
         enabled: expertProfileId ? !!expertProfileId : (categoryId > 0 && serviceTypeId > 0 && !!latitude && !!longitude && locationRange > 0),
         retry: 1,
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 0, // No cache - always fetch fresh data
+        gcTime: 0, // No garbage collection time - clear immediately
     });
 
     const createServiceMutation = useMutation({

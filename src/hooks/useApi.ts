@@ -25,8 +25,11 @@ export const useApi = () => {
             });
         }
 
+        // El interceptor de authService ya agrega el token automáticamente
+        // Pero mantenemos esto para compatibilidad con código que no usa el interceptor
+        const token = getAuthToken();
         const headers: Record<string, string> = {
-            ...(requiresAuth && getAuthToken() ? { 'Authorization': `Bearer ${getAuthToken()}` } : {}),
+            ...(requiresAuth && token ? { 'Authorization': `Bearer ${token}` } : {}),
             ...(config.headers as Record<string, string>),
         };
 
