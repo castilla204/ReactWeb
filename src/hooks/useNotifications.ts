@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useApi } from './useApi';
+import { useAuth } from '../contexts/AuthContext';
 import { API_CONFIG } from '../config/api';
 
 export interface Notification {
@@ -16,10 +17,13 @@ export interface Notification {
 
 export const useNotifications = () => {
     const { fetchApi } = useApi();
+    const { isAuthenticated } = useAuth();
 
     const notificationsQuery = useQuery({
         queryKey: ['notifications'],
         queryFn: () => fetchApi<Notification[]>(API_CONFIG.endpoints.notifications.list),
+        enabled: isAuthenticated, // Solo ejecutar si el usuario está autenticado
+        retry: false, // No reintentar si falla (evita spam de requests)
     });
 
     const unreadCount = notificationsQuery.data?.filter(n => !n.read).length ?? 0;

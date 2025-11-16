@@ -35,6 +35,7 @@ import { getStatusInfoWithFallback } from '../utils/statusUtils';
 import { useErrorHandler, isNetworkError } from '../hooks/useErrorHandler';
 import type { SearchItem, SearchFilters, PaginationMetadata } from '../hooks/useSearch.hooks';
 import { useNavigate } from 'react-router-dom';
+import { MFABanner } from './layout/MFABanner';
 
 
 interface SearchDashboardProps {
@@ -339,78 +340,86 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         return (
             <div className="min-h-screen bg-gray-50">
                 {/* Header Skeleton */}
-                <div className="bg-white border-b border-gray-200">
-                    <div className="max-w-6xl mx-auto px-6 py-8">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-                                <div>
-                                    <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
-                                    <div className="h-4 bg-gray-200 rounded w-24 mt-1 animate-pulse"></div>
+                <div className="bg-white border-b border-gray-200/60">
+                    <div className="max-w-7xl mx-auto px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-16">
+                            <div className="flex items-center gap-6">
+                                <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
                                 </div>
+                            <div className="flex items-center gap-1">
+                                <div className="hidden sm:flex items-center gap-0 bg-gray-50/80 p-0.5 rounded-lg border border-gray-200/60">
+                                    <div className="w-8 h-8 bg-gray-200 rounded-md animate-pulse"></div>
+                                    <div className="w-8 h-8 bg-gray-200 rounded-md animate-pulse"></div>
                             </div>
-                            <div className="hidden sm:flex w-20 h-8 bg-gray-200 rounded animate-pulse"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto px-6 py-6">
-                    {/* Filters Skeleton */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-                        <div className="hidden sm:block w-64 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-20 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
-                            <div className="w-16 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
-                            <div className="w-24 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
-                            <div className="w-16 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
-                            <div className="w-20 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
+                <div className="max-w-7xl mx-auto px-8 py-10">
+                    {/* Filters Bar Skeleton */}
+                    <div className="mb-6 flex items-center gap-3 flex-wrap sm:flex-nowrap">
+                        {/* Search Bar Skeleton */}
+                        <div className="w-full sm:flex-1 sm:min-w-[200px] sm:max-w-md">
+                            <div className="relative">
+                                <div className="w-full h-10 bg-white border border-gray-200 rounded-lg animate-pulse">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 bg-gray-200 rounded"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Filter Buttons Skeleton */}
+                        <div className="flex items-center gap-2 sm:gap-3 w-[75%] sm:w-auto flex-nowrap">
+                            <div className="w-24 sm:w-28 h-9 bg-white border border-gray-200 rounded-lg animate-pulse flex-1 sm:flex-none"></div>
+                            <div className="w-20 sm:w-24 h-9 bg-gray-200 rounded-lg animate-pulse flex-1 sm:flex-none"></div>
+                            <div className="w-28 sm:w-32 h-9 bg-white border border-gray-200 rounded-lg animate-pulse flex-1 sm:flex-none"></div>
                         </div>
                     </div>
 
                     {/* Results count skeleton */}
-                    <div className="mb-4">
-                        <div className="h-4 bg-gray-200 rounded w-40 animate-pulse"></div>
+                    <div className="mb-6">
+                        <div className="h-5 bg-gray-200 rounded-md w-48 animate-pulse"></div>
                     </div>
 
                     {/* Cards Skeleton */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 animate-pulse">
+                            <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 shadow-sm">
                                 {/* Header */}
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className="flex-1">
-                                        <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-full mb-1"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-6 bg-gray-200 rounded-md w-4/5 animate-pulse"></div>
+                                        <div className="h-4 bg-gray-200 rounded-md w-full animate-pulse"></div>
+                                        <div className="h-4 bg-gray-200 rounded-md w-3/5 animate-pulse"></div>
                                     </div>
-                                    <div className="w-6 h-6 bg-gray-200 rounded-full ml-4"></div>
+                                    <div className="w-7 h-7 bg-gray-200 rounded-full ml-3 animate-pulse"></div>
                                 </div>
                                 
                                 {/* Meta Info */}
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-16"></div>
+                                        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                                        <div className="h-4 bg-gray-200 rounded-md w-20 animate-pulse"></div>
                                     </div>
-                                    <div className="h-4 bg-gray-200 rounded w-12"></div>
+                                    <div className="h-4 bg-gray-200 rounded-md w-16 animate-pulse"></div>
                                 </div>
                                 
                                 {/* Status */}
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-16 h-6 bg-gray-200 rounded-full"></div>
-                                        <div className="w-20 h-6 bg-gray-200 rounded-full"></div>
+                                        <div className="w-20 h-6 bg-gray-200 rounded-full animate-pulse"></div>
+                                        <div className="w-24 h-6 bg-gray-200 rounded-full animate-pulse"></div>
                                     </div>
-                                    <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                                    <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
                                 </div>
                                 
                                 {/* Expert info (sometimes) */}
                                 {i % 3 === 0 && (
                                     <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-                                        <div className="flex-1">
-                                            <div className="h-4 bg-gray-200 rounded w-20 mb-1"></div>
-                                            <div className="h-3 bg-gray-200 rounded w-24"></div>
+                                        <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                                        <div className="flex-1 space-y-1.5">
+                                            <div className="h-4 bg-gray-200 rounded-md w-24 animate-pulse"></div>
+                                            <div className="h-3 bg-gray-200 rounded-md w-32 animate-pulse"></div>
                                         </div>
                                     </div>
                                 )}
@@ -421,7 +430,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
             </div>
         );
     }
-    
+
     // Verificar si es error de red
     const isNetworkErr = error && isNetworkError(error instanceof Error ? error : { message: String(error) });
     
@@ -429,29 +438,29 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     if (error && !isNetworkErr) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 p-4">
-                <div className="text-center max-w-md w-full">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 space-y-6">
-                        <div className="flex justify-center">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-orange-100 dark:bg-orange-900/20 rounded-full animate-ping opacity-75"></div>
-                                <AlertTriangle className="w-16 h-16 text-orange-500 dark:text-orange-400 relative" />
+                <div className="text-center space-y-6 max-w-md">
+                    <div className="flex justify-center">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-full blur-xl opacity-50"></div>
+                            <div className="relative w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700">
+                                <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500" strokeWidth={1.5} />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Oops, algo salió mal</h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {error instanceof Error ? error.message : 'Ha ocurrido un error inesperado. Por favor, intenta nuevamente.'}
-                            </p>
-                        </div>
-                        <Button
-                            onClick={() => searchesWithFiltersQuery.refetch()}
-                            className="w-full"
-                            size="lg"
-                        >
-                            <Activity className="w-4 h-4 mr-2" />
-                            Reintentar
-                        </Button>
                     </div>
+                    <div className="space-y-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                            {error instanceof Error ? error.message : 'Ha ocurrido un error inesperado'}
+                        </p>
+                    </div>
+                    <Button
+                        onClick={() => searchesWithFiltersQuery.refetch()}
+                        variant="outline"
+                        size="sm"
+                        className="mt-4"
+                    >
+                        <Activity className="w-4 h-4 mr-2" />
+                        Reintentar
+                    </Button>
                 </div>
             </div>
         );
@@ -459,6 +468,11 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
 
     return (
         <div className="min-h-screen bg-gray-50">
+            {/* MFA Banner */}
+            <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-6">
+                <MFABanner />
+            </div>
+            
             {/* Header Section */}
             <div className="bg-white border-b border-gray-200/60">
                 <div className="max-w-7xl mx-auto px-6 lg:px-8">

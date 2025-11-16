@@ -151,8 +151,8 @@ export default function SearchForm({
                 showToast('error', `👑 ${errorMessage}`, 6000);
                 // Opcional: acción para ir a suscripciones
                 setTimeout(() => {
-                    setCurrentStep(0);
-                    setShowSubscriptions(true);
+                        setCurrentStep(0);
+                        setShowSubscriptions(true);
                 }, 2000);
             } else {
                 showToast('error', errorMessage, 5000);

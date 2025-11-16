@@ -12,22 +12,26 @@ import {
  * Hook unificado optimizado para SearchDetails
  * Ahora usa solo useSearchDetailsComplete que incluye TODA la información
  * 
- * @param searchId - ID de la búsqueda
- * @param options - Opciones de configuración del hook
+ * @param searchId - ID de la búsqueda (opcional si se usa searchHireId)
+ * @param options - Opciones de configuración del hook (puede incluir searchHireId)
  * @returns Todos los datos de SearchDetails optimizados
  */
 export const useSearchDetailsOptimized = (
-  searchId: number, 
-  options: UseSearchDetailsOptions = {}
+  searchId: number | null = null, 
+  options: UseSearchDetailsOptions & { searchHireId?: number } = {}
 ): UseSearchDetailsOptimizedReturn => {
   const queryClient = useQueryClient();
   
-  // ✅ Una sola llamada que incluye TODO
+  // ✅ Una sola llamada que incluye TODO (usa searchHireId si está disponible)
   const searchDetailsQuery = useSearchDetailsComplete(searchId, options);
   
   // ✅ Función para invalidar todas las queries relacionadas
   const invalidateAll = () => {
+    if (options.searchHireId) {
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire', options.searchHireId] });
+    } else if (searchId) {
     queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete', searchId] });
+    }
   };
   
   // ✅ Función para refetch

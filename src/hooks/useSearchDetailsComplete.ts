@@ -13,42 +13,65 @@ import {
  * Hook optimizado para obtener datos principales de SearchDetails
  * Incluye: Search, SearchHire, Expert, Service, SearchParameters, MoneyDistribution
  * 
- * @param searchId - ID de la búsqueda
+ * @param searchId - ID de la búsqueda (opcional si se usa searchHireId)
+ * @param searchHireId - ID de la contratación (prioritario, funciona aunque Search sea null)
  * @param options - Opciones de configuración del hook
  * @returns Datos principales y estados de carga
  */
 export const useSearchDetailsComplete = (
-  searchId: number, 
-  options: UseSearchDetailsOptions = {}
+  searchId: number | null = null, 
+  options: UseSearchDetailsOptions & { searchHireId?: number } = {}
 ): UseSearchDetailsCompleteReturn => {
   const { fetchApi } = useApi();
+  const { searchHireId, ...restOptions } = options;
   
   const {
     enabled = true,
     staleTime = 30000, // 30 segundos de cache
     gcTime = 300000, // 5 minutos en cache (antes cacheTime)
     refetchOnWindowFocus = false
-  } = { ...options, gcTime: options.gcTime || 300000 };
+  } = { ...restOptions, gcTime: restOptions.gcTime || 300000 };
+
+  // ✅ Usar searchHireId si está disponible, sino usar searchId
+  const useSearchHireEndpoint = !!searchHireId;
+  const identifier = searchHireId || searchId;
+  const queryKey = useSearchHireEndpoint 
+    ? ['searchDetailsCompleteByHire', searchHireId]
+    : ['searchDetailsComplete', searchId];
 
   const query = useQuery({
-    queryKey: ['searchDetailsComplete', searchId],
+    queryKey,
     queryFn: async (): Promise<SearchDetailsCompleteDto> => {
-      console.log(`[useSearchDetailsComplete] Fetching data for searchId: ${searchId}`);
-      console.log(`[useSearchDetailsComplete] Endpoint: ${API_CONFIG.endpoints.search.detailsComplete(searchId)}`);
+      const endpoint = useSearchHireEndpoint
+        ? API_CONFIG.endpoints.expert.hires.detailsComplete(searchHireId!)
+        : API_CONFIG.endpoints.search.detailsComplete(searchId!);
       
-      const response = await fetchApi<SearchDetailsCompleteDto>(
-        API_CONFIG.endpoints.search.detailsComplete(searchId)
-      );
+      console.log(`[useSearchDetailsComplete] Fetching data for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}: ${identifier}`);
+      console.log(`[useSearchDetailsComplete] Endpoint: ${endpoint}`);
+      
+      const response = await fetchApi<SearchDetailsCompleteDto>(endpoint);
       
       // ✅ DEBUG: Verificar si hay algún problema con la respuesta
       if (!response) {
-        console.error(`[useSearchDetailsComplete] No response received for searchId: ${searchId}`);
+        console.error(`[useSearchDetailsComplete] No response received for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}: ${identifier}`);
         throw new Error('No response received from API');
       }
       
+      // ✅ Cuando se usa searchHireId, el search puede ser null (cliente eliminado) - esto es válido
+      // ✅ Cuando se usa searchId, el search debería estar presente, pero verificamos
+      if (!useSearchHireEndpoint && !response.search) {
+        console.warn(`[useSearchDetailsComplete] No search data in response for searchId: ${searchId} - esto puede ser normal si el cliente borró su cuenta`);
+        // No lanzamos error, permitimos que search sea null
+      }
+      
+      // ✅ Log para debugging cuando search es null
       if (!response.search) {
-        console.error(`[useSearchDetailsComplete] No search data in response for searchId: ${searchId}`);
-        throw new Error('No search data in response');
+        console.log(`[useSearchDetailsComplete] Search is null (cliente probablemente eliminado), pero tenemos otros datos:`, {
+          hasAppointment: !!response.appointment,
+          hasDeliverables: response.deliverables?.length > 0,
+          hasDisputes: response.disputes?.length > 0,
+          hasExpertProfile: !!response.expertProfile
+        });
       }
       
       console.log(`[useSearchDetailsComplete] Data received:`, response);
@@ -68,7 +91,7 @@ export const useSearchDetailsComplete = (
           comparisonResult: response.search.searchHire.status === 'awaiting_client_decision' ? 'MATCH' : 'NO_MATCH'
         });
       } else {
-        console.log(`[useSearchDetailsComplete] No searchHire data found for searchId: ${searchId}`);
+        console.log(`[useSearchDetailsComplete] No searchHire data found for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}: ${identifier}`);
         console.log(`[useSearchDetailsComplete] Search data structure:`, {
           hasSearch: !!response.search,
           searchId: response.search?.id,
@@ -78,7 +101,7 @@ export const useSearchDetailsComplete = (
       }
       return response;
     },
-    enabled: enabled && !!searchId,
+    enabled: enabled && (!!searchHireId || !!searchId),
     staleTime,
     gcTime,
     refetchOnWindowFocus,

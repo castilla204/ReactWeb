@@ -97,7 +97,7 @@ export interface DeliverableTypeDto {
 
 // ✅ DTO PRINCIPAL - Datos esenciales (ACTUALIZADO CON NUEVA ESTRUCTURA)
 export interface SearchDetailsCompleteDto {
-  search: SearchListDto;
+  search: SearchListDto | null; // ✅ Nullable: puede ser null si el cliente borró su cuenta
   moneyDistribution: MoneyDistributionConfigDto | null;
   category: CategoryDto | null;
   review: ReviewDto | null;

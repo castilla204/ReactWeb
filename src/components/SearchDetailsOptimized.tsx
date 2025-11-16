@@ -1,7 +1,7 @@
 // ✅ COMPONENTE DE EJEMPLO USANDO LOS HOOKS OPTIMIZADOS
 
 import React, { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useSearchDetailsOptimized } from '../hooks/useSearchDetailsOptimized';
 import { useSearchDetailsWithLazyLoading } from '../hooks/useSearchDetailsOptimized';
 import { useErrorHandler } from '../hooks/useErrorHandler';
@@ -68,28 +68,28 @@ export const SearchDetailsOptimized: React.FC<SearchDetailsOptimizedProps> = ({
   // Los errores de red se manejan con toast, solo mostrar pantalla para errores críticos
   if (isError && error && !error?.message?.includes('Failed to fetch') && !error?.message?.includes('NetworkError')) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] p-4">
-        <div className="text-center max-w-md w-full">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 space-y-6">
-            <div className="flex justify-center">
-              <div className="relative">
-                <div className="absolute inset-0 bg-orange-100 dark:bg-orange-900/20 rounded-full animate-ping opacity-75"></div>
-                <AlertTriangle className="w-16 h-16 text-orange-500 dark:text-orange-400 relative" />
+      <div className="flex items-center justify-center min-h-[400px] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 p-4">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="flex justify-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-full blur-xl opacity-50"></div>
+              <div className="relative w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700">
+                <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500" strokeWidth={1.5} />
               </div>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Error al cargar los datos</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {error?.message || 'Ha ocurrido un error inesperado'}
-              </p>
-            </div>
-            <button
-              onClick={() => invalidateAll()}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Reintentar
-            </button>
           </div>
+          <div className="space-y-2">
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+          {error?.message || 'Ha ocurrido un error inesperado'}
+        </p>
+          </div>
+        <button
+          onClick={() => invalidateAll()}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 mx-auto"
+        >
+            <RefreshCw className="w-4 h-4" />
+          Reintentar
+        </button>
         </div>
       </div>
     );

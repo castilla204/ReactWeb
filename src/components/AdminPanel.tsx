@@ -9,6 +9,7 @@ import PriorityBadge from './PriorityBadge';
 import { API_CONFIG } from '../config/api';
 import { useCategories } from '../contexts/CategoryContext';
 import { CreateCategoryDialog } from './CreateCategoryDialog';
+import { ErrorDisplay } from './ErrorDisplay';
 
 const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'status' | 'category' | 'granular' | 'query' | 'mappings' | 'categories'>('status');
@@ -1125,18 +1126,11 @@ const AdminPanel: React.FC = () => {
                   <p className="mt-2 text-gray-600">Cargando configuraciones...</p>
                 </div>
               ) : getErrorForTab() ? (
-                <div className="text-center py-8">
-                  <div className="text-red-600 mb-4">
-                    <p className="text-lg font-semibold">Error al cargar configuraciones</p>
-                    <p className="text-sm">{getErrorForTab()}</p>
-                  </div>
-                  <button
-                    onClick={() => appointmentStatusConfigs.fetchConfigs()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Reintentar
-                  </button>
-                </div>
+                <ErrorDisplay
+                  message={getErrorForTab() || 'Error al cargar configuraciones'}
+                  onRetry={() => appointmentStatusConfigs.fetchConfigs()}
+                  fullScreen={false}
+                />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -1238,18 +1232,11 @@ const AdminPanel: React.FC = () => {
                   <p className="mt-2 text-gray-600">Cargando configuraciones...</p>
                 </div>
               ) : getErrorForTab() ? (
-                <div className="text-center py-8">
-                  <div className="text-red-600 mb-4">
-                    <p className="text-lg font-semibold">Error al cargar configuraciones</p>
-                    <p className="text-sm">{getErrorForTab()}</p>
-                  </div>
-                  <button
-                    onClick={() => serviceTypeCategoryConfigs.fetchConfigs()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Reintentar
-                  </button>
-                </div>
+                <ErrorDisplay
+                  message={getErrorForTab() || 'Error al cargar configuraciones'}
+                  onRetry={() => serviceTypeCategoryConfigs.fetchConfigs()}
+                  fullScreen={false}
+                />
               ) : (
                 <div className="space-y-6">
                   {getConfigsForTab().length === 0 ? (
@@ -1377,23 +1364,11 @@ const AdminPanel: React.FC = () => {
                   <span className="ml-3 text-gray-600">Cargando configuraciones granulares...</span>
                 </div>
               ) : getErrorForTab() ? (
-                <div className="bg-red-50 border-l-4 border-red-400 p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <X className="h-5 w-5 text-red-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-red-800">Error al cargar configuraciones</h3>
-                      <p className="mt-2 text-sm text-red-700">{getErrorForTab()}</p>
-                      <button
-                        onClick={() => granularConfigs.fetchConfigs()}
-                        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                      >
-                        Reintentar
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <ErrorDisplay
+                  message={getErrorForTab() || 'Error al cargar configuraciones'}
+                  onRetry={() => granularConfigs.fetchConfigs()}
+                  fullScreen={false}
+                />
               ) : (
                 <div className="space-y-8">
                   {getConfigsForTab().length === 0 ? (

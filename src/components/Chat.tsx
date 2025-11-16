@@ -10,12 +10,13 @@ import { showToast } from '../lib/toast';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 
 interface ChatProps {
-    searchId: number;
+    searchId: number | null;
     isExpert: boolean;
     expertData?: {
         name?: string;
         profilePictureUrl?: string;
     };
+    searchHireId?: number;
 }
 
 const libraries: ("drawing" | "geometry")[] = ['drawing', 'geometry'];
@@ -198,10 +199,11 @@ const getStatusDisplay = (statusValue: string): StatusDisplay => {
     };
 };
 
-const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData }) => {
+const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireId }) => {
     const { user } = useAuth();
     const { conversation, loading, error, newMessage, setNewMessage, sendMessage, isSending } = useChat(
-        searchId
+        searchId,
+        searchHireId
     );
     
     // State for image modal
@@ -334,8 +336,13 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData }) => {
         }
     };
 
-    const getAvatarInitials = (senderId: string) => {
-        if (senderId === String(user?.id)) {
+    const getAvatarInitials = (senderId: string | number | null) => {
+        // ✅ Manejar caso cuando senderId es null (usuario eliminado)
+        if (senderId === null || senderId === undefined) {
+            return '?';
+        }
+        
+        if (String(senderId) === String(user?.id)) {
             return user?.name?.charAt(0)?.toUpperCase() || 'Y';
         }
         // Special case for header - 'other' means the other person in conversation
@@ -348,15 +355,28 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData }) => {
         return String(senderId) === String(expertId) ? (expertData?.name?.charAt(0)?.toUpperCase() || 'E') : 'C';
     };
 
-    const getAvatarColor = (senderId: string) => {
-        if (senderId === String(user?.id)) {
+    const getAvatarColor = (senderId: string | number | null) => {
+        // ✅ Manejar caso cuando senderId es null (usuario eliminado)
+        if (senderId === null || senderId === undefined) {
+            return 'bg-gray-500';
+        }
+        
+        if (String(senderId) === String(user?.id)) {
             return 'bg-gray-600';
         }
-        return 'bg-gray-500';
+        if (senderId === 'other') {
+            return isClient ? 'bg-green-500' : 'bg-purple-500';
+        }
+        return String(senderId) === String(expertId) ? 'bg-green-500' : 'bg-purple-500';
     };
 
-    const getAvatarImage = (senderId: string) => {
-        if (senderId === String(user?.id)) {
+    const getAvatarImage = (senderId: string | number | null) => {
+        // ✅ Manejar caso cuando senderId es null (usuario eliminado)
+        if (senderId === null || senderId === undefined) {
+            return undefined;
+        }
+        
+        if (String(senderId) === String(user?.id)) {
             return user?.profilePictureUrl;
         }
         // Special case for header - 'other' means the other person in conversation
@@ -383,14 +403,18 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData }) => {
 
     // Convert IDs to numbers for comparison to handle string/number type mismatches
     const userId = Number(user?.id);
-    const clientId = Number(conversation?.clientId);
-    const expertId = Number(conversation?.expertId);
+    // ✅ Manejar casos cuando clientId o expertId son null (usuarios eliminados)
+    const clientId = conversation?.clientId ? Number(conversation.clientId) : null;
+    const expertId = conversation?.expertId ? Number(conversation.expertId) : null;
     
     // Check if user is admin
     const userIsAdmin = isAdmin(user?.email);
     
+    // ✅ Manejar casos cuando clientId o expertId son null (usuarios eliminados)
     // User has access if they are the client, expert, or admin
-    const hasAccess = userId === clientId || userId === expertId || userIsAdmin;
+    const hasAccess = (clientId !== null && userId === clientId) || 
+                      (expertId !== null && userId === expertId) || 
+                      userIsAdmin;
     
     // Debug: Log access control information
     console.log('[Chat] Access control debug:', {
@@ -430,17 +454,21 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData }) => {
             ? new Date(message.sentAt).getTime() - new Date(previousMessage.sentAt).getTime()
             : 0;
 
-        // Group if same sender and within 5 minutes
-        if (previousMessage &&
-            previousMessage.senderId === message.senderId &&
-            timeDiff < 5 * 60 * 1000) {
+        // ✅ Group if same sender and within 5 minutes
+        // Manejar casos cuando senderId es null (usuario eliminado)
+        const sameSender = previousMessage && 
+            ((previousMessage.senderId === null && message.senderId === null) ||
+             (previousMessage.senderId !== null && message.senderId !== null && 
+              previousMessage.senderId === message.senderId));
+        
+        if (sameSender && timeDiff < 5 * 60 * 1000) {
             groups[groups.length - 1].messages.push(message);
         } else {
             groups.push({
                 senderId: message.senderId,
                 messages: [message],
                 timestamp: message.sentAt,
-                isOwn: message.senderId === user.id
+                isOwn: message.senderId !== null && message.senderId === user?.id
             });
         }
         return groups;

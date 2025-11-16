@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Bell, Info, AlertTriangle, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../hooks/useApi';
+import { ErrorDisplay } from './ErrorDisplay';
 
 interface Notification {
   id: string;
@@ -185,7 +186,12 @@ const NotificationManagement: React.FC = () => {
           {notificationsQuery.isLoading ? (
             <div className="text-center text-gray-500">Loading notifications...</div>
           ) : notificationsQuery.error ? (
-            <div className="text-center text-red-500">Error loading notifications</div>
+            <ErrorDisplay
+              message={notificationsQuery.error instanceof Error ? notificationsQuery.error.message : 'Error loading notifications'}
+              fullScreen={false}
+              noBackground={true}
+              compact={true}
+            />
           ) : notificationsQuery.data?.length === 0 ? (
             <div className="text-center text-gray-500">No notifications</div>
           ) : (

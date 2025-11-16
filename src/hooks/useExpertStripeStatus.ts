@@ -34,13 +34,20 @@ export interface StatusInfo {
     canCreateServices: boolean;
     canRetry: boolean;
     message: string;
-    action: 'setup' | 'wait' | 'success' | 'retry' | 'contact';
+    action: 'setup' | 'wait' | 'success' | 'retry' | 'contact' | 'complete_requirements' | 'edit_account';
     buttonText: string;
     color: string;
     bgColor: string;
 }
 
-const getStatusInfo = (status: string, rejectionReason?: string, stripeStatusDetails?: string | null, canRetryOnboarding?: boolean): StatusInfo => {
+const getStatusInfo = (
+    status: string, 
+    rejectionReason?: string, 
+    stripeStatusDetails?: string | null, 
+    canRetryOnboarding?: boolean,
+    onboardingCompleted?: boolean,
+    hasStripeAccount?: boolean
+): StatusInfo => {
     const getRejectionMessage = (reason: string) => {
         switch (reason) {
             case "rejected.fraud":
@@ -59,6 +66,19 @@ const getStatusInfo = (status: string, rejectionReason?: string, stripeStatusDet
         return stripeStatusDetails || defaultMessage;
     };
 
+    // Verificar si es rechazo permanente basado en stripeStatusDetails
+    const isPermanentRejection = (details: string | null | undefined): boolean => {
+        if (!details) return false;
+        const permanentReasons = [
+            "rejected.fraud",
+            "rejected.terms_of_service",
+            "rejected.unsupported_business",
+            "rejected.listed",
+            "listed"
+        ];
+        return permanentReasons.some(reason => details.includes(reason));
+    };
+
     switch (status) {
         case STRIPE_STATUS.NOT_REQUESTED:
             return {
@@ -66,12 +86,37 @@ const getStatusInfo = (status: string, rejectionReason?: string, stripeStatusDet
                 canRetry: true,
                 message: getMessage("Para completar tu registro como experto, necesitas configurar tu cuenta de pagos. Este proceso es obligatorio y te permitirá recibir pagos por los servicios que ofrezcas. El proceso es seguro y se completa en pocos minutos."),
                 action: "setup",
-                buttonText: "Configurar Cuenta de Pagos",
+                buttonText: "🔧 Configurar Pagos",
                 color: "#3b82f6",
                 bgColor: "#eff6ff"
             };
         
         case STRIPE_STATUS.PENDING:
+            // Si onboardingCompleted es false, mostrar "Continuar Verificación"
+            if (onboardingCompleted === false) {
+                return {
+                    canCreateServices: false,
+                    canRetry: true,
+                    message: getMessage("Tu proceso de verificación está en curso. Completa la configuración de tu cuenta de pagos para continuar."),
+                    action: "setup",
+                    buttonText: "⏳ Continuar Verificación",
+                    color: "#f59e0b",
+                    bgColor: "#fffbeb"
+                };
+            }
+            // Si onboardingCompleted es true y tiene cuenta, mostrar "Completar Requisitos"
+            if (onboardingCompleted === true && hasStripeAccount) {
+                return {
+                    canCreateServices: false,
+                    canRetry: true,
+                    message: getMessage("Stripe requiere información adicional para activar tu cuenta. Completa los requisitos pendientes."),
+                    action: "complete_requirements",
+                    buttonText: "⚠️ Completar Requisitos",
+                    color: "#f59e0b",
+                    bgColor: "#fffbeb"
+                };
+            }
+            // Default: esperar
             return {
                 canCreateServices: false,
                 canRetry: false,
@@ -85,17 +130,17 @@ const getStatusInfo = (status: string, rejectionReason?: string, stripeStatusDet
         case STRIPE_STATUS.APPROVED:
             return {
                 canCreateServices: true,
-                canRetry: false,
+                canRetry: true,
                 message: getMessage("¡Excelente! Tu cuenta de pagos está activa y lista para recibir pagos. Ya puedes empezar a ofrecer servicios y generar ingresos."),
-                action: "success",
-                buttonText: "Acceder al Panel",
+                action: "edit_account",
+                buttonText: "✅ Editar Cuenta de Pagos",
                 color: "#10b981",
                 bgColor: "#ecfdf5"
             };
         
         case STRIPE_STATUS.REJECTED:
-            // Si canRetryOnboarding es false, no mostrar botón de reintentar
-            const cannotRetry = canRetryOnboarding === false;
+            // Verificar si es rechazo permanente
+            const isPermanent = isPermanentRejection(stripeStatusDetails) || canRetryOnboarding === false;
             let rejectedMessage = "Tu cuenta de pagos fue rechazada por Stripe.";
             
             // Agregar motivo del rechazo si está disponible
@@ -103,17 +148,17 @@ const getStatusInfo = (status: string, rejectionReason?: string, stripeStatusDet
                 rejectedMessage += `\n${getRejectionMessage(rejectionReason)}`;
             }
             
-            // Si no puede reintentar, agregar mensaje de contacto con soporte
-            if (cannotRetry) {
+            // Si es permanente, agregar mensaje de contacto con soporte
+            if (isPermanent) {
                 rejectedMessage += "\nPor favor, contacta al soporte técnico para revisar tu situación.";
             }
             
             return {
                 canCreateServices: false,
-                canRetry: canRetryOnboarding !== false, // false solo si explícitamente es false
+                canRetry: !isPermanent,
                 message: getMessage(rejectedMessage),
-                action: cannotRetry ? "contact" : "retry",
-                buttonText: cannotRetry ? "Contactar Soporte" : "Reintentar Solicitud",
+                action: isPermanent ? "contact" : "retry",
+                buttonText: isPermanent ? "🚫 Contactar Soporte" : "🔄 Reintentar Configuración",
                 color: "#ef4444",
                 bgColor: "#fef2f2"
             };
@@ -122,9 +167,9 @@ const getStatusInfo = (status: string, rejectionReason?: string, stripeStatusDet
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: getMessage("Tu cuenta de pagos ha sido desactivada. Por favor, contacta nuestro equipo de soporte para reactivarla o configurar una nueva cuenta."),
-                action: "contact",
-                buttonText: "Contactar Soporte",
+                message: getMessage("Tu cuenta de pagos ha sido desactivada. Por favor, reconecta tu cuenta para continuar recibiendo pagos."),
+                action: "setup",
+                buttonText: "🔗 Volver a Conectar",
                 color: "#8b5cf6",
                 bgColor: "#faf5ff"
             };
@@ -429,7 +474,14 @@ export const useExpertStripeStatus = () => {
         error,
         refetch: () => fetchStatus(true),
         syncStatus,
-        statusInfo: status ? getStatusInfo(status.stripeStatus, status.rejectionReason || undefined, status.stripeStatusDetails, status.canRetryOnboarding) : null,
+        statusInfo: status ? getStatusInfo(
+            status.stripeStatus, 
+            status.rejectionReason || undefined, 
+            status.stripeStatusDetails, 
+            status.canRetryOnboarding,
+            status.onboardingCompleted,
+            status.hasStripeAccount
+        ) : null,
         isPolling
     };
 };

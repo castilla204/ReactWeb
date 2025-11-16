@@ -8,6 +8,16 @@ export const API_CONFIG = {
             googleAuth: `${API_PATH}/User/google-auth`,
             sendVerification: `${API_PATH}/User/send-verification`,
             verifyCode: `${API_PATH}/User/verify-code`,
+            refreshToken: `${API_PATH}/auth/refresh-token`,
+            logout: `${API_PATH}/auth/logout`,
+            revokeAll: `${API_PATH}/auth/revoke-all`,
+        },
+        mfa: {
+            setup: `${API_PATH}/auth/mfa/setup`,
+            enable: `${API_PATH}/auth/mfa/enable`,
+            verify: `${API_PATH}/auth/mfa/verify`,
+            disable: `${API_PATH}/auth/mfa/disable`,
+            status: `${API_PATH}/auth/mfa/status`,
         },
         categories: {
             list: `${API_PATH}/Categories`,
@@ -87,6 +97,7 @@ export const API_CONFIG = {
                 listAsClient: `${API_PATH}/SearchHire/client`,
                 listAsExpert: `${API_PATH}/SearchHire/expert`,
                 updateStatus: (hireId: number) => `${API_PATH}/SearchHire/${hireId}/status`,
+                detailsComplete: (searchHireId: number) => `${API_PATH}/searchhire/${searchHireId}/details-complete`,
             },
         },
         users: {
@@ -96,6 +107,7 @@ export const API_CONFIG = {
         },
         chat: {
             conversation: `${API_PATH}/chat/conversation`,
+            conversationBySearchHire: (searchHireId: number) => `${API_PATH}/chat/by-searchhire/${searchHireId}`,
             message: `${API_PATH}/chat/message`,
             markAsRead: (messageId: number) => `${API_PATH}/chat/message/${messageId}/read`,
             ws: `${API_PATH}/chat/ws`,
@@ -166,6 +178,9 @@ export const API_CONFIG = {
             delete: `${API_PATH}/AccountDeletion/delete`,
             adminStatus: (userId: number) => `${API_PATH}/AccountDeletion/admin/status/${userId}`,
             adminDelete: (userId: number) => `${API_PATH}/AccountDeletion/admin/delete/${userId}`,
+        },
+        financialTransaction: {
+            myTransactions: `${API_PATH}/FinancialTransaction/my-transactions`,
         },
     },
 };

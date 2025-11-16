@@ -1,5 +1,5 @@
 ﻿import { useState, useRef } from 'react';
-import { Star, Trash2, X, Send, Upload, AlertTriangle } from 'lucide-react';
+import { Star, Trash2, X, Send, Upload, AlertTriangle, AlertCircle } from 'lucide-react';
 import { useReview } from '../hooks/useReview.hooks';
 import { useExpertReport } from '../hooks/useExpertReport';
 import { showToast, NotificationType } from '../lib/toast';
@@ -82,7 +82,7 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
 
     return (
         <Drawer open={isOpen} onOpenChange={onClose}>
-            <DrawerContent className="max-h-[96vh] flex flex-col">
+            <DrawerContent className="max-h-[96vh] flex flex-col border-t-4 border-destructive">
                 <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96vh]">
                     <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
                         <div className="flex items-center gap-3">
@@ -309,19 +309,29 @@ export function DisputeModal({
 
     return (
         <Drawer open={isOpen} onOpenChange={onClose}>
-            <DrawerContent className="max-h-[96vh] flex flex-col">
-                <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96vh]">
-                    <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
+            <DrawerContent className="max-h-[96vh] flex flex-col border-t-4 border-destructive">
+                <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96vh] bg-background">
+                    {/* Header minimalista */}
+                    <DrawerHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-border flex-shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                                <AlertTriangle className="w-5 h-5 text-white" />
+                            <div className="w-10 h-10 bg-destructive/10 rounded-lg flex items-center justify-center">
+                                <AlertTriangle className="w-5 h-5 text-destructive" />
                             </div>
-                            <div className="flex-1">
-                                <DrawerTitle className="text-lg sm:text-xl font-semibold">Iniciar Disputa</DrawerTitle>
-                                <DrawerDescription className="text-sm">Reportar un problema con evidencia</DrawerDescription>
+                            <div className="flex-1 min-w-0">
+                                <DrawerTitle className="text-lg sm:text-xl font-semibold text-foreground">
+                                    Iniciar Disputa
+                                </DrawerTitle>
+                                <DrawerDescription className="text-sm text-muted-foreground">
+                                    Reporta un problema con evidencia
+                                </DrawerDescription>
                             </div>
                             <DrawerClose asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isSubmitting}>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8" 
+                                    disabled={isSubmitting}
+                                >
                                     <X className="h-4 w-4" />
                                 </Button>
                             </DrawerClose>
@@ -329,45 +339,51 @@ export function DisputeModal({
                     </DrawerHeader>
 
                     {/* Contenido scrollable */}
-                    <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto">
-                        <div className="space-y-6">
-                            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
-                                <p className="text-sm text-destructive-foreground">
-                                    <strong>Importante:</strong> Una disputa iniciará un proceso de mediación. Por favor, explique claramente el problema y adjunte evidencia para una resolución rápida.
+                    <div className="px-4 sm:px-6 py-5 sm:py-6 flex-1 min-h-0 overflow-y-auto">
+                        <div className="space-y-5">
+                            {/* Alerta importante minimalista */}
+                            <div className="p-3 bg-muted/50 border border-border rounded-lg">
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    <span className="font-medium text-foreground">Importante:</span> Una disputa iniciará un proceso de mediación. Por favor, explica claramente el problema y adjunta evidencia para una resolución rápida.
                                 </p>
                             </div>
                 
-                            <div>
-                                <Label className="text-sm font-semibold mb-3 block">
+                            {/* Campo de motivo */}
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium text-foreground">
                                     Motivo de la disputa <span className="text-destructive">*</span>
                                 </Label>
-                                <textarea
-                                    value={disputeReason}
-                                    onChange={(e) => setDisputeReason(e.target.value)}
-                                    className="w-full px-4 py-3 border border-input rounded-xl focus:ring-2 focus:ring-ring focus:border-destructive transition-all duration-200 bg-background resize-none"
-                                    rows={4}
-                                    placeholder="Describe detalladamente el problema que has experimentado con este servicio..."
-                                    required
-                                    disabled={isSubmitting}
-                                    maxLength={1000}
-                                />
-                                <div className="text-right text-xs text-muted-foreground mt-1">
-                                    {disputeReason.length}/1000 caracteres
+                                <div className="relative">
+                                    <textarea
+                                        value={disputeReason}
+                                        onChange={(e) => setDisputeReason(e.target.value)}
+                                        className="w-full px-3 py-2.5 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-destructive transition-colors bg-background resize-none text-sm"
+                                        rows={5}
+                                        placeholder="Describe detalladamente el problema que has experimentado con este servicio..."
+                                        required
+                                        disabled={isSubmitting}
+                                        maxLength={1000}
+                                    />
+                                    <div className="absolute bottom-2 right-2">
+                                        <span className={`text-xs ${disputeReason.length > 900 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                            {disputeReason.length}/1000
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* File Upload Section */}
-                            <div>
-                                <Label className="text-sm font-semibold mb-3 block">
-                                    Archivos de evidencia (opcional)
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium text-foreground">
+                                    Archivos de evidencia <span className="text-muted-foreground font-normal">(opcional)</span>
                                 </Label>
                                 
                                 {/* Drop Zone */}
                                 <div
-                                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors duration-200 ${
+                                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                                         dragActive 
-                                            ? 'border-destructive bg-destructive/10' 
-                                            : 'border-input hover:border-primary'
+                                            ? 'border-destructive bg-destructive/5' 
+                                            : 'border-input hover:border-primary/50'
                                     }`}
                                     onDragEnter={(e) => {
                                         e.preventDefault();
@@ -385,18 +401,18 @@ export function DisputeModal({
                                     }}
                                 >
                                     <div className="flex flex-col items-center gap-3">
-                                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                                            <Upload className="w-6 h-6 text-muted-foreground" />
+                                        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                                            <Upload className="w-5 h-5 text-muted-foreground" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-foreground">
+                                            <p className="text-sm text-foreground">
                                                 Arrastra archivos aquí o{' '}
                                                 <Button
                                                     type="button"
                                                     variant="link"
                                                     onClick={() => fileInputRef.current?.click()}
                                                     disabled={isSubmitting}
-                                                    className="h-auto p-0 text-destructive hover:text-destructive"
+                                                    className="h-auto p-0 text-primary"
                                                 >
                                                     selecciona archivos
                                                 </Button>
@@ -420,33 +436,38 @@ export function DisputeModal({
 
                                 {/* File List */}
                                 {files.length > 0 && (
-                                    <div className="mt-4 space-y-2">
-                                        <h4 className="text-sm font-medium text-foreground">Archivos seleccionados:</h4>
-                                        {files.map((file, index) => (
-                                            <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-lg">{getFileIcon(file)}</span>
-                                                    <div>
-                                                        <p className="text-sm font-medium text-foreground truncate max-w-48">
-                                                            {file.name}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {formatFileSize(file.size)}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => removeFile(index)}
-                                                    disabled={isSubmitting}
-                                                    className="h-8 w-8"
+                                    <div className="mt-3 space-y-2">
+                                        <h4 className="text-xs font-medium text-muted-foreground">Archivos seleccionados ({files.length})</h4>
+                                        <div className="space-y-1.5">
+                                            {files.map((file, index) => (
+                                                <div 
+                                                    key={index} 
+                                                    className="flex items-center justify-between p-2.5 bg-muted/50 border border-border rounded-lg"
                                                 >
-                                                    <X className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
+                                                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                                        <span className="text-base">{getFileIcon(file)}</span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm text-foreground truncate">
+                                                                {file.name}
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {formatFileSize(file.size)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => removeFile(index)}
+                                                        disabled={isSubmitting}
+                                                        className="h-7 w-7"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -456,7 +477,7 @@ export function DisputeModal({
                     <Separator className="flex-shrink-0" />
 
                     {/* Footer con botones */}
-                    <DrawerFooter className="flex-shrink-0">
+                    <DrawerFooter className="px-4 sm:px-6 py-4 flex-shrink-0">
                         <div className="flex gap-3 w-full">
                             <Button
                                 variant="outline"
@@ -469,7 +490,8 @@ export function DisputeModal({
                             <Button
                                 onClick={onSubmit}
                                 disabled={!disputeReason.trim() || isSubmitting}
-                                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                                variant="destructive"
+                                className="flex-1"
                             >
                                 {isSubmitting ? (
                                     <>

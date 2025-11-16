@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
@@ -89,7 +89,9 @@ const statusRoadmap = [
 export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const queryClient = useQueryClient();
     const { id } = useParams<{ id: string }>();
-    const searchId = parseInt(id || '0', 10);
+    const searchIdParam = parseInt(id || '0', 10);
+    // ✅ Si searchId es 0, significa que solo tenemos searchHireId (cliente eliminado)
+    const searchId = searchIdParam === 0 ? null : searchIdParam;
     const navigate = useNavigate();
     const [modalState, setModalState] = useState({
         showFinalizeModal: false,
@@ -179,6 +181,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const { user } = useAuth();
 
     // ? HOOK OPTIMIZADO - Reemplaza múltiples queries
+    // ✅ Obtener searchHireId desde la URL o intentar obtenerlo de los datos después
+    const searchHireIdFromUrl = new URLSearchParams(window.location.search).get('searchHireId');
+    const initialSearchHireId = searchHireIdFromUrl ? parseInt(searchHireIdFromUrl, 10) : undefined;
+    
     const {
         search,
         moneyDistribution,
@@ -194,22 +200,27 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         isError,
         error,
         invalidateAll
-    } = useSearchDetailsOptimized(searchId);
+    } = useSearchDetailsOptimized(searchId, { searchHireId: initialSearchHireId });
+    
+    // ✅ Obtener searchHireId final (de URL o de los datos cargados)
+    const searchHireId = initialSearchHireId || search?.searchHire?.id;
 
     // ? DATOS DERIVADOS
-    const hireId = search?.searchHire?.id;
-    const hasSearchHire = !!search?.searchHire;
+    const hireId = searchHireId || search?.searchHire?.id;
+    const hasSearchHireData = !!search?.searchHire || !!searchHireId;
+    // ✅ Cuando search es null, usar serviceInfo de searchHire si está disponible
     const serviceInfo = search?.searchHire?.service;
     
-    // ? DATOS DE EXPERTO DESDE SEARCHHIRE
-    const expertInfo = search?.searchHire?.expert;
+    // ? DATOS DE EXPERTO DESDE SEARCHHIRE O EXPERTPROFILE
+    // ✅ Cuando search es null, usar expertProfile.user directamente
+    const expertInfo = search?.searchHire?.expert || expertProfile?.user || null;
     
     // Debug: Verificar qué datos tiene expertInfo
     console.log('[SearchDetails] expertInfo:', expertInfo);
     console.log('[SearchDetails] user:', user);
 
     // ? HOOKS PARA ACCIONES
-    const { uploadDeliverable, isUploadingDeliverable } = useChat(searchId);
+    const { uploadDeliverable, isUploadingDeliverable } = useChat(searchId, searchHireId);
     const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit: submitDispute, handleResolveDispute, handleAddAd } =
         useSearchActions();
     
@@ -669,7 +680,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const requiresAppointment = serviceInfo?.requiresAppointment;
     
     // Usar cualquiera de las dos condiciones, pero solo si hay searchHire
-    const needsAppointment = hasSearchHire && (isAppointmentCategory || requiresAppointment);
+    const needsAppointment = hasSearchHireData && (isAppointmentCategory || requiresAppointment);
     
     // Función para calcular el tiempo restante para crear cita (24 horas desde la contratación)
     const calculateTimeRemaining = () => {
@@ -705,11 +716,23 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     }, [needsAppointment, appointment, search?.searchHire?.createdAt]);
 
     const userId = Number(user?.id) || 0;
+    // ✅ Cuando search es null, no podemos obtener clientId (cliente eliminado)
     const clientId = Number(search?.userId ?? 0);
-    const expertId = Number(search?.searchHire?.expertId ?? search?.searchHire?.expert?.id ?? 0);
+    // ✅ Cuando search es null, obtener expertId de expertProfile, expertInfo o searchHire
+    const expertId = Number(
+        search?.searchHire?.expert?.id ?? 
+        expertInfo?.id ??
+        expertProfile?.id ?? 
+        0
+    );
 
-    const isClient = userId === clientId;
-    const isExpert = userId === expertId || (search?.searchHire?.expert?.id && userId === Number(search.searchHire.expert.id));
+    // ✅ Determinar si es cliente o experto
+    // Si search es null, solo podemos verificar si es experto (el cliente fue eliminado)
+    const isClient = search ? (userId === clientId) : false;
+    const isExpert = userId === expertId || 
+                     (search?.searchHire?.expert?.id && userId === Number(search.searchHire.expert.id)) ||
+                     (expertInfo?.id && userId === Number(expertInfo.id)) ||
+                     (expertProfile?.id && userId === Number(expertProfile.id));
     const userRole = isClient ? 'client' : 'expert';
     
     // Debug: Verificar isExpert
@@ -747,30 +770,102 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                searchHireStatus === 'disputed'));
     
     // Validación más robusta para el chat
-    const canViewChat = (isClient || isExpert || isAdmin) && !!search?.searchHire && !!search?.searchHire?.id;
+    // ✅ Permitir ver chat si tenemos searchHireId, incluso cuando search es null (cliente eliminado)
+    // Si tenemos searchHireId y el usuario está autenticado, permitir ver el chat
+    // El backend validará los permisos reales cuando se intente acceder a la conversación
+    const hasValidSearchHire = !!search?.searchHire?.id || !!searchHireId;
+    // ✅ Si tenemos searchHireId y usuario autenticado, mostrar el chat (el backend validará permisos)
+    const canViewChat = hasValidSearchHire && !!user;
+    
+    // ✅ DEBUG: Log para verificar por qué no se muestra el chat
+    console.log('[SearchDetails] Chat visibility check:', {
+        isClient,
+        isExpert,
+        isAdmin,
+        hasSearchHireId: !!search?.searchHire?.id,
+        hasSearchHireIdParam: !!searchHireId,
+        hasValidSearchHire,
+        canViewChat,
+        userId,
+        expertId,
+        clientId,
+        searchIsNull: search === null,
+        expertInfo: expertInfo?.id,
+        expertProfile: expertProfile?.id
+    });
 
     // ✅ Usar categoría del endpoint details-complete
     const categoryName = category?.name || 'Unknown Category';
 
-    // Función para verificar si se puede proponer una cita
-    const canProposeAppointment = () => {
-        if (appointment) {
-            const validAppointmentStatuses = appointmentStatuses && Array.isArray(appointmentStatuses)
-                ? appointmentStatuses
-                    .filter((s: any) => s.statusValue === 'awaiting_appointment' || 
-                                s.statusValue === 'appointment_rejected' || 
-                                s.statusValue === 'appointment_cancelled_by_client' ||
-                                s.statusValue === 'appointment_cancelled_by_expert')
-                    .map((s: any) => s.statusValue)
-                : ['awaiting_appointment', 'appointment_rejected', 'appointment_cancelled_by_client', 'appointment_cancelled_by_expert'];
-            const canPropose = validAppointmentStatuses.includes(appointment.status);
-            return canPropose;
+    // ✅ Verificar si el SearchHire está finalizado (según la guía)
+    const isSearchHireFinalized = search?.searchHire?.statusInfo?.isFinalizationStatus === true ||
+                                  (searchHireStatus && ['completed', 'canceled', 'disputed', 'dispute_resolved'].includes(searchHireStatus));
+
+    // ✅ Función helper para determinar qué botones mostrar según la guía
+    const getAppointmentButtons = () => {
+        // Si SearchHire está finalizado, no mostrar ningún botón
+        if (isSearchHireFinalized) {
+            return {
+                showPropose: false,
+                showCancel: false,
+                showAccept: false,
+                showReject: false
+            };
         }
-        
-        const validHireStatuses = ['pending'];
-        const currentHireStatus = search?.searchHire?.status;
-        const canPropose = currentHireStatus ? validHireStatuses.includes(currentHireStatus) : false;
-        return canPropose;
+
+        // Si no hay cita, solo el cliente puede proponer (si el SearchHire está en estado válido)
+        if (!appointment) {
+            const validHireStatuses = ['pending', 'in_progress'];
+            const currentHireStatus = searchHireStatus;
+            const canPropose = currentHireStatus ? validHireStatuses.includes(currentHireStatus) : false;
+            
+            return {
+                showPropose: isClient && canPropose,
+                showCancel: false,
+                showAccept: false,
+                showReject: false
+            };
+        }
+
+        const status = appointment.status;
+
+        if (isClient) {
+            // BOTONES PARA CLIENTE según la guía
+            return {
+                showPropose: [
+                    'awaiting_appointment',
+                    'appointment_rejected',
+                    'appointment_cancelled_by_client',
+                    'appointment_cancelled_by_expert'
+                ].includes(status),
+                showCancel: status === 'appointment_confirmed',
+                showAccept: false,
+                showReject: false
+            };
+        } else if (isExpert) {
+            // BOTONES PARA EXPERTO según la guía
+            return {
+                showPropose: false,
+                showCancel: status === 'appointment_confirmed',
+                showAccept: status === 'appointment_proposed',
+                showReject: status === 'appointment_proposed'
+            };
+        }
+
+        return {
+            showPropose: false,
+            showCancel: false,
+            showAccept: false,
+            showReject: false
+        };
+    };
+
+    const appointmentButtons = getAppointmentButtons();
+
+    // ✅ Función para verificar si se puede proponer una cita (compatibilidad con código existente)
+    const canProposeAppointment = () => {
+        if (isSearchHireFinalized) return false;
+        return appointmentButtons.showPropose;
     };
 
     // Función para manejar la confirmación del rechazo desde el modal
@@ -944,29 +1039,29 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     if (isError && error && !isNetworkErr) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 p-4">
-                <div className="text-center max-w-md w-full">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 space-y-6">
-                        <div className="flex justify-center">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-orange-100 dark:bg-orange-900/20 rounded-full animate-ping opacity-75"></div>
-                                <AlertTriangle className="w-16 h-16 text-orange-500 dark:text-orange-400 relative" />
+                <div className="text-center space-y-6 max-w-md">
+                    <div className="flex justify-center">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-full blur-xl opacity-50"></div>
+                            <div className="relative w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700">
+                                <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500" strokeWidth={1.5} />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Oops, algo salió mal</h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {error?.message || 'Ha ocurrido un error inesperado. Por favor, intenta nuevamente.'}
-                            </p>
-                        </div>
-                        <Button
-                            onClick={() => invalidateAll()}
-                            className="w-full"
-                            size="lg"
-                        >
-                            <Activity className="w-4 h-4 mr-2" />
-                            Reintentar
-                        </Button>
                     </div>
+                    <div className="space-y-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                            {error?.message || 'Ha ocurrido un error inesperado'}
+                        </p>
+                    </div>
+                    <Button
+                        onClick={() => invalidateAll()}
+                        variant="outline"
+                        size="sm"
+                        className="mt-4"
+                    >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Reintentar
+                    </Button>
                 </div>
             </div>
         );
@@ -989,7 +1084,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </Button>
                             <div className="flex flex-col min-w-0 flex-1">
                                 <h1 className="text-xl font-semibold text-foreground tracking-tight truncate">
-                                    {search?.title || 'Cargando...'}
+                                    {search?.title || serviceInfo?.name || category?.name || 'Contratación'}
                                 </h1>
                             </div>
                         </div>
@@ -1062,6 +1157,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 <div className="h-full flex-1 min-h-0 relative flex flex-col">
                                     <Chat 
                                         searchId={searchId} 
+                                        searchHireId={searchHireId}
                                         isExpert={!!isExpert} 
                                         expertData={{
                                             name: expertData?.name, 
@@ -1469,13 +1565,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 )}
                                     </div>
                                     
-                                    {/* Botones de acción fijos en móvil */}
-                                    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 p-4 space-y-2 shadow-lg">
-                                    {/* Botones de cita - Confirmar/Rechazar/Cancelar */}
-                                    {(userRole === 'expert' && appointment?.status === 'appointment_proposed') || appointment?.status === 'appointment_confirmed' ? (
-                                        <div className="flex gap-2">
-                                            {userRole === 'expert' && appointment.status === 'appointment_proposed' && (
-                                                <>
+                                    {/* ✅ Botones de acción fijos en móvil - Según la guía */}
+                                    {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
+                                        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 p-4 space-y-2 shadow-lg">
+                                            <div className="flex gap-2">
+                                                {/* ✅ BOTÓN: Aceptar (Solo Experto, solo cuando appointment_proposed) */}
+                                                {appointmentButtons.showAccept && (
                                                     <Button
                                                         onClick={(e) => {
                                                             e.preventDefault();
@@ -1493,15 +1588,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                                                 </svg>
-                                                                Confirmando...
+                                                                Aceptando...
                                                             </>
                                                         ) : (
                                                             <>
                                                                 <CheckCircle className="w-4 h-4 mr-2" />
-                                                                Confirmar
+                                                                Aceptar
                                                             </>
                                                         )}
                                                     </Button>
+                                                )}
+                                                
+                                                {/* ✅ BOTÓN: Rechazar (Solo Experto, solo cuando appointment_proposed) */}
+                                                {appointmentButtons.showReject && (
                                                     <Button
                                                         onClick={(e) => {
                                                             e.preventDefault();
@@ -1530,44 +1629,79 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             </>
                                                         )}
                                                     </Button>
-                                                </>
-                                            )}
-                                            {appointment.status === 'appointment_confirmed' && (
+                                                )}
+                                                
+                                                {/* ✅ BOTÓN: Cancelar (Cliente o Experto, solo cuando appointment_confirmed) */}
+                                                {appointmentButtons.showCancel && (
+                                                    <Button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setAppointmentToReject(appointment as Appointment);
+                                                            setModalActionType('cancel');
+                                                            setShowRejectModal(true);
+                                                        }}
+                                                        variant="outline"
+                                                        className="w-full"
+                                                        size="sm"
+                                                        disabled={isCancelling}
+                                                    >
+                                                        {isCancelling ? (
+                                                            <>
+                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                                </svg>
+                                                                Cancelando...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <XCircle className="w-4 h-4 mr-2" />
+                                                                Cancelar Cita
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            
+                                            {/* ✅ BOTÓN: Proponer (Solo Cliente) */}
+                                            {appointmentButtons.showPropose && (
                                                 <Button
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
-                                                        setAppointmentToReject(appointment as Appointment);
-                                                        setModalActionType('cancel');
-                                                        setShowRejectModal(true);
+                                                        handleAppointmentAction('propose', { 
+                                                            id: 0, 
+                                                            searchHireId: search?.searchHire?.id || searchHireId || 0,
+                                                            status: 'awaiting_appointment',
+                                                            amount: serviceInfo?.price || 0
+                                                        } as Appointment);
                                                     }}
-                                                    variant="outline"
-                                                    className="w-full"
+                                                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                                                     size="sm"
-                                                    disabled={isCancelling}
+                                                    disabled={isProposing}
                                                 >
-                                                    {isCancelling ? (
+                                                    {isProposing ? (
                                                         <>
                                                             <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
                                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                                             </svg>
-                                                            Cancelando...
+                                                            Proponiendo...
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <XCircle className="w-4 h-4 mr-2" />
-                                                            Cancelar Cita
+                                                            <Calendar className="w-4 h-4 mr-2" />
+                                                            {appointment && appointment.status === 'appointment_cancelled_by_expert' 
+                                                                ? 'Proponer Nueva Cita'
+                                                                : 'Programar Cita'
+                                                            }
                                                         </>
                                                     )}
                                                 </Button>
                                             )}
-                                        </div>
-                                    ) : null}
-                                    
-                                    {/* Acciones Principales */}
-                                    {(canDispute || canApprove || canExpertRespond) && (
-                                        <div className="space-y-2">
+                                            
+                                            {/* ✅ Acciones Principales - Aprobar/Disputar/Responder */}
                                             {canApprove && (
                                                 <Button
                                                     onClick={handleApproveService}
@@ -1645,7 +1779,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     )}
                                     
                                     {/* Programar Cita */}
-                                    {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
+                                    {appointmentButtons.showPropose && (
                                         <Button
                                             onClick={() => handleAppointmentAction('propose', { 
                                                 id: 0, 
@@ -1676,7 +1810,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             )}
                                         </Button>
                                     )}
-                                    </div>
                                 </div>
                             </TabsContent>
                         </Tabs>
@@ -1888,136 +2021,146 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     </AccordionItem>
                                                 </Accordion>
                                             )}
+                                        </div>
+                                    </div>
+                                )}
 
-                                            {/* Botones de acción para desktop */}
-                                            {((appointment && ((userRole === 'expert' && appointment.status === 'appointment_proposed') || appointment.status === 'appointment_confirmed')) || 
-                                              (isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')))) && (
-                                                <div className="flex gap-2 mt-4 pt-3 border-t border-border/50">
-                                                    {userRole === 'expert' && appointment && appointment.status === 'appointment_proposed' && (
-                                                        <>
-                                                            <Button
-                                                                onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
-                                                                    setAppointmentToConfirm(appointment as Appointment);
-                                                                    setShowConfirmAppointmentDialog(true);
-                                                                }}
-                                                                className="flex-1"
-                                                                size="sm"
-                                                                disabled={isConfirming || isRejecting}
-                                                            >
-                                                                {isConfirming ? (
-                                                                    <>
-                                                                        <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                                        </svg>
-                                                                        Aceptando...
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <CheckCircle className="w-4 h-4 mr-2" />
-                                                                        Aceptar
-                                                                    </>
-                                                                )}
-                                                            </Button>
-                                                            <Button
-                                                                onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
-                                                                    setAppointmentToReject(appointment as Appointment);
-                                                                    setModalActionType('reject');
-                                                                    setShowRejectModal(true);
-                                                                }}
-                                                                variant="destructive"
-                                                                className="flex-1"
-                                                                size="sm"
-                                                                disabled={isConfirming || isRejecting}
-                                                            >
-                                                                {isRejecting ? (
-                                                                    <>
-                                                                        <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                                        </svg>
-                                                                        Rechazando...
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <XCircle className="w-4 h-4 mr-2" />
-                                                                        Rechazar
-                                                                    </>
-                                                                )}
-                                                            </Button>
-                                                        </>
-                                                    )}
-                                                    {appointment && appointment.status === 'appointment_confirmed' && (
-                                                        <Button
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setAppointmentToReject(appointment as Appointment);
-                                                                setModalActionType('cancel');
-                                                                setShowRejectModal(true);
-                                                            }}
-                                                            variant="outline"
-                                                            className="w-full"
-                                                            size="sm"
-                                                            disabled={isCancelling}
-                                                        >
-                                                            {isCancelling ? (
-                                                                <>
-                                                                    <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                                    </svg>
-                                                                    Cancelando...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <XCircle className="w-4 h-4 mr-2" />
-                                                                    Cancelar Cita
-                                                                </>
-                                                            )}
-                                                        </Button>
-                                                    )}
-                                                    {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
-                                                        <Button
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                handleAppointmentAction('propose', { 
-                                                                    id: 0, 
-                                                                    searchHireId: search?.searchHire?.id || 0,
-                                                                    status: 'awaiting_appointment',
-                                                                    amount: serviceInfo?.price || 0
-                                                                } as Appointment);
-                                                            }}
-                                                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                                                            size="sm"
-                                                            disabled={isProposing}
-                                                        >
-                                                            {isProposing ? (
-                                                                <>
-                                                                    <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                                    </svg>
-                                                                    Proponiendo...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Calendar className="w-4 h-4 mr-2" />
-                                                                    {appointment && appointment.status === 'appointment_cancelled_by_expert' 
-                                                                        ? 'Proponer Nueva Cita'
-                                                                        : 'Programar Cita'
-                                                                    }
-                                                                </>
-                                                            )}
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            )}
+                                {/* ✅ Botones de acción para desktop - Según la guía - Fuera de needsAppointment para que siempre se muestren */}
+                                {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject) && (
+                                    <div className="mt-5 hidden lg:block">
+                                        <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
+                                            <div className="flex gap-2">
+                                                {/* ✅ BOTÓN: Aceptar (Solo Experto, solo cuando appointment_proposed) */}
+                                                {appointmentButtons.showAccept && (
+                                                    <Button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setAppointmentToConfirm(appointment as Appointment);
+                                                            setShowConfirmAppointmentDialog(true);
+                                                        }}
+                                                        className="flex-1"
+                                                        size="sm"
+                                                        disabled={isConfirming || isRejecting}
+                                                    >
+                                                        {isConfirming ? (
+                                                            <>
+                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                                </svg>
+                                                                Aceptando...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                                Aceptar
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                )}
+                                                
+                                                {/* ✅ BOTÓN: Rechazar (Solo Experto, solo cuando appointment_proposed) */}
+                                                {appointmentButtons.showReject && (
+                                                    <Button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setAppointmentToReject(appointment as Appointment);
+                                                            setModalActionType('reject');
+                                                            setShowRejectModal(true);
+                                                        }}
+                                                        variant="destructive"
+                                                        className="flex-1"
+                                                        size="sm"
+                                                        disabled={isConfirming || isRejecting}
+                                                    >
+                                                        {isRejecting ? (
+                                                            <>
+                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                                </svg>
+                                                                Rechazando...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <XCircle className="w-4 h-4 mr-2" />
+                                                                Rechazar
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                )}
+                                                
+                                                {/* ✅ BOTÓN: Cancelar (Cliente o Experto, solo cuando appointment_confirmed) */}
+                                                {appointmentButtons.showCancel && (
+                                                    <Button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setAppointmentToReject(appointment as Appointment);
+                                                            setModalActionType('cancel');
+                                                            setShowRejectModal(true);
+                                                        }}
+                                                        variant="outline"
+                                                        className="w-full"
+                                                        size="sm"
+                                                        disabled={isCancelling}
+                                                    >
+                                                        {isCancelling ? (
+                                                            <>
+                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                                </svg>
+                                                                Cancelando...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <XCircle className="w-4 h-4 mr-2" />
+                                                                Cancelar Cita
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                )}
+                                                
+                                                {/* ✅ BOTÓN: Proponer (Solo Cliente) */}
+                                                {appointmentButtons.showPropose && (
+                                                    <Button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleAppointmentAction('propose', { 
+                                                                id: 0, 
+                                                                searchHireId: search?.searchHire?.id || searchHireId || 0,
+                                                                status: 'awaiting_appointment',
+                                                                amount: serviceInfo?.price || 0
+                                                            } as Appointment);
+                                                        }}
+                                                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                                                        size="sm"
+                                                        disabled={isProposing}
+                                                    >
+                                                        {isProposing ? (
+                                                            <>
+                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                                </svg>
+                                                                Proponiendo...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Calendar className="w-4 h-4 mr-2" />
+                                                                {appointment && appointment.status === 'appointment_cancelled_by_expert' 
+                                                                    ? 'Proponer Nueva Cita'
+                                                                    : 'Programar Cita'
+                                                                }
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -2295,7 +2438,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                             {/* Programar Cita - Solo en móvil (en desktop está dentro de la card) */}
                             <div className="lg:hidden">
-                            {isClient && (canProposeAppointment() || (appointment && appointment.status === 'appointment_cancelled_by_expert')) && (
+                            {appointmentButtons.showPropose && (
                                 <>
                                     <Separator />
                                     <Button
@@ -2387,7 +2530,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
             {/* Alert Dialog para confirmar cita */}
             <AlertDialog open={showConfirmAppointmentDialog} onOpenChange={setShowConfirmAppointmentDialog}>
-                <AlertDialogContent>
+                <AlertDialogContent className="border-t-4 border-destructive">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirmar cita</AlertDialogTitle>
                         <AlertDialogDescription>

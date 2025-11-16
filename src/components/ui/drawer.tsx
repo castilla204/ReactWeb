@@ -35,22 +35,71 @@ DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
 const DrawerContent = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DrawerPortal>
-    <DrawerOverlay />
-    <DrawerPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed inset-x-0 bottom-0 z-50 flex h-auto flex-col rounded-t-[10px] border bg-background sm:inset-x-0 sm:top-auto sm:bottom-0 sm:rounded-t-lg sm:shadow-xl",
-        className
-      )}
-      {...props}
-    >
-      <div className="mx-auto mt-3 mb-2 h-1.5 w-12 rounded-full bg-muted md:hidden" />
-      {children}
-    </DrawerPrimitive.Content>
-  </DrawerPortal>
-))
+>(({ className, children, ...props }, ref) => {
+  // ✅ BEST PRACTICE: Prevenir warnings de accesibilidad
+  // Vaul maneja aria-hidden automáticamente, pero podemos asegurarnos de que
+  // cuando el drawer está abierto, los elementos puedan recibir focus correctamente
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  
+  React.useEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
+    
+    // Función para verificar y corregir aria-hidden cuando el drawer está abierto
+    const checkAriaHidden = () => {
+      const isOpen = content.getAttribute('data-state') === 'open';
+      const hasAriaHidden = content.getAttribute('aria-hidden') === 'true';
+      
+      // Si el drawer está abierto pero tiene aria-hidden, removerlo
+      // Esto previene warnings de accesibilidad
+      if (isOpen && hasAriaHidden) {
+        // Usar requestAnimationFrame para evitar conflictos con vaul
+        requestAnimationFrame(() => {
+          if (content.getAttribute('data-state') === 'open') {
+            content.removeAttribute('aria-hidden');
+          }
+        });
+      }
+    };
+    
+    // Observar cambios en data-state
+    const observer = new MutationObserver(checkAriaHidden);
+    
+    observer.observe(content, {
+      attributes: true,
+      attributeFilter: ['data-state', 'aria-hidden']
+    });
+    
+    // Verificar inicialmente
+    checkAriaHidden();
+    
+    return () => observer.disconnect();
+  }, []);
+  
+  return (
+    <DrawerPortal>
+      <DrawerOverlay />
+      <DrawerPrimitive.Content
+        ref={(node) => {
+          if (typeof ref === 'function') {
+            ref(node);
+          } else if (ref) {
+            (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+          }
+          contentRef.current = node;
+        }}
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-50 flex h-auto flex-col rounded-t-[10px] border bg-background sm:inset-x-0 sm:top-auto sm:bottom-0 sm:rounded-t-lg sm:shadow-xl",
+          className
+        )}
+        {...props}
+      >
+        <div className="mx-auto mt-3 mb-2 h-1.5 w-12 rounded-full bg-muted md:hidden" />
+        {children}
+      </DrawerPrimitive.Content>
+    </DrawerPortal>
+  );
+})
 DrawerContent.displayName = "DrawerContent"
 
 const DrawerHeader = ({

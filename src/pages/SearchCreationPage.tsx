@@ -8,6 +8,7 @@ import { showToast } from '../lib/toast';
 import HomePresentation from '../components/HomePresentation';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
+import { ErrorDisplay } from '../components/ErrorDisplay';
 
 
 interface SearchParameters {
@@ -256,10 +257,12 @@ const SearchCreationPage: React.FC = () => {
                                             </>
                                         ) : serviceTypesError ? (
                                             // Error state
-                                            <div className="col-span-2 p-4 border border-red-200 rounded-lg bg-red-50">
-                                                <p className="text-red-600 text-sm">
-                                                    Error al cargar los tipos de servicio. Usando configuración por defecto.
-                                                </p>
+                                            <div className="col-span-2">
+                                                <ErrorDisplay
+                                                    message="Error al cargar los tipos de servicio. Usando configuración por defecto."
+                                                    fullScreen={false}
+                                                    compact={true}
+                                                />
                                             </div>
                                         ) : (
                                             // Dynamic service types
@@ -796,7 +799,7 @@ const SearchCreationPage: React.FC = () => {
 
                                 {/* Right Column - Visual Element */}
                                 <div className="hidden lg:block sticky top-8">
-                                    <div className="relative h-full min-h-[800px] rounded-2xl overflow-hidden shadow-2xl">
+                                    <div className="relative h-full min-h-[800px] rounded-tr-[2.5rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),0_10px_25px_-5px_rgba(0,0,0,0.2)] border border-white/10 backdrop-blur-sm">
                                         {/* Background Image - HD Real con fallback local */}
                                         <div className="absolute inset-0">
                                             {/* Imagen HD principal - Inspección de vehículo profesional en alta calidad */}
@@ -837,17 +840,20 @@ const SearchCreationPage: React.FC = () => {
                                         </div>
                                         
                                         {/* Overlay sutil para mejorar legibilidad sin ocultar la imagen HD */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/10"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/15"></div>
                                         
                                         {/* Efecto de brillo sutil en la parte superior */}
-                                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 pointer-events-none"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/25 pointer-events-none"></div>
+                                        
+                                        {/* Borde interno sutil para profundidad */}
+                                        <div className="absolute inset-[1px] rounded-tr-[2.5rem] border border-white/5 pointer-events-none"></div>
                                         
                                         {/* Content */}
                                         <div className="relative h-full flex flex-col justify-between p-8">
                                             {/* Top badge */}
                                             <div className="flex justify-end">
-                                                <div className="px-4 py-2 bg-white/95 backdrop-blur-sm rounded-full flex items-center gap-2 shadow-lg">
-                                                    <span className="text-sm font-medium text-gray-900">inspecciono.com</span>
+                                                <div className="px-5 py-2.5 bg-white/98 backdrop-blur-md rounded-full flex items-center gap-2.5 shadow-[0_4px_14px_0_rgba(0,0,0,0.15)] border border-white/20 hover:shadow-[0_6px_20px_0_rgba(0,0,0,0.2)] transition-all duration-300">
+                                                    <span className="text-sm font-semibold text-gray-900 tracking-tight">inspecciono.com</span>
                                                     <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                                     </svg>
@@ -856,36 +862,36 @@ const SearchCreationPage: React.FC = () => {
                                             
                                             {/* Bottom content */}
                                             <div className="space-y-6">
-                                                <div className="space-y-3">
-                                                    <p className="text-white text-sm font-semibold tracking-wide uppercase">Descubriendo lo mejor</p>
-                                                    <h3 className="text-3xl md:text-4xl font-bold text-white leading-tight drop-shadow-lg">
+                                                <div className="space-y-4">
+                                                    <p className="text-white/95 text-xs font-bold tracking-[0.15em] uppercase letter-spacing-wider">Descubriendo lo mejor</p>
+                                                    <h3 className="text-3xl md:text-4xl font-bold text-white leading-[1.2] drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
                                                         "Una elección inteligente. La mejor inspección profesional para tu compra"
                                                     </h3>
                                                 </div>
                                                 
                                                 {/* Feature badges */}
-                                                <div className="flex flex-wrap gap-4">
-                                                    <div className="flex items-center gap-2.5 px-4 py-2 bg-white/25 backdrop-blur-md rounded-full border border-white/30">
-                                                        <div className="w-6 h-6 rounded-full bg-white/30 backdrop-blur-sm border border-white/50 flex items-center justify-center flex-shrink-0">
-                                                            <Shield className="w-3.5 h-3.5 text-white" />
+                                                <div className="flex flex-wrap gap-3">
+                                                    <div className="flex items-center gap-2.5 px-5 py-2.5 bg-white/30 backdrop-blur-lg rounded-full border border-white/40 shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:bg-white/35 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] transition-all duration-300">
+                                                        <div className="w-7 h-7 rounded-full bg-white/40 backdrop-blur-sm border border-white/60 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                            <Shield className="w-4 h-4 text-white drop-shadow-sm" />
                                                         </div>
-                                                        <span className="text-sm font-semibold text-white">100% Garantía</span>
+                                                        <span className="text-sm font-bold text-white drop-shadow-sm">100% Garantía</span>
                                                     </div>
-                                                    <div className="flex items-center gap-2.5 px-4 py-2 bg-white/25 backdrop-blur-md rounded-full border border-white/30">
-                                                        <div className="w-6 h-6 rounded-full bg-white/30 backdrop-blur-sm border border-white/50 flex items-center justify-center flex-shrink-0">
-                                                            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    <div className="flex items-center gap-2.5 px-5 py-2.5 bg-white/30 backdrop-blur-lg rounded-full border border-white/40 shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:bg-white/35 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] transition-all duration-300">
+                                                        <div className="w-7 h-7 rounded-full bg-white/40 backdrop-blur-sm border border-white/60 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                            <svg className="w-4 h-4 text-white drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                             </svg>
                                                         </div>
-                                                        <span className="text-sm font-semibold text-white">Informe detallado</span>
+                                                        <span className="text-sm font-bold text-white drop-shadow-sm">Informe detallado</span>
                                                     </div>
                                                 </div>
                                                 
                                                 {/* Pagination dots */}
-                                                <div className="flex items-center justify-center gap-2 pt-2">
-                                                    <div className="w-10 h-1 bg-white rounded-full"></div>
-                                                    <div className="w-4 h-1 bg-white/40 rounded-full"></div>
-                                                    <div className="w-4 h-1 bg-white/40 rounded-full"></div>
+                                                <div className="flex items-center justify-center gap-2.5 pt-3">
+                                                    <div className="w-12 h-1.5 bg-white rounded-full shadow-sm"></div>
+                                                    <div className="w-5 h-1.5 bg-white/50 rounded-full"></div>
+                                                    <div className="w-5 h-1.5 bg-white/50 rounded-full"></div>
                                                 </div>
                                             </div>
                                         </div>

@@ -1,6 +1,9 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { authenticateWithGoogle, setAuthToken } from '../lib/auth';
+import { authService } from '../services/authService';
+import { mfaService } from '../services/mfaService';
+import { RoleChecker } from '../utils/roleChecker';
+import { MFAVerify } from './MFAVerify';
 import { useNavigate } from 'react-router-dom';
 
 // Google SVG Icon Component
@@ -32,6 +35,7 @@ export function GoogleAuth() {
     const [isLoading, setIsLoading] = useState(true);
     const [isReady, setIsReady] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
+    const [requiresMFA, setRequiresMFA] = useState(false);
     const { setUser } = useAuth();
     const navigate = useNavigate();
 
@@ -43,31 +47,148 @@ export function GoogleAuth() {
                 throw new Error('No credential received from Google');
             }
 
-            const decoded: any = JSON.parse(atob(response.credential.split('.')[1]));
+            const result = await authService.googleAuth(response.credential);
 
-            const authResponse = await authenticateWithGoogle(
-                response.credential,
-                decoded.email,
-                decoded.name,
-                decoded.sub
-            );
+            if (!result.success) {
+                throw new Error('Authentication failed');
+            }
 
-            // Verificación de teléfono desactivada temporalmente
-            // if (!authResponse.user.phoneVerified) {
-            //     setAuthToken(authResponse.token);
-            //     setUser(authResponse.user);
-            //     navigate('/verify-phone');
-            //     return;
-            // }
+            // Guardar usuario
+            setUser(result.user);
+            localStorage.setItem('userData', JSON.stringify(result.user));
 
-            setAuthToken(authResponse.token);
-            setUser(authResponse.user);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Authentication failed';
-            console.error('Error during Google authentication:', message);
-            setError('Authentication failed: ' + message);
+            // Verificar rol del usuario
+            const token = authService.getAccessToken();
+            if (!token) {
+                throw new Error('No token received');
+            }
+
+            const userRole = RoleChecker.getUserRole(token);
+            const requiresMfa = RoleChecker.requiresMfa(userRole);
+
+            console.log('[GoogleAuth] User role:', userRole, 'Requires MFA:', requiresMfa);
+
+            if (requiresMfa) {
+                // Admin o Expert → Verificar si tiene MFA habilitado
+                try {
+                    console.log('[GoogleAuth] Checking MFA status...');
+                    const mfaStatus = await mfaService.getMFAStatus();
+                    console.log('[GoogleAuth] MFA Status:', mfaStatus);
+                    
+                    if (!mfaStatus.isEnabled) {
+                        console.log('[GoogleAuth] MFA not enabled, redirecting to setup');
+                        // ⚠️ MFA requerido pero NO configurado → Redirigir a setup
+                        navigate('/mfa/setup-required', {
+                            state: { 
+                                reason: 'required_for_role',
+                                firstLogin: true 
+                            }
+                        });
+                        return;
+                    }
+                    
+                    // ✅ MFA configurado → Solicitar verificación
+                    console.log('[GoogleAuth] MFA is enabled, showing verification screen');
+                    setRequiresMFA(true);
+                    return;
+                } catch (error: any) {
+                    // Si el error es 404, significa que MFA no está configurado
+                    if (error?.response?.status === 404 || error?.message?.includes('404')) {
+                        navigate('/mfa/setup-required', {
+                            state: { 
+                                reason: 'required_for_role',
+                                firstLogin: true 
+                            }
+                        });
+                        return;
+                    }
+                    
+                    // Si el error es 429 (rate limiting), intentar usar caché o asumir que MFA está configurado
+                    if (error?.message?.includes('429') || error?.message?.includes('Too Many Requests') || error?.message?.includes('Rate limited')) {
+                        console.warn('[GoogleAuth] Rate limited during MFA check, assuming MFA is configured and showing verification');
+                        // Si hay rate limiting, asumir que MFA está configurado y mostrar verificación
+                        // Esto es más seguro que bloquear al usuario
+                        setRequiresMFA(true);
+                        return;
+                    }
+                    
+                    // Otro error → Continuar con verificación MFA si result.requiresMFA
+                    if (result.requiresMFA) {
+                        setRequiresMFA(true);
+                        return;
+                    }
+                    
+                    // Si no hay result.requiresMFA y hay otro error, redirigir a setup por seguridad
+                    console.warn('Error checking MFA status, redirecting to setup:', error);
+                    navigate('/mfa/setup-required', {
+                        state: { 
+                            reason: 'error_checking_status',
+                            firstLogin: true 
+                        }
+                    });
+                    return;
+                }
+            }
+
+            // Si result.requiresMFA es true (usuario con MFA habilitado pero no Admin/Expert)
+            if (result.requiresMFA) {
+                console.log('[GoogleAuth] Backend indicates MFA required, showing verification');
+                setRequiresMFA(true);
+            } else {
+                // Cliente o login sin MFA → Continuar normalmente
+                console.log('[GoogleAuth] No MFA required, continuing to dashboard');
+                // El usuario ya está guardado arriba
+                navigate('/busquedas');
+            }
+        } catch (error: any) {
+            let message = error instanceof Error ? error.message : 'Authentication failed';
+            console.error('[GoogleAuth] Error during authentication:', error);
+            
+            // ✅ BEST PRACTICE: Detectar errores específicos y mostrar mensajes más claros
+            if (error?.response?.status === 429 || error?.message?.includes('429') || error?.message?.includes('Too Many Requests')) {
+                message = 'Demasiadas solicitudes. Por favor espera unos momentos antes de intentar de nuevo.';
+            } else if (error?.response?.status === 403 || message.includes('403')) {
+                message = 'Error de configuración de Google OAuth. Por favor contacta al administrador.';
+            } else if (message.includes('Authentication failed')) {
+                // Si el error viene del backend, intentar obtener el mensaje específico
+                const backendMessage = error?.response?.data?.message || error?.data?.message;
+                if (backendMessage) {
+                    message = backendMessage;
+                }
+            }
+            
+            setError(message);
         }
     }, [setUser, navigate]);
+
+    const handleMFASuccess = () => {
+        // MFA verificado → Actualizar usuario y continuar
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+            setUser(JSON.parse(userData));
+        }
+        setRequiresMFA(false);
+        // Redirigir al dashboard o página principal
+        navigate('/busquedas');
+    };
+
+    const handleMFACancel = () => {
+        // Cancelar MFA → Logout y volver al login
+        authService.logout();
+        setRequiresMFA(false);
+        setUser(null);
+    };
+
+    if (requiresMFA) {
+        console.log('[GoogleAuth] Rendering MFAVerify component');
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background p-4">
+                <div className="w-full max-w-md">
+                    <MFAVerify onSuccess={handleMFASuccess} onCancel={handleMFACancel} />
+                </div>
+            </div>
+        );
+    }
 
     // Detectar cuando el componente es visible
     useEffect(() => {
@@ -110,7 +231,26 @@ export function GoogleAuth() {
                     throw new Error('Google SDK not loaded');
                 }
 
-                console.log('Initializing Google Auth...');
+                console.log('[GoogleAuth] Initializing Google Auth...');
+                
+                // ✅ BEST PRACTICE: Suprimir advertencias de COOP y rate limit conocidas (no afectan funcionalidad)
+                // Estas advertencias son esperadas con Google OAuth y no bloquean la autenticación
+                const originalWarn = console.warn;
+                const suppressKnownWarnings = (...args: any[]) => {
+                    const message = args[0]?.toString() || '';
+                    // Filtrar advertencias conocidas que no afectan la funcionalidad
+                    if (message.includes('Cross-Origin-Opener-Policy') || 
+                        message.includes('window.postMessage') ||
+                        message.includes('[Rate Limit]')) {
+                        // Solo loguear en desarrollo como debug, no como warning
+                        if (import.meta.env.DEV) {
+                            console.debug('[GoogleAuth] Suppressed warning (expected, non-blocking):', ...args);
+                        }
+                        return;
+                    }
+                    originalWarn.apply(console, args);
+                };
+                console.warn = suppressKnownWarnings;
                 
                 // Clear any previous initialization
                 try {
@@ -124,8 +264,15 @@ export function GoogleAuth() {
                     callback: handleCredentialResponse,
                     auto_select: false,
                     cancel_on_tap_outside: false,
-                    use_fedcm_for_prompt: false // Disable FedCM for better compatibility
+                    use_fedcm_for_prompt: false, // Disable FedCM for better compatibility
+                    // ✅ BEST PRACTICE: Configuración para reducir advertencias COOP
+                    itp_support: true // Soporte para Intelligent Tracking Prevention
                 });
+                
+                // Restaurar console.warn después de la inicialización (más tiempo para capturar todos los warnings)
+                setTimeout(() => {
+                    console.warn = originalWarn;
+                }, 5000);
 
                 const buttonElement = document.getElementById('googleButton');
                 if (buttonElement) {

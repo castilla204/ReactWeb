@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 interface Hire { 
     id: number; 
     searchId: number | null; 
-    client: { name: string; email: string }; 
+    client: { name: string; email: string } | null; 
     service: { categoryId: number }; 
     serviceType: { name: string } | null; 
     status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute_resolved' | 'dispute_resolved_client' | 'dispute_resolved_expert'; 
@@ -61,7 +61,7 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
         return ['completed', 'cancelled', 'transfer_failed', 'dispute_resolved', 'dispute_resolved_client', 'dispute_resolved_expert'].includes(hire.status);
     });
     const filteredHires = (hireTab === 'active' ? activeHires : inactiveHires).filter((hire) => {
-        const matchesClient = !filters.clientName || hire.client.name.toLowerCase().includes(filters.clientName.toLowerCase());
+        const matchesClient = !filters.clientName || (hire.client?.name || '').toLowerCase().includes(filters.clientName.toLowerCase());
         // ✅ Usar statusInfo.statusValue cuando esté disponible para comparar con el filtro
         const hireStatus = hire.statusInfo?.statusValue || hire.status;
         const matchesStatus = !filters.status || hireStatus === filters.status;
@@ -231,11 +231,11 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                         <div className="flex items-center gap-3 flex-shrink-0">
                                             <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
                                                 <span className="text-xs font-semibold text-primary">
-                                                    {hire.client.name.charAt(0).toUpperCase()}
+                                                    {hire.client?.name?.charAt(0).toUpperCase() || '?'}
                                                 </span>
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-medium text-foreground">D {hire.client.name}</span>
+                                                <span className="text-sm font-medium text-foreground">D {hire.client?.name || 'Cliente desconocido'}</span>
                                                 {hire.unreadMessagesCount > 0 && (
                                                     <div className="flex items-center gap-1 mt-0.5">
                                                         <MessageCircle className="w-3 h-3 text-primary" />
