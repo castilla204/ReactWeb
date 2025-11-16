@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types/auth';
 import { getAuthToken, getUserData, removeAuthToken, setAuthToken } from '../lib/auth';
+import { authService } from '../services/authService';
 
 interface AuthContextType {
     user: User | null;
@@ -56,12 +57,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
-        setIsAuthenticated(!!user);
-        console.log('Auth state updated:', { user, isAuthenticated });
+        // Verificar autenticación basada en token y usuario
+        const token = getAuthToken();
+        const hasUser = !!user;
+        const hasToken = !!token;
+        const authenticated = hasUser && hasToken;
+        
+        setIsAuthenticated(authenticated);
+        console.log('Auth state updated:', { user, isAuthenticated: authenticated, hasToken });
     }, [user]);
 
-    const signOut = () => {
+    const signOut = async () => {
         console.log('Signing out user');
+        await authService.logout();
         setUser(null);
         setIsAuthenticated(false);
         removeAuthToken();

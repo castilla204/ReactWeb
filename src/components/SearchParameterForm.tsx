@@ -79,7 +79,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [selectedService, setSelectedService] = useState<number | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [filters, setFilters] = useState({
-        priceRange: [0, 1000] as [number, number], // [min, max] en euros
+        priceRange: [0, 100000] as [number, number], // [min, max] en euros - rango amplio para servicios premium
         rating: 0 as number, // Mínimo de estrellas (0-5)
     });
    
@@ -100,11 +100,26 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
    
     // Aplicar filtros a servicios
     const services = allServices.filter(service => {
-            const price = service.price || 0;
-        if (price < filters.priceRange[0] || price > filters.priceRange[1]) return false;
+        // El precio viene directamente en euros
+        const price = service.price || 0;
+        if (price < filters.priceRange[0] || price > filters.priceRange[1]) {
+            if (service.id === 154) {
+                console.log(`🔍 SearchParameterForm: Service 154 filtered by price - price: ${price}, range: [${filters.priceRange[0]}, ${filters.priceRange[1]}]`);
+            }
+            return false;
+        }
         
-            const rating = service.averageRating || 0;
-        if (rating < filters.rating) return false;
+        const rating = service.averageRating || 0;
+        if (rating < filters.rating) {
+            if (service.id === 154) {
+                console.log(`🔍 SearchParameterForm: Service 154 filtered by rating - rating: ${rating}, minRating: ${filters.rating}`);
+            }
+            return false;
+        }
+        
+        if (service.id === 154) {
+            console.log('✅ SearchParameterForm: Service 154 PASSED all filters');
+        }
         
         return true;
     });
@@ -147,19 +162,25 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         });
     }, [selectedLocation, formData.latitude, formData.longitude]);
     useEffect(() => {
+        const service154 = allServices.find(s => s.id === 154);
         console.log('🔍 [DEBUG] Servicios cargados:', {
             totalServices: allServices.length,
             filteredServices: services.length,
             isLoading: isLoadingServices,
+            service154InAll: !!service154,
+            service154InFiltered: !!services.find(s => s.id === 154),
+            service154Price: service154 ? service154.price : null,
+            filters: filters,
             services: services.map(s => ({
                 id: s.id,
                 name: s.expert?.user?.name,
                 price: s.price,
+                rating: s.averageRating,
                 categoryName: s.categoryName,
                 serviceTypeName: s.serviceTypeName
             }))
         });
-    }, [allServices, services, isLoadingServices]);
+    }, [allServices, services, isLoadingServices, filters]);
    
     
     // Función para extraer ciudad y código postal de la dirección
@@ -476,7 +497,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     <Popover>
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className="h-8 text-xs px-3">
-                                                {filters.priceRange[0] === 0 && filters.priceRange[1] === 1000 ? 'Precio' : `€${filters.priceRange[0]}-€${filters.priceRange[1]}`}
+                                                {filters.priceRange[0] === 0 && filters.priceRange[1] === 100000 ? 'Precio' : `€${filters.priceRange[0]}-€${filters.priceRange[1]}`}
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-80 p-4" align="start">
@@ -487,7 +508,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         value={filters.priceRange}
                                                         onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
                                                         min={0}
-                                                        max={1000}
+                                                        max={100000}
                                                         step={10}
                                                         className="w-full"
                                                     />
@@ -543,11 +564,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     </Popover>
                             </div>
                                 {/* Services List */}
-                                {isLoadingServices ? (
-                                    <div className="flex items-center justify-center py-12">
-                                        <div className="text-muted-foreground">Cargando servicios...</div>
-                        </div>
-                                ) : services.length > 0 ? (
+                                {services.length > 0 ? (
                                     <div className="space-y-6 mb-6">
                                         {services.map((service) => {
                                             const isPro = (service.completedSearches || 0) > 5;
@@ -720,11 +737,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     
                     {/* Map Container */}
                     <div className="flex-1 relative min-h-0 w-full">
-                        {!isLoaded ? (
-                            <div className="h-full flex items-center justify-center bg-muted">
-                                <div className="text-muted-foreground">Cargando mapa...</div>
-                            </div>
-                        ) : loadError ? (
+                        {loadError ? (
                             <div className="h-full flex items-center justify-center bg-muted">
                                 <div className="text-destructive">Error al cargar el mapa</div>
                             </div>
@@ -767,7 +780,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 </div>
                                 
                                 {/* Map */}
-                                {isLoaded && (
+                                {isLoaded ? (
                                     <LocationMap
                                         selectedLocation={selectedLocation}
                                         mapExperts={mapExperts}
@@ -794,7 +807,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         isMobile={true}
                                         isLoaded={isLoaded}
                                     />
-                                )}
+                                ) : null}
                                 
                                 {/* Floating Button to Open Drawer */}
                                 {formData.latitude && formData.longitude && (
@@ -825,11 +838,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 {/* Desktop: Right Side - Map */}
                 <div className="hidden lg:block w-1/2 border-l bg-muted/30">
                     <div className="h-full sticky top-[73px]">
-                        {!isLoaded ? (
-                            <div className="h-full flex items-center justify-center bg-muted">
-                                <div className="text-muted-foreground">Cargando mapa...</div>
-                            </div>
-                        ) : loadError ? (
+                        {loadError ? (
                             <div className="h-full flex items-center justify-center bg-muted">
                                 <div className="text-destructive">Error al cargar el mapa</div>
                             </div>
@@ -871,7 +880,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     </div>
                                 </div>
                                 
-                                {isLoaded && (
+                                {isLoaded ? (
                                     <LocationMap
                                         selectedLocation={selectedLocation}
                                         mapExperts={mapExperts}
@@ -889,7 +898,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         isMobile={false}
                                         isLoaded={isLoaded}
                                     />
-                                )}
+                                ) : null}
                             </>
                         )}
                         </div>
@@ -925,7 +934,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     <Popover>
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className="h-9 flex-1 text-sm">
-                                                {filters.priceRange[0] === 0 && filters.priceRange[1] === 1000 ? 'Precio' : `€${filters.priceRange[0]}-€${filters.priceRange[1]}`}
+                                                {filters.priceRange[0] === 0 && filters.priceRange[1] === 100000 ? 'Precio' : `€${filters.priceRange[0]}-€${filters.priceRange[1]}`}
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-80 p-4" align="start">
@@ -936,7 +945,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         value={filters.priceRange}
                                                         onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
                                                         min={0}
-                                                        max={1000}
+                                                        max={100000}
                                                         step={10}
                                                         className="w-full"
                                                     />
@@ -995,11 +1004,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             
                             {/* Services List */}
                             <div className="px-4 py-4">
-                                {isLoadingServices ? (
-                                    <div className="flex items-center justify-center py-12">
-                                        <div className="text-muted-foreground text-sm">Cargando servicios...</div>
-                                    </div>
-                                ) : services.length > 0 ? (
+                                {services.length > 0 ? (
                                     <div className="space-y-2">
                                         {services.map((service) => {
                                             const isPro = (service.completedSearches || 0) > 5;

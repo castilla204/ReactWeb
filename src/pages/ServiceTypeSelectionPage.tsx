@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { useServiceTypes } from '../hooks/useServiceTypes'; // Assume this hook fetches service types
+import { useServiceTypes } from '../hooks/useServiceTypes';
+import { ErrorDisplay } from '../components/ErrorDisplay';
 
 interface ServiceType {
     id: number;
@@ -43,9 +44,10 @@ export function ServiceTypeSelectionPage({ selectedCategory }: ServiceTypeSelect
 
     if (error) {
         return (
-            <div className="text-center py-12 text-red-500">
-                Error al cargar los tipos de servicio: {(error as Error).message}
-            </div>
+            <ErrorDisplay
+                message={`Error al cargar los tipos de servicio: ${(error as Error).message}`}
+                fullScreen={false}
+            />
         );
     }
 

@@ -1,41 +1,13 @@
-import { API_CONFIG } from '../config/api';
+import { authService } from '../services/authService';
 
+// Mantener compatibilidad con código existente
 export async function authenticateWithGoogle(accessToken: string, email: string, name: string, googleId: string) {
-    try {
-        console.log('Sending auth request to:', API_CONFIG.endpoints.auth.googleAuth);
-
-        const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.googleAuth}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                accessToken,
-                email,
-                name,
-                googleId,
-            }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'Authentication failed');
-        }
-
-        if (!data.token || !data.user) {
-            console.error('Invalid response format:', data);
-            throw new Error('Invalid response from server');
-        }
-
-        console.log('Authentication successful:', { userId: data.user.id, name: data.user.name });
-        setAuthToken(data.token, data.user); // Guardar token y usuario directamente
-        return data;
-    } catch (error) {
-        console.error('Authentication error:', error);
-        throw error;
-    }
+    const result = await authService.googleAuth(accessToken);
+    return {
+        token: `${result.user ? 'token' : ''}`, // Mantener compatibilidad
+        user: result.user,
+        requiresMFA: result.requiresMFA,
+    };
 }
 
 export function setAuthToken(token: string, user?: any) {

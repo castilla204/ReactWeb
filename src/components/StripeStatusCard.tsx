@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle, AlertTriangle, Clock, XCircle, UserX, Loader2, Settings, RefreshCw, MessageCircle, HelpCircle } from 'lucide-react';
 import { useExpertStripeStatus, STRIPE_STATUS } from '../hooks/useExpertStripeStatus';
+import { ErrorDisplay } from './ErrorDisplay';
 
 interface StripeStatusCardProps {
     onSetupStripe?: () => void;
@@ -33,6 +34,9 @@ const getActionIcon = (action: string) => {
             return <Settings className="w-4 h-4 lg:w-5 lg:h-5" />;
         case 'wait':
             return <Clock className="w-4 h-4 lg:w-5 lg:h-5" />;
+        case 'complete_requirements':
+            return <AlertTriangle className="w-4 h-4 lg:w-5 lg:h-5" />;
+        case 'edit_account':
         case 'success':
             return <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5" />;
         case 'retry':
@@ -81,6 +85,9 @@ const getButtonClass = (action: string) => {
             return 'bg-orange-600 hover:bg-orange-700 text-white';
         case 'wait':
             return 'bg-blue-600 hover:bg-blue-700 text-white';
+        case 'complete_requirements':
+            return 'bg-yellow-600 hover:bg-yellow-700 text-white';
+        case 'edit_account':
         case 'success':
             return 'bg-green-600 hover:bg-green-700 text-white';
         case 'contact':
@@ -120,19 +127,12 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
 
     if (error) {
         return (
-            <div className={`bg-white rounded-xl p-6 border border-red-200 shadow-sm ${className}`}>
-                <div className="text-center">
-                    <XCircle className="w-8 h-8 text-red-600 mx-auto mb-2" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar estado</h3>
-                    <p className="text-gray-600 mb-4">{error}</p>
-                    <button
-                        onClick={refetch}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                        Reintentar
-                    </button>
-                </div>
-            </div>
+            <ErrorDisplay
+                message={error}
+                onRetry={refetch}
+                fullScreen={false}
+                className={className}
+            />
         );
     }
 
@@ -154,7 +154,8 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                 console.log('StripeStatusCard: Calling onSetupStripe');
                 onSetupStripe?.();
                 break;
-            case 'success':
+            case 'complete_requirements':
+            case 'edit_account':
                 console.log('StripeStatusCard: Calling onAccessDashboard');
                 onAccessDashboard?.();
                 break;

@@ -10,26 +10,26 @@ import { getAuthToken } from '../lib/auth';
 interface Message {
     id: number;
     conversationId: number;
-    senderId: number;
+    senderId: number | null; // ✅ Nullable si usuario borró cuenta
     content: string;
     sentAt: string;
     isRead: boolean;
     sender?: { name: string; $id?: string; $ref?: string };
-    senderName?: string;
-    locationLatitude?: string;
-    locationLongitude?: string;
-    attachmentUrls?: string[];
+    senderName: string; // ✅ "[Usuario eliminado]" si senderId es null
+    locationLatitude?: string | null;
+    locationLongitude?: string | null;
+    attachmentUrls?: string[]; // ✅ URLs de archivos adjuntos
 }
 
 interface Conversation {
     id: number;
     searchHireId: number;
-    clientId: number;
-    expertId: number | null;
+    clientId: number | null; // ✅ Nullable si cliente borró cuenta
+    expertId: number | null; // ✅ Nullable si experto borró cuenta
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
-    messages: Message[];
+    messages: Message[]; // ✅ Todos los mensajes incluidos
     $id?: string;
     $ref?: string;
 }
@@ -40,7 +40,7 @@ interface Deliverable {
     createdAt: string;
 }
 
-export const useChat = (searchId: number) => {
+export const useChat = (searchId: number | null = null, searchHireId?: number) => {
     const { user } = useAuth();
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
@@ -67,15 +67,24 @@ export const useChat = (searchId: number) => {
         }
     }, []);
 
+    // ✅ Usar searchHireId si está disponible, sino usar searchId
+    const useSearchHireEndpoint = !!searchHireId;
+    const identifier = searchHireId || searchId;
+    
     // Fetch conversation
     const { data: conversation, isLoading: loading, error, refetch } = useQuery<Conversation, Error>({
-        queryKey: ['conversation', searchId],
+        queryKey: useSearchHireEndpoint 
+            ? ['conversation', 'searchHire', searchHireId]
+            : ['conversation', searchId],
         queryFn: async () => {
-            console.log('[10:45 CEST] Fetching conversation for searchId:', searchId);
+            const endpoint = useSearchHireEndpoint
+                ? API_CONFIG.endpoints.chat.conversationBySearchHire(searchHireId!)
+                : `${API_CONFIG.endpoints.chat.conversation}?searchId=${searchId}`;
+            
+            console.log(`[useChat] Fetching conversation for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}:`, identifier);
+            console.log(`[useChat] Endpoint:`, endpoint);
             try {
-                const response = await fetchApi<Conversation>(
-                    `${API_CONFIG.endpoints.chat.conversation}?searchId=${searchId}`
-                );
+                const response = await fetchApi<Conversation>(endpoint);
                 console.log('[10:45 CEST] Fetched conversation:', response);
                 console.log('[10:45 CEST] Conversation searchHireId:', response.searchHireId);
                 return {
@@ -105,7 +114,7 @@ export const useChat = (searchId: number) => {
                 throw err;
             }
         },
-        enabled: !!user && !!searchId,
+        enabled: !!user && (!!searchHireId || !!searchId),
         retry: (failureCount, err) => failureCount < 3 && !err.message.includes('401') && !err.message.includes('Search hire not found'),
     });
 
@@ -532,7 +541,9 @@ export const useChat = (searchId: number) => {
             }),
         onSuccess: (_, messageId) => {
             console.log('[10:45 CEST] Successfully marked message as read:', messageId);
-            queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
+            queryClient.setQueryData(useSearchHireEndpoint 
+                ? ['conversation', 'searchHire', searchHireId]
+                : ['conversation', searchId], (prev: Conversation | undefined) => {
                 if (!prev) return prev;
                 return {
                     ...prev,

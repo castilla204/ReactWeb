@@ -144,8 +144,8 @@ export function ServicesTab({
                             Crear servicio
                         </Button>
                     </div>
-                    <div className="border rounded-lg overflow-x-auto">
-                        <Table>
+                <div className="border rounded-lg overflow-x-auto">
+                    <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-[40px] sm:w-[50px] hidden sm:table-cell">Imagen</TableHead>

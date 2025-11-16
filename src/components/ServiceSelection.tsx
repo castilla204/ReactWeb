@@ -14,7 +14,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from './ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from './ui/drawer';
 
 const libraries: ("geometry" | "places")[] = ['geometry', 'places'];
@@ -118,6 +118,23 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
 };
 
     console.log('ServiceSelection - Services received:', services);
+    console.log('ServiceSelection - Total services count:', services.length);
+    
+    // Buscar específicamente el servicio 154
+    const service154 = services.find(s => s.id === 154);
+    if (service154) {
+        console.log('✅ ServiceSelection: Service 154 FOUND in filtered services:', {
+            id: service154.id,
+            isActive: service154.isActive,
+            price: service154.price,
+            averageRating: service154.averageRating,
+            completedSearches: service154.completedSearches
+        });
+    } else {
+        console.warn('⚠️ ServiceSelection: Service 154 NOT FOUND in filtered services');
+        console.log('ServiceSelection - All service IDs:', services.map(s => s.id));
+    }
+    
     services.forEach((service, index) => {
         console.log(`ServiceSelection - Service ${index} (${service.id}):`, {
             id: service.id,
@@ -127,28 +144,7 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
         });
     });
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-background">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-8 bg-muted rounded w-1/3"></div>
-                        <div className="flex flex-col lg:flex-row gap-6">
-                            <div className="lg:w-80 space-y-4">
-                                <div className="h-40 bg-muted rounded"></div>
-                                <div className="h-64 bg-muted rounded"></div>
-                        </div>
-                            <div className="flex-1 space-y-4">
-                                <div className="h-32 bg-muted rounded"></div>
-                                <div className="h-32 bg-muted rounded"></div>
-                                <div className="h-32 bg-muted rounded"></div>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // No mostrar estado de carga, simplemente renderizar vacío mientras carga
 
     if (error) {
         const errorMessage = `Error al cargar los servicios: ${error.message}`;
@@ -162,6 +158,14 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
         );
     }
 
+    // Log para verificar condiciones de renderizado
+    console.log('ServiceSelection - Render conditions:', {
+        selectedCategory,
+        selectedServiceTypeId,
+        servicesLength: services.length,
+        willShowServices: !(selectedCategory <= 0 || !selectedServiceTypeId || selectedServiceTypeId <= 0 || services.length === 0)
+    });
+    
     if (selectedCategory <= 0 || !selectedServiceTypeId || selectedServiceTypeId <= 0 || services.length === 0) {
         const serviceTypeName = serviceTypes.find((st) => st.id === selectedServiceTypeId)?.name || 'Servicios';
         return (
@@ -952,11 +956,12 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                 <Dialog open={!!detailServiceId} onOpenChange={() => setDetailServiceId(null)}>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle>{detailService.expert?.user?.name}</DialogTitle>
-                            <DialogClose asChild>
-                                <Button variant="ghost" className="absolute right-4 top-4"><X className="h-4 w-4" /></Button>
-                            </DialogClose>
+                            <DialogTitle>{detailService.expert?.user?.name || 'Detalles del Servicio'}</DialogTitle>
+                            <DialogDescription className="sr-only">Información detallada del servicio seleccionado</DialogDescription>
                         </DialogHeader>
+                        <DialogClose asChild>
+                            <Button variant="ghost" className="absolute right-4 top-4"><X className="h-4 w-4" /></Button>
+                        </DialogClose>
                         <Tabs defaultValue="details" className="relative mr-auto w-full">
                             <TabsList className="w-full">
                                 <TabsTrigger value="details">Detalles</TabsTrigger>
