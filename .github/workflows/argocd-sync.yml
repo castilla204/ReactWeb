@@ -1,0 +1,34 @@
+name: ArgoCD Sync
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'k8s/**'
+      - '.github/workflows/argocd-sync.yml'
+
+jobs:
+  sync-argocd:
+    name: Sync ArgoCD Application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Sync ArgoCD Application
+        run: |
+          argocd app sync react-web --server ${{ secrets.ARGOCD_SERVER }} --auth-token ${{ secrets.ARGOCD_TOKEN }} || \
+          kubectl apply -f k8s/ -n default && \
+          kubectl rollout restart deployment/react-web -n default
+

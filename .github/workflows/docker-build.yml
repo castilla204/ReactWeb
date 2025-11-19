@@ -1,5 +1,6 @@
-# .github/workflows/docker-build-push.yml
-name: Docker Build and Push
+# Workflow legacy - Mantener para compatibilidad
+# El workflow principal es ci-cd.yml
+name: Docker Build and Push (Legacy)
 
 on:
   push:
@@ -31,4 +32,5 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/reactweb:latest
             ${{ secrets.DOCKER_USERNAME }}/reactweb:${{ github.sha }}
-          # Sin caché para forzar un build limpio
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/reactweb:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/reactweb:buildcache,mode=max
