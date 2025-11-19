@@ -76,6 +76,10 @@ spec:
         - name: ssl-certs
           mountPath: "/etc/nginx/certs"
           readOnly: true
+        - name: nginx-cache
+          mountPath: "/var/cache/nginx"
+        - name: nginx-tmp
+          mountPath: "/var/run"
       volumes:
       - name: ssl-certs
         secret:
@@ -85,6 +89,10 @@ spec:
             path: origin-cert.pem
           - key: tls.key
             path: origin-key.key
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-tmp
+        emptyDir: {}
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
