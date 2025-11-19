@@ -3,14 +3,21 @@ kind: Service
 metadata:
   name: react-web-svc
   namespace: default
+  labels:
+    app: react-web
+    managed-by: argocd
 spec:
+  type: ClusterIP
   ports:
   - name: http
     port: 80
     targetPort: 80
+    protocol: TCP
   - name: https
     port: 443
     targetPort: 443
+    protocol: TCP
   selector:
     app: react-web
-  type: ClusterIP
+  sessionAffinity: None
+
