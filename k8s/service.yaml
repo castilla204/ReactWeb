@@ -20,20 +20,4 @@ spec:
   selector:
     app: react-web
   sessionAffinity: None
----
-apiVersion: v1
-kind: ServiceMonitor
-metadata:
-  name: react-web-metrics
-  namespace: default
-  labels:
-    app: react-web
-spec:
-  selector:
-    matchLabels:
-      app: react-web
-  endpoints:
-  - port: http
-    path: /metrics
-    interval: 30s
 
