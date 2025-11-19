@@ -36,10 +36,16 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Si package-lock.json está desincronizado, regenerarlo
-          npm install --package-lock-only || npm install
-          # Verificar que estén sincronizados
-          npm ci
+          # Intentar npm ci primero (instalación limpia y determinista)
+          if ! npm ci; then
+            echo "⚠️ package-lock.json está desincronizado con package.json"
+            echo "🔄 Regenerando package-lock.json..."
+            npm install --package-lock-only
+            echo "✅ package-lock.json regenerado"
+            echo "⚠️ IMPORTANTE: Hacer commit del package-lock.json actualizado"
+            # Intentar npm ci de nuevo
+            npm ci
+          fi
 
       - name: Run linter
         run: npm run lint || true
