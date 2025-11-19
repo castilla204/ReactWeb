@@ -36,16 +36,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Intentar npm ci primero (instalación limpia y determinista)
-          if ! npm ci; then
-            echo "⚠️ package-lock.json está desincronizado con package.json"
-            echo "🔄 Regenerando package-lock.json..."
-            npm install --package-lock-only
-            echo "✅ package-lock.json regenerado"
-            echo "⚠️ IMPORTANTE: Hacer commit del package-lock.json actualizado"
-            # Intentar npm ci de nuevo
-            npm ci
-          fi
+          # Regenerar package-lock.json si está desincronizado con package.json
+          npm install --package-lock-only
+          # Verificar que estén sincronizados
+          npm ci
 
       - name: Run linter
         run: npm run lint || true
@@ -76,6 +70,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies and update package-lock.json
+        run: |
+          # Regenerar package-lock.json para asegurar que esté sincronizado
+          npm install --package-lock-only
+          # Verificar que estén sincronizados
+          npm ci
 
       - name: Run Trivy vulnerability scanner
         id: trivy-scan
