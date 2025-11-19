@@ -1,4 +1,4 @@
-const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : 'https://api.inspecciono.io'; 
+const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : 'https://api.atrapo.io'; 
 const API_PATH = '/api'; 
 
 export const API_CONFIG = {
