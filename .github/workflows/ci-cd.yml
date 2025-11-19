@@ -11,6 +11,10 @@ on:
       - develop
   workflow_dispatch:
 
+permissions:
+  contents: read
+  security-events: write
+
 env:
   REGISTRY: docker.io
   IMAGE_NAME: erizo9/reactweb
@@ -129,7 +133,8 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
+        continue-on-error: true  # No fallar el workflow si falla el upload
         with:
           sarif_file: 'trivy-results.sarif'
 
