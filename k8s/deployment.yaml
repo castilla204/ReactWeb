@@ -3,8 +3,19 @@ kind: Deployment
 metadata:
   name: react-web
   namespace: default
+  labels:
+    app: react-web
+    version: v1
+    managed-by: argocd
+  annotations:
+    deployment.kubernetes.io/revision-history-limit: "10"
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: react-web
@@ -12,21 +23,63 @@ spec:
     metadata:
       labels:
         app: react-web
+        version: v1
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        fsGroup: 101
       containers:
       - name: react-web
         image: erizo9/reactweb:latest
         imagePullPolicy: Always
         ports:
-        - containerPort: 80
-        - containerPort: 443
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        - name: https
+          containerPort: 443
+          protocol: TCP
         env:
         - name: NODE_ENV
           value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
         volumeMounts:
         - name: ssl-certs
           mountPath: "/etc/nginx/certs"
           readOnly: true
+        - name: nginx-cache
+          mountPath: "/var/cache/nginx"
+        - name: nginx-tmp
+          mountPath: "/var/run"
       volumes:
       - name: ssl-certs
         secret:
@@ -36,12 +89,18 @@ spec:
             path: origin-cert.pem
           - key: tls.key
             path: origin-key.key
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-tmp
+        emptyDir: {}
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: react-web-hpa
   namespace: default
+  labels:
+    app: react-web
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -56,3 +115,37 @@ spec:
       target:
         type: Utilization
         averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 2
+        periodSeconds: 30
+      selectPolicy: Max
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: react-web-pdb
+  namespace: default
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: react-web
