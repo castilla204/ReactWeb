@@ -208,6 +208,13 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
         if (connection) {
             console.log('[10:45 CEST] Stopping existing SignalR connection');
+            if (conversation?.id) {
+                try {
+                    await connection.invoke('LeaveConversation', conversation.id);
+                } catch (err) {
+                    console.warn('[10:45 CEST] Failed to leave previous conversation before reconnecting:', err);
+                }
+            }
             await connection.stop();
             setConnection(null);
         }
@@ -233,7 +240,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         const transport = window.WebSocket ? HttpTransportType.WebSockets : HttpTransportType.ServerSentEvents;
 
         const conn = new HubConnectionBuilder()
-            .withUrl(`${API_CONFIG.baseUrl}/chatHub?conversationId=${conversation.id}`, {
+            .withUrl(`${API_CONFIG.baseUrl}/chatHub`, {
                 accessTokenFactory: () => token,
                 transport,
                 withCredentials: true,
@@ -255,8 +262,8 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
         conn.onreconnected((connectionId) => {
             console.log('[10:45 CEST] SignalR reconnected, new Connection ID:', connectionId);
-            if (conversation?.id && user?.id) {
-                conn.invoke('JoinConversation', conversation.id, user.id).catch((err) =>
+            if (conversation?.id) {
+                conn.invoke('JoinConversation', conversation.id).catch((err) =>
                     console.error('[10:45 CEST] Failed to rejoin conversation:', err)
                 );
             }
@@ -335,8 +342,8 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         try {
             await conn.start();
             console.log(`[10:45 CEST] SignalR connected for conversation ${conversation.id}, Connection ID: ${conn.connectionId}`);
-            await conn.invoke('JoinConversation', conversation.id, user.id);
-            console.log(`[10:45 CEST] Successfully joined conversation ${conversation.id} with user ${user.id}`);
+            await conn.invoke('JoinConversation', conversation.id);
+            console.log(`[10:45 CEST] Successfully joined conversation ${conversation.id}`);
             setConnection(conn);
         } catch (err) {
             console.error('[10:45 CEST] SignalR connection error:', err);
@@ -586,6 +593,11 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         return () => {
             if (connection) {
                 console.log('[10:45 CEST] Cleaning up SignalR connection');
+                if (conversation?.id) {
+                    connection.invoke('LeaveConversation', conversation.id).catch((err) =>
+                        console.warn('[10:45 CEST] Failed to leave conversation gracefully:', err)
+                    );
+                }
                 connection.stop();
                 setConnection(null);
             }
