@@ -241,6 +241,21 @@ class AuthService {
 
             let response = await originalFetch(url, fetchOptions);
 
+            // ✅ Si recibimos 403 por MFA faltante → Redirigir a setup
+            if (response.status === 403 && !(fetchOptions as any)._mfaChecked) {
+                try {
+                    const data = await response.clone().json();
+                    if (data.error === 'MFA_REQUIRED' || data.requiresMfaSetup) {
+                        (fetchOptions as any)._mfaChecked = true;
+                        console.warn('[AuthService] MFA required detected, redirecting to setup');
+                        window.location.href = '/mfa/setup-required';
+                        return response;
+                    }
+                } catch {
+                    // Si no se puede parsear JSON, continuar normalmente
+                }
+            }
+
             // Si recibimos 401, intentar renovar token (solo si tenemos refresh token)
             if (response.status === 401 && !(fetchOptions as any)._retry) {
                 const refreshToken = self.getRefreshToken();
