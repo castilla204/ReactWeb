@@ -16,13 +16,22 @@ const getStatusIcon = (status: string) => {
         case STRIPE_STATUS.APPROVED:
             return <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-600" />;
         case STRIPE_STATUS.PENDING:
+        case STRIPE_STATUS.PENDING_VERIFICATION:
             return <Clock className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600" />;
+        case STRIPE_STATUS.ACTION_REQUIRED:
+        case STRIPE_STATUS.REQUIREMENTS_DUE:
+        case STRIPE_STATUS.RESTRICTED_SOON:
+            return <AlertTriangle className="w-4 h-4 lg:w-5 lg:h-5 text-amber-500" />;
+        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
+        case STRIPE_STATUS.RESTRICTED:
+            return <AlertTriangle className="w-4 h-4 lg:w-5 lg:h-5 text-orange-600" />;
+        case STRIPE_STATUS.DISABLED:
         case STRIPE_STATUS.REJECTED:
             return <XCircle className="w-4 h-4 lg:w-5 lg:h-5 text-red-600" />;
         case STRIPE_STATUS.DEAUTHORIZED:
             return <UserX className="w-4 h-4 lg:w-5 lg:h-5 text-purple-600" />;
         case STRIPE_STATUS.NOT_REQUESTED:
-            return null; // Sin icono para NotRequested
+            return <AlertTriangle className="w-4 h-4 lg:w-5 lg:h-5 text-gray-500" />;
         default:
             return <AlertTriangle className="w-4 h-4 lg:w-5 lg:h-5 text-orange-600" />;
     }
@@ -53,13 +62,22 @@ const getStatusIconClass = (status: string) => {
         case STRIPE_STATUS.APPROVED:
             return 'bg-green-100 text-green-600';
         case STRIPE_STATUS.PENDING:
+        case STRIPE_STATUS.PENDING_VERIFICATION:
             return 'bg-blue-100 text-blue-600';
+        case STRIPE_STATUS.ACTION_REQUIRED:
+        case STRIPE_STATUS.REQUIREMENTS_DUE:
+        case STRIPE_STATUS.RESTRICTED_SOON:
+            return 'bg-amber-100 text-amber-600';
+        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
+        case STRIPE_STATUS.RESTRICTED:
+            return 'bg-orange-100 text-orange-600';
+        case STRIPE_STATUS.DISABLED:
         case STRIPE_STATUS.REJECTED:
             return 'bg-red-100 text-red-600';
         case STRIPE_STATUS.DEAUTHORIZED:
             return 'bg-purple-100 text-purple-600';
         default:
-            return 'bg-orange-100 text-orange-600';
+            return 'bg-gray-100 text-gray-600';
     }
 };
 
@@ -68,13 +86,22 @@ const getStatusBadgeClass = (status: string) => {
         case STRIPE_STATUS.APPROVED:
             return 'bg-green-100 text-green-800 border-green-200';
         case STRIPE_STATUS.PENDING:
+        case STRIPE_STATUS.PENDING_VERIFICATION:
             return 'bg-blue-100 text-blue-800 border-blue-200';
+        case STRIPE_STATUS.ACTION_REQUIRED:
+        case STRIPE_STATUS.REQUIREMENTS_DUE:
+        case STRIPE_STATUS.RESTRICTED_SOON:
+            return 'bg-amber-100 text-amber-800 border-amber-200';
+        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
+        case STRIPE_STATUS.RESTRICTED:
+            return 'bg-orange-100 text-orange-800 border-orange-200';
+        case STRIPE_STATUS.DISABLED:
         case STRIPE_STATUS.REJECTED:
             return 'bg-red-100 text-red-800 border-red-200';
         case STRIPE_STATUS.DEAUTHORIZED:
             return 'bg-purple-100 text-purple-800 border-purple-200';
         default:
-            return 'bg-orange-100 text-orange-800 border-orange-200';
+            return 'bg-gray-100 text-gray-800 border-gray-200';
     }
 };
 
@@ -170,6 +197,8 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
         }
     };
 
+    const futureRequirementsText = status.stripeFutureRequirements || statusInfo.futureRequirementsText;
+
     return (
         <div 
             className={`bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-lg p-8 lg:p-10 shadow-lg shadow-gray-200/30 w-full max-w-4xl ${className}`}
@@ -181,7 +210,7 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
         >
             <div className="mb-6 lg:mb-8">
                 {/* Barra de progreso para NotRequested */}
-                {status.stripeStatus === 'NotRequested' && (
+                {status.stripeStatus === STRIPE_STATUS.NOT_REQUESTED && (
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-medium text-gray-500">Paso 1: Registro</span>
@@ -193,13 +222,13 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                     </div>
                 )}
                 
-                <div className="mb-3 lg:mb-4">
-                    <h3 className="text-lg lg:text-xl font-semibold text-gray-900">
-                        {status.stripeStatus === 'NotRequested' ? 'Termina de Configurar tu Cuenta de Experto' : 'Estado de Cuenta de Pagos'}
-                    </h3>
-                </div>
+                    <div className="mb-3 lg:mb-4">
+                        <h3 className="text-lg lg:text-xl font-semibold text-gray-900">
+                            {status.stripeStatus === STRIPE_STATUS.NOT_REQUESTED ? 'Termina de Configurar tu Cuenta de Experto' : 'Estado de Cuenta de Pagos'}
+                        </h3>
+                    </div>
                 <p className="text-gray-600 text-xs lg:text-sm">
-                    {status.stripeStatus === 'NotRequested' 
+                    {status.stripeStatus === STRIPE_STATUS.NOT_REQUESTED 
                         ? 'Completa la configuración de tu cuenta de pagos para finalizar tu registro como experto'
                         : 'Estado actual de tu cuenta de pagos de Inspecciono'
                     }
@@ -217,10 +246,29 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                         </p>
                     </div>
                 )}
+                
+                {(statusInfo.deadlineText || futureRequirementsText) && (
+                    <div className="mt-3 space-y-2">
+                        {statusInfo.deadlineText && (
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <p className="text-sm text-amber-900">
+                                    <span className="font-medium">Plazo:</span> {statusInfo.deadlineText}
+                                </p>
+                            </div>
+                        )}
+                        {futureRequirementsText && (
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <p className="text-sm text-amber-900">
+                                    <span className="font-medium">Requisitos detectados:</span> {futureRequirementsText}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
             
             {/* Ocultar botón si Rejected y canRetryOnboarding es false */}
-            {(status.stripeStatus !== 'Rejected' || status.canRetryOnboarding !== false) && (
+            {(status.stripeStatus !== STRIPE_STATUS.REJECTED || status.canRetryOnboarding !== false) && (
                 <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
                     <button 
                         onClick={handleAction}
@@ -235,7 +283,7 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
             )}
             
             {/* Mostrar información de contacto cuando Rejected y canRetryOnboarding es false */}
-            {status.stripeStatus === 'Rejected' && status.canRetryOnboarding === false && (
+            {status.stripeStatus === STRIPE_STATUS.REJECTED && status.canRetryOnboarding === false && (
                 <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                     <p className="text-sm text-gray-700">
                         <span className="font-medium">Soporte técnico:</span>{' '}
@@ -246,10 +294,10 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                 </div>
             )}
             
-            {(status.stripeAccountId || status.canCreateServices || status.rejectionReason || status.stripeStatus === 'NotRequested') && (
+            {(status.stripeAccountId || status.canCreateServices || status.rejectionReason || status.stripeStatus === STRIPE_STATUS.NOT_REQUESTED) && (
                 <div className="mt-8 pt-6 border-t border-gray-200">
                     <div className="space-y-4">
-                        {status.stripeStatus === 'NotRequested' && (
+                        {status.stripeStatus === STRIPE_STATUS.NOT_REQUESTED && (
                             <div className="bg-gray-50 rounded-lg p-4 lg:p-6 border border-gray-200">
                                 <div className="text-xs lg:text-sm text-gray-700">
                                     <div className="font-semibold mb-2 lg:mb-3 text-sm lg:text-base text-gray-800">Documentación requerida</div>
@@ -273,6 +321,13 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                             <div className="flex items-center gap-2 text-sm text-green-700">
                                 <CheckCircle className="w-4 h-4" />
                                 <span className="font-medium">Listo para trabajar - Puedes crear servicios y recibir pagos</span>
+                            </div>
+                        )}
+                        
+                        {!status.canReceivePayments && status.stripeStatus !== STRIPE_STATUS.NOT_REQUESTED && (
+                            <div className="flex items-center gap-2 text-sm text-red-700">
+                                <XCircle className="w-4 h-4" />
+                                <span className="font-medium">Los pagos están bloqueados hasta completar los requisitos en Stripe</span>
                             </div>
                         )}
                         
