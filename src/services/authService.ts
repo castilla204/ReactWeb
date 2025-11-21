@@ -18,6 +18,8 @@ class AuthService {
     private refreshTimeout: NodeJS.Timeout | null = null;
     // ✅ BEST PRACTICE: Prevenir race conditions en token refresh
     private refreshPromise: Promise<boolean> | null = null;
+    // ✅ Cola de requests pendientes esperando verificación MFA
+    private pendingMfaRequests: Array<{ url: string; options: RequestInit; resolve: (response: Response) => void; reject: (error: any) => void }> = [];
 
     constructor() {
         this.initFromStorage();
@@ -241,13 +243,42 @@ class AuthService {
 
             let response = await originalFetch(url, fetchOptions);
 
-            // ✅ Si recibimos 403 por MFA faltante → Redirigir a setup
+            // ✅ Si recibimos 403 por MFA → Manejar según el tipo
             if (response.status === 403 && !(fetchOptions as any)._mfaChecked) {
                 try {
                     const data = await response.clone().json();
+                    
+                    // ✅ MFA_VERIFICATION_REQUIRED: MFA habilitado pero no verificado → Mostrar verificación
+                    if (data.error === 'MFA_VERIFICATION_REQUIRED') {
+                        (fetchOptions as any)._mfaChecked = true;
+                        console.warn('[AuthService] MFA verification required, showing verification modal');
+                        
+                        // Guardar request en cola y mostrar modal
+                        return new Promise<Response>((resolve, reject) => {
+                            self.pendingMfaRequests.push({
+                                url: url as string,
+                                options: fetchOptions,
+                                resolve,
+                                reject
+                            });
+                            
+                            // Disparar evento para mostrar modal de verificación
+                            const mfaVerificationEvent = new CustomEvent('showMfaVerification', {
+                                detail: {
+                                    onSuccess: async () => {
+                                        // Después de verificación exitosa, reintentar todos los requests pendientes
+                                        await self.retryPendingMfaRequests();
+                                    }
+                                }
+                            });
+                            window.dispatchEvent(mfaVerificationEvent);
+                        });
+                    }
+                    
+                    // ✅ MFA_REQUIRED: MFA no configurado → Redirigir a setup
                     if (data.error === 'MFA_REQUIRED' || data.requiresMfaSetup) {
                         (fetchOptions as any)._mfaChecked = true;
-                        console.warn('[AuthService] MFA required detected, redirecting to setup');
+                        console.warn('[AuthService] MFA setup required, redirecting to setup');
                         window.location.href = '/mfa/setup-required';
                         return response;
                     }
@@ -257,7 +288,9 @@ class AuthService {
             }
 
             // Si recibimos 401, intentar renovar token (solo si tenemos refresh token)
-            if (response.status === 401 && !(fetchOptions as any)._retry) {
+            // ✅ EXCEPCIÓN: No intentar renovar token para verifyMFA porque un 401 puede ser código inválido, no token expirado
+            const isMfaVerifyEndpoint = typeof url === 'string' && url.includes('/api/auth/mfa/verify');
+            if (response.status === 401 && !(fetchOptions as any)._retry && !isMfaVerifyEndpoint) {
                 const refreshToken = self.getRefreshToken();
                 
                 // Solo intentar refrescar si tenemos refresh token disponible
@@ -293,7 +326,33 @@ class AuthService {
     }
 
     // ============================================
-    // 5. LOGOUT
+    // 5. REINTENTAR REQUESTS PENDIENTES DESPUÉS DE MFA
+    // ============================================
+    private async retryPendingMfaRequests() {
+        const requests = [...this.pendingMfaRequests];
+        this.pendingMfaRequests = [];
+        
+        const originalFetch = window.fetch;
+        const newToken = this.getAccessToken();
+        
+        for (const request of requests) {
+            try {
+                if (newToken) {
+                    const headers = new Headers(request.options.headers);
+                    headers.set('Authorization', `Bearer ${newToken}`);
+                    request.options.headers = headers;
+                }
+                (request.options as any)._mfaChecked = false; // Permitir reintento
+                const response = await originalFetch(request.url, request.options);
+                request.resolve(response);
+            } catch (error) {
+                request.reject(error);
+            }
+        }
+    }
+
+    // ============================================
+    // 6. LOGOUT
     // ============================================
     async logout() {
         try {
