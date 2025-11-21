@@ -284,22 +284,49 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     attachmentUrls: Array.isArray(message.attachmentUrls) ? message.attachmentUrls : [],
                 };
                 console.log('[10:45 CEST] Updating conversation state with new message:', typedMessage);
-                queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
-                    if (!prev) {
-                        console.log('[10:45 CEST] No previous conversation, creating new with message');
-                        return conversation ? { ...conversation, messages: [typedMessage] } : undefined;
+                
+                // Update both query keys (searchId and searchHireId) to ensure consistency
+                const updateQueryData = (queryKey: any[]) => {
+                    queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
+                        if (!prev) {
+                            console.log('[10:45 CEST] No previous conversation, creating new with message');
+                            return conversation ? { ...conversation, messages: [typedMessage] } : undefined;
+                        }
+                        const updatedMessages = [
+                            ...prev.messages.filter((m) => m.id !== typedMessage.id),
+                            { ...typedMessage, conversation: undefined },
+                        ].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
+                        console.log('[10:45 CEST] Updated messages:', updatedMessages);
+                        return {
+                            ...prev,
+                            messages: updatedMessages,
+                        };
+                    });
+                };
+                
+                // Update both possible query keys
+                if (useSearchHireEndpoint && searchHireId) {
+                    updateQueryData(['conversation', 'searchHire', searchHireId]);
+                }
+                if (searchId) {
+                    updateQueryData(['conversation', searchId]);
+                }
+                
+                // Invalidate queries to trigger re-render and scroll
+                queryClient.invalidateQueries({ queryKey: ['conversation'] });
+                
+                // Trigger scroll to bottom after message is added
+                setTimeout(() => {
+                    const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                    if (chatContainer) {
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
                     }
-                    const updatedMessages = [
-                        ...prev.messages.filter((m) => m.id !== typedMessage.id),
-                        { ...typedMessage, conversation: undefined },
-                    ].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
-                    console.log('[10:45 CEST] Updated messages:', updatedMessages);
-                    return {
-                        ...prev,
-                        messages: updatedMessages,
-                    };
-                });
-                queryClient.invalidateQueries({ queryKey: ['conversation', searchId] });
+                    // Also try the messages container directly
+                    const messagesContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
+                    if (messagesContainer) {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }
+                }, 100);
             } else {
                 console.log('[10:45 CEST] Message ignored: not for this conversation', {
                     receivedConversationId: message?.conversationId,
@@ -403,25 +430,49 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         },
         onSuccess: (message) => {
             console.log('[10:45 CEST] Message sent successfully:', message);
-            queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
-                if (!prev && conversation) {
-                    console.log('[10:45 CEST] No previous conversation, using current conversation');
-                    return { ...conversation, messages: [message] };
-                }
-                if (!prev) {
-                    console.warn('[10:45 CEST] No previous or current conversation, cannot update');
-                    refetch();
-                    return undefined;
-                }
-                return {
-                    ...prev,
-                    messages: [...prev.messages.filter((m) => m.id !== message.id), message].sort(
-                        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-                    ),
-                };
-            });
+            
+            const updateQueryData = (queryKey: any[]) => {
+                queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
+                    if (!prev && conversation) {
+                        console.log('[10:45 CEST] No previous conversation, using current conversation');
+                        return { ...conversation, messages: [message] };
+                    }
+                    if (!prev) {
+                        console.warn('[10:45 CEST] No previous or current conversation, cannot update');
+                        return undefined;
+                    }
+                    return {
+                        ...prev,
+                        messages: [...prev.messages.filter((m) => m.id !== message.id), message].sort(
+                            (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+                        ),
+                    };
+                });
+            };
+            
+            // Update both possible query keys
+            if (useSearchHireEndpoint && searchHireId) {
+                updateQueryData(['conversation', 'searchHire', searchHireId]);
+            }
+            if (searchId) {
+                updateQueryData(['conversation', searchId]);
+            }
+            
             setNewMessage('');
             showToast('success', 'Mensaje enviado con éxito.', 3000);
+            
+            // Trigger scroll to bottom after message is sent
+            setTimeout(() => {
+                const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+                // Also try the messages container directly
+                const messagesContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }, 100);
             /*
             setNotifications((prev) => [
                 ...prev,

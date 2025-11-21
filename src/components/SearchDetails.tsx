@@ -151,20 +151,30 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const [showMoneyDistribution, setShowMoneyDistribution] = useState(false);
     const [selectedDistributionStatus, setSelectedDistributionStatus] = useState<string>('');
 
-    // Prevent body scroll when chat is active on mobile
+    // Prevent body scroll when chat is active on mobile and ensure scroll to bottom
     useEffect(() => {
         if (activeTab === 'chat') {
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.width = '100%';
             
-            // Scroll chat to bottom when switching to chat tab
-            setTimeout(() => {
-                const chatContainer = document.querySelector('[data-chat-messages]');
+            // Scroll chat to bottom when switching to chat tab - multiple attempts for reliability
+            const scrollToBottom = () => {
+                const chatContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
                 if (chatContainer) {
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 }
-            }, 150);
+                // Also try to find the messagesEndRef element
+                const messagesEnd = chatContainer?.querySelector('[ref]') || chatContainer?.lastElementChild;
+                if (messagesEnd) {
+                    messagesEnd.scrollIntoView({ behavior: 'auto', block: 'end' });
+                }
+            };
+            
+            // Try multiple times to ensure it works
+            setTimeout(scrollToBottom, 100);
+            setTimeout(scrollToBottom, 250);
+            setTimeout(scrollToBottom, 400);
         } else {
             document.body.style.overflow = '';
             document.body.style.position = '';
@@ -179,6 +189,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     }, [activeTab]);
 
     const { user } = useAuth();
+
+    // Scroll page to top when component mounts or searchId changes
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+    }, [searchIdParam]);
 
     // ? HOOK OPTIMIZADO - Reemplaza múltiples queries
     // ✅ Obtener searchHireId desde la URL o intentar obtenerlo de los datos después
@@ -1133,13 +1148,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
             {/* Main Layout - Dos columnas en desktop, tabs en móvil */}
             {!isNetworkErr && (
-            <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)] bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-950 dark:to-gray-900 lg:gap-6 lg:p-6">
+            <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)] lg:h-[calc(100vh-80px)] bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-950 dark:to-gray-900 lg:gap-6 lg:p-6 overflow-hidden">
                 {/* Chat Section - Izquierda en desktop, tabs en móvil */}
                 {canViewChat && (
-                    <div className="flex-1 lg:w-[60%] xl:w-[65%] bg-white dark:bg-gray-900 flex flex-col lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-200/50 dark:border-gray-800/50 lg:overflow-hidden flex-shrink-0">
+                    <div className="flex-1 lg:w-[60%] xl:w-[65%] bg-white dark:bg-gray-900 flex flex-col lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-200/50 dark:border-gray-800/50 lg:overflow-hidden flex-shrink-0 h-full lg:h-auto">
                         {/* Tabs - Solo en móvil */}
-                        <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')} className="w-full flex flex-col flex-1 min-h-0">
-                            <div className="border-b border-border bg-background/95 backdrop-blur-sm p-2 sticky top-[80px] z-40 lg:hidden">
+                        <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')} className="w-full flex flex-col flex-1 min-h-0 h-full">
+                            <div className="border-b border-border bg-background/95 backdrop-blur-sm p-2 sticky top-0 z-40 lg:hidden flex-shrink-0">
                                 <TabsList className="w-full grid grid-cols-2 h-10">
                                     <TabsTrigger value="chat" className="flex items-center gap-2 text-sm font-medium">
                                         <MessageSquare className="w-4 h-4" />
@@ -1153,8 +1168,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </div>
 
                             {/* Chat Content - Visible siempre en desktop, solo en tab chat en móvil */}
-                            <TabsContent value="chat" className="mt-0 flex-1 flex flex-col lg:mt-0 lg:flex min-h-0">
-                                <div className="h-full flex-1 min-h-0 relative flex flex-col">
+                            <TabsContent value="chat" className="mt-0 flex-1 flex flex-col lg:mt-0 lg:flex min-h-0 h-full">
+                                <div className="h-full flex-1 min-h-0 relative flex flex-col overflow-hidden">
                                     <Chat 
                                         searchId={searchId} 
                                         searchHireId={searchHireId}
