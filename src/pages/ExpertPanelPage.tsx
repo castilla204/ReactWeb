@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -29,7 +29,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
 import { ErrorDisplay } from '../components/ErrorDisplay';
-import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError } from '../hooks/useExpertStripeStatus';
+import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError, STRIPE_STATUS } from '../hooks/useExpertStripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
 import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
@@ -143,7 +143,7 @@ export function ExpertPanelPage() {
 
     const { hires, isLoading: isLoadingHires, error: hiresError } = useExpertHires();
 
-    const { status: stripeStatus, statusInfo: stripeStatusInfo } = useExpertStripeStatus();
+    const { status: stripeStatus } = useExpertStripeStatus();
     const { modalState, hideModal } = useStripeStatusModal();
     const { openAccountLink, isLoading: isAccountLinkLoading } = useStripeAccountLink();
     const { toggleVacationMode, isToggling } = useVacationMode();
@@ -198,7 +198,7 @@ export function ExpertPanelPage() {
     };
     
     useEffect(() => {
-        if (stripeStatus?.stripeStatus === 'Approved' && stripeStatus?.onboardingCompleted && !hasClearedCache) {
+        if (stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted && !hasClearedCache) {
             console.log('🧹 ExpertPanelPage: Status changed to APPROVED, clearing cache and refreshing data');
             setHasClearedCache(true);
             // Limpiar cache y refrescar datos
@@ -725,7 +725,7 @@ export function ExpertPanelPage() {
                                 setIsStripeLoading(true);
                                 try {
                                     // Si es Rejected y puede reintentar, usar restart-onboarding
-                                    if (stripeStatus?.stripeStatus === 'Rejected' && stripeStatus?.canRetryOnboarding !== false) {
+                                    if (stripeStatus?.stripeStatus === STRIPE_STATUS.REJECTED && stripeStatus?.canRetryOnboarding !== false) {
                                         await restartAndStartOnboarding();
                                     } else {
                                         // Para NotRequested, Pending (onboardingCompleted=false), y Deauthorized
