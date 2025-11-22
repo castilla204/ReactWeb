@@ -19,7 +19,7 @@ export interface ActiveContract {
 }
 
 export interface AccountDeletionRequest {
-  reason?: string;
+  reason?: string; // Opcional: razón para eliminar la cuenta
 }
 
 export interface AccountDeletionResponse {

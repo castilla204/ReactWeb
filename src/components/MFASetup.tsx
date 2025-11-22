@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
-import { Shield, CheckCircle, Download, Copy, AlertCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Shield, CheckCircle, Download, Copy, AlertCircle, Clock } from 'lucide-react';
 import { mfaService } from '../services/mfaService';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { showToast } from '../lib/toast';
+import {
+    InputOTP,
+    InputOTPGroup,
+    InputOTPSlot,
+    InputOTPSeparator,
+} from './ui/input-otp';
 
 interface MFASetupProps {
     onComplete: () => void;
@@ -20,32 +25,76 @@ export function MFASetup({ onComplete, onCancel }: MFASetupProps) {
     const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>('');
+    const [rateLimitSeconds, setRateLimitSeconds] = useState<number | null>(null);
+    const isProcessingRef = useRef(false); // ✅ Prevenir múltiples clics simultáneos
+    const rateLimitIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // ✅ Cleanup del intervalo al desmontar
+    useEffect(() => {
+        return () => {
+            if (rateLimitIntervalRef.current) {
+                clearInterval(rateLimitIntervalRef.current);
+            }
+        };
+    }, []);
 
     // ============================================
     // PASO 1: Obtener QR Code
     // ============================================
     const handleStartSetup = async () => {
+        // ✅ Prevenir múltiples clics simultáneos
+        if (isProcessingRef.current || loading) {
+            return;
+        }
+
+        isProcessingRef.current = true;
         setLoading(true);
         setError('');
+        setRateLimitSeconds(null);
+
+        // ✅ Limpiar intervalo anterior si existe
+        if (rateLimitIntervalRef.current) {
+            clearInterval(rateLimitIntervalRef.current);
+            rateLimitIntervalRef.current = null;
+        }
 
         try {
             const result = await mfaService.setupMFA();
             setQrCode(result.qrCodeBase64);
             setManualKey(result.manualEntryKey);
             setStep(2);
+            setError('');
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Error al configurar MFA';
-            // Filtrar mensajes de rate limiting
-            const filteredMessage = errorMessage.includes('Rate limited') || errorMessage.includes('429') 
-                ? 'Error temporal. Por favor intenta de nuevo en un momento.' 
-                : errorMessage;
-            setError(filteredMessage);
-            // ❌ TEMPORALMENTE DESHABILITADO: No mostrar toast de error para rate limiting
-            if (!errorMessage.includes('Rate limited') && !errorMessage.includes('429')) {
-                showToast('error', filteredMessage);
+            
+            // ✅ Manejar rate limiting con contador
+            if (err.isRateLimit && err.retryAfter) {
+                const seconds = err.retryAfter;
+                setRateLimitSeconds(seconds);
+                setError(`Demasiadas solicitudes. Por favor espera ${seconds} segundos antes de intentar de nuevo.`);
+                
+                // ✅ Iniciar contador regresivo
+                rateLimitIntervalRef.current = setInterval(() => {
+                    setRateLimitSeconds((prev) => {
+                        if (prev === null || prev <= 1) {
+                            if (rateLimitIntervalRef.current) {
+                                clearInterval(rateLimitIntervalRef.current);
+                                rateLimitIntervalRef.current = null;
+                            }
+                            return null;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
+                
+                showToast('error', `Demasiadas solicitudes. Espera ${seconds} segundos.`, 5000);
+            } else {
+                setError(errorMessage);
+                showToast('error', errorMessage);
             }
         } finally {
             setLoading(false);
+            isProcessingRef.current = false;
         }
     };
 
@@ -107,12 +156,33 @@ export function MFASetup({ onComplete, onCancel }: MFASetupProps) {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {error && (
-                            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-sm text-destructive">
-                                {error}
+                            <div className={`p-3 border rounded-md text-sm ${
+                                rateLimitSeconds !== null 
+                                    ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-700 dark:text-yellow-400' 
+                                    : 'bg-destructive/10 border-destructive/20 text-destructive'
+                            }`}>
+                                <div className="flex items-center gap-2">
+                                    {rateLimitSeconds !== null && <Clock className="w-4 h-4" />}
+                                    <span>{error}</span>
+                                </div>
+                                {rateLimitSeconds !== null && rateLimitSeconds > 0 && (
+                                    <div className="mt-2 text-xs">
+                                        Tiempo restante: <strong>{rateLimitSeconds} segundos</strong>
+                                    </div>
+                                )}
                             </div>
                         )}
-                        <Button onClick={handleStartSetup} disabled={loading} className="w-full">
-                            {loading ? 'Cargando...' : 'Comenzar Configuración'}
+                        <Button 
+                            onClick={handleStartSetup} 
+                            disabled={loading || rateLimitSeconds !== null} 
+                            className="w-full"
+                        >
+                            {loading 
+                                ? 'Cargando...' 
+                                : rateLimitSeconds !== null 
+                                    ? `Espera ${rateLimitSeconds}s...` 
+                                    : 'Comenzar Configuración'
+                            }
                         </Button>
                         {onCancel && (
                             <Button variant="outline" onClick={onCancel} className="w-full">
@@ -182,17 +252,27 @@ export function MFASetup({ onComplete, onCancel }: MFASetupProps) {
                         {/* Formulario de verificación */}
                         <form onSubmit={handleEnableMFA} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="totpCode">Código de 6 dígitos</Label>
-                                <Input
-                                    id="totpCode"
-                                    type="text"
-                                    value={totpCode}
-                                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                    placeholder="123456"
-                                    maxLength={6}
-                                    required
-                                    className="text-center text-2xl tracking-widest font-mono"
-                                />
+                                <Label>Código de 6 dígitos</Label>
+                                <div className="flex justify-center">
+                                    <InputOTP
+                                        maxLength={6}
+                                        value={totpCode}
+                                        onChange={(value) => setTotpCode(value)}
+                                        disabled={loading}
+                                    >
+                                        <InputOTPGroup>
+                                            <InputOTPSlot index={0} />
+                                            <InputOTPSlot index={1} />
+                                            <InputOTPSlot index={2} />
+                                        </InputOTPGroup>
+                                        <InputOTPSeparator />
+                                        <InputOTPGroup>
+                                            <InputOTPSlot index={3} />
+                                            <InputOTPSlot index={4} />
+                                            <InputOTPSlot index={5} />
+                                        </InputOTPGroup>
+                                    </InputOTP>
+                                </div>
                             </div>
 
                             {error && (

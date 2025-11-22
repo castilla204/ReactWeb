@@ -5,6 +5,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import App from './App.tsx'
 import { AuthProvider } from './contexts/AuthContext'
 import { CategoryProvider } from './contexts/CategoryContext'
+import { MfaVerificationProvider } from './contexts/MfaVerificationContext'
+import { DisableMFAModalProvider } from './contexts/DisableMFAModalContext'
 import './index.css'
 
 // Ensure light mode is always active (dark mode removed)
@@ -29,7 +31,11 @@ createRoot(document.getElementById('root')!).render(
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
                 <CategoryProvider>
-                    <App />
+                    <MfaVerificationProvider>
+                        <DisableMFAModalProvider>
+                            <App />
+                        </DisableMFAModalProvider>
+                    </MfaVerificationProvider>
                 </CategoryProvider>
             </AuthProvider>
             <ReactQueryDevtools initialIsOpen={false} />
