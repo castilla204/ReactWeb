@@ -1,6 +1,18 @@
-// Types for the new Stripe API responses with DTOs
+// Types for the Stripe API responses with DTOs
 
-export type StripeStatus = "NotRequested" | "Pending" | "Approved" | "Rejected" | "Deauthorized";
+export type StripeStatus =
+    | "NotRequested"
+    | "Pending"
+    | "ActionRequired"
+    | "PendingVerification"
+    | "RequirementsDue"
+    | "RequirementsPastDue"
+    | "RestrictedSoon"
+    | "Restricted"
+    | "Disabled"
+    | "Approved"
+    | "Rejected"
+    | "Deauthorized";
 
 // Disponibilidad horaria
 export interface CurrentExpertAvailabilityDto {
@@ -58,6 +70,8 @@ export interface ExpertProfileResponse {
     stripeStatus: StripeStatus;
     stripeStatusDetails: string | null;
     onboardingCompleted: boolean;
+    stripeFutureRequirements?: string | null;
+    stripeFutureDueAt?: string | null;
     isOnVacation?: boolean;
     currentAvailability?: CurrentExpertAvailabilityDto | null;
 }
@@ -91,6 +105,8 @@ export interface OnboardingStatusResponse {
     stripeStatus: StripeStatus;
     stripeStatusDetails: string | null;
     canAccessStripe: boolean;
+    stripeFutureRequirements?: string | null;
+    stripeFutureDueAt?: string | null;
 }
 
 // 5. GET /api/subscription/expert-status response
@@ -105,6 +121,8 @@ export interface ExpertStatusResponse {
     canCreateServices: boolean;
     canReceivePayments: boolean;
     statusMessage: string;
+    stripeFutureRequirements?: string | null;
+    stripeFutureDueAt?: string | null;
     canRetryOnboarding: boolean;
     rejectionReason: string | null;
 }
@@ -118,6 +136,8 @@ export interface StripeSyncStatusResponse {
     stripeStatusDetails: string | null;
     stripeAccountId: string | null;
     canAccessStripe: boolean;
+    stripeFutureRequirements?: string | null;
+    stripeFutureDueAt?: string | null;
     stripeAccountStatus: {
         chargesEnabled: boolean;
         payoutsEnabled: boolean;

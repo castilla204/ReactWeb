@@ -4,31 +4,31 @@ import { API_CONFIG } from '../config/api';
 import { ExpertStatusResponse, StripeSyncStatusResponse } from '../types/stripe';
 import { handleStripeStatusChange } from '../utils/stripeNotifications';
 
-// Estados de Stripe y sus significados (actualizados según backend)
+// Estados de Stripe alineados con backend 2025
 export const STRIPE_STATUS = {
-    NOT_REQUESTED: 'NotRequested',    // 0 - No ha configurado Stripe
-    PENDING: 'Pending',               // 1 - Cuenta en revisión por Stripe
-    APPROVED: 'Approved',             // 2 - Cuenta aprobada y puede recibir pagos
-    REJECTED: 'Rejected',             // 3 - Cuenta rechazada por Stripe
-    DEAUTHORIZED: 'Deauthorized'      // 4 - Cuenta desautorizada
+    NOT_REQUESTED: 'NotRequested',
+    PENDING: 'Pending',
+    ACTION_REQUIRED: 'ActionRequired',
+    PENDING_VERIFICATION: 'PendingVerification',
+    REQUIREMENTS_DUE: 'RequirementsDue',
+    REQUIREMENTS_PAST_DUE: 'RequirementsPastDue',
+    RESTRICTED_SOON: 'RestrictedSoon',
+    RESTRICTED: 'Restricted',
+    DISABLED: 'Disabled',
+    APPROVED: 'Approved',
+    REJECTED: 'Rejected',
+    DEAUTHORIZED: 'Deauthorized'
 } as const;
 
-export type StripeStatus = typeof STRIPE_STATUS[keyof typeof STRIPE_STATUS];
-
-export interface ExpertStatus {
-    hasStripeAccount: boolean;
-    hasPendingOnboarding: boolean;
-    onboardingCompleted: boolean;
-    stripeStatus: string; // "NotRequested" | "Pending" | "Approved" | "Rejected" | "Deauthorized"
-    stripeStatusDetails: string | null; // Mensaje detallado del estado
-    stripeAccountId: string | null;
-    canAccessStripe: boolean;
-    canCreateServices: boolean;
-    canReceivePayments: boolean;
-    statusMessage: string;
-    canRetryOnboarding: boolean;
-    rejectionReason?: string; // Solo si stripeStatus = "Rejected"
-}
+const POLLING_STATUSES = new Set<string>([
+    STRIPE_STATUS.PENDING,
+    STRIPE_STATUS.ACTION_REQUIRED,
+    STRIPE_STATUS.PENDING_VERIFICATION,
+    STRIPE_STATUS.REQUIREMENTS_DUE,
+    STRIPE_STATUS.REQUIREMENTS_PAST_DUE,
+    STRIPE_STATUS.RESTRICTED_SOON,
+    STRIPE_STATUS.RESTRICTED
+]);
 
 export interface StatusInfo {
     canCreateServices: boolean;
@@ -38,6 +38,8 @@ export interface StatusInfo {
     buttonText: string;
     color: string;
     bgColor: string;
+    deadlineText?: string | null;
+    futureRequirementsText?: string | null;
 }
 
 const getStatusInfo = (
@@ -46,7 +48,9 @@ const getStatusInfo = (
     stripeStatusDetails?: string | null, 
     canRetryOnboarding?: boolean,
     onboardingCompleted?: boolean,
-    hasStripeAccount?: boolean
+    hasStripeAccount?: boolean,
+    stripeFutureRequirements?: string | null,
+    stripeFutureDueAt?: string | null
 ): StatusInfo => {
     const getRejectionMessage = (reason: string) => {
         switch (reason) {
@@ -66,6 +70,17 @@ const getStatusInfo = (
         return stripeStatusDetails || defaultMessage;
     };
 
+    const formatDeadline = (): string | null => {
+        if (!stripeFutureDueAt) return null;
+        const date = new Date(stripeFutureDueAt);
+        if (Number.isNaN(date.getTime())) return null;
+        return `Fecha límite estimada: ${date.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        })}`;
+    };
+
     // Verificar si es rechazo permanente basado en stripeStatusDetails
     const isPermanentRejection = (details: string | null | undefined): boolean => {
         if (!details) return false;
@@ -79,6 +94,9 @@ const getStatusInfo = (
         return permanentReasons.some(reason => details.includes(reason));
     };
 
+    const baseFutureDue = formatDeadline();
+    const futureRequirementsText = stripeFutureRequirements || null;
+
     switch (status) {
         case STRIPE_STATUS.NOT_REQUESTED:
             return {
@@ -88,7 +106,8 @@ const getStatusInfo = (
                 action: "setup",
                 buttonText: "🔧 Configurar Pagos",
                 color: "#3b82f6",
-                bgColor: "#eff6ff"
+                bgColor: "#eff6ff",
+                futureRequirementsText
             };
         
         case STRIPE_STATUS.PENDING:
@@ -101,7 +120,8 @@ const getStatusInfo = (
                     action: "setup",
                     buttonText: "⏳ Continuar Verificación",
                     color: "#f59e0b",
-                    bgColor: "#fffbeb"
+                bgColor: "#fffbeb",
+                futureRequirementsText
                 };
             }
             // Si onboardingCompleted es true y tiene cuenta, mostrar "Completar Requisitos"
@@ -113,7 +133,8 @@ const getStatusInfo = (
                     action: "complete_requirements",
                     buttonText: "⚠️ Completar Requisitos",
                     color: "#f59e0b",
-                    bgColor: "#fffbeb"
+                bgColor: "#fffbeb",
+                futureRequirementsText
                 };
             }
             // Default: esperar
@@ -124,7 +145,99 @@ const getStatusInfo = (
                 action: "wait",
                 buttonText: "Verificar Estado",
                 color: "#f59e0b",
-                bgColor: "#fffbeb"
+                bgColor: "#fffbeb",
+                futureRequirementsText
+            };
+
+        case STRIPE_STATUS.ACTION_REQUIRED:
+            return {
+                canCreateServices: false,
+                canRetry: true,
+                message: getMessage("Stripe necesita documentación o datos adicionales de inmediato. Abre tu panel de Stripe y completa los campos marcados como \"currently_due\"."),
+                action: "complete_requirements",
+                buttonText: "⚠️ Resolver en Stripe",
+                color: "#f97316",
+                bgColor: "#fff7ed",
+                deadlineText: baseFutureDue,
+                futureRequirementsText
+            };
+
+        case STRIPE_STATUS.PENDING_VERIFICATION:
+            return {
+                canCreateServices: false,
+                canRetry: false,
+                message: getMessage("Stripe está verificando la documentación enviada. Mientras tanto, los pagos seguirán bloqueados."),
+                action: "wait",
+                buttonText: "Ver panel Stripe",
+                color: "#3b82f6",
+                bgColor: "#eff6ff",
+                deadlineText: baseFutureDue,
+                futureRequirementsText
+            };
+
+        case STRIPE_STATUS.REQUIREMENTS_DUE:
+            return {
+                canCreateServices: false,
+                canRetry: true,
+                message: getMessage("Stripe programó requisitos futuros. Actualiza tus datos antes de que la cuenta pase a un estado restrictivo."),
+                action: "complete_requirements",
+                buttonText: "Actualizar datos",
+                color: "#fbbf24",
+                bgColor: "#fffbeb",
+                deadlineText: baseFutureDue,
+                futureRequirementsText
+            };
+
+        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
+            return {
+                canCreateServices: false,
+                canRetry: true,
+                message: getMessage("Algunos requisitos vencieron y Stripe bloqueó tus cobros. Completa la información para reactivar los pagos."),
+                action: "complete_requirements",
+                buttonText: "Reactivar en Stripe",
+                color: "#dc2626",
+                bgColor: "#fef2f2",
+                deadlineText: baseFutureDue,
+                futureRequirementsText
+            };
+
+        case STRIPE_STATUS.RESTRICTED_SOON:
+            return {
+                canCreateServices: false,
+                canRetry: true,
+                message: getMessage("Stripe emitió una alerta: si no actualizas tus datos, restringirá tu cuenta en breve."),
+                action: "complete_requirements",
+                buttonText: "Resolver ahora",
+                color: "#f97316",
+                bgColor: "#fff7ed",
+                deadlineText: baseFutureDue,
+                futureRequirementsText
+            };
+
+        case STRIPE_STATUS.RESTRICTED:
+            return {
+                canCreateServices: false,
+                canRetry: true,
+                message: getMessage("Stripe limitó temporalmente tus cobros/payouts. Revisa el panel para completar los pasos pendientes."),
+                action: "complete_requirements",
+                buttonText: "Resolver en Stripe",
+                color: "#f97316",
+                bgColor: "#fff7ed",
+                deadlineText: baseFutureDue,
+                futureRequirementsText
+            };
+
+        case STRIPE_STATUS.DISABLED:
+            return {
+                canCreateServices: false,
+                canRetry: false,
+                message: getMessage("Stripe deshabilitó los pagos por un incidente o incumplimiento. Debes coordinar con Stripe para recuperar la cuenta."),
+                action: "contact",
+                buttonText: "Contactar Stripe",
+                color: "#7f1d1d",
+                bgColor: "#fef2f2",
+                deadlineText: baseFutureDue,
+                futureRequirementsText
             };
         
         case STRIPE_STATUS.APPROVED:
@@ -133,9 +246,10 @@ const getStatusInfo = (
                 canRetry: true,
                 message: getMessage("¡Excelente! Tu cuenta de pagos está activa y lista para recibir pagos. Ya puedes empezar a ofrecer servicios y generar ingresos."),
                 action: "edit_account",
-                buttonText: "✅ Editar Cuenta de Pagos",
+                buttonText: "✅ Abrir panel de Stripe",
                 color: "#10b981",
-                bgColor: "#ecfdf5"
+                bgColor: "#ecfdf5",
+                futureRequirementsText
             };
         
         case STRIPE_STATUS.REJECTED:
@@ -160,7 +274,8 @@ const getStatusInfo = (
                 action: isPermanent ? "contact" : "retry",
                 buttonText: isPermanent ? "🚫 Contactar Soporte" : "🔄 Reintentar Configuración",
                 color: "#ef4444",
-                bgColor: "#fef2f2"
+                bgColor: "#fef2f2",
+                futureRequirementsText
             };
         
         case STRIPE_STATUS.DEAUTHORIZED:
@@ -171,7 +286,8 @@ const getStatusInfo = (
                 action: "setup",
                 buttonText: "🔗 Volver a Conectar",
                 color: "#8b5cf6",
-                bgColor: "#faf5ff"
+                bgColor: "#faf5ff",
+                futureRequirementsText
             };
         
         default:
@@ -182,7 +298,8 @@ const getStatusInfo = (
                 action: "setup",
                 buttonText: "Verificar Estado",
                 color: "#6b7280",
-                bgColor: "#f9fafb"
+                bgColor: "#f9fafb",
+                futureRequirementsText
             };
     }
 };
@@ -425,9 +542,9 @@ export const useExpertStripeStatus = () => {
     useEffect(() => {
         if (!status) return;
 
-        // Solo hacer polling para PENDING, no para REJECTED
-        const needsPolling = status.stripeStatus === STRIPE_STATUS.PENDING || 
-                           (!status.onboardingCompleted && status.hasStripeAccount);
+        // Hacer polling para estados que pueden cambiar automáticamente en Stripe
+        const needsPolling = POLLING_STATUSES.has(status.stripeStatus) || 
+                             (!status.onboardingCompleted && status.hasStripeAccount);
 
         if (needsPolling && !pollingIntervalRef.current) {
             console.log('🔄 useExpertStripeStatus: Starting polling for status:', status.stripeStatus);
@@ -480,7 +597,9 @@ export const useExpertStripeStatus = () => {
             status.stripeStatusDetails, 
             status.canRetryOnboarding,
             status.onboardingCompleted,
-            status.hasStripeAccount
+            status.hasStripeAccount,
+            status.stripeFutureRequirements || null,
+            status.stripeFutureDueAt || null
         ) : null,
         isPolling
     };
@@ -499,7 +618,16 @@ export const validateBeforeCreatingService = async (cachedStatus?: ExpertStatusR
         }
         
         if (!status.canCreateServices) {
-            const statusInfo = getStatusInfo(status.stripeStatus, status.rejectionReason || undefined, status.stripeStatusDetails, status.canRetryOnboarding);
+            const statusInfo = getStatusInfo(
+                status.stripeStatus,
+                status.rejectionReason || undefined,
+                status.stripeStatusDetails,
+                status.canRetryOnboarding,
+                status.onboardingCompleted,
+                status.hasStripeAccount,
+                status.stripeFutureRequirements || null,
+                status.stripeFutureDueAt || null
+            );
             
             // Disparar evento para mostrar modal de estado
             window.dispatchEvent(new CustomEvent('showStripeStatusModal', {
@@ -532,7 +660,16 @@ export const validateBeforeCreatingService = async (cachedStatus?: ExpertStatusR
 // Función para manejar errores específicos de Stripe
 export const handleStripeServiceError = (error: any) => {
     if (error.stripeStatus) {
-        const statusInfo = getStatusInfo(error.stripeStatus, error.rejectionReason, error.stripeStatusDetails, error.canRetryOnboarding);
+        const statusInfo = getStatusInfo(
+            error.stripeStatus,
+            error.rejectionReason,
+            error.stripeStatusDetails,
+            error.canRetryOnboarding,
+            error.onboardingCompleted,
+            error.hasStripeAccount,
+            error.stripeFutureRequirements,
+            error.stripeFutureDueAt
+        );
         
         window.dispatchEvent(new CustomEvent('showStripeStatusModal', {
             detail: {
