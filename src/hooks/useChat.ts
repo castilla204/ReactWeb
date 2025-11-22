@@ -256,7 +256,10 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         conn.onreconnected((connectionId) => {
             console.log('[10:45 CEST] SignalR reconnected, new Connection ID:', connectionId);
             if (conversation?.id && user?.id) {
-                conn.invoke('JoinConversation', conversation.id, user.id).catch((err) =>
+                // Server expects 2 arguments: conversationId and userId
+                const conversationId = conversation.id;
+                const userId = user.id;
+                conn.invoke('JoinConversation', conversationId, userId).catch((err) =>
                     console.error('[10:45 CEST] Failed to rejoin conversation:', err)
                 );
             }
@@ -335,8 +338,15 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         try {
             await conn.start();
             console.log(`[10:45 CEST] SignalR connected for conversation ${conversation.id}, Connection ID: ${conn.connectionId}`);
-            await conn.invoke('JoinConversation', conversation.id, user.id);
-            console.log(`[10:45 CEST] Successfully joined conversation ${conversation.id} with user ${user.id}`);
+            // Server expects 2 arguments: conversationId and userId
+            const conversationId = conversation.id;
+            const userId = user?.id;
+            if (conversationId && userId) {
+                await conn.invoke('JoinConversation', conversationId, userId);
+                console.log(`[10:45 CEST] Successfully joined conversation ${conversationId} as user ${userId}`);
+            } else {
+                console.error('[10:45 CEST] Cannot join conversation: conversationId or userId is missing', { conversationId, userId });
+            }
             setConnection(conn);
         } catch (err) {
             console.error('[10:45 CEST] SignalR connection error:', err);
