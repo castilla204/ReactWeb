@@ -210,6 +210,13 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
         if (connection) {
             console.log('[10:45 CEST] Stopping existing SignalR connection');
+            if (conversation?.id) {
+                try {
+                    await connection.invoke('LeaveConversation', conversation.id);
+                } catch (err) {
+                    console.warn('[10:45 CEST] Failed to leave previous conversation before reconnecting:', err);
+                }
+            }
             await connection.stop();
             setConnection(null);
         }
@@ -235,7 +242,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         const transport = window.WebSocket ? HttpTransportType.WebSockets : HttpTransportType.ServerSentEvents;
 
         const conn = new HubConnectionBuilder()
-            .withUrl(`${API_CONFIG.baseUrl}/chatHub?conversationId=${conversation.id}`, {
+            .withUrl(`${API_CONFIG.baseUrl}/chatHub`, {
                 accessTokenFactory: () => token,
                 transport,
                 withCredentials: true,
@@ -374,7 +381,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             // ✅ Verificar que la conexión esté en estado Connected antes de unirse
             if (conn.state === 'Connected') {
                 // Server expects 1 argument: conversationId
-            const conversationId = conversation.id;
+                const conversationId = conversation.id;
                 if (conversationId) {
                     await conn.invoke('JoinConversation', conversationId);
                     console.log(`[10:45 CEST] ✅ Successfully joined conversation ${conversationId}`);
@@ -660,6 +667,11 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         return () => {
             if (connection) {
                 console.log('[10:45 CEST] Cleaning up SignalR connection');
+                if (conversation?.id) {
+                    connection.invoke('LeaveConversation', conversation.id).catch((err) =>
+                        console.warn('[10:45 CEST] Failed to leave conversation gracefully:', err)
+                    );
+                }
                 connection.stop();
                 setConnection(null);
             }

@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ExpertStatus, getExpertStatus } from './useExpertStripeStatus';
+import { ExpertStatusResponse } from '../types/stripe';
+import { getExpertStatus } from './useExpertStripeStatus';
 
 // Cache global para el estado de Stripe
 class StripeStatusCache {
     private static instance: StripeStatusCache;
-    private cache: ExpertStatus | null = null;
+    private cache: ExpertStatusResponse | null = null;
     private lastFetch: number = 0;
-    private subscribers: Set<(status: ExpertStatus | null) => void> = new Set();
+    private subscribers: Set<(status: ExpertStatusResponse | null) => void> = new Set();
     private CACHE_DURATION = 30000; // 30 segundos
 
     static getInstance(): StripeStatusCache {
@@ -16,7 +17,7 @@ class StripeStatusCache {
         return StripeStatusCache.instance;
     }
 
-    subscribe(callback: (status: ExpertStatus | null) => void): () => void {
+    subscribe(callback: (status: ExpertStatusResponse | null) => void): () => void {
         this.subscribers.add(callback);
         // Enviar estado actual inmediatamente
         callback(this.cache);
@@ -30,7 +31,7 @@ class StripeStatusCache {
         this.subscribers.forEach(callback => callback(this.cache));
     }
 
-    async fetchStatus(force = false): Promise<ExpertStatus | null> {
+    async fetchStatus(force = false): Promise<ExpertStatusResponse | null> {
         const now = Date.now();
         
         // Si no es forzado y tenemos datos recientes, devolver cache
@@ -50,7 +51,7 @@ class StripeStatusCache {
         }
     }
 
-    getCachedStatus(): ExpertStatus | null {
+    getCachedStatus(): ExpertStatusResponse | null {
         return this.cache;
     }
 
@@ -68,7 +69,7 @@ class StripeStatusCache {
 
 // Hook para usar el cache global
 export const useStripeStatusCache = () => {
-    const [status, setStatus] = useState<ExpertStatus | null>(null);
+    const [status, setStatus] = useState<ExpertStatusResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
