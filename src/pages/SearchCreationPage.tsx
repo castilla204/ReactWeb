@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Car, Home, Shield, CheckCircle, FolderTree, Wrench, ChevronRight, ArrowUp } from 'lucide-react';
+import { Car, Home, Shield, CheckCircle, FolderTree, Wrench, ChevronRight, ArrowUp, AlertCircle } from 'lucide-react';
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
@@ -9,6 +9,8 @@ import HomePresentation from '../components/HomePresentation';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import { ErrorDisplay } from '../components/ErrorDisplay';
+import { useMfaVerification } from '../contexts/MfaVerificationContext';
+import { Button } from '../components/ui/button';
 
 
 interface SearchParameters {
@@ -30,7 +32,9 @@ const SearchCreationPage: React.FC = () => {
     const { categories } = useCategories();
     // Removed subscription limits - no longer needed
     const { serviceTypes, isLoading: serviceTypesLoading, error: serviceTypesError } = useServiceTypes();
+    const { showVerification, hasPendingVerification } = useMfaVerification();
     const [currentStep, setCurrentStep] = useState(0);
+    const [showPendingMfaBanner, setShowPendingMfaBanner] = useState(false);
     
     // Notificar a App.tsx cuando estamos en un formulario (step 1 o 2) para ocultar el header en móvil
     React.useEffect(() => {
@@ -79,6 +83,54 @@ const SearchCreationPage: React.FC = () => {
             }, 500);
         }
     }, [currentStep]);
+
+    // ✅ Verificar si hay verificación MFA pendiente
+    useEffect(() => {
+        const checkPendingVerification = () => {
+            // ✅ Leer directamente del localStorage en lugar de usar el hook
+            const hasPending = localStorage.getItem('mfa-verification-pending') === 'true';
+            console.log('[SearchCreationPage] Checking pending verification:', hasPending, 'isAuthenticated:', isAuthenticated);
+            if (isAuthenticated && hasPending) {
+                setShowPendingMfaBanner(true);
+            } else {
+                setShowPendingMfaBanner(false);
+            }
+        };
+
+        // Verificar al cargar
+        checkPendingVerification();
+
+        // ✅ Escuchar cambios en localStorage para actualizar el banner (funciona entre pestañas)
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'mfa-verification-pending') {
+                console.log('[SearchCreationPage] Storage change detected:', e.newValue);
+                checkPendingVerification();
+            }
+        };
+
+        // ✅ Escuchar eventos personalizados cuando se limpia la verificación (misma pestaña)
+        const handleVerificationCleared = () => {
+            console.log('[SearchCreationPage] MFA verification cleared event received');
+            // Forzar verificación inmediata
+            setTimeout(() => {
+                checkPendingVerification();
+            }, 50);
+        };
+
+        // ✅ Verificación periódica como fallback (cada 200ms para respuesta más rápida)
+        const intervalId = setInterval(() => {
+            checkPendingVerification();
+        }, 200);
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('mfaVerificationCleared', handleVerificationCleared);
+
+        return () => {
+            clearInterval(intervalId);
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('mfaVerificationCleared', handleVerificationCleared);
+        };
+    }, [isAuthenticated]);
 
     // Filtrar solo categorías padre
     const parentCategories = safeCategories.filter(cat => {
@@ -201,6 +253,36 @@ const SearchCreationPage: React.FC = () => {
             {currentStep === 0 ? (
                 <>
                     <HomePresentation onScrollToForm={scrollToForm} />
+                    
+                    {/* ✅ Banner de verificación MFA pendiente */}
+                    {showPendingMfaBanner && isAuthenticated && (
+                        <div className="w-full bg-yellow-50 border-b border-yellow-200">
+                            <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-3">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+                                        <div>
+                                            <p className="text-sm font-medium text-yellow-900">
+                                                Verificación de seguridad pendiente
+                                            </p>
+                                            <p className="text-xs text-yellow-700">
+                                                Completa la verificación de dos factores para continuar
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        onClick={() => showVerification()}
+                                        size="sm"
+                                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                                    >
+                                        <Shield className="h-4 w-4 mr-2" />
+                                        Verificar ahora
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
                     <div className="w-full py-6 md:py-8">
                         <div
                             id="form-section"

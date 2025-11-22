@@ -33,11 +33,23 @@ class MFAService {
     private readonly CACHE_DURATION = 10000; // 10 segundos
     private pendingStatusRequest: Promise<MFAStatusResponse> | null = null;
     private pendingSetupRequest: Promise<MFASetupResponse> | null = null;
+    // ✅ Rate limiting: rastrear cuándo fue el último rate limit y cuánto tiempo queda
+    private rateLimitUntil: number = 0; // Timestamp hasta cuando estamos rate limited
 
     // ============================================
     // 1. SETUP MFA (Obtener QR code)
     // ============================================
     async setupMFA(): Promise<MFASetupResponse> {
+        // ✅ Verificar si estamos en rate limit
+        const now = Date.now();
+        if (now < this.rateLimitUntil) {
+            const secondsRemaining = Math.ceil((this.rateLimitUntil - now) / 1000);
+            const error = new Error(`Rate limited`) as any;
+            error.retryAfter = secondsRemaining;
+            error.isRateLimit = true;
+            throw error;
+        }
+
         // Si ya hay una solicitud pendiente, esperar a que termine
         if (this.pendingSetupRequest) {
             return this.pendingSetupRequest;
@@ -61,10 +73,13 @@ class MFAService {
                 if (response.status === 429) {
                     const retryAfter = response.headers.get('Retry-After') || '30';
                     const retrySeconds = parseInt(retryAfter, 10);
-                    // ❌ TEMPORALMENTE DESHABILITADO
-                    // throw new Error(`Demasiadas solicitudes. Por favor espera ${retrySeconds} segundos antes de intentar de nuevo.`);
-                    console.warn(`[MFAService] Rate limited (429) - ${retrySeconds}s. Silently failing.`);
-                    throw new Error('Rate limited');
+                    // ✅ Guardar el tiempo hasta cuando estamos rate limited
+                    this.rateLimitUntil = now + (retrySeconds * 1000);
+                    const error = new Error(`Demasiadas solicitudes. Por favor espera ${retrySeconds} segundos antes de intentar de nuevo.`) as any;
+                    error.retryAfter = retrySeconds;
+                    error.isRateLimit = true;
+                    console.warn(`[MFAService] Rate limited (429) - ${retrySeconds}s. Blocking until ${new Date(this.rateLimitUntil).toLocaleTimeString()}`);
+                    throw error;
                 }
 
                 if (!response.ok) {
@@ -141,25 +156,44 @@ class MFAService {
                 }),
             });
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Invalid MFA code');
+            // ✅ Leer el cuerpo de la respuesta ANTES de verificar response.ok
+            // Esto asegura que el error se capture correctamente
+            let responseData: any;
+            try {
+                const responseText = await response.text();
+                responseData = responseText ? JSON.parse(responseText) : {};
+            } catch {
+                responseData = {};
             }
 
-            const data = await response.json();
+            if (!response.ok) {
+                const errorMessage = responseData.message || 'Invalid MFA code';
+                const error = new Error(errorMessage) as any;
+                error.response = { 
+                    status: response.status, 
+                    data: { message: errorMessage } 
+                };
+                console.error('[MFAService] Verify failed:', response.status, errorMessage);
+                throw error;
+            }
 
-            if (data.accessToken && data.refreshToken) {
+            if (responseData.accessToken && responseData.refreshToken) {
                 return {
                     isValid: true,
-                    accessToken: data.accessToken,
-                    refreshToken: data.refreshToken,
-                    message: data.message,
+                    accessToken: responseData.accessToken,
+                    refreshToken: responseData.refreshToken,
+                    message: responseData.message,
                 };
             }
 
             return { isValid: false };
         } catch (error: any) {
-            console.error('MFA Verify error:', error);
+            // ✅ Asegurar que el error se propaga correctamente
+            console.error('[MFAService] Verify error:', error);
+            // Si el error ya tiene un mensaje, mantenerlo; si no, agregar uno genérico
+            if (!error.message) {
+                error.message = 'Error al verificar código';
+            }
             throw error;
         }
     }
@@ -243,10 +277,13 @@ class MFAService {
                     }
                     const retryAfter = response.headers.get('Retry-After') || '30';
                     const retrySeconds = parseInt(retryAfter, 10);
-                    // ❌ TEMPORALMENTE DESHABILITADO
-                    // throw new Error(`Demasiadas solicitudes. Por favor espera ${retrySeconds} segundos.`);
-                    console.warn(`[MFAService] Rate limited (429) - ${retrySeconds}s. Silently failing.`);
-                    throw new Error('Rate limited');
+                    // ✅ Guardar el tiempo hasta cuando estamos rate limited
+                    this.rateLimitUntil = Date.now() + (retrySeconds * 1000);
+                    const error = new Error(`Demasiadas solicitudes. Por favor espera ${retrySeconds} segundos.`) as any;
+                    error.retryAfter = retrySeconds;
+                    error.isRateLimit = true;
+                    console.warn(`[MFAService] Rate limited (429) - ${retrySeconds}s. Blocking until ${new Date(this.rateLimitUntil).toLocaleTimeString()}`);
+                    throw error;
                 }
 
                 if (response.status === 404) {

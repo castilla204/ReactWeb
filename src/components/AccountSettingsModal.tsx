@@ -6,6 +6,7 @@ import { useAccountDeletion } from '../hooks/useAccountDeletion';
 import { AccountDeletionStatus, ActiveContract } from '../types/accountDeletion';
 import { mfaService } from '../services/mfaService';
 import { MFASetup } from './MFASetup';
+import { useDisableMFAModal } from '../contexts/DisableMFAModalContext';
 import { showToast } from '../lib/toast';
 import {
     Dialog,
@@ -58,9 +59,10 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   // Estados para MFA
   const [mfaStatus, setMfaStatus] = useState<any>(null);
   const [showMFASetup, setShowMFASetup] = useState(false);
+  const { showDisableMFA } = useDisableMFAModal();
   const [loadingMFAStatus, setLoadingMFAStatus] = useState(false);
+  
   const [deletionReason, setDeletionReason] = useState('');
-  const [deletionPassword, setDeletionPassword] = useState('');
   const [deletionResult, setDeletionResult] = useState<any>(null);
   
   const { 
@@ -125,23 +127,15 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     showToast('success', 'MFA configurado exitosamente. La próxima vez que inicies sesión, se te pedirá el código MFA.');
   };
 
-  const handleDisableMFA = async () => {
-    const password = prompt('Ingresa tu contraseña:');
-    const totpCode = prompt('Ingresa el código de tu app:');
-
-    if (!password || !totpCode) return;
-
-    try {
-      await mfaService.disableMFA(password, totpCode);
-      // Limpiar caché y forzar refresh
+  const handleDisableMFAClick = () => {
+    console.log('[AccountSettingsModal] handleDisableMFAClick called');
+    showDisableMFA(() => {
+      // Callback cuando se deshabilita exitosamente
       mfaService.clearCache();
       setTimeout(() => {
         loadMFAStatus();
       }, 500);
-      showToast('success', 'MFA deshabilitado');
-    } catch (error: any) {
-      showToast('error', error.response?.data?.message || error.message || 'Error al deshabilitar MFA');
-    }
+    });
   };
 
   const checkStatus = async () => {
@@ -155,14 +149,12 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!deletionPassword.trim()) {
-      return;
-    }
-    
     setDeletionStep('processing');
     clearError();
     
-    const request = deletionReason.trim() ? { reason: deletionReason.trim() } : {};
+    // ✅ El backend ya no requiere contraseña, solo razón opcional
+    const request: any = deletionReason.trim() ? { reason: deletionReason.trim() } : {};
+    
     const response = await deleteAccount(request);
     
     if (response) {
@@ -182,7 +174,6 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     setDeletionStep('initial');
     setDeletionStatus(null);
     setDeletionReason('');
-    setDeletionPassword('');
     setDeletionResult(null);
     clearError();
   };
@@ -287,7 +278,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                         </div>
                       )}
                       <Button 
-                        onClick={handleDisableMFA} 
+                        onClick={handleDisableMFAClick} 
                         variant="destructive" 
                         size="sm"
                       >
@@ -446,17 +437,6 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 />
               </div>
 
-              {/* Password confirmation */}
-              <div>
-                <Label>Confirma tu contraseña para continuar *</Label>
-                <input
-                  type="password"
-                  value={deletionPassword}
-                  onChange={(e) => setDeletionPassword(e.target.value)}
-                  placeholder="Ingresa tu contraseña"
-                  className="mt-2 w-full p-3 border border-input rounded-md bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                />
-              </div>
 
               {/* Action buttons */}
               <div className="flex gap-3 pt-4">
@@ -470,7 +450,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 <Button
                   variant="destructive"
                   onClick={handleDelete}
-                  disabled={!deletionPassword.trim() || deletionLoading}
+                  disabled={deletionLoading}
                   className="flex-1"
                 >
                   {deletionLoading ? 'Eliminando...' : 'Eliminar Cuenta'}
