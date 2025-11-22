@@ -222,11 +222,19 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
 
     console.log('[09:15 CEST] Chat component render:', { searchId, isExpert, userId: user?.id, conversationId: conversation?.id });
 
+    // Scroll to bottom when new messages arrive
     useEffect(() => {
         if (conversation?.messages && conversation.messages.length > lastMessageCount.current) {
-            if (messagesEndRef.current) {
-                messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-            }
+            // Use requestAnimationFrame for better performance
+            requestAnimationFrame(() => {
+                const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+                if (messagesEndRef.current) {
+                    messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }
+            });
             lastMessageCount.current = conversation.messages.length;
         }
     }, [conversation?.messages?.length]);
@@ -234,12 +242,26 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
     // Scroll to bottom when conversation loads for the first time
     useEffect(() => {
         if (conversation?.messages && messagesEndRef.current && !loading) {
-            // Use setTimeout to ensure DOM is fully rendered
-            setTimeout(() => {
-                if (messagesEndRef.current) {
-                    messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+            // Use multiple timeouts to ensure DOM is fully rendered
+            const scrollToBottom = () => {
+                const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
                 }
-            }, 100);
+                if (messagesEndRef.current) {
+                    const container = messagesEndRef.current.closest('[data-chat-messages]') as HTMLElement;
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                    } else {
+                        messagesEndRef.current.scrollIntoView({ behavior: 'auto', block: 'end' });
+                    }
+                }
+            };
+            // Try multiple times to ensure it works
+            setTimeout(scrollToBottom, 50);
+            setTimeout(scrollToBottom, 150);
+            setTimeout(scrollToBottom, 300);
+            setTimeout(scrollToBottom, 500);
         }
     }, [conversation?.id, loading]);
 
@@ -478,14 +500,15 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
         <div className="relative flex flex-col h-full w-full bg-background overflow-hidden">
             {/* Messages Container - Fixed height with internal scroll */}
             <div 
-                className="w-full overflow-y-auto overflow-x-hidden px-4 lg:px-6 chat-scroll-area" 
+                className="w-full overflow-y-auto overflow-x-hidden px-3 sm:px-4 lg:px-6 chat-scroll-area" 
                 style={{ 
                     flex: '1 1 0%',
                     minHeight: 0,
-                    height: 0
+                    height: 0,
+                    scrollBehavior: 'smooth'
                 }}
             >
-                <div className="space-y-6 pb-24 lg:pb-20 pt-4 lg:pt-8" data-chat-messages ref={messagesEndRef}>
+                <div className="space-y-4 sm:space-y-6 pb-20 sm:pb-24 lg:pb-20 pt-3 sm:pt-4 lg:pt-8" data-chat-messages>
                     {/* Mensajes de bienvenida - Siempre se muestran */}
                     {isExpert ? (
                         <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-8 lg:pt-16' : 'pt-6 lg:pt-12'} pb-8 text-center px-4`}>
@@ -967,36 +990,36 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                         </div>
                     ))
                     )}
-                    <div ref={messagesEndRef} />
+                    <div ref={messagesEndRef} className="h-1" />
                 </div>
             </div>
 
-            {/* Fixed Input Area at Bottom - Inspirado en PromptInput de AI Elements */}
+            {/* Fixed Input Area at Bottom - Optimizado para móvil y desktop */}
             <div className="sticky bottom-0 left-0 right-0 bg-background z-10 border-t border-border/50 shadow-lg lg:shadow-none">
-                <div className="w-full px-3 pt-2 pb-2 sm:px-4 sm:pt-2.5 sm:pb-2.5 lg:px-6 lg:pt-3 lg:pb-3" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+                <div className="w-full px-2 pt-1.5 pb-1.5 sm:px-3 sm:pt-2 sm:pb-2 lg:px-4 lg:pt-2.5 lg:pb-2.5" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
                     <div className="max-w-4xl mx-auto">
-                        {/* PromptInput Container - Estilo moderno con colores tutifruti sutiles */}
-                        <div className="relative bg-white dark:bg-gray-900 border-2 border-gray-300/70 dark:border-gray-600/60 rounded-xl shadow-lg overflow-hidden">
-                            {/* Borde decorativo con gradiente tutifruti */}
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/15 via-indigo-400/15 via-purple-400/15 to-orange-400/15 dark:from-blue-500/12 dark:via-indigo-500/12 dark:via-purple-500/12 dark:to-orange-500/12 -z-10 blur-sm"></div>
+                        {/* PromptInput Container - Más compacto */}
+                        <div className="relative bg-white dark:bg-gray-900 border border-gray-300/70 dark:border-gray-600/60 rounded-lg sm:rounded-xl shadow-md overflow-hidden">
+                            {/* Borde decorativo con gradiente */}
+                            <div className="absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-r from-blue-400/10 via-indigo-400/10 via-purple-400/10 to-orange-400/10 dark:from-blue-500/8 dark:via-indigo-500/8 dark:via-purple-500/8 dark:to-orange-500/8 -z-10 blur-sm"></div>
                             {/* Fondo con gradiente sutil */}
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-50/35 via-indigo-50/30 to-orange-50/30 dark:from-blue-950/25 dark:via-indigo-950/20 dark:to-orange-950/18 -z-10"></div>
-                            <div className="relative bg-white dark:bg-gray-900 rounded-xl">
+                            <div className="absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-50/25 via-indigo-50/20 to-orange-50/20 dark:from-blue-950/15 dark:via-indigo-950/12 dark:to-orange-950/10 -z-10"></div>
+                            <div className="relative bg-white dark:bg-gray-900 rounded-lg sm:rounded-xl">
                                 {/* Header - Attachments */}
                 {(selectedFiles.length > 0 || location) && (
-                                    <div className="px-2.5 py-2 sm:px-3 sm:py-2.5 border-b border-gray-200/60 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/30 via-indigo-50/25 to-orange-50/25 dark:from-blue-950/18 dark:via-indigo-950/15 dark:to-orange-950/12">
-                                        <div className="flex flex-wrap gap-2">
+                                    <div className="px-2 py-1.5 sm:px-2.5 sm:py-2 border-b border-gray-200/60 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/20 via-indigo-50/15 to-orange-50/15 dark:from-blue-950/12 dark:via-indigo-950/10 dark:to-orange-950/8">
+                                        <div className="flex flex-wrap gap-1.5">
                             {selectedFiles.map((file, index) => (
                                                 <div
                                                     key={index}
-                                                    className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-background border border-border/50 text-xs"
+                                                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-background border border-border/50 text-xs"
                                                 >
-                                                    <Paperclip className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                                    <Paperclip className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-foreground truncate max-w-[120px]">
+                                                        <p className="font-medium text-foreground truncate max-w-[100px] sm:max-w-[120px]">
                                         {file.name}
                                         </p>
-                                                        <p className="text-muted-foreground">
+                                                        <p className="text-muted-foreground text-[10px]">
                                         {formatFileSize(file.size)}
                                         </p>
                                     </div>
@@ -1007,24 +1030,24 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                             newFiles.splice(index, 1);
                                             setSelectedFiles(newFiles);
                                         }}
-                                                        className="ml-1 p-0.5 rounded hover:bg-muted transition-colors"
+                                                        className="ml-0.5 p-0.5 rounded hover:bg-muted transition-colors"
                                                     >
-                                                        <X className="w-3.5 h-3.5 text-muted-foreground" />
+                                                        <X className="w-3 h-3 text-muted-foreground" />
                                                     </button>
                                                 </div>
                             ))}
                 {location && (
-                                                <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-green-50/50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/50 text-xs">
-                                                    <MapPin className="w-3.5 h-3.5 text-green-600 dark:text-green-400 flex-shrink-0" />
-                                                    <div className="font-medium text-green-700 dark:text-green-400">
+                                                <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-green-50/50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/50 text-xs">
+                                                    <MapPin className="w-3 h-3 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                                    <div className="font-medium text-green-700 dark:text-green-400 text-[10px] sm:text-xs">
                                 {parseFloat(location.latitude).toFixed(4)}, {parseFloat(location.longitude).toFixed(4)}
                             </div>
                                                     <button
                                         type="button"
                                         onClick={() => setLocation(null)}
-                                                        className="ml-1 p-0.5 rounded hover:bg-green-100/50 dark:hover:bg-green-900/30 transition-colors"
+                                                        className="ml-0.5 p-0.5 rounded hover:bg-green-100/50 dark:hover:bg-green-900/30 transition-colors"
                                                     >
-                                                        <X className="w-3.5 h-3.5 text-green-700 dark:text-green-400" />
+                                                        <X className="w-3 h-3 text-green-700 dark:text-green-400" />
                                                     </button>
                                                 </div>
                             )}
@@ -1032,20 +1055,20 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                     </div>
                 )}
 
-                                {/* Body - Textarea */}
-                                <div className="px-2.5 py-2.5 sm:px-3 sm:py-3">
+                                {/* Body - Textarea - Más compacto */}
+                                <div className="px-2 py-1.5 sm:px-2.5 sm:py-2">
                                     <textarea
                                         value={newMessage}
                                         onChange={(e) => {
                                             setNewMessage(e.target.value);
                                             // Auto-resize
                                             e.target.style.height = 'auto';
-                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
                                         }}
                                         placeholder="Escribe un mensaje..."
-                                        className="w-full bg-transparent resize-none text-foreground placeholder:text-muted-foreground text-sm leading-relaxed focus:outline-none border-0"
+                                        className="w-full bg-transparent resize-none text-foreground placeholder:text-muted-foreground text-sm sm:text-base leading-relaxed focus:outline-none border-0"
                                         rows={1}
-                                        style={{ minHeight: '44px', maxHeight: '160px' }}
+                                        style={{ minHeight: '36px', maxHeight: '120px' }}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
                                                 e.preventDefault();
@@ -1056,8 +1079,8 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                     />
                                 </div>
 
-                                {/* Footer - Tools and Submit */}
-                                <div className="px-2.5 py-2 sm:px-3 sm:py-2.5 border-t border-gray-200/60 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/30 via-indigo-50/25 to-orange-50/25 dark:from-blue-950/18 dark:via-indigo-950/15 dark:to-orange-950/12 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0">
+                                {/* Footer - Tools and Submit - Más compacto */}
+                                <div className="px-2 py-1.5 sm:px-2.5 sm:py-2 border-t border-gray-200/60 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/20 via-indigo-50/15 to-orange-50/15 dark:from-blue-950/12 dark:via-indigo-950/10 dark:to-orange-950/8 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0">
                                     {/* Tools - Left side */}
                                     <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                                         <label className="cursor-pointer">
@@ -1066,7 +1089,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                                 variant="ghost"
                                                 size="icon"
                                                 asChild
-                                                className="h-7 w-7 sm:h-8 sm:w-8 rounded-md hover:bg-muted transition-colors"
+                                                className="h-6 w-6 sm:h-7 sm:w-7 rounded-md hover:bg-muted transition-colors"
                                             >
                                                 <span>
                                                     <Paperclip className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
@@ -1087,7 +1110,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                             variant="ghost"
                                             size="icon"
                                             onClick={handleOpenMapModal}
-                                            className="h-7 w-7 sm:h-8 sm:w-8 rounded-md hover:bg-muted transition-colors"
+                                            className="h-6 w-6 sm:h-7 sm:w-7 rounded-md hover:bg-muted transition-colors"
                                             title="Seleccionar ubicación"
                                         >
                                             <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
@@ -1100,7 +1123,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                             type="button"
                                             onClick={handleSendMessage}
                                             size="icon"
-                                        className={`h-7 w-7 sm:h-8 sm:w-8 rounded-md transition-all duration-200 shrink-0 ${
+                                        className={`h-6 w-6 sm:h-7 sm:w-7 rounded-md transition-all duration-200 shrink-0 ${
                                                 isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
                                                     ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
                                                     : messageSent

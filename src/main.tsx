@@ -6,7 +6,6 @@ import App from './App.tsx'
 import { AuthProvider } from './contexts/AuthContext'
 import { CategoryProvider } from './contexts/CategoryContext'
 import { MfaVerificationProvider } from './contexts/MfaVerificationContext'
-import { DisableMFAModalProvider } from './contexts/DisableMFAModalContext'
 import './index.css'
 
 // Ensure light mode is always active (dark mode removed)
@@ -32,9 +31,7 @@ createRoot(document.getElementById('root')!).render(
             <AuthProvider>
                 <CategoryProvider>
                     <MfaVerificationProvider>
-                        <DisableMFAModalProvider>
-                            <App />
-                        </DisableMFAModalProvider>
+                        <App />
                     </MfaVerificationProvider>
                 </CategoryProvider>
             </AuthProvider>
