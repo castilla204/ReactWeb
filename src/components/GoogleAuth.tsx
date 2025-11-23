@@ -76,14 +76,18 @@ export function GoogleAuth() {
                     console.log('[GoogleAuth] MFA Status:', mfaStatus);
                     
                     if (!mfaStatus.isEnabled) {
-                        console.log('[GoogleAuth] MFA not enabled, redirecting to setup');
+                        console.log('[GoogleAuth] MFA not enabled, but MFA is no longer mandatory');
+                        // ✅ DESACTIVADO: MFA ya no es obligatorio
                         // ⚠️ MFA requerido pero NO configurado → Redirigir a setup
-                        navigate('/mfa/setup-required', {
-                            state: { 
-                                reason: 'required_for_role',
-                                firstLogin: true 
-                            }
-                        });
+                        // navigate('/mfa/setup-required', {
+                        //     state: { 
+                        //         reason: 'required_for_role',
+                        //         firstLogin: true 
+                        //     }
+                        // });
+                        // return;
+                        // Continuar sin MFA
+                        navigate('/busquedas');
                         return;
                     }
                     
@@ -92,14 +96,19 @@ export function GoogleAuth() {
                     setRequiresMFA(true);
                     return;
                 } catch (error: any) {
+                    // ✅ DESACTIVADO: MFA ya no es obligatorio
                     // Si el error es 404, significa que MFA no está configurado
                     if (error?.response?.status === 404 || error?.message?.includes('404')) {
-                        navigate('/mfa/setup-required', {
-                            state: { 
-                                reason: 'required_for_role',
-                                firstLogin: true 
-                            }
-                        });
+                        // navigate('/mfa/setup-required', {
+                        //     state: { 
+                        //         reason: 'required_for_role',
+                        //         firstLogin: true 
+                        //     }
+                        // });
+                        // return;
+                        // Continuar sin MFA
+                        console.log('[GoogleAuth] MFA not configured, but MFA is no longer mandatory');
+                        navigate('/busquedas');
                         return;
                     }
                     
@@ -118,14 +127,18 @@ export function GoogleAuth() {
                         return;
                     }
                     
+                    // ✅ DESACTIVADO: MFA ya no es obligatorio
                     // Si no hay result.requiresMFA y hay otro error, redirigir a setup por seguridad
-                    console.warn('Error checking MFA status, redirecting to setup:', error);
-                    navigate('/mfa/setup-required', {
-                        state: { 
-                            reason: 'error_checking_status',
-                            firstLogin: true 
-                        }
-                    });
+                    console.warn('Error checking MFA status, but MFA is no longer mandatory:', error);
+                    // navigate('/mfa/setup-required', {
+                    //     state: { 
+                    //         reason: 'error_checking_status',
+                    //         firstLogin: true 
+                    //     }
+                    // });
+                    // return;
+                    // Continuar sin MFA
+                    navigate('/busquedas');
                     return;
                 }
             }

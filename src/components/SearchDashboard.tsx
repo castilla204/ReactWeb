@@ -20,6 +20,8 @@ import {
     Plus,
     WifiOff,
     RefreshCw,
+    Shield,
+    X,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
@@ -28,6 +30,7 @@ import { useAppointmentStatuses, getAppointmentStatusText } from '../hooks/useAp
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from './ui/empty';
 import { Button } from './ui/button';
+import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 
 // ✅ NUEVOS IMPORTS PARA SISTEMA DE ESTADOS
 import StatusBadge from './StatusBadge';
@@ -35,7 +38,7 @@ import { getStatusInfoWithFallback } from '../utils/statusUtils';
 import { useErrorHandler, isNetworkError } from '../hooks/useErrorHandler';
 import type { SearchItem, SearchFilters, PaginationMetadata } from '../hooks/useSearch.hooks';
 import { useNavigate } from 'react-router-dom';
-import { MFABanner } from './layout/MFABanner';
+import { mfaService } from '../services/mfaService';
 
 
 interface SearchDashboardProps {
@@ -115,13 +118,15 @@ interface Filters {
 }
 
 const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
-    const { user } = useAuth();
+    const { user, isAuthenticated } = useAuth();
     const { categories } = useCategories();
     const {
         searchesWithFilters, // ✅ NUEVO: Hook unificado con filtros
         reviseSearch: reviseSearchMutation,
     } = useSearch();
     const navigate = useNavigate();
+    const [showMfaRecommendationBanner, setShowMfaRecommendationBanner] = useState(false);
+    const [mfaEnabled, setMfaEnabled] = useState<boolean | null>(null);
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [filters, setFilters] = useState<Filters>({
@@ -246,6 +251,47 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         
         return () => window.removeEventListener('resize', checkIsMobile);
     }, []);
+
+    // ✅ Verificar estado de MFA para mostrar recomendación
+    useEffect(() => {
+        const checkMfaStatus = async () => {
+            if (!isAuthenticated) {
+                setMfaEnabled(null);
+                setShowMfaRecommendationBanner(false);
+                return;
+            }
+
+            try {
+                const mfaStatus = await mfaService.getMFAStatus();
+                setMfaEnabled(mfaStatus.isEnabled);
+                
+                // Mostrar banner solo si:
+                // 1. MFA no está habilitado
+                // 2. El banner no ha sido cerrado (localStorage)
+                const bannerDismissed = localStorage.getItem('mfa-recommendation-banner-dismissed') === 'true';
+                if (!mfaStatus.isEnabled && !bannerDismissed) {
+                    setShowMfaRecommendationBanner(true);
+                } else {
+                    setShowMfaRecommendationBanner(false);
+                }
+            } catch (error) {
+                console.error('[SearchDashboard] Error checking MFA status:', error);
+                setMfaEnabled(null);
+                setShowMfaRecommendationBanner(false);
+            }
+        };
+
+        checkMfaStatus();
+    }, [isAuthenticated]);
+
+    const handleDismissMfaRecommendation = () => {
+        setShowMfaRecommendationBanner(false);
+        localStorage.setItem('mfa-recommendation-banner-dismissed', 'true');
+    };
+
+    const handleSetupMfa = () => {
+        navigate('/mfa/setup');
+    };
 
 
     const isAdmin = user?.role === 'Admin' || user?.email?.trim().toLowerCase() === 'dcastillaa@gmail.com'.toLowerCase();
@@ -468,10 +514,44 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* MFA Banner */}
-            <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-6">
-                <MFABanner />
-            </div>
+            {/* Banner MFA - Diseño tech minimalista con shadcn/ui */}
+            {showMfaRecommendationBanner && isAuthenticated && mfaEnabled === false && (
+                <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-5">
+                    <Alert className="border-gray-800/60 bg-transparent rounded-lg">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                                <Shield className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
+                                <div className="flex-1 min-w-0">
+                                    <AlertTitle className="text-sm font-medium text-gray-200 mb-1">
+                                        Autenticación de dos factores
+                                    </AlertTitle>
+                                    <AlertDescription className="text-xs text-gray-500 leading-relaxed">
+                                        Añade una capa adicional de seguridad a tu cuenta
+                                    </AlertDescription>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <Button
+                                    onClick={handleSetupMfa}
+                                    size="sm"
+                                    className="bg-gray-800 hover:bg-gray-700 text-white text-xs h-8 px-4 border border-gray-700"
+                                >
+                                    Habilitar
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleDismissMfaRecommendation}
+                                    className="h-8 w-8 p-0 text-gray-500 hover:text-gray-300 hover:bg-transparent"
+                                    aria-label="Cerrar"
+                                >
+                                    <X className="h-4 w-4" strokeWidth={2} />
+                                </Button>
+                            </div>
+                        </div>
+                    </Alert>
+                </div>
+            )}
             
             {/* Header Section */}
             <div className="bg-white border-b border-gray-200/60">

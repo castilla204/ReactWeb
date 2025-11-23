@@ -53,24 +53,24 @@ export const ProtectedRouteWithMFA: React.FC<ProtectedRouteWithMFAProps> = ({
         }
     }
 
-    // 3. Verificar MFA (si es requerido)
-    if (requireMfa || RoleChecker.requiresMfa(userRole)) {
-        if (isLoading) {
-            return (
-                <div className="flex items-center justify-center min-h-screen bg-background">
-                    <div className="flex flex-col items-center gap-3">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                        <p className="text-sm text-muted-foreground">Verificando seguridad...</p>
-                    </div>
-                </div>
-            );
-        }
+    // 3. Verificar MFA (si es requerido) - DESACTIVADO: MFA ya no es obligatorio
+    // if (requireMfa || RoleChecker.requiresMfa(userRole)) {
+    //     if (isLoading) {
+    //         return (
+    //             <div className="flex items-center justify-center min-h-screen bg-background">
+    //                 <div className="flex flex-col items-center gap-3">
+    //                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    //                     <p className="text-sm text-muted-foreground">Verificando seguridad...</p>
+    //                 </div>
+    //             </div>
+    //         );
+    //     }
 
-        if (requiresSetup && isEnforced) {
-            // MFA obligatorio y no configurado → Redirigir a setup
-            return <Navigate to="/mfa/setup-required" replace />;
-        }
-    }
+    //     if (requiresSetup && isEnforced) {
+    //         // MFA obligatorio y no configurado → Redirigir a setup
+    //         return <Navigate to="/mfa/setup-required" replace />;
+    //     }
+    // }
 
     // ✅ Todo OK → Renderizar contenido
     return <>{children}</>;

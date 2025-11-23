@@ -166,6 +166,12 @@ export function ExpertPanelPage() {
     // Limpiar cache cuando el estado cambia a aprobado (solo una vez)
     const [hasClearedCache, setHasClearedCache] = useState(false);
     
+    // ✅ Estado para banner dismissible (debe estar antes de cualquier early return)
+    const [bannerDismissed, setBannerDismissed] = React.useState(() => {
+        const dismissed = localStorage.getItem('stripe-verification-banner-dismissed');
+        return dismissed === 'true';
+    });
+    
     // Función para manejar el toggle del modo vacaciones
     const handleVacationModeToggle = async () => {
         try {
@@ -777,6 +783,11 @@ export function ExpertPanelPage() {
             </>
         );
     }
+
+    const handleDismissBanner = () => {
+        setBannerDismissed(true);
+        localStorage.setItem('stripe-verification-banner-dismissed', 'true');
+    };
 
     return (
         <div className="min-h-screen bg-background flex">
