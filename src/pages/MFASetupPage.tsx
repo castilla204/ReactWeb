@@ -30,8 +30,9 @@ export const MFASetupPage: React.FC = () => {
     const handleSetupComplete = () => {
         setIsCompleted(true);
         
-        // Limpiar banner dismissed
+        // Limpiar banners dismissed
         localStorage.removeItem('mfa-banner-dismissed');
+        localStorage.removeItem('mfa-recommendation-banner-dismissed');
         
         // Mostrar mensaje de éxito
         setTimeout(() => {

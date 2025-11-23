@@ -6,7 +6,6 @@ import { useAccountDeletion } from '../hooks/useAccountDeletion';
 import { AccountDeletionStatus, ActiveContract } from '../types/accountDeletion';
 import { mfaService } from '../services/mfaService';
 import { MFASetup } from './MFASetup';
-import { useDisableMFAModal } from '../contexts/DisableMFAModalContext';
 import { showToast } from '../lib/toast';
 import {
     Dialog,
@@ -59,10 +58,10 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   // Estados para MFA
   const [mfaStatus, setMfaStatus] = useState<any>(null);
   const [showMFASetup, setShowMFASetup] = useState(false);
-  const { showDisableMFA } = useDisableMFAModal();
   const [loadingMFAStatus, setLoadingMFAStatus] = useState(false);
   
   const [deletionReason, setDeletionReason] = useState('');
+  const [deletionPassword, setDeletionPassword] = useState('');
   const [deletionResult, setDeletionResult] = useState<any>(null);
   
   const { 
@@ -121,21 +120,32 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     // Limpiar caché y forzar refresh
     console.log('[AccountSettings] MFA setup complete, clearing cache');
     mfaService.clearCache();
+    // Limpiar banners dismissed
+    localStorage.removeItem('mfa-banner-dismissed');
+    localStorage.removeItem('mfa-recommendation-banner-dismissed');
     setTimeout(() => {
       loadMFAStatus();
     }, 500);
     showToast('success', 'MFA configurado exitosamente. La próxima vez que inicies sesión, se te pedirá el código MFA.');
   };
 
-  const handleDisableMFAClick = () => {
-    console.log('[AccountSettingsModal] handleDisableMFAClick called');
-    showDisableMFA(() => {
-      // Callback cuando se deshabilita exitosamente
+  const handleDisableMFA = async () => {
+    const password = prompt('Ingresa tu contraseña:');
+    const totpCode = prompt('Ingresa el código de tu app:');
+
+    if (!password || !totpCode) return;
+
+    try {
+      await mfaService.disableMFA(password, totpCode);
+      // Limpiar caché y forzar refresh
       mfaService.clearCache();
       setTimeout(() => {
         loadMFAStatus();
       }, 500);
-    });
+      showToast('success', 'MFA deshabilitado');
+    } catch (error: any) {
+      showToast('error', error.response?.data?.message || error.message || 'Error al deshabilitar MFA');
+    }
   };
 
   const checkStatus = async () => {
@@ -278,7 +288,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                         </div>
                       )}
                       <Button 
-                        onClick={handleDisableMFAClick} 
+                        onClick={handleDisableMFA} 
                         variant="destructive" 
                         size="sm"
                       >
