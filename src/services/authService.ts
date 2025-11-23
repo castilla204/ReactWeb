@@ -275,13 +275,14 @@ class AuthService {
                         });
                     }
                     
-                    // ✅ MFA_REQUIRED: MFA no configurado → Redirigir a setup
-                    if (data.error === 'MFA_REQUIRED' || data.requiresMfaSetup) {
-                        (fetchOptions as any)._mfaChecked = true;
-                        console.warn('[AuthService] MFA setup required, redirecting to setup');
-                        window.location.href = '/mfa/setup-required';
-                        return response;
-                    }
+                    // ✅ DESACTIVADO: MFA ya no es obligatorio
+                    // MFA_REQUIRED: MFA no configurado → Redirigir a setup
+                    // if (data.error === 'MFA_REQUIRED' || data.requiresMfaSetup) {
+                    //     (fetchOptions as any)._mfaChecked = true;
+                    //     console.warn('[AuthService] MFA setup required, redirecting to setup');
+                    //     window.location.href = '/mfa/setup-required';
+                    //     return response;
+                    // }
                 } catch {
                     // Si no se puede parsear JSON, continuar normalmente
                 }

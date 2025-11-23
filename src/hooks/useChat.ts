@@ -268,8 +268,8 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
         conn.onreconnected((connectionId) => {
             console.log('[10:45 CEST] SignalR reconnected, new Connection ID:', connectionId);
-            if (conversation?.id && user?.id) {
-                conn.invoke('JoinConversation', conversation.id, user.id).catch((err) =>
+            if (conversation?.id) {
+                conn.invoke('JoinConversation', conversation.id).catch((err) =>
                     console.error('[10:45 CEST] Failed to rejoin conversation:', err)
                 );
             }
@@ -380,8 +380,8 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         try {
             await conn.start();
             console.log(`[10:45 CEST] SignalR connected for conversation ${conversation.id}, Connection ID: ${conn.connectionId}`);
-            await conn.invoke('JoinConversation', conversation.id, user.id);
-            console.log(`[10:45 CEST] Successfully joined conversation ${conversation.id} with user ${user.id}`);
+            await conn.invoke('JoinConversation', conversation.id);
+            console.log(`[10:45 CEST] Successfully joined conversation ${conversation.id}`);
             setConnection(conn);
             connectionRef.current = conn;
         } catch (err) {

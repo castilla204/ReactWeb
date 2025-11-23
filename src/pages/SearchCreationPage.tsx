@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Car, Home, Shield, CheckCircle, FolderTree, Wrench, ChevronRight, ArrowUp, AlertCircle } from 'lucide-react';
+import { Car, Home, Shield, CheckCircle, FolderTree, Wrench, ChevronRight, ArrowUp, AlertCircle, X } from 'lucide-react';
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
@@ -11,6 +11,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../c
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { useMfaVerification } from '../contexts/MfaVerificationContext';
 import { Button } from '../components/ui/button';
+import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
+import { useNavigate } from 'react-router-dom';
+import { mfaService } from '../services/mfaService';
 
 
 interface SearchParameters {
@@ -29,12 +32,15 @@ interface SearchParameters {
 
 const SearchCreationPage: React.FC = () => {
     const { isAuthenticated } = useAuth();
+    const navigate = useNavigate();
     const { categories } = useCategories();
     // Removed subscription limits - no longer needed
     const { serviceTypes, isLoading: serviceTypesLoading, error: serviceTypesError } = useServiceTypes();
     const { showVerification, hasPendingVerification } = useMfaVerification();
     const [currentStep, setCurrentStep] = useState(0);
     const [showPendingMfaBanner, setShowPendingMfaBanner] = useState(false);
+    const [showMfaRecommendationBanner, setShowMfaRecommendationBanner] = useState(false);
+    const [mfaEnabled, setMfaEnabled] = useState<boolean | null>(null);
     
     // Notificar a App.tsx cuando estamos en un formulario (step 1 o 2) para ocultar el header en móvil
     React.useEffect(() => {
@@ -131,6 +137,48 @@ const SearchCreationPage: React.FC = () => {
             window.removeEventListener('mfaVerificationCleared', handleVerificationCleared);
         };
     }, [isAuthenticated]);
+
+    // ✅ Verificar estado de MFA para mostrar recomendación
+    useEffect(() => {
+        const checkMfaStatus = async () => {
+            if (!isAuthenticated) {
+                setMfaEnabled(null);
+                setShowMfaRecommendationBanner(false);
+                return;
+            }
+
+            try {
+                const mfaStatus = await mfaService.getMFAStatus();
+                setMfaEnabled(mfaStatus.isEnabled);
+                
+                // Mostrar banner solo si:
+                // 1. MFA no está habilitado
+                // 2. El banner no ha sido cerrado (localStorage)
+                // 3. Estamos en el paso 0 (homepage)
+                const bannerDismissed = localStorage.getItem('mfa-recommendation-banner-dismissed') === 'true';
+                if (!mfaStatus.isEnabled && !bannerDismissed && currentStep === 0) {
+                    setShowMfaRecommendationBanner(true);
+                } else {
+                    setShowMfaRecommendationBanner(false);
+                }
+            } catch (error) {
+                console.error('[SearchCreationPage] Error checking MFA status:', error);
+                setMfaEnabled(null);
+                setShowMfaRecommendationBanner(false);
+            }
+        };
+
+        checkMfaStatus();
+    }, [isAuthenticated, currentStep]);
+
+    const handleDismissMfaRecommendation = () => {
+        setShowMfaRecommendationBanner(false);
+        localStorage.setItem('mfa-recommendation-banner-dismissed', 'true');
+    };
+
+    const handleSetupMfa = () => {
+        navigate('/mfa/setup');
+    };
 
     // Filtrar solo categorías padre
     const parentCategories = safeCategories.filter(cat => {
@@ -280,6 +328,45 @@ const SearchCreationPage: React.FC = () => {
                                     </Button>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Banner MFA - Diseño tech minimalista con shadcn/ui */}
+                    {showMfaRecommendationBanner && isAuthenticated && mfaEnabled === false && (
+                        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-5">
+                            <Alert className="border-gray-800/60 bg-transparent rounded-lg">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                                        <Shield className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
+                                        <div className="flex-1 min-w-0">
+                                            <AlertTitle className="text-sm font-medium text-gray-200 mb-1">
+                                                Autenticación de dos factores
+                                            </AlertTitle>
+                                            <AlertDescription className="text-xs text-gray-500 leading-relaxed">
+                                                Añade una capa adicional de seguridad a tu cuenta
+                                            </AlertDescription>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <Button
+                                            onClick={handleSetupMfa}
+                                            size="sm"
+                                            className="bg-gray-800 hover:bg-gray-700 text-white text-xs h-8 px-4 border border-gray-700"
+                                        >
+                                            Habilitar
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleDismissMfaRecommendation}
+                                            className="h-8 w-8 p-0 text-gray-500 hover:text-gray-300 hover:bg-transparent"
+                                            aria-label="Cerrar"
+                                        >
+                                            <X className="h-4 w-4" strokeWidth={2} />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </Alert>
                         </div>
                     )}
                     

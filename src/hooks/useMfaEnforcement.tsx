@@ -79,19 +79,20 @@ export function useMfaEnforcement() {
                     
                     setState({
                         isLoading: false,
-                        requiresSetup: true,
+                        requiresSetup: false, // ✅ DESACTIVADO: MFA ya no es obligatorio
                         requiresVerification: false,
                         userRole,
                         gracePeriodDays: remainingDays,
-                        isEnforced: remainingDays === 0
+                        isEnforced: false // ✅ DESACTIVADO: MFA ya no es obligatorio
                     });
                     
+                    // ✅ DESACTIVADO: MFA ya no es obligatorio
                     // Si el período de gracia expiró → Forzar setup
-                    if (remainingDays === 0) {
-                        navigate('/mfa/setup-required', { 
-                            state: { reason: 'grace_period_expired' } 
-                        });
-                    }
+                    // if (remainingDays === 0) {
+                    //     navigate('/mfa/setup-required', { 
+                    //         state: { reason: 'grace_period_expired' } 
+                    //     });
+                    // }
                 } else {
                     // MFA habilitado → Todo OK
                     setState({
