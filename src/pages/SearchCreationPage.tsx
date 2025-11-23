@@ -330,45 +330,6 @@ const SearchCreationPage: React.FC = () => {
                             </div>
                         </div>
                     )}
-
-                    {/* Banner MFA - Diseño tech minimalista con shadcn/ui */}
-                    {showMfaRecommendationBanner && isAuthenticated && mfaEnabled === false && (
-                        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-5">
-                            <Alert className="border-gray-800/60 bg-transparent rounded-lg">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                                        <Shield className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={2} />
-                                        <div className="flex-1 min-w-0">
-                                            <AlertTitle className="text-sm font-medium text-gray-200 mb-1">
-                                                Autenticación de dos factores
-                                            </AlertTitle>
-                                            <AlertDescription className="text-xs text-gray-500 leading-relaxed">
-                                                Añade una capa adicional de seguridad a tu cuenta
-                                            </AlertDescription>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                        <Button
-                                            onClick={handleSetupMfa}
-                                            size="sm"
-                                            className="bg-gray-800 hover:bg-gray-700 text-white text-xs h-8 px-4 border border-gray-700"
-                                        >
-                                            Habilitar
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={handleDismissMfaRecommendation}
-                                            className="h-8 w-8 p-0 text-gray-500 hover:text-gray-300 hover:bg-transparent"
-                                            aria-label="Cerrar"
-                                        >
-                                            <X className="h-4 w-4" strokeWidth={2} />
-                                        </Button>
-                                    </div>
-                                </div>
-                            </Alert>
-                        </div>
-                    )}
                     
                     <div className="w-full py-6 md:py-8">
                         <div
