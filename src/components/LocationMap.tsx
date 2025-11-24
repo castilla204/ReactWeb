@@ -3,47 +3,47 @@ import { GoogleMap, Marker } from '@react-google-maps/api';
 import { MapExpert } from '../hooks/useMapExperts';
 import { Service } from '../hooks/useServices';
 
-// Paleta de colores minimalista - Inspirada en mapas modernos con colores suaves
+// Paleta de colores vibrante estilo Airbnb - Colores más vivos y contrastados
 const mapStyles = [
     {
         featureType: 'all',
         elementType: 'geometry',
-        stylers: [{ color: '#faf8f3' }] // Beige/off-white muy claro para la tierra
+        stylers: [{ color: '#f7f7f7' }] // Gris muy claro para la tierra
     },
     {
         featureType: 'water',
         elementType: 'geometry',
-        stylers: [{ color: '#a8d5e2' }] // Azul claro vibrante para el agua
+        stylers: [{ color: '#c8e6f5' }] // Azul más vibrante para el agua
     },
     {
         featureType: 'landscape',
         elementType: 'geometry',
-        stylers: [{ color: '#faf8f3' }] // Beige muy claro para el paisaje
+        stylers: [{ color: '#f0f0f0' }] // Gris claro para el paisaje
     },
     {
         featureType: 'road',
         elementType: 'geometry',
-        stylers: [{ color: '#f5f5f0' }] // Gris muy claro para carreteras menores
+        stylers: [{ color: '#ffffff' }] // Blanco para carreteras menores
     },
     {
         featureType: 'road.highway',
         elementType: 'geometry',
-        stylers: [{ color: '#ffd4a3' }] // Naranja claro para autopistas
+        stylers: [{ color: '#ffd89b' }] // Naranja más vibrante para autopistas
     },
     {
         featureType: 'road.highway.controlled_access',
         elementType: 'geometry',
-        stylers: [{ color: '#ffc085' }] // Naranja un poco más intenso para autopistas principales
+        stylers: [{ color: '#ffb84d' }] // Naranja intenso para autopistas principales
     },
     {
         featureType: 'road.arterial',
         elementType: 'geometry',
-        stylers: [{ color: '#e8e8e3' }] // Gris claro para carreteras principales
+        stylers: [{ color: '#f5f5f5' }] // Gris muy claro para carreteras principales
     },
     {
         featureType: 'road.local',
         elementType: 'geometry',
-        stylers: [{ color: '#f5f5f0' }] // Gris muy claro para carreteras locales
+        stylers: [{ color: '#ffffff' }] // Blanco para carreteras locales
     },
     {
         featureType: 'poi',
@@ -142,7 +142,7 @@ export function LocationMap({
                     this.div.style.pointerEvents = 'none';
                     this.div.style.overflow = 'hidden';
                     this.div.style.borderRadius = '50%';
-                    this.div.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.3), inset 0 0 15px rgba(37, 99, 235, 0.15)';
+                    this.div.style.boxShadow = '0 0 25px rgba(0, 102, 204, 0.4), inset 0 0 20px rgba(0, 102, 204, 0.2)';
                     this.div.style.zIndex = '0';
                     this.div.style.willChange = 'transform';
                     // Asegurar que todos los eventos pasen a través - CRÍTICO para móvil
@@ -186,7 +186,7 @@ export function LocationMap({
                         });
                     }
 
-                    // Capa base (radial gradient con pulse) - Más sutil
+                    // Capa base (radial gradient con pulse) - Más vibrante
                     const baseDiv = document.createElement('div');
                     baseDiv.style.width = '100%';
                     baseDiv.style.height = '100%';
@@ -194,12 +194,12 @@ export function LocationMap({
                     baseDiv.style.top = '0';
                     baseDiv.style.left = '0';
                     baseDiv.style.pointerEvents = 'none';
-                    baseDiv.style.background = `radial-gradient(circle, rgba(37, 99, 235, 0.35) 0%, rgba(37, 99, 235, 0.25) 5%, rgba(59, 130, 246, 0.18) 10%, rgba(59, 130, 246, 0.12) 15%, rgba(59, 130, 246, 0.08) 20%, rgba(59, 130, 246, 0.05) 25%, rgba(59, 130, 246, 0.03) 30%, transparent 40%)`;
+                    baseDiv.style.background = `radial-gradient(circle, rgba(0, 102, 204, 0.45) 0%, rgba(0, 102, 204, 0.35) 5%, rgba(0, 102, 204, 0.25) 10%, rgba(0, 102, 204, 0.18) 15%, rgba(0, 102, 204, 0.12) 20%, rgba(0, 102, 204, 0.08) 25%, rgba(0, 102, 204, 0.05) 30%, transparent 40%)`;
                     baseDiv.style.animation = 'pulse-sweep 2s ease-in-out infinite';
                     baseDiv.style.mixBlendMode = 'screen';
                     this.div.appendChild(baseDiv);
 
-                    // Capa sweep (conic gradient rotatorio, más sutil)
+                    // Capa sweep (conic gradient rotatorio, más vibrante)
                     const sweepDiv = document.createElement('div');
                     sweepDiv.style.width = '100%';
                     sweepDiv.style.height = '100%';
@@ -207,7 +207,7 @@ export function LocationMap({
                     sweepDiv.style.top = '0';
                     sweepDiv.style.left = '0';
                     sweepDiv.style.pointerEvents = 'none';
-                    sweepDiv.style.background = `conic-gradient(from 0deg, transparent 0deg, transparent 300deg, rgba(37, 99, 235, 0.3) 300deg, rgba(59, 130, 246, 0.4) 315deg, rgba(37, 99, 235, 0.3) 330deg, transparent 360deg)`;
+                    sweepDiv.style.background = `conic-gradient(from 0deg, transparent 0deg, transparent 300deg, rgba(0, 102, 204, 0.4) 300deg, rgba(0, 102, 204, 0.5) 315deg, rgba(0, 102, 204, 0.4) 330deg, transparent 360deg)`;
                     sweepDiv.style.animation = 'radar-sweep 3s linear infinite';
                     sweepDiv.style.mixBlendMode = 'screen';
                     sweepDiv.style.transformOrigin = 'center center';
@@ -222,13 +222,13 @@ export function LocationMap({
                     blipDiv.style.height = '6px';
                     blipDiv.style.transform = 'translate(-50%, -50%)';
                     blipDiv.style.pointerEvents = 'none';
-                    blipDiv.style.background = 'rgba(59, 130, 246, 0.5)';
+                    blipDiv.style.background = 'rgba(0, 102, 204, 0.7)';
                     blipDiv.style.borderRadius = '50%';
-                    blipDiv.style.boxShadow = '0 0 6px rgba(59, 130, 246, 0.6), 0 0 12px rgba(37, 99, 235, 0.4)';
+                    blipDiv.style.boxShadow = '0 0 8px rgba(0, 102, 204, 0.8), 0 0 16px rgba(0, 102, 204, 0.5)';
                     blipDiv.style.animation = 'pulse-sweep 1.5s ease-in-out infinite';
                     this.div.appendChild(blipDiv);
 
-                    // Contorno del círculo - Más marcado y visible
+                    // Contorno del círculo - Más marcado y visible con azul
                     const borderDiv = document.createElement('div');
                     borderDiv.style.width = '100%';
                     borderDiv.style.height = '100%';
@@ -237,8 +237,8 @@ export function LocationMap({
                     borderDiv.style.left = '0';
                     borderDiv.style.pointerEvents = 'none';
                     borderDiv.style.borderRadius = '50%';
-                    borderDiv.style.border = '3px solid rgba(37, 99, 235, 0.8)';
-                    borderDiv.style.boxShadow = '0 0 8px rgba(37, 99, 235, 0.6), inset 0 0 8px rgba(37, 99, 235, 0.3)';
+                    borderDiv.style.border = '3px solid rgba(0, 102, 204, 0.9)';
+                    borderDiv.style.boxShadow = '0 0 12px rgba(0, 102, 204, 0.7), inset 0 0 10px rgba(0, 102, 204, 0.4)';
                     this.div.appendChild(borderDiv);
 
                     // Añadir al pane del mapa más bajo (mapPane) para estar debajo de los marcadores
@@ -558,7 +558,7 @@ export function LocationMap({
                             icon={{
                                 url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
                                     <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="12" cy="12" r="8" fill="#3B82F6" stroke="#FFFFFF" stroke-width="2"/>
+                                        <circle cx="12" cy="12" r="8" fill="#0066CC" stroke="#FFFFFF" stroke-width="2"/>
                                         <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
                                     </svg>
                                 `),
@@ -570,35 +570,47 @@ export function LocationMap({
                 }
 
                 const isSelected = selectedService === service.id;
+                // El precio parece estar en euros directamente
+                const priceInEuros = service.price ? Math.round(service.price) : 0;
+                const priceText = priceInEuros > 0 ? `€${priceInEuros}` : '€0';
+
+                // Crear marcador estilo Airbnb con precio visible en SVG
+                const markerColor = isSelected ? '#10B981' : '#0066CC';
+                const svgIcon = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="70" height="32" viewBox="0 0 70 32">
+                        <!-- Pin point -->
+                        <path d="M 35 32 L 30 24 L 30 8 C 30 4 32 2 35 2 C 38 2 40 4 40 8 L 40 24 Z" 
+                              fill="${markerColor}" 
+                              stroke="#FFFFFF" 
+                              stroke-width="2"/>
+                        <!-- Price box -->
+                        <rect x="2" y="2" width="66" height="24" rx="5" ry="5" 
+                              fill="#FFFFFF" 
+                              stroke="${markerColor}" 
+                              stroke-width="2"/>
+                        <text x="35" y="17" 
+                              font-family="Arial, sans-serif" 
+                              font-size="13" 
+                              font-weight="700" 
+                              fill="#222222" 
+                              text-anchor="middle" 
+                              dominant-baseline="middle">${priceText}</text>
+                    </svg>
+                `;
 
                 return (
                     <Marker
                         key={`expert-${expert.id}-service-${service.id}`}
                         position={{ lat: expertLat, lng: expertLng }}
                         onClick={() => onServiceSelect && onServiceSelect(service.id)}
-                        zIndex={10}
+                        zIndex={isSelected ? 20 : 10}
                         clickable={true}
                         optimized={false}
-                        title={service.expert?.user?.name || expert.name}
+                        title={`${service.expert?.user?.name || expert.name} - ${priceText}`}
                         icon={{
-                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                                    <!-- Área de clic invisible más grande -->
-                                    <circle cx="20" cy="20" r="18" fill="transparent" />
-                                    <!-- Icono visible - Pin style -->
-                                    <g transform="translate(8, 8)">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M12 2 C8.13 2 5 5.13 5 9 C5 14.25 12 22 12 22 C12 22 19 14.25 19 9 C19 5.13 15.87 2 12 2 Z" 
-                                                  fill="${isSelected ? '#10B981' : '#3B82F6'}" 
-                                                  stroke="#FFFFFF" 
-                                                  stroke-width="2"/>
-                                            <circle cx="12" cy="9" r="3" fill="#FFFFFF"/>
-                                        </svg>
-                                    </g>
-                                </svg>
-                            `),
-                            scaledSize: new window.google.maps.Size(40, 40),
-                            anchor: new window.google.maps.Point(20, 20)
+                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgIcon),
+                            scaledSize: new window.google.maps.Size(70, 32),
+                            anchor: new window.google.maps.Point(35, 32)
                         }}
                     />
                 );
@@ -645,7 +657,7 @@ export function LocationMap({
                                 </defs>
                                 <ellipse cx="16" cy="36" rx="10" ry="4" fill="rgba(0,0,0,0.25)"/>
                                 <path d="M16 2 C10 2 6 6 6 12 C6 18 16 32 16 32 C16 32 26 18 26 12 C26 6 22 2 16 2 Z"
-                                      fill="#2563EB"
+                                      fill="#0066CC"
                                       stroke="#FFFFFF"
                                       stroke-width="2.5"
                                       filter="url(#glow-main)"/>

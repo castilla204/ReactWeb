@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Star, User, Calendar, Image as ImageIcon } from 'lucide-react';
 
 interface EnhancedReview {
@@ -29,11 +29,17 @@ export default function EnhancedReviewCard({
     showImages = true,
     maxImages = 3 
 }: EnhancedReviewCardProps) {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const MAX_LENGTH = 300;
+    const shouldTruncate = review.description.length > MAX_LENGTH;
+    const displayText = isExpanded || !shouldTruncate 
+        ? review.description 
+        : review.description.substring(0, MAX_LENGTH) + '...';
+
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('es-ES', {
             year: 'numeric',
-            month: 'long',
-            day: 'numeric'
+            month: 'long'
         });
     };
 
@@ -41,10 +47,10 @@ export default function EnhancedReviewCard({
         return Array.from({ length: 5 }, (_, index) => (
             <Star
                 key={index}
-                className={`w-4 h-4 ${
+                className={`w-3.5 h-3.5 ${
                     index < score 
-                        ? 'text-yellow-400 fill-current' 
-                        : 'text-gray-300'
+                        ? 'fill-[#222222] text-[#222222]' 
+                        : 'text-[#DDDDDD]'
                 }`}
             />
         ));
@@ -55,93 +61,92 @@ export default function EnhancedReviewCard({
     const remainingImages = imageUrls.length - maxImages;
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
-            {/* Header con información del revisor */}
-            {showReviewerInfo && (
-                <div className="flex items-center gap-3 mb-3">
-                    <div className="relative">
-                        {review.reviewer?.profilePictureUrl ? (
-                            <img
-                                src={review.reviewer.profilePictureUrl}
-                                alt={review.reviewer.name}
-                                className="w-10 h-10 rounded-full object-cover border-2 border-gray-100"
-                                onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                }}
-                            />
-                        ) : null}
-                        <div className={`w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white text-sm font-medium ${review.reviewer?.profilePictureUrl ? 'hidden' : ''}`}>
-                            {review.reviewer?.name?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                    </div>
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-gray-900 text-sm">
-                                {review.reviewer?.name || 'Usuario Anónimo'}
-                            </h4>
-                            <div className="flex items-center gap-1">
-                                {renderStars(review.score)}
+        <div className="pb-6 border-b border-[#EBEBEB] last:border-b-0 w-full">
+            <div className="flex items-start gap-4">
+                {/* Contenido principal */}
+                <div className="flex-1 min-w-0">
+                    {/* Header con información del revisor */}
+                    {showReviewerInfo && (
+                        <div className="flex items-start gap-2.5 mb-3">
+                            <div className="relative flex-shrink-0">
+                                {review.reviewer?.profilePictureUrl ? (
+                                    <img
+                                        src={review.reviewer.profilePictureUrl}
+                                        alt={review.reviewer.name}
+                                        className="w-8 h-8 rounded-full object-cover"
+                                        onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                        }}
+                                    />
+                                ) : null}
+                                <div className={`w-8 h-8 bg-[#717171] rounded-full flex items-center justify-center text-white text-xs font-medium ${review.reviewer?.profilePictureUrl ? 'hidden' : ''}`}>
+                                    {review.reviewer?.name?.charAt(0).toUpperCase() || 'U'}
+                                </div>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <Calendar className="w-3 h-3" />
-                            <span>{formatDate(review.createdAt)}</span>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Descripción de la reseña */}
-            <div className="mb-3">
-                <p className="text-gray-700 text-sm leading-relaxed">
-                    {review.description}
-                </p>
-            </div>
-
-            {/* Imágenes de la reseña */}
-            {showImages && imageUrls.length > 0 && (
-                <div className="mb-3">
-                    <div className="flex items-center gap-2 mb-2">
-                        <ImageIcon className="w-4 h-4 text-gray-500" />
-                        <span className="text-xs text-gray-500 font-medium">
-                            Imágenes ({imageUrls.length})
-                        </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                        {displayImages.map((imageUrl, index) => (
-                            <div key={index} className="relative group">
-                                <img
-                                    src={imageUrl}
-                                    alt={`Imagen ${index + 1} de la reseña`}
-                                    className="w-full h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={() => {
-                                        // Aquí puedes implementar un modal para ver la imagen en grande
-                                        window.open(imageUrl, '_blank');
-                                    }}
-                                />
-                                {index === maxImages - 1 && remainingImages > 0 && (
-                                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                                        <span className="text-white text-xs font-medium">
-                                            +{remainingImages}
-                                        </span>
+                            <div className="flex-1 min-w-0">
+                                <div className="mb-1">
+                                    <h4 className="font-semibold text-[#222222] text-sm mb-0.5">
+                                        {review.reviewer?.name || 'Usuario Anónimo'}
+                                    </h4>
+                                    <div className="flex items-center gap-1.5 text-xs text-[#717171]">
+                                        <span>{formatDate(review.createdAt)}</span>
                                     </div>
-                                )}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    {renderStars(review.score)}
+                                </div>
                             </div>
-                        ))}
+                        </div>
+                    )}
+
+                    {/* Descripción de la reseña */}
+                    <div className="mb-3">
+                        <p className="text-[#222222] text-sm leading-[20px] whitespace-pre-line">
+                            {displayText}
+                        </p>
+                        {shouldTruncate && (
+                            <button
+                                onClick={() => setIsExpanded(!isExpanded)}
+                                className="text-[#222222] text-sm font-semibold underline decoration-1 mt-1 hover:no-underline"
+                            >
+                                {isExpanded ? 'Mostrar menos' : 'Mostrar más'}
+                            </button>
+                        )}
                     </div>
                 </div>
-            )}
 
-            {/* Footer con información adicional */}
-            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                    <User className="w-3 h-3" />
-                    <span>ID: {review.reviewer?.id || 'N/A'}</span>
-                </div>
-                <div className="text-xs text-gray-400">
-                    Reseña #{review.id}
-                </div>
+                {/* Imágenes de la reseña - Más pequeñas y compactas */}
+                {showImages && imageUrls.length > 0 && (
+                    <div className="flex-shrink-0">
+                        <div className="flex gap-1.5">
+                            {displayImages.map((imageUrl, index) => (
+                                <div 
+                                    key={index} 
+                                    className="relative group flex-shrink-0"
+                                    style={{ width: '56px', height: '56px' }}
+                                >
+                                    <img
+                                        src={imageUrl}
+                                        alt={`Imagen ${index + 1} de la reseña`}
+                                        className="w-full h-full object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
+                                        style={{ width: '56px', height: '56px', objectFit: 'cover' }}
+                                        onClick={() => {
+                                            window.open(imageUrl, '_blank');
+                                        }}
+                                    />
+                                    {index === maxImages - 1 && remainingImages > 0 && (
+                                        <div className="absolute inset-0 bg-black/60 rounded flex items-center justify-center cursor-pointer hover:bg-black/70 transition-colors">
+                                            <span className="text-white text-[10px] font-medium">
+                                                +{remainingImages}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -183,19 +188,8 @@ export function EnhancedReviewsList({
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                    Reseñas ({reviews.length})
-                </h3>
-                {remainingReviews > 0 && (
-                    <span className="text-sm text-gray-500">
-                        Mostrando {displayReviews.length} de {reviews.length}
-                    </span>
-                )}
-            </div>
-            
-            <div className="space-y-4">
+        <div>
+            <div className="space-y-0">
                 {displayReviews.map((review) => (
                     <EnhancedReviewCard
                         key={review.id}
@@ -208,9 +202,9 @@ export function EnhancedReviewsList({
             </div>
 
             {remainingReviews > 0 && (
-                <div className="text-center pt-4">
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                        Ver {remainingReviews} reseñas más
+                <div className="pt-4">
+                    <button className="text-[#222222] hover:underline text-sm font-semibold underline decoration-1">
+                        Mostrar todas las {reviews.length} reseñas
                     </button>
                 </div>
             )}

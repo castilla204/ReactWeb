@@ -454,8 +454,13 @@ export function ExpertPanelPage() {
                 selectedDeliverableTypes: formData.selectedDeliverableTypes,
             });
 
+            // Cerrar el Drawer primero y esperar a que se cierre completamente antes de resetear
             setShowServiceForm(false);
-            resetForm();
+            // Esperar a que la animación del Drawer termine completamente antes de resetear el estado
+            // Usar 600ms para asegurar que el Portal se desmonte completamente y evitar errores de removeChild
+            setTimeout(() => {
+                resetForm();
+            }, 600);
 
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
@@ -504,8 +509,13 @@ export function ExpertPanelPage() {
                 selectedDeliverableTypes: formData.selectedDeliverableTypes,
             });
 
+            // Cerrar el Drawer primero y esperar a que se cierre completamente antes de resetear
             setShowServiceForm(false);
-            resetForm();
+            // Esperar a que la animación del Drawer termine completamente antes de resetear el estado
+            // Usar 600ms para asegurar que el Portal se desmonte completamente y evitar errores de removeChild
+            setTimeout(() => {
+                resetForm();
+            }, 600);
 
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
@@ -1128,7 +1138,10 @@ export function ExpertPanelPage() {
                                     showServiceForm={showServiceForm}
                                     setShowServiceForm={(value) => {
                                         if (value) {
-                                            resetForm(); // Resetear cuando se abre para crear nuevo servicio
+                                            // Solo resetear si el drawer no está abierto (para evitar conflictos)
+                                            if (!showServiceForm) {
+                                                resetForm(); // Resetear cuando se abre para crear nuevo servicio
+                                            }
                                         }
                                         setShowServiceForm(value);
                                     }}
@@ -1165,7 +1178,11 @@ export function ExpertPanelPage() {
                         showServiceForm={showServiceForm}
                         setShowServiceForm={(value) => {
                             if (!value) {
-                                resetForm(); // Resetear cuando se cierra el formulario
+                                // Esperar a que el drawer se cierre completamente antes de resetear
+                                // para evitar errores de removeChild cuando React intenta desmontar el Portal
+                                setTimeout(() => {
+                                    resetForm();
+                                }, 600);
                             }
                             setShowServiceForm(value);
                         }}
