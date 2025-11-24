@@ -3,6 +3,7 @@ import { Car, Home, Shield, CheckCircle, FolderTree, Wrench, ChevronRight, Arrow
 import { useCategories } from '../contexts/CategoryContext';
 import SearchForm from '../components/SearchForm';
 import { SearchParameterForm } from '../components/SearchParameterForm';
+import { ServiceReviewPage } from './ServiceReviewPage';
 import { useAuth } from '../contexts/AuthContext';
 import { showToast } from '../lib/toast';
 import HomePresentation from '../components/HomePresentation';
@@ -42,9 +43,9 @@ const SearchCreationPage: React.FC = () => {
     const [showMfaRecommendationBanner, setShowMfaRecommendationBanner] = useState(false);
     const [mfaEnabled, setMfaEnabled] = useState<boolean | null>(null);
     
-    // Notificar a App.tsx cuando estamos en un formulario (step 1 o 2) para ocultar el header en móvil
+    // Notificar a App.tsx cuando estamos en un formulario (step 1, 2 o 3) para ocultar el header en móvil
     React.useEffect(() => {
-        if (currentStep === 1 || currentStep === 2) {
+        if (currentStep === 1 || currentStep === 2 || currentStep === 3) {
             sessionStorage.setItem('isInFormStep', 'true');
         } else {
             sessionStorage.removeItem('isInFormStep');
@@ -214,7 +215,7 @@ const SearchCreationPage: React.FC = () => {
         const updatedParameters = { ...parameters, strictMatchOnly: false };
         setSearchParameters(updatedParameters);
         
-        // Si viene el servicio seleccionado, guardarlo y pasar al siguiente paso
+        // Si viene el servicio seleccionado, guardarlo y pasar al siguiente paso (ServiceReviewPage)
         if (parameters.serviceId) {
             setSelectedServiceId(parameters.serviceId);
             setExpertProfilePicture(parameters.expertProfilePicture);
@@ -222,7 +223,7 @@ const SearchCreationPage: React.FC = () => {
             setServicePrice(parameters.servicePrice);
             setServiceDescription(parameters.serviceDescription);
             setServiceImageUrls(parameters.serviceImageUrls || []);
-            setCurrentStep(2); // Ahora el paso 2 es Contratación (antes era 3)
+            setCurrentStep(2); // Paso 2: ServiceReviewPage (revisión del servicio)
         } else {
             // Si no viene servicio, quedarse en el paso actual
             setCurrentStep(1);
@@ -1075,6 +1076,27 @@ const SearchCreationPage: React.FC = () => {
                         </div>
                     )}
                     {currentStep === 2 && selectedServiceId && (
+                        <div className="flex-1 overflow-y-auto">
+                            <ServiceReviewPage
+                                serviceId={selectedServiceId}
+                                expertProfilePicture={expertProfilePicture}
+                                expertName={expertName}
+                                servicePrice={servicePrice}
+                                serviceDescription={serviceDescription}
+                                serviceImageUrls={serviceImageUrls}
+                                categoryId={searchParameters.category}
+                                serviceTypeId={searchParameters.serviceTypeId}
+                                latitude={searchParameters.latitude}
+                                longitude={searchParameters.longitude}
+                                locationRange={searchParameters.locationRange}
+                                currentStep={2}
+                                totalSteps={3}
+                                onBack={() => setCurrentStep(1)}
+                                onContinue={() => setCurrentStep(3)}
+                            />
+                        </div>
+                    )}
+                    {currentStep === 3 && selectedServiceId && (
                         <div className="flex-1 overflow-y-auto">
                             <SearchForm
                                 parameters={searchParameters as SearchParameters & { latitude: string; longitude: string; locationRange: number }}

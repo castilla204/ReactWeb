@@ -115,15 +115,24 @@ export const StripeStatusModal: React.FC<StripeStatusModalProps> = ({
 
         if (isOpen) {
             document.addEventListener('keydown', handleEscape);
+            const originalOverflow = document.body.style.overflow;
             document.body.style.overflow = 'hidden';
-        }
+            
+            // Timeout de seguridad: restaurar después de 5 minutos si el modal no se cierra
+            const safetyTimeout = setTimeout(() => {
+                console.warn('[StripeStatusModal] Safety timeout - restoring body scroll');
+                document.body.style.overflow = originalOverflow || '';
+            }, 5 * 60 * 1000);
 
-        return () => {
-            document.removeEventListener('keydown', handleEscape);
-            document.body.style.overflow = 'unset';
-        };
+            return () => {
+                document.removeEventListener('keydown', handleEscape);
+                clearTimeout(safetyTimeout);
+                document.body.style.overflow = originalOverflow || '';
+            };
+        }
     }, [isOpen, onClose]);
 
+    // React manejará la eliminación del DOM cuando isOpen es false
     if (!isOpen) return null;
 
     const handleAction = () => {
@@ -134,7 +143,10 @@ export const StripeStatusModal: React.FC<StripeStatusModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            data-stripe-status-modal="true"
+        >
             {/* Backdrop */}
             <div 
                 className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
