@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock } from 'lucide-react';
 import { ImageCarousel } from './ui/image-carousel';
 import { useLoadScript } from '@react-google-maps/api';
 import { useServices } from '../hooks/useServices';
@@ -419,7 +419,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         <div className="bg-background h-screen flex flex-col overflow-hidden fixed inset-0 lg:relative lg:h-auto lg:min-h-screen">
             {/* Header Section - Fixed */}
             <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b flex-shrink-0">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                <div className="w-full px-3 py-2">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Button
@@ -437,7 +437,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     {serviceTypeId === 1 ? 'Inspector especializado' : 'Experto en búsquedas'}
                             </h1>
                                 {/* Timeline del proceso */}
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                                     <div className={`flex items-center gap-1 ${formData.latitude && formData.longitude ? 'text-primary' : ''}`}>
                                         <div className={`w-2 h-2 rounded-full ${formData.latitude && formData.longitude ? 'bg-primary' : 'bg-muted'}`} />
                                         <span>Ubicación</span>
@@ -460,43 +460,22 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             </div>
                    
             {/* Main Layout - Split View */}
-            <div className="flex flex-1 min-h-0 overflow-hidden max-w-7xl mx-auto">
+            <div className="flex flex-1 min-h-0 overflow-hidden w-full">
                 {/* Left Side - Form & Results (Desktop only) */}
-                <div className="hidden lg:flex flex-1 overflow-y-auto">
-                    <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
-                        {/* Accordion con instrucciones - Siempre visible */}
-                        <Accordion type="single" collapsible defaultValue="instructions" className="mb-6">
-                            <AccordionItem value="instructions" className="border-border">
-                                <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-3">
-                                    <div className="flex items-center gap-2">
-                                        <Info className="w-4 h-4 text-primary" />
-                                        <span>¿Qué hacer en esta página?</span>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="text-sm text-muted-foreground leading-relaxed pt-2 pb-4">
-                                    <p className="mb-2">
-                                        Selecciona una ubicación en el mapa usando la barra de búsqueda o haciendo clic directamente en el mapa.
-                                        Una vez seleccionada la ubicación, aparecerán los servicios disponibles en un radio de 25 km.
-                                    </p>
-                                    <p className="mb-2">
-                                        Puedes filtrar los servicios por precio y valoración usando los menús desplegables.
-                                        Haz clic en una tarjeta de servicio para seleccionarla y luego presiona "Continuar" para proceder.
-                                    </p>
-                                    <p>
-                                        Las imágenes de los servicios se pueden pasar deslizando o usando las flechas.
-                                        Revisa la descripción y los detalles de cada servicio antes de seleccionar.
-                                    </p>
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
+                <div className="hidden lg:flex flex-col w-2/5 overflow-y-auto border-r bg-background">
+                    <div className="w-full px-3 py-3">
+                        {/* Instrucciones minimalistas */}
+                        <div className="mb-3 text-xs text-muted-foreground">
+                            Selecciona una ubicación en el mapa
+                        </div>
                         {/* Services Results - Only show when location is selected */}
                         {formData.latitude && formData.longitude && (
                             <>
                                 {/* Filters compactos */}
-                                <div className="flex items-center gap-2 mb-4 flex-wrap">
+                                <div className="flex items-center gap-1.5 mb-3 flex-wrap">
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="h-8 text-xs px-3">
+                                            <Button variant="outline" className="h-7 text-[10px] px-2">
                                                 {filters.priceRange[0] === 0 && filters.priceRange[1] === 100000 ? 'Precio' : `€${filters.priceRange[0]}-€${filters.priceRange[1]}`}
                                             </Button>
                                         </PopoverTrigger>
@@ -523,7 +502,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="h-8 text-xs px-3">
+                                            <Button variant="outline" className="h-7 text-[10px] px-2">
                                                 {filters.rating > 0 ? (
                                                     <span className="flex items-center gap-1">
                                                         {filters.rating}+
@@ -565,7 +544,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                                 {/* Services List */}
                                 {services.length > 0 ? (
-                                    <div className="space-y-6 mb-6">
+                                    <div className="space-y-3 mb-4">
                                         {services.map((service) => {
                                             const isPro = (service.completedSearches || 0) > 5;
                                             const allImages = service.imageUrls && service.imageUrls.length > 0
@@ -594,14 +573,23 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                                         alt={service.expert?.user?.name || 'Experto'}
                                                                         className="w-full h-full rounded-l-xl"
                                                                     />
-                                                                    {isPro && (
-                                                                        <div className="absolute top-2 left-2 bg-primary text-white text-[10px] font-semibold px-2 py-1 rounded-md shadow-sm z-20">
-                                                                            Pro
-                    </div>
-                                                                    )}
+                                                                    {/* Badges en la imagen */}
+                                                                    <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-20">
+                                                                        {isPro && (
+                                                                            <div className="bg-[#0066CC] text-white text-[9px] font-bold px-2 py-0.5 rounded-md shadow-md">
+                                                                                PRO
+                                                                            </div>
+                                                                        )}
+                                                                        {service.averageRating && service.averageRating >= 4.8 && (
+                                                                            <div className="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-md shadow-md flex items-center gap-1">
+                                                                                <Star className="w-2.5 h-2.5 fill-white" />
+                                                                                TOP
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
                                                                     {selectedService === service.id && (
                                                                         <div className="absolute top-2 right-2 z-20">
-                                                                            <div className="bg-primary/90 backdrop-blur-sm text-white rounded-full p-1 shadow-md">
+                                                                            <div className="bg-[#0066CC]/90 backdrop-blur-sm text-white rounded-full p-1 shadow-md">
                                                                                 <CheckCircle className="w-3.5 h-3.5" />
                                                                             </div>
                                                                         </div>
@@ -620,60 +608,87 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        {/* Información a la derecha - estilo Airbnb */}
-                                                        <div className="flex-1 p-5 flex flex-col justify-between min-w-0">
-                                                            <div className="flex-1 space-y-2.5">
-                                                                {/* Categoría */}
-                                                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                                                    {service.categoryName || 'Servicio'} · {service.serviceTypeName || 'Revisión'}
-                                                                </p>
-                                                               
+                                                        {/* Información a la derecha - estilo Airbnb mejorado */}
+                                                        <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                                                            <div className="flex-1 space-y-2">
+                                                                {/* Badges de marketing */}
+                                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                                    {service.averageRating && service.averageRating >= 4.5 && (
+                                                                        <div className="flex items-center gap-1 bg-[#0066CC]/10 text-[#0066CC] px-2 py-0.5 rounded-full text-[9px] font-semibold">
+                                                                            <Award className="w-2.5 h-2.5" />
+                                                                            Mejor valorado
+                                                                        </div>
+                                                                    )}
+                                                                    {service.completedSearches && service.completedSearches > 10 && (
+                                                                        <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-semibold">
+                                                                            <TrendingUp className="w-2.5 h-2.5" />
+                                                                            Popular
+                                                                        </div>
+                                                                    )}
+                                                                    {service.expert?.stripeAccountId && (
+                                                                        <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-[9px] font-semibold">
+                                                                            <Shield className="w-2.5 h-2.5" />
+                                                                            Verificado
+                                                                        </div>
+                                                                    )}
+                                                                    {service.durationInHours && service.durationInHours <= 24 && (
+                                                                        <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-semibold">
+                                                                            <Zap className="w-2.5 h-2.5" />
+                                                                            Rápido
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
                                                                 {/* Título */}
-                                                                <h3 className="text-lg font-semibold text-foreground leading-tight">
+                                                                <h3 className="text-base font-semibold text-foreground leading-tight">
                                                                     {service.expert?.user?.name || 'Experto'}
                                                                 </h3>
                                                                
-                                                                {/* Descripción */}
+                                                                {/* Descripción corta */}
                                                                 {service.conditions && (
-                                                                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                                                                        {service.conditions.length > 120
-                                                                            ? `${service.conditions.substring(0, 120)}...`
+                                                                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                        {service.conditions.length > 80
+                                                                            ? `${service.conditions.substring(0, 80)}...`
                                                                             : service.conditions}
                                                                     </p>
                                                                 )}
-                                                               
-                                                                {/* Detalles en una línea */}
-                                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-                                                                    {service.selectedDeliverableTypes?.slice(0, 3).map((deliverable, idx) => (
-                                                                        <span key={deliverable.id}>
-                                                                            {deliverable.displayName}
-                                                                            {idx < Math.min(2, (service.selectedDeliverableTypes?.length || 0) - 1) && ' · '}
-                                                                        </span>
+
+                                                                {/* Detalles con iconos */}
+                                                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
+                                                                    {service.selectedDeliverableTypes?.slice(0, 2).map((deliverable) => (
+                                                                        <div key={deliverable.id} className="flex items-center gap-1">
+                                                                            <CheckCircle className="w-3 h-3 text-[#0066CC]" />
+                                                                            <span>{deliverable.displayName}</span>
+                                                                        </div>
                                                                     ))}
-                                                                    {service.selectedDeliverableTypes && service.selectedDeliverableTypes.length > 3 && (
-                                                                        <span> · +{service.selectedDeliverableTypes.length - 3} más</span>
+                                                                    {service.selectedDeliverableTypes && service.selectedDeliverableTypes.length > 2 && (
+                                                                        <span className="text-[#0066CC] font-medium">
+                                                                            +{service.selectedDeliverableTypes.length - 2} más
+                                                                        </span>
                                                                     )}
-                            </div>
-                                                               
-                                                                {/* Rating y precio en la misma línea */}
-                                                                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                                                                </div>
+
+                                                                {/* Rating, reseñas y precio */}
+                                                                <div className="flex items-center justify-between pt-2 border-t border-border/30">
                                                                     <div className="flex items-center gap-1.5">
-                                                                        <Star className="w-3.5 h-3.5 fill-muted-foreground/30 text-muted-foreground" />
-                                                                        <span className="text-sm font-semibold text-foreground">
-                                                                            {service.averageRating?.toFixed(1) || '0.0'}
+                                                                        <Star className="w-3.5 h-3.5 fill-[#0066CC] text-[#0066CC]" />
+                                                                        <span className="text-xs font-semibold text-foreground">
+                                                                            {service.averageRating?.toFixed(1) || 'Nuevo'}
                                                                         </span>
-                                                                        <span className="text-xs text-muted-foreground">
-                                                                            ({service.expert?.reviews?.length || 0})
-                                                                        </span>
-                        </div>
+                                                                        {service.expert?.reviews && service.expert.reviews.length > 0 && (
+                                                                            <span className="text-[10px] text-muted-foreground">
+                                                                                ({service.expert.reviews.length})
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                     <div className="text-right">
-                                                                        <span className="text-lg font-bold text-foreground">
+                                                                        <span className="text-base font-bold text-foreground">
                                                                             €{service.price || 72}
                                                                         </span>
-                                                                        <span className="text-xs text-muted-foreground ml-1 font-normal">
+                                                                        <span className="text-[10px] text-muted-foreground ml-1">
                                                                             /servicio
                                                                         </span>
-                    </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -689,15 +704,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 )}
                                 {/* Continue Button */}
                                 {services.length > 0 && (
-                                    <div className="mt-6 pb-6">
+                                    <div className="mt-3 pb-3">
                                         <Button
                                             onClick={handleContinue}
                                             disabled={!selectedService}
                                             size="lg"
-                                            className="w-full h-11 text-base font-medium shadow-lg"
+                                            className="w-full h-10 text-sm font-medium shadow-md"
                                         >
                                             Continuar
-                                            <ArrowRight className="ml-2 h-4 w-4" />
+                                            <ArrowRight className="ml-2 h-3.5 w-3.5" />
                                         </Button>
                                     </div>
                                 )}
@@ -715,24 +730,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 
                 {/* Mobile: Map View */}
                 <div className="lg:hidden flex flex-col h-full w-full min-h-0">
-                    {/* Accordion con instrucciones - Mobile */}
-                    <div className="px-4 pt-4 pb-2 flex-shrink-0">
-                        <Accordion type="single" collapsible defaultValue="instructions" className="mb-2">
-                            <AccordionItem value="instructions" className="border-border">
-                                <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-2">
-                                    <div className="flex items-center gap-2">
-                                        <Info className="w-4 h-4 text-primary" />
-                                        <span>¿Qué hacer en esta página?</span>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="text-sm text-muted-foreground leading-relaxed pt-2 pb-3">
-                                    <p>
-                                        Selecciona una ubicación en el mapa. Una vez seleccionada, aparecerán los servicios disponibles en un radio de 25 km.
-                                        Puedes filtrar por precio y valoración, y seleccionar un servicio para continuar.
-                                    </p>
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
+                    {/* Instrucciones minimalistas - Mobile */}
+                    <div className="px-3 pt-2 pb-1 flex-shrink-0">
+                        <div className="text-[10px] text-muted-foreground">
+                            Selecciona una ubicación
+                        </div>
                     </div>
                     
                     {/* Map Container */}
@@ -744,7 +746,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         ) : (
                             <>
                                 {/* Search Bar */}
-                                <div className="absolute top-4 left-4 right-4 z-20">
+                                <div className="absolute top-3 left-3 right-3 z-20">
                                         <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 {isGeocoding ? (
@@ -760,7 +762,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 onChange={(e) => setSearchAddress(e.target.value)}
                                                 placeholder={isGeocoding ? "Buscando..." : "Buscar dirección..."}
                                                 disabled={isGeocoding}
-                                            className="w-full pl-9 pr-8 h-9 text-sm bg-background/95 backdrop-blur-md border-border/50 shadow-sm"
+                                            className="w-full pl-9 pr-8 h-11 text-sm bg-white backdrop-blur-md border-[#DDDDDD] shadow-lg hover:shadow-xl transition-shadow"
                                             />
                                             {searchAddress && (
                                                 <button
@@ -836,7 +838,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </div>
                 
                 {/* Desktop: Right Side - Map */}
-                <div className="hidden lg:block w-1/2 border-l bg-muted/30">
+                <div className="hidden lg:block w-3/5 border-l bg-muted/30">
                     <div className="h-full sticky top-[73px]">
                         {loadError ? (
                             <div className="h-full flex items-center justify-center bg-muted">
@@ -845,7 +847,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         ) : (
                             <>
                                 {/* Search Bar */}
-                                <div className="absolute top-4 left-4 right-4 z-10 max-w-sm">
+                                <div className="absolute top-3 left-3 right-3 z-10 max-w-sm">
                                         <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                 {isGeocoding ? (
@@ -861,7 +863,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 onChange={(e) => setSearchAddress(e.target.value)}
                                                 placeholder={isGeocoding ? "Buscando..." : "Buscar dirección..."}
                                                 disabled={isGeocoding}
-                                            className="w-full pl-9 pr-8 h-9 text-sm bg-background/95 backdrop-blur-md border-border/50 shadow-sm"
+                                            className="w-full pl-9 pr-8 h-11 text-sm bg-white backdrop-blur-md border-[#DDDDDD] shadow-lg hover:shadow-xl transition-shadow"
                                             />
                                             {searchAddress && (
                                                 <button

@@ -18,10 +18,24 @@ export const MfaVerificationProvider: React.FC<{ children: React.ReactNode }> = 
     const [onSuccessCallback, setOnSuccessCallback] = useState<(() => void | Promise<any>) | undefined>(undefined);
     const [isVerified, setIsVerified] = useState(false);
     const isDesktop = useMediaQuery('(min-width: 768px)');
+    const forceCloseTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
     const showVerification = useCallback((onSuccess?: () => void | Promise<any>) => {
         setOnSuccessCallback(() => onSuccess);
         setIsOpen(true);
+        // Guardar timestamp para permitir cierre forzado después de 30s
+        (window as any).__mfaDialogOpenTime = Date.now();
+        
+        // Limpiar timeout anterior si existe
+        if (forceCloseTimeoutRef.current) {
+            clearTimeout(forceCloseTimeoutRef.current);
+        }
+        
+        // Timeout de seguridad: forzar cierre después de 30 segundos
+        forceCloseTimeoutRef.current = setTimeout(() => {
+            console.warn('[MfaVerificationContext] Force closing after 30s timeout');
+            hideVerification(true);
+        }, 30000);
     }, []);
 
     const hideVerification = useCallback((force: boolean = false) => {
@@ -30,10 +44,18 @@ export const MfaVerificationProvider: React.FC<{ children: React.ReactNode }> = 
             // No cerrar si no está verificado - el usuario debe usar el botón cancelar
             return;
         }
+        
+        // Limpiar timeout si existe
+        if (forceCloseTimeoutRef.current) {
+            clearTimeout(forceCloseTimeoutRef.current);
+            forceCloseTimeoutRef.current = null;
+        }
+        
         setIsOpen(false);
         setOnSuccessCallback(undefined);
         setIsVerified(false);
         localStorage.removeItem('mfa-verification-pending');
+        delete (window as any).__mfaDialogOpenTime;
     }, [isVerified]);
 
     const handleSuccess = useCallback(async () => {
@@ -102,23 +124,27 @@ export const MfaVerificationProvider: React.FC<{ children: React.ReactNode }> = 
             {children}
             {isDesktop ? (
                 <Dialog open={isOpen} onOpenChange={(open) => {
-                    // ✅ Prevenir cierre si no está verificado
-                    if (!open && !isVerified) {
-                        return; // No cerrar
-                    }
                     if (!open) {
                         hideVerification();
                     }
                 }}>
                     <DialogContent className="sm:max-w-md" onEscapeKeyDown={(e) => {
-                        // ✅ Prevenir cierre con ESC si no está verificado
+                        // ✅ Prevenir cierre con ESC si no está verificado, pero permitir después de 30s
                         if (!isVerified) {
-                            e.preventDefault();
+                            const openTime = (window as any).__mfaDialogOpenTime || 0;
+                            const elapsed = Date.now() - openTime;
+                            if (elapsed < 30000) {
+                                e.preventDefault();
+                            }
                         }
                     }} onPointerDownOutside={(e) => {
-                        // ✅ Prevenir cierre haciendo clic fuera si no está verificado
+                        // ✅ Prevenir cierre haciendo clic fuera si no está verificado, pero permitir después de 30s
                         if (!isVerified) {
-                            e.preventDefault();
+                            const openTime = (window as any).__mfaDialogOpenTime || 0;
+                            const elapsed = Date.now() - openTime;
+                            if (elapsed < 30000) {
+                                e.preventDefault();
+                            }
                         }
                     }}>
                         {content}
@@ -128,10 +154,6 @@ export const MfaVerificationProvider: React.FC<{ children: React.ReactNode }> = 
                 <Drawer 
                     open={isOpen} 
                     onOpenChange={(open) => {
-                        // ✅ Prevenir cierre si no está verificado
-                        if (!open && !isVerified) {
-                            return; // No cerrar
-                        }
                         if (!open) {
                             hideVerification();
                         }
@@ -142,15 +164,23 @@ export const MfaVerificationProvider: React.FC<{ children: React.ReactNode }> = 
                     <DrawerContent 
                         className="max-h-[96vh]"
                         onPointerDownOutside={(e) => {
-                            // ✅ Prevenir cierre haciendo clic fuera si no está verificado
+                            // ✅ Prevenir cierre haciendo clic fuera si no está verificado, pero permitir después de 30s
                             if (!isVerified) {
-                                e.preventDefault();
+                                const openTime = (window as any).__mfaDialogOpenTime || 0;
+                                const elapsed = Date.now() - openTime;
+                                if (elapsed < 30000) {
+                                    e.preventDefault();
+                                }
                             }
                         }}
                         onEscapeKeyDown={(e) => {
-                            // ✅ Prevenir cierre con ESC si no está verificado
+                            // ✅ Prevenir cierre con ESC si no está verificado, pero permitir después de 30s
                             if (!isVerified) {
-                                e.preventDefault();
+                                const openTime = (window as any).__mfaDialogOpenTime || 0;
+                                const elapsed = Date.now() - openTime;
+                                if (elapsed < 30000) {
+                                    e.preventDefault();
+                                }
                             }
                         }}
                     >

@@ -153,6 +153,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     // Prevent body scroll when chat is active on mobile and ensure scroll to bottom
     useEffect(() => {
+        const originalOverflow = document.body.style.overflow;
+        const originalPosition = document.body.style.position;
+        const originalWidth = document.body.style.width;
+        
         if (activeTab === 'chat') {
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
@@ -176,15 +180,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             setTimeout(scrollToBottom, 250);
             setTimeout(scrollToBottom, 400);
         } else {
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
+            document.body.style.overflow = originalOverflow || '';
+            document.body.style.position = originalPosition || '';
+            document.body.style.width = originalWidth || '';
         }
 
         return () => {
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
+            document.body.style.overflow = originalOverflow || '';
+            document.body.style.position = originalPosition || '';
+            document.body.style.width = originalWidth || '';
         };
     }, [activeTab]);
 
