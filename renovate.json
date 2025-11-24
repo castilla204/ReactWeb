@@ -16,7 +16,8 @@
         "minor",
         "digest"
       ],
-      "automerge": true
+      "automerge": true,
+      "automergeType": "pr"
     },
     {
       "description": "Auto-merge security patches for dependencies",
@@ -28,7 +29,8 @@
       "matchUpdateTypes": [
         "patch"
       ],
-      "automerge": true
+      "automerge": true,
+      "automergeType": "pr"
     },
     {
       "description": "Pin Docker image digests",
@@ -48,7 +50,7 @@
     }
   ],
   "kubernetes": {
-    "fileMatch": [
+    "managerFilePatterns": [
       "**/deployment.yaml",
       "**/deployment.yml",
       "**/statefulset.yaml",
@@ -57,10 +59,6 @@
       "k8s/**/*.yml"
     ]
   },
-  "schedule": [
-    "before 10am on monday"
-  ],
-  "timezone": "Europe/Madrid",
   "labels": [
     "dependencies",
     "renovate"
