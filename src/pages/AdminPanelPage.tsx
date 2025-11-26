@@ -4,15 +4,14 @@ import { UserManagement } from '../components/UserManagement';
 import AdminPanel from '../components/AdminPanel';
 import NotificationManagement from '../components/NotificationManagement';
 import { DisputePanel } from '../components/DisputePanel';
-import HangfirePanel from '../components/HangfirePanel';
-import { ArrowLeft, Users, Settings, Bell, AlertTriangle, Activity } from 'lucide-react';
+import { ArrowLeft, Users, Settings, Bell, AlertTriangle } from 'lucide-react';
 import Background from '../components/Background';
 import { useAuth } from '../contexts/AuthContext';
 
 const AdminPanelPage: React.FC = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated, isLoading } = useAuth();
-    const [activeTab, setActiveTab] = useState<'users' | 'config' | 'notifications' | 'disputes' | 'hangfire'>('users');
+    const [activeTab, setActiveTab] = useState<'users' | 'config' | 'notifications' | 'disputes'>('users');
 
     useEffect(() => {
         console.log('AdminPanelPage - User:', user);
@@ -129,7 +128,6 @@ const AdminPanelPage: React.FC = () => {
                     {activeTab === 'config' && <AdminPanel />}
                     {activeTab === 'notifications' && <NotificationManagement />}
                     {activeTab === 'disputes' && <DisputePanel />}
-                    {activeTab === 'hangfire' && <HangfirePanel />}
                 </div>
             </div>
         </div>
