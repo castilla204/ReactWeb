@@ -23,7 +23,7 @@ metadata:
     nginx.ingress.kubernetes.io/x-xss-protection: "1; mode=block"
     nginx.ingress.kubernetes.io/referrer-policy: "strict-origin-when-cross-origin"
     nginx.ingress.kubernetes.io/permissions-policy: "geolocation=(), microphone=(), camera=()"
-    nginx.ingress.kubernetes.io/content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://api.inspecciono.io https://accounts.google.com; frame-src 'self' https://accounts.google.com; frame-ancestors 'none';"
+    nginx.ingress.kubernetes.io/content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com https://js.stripe.com https://static.elfsight.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://api.atrapo.io https://accounts.google.com https://api.stripe.com https://checkout.stripe.com https://*.elfsight.com; frame-src 'self' https://accounts.google.com https://js.stripe.com https://hooks.stripe.com https://*.elfsight.com; frame-ancestors 'none';"
     nginx.ingress.kubernetes.io/configuration-snippet: |
       more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
     nginx.ingress.kubernetes.io/server-snippet: |
