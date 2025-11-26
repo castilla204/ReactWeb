@@ -3,9 +3,19 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
+      - main
+      - develop
+      - main
+      - develop
+    branches:
     paths-ignore:
       - 'k8s/deployment.yaml'
 
+    paths-ignore:
+      - 'k8s/deployment.yaml'
+
+      - main
+      - develop
   pull_request:
     branches:
     paths-ignore:
@@ -118,8 +128,8 @@ jobs:
     branches:
       - main
       - develop
-    paths-ignore:
-      - k8s/deployment.yaml
+      - main
+      - develop
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
     needs: [ci, security-scan]  # Solo se ejecuta si security-scan pasa
@@ -180,8 +190,8 @@ jobs:
     branches:
       - main
       - develop
-    paths-ignore:
-      - k8s/deployment.yaml
+      - main
+      - develop
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
