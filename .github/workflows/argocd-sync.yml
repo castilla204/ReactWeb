@@ -20,6 +20,13 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+          rm argocd-linux-amd64
+          argocd version --client
+
       - name: Configure kubectl
         run: |
           mkdir -p $HOME/.kube
@@ -28,7 +35,11 @@ jobs:
 
       - name: Sync ArgoCD Application
         run: |
-          argocd app sync react-web --server ${{ secrets.ARGOCD_SERVER }} --auth-token ${{ secrets.ARGOCD_TOKEN }} || \
-          kubectl apply -f k8s/ -n default && \
-          kubectl rollout restart deployment/react-web -n default
+          if argocd app sync react-web --server ${{ secrets.ARGOCD_SERVER }} --auth-token ${{ secrets.ARGOCD_TOKEN }}; then
+            echo "✅ ArgoCD sync successful"
+          else
+            echo "⚠️ ArgoCD sync failed, falling back to kubectl apply"
+            kubectl apply -f k8s/ --validate=false -n default
+            kubectl rollout restart deployment/react-web -n default
+          fi
 
