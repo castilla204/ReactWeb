@@ -617,9 +617,25 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   }
 
   // Mobile version
+  const handleDrawerOpenChange = (open: boolean) => {
+    if (!open) {
+      // Cerrar el drawer anidado primero para evitar conflictos de DOM
+      setMobileMenuOpen(false);
+      // Pequeño delay para asegurar que el drawer anidado se cierre antes
+      setTimeout(() => {
+        onClose();
+      }, 100);
+    }
+    // Si open es true, no hacemos nada - el drawer se abre automáticamente
+  };
+
+  const handleNestedDrawerOpenChange = (open: boolean) => {
+    setMobileMenuOpen(open);
+  };
+
   return (
     <>
-      <Drawer open={isOpen} onOpenChange={onClose}>
+      <Drawer open={isOpen} onOpenChange={handleDrawerOpenChange}>
         <DrawerContent className="max-h-[96vh]">
           <DrawerHeader className="sr-only">
             <DrawerTitle>Configuración de Cuenta</DrawerTitle>
@@ -628,7 +644,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           <div className="mx-auto w-full max-w-4xl">
             {/* Mobile Header */}
             <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-              <Drawer open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <Drawer open={mobileMenuOpen} onOpenChange={handleNestedDrawerOpenChange}>
                 <DrawerTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-9 w-9">
                     <Menu className="h-5 w-5" />

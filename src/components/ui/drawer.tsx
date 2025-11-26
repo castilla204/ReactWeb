@@ -48,7 +48,8 @@ const DrawerContent = React.forwardRef<
     // Función para verificar y corregir aria-hidden cuando el drawer está abierto
     const checkAriaHidden = () => {
       const content = contentRef.current;
-      if (!content) return;
+      // Verificar que el elemento existe y está en el DOM antes de manipularlo
+      if (!content || !content.parentNode) return;
       
       const isOpen = content.getAttribute('data-state') === 'open';
       
@@ -64,11 +65,14 @@ const DrawerContent = React.forwardRef<
           // Eliminar aria-hidden de todos los ancestros del elemento con foco hasta el drawer
           let parent = focusedElement.parentElement;
           while (parent && parent !== content) {
-            if (parent.getAttribute('aria-hidden') === 'true') {
-              parent.removeAttribute('aria-hidden');
-            }
-            if (parent.getAttribute('data-aria-hidden') === 'true') {
-              parent.removeAttribute('data-aria-hidden');
+            // Verificar que el parent existe antes de manipularlo
+            if (parent && parent.parentNode) {
+              if (parent.getAttribute('aria-hidden') === 'true') {
+                parent.removeAttribute('aria-hidden');
+              }
+              if (parent.getAttribute('data-aria-hidden') === 'true') {
+                parent.removeAttribute('data-aria-hidden');
+              }
             }
             parent = parent.parentElement;
           }
@@ -93,25 +97,39 @@ const DrawerContent = React.forwardRef<
     
     // ✅ Escuchar eventos de foco para corregir inmediatamente
     const handleFocusIn = (e: FocusEvent) => {
+      const currentContent = contentRef.current;
       const target = e.target as HTMLElement;
-      if (content.contains(target)) {
+      // Verificar que content existe y contiene el target antes de procesar
+      if (currentContent && currentContent.parentNode && currentContent.contains(target)) {
         checkAriaHidden();
       }
     };
     
     // ✅ Escuchar cuando el drawer se abre
     const handleStateChange = () => {
-      checkAriaHidden();
+      // Verificar que content existe antes de procesar usando la referencia actual
+      const currentContent = contentRef.current;
+      if (currentContent && currentContent.parentNode) {
+        checkAriaHidden();
+      }
     };
     
     document.addEventListener('focusin', handleFocusIn);
-    content.addEventListener('transitionend', handleStateChange);
+    // Solo agregar el listener si el elemento existe
+    if (content) {
+      content.addEventListener('transitionend', handleStateChange);
+    }
     
     return () => {
       observer.disconnect();
       clearInterval(intervalId);
       document.removeEventListener('focusin', handleFocusIn);
-      content.removeEventListener('transitionend', handleStateChange);
+      // Verificar que el elemento existe antes de remover el listener
+      // Usar contentRef.current para obtener la referencia más reciente
+      const currentContent = contentRef.current;
+      if (currentContent && currentContent.parentNode) {
+        currentContent.removeEventListener('transitionend', handleStateChange);
+      }
     };
   }, []);
   
