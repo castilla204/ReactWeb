@@ -120,7 +120,6 @@ const AdminPanelPage: React.FC = () => {
                                     <span>Panel de Disputas</span>
                                 </div>
                             </button>
-                            </button>
                             <button
                                 onClick={() => setActiveTab('hangfire')}
                                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
