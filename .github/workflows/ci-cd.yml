@@ -1,6 +1,20 @@
 name: CI/CD Pipeline
 
 on:
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - k8s/deployment.yaml
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - k8s/deployment.yaml
+  workflow_dispatch:
+
 on:
   push:
     branches:
