@@ -6,21 +6,6 @@ on:
       - main
       - develop
     paths-ignore:
-      - k8s/deployment.yaml
-  pull_request:
-    branches:
-      - main
-      - develop
-    paths-ignore:
-      - k8s/deployment.yaml
-  workflow_dispatch:
-
-on:
-  push:
-    branches:
-      - main
-      - develop
-    paths-ignore:
       - 'k8s/deployment.yaml'
   pull_request:
     branches:
@@ -28,12 +13,6 @@ on:
       - develop
     paths-ignore:
       - 'k8s/deployment.yaml'
-    branches:
-    paths-ignore:
-      - 'k8s/deployment.yaml'
-
-      - main
-      - develop
   workflow_dispatch:
 
 permissions:
