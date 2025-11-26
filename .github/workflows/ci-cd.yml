@@ -1,6 +1,7 @@
 name: CI/CD Pipeline
 
 on:
+on:
   push:
     branches:
       - main
@@ -13,7 +14,6 @@ on:
       - develop
     paths-ignore:
       - 'k8s/deployment.yaml'
-  workflow_dispatch:
     branches:
     paths-ignore:
       - 'k8s/deployment.yaml'
