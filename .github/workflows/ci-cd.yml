@@ -269,7 +269,6 @@ jobs:
           commit_message: 'chore: Update deployment image digest [skip ci]'
           file_pattern: 'k8s/deployment.yaml'
           skip_dirty_check: true
-          pull_options: '--rebase'  # Hacer pull con rebase antes de push
 
   notify:
     name: Notify - ArgoCD will deploy automatically
@@ -365,7 +364,6 @@ jobs:
           commit_message: 'chore: Update deployment image digest [skip ci]'
           file_pattern: 'k8s/deployment.yaml'
           skip_dirty_check: true
-          pull_options: '--rebase'  # Hacer pull con rebase antes de push
 
 
       - name: Build completed
@@ -384,3 +382,6 @@ jobs:
 
 
 
+
+    permissions:
+      contents: write
