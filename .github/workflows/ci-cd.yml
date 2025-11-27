@@ -277,6 +277,7 @@ jobs:
           file_pattern: 'k8s/deployment.yaml'
           skip_dirty_check: true
           skip_fetch: true  # Ya hicimos pull antes
+          skip_checkout: true  # Ya tenemos el código con checkout
 
   notify:
     name: Notify - ArgoCD will deploy automatically
@@ -380,6 +381,7 @@ jobs:
           file_pattern: 'k8s/deployment.yaml'
           skip_dirty_check: true
           skip_fetch: true  # Ya hicimos pull antes
+          skip_checkout: true  # Ya tenemos el código con checkout
 
 
       - name: Build completed
@@ -401,6 +403,7 @@ jobs:
 
     permissions:
       contents: write
+
 
 
 
