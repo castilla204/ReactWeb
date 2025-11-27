@@ -265,7 +265,8 @@ jobs:
       - name: Commit and push deployment update
         if: github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v5
-        with:          commit_message: 'chore: Update deployment image digest [skip ci]'
+        with:
+                commit_message: 'chore: Update deployment image digest [skip ci]'
           file_pattern: 'k8s/deployment.yaml'
           skip_dirty_check: true
           pull_options: '--rebase'  # Hacer pull con rebase antes de push
@@ -367,7 +368,8 @@ jobs:
       - name: Commit and push deployment update
         if: github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v5
-        with:          commit_message: 'chore: Update deployment image digest [skip ci]'
+        with:
+                commit_message: 'chore: Update deployment image digest [skip ci]'
           file_pattern: 'k8s/deployment.yaml'
           skip_dirty_check: true
           pull_options: '--rebase'  # Hacer pull con rebase antes de push
