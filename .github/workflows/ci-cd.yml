@@ -26,6 +26,13 @@ env:
 jobs:
   # Job de CI: Build, test y lint
   ci:
+    # NO ejecutar en PRs de renovate/dependabot para ahorrar costos
+    if: |
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.user.login != 'renovate[bot]' &&
+       github.event.pull_request.user.login != 'dependabot[bot]' &&
+       !startsWith(github.event.pull_request.head.ref, 'renovate/') &&
+       !startsWith(github.event.pull_request.head.ref, 'dependabot/'))
     name: Continuous Integration
     runs-on: ubuntu-latest
     steps:
@@ -67,6 +74,15 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    # NO ejecutar en PRs de renovate/dependabot para ahorrar costos
+    if: |
+      (github.event_name != 'pull_request' ||
+       (github.event.pull_request.user.login != 'renovate[bot]' &&
+        github.event.pull_request.user.login != 'dependabot[bot]' &&
+        !startsWith(github.event.pull_request.head.ref, 'renovate/') &&
+        !startsWith(github.event.pull_request.head.ref, 'dependabot/'))) &&
+      always() &&
+      (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     needs: ci
     permissions:
       contents: read
