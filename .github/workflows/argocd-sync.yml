@@ -61,3 +61,4 @@ jobs:
           echo "⚠️ No ArgoCD or kubectl configuration found"
           echo "ℹ️ Skipping sync. ArgoCD will sync automatically when it detects changes."
           echo "ℹ️ To enable manual sync, configure ARGOCD_SERVER and ARGOCD_TOKEN secrets"
+
