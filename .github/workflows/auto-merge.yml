@@ -117,14 +117,13 @@ jobs:
               console.log(`PR not found by exact SHA match, using only PR found: #${prs[0].number}`);
               pr = prs[0];
             }
-            
-            // Si hay múltiples PRs, buscar el más reciente
-            if (!pr && prs.length > 1) {
-              console.log(`Multiple PRs found, using most recent one`);
-              pr = prs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+            // NO mergear PRs de renovate/dependabot para ahorrar costos
+            if (pr.user.login === 'renovate[bot]' || pr.user.login === 'dependabot[bot]' || pr.head.ref.startsWith('renovate/') || pr.head.ref.startsWith('dependabot/')) {
+              console.log(`Skipping: PR is from renovate/dependabot - not auto-merging to save costs`);
+              return;
             }
             
-            if (!pr) {
+            // Solo procesar PRs de otros bots
               console.log('No PR found matching the SHA, skipping');
               return;
             }
@@ -141,6 +140,11 @@ jobs:
             }
             
             // Solo procesar PRs de bots
+            // NO mergear PRs de renovate/dependabot para ahorrar costos
+            if (pr.user.login === 'renovate[bot]' || pr.user.login === 'dependabot[bot]' || pr.head.ref.startsWith('renovate/') || pr.head.ref.startsWith('dependabot/')) {
+              console.log(`Skipping: PR is from renovate/dependabot - not auto-merging to save costs`);
+              return;
+            }
             if (pr.user.type !== 'Bot' && !pr.user.login.includes('bot')) {
               console.log('Skipping: PR is not from a bot');
               return;
