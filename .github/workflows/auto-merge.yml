@@ -10,6 +10,7 @@ permissions:
   contents: write
   pull-requests: write
   checks: read
+  actions: read  # Necesario para leer workflow runs
 
 jobs:
   auto-merge:
@@ -280,3 +281,4 @@ jobs:
                 throw error;
               }
             }
+
