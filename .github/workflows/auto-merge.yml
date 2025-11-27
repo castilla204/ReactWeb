@@ -10,6 +10,7 @@ permissions:
   contents: write
   pull-requests: write
   checks: read
+  statuses: read  # Necesario para verificar estado de commits
   actions: read  # Necesario para leer workflow runs
 
 jobs:
@@ -294,5 +295,6 @@ jobs:
                 throw error;
               }
             }
+
 
 
