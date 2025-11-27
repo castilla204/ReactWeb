@@ -130,11 +130,17 @@ jobs:
             
             console.log(`Found PR #${pr.number}: ${pr.title}`);
             console.log(`  User: ${pr.user.login} (${pr.user.type})`);
-            console.log(`  Base branch: ${pr.base.ref}`);
+            if (pr.base.ref !== 'main' && pr.base.ref !== 'master') {
+              console.log(`Skipping: PR targets branch '${pr.base.ref}', not 'main' or 'master'`);
+              return;
+            }
+            }
+              return;
             console.log(`  Head branch: ${pr.head.ref}`);
             
             // ✅ SOLO mergear PRs que apunten a 'main'
-            if (pr.base.ref !== 'main' && pr.base.ref !== 'master') {
+            if (pr.base.ref !== 'main' if (pr.base.ref !== 'main' && pr.base.ref !== 'master') {if (pr.base.ref !== 'main' && pr.base.ref !== 'master') { pr.base.ref !== 'master') {
+              return;
               console.log(`Skipping: PR targets branch '${pr.base.ref}', not 'main' or 'master'`);
               return;
             if (pr.user.type !== 'Bot' && !pr.user.login.includes('bot')) {
