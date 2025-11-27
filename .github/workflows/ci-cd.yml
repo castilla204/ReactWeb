@@ -192,7 +192,7 @@ jobs:
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
           echo "Image digest: $DIGEST"
 
-            - name: Pull latest changes before commit
+      - name: Pull latest changes before commit
         if: github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
@@ -296,7 +296,7 @@ jobs:
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
           echo "Image digest: $DIGEST"
 
-            - name: Pull latest changes before commit
+      - name: Pull latest changes before commit
         if: github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
@@ -379,6 +379,7 @@ jobs:
           echo "📦 Image pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo "🚀 ArgoCD will automatically deploy when it detects the new image"
           echo "🔍 Check ArgoCD UI: https://argocd.inspecciono.com"
+
 
 
 
