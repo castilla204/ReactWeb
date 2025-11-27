@@ -106,7 +106,20 @@ jobs:
             }
             
             // Buscar PR que coincida con el SHA
-            const pr = prs.find(p => p.head.sha === headSha);
+            // Buscar PR que coincida con el SHA
+            let pr = prs.find(p => p.head.sha === headSha);
+            
+            // Si no se encuentra por SHA exacto, usar el primero si solo hay uno
+            if (!pr && prs.length === 1) {
+              console.log(`PR not found by exact SHA match, using only PR found: #${prs[0].number}`);
+              pr = prs[0];
+            }
+            
+            // Si hay múltiples PRs, buscar el más reciente
+            if (!pr && prs.length > 1) {
+              console.log(`Multiple PRs found, using most recent one`);
+              pr = prs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+            }
             
             if (!pr) {
               console.log('No PR found matching the SHA, skipping');
@@ -281,4 +294,5 @@ jobs:
                 throw error;
               }
             }
+
 
