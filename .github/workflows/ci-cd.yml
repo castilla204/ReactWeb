@@ -192,7 +192,14 @@ jobs:
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
           echo "Image digest: $DIGEST"
 
-      - name: Update deployment.yaml
+            - name: Pull latest changes before commit
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull origin main --rebase || git pull origin main --no-rebase || true
+      
+- name: Update deployment.yaml
         if: github.ref == 'refs/heads/main'
         run: |
           # Verificar que el archivo existe
@@ -258,13 +265,11 @@ jobs:
       - name: Commit and push deployment update
         if: github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'chore: Update deployment image digest [skip ci]'
+        with:          commit_message: 'chore: Update deployment image digest [skip ci]'
           file_pattern: 'k8s/deployment.yaml'
           skip_dirty_check: true
+          pull_options: '--rebase'  # Hacer pull con rebase antes de push
 
-
-  # Job de CD: Notificación (ArgoCD hará el deploy automáticamente)
   notify:
     name: Notify - ArgoCD will deploy automatically
     runs-on: ubuntu-latest
@@ -291,7 +296,14 @@ jobs:
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
           echo "Image digest: $DIGEST"
 
-      - name: Update deployment.yaml
+            - name: Pull latest changes before commit
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull origin main --rebase || git pull origin main --no-rebase || true
+      
+- name: Update deployment.yaml
         if: github.ref == 'refs/heads/main'
         run: |
           # Verificar que el archivo existe
@@ -355,10 +367,11 @@ jobs:
       - name: Commit and push deployment update
         if: github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'chore: Update deployment image digest [skip ci]'
+        with:          commit_message: 'chore: Update deployment image digest [skip ci]'
           file_pattern: 'k8s/deployment.yaml'
           skip_dirty_check: true
+          pull_options: '--rebase'  # Hacer pull con rebase antes de push
+
 
       - name: Build completed
         run: |
