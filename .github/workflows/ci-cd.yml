@@ -276,6 +276,7 @@ jobs:
           commit_message: 'chore: Update deployment image digest [skip ci]'
           file_pattern: 'k8s/deployment.yaml'
           skip_dirty_check: true
+          skip_fetch: true  # Ya hicimos pull antes
 
   notify:
     name: Notify - ArgoCD will deploy automatically
@@ -286,6 +287,7 @@ jobs:
       name: production
       url: https://inspecciono.com
     steps:
+      - name: Checkout code
       - name: Checkout code
         uses: actions/checkout@v6
       - name: Get image digest
@@ -378,8 +380,10 @@ jobs:
           commit_message: 'chore: Update deployment image digest [skip ci]'
           file_pattern: 'k8s/deployment.yaml'
           skip_dirty_check: true
+          skip_fetch: true  # Ya hicimos pull antes
 
 
+      - name: Build completed
       - name: Build completed
         run: |
           echo "✅ Build completed successfully!"
@@ -399,4 +403,5 @@ jobs:
 
     permissions:
       contents: write
+
 
