@@ -137,9 +137,6 @@ jobs:
             if (pr.base.ref !== 'main' && pr.base.ref !== 'master') {
               console.log(`Skipping: PR targets branch '${pr.base.ref}', not 'main' or 'master'`);
               return;
-            }
-            
-            // Solo procesar PRs de bots
             if (pr.user.type !== 'Bot' && !pr.user.login.includes('bot')) {
               console.log('Skipping: PR is not from a bot');
               return;
