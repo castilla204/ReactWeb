@@ -127,7 +127,6 @@ jobs:
             const isBot = pr.user.type === 'Bot' || 
                          (pr.user.login.includes('bot') && pr.user.login !== 'renovate[bot]' && pr.user.login !== 'dependabot[bot]') || 
                          pr.user.login === 'github-actions[bot]';
-            }
             
             console.log(`Found PR #${pr.number}: ${pr.title}`);
             console.log(`  User: ${pr.user.login} (${pr.user.type})`);
