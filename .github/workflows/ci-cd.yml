@@ -274,6 +274,8 @@ jobs:
       name: production
       url: https://inspecciono.com
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
       - name: Get image digest
         id: image-digest
         run: |
@@ -364,6 +366,7 @@ jobs:
           echo "📦 Image pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo "🚀 ArgoCD will automatically deploy when it detects the new image"
           echo "🔍 Check ArgoCD UI: https://argocd.inspecciono.com"
+
 
 
 
