@@ -193,22 +193,59 @@ jobs:
           echo "Image digest: $DIGEST"
 
       - name: Update deployment.yaml
-        if: github.ref == 'refs/heads/main'
-        run: |
-          DIGEST="${{ steps.image-digest.outputs.digest }}"
-          echo "Updating deployment.yaml with digest: $DIGEST"
-          
-          # Actualizar la línea de image en deployment.yaml
-          sed -i "s|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest@sha256:[a-f0-9]*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest@$DIGEST|g" k8s/deployment.yaml
-          
-          # Verificar
-          if grep -q "$DIGEST" k8s/deployment.yaml; then
-            echo "✅ deployment.yaml actualizado"
-            grep "image:" k8s/deployment.yaml
-          else
-            echo "❌ Error actualizando deployment.yaml"
-            exit 1
-          fi
+              if: github.ref == 'refs/heads/main'
+              run: |
+                DIGEST="${{ steps.image-digest.outputs.digest }}"
+                echo "Updating deployment.yaml with digest: $DIGEST"
+                echo "Current image line in deployment.yaml:"
+                grep "image:" k8s/deployment.yaml || echo "No image line found"
+                
+                # Intentar múltiples formatos de imagen
+                UPDATED=false
+                
+                # Formato 1: docker.io/erizo9/reactweb:latest@sha256:...
+                if grep -q "image: docker.io/erizo9/reactweb:latest@sha256:" k8s/deployment.yaml; then
+                  sed -i "s|image: docker.io/erizo9/reactweb:latest@sha256:[a-f0-9]*|image: docker.io/erizo9/reactweb:latest@$DIGEST|g" k8s/deployment.yaml
+                  UPDATED=true
+                  echo "✅ Updated with format: docker.io/erizo9/reactweb:latest@sha256:..."
+                # Formato 2: erizo9/reactweb:latest@sha256:...
+                elif grep -q "image: erizo9/reactweb:latest@sha256:" k8s/deployment.yaml; then
+                  sed -i "s|image: erizo9/reactweb:latest@sha256:[a-f0-9]*|image: erizo9/reactweb:latest@$DIGEST|g" k8s/deployment.yaml
+                  UPDATED=true
+                  echo "✅ Updated with format: erizo9/reactweb:latest@sha256:..."
+                # Formato 3: docker.io/erizo9/reactweb@sha256:...
+                elif grep -q "image: docker.io/erizo9/reactweb@sha256:" k8s/deployment.yaml; then
+                  sed -i "s|image: docker.io/erizo9/reactweb@sha256:[a-f0-9]*|image: docker.io/erizo9/reactweb@$DIGEST|g" k8s/deployment.yaml
+                  UPDATED=true
+                  echo "✅ Updated with format: docker.io/erizo9/reactweb@sha256:..."
+                # Formato 4: erizo9/reactweb@sha256:...
+                elif grep -q "image: erizo9/reactweb@sha256:" k8s/deployment.yaml; then
+                  sed -i "s|image: erizo9/reactweb@sha256:[a-f0-9]*|image: erizo9/reactweb@$DIGEST|g" k8s/deployment.yaml
+                  UPDATED=true
+                  echo "✅ Updated with format: erizo9/reactweb@sha256:..."
+                fi
+                
+                if [ "$UPDATED" = "false" ]; then
+                  echo "❌ No matching image pattern found in deployment.yaml"
+                  echo "Available image lines:"
+                  grep "image:" k8s/deployment.yaml || echo "No image line found"
+                  exit 1
+                fi
+                
+                # Verificar que se actualizó correctamente
+                if grep -q "$DIGEST" k8s/deployment.yaml; then
+                  echo "✅ deployment.yaml actualizado correctamente"
+                  echo "Updated line:"
+                  grep "image:" k8s/deployment.yaml | grep "$DIGEST"
+                else
+                  echo "❌ Error: digest no encontrado en deployment.yaml después de actualizar"
+                  echo "Digest buscado: $DIGEST"
+                  echo "Contenido actual:"
+                  grep "image:" k8s/deployment.yaml || echo "No image line found"
+                  exit 1
+                fi
+
+
 
       - name: Commit and push deployment update
         if: github.ref == 'refs/heads/main'
@@ -276,5 +313,6 @@ jobs:
           echo "📦 Image pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo "🚀 ArgoCD will automatically deploy when it detects the new image"
           echo "🔍 Check ArgoCD UI: https://argocd.inspecciono.com"
+
 
 
