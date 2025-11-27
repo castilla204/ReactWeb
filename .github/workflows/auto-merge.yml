@@ -148,10 +148,10 @@ jobs:
             
             console.log(`✅ PR #${pr.number} is from bot and targets 'main' - proceeding to merge`);
             
-            // Esperar a que sea mergeable (máximo 5 minutos)
+            // Esperar a que sea mergeable (máximo 10 minutos)
             console.log('Waiting for PR to be mergeable...');
             let mergeable = false;
-            for (let i = 0; i < 30; i++) {
+            for (let i = 0; i < 60; i++) {
               const { data: prCheck } = await github.rest.pulls.get({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -189,12 +189,12 @@ jobs:
               return;
             }
             
-            // Verificar checks (máximo 5 minutos)
+            // Verificar checks (máximo 10 minutos)
             console.log('Waiting for all checks to pass...');
             const headShaCheck = pr.head.sha;
             let checksPassed = false;
             
-            for (let i = 0; i < 30; i++) {
+            for (let i = 0; i < 60; i++) {
               const { data: status } = await github.rest.repos.getCombinedStatusForRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
