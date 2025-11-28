@@ -90,41 +90,58 @@ const HangfirePanel: React.FC = () => {
             
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {hangfireUrl ? (
-                    <iframe
-                        src={hangfireUrl}
-                        className="w-full"
-                        style={{ height: 'calc(100vh - 300px)', minHeight: '600px', border: 'none' }}
-                        title="Hangfire Dashboard"
-                        allow="fullscreen"
-                        onError={() => setError('Error al cargar el dashboard de Hangfire. Verifica que el endpoint esté accesible y que tengas permisos de administrador.')}
-                        onLoad={(e) => {
-                            // Verificar si el iframe cargó correctamente
-                            const iframe = e.currentTarget;
-                            try {
-                                // Intentar acceder al contenido para verificar si hay error de permisos
-                                const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                                if (iframeDoc) {
-                                    const bodyText = iframeDoc.body?.innerText || '';
-                                    if (bodyText.includes('403') || bodyText.includes('Forbidden') || bodyText.includes('no tiene permisos')) {
-                                        setError('No tienes permisos para acceder al dashboard de Hangfire. Contacta al administrador.');
+                    <>
+                        <iframe
+                            src={hangfireUrl}
+                            className="w-full"
+                            style={{ height: 'calc(100vh - 300px)', minHeight: '600px', border: 'none' }}
+                            title="Hangfire Dashboard"
+                            allow="fullscreen"
+                            onError={() => {
+                                setError('Error al cargar el dashboard de Hangfire. El endpoint puede requerir autenticación adicional.');
+                            }}
+                            onLoad={(e) => {
+                                // Verificar si el iframe cargó correctamente después de un tiempo
+                                setTimeout(() => {
+                                    const iframe = e.currentTarget;
+                                    try {
+                                        // Intentar acceder al contenido para verificar si hay error
+                                        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                                        if (iframeDoc) {
+                                            const bodyText = iframeDoc.body?.innerText || '';
+                                            const bodyHTML = iframeDoc.body?.innerHTML || '';
+                                            
+                                            // Verificar si hay errores de autenticación
+                                            if (bodyText.includes('401') || bodyText.includes('Unauthorized') || 
+                                                bodyText.includes('403') || bodyText.includes('Forbidden') ||
+                                                bodyHTML.includes('401') || bodyHTML.includes('Unauthorized')) {
+                                                setError('Error de autenticación. El token puede haber expirado. Por favor, recarga la página o cierra sesión y vuelve a iniciar sesión.');
+                                            } else if (bodyText.trim() === '' && bodyHTML.trim() === '') {
+                                                // Iframe vacío puede indicar un problema
+                                                console.warn('Hangfire iframe appears to be empty');
+                                            }
+                                        }
+                                    } catch (err) {
+                                        // Error de CORS al acceder al contenido del iframe - esto es normal
+                                        // Si hay CORS, no podemos verificar el contenido, pero el iframe puede estar cargando
+                                        console.log('Cannot access iframe content (CORS) - this is expected if the iframe loads successfully');
                                     }
-                                }
-                            } catch (err) {
-                                // Error de CORS al acceder al contenido del iframe - esto es normal
-                                console.log('Cannot access iframe content (CORS) - this is expected');
-                            }
-                            console.log('Hangfire iframe loaded');
-                        }}
-                        // Permitir que el iframe pase cookies y credenciales
-                        // Removemos restricciones del sandbox para permitir autenticación
-                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
-                        // Intentar cargar con credenciales
-                        referrerPolicy="same-origin"
-                        // Permitir que el iframe use credenciales (cookies)
-                        // Nota: Esto requiere que el backend acepte cookies del mismo origen
-                        // Si el backend usa JWT en headers, necesitamos un endpoint proxy
-                        loading="lazy"
-                    />
+                                }, 2000); // Esperar 2 segundos para que el contenido cargue
+                                console.log('Hangfire iframe loaded');
+                            }}
+                            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
+                            referrerPolicy="same-origin"
+                            loading="lazy"
+                        />
+                        {error && (
+                            <div className="p-4 bg-yellow-50 border-t border-yellow-200">
+                                <p className="text-sm text-yellow-800">{error}</p>
+                                <p className="text-xs text-yellow-600 mt-2">
+                                    Si el problema persiste, intenta abrir el dashboard directamente en: <a href={hangfireUrl} target="_blank" rel="noopener noreferrer" className="underline">{hangfireUrl}</a>
+                                </p>
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <div className="p-8 text-center text-gray-500">
                         Cargando Hangfire Dashboard...
