@@ -8,6 +8,9 @@ on:
     paths:
       - 'k8s/**'
       - '.github/workflows/argocd-sync.yml'
+  # También ejecutar cuando cambia el deployment.yaml (incluso con [skip ci])
+  repository_dispatch:
+    types: [argocd-sync]
 
 jobs:
   sync-argocd:
