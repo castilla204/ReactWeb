@@ -22,16 +22,32 @@ const HangfirePanel: React.FC = () => {
         }
 
         // Construir la URL del Hangfire dashboard
-        // El token se pasará automáticamente mediante cookies si el backend está configurado
-        // Si no, necesitamos un endpoint proxy que acepte el token JWT
         const apiUrl = import.meta.env.VITE_API_URL || 'https://api.atrapo.io';
         const token = getAuthToken();
         
-        // Intentar pasar el token como query parameter (si el backend lo soporta)
-        // O usar la URL directa si el backend acepta cookies/headers del iframe
-        const url = token 
-            ? `${apiUrl}/hangfire?token=${encodeURIComponent(token)}`
-            : `${apiUrl}/hangfire`;
+        if (!token) {
+            setError('No se encontró token de autenticación. Por favor, recarga la página o cierra sesión y vuelve a iniciar sesión.');
+            return;
+        }
+        
+        // Verificar si el token está expirado (decodificar JWT básico)
+        try {
+            const tokenParts = token.split('.');
+            if (tokenParts.length === 3) {
+                const payload = JSON.parse(atob(tokenParts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                const exp = payload.exp;
+                const now = Math.floor(Date.now() / 1000);
+                if (exp && exp < now) {
+                    setError('Tu sesión ha expirado. Por favor, recarga la página o cierra sesión y vuelve a iniciar sesión.');
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('No se pudo verificar expiración del token:', e);
+        }
+        
+        // Intentar pasar el token como query parameter
+        const url = `${apiUrl}/hangfire?token=${encodeURIComponent(token)}`;
         
         setHangfireUrl(url);
         console.log('Hangfire URL:', url);
