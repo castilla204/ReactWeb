@@ -10,9 +10,11 @@ import { API_CONFIG } from '../config/api';
 import { useCategories } from '../contexts/CategoryContext';
 import { CreateCategoryDialog } from './CreateCategoryDialog';
 import { ErrorDisplay } from './ErrorDisplay';
+import StripeModePanel from './StripeModePanel';
+import { Pagination } from './Pagination';
 
 const AdminPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'status' | 'category' | 'granular' | 'query' | 'mappings' | 'categories'>('status');
+  const [activeTab, setActiveTab] = useState<'status' | 'category' | 'granular' | 'query' | 'mappings' | 'categories' | 'stripe'>('status');
   const [showForm, setShowForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [formData, setFormData] = useState<ConfigFormData>({
@@ -45,15 +47,23 @@ const AdminPanel: React.FC = () => {
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] = useState(false);
   const { categories: allCategories, loading: categoriesLoading, error: categoriesError } = useCategories();
 
+  // Estados para paginación
+  const [granularPage, setGranularPage] = useState(1);
+  const [granularPageSize, setGranularPageSize] = useState(20);
+  const [mappingsPage, setMappingsPage] = useState(1);
+  const [mappingsPageSize, setMappingsPageSize] = useState(20);
+  const [statusManagementPage, setStatusManagementPage] = useState(1);
+  const [statusManagementPageSize, setStatusManagementPageSize] = useState(20);
+
   // Hooks
   const appointmentStatusConfigs = useAppointmentStatusConfigs();
   const serviceTypeCategoryConfigs = useServiceTypeCategoryConfigs();
-  const granularConfigs = useCategoryServiceTypeConfigs();
+  const granularConfigs = useCategoryServiceTypeConfigs(granularPage, granularPageSize);
   const moneyDistributionQuery = useMoneyDistributionQuery();
   const { validateForm } = useConfigValidation();
   const { data: appointmentStatuses } = useAppointmentStatuses();
-  const statusMappings = useStatusMappings();
-  const statusManagement = useAppointmentStatusManagement();
+  const statusMappings = useStatusMappings(mappingsPage, mappingsPageSize);
+  const statusManagement = useAppointmentStatusManagement(statusManagementPage, statusManagementPageSize);
 
   // Cargar datos básicos al montar el componente
   React.useEffect(() => {
@@ -855,6 +865,16 @@ const AdminPanel: React.FC = () => {
               >
                 📁 Gestión de Categorías
               </button>
+              <button
+                onClick={() => setActiveTab('stripe')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'stripe'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                💳 Configuración Stripe
+              </button>
             </nav>
           </div>
         </div>
@@ -1119,6 +1139,30 @@ const AdminPanel: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Paginación para estados de finalización */}
+              {statusManagement.pagination && (
+                <div className="mt-6">
+                  <Pagination
+                    page={statusManagement.pagination.page}
+                    pageSize={statusManagement.pagination.pageSize}
+                    totalCount={statusManagement.pagination.totalCount}
+                    totalPages={statusManagement.pagination.totalPages}
+                    hasNextPage={statusManagement.pagination.hasNextPage}
+                    hasPreviousPage={statusManagement.pagination.hasPreviousPage}
+                    onPageChange={(newPage) => {
+                      setStatusManagementPage(newPage);
+                      statusManagement.fetchAllStatuses();
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onPageSizeChange={(newPageSize) => {
+                      setStatusManagementPageSize(newPageSize);
+                      setStatusManagementPage(1);
+                      statusManagement.fetchAllStatuses();
+                    }}
+                  />
+                </div>
+              )}
 
               {getLoadingForTab() ? (
                 <div className="text-center py-8">
@@ -1399,7 +1443,7 @@ const AdminPanel: React.FC = () => {
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                             {granularConfigs.map((config) => (
+                             {granularConfigs.configs.map((config) => (
                               <tr key={config.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{config.serviceTypeCategoryName || 'N/A'}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -1453,6 +1497,26 @@ const AdminPanel: React.FC = () => {
                     </div>
                     );
                   })
+                  )}
+                  {granularConfigs.pagination && (
+                    <div className="mt-6">
+                      <Pagination
+                        page={granularConfigs.pagination.page}
+                        pageSize={granularConfigs.pagination.pageSize}
+                        totalCount={granularConfigs.pagination.totalCount}
+                        totalPages={granularConfigs.pagination.totalPages}
+                        hasNextPage={granularConfigs.pagination.hasNextPage}
+                        hasPreviousPage={granularConfigs.pagination.hasPreviousPage}
+                        onPageChange={(newPage) => {
+                          setGranularPage(newPage);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        onPageSizeChange={(newPageSize) => {
+                          setGranularPageSize(newPageSize);
+                          setGranularPage(1);
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
               )}
@@ -2052,6 +2116,26 @@ const AdminPanel: React.FC = () => {
                       ))}
                     </ul>
                   )}
+                  {statusMappings.mappingsPagination && (
+                    <div className="border-t border-gray-200">
+                      <Pagination
+                        page={statusMappings.mappingsPagination.page}
+                        pageSize={statusMappings.mappingsPagination.pageSize}
+                        totalCount={statusMappings.mappingsPagination.totalCount}
+                        totalPages={statusMappings.mappingsPagination.totalPages}
+                        hasNextPage={statusMappings.mappingsPagination.hasNextPage}
+                        hasPreviousPage={statusMappings.mappingsPagination.hasPreviousPage}
+                        onPageChange={(newPage) => {
+                          setMappingsPage(newPage);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        onPageSizeChange={(newPageSize) => {
+                          setMappingsPageSize(newPageSize);
+                          setMappingsPage(1);
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2319,6 +2403,12 @@ const AdminPanel: React.FC = () => {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'stripe' && (
+          <div>
+            <StripeModePanel />
           </div>
         )}
       </div>

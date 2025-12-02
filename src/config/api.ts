@@ -172,6 +172,15 @@ export const API_CONFIG = {
             // Mapeos de estado
             mappings: `${API_PATH}/SystemStatus/mappings`,
             mappingsById: (id: number) => `${API_PATH}/SystemStatus/mappings/${id}`,
+            
+            // Configuraciones
+            configurations: `${API_PATH}/SystemStatus/configurations`,
+        },
+        review: {
+            expert: (expertId: number) => `${API_PATH}/Review/expert/${expertId}`,
+        },
+        log: {
+            critical: `${API_PATH}/Log/critical`,
         },
         accountDeletion: {
             status: `${API_PATH}/AccountDeletion/status`,
@@ -181,6 +190,14 @@ export const API_CONFIG = {
         },
         financialTransaction: {
             myTransactions: `${API_PATH}/FinancialTransaction/my-transactions`,
+        },
+        admin: {
+            stripe: {
+                mode: `${API_PATH}/Admin/stripe/mode`,
+                toggleMode: `${API_PATH}/Admin/stripe/toggle-mode`,
+                webhooks: `${API_PATH}/Admin/stripe/webhooks`,
+                webhook: (webhookId: string) => `${API_PATH}/Admin/stripe/webhooks/${webhookId}`,
+            },
         },
     },
 };
