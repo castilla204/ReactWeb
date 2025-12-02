@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 import {
@@ -839,7 +839,7 @@ export const useAppointmentStatusManagement = (page: number = 1, pageSize: numbe
     hasPreviousPage: boolean;
   } | null>(null);
 
-  const fetchAllStatuses = async () => {
+  const fetchAllStatuses = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     
@@ -884,13 +884,12 @@ export const useAppointmentStatusManagement = (page: number = 1, pageSize: numbe
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, pageSize, fetchApi]);
 
   // Ejecutar automáticamente cuando cambien page o pageSize
   useEffect(() => {
     fetchAllStatuses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize]);
+  }, [fetchAllStatuses]);
 
   const updateFinalizationStatus = async (statusId: number, isFinalizationStatus: boolean) => {
     try {
