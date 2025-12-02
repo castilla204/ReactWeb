@@ -162,7 +162,9 @@ export function GoogleAuth() {
                 message = 'Demasiadas solicitudes. Por favor espera unos momentos antes de intentar de nuevo.';
             } else if (error?.response?.status === 403 || message.includes('403')) {
                 message = 'Error de configuración de Google OAuth. Por favor contacta al administrador.';
-            } else if (message.includes('Authentication failed')) {
+            } else if (message.includes('Client ID') || message.includes('untrusted') || message.includes("'aud' claim")) {
+                message = 'Error de configuración: El Client ID de Google OAuth no coincide. Por favor contacta al administrador.';
+            } else if (message.includes('Authentication failed') || message.includes('Invalid Google token')) {
                 // Si el error viene del backend, intentar obtener el mensaje específico
                 const backendMessage = error?.response?.data?.message || error?.data?.message;
                 if (backendMessage) {

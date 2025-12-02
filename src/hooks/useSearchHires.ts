@@ -27,11 +27,19 @@ export interface SearchHireResponseDto {
   };
 }
 
-// ✅ HOOK PARA SEARCHHIRE/EXPERT
-export const useSearchHires = (type: 'client' | 'expert') => {
+// ✅ HOOK PARA SEARCHHIRE/EXPERT CON PAGINACIÓN
+export const useSearchHires = (type: 'client' | 'expert', page: number = 1, pageSize: number = 20) => {
   const [hires, setHires] = useState<SearchHireResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  } | null>(null);
   const { fetchApi } = useApi();
 
   useEffect(() => {
@@ -40,10 +48,10 @@ export const useSearchHires = (type: 'client' | 'expert') => {
         setLoading(true);
         setError(null);
         
-        console.log(`[useSearchHires] Fetching ${type} hires...`);
+        console.log(`[useSearchHires] Fetching ${type} hires (page ${page}, pageSize ${pageSize})...`);
         
-        const response = await fetchApi<SearchHireResponseDto[]>(
-          `/api/SearchHire/${type}`,
+        const response = await fetchApi<any>(
+          `/api/SearchHire/${type}?page=${page}&pageSize=${pageSize}`,
           {
             requiresAuth: true,
             headers: {
@@ -53,23 +61,36 @@ export const useSearchHires = (type: 'client' | 'expert') => {
         );
         
         console.log(`[useSearchHires] ${type} hires response:`, response);
-        setHires(response);
+        
+        // Manejar respuesta paginada o no paginada
+        if (response.hires && response.pagination) {
+          setHires(response.hires);
+          setPagination(response.pagination);
+        } else if (Array.isArray(response)) {
+          setHires(response);
+          setPagination(null);
+        } else {
+          setHires([]);
+          setPagination(null);
+        }
       } catch (err) {
         console.error(`[useSearchHires] Error fetching ${type} hires:`, err);
         setError(err instanceof Error ? err.message : 'Error desconocido');
         setHires([]);
+        setPagination(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchHires();
-  }, [type, fetchApi]);
+  }, [type, page, pageSize, fetchApi]);
 
   return { 
     hires, 
     loading, 
     error,
+    pagination,
     refetch: () => {
       setLoading(true);
       setError(null);

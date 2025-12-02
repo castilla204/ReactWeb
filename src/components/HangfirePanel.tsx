@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthToken } from '../lib/auth';
+import { API_CONFIG } from '../config/api';
 
 const HangfirePanel: React.FC = () => {
     const [hangfireUrl, setHangfireUrl] = useState<string>('');
     const [error, setError] = useState<string>('');
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [iframeLoaded, setIframeLoaded] = useState<boolean>(false);
     const { isAuthenticated, user } = useAuth();
 
     useEffect(() => {
@@ -21,8 +24,10 @@ const HangfirePanel: React.FC = () => {
             return;
         }
 
-        // Construir la URL del Hangfire dashboard
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://api.atrapo.io';
+        // Construir la URL del Hangfire dashboard usando la misma configuración que el resto de la app
+        // API_CONFIG.baseUrl ya incluye la URL base (ej: https://api.atrapo.io o http://localhost:7124)
+        // Hangfire está en /hangfire, no en /api/hangfire, así que usamos la baseUrl directamente
+        const apiUrl = API_CONFIG.baseUrl;
         const token = getAuthToken();
         
         if (!token) {
@@ -104,9 +109,34 @@ const HangfirePanel: React.FC = () => {
                 )}
             </div>
             
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden relative">
                 {hangfireUrl ? (
                     <>
+                        {/* Indicador de carga */}
+                        {isLoading && (
+                            <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10">
+                                <div className="text-center">
+                                    <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                    <p className="text-gray-600">Cargando Hangfire Dashboard...</p>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Botón para abrir en nueva pestaña */}
+                        <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                            <p className="text-sm text-gray-600">
+                                Si el dashboard no se muestra correctamente, puedes abrirlo en una nueva pestaña
+                            </p>
+                            <a
+                                href={hangfireUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
+                            >
+                                Abrir en nueva pestaña
+                            </a>
+                        </div>
+                        
                         <iframe
                             src={hangfireUrl}
                             className="w-full"
@@ -114,11 +144,16 @@ const HangfirePanel: React.FC = () => {
                             title="Hangfire Dashboard"
                             allow="fullscreen"
                             onError={() => {
+                                setIsLoading(false);
                                 setError('Error al cargar el dashboard de Hangfire. El endpoint puede requerir autenticación adicional.');
                             }}
                             onLoad={(e) => {
+                                console.log('Hangfire iframe loaded');
+                                setIframeLoaded(true);
+                                
                                 // Verificar si el iframe cargó correctamente después de un tiempo
                                 setTimeout(() => {
+                                    setIsLoading(false);
                                     const iframe = e.currentTarget;
                                     try {
                                         // Intentar acceder al contenido para verificar si hay error
@@ -135,32 +170,56 @@ const HangfirePanel: React.FC = () => {
                                             } else if (bodyText.trim() === '' && bodyHTML.trim() === '') {
                                                 // Iframe vacío puede indicar un problema
                                                 console.warn('Hangfire iframe appears to be empty');
+                                                // No establecer error aquí, puede ser que el contenido aún esté cargando
+                                            } else {
+                                                // Si hay contenido, el iframe se cargó correctamente
+                                                console.log('Hangfire iframe content detected');
                                             }
                                         }
                                     } catch (err) {
                                         // Error de CORS al acceder al contenido del iframe - esto es normal
                                         // Si hay CORS, no podemos verificar el contenido, pero el iframe puede estar cargando
                                         console.log('Cannot access iframe content (CORS) - this is expected if the iframe loads successfully');
+                                        // Si el iframe se cargó pero no podemos acceder al contenido por CORS,
+                                        // asumimos que está funcionando correctamente
+                                        // El iframe debería mostrar el contenido de Hangfire
                                     }
-                                }, 2000); // Esperar 2 segundos para que el contenido cargue
-                                console.log('Hangfire iframe loaded');
+                                }, 3000); // Esperar 3 segundos para que el contenido cargue
                             }}
                             sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
                             referrerPolicy="same-origin"
                             loading="lazy"
                         />
+                        
+                        {/* Mensaje de ayuda si hay error */}
                         {error && (
                             <div className="p-4 bg-yellow-50 border-t border-yellow-200">
-                                <p className="text-sm text-yellow-800">{error}</p>
-                                <p className="text-xs text-yellow-600 mt-2">
-                                    Si el problema persiste, intenta abrir el dashboard directamente en: <a href={hangfireUrl} target="_blank" rel="noopener noreferrer" className="underline">{hangfireUrl}</a>
+                                <p className="text-sm text-yellow-800 font-medium mb-2">{error}</p>
+                                <div className="text-xs text-yellow-600 space-y-1">
+                                    <p>Posibles soluciones:</p>
+                                    <ul className="list-disc list-inside ml-2 space-y-1">
+                                        <li>Recarga la página para obtener un nuevo token</li>
+                                        <li>Abre el dashboard en una nueva pestaña usando el botón de arriba</li>
+                                        <li>Verifica que el backend esté configurado correctamente para aceptar tokens en query parameters</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Mensaje informativo si no hay error pero el iframe puede no estar visible */}
+                        {!error && iframeLoaded && !isLoading && (
+                            <div className="p-3 bg-blue-50 border-t border-blue-200">
+                                <p className="text-xs text-blue-700">
+                                    💡 Si no ves el contenido del dashboard, haz clic en "Abrir en nueva pestaña" arriba. 
+                                    Esto puede ocurrir debido a restricciones de seguridad del navegador.
                                 </p>
                             </div>
                         )}
                     </>
                 ) : (
                     <div className="p-8 text-center text-gray-500">
-                        Cargando Hangfire Dashboard...
+                        <div className="inline-block w-8 h-8 border-4 border-gray-300 border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <p>Cargando Hangfire Dashboard...</p>
                     </div>
                 )}
             </div>
