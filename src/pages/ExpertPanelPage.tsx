@@ -119,6 +119,8 @@ export function ExpertPanelPage() {
         dateTo: '',
     });
     const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: number]: number }>({});
+    const [hiresPage, setHiresPage] = useState(1);
+    const [hiresPageSize, setHiresPageSize] = useState(20);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -141,7 +143,7 @@ export function ExpertPanelPage() {
 
     const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService, updateService, isUpdatingService, deleteService, isDeletingService } = useServices({ expertProfileId: profile?.id });
 
-    const { hires, isLoading: isLoadingHires, error: hiresError } = useExpertHires();
+    const { hires, pagination: hiresPagination, isLoading: isLoadingHires, error: hiresError } = useExpertHires(hiresPage, hiresPageSize);
 
     const { status: stripeStatus } = useExpertStripeStatus();
     const { modalState, hideModal } = useStripeStatusModal();
@@ -1165,6 +1167,9 @@ export function ExpertPanelPage() {
                                     setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as any })}
                                     handleViewHire={handleViewHire}
                                     categories={categories}
+                                    pagination={hiresPagination}
+                                    onPageChange={setHiresPage}
+                                    onPageSizeChange={setHiresPageSize}
                                 />
                                     )}
                                 </CardContent>

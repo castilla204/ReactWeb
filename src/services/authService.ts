@@ -60,6 +60,15 @@ class AuthService {
                     try {
                         const errorData = await response.json();
                         errorMessage = errorData.message || errorData.error || errorMessage;
+                        
+                        // ✅ Mejorar mensaje para errores de 'aud' claim
+                        if (errorData.details && errorData.details.includes("untrusted 'aud' claim")) {
+                            errorMessage = 'Error de configuración: El Client ID de Google OAuth no coincide entre el frontend y el backend. Por favor contacta al administrador.';
+                            console.error('[AuthService] Google OAuth Client ID mismatch:', {
+                                frontendClientId: '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com',
+                                error: errorData
+                            });
+                        }
                     } catch {
                         // Si no se puede parsear JSON, usar mensaje por defecto
                         errorMessage = `Authentication failed (${response.status})`;

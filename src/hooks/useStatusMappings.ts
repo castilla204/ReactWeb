@@ -3,12 +3,20 @@ import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 import { StatusMapping, SystemStatus, CreateStatusMappingDto } from '../types/admin';
 
-export const useStatusMappings = () => {
+export const useStatusMappings = (page: number = 1, pageSize: number = 20) => {
   const [mappings, setMappings] = useState<StatusMapping[]>([]);
   const [appointmentStatuses, setAppointmentStatuses] = useState<SystemStatus[]>([]);
   const [searchHireStatuses, setSearchHireStatuses] = useState<SystemStatus[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mappingsPagination, setMappingsPagination] = useState<{
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  } | null>(null);
   const { fetchApi } = useApi();
 
   const loadMappings = async () => {
@@ -16,10 +24,22 @@ export const useStatusMappings = () => {
     setError(null);
     
     try {
-      console.log('🔄 Cargando mapeos de estado desde:', API_CONFIG.endpoints.systemStatus.mappings);
-      const response = await fetchApi<StatusMapping[]>(API_CONFIG.endpoints.systemStatus.mappings);
+      const endpoint = `${API_CONFIG.endpoints.systemStatus.mappings}?page=${page}&pageSize=${pageSize}`;
+      console.log('🔄 Cargando mapeos de estado desde:', endpoint);
+      const response = await fetchApi<any>(endpoint);
       console.log('✅ Mapeos de estado cargados:', response);
-      setMappings(response);
+      
+      // Manejar respuesta paginada o no paginada
+      if (response.mappings && response.pagination) {
+        setMappings(response.mappings);
+        setMappingsPagination(response.pagination);
+      } else if (Array.isArray(response)) {
+        setMappings(response);
+        setMappingsPagination(null);
+      } else {
+        setMappings([]);
+        setMappingsPagination(null);
+      }
     } catch (err: any) {
       console.error('❌ Error loading status mappings:', err);
       if (err.message?.includes('404')) {
@@ -252,17 +272,18 @@ export const useStatusMappings = () => {
     }, 30000); // 30 segundos
 
     return () => clearInterval(interval);
-  }, []);
+  }, [page, pageSize]);
 
-  // Cargar datos al montar el componente
+  // Cargar datos al montar el componente o cuando cambian los parámetros de paginación
   useEffect(() => {
     loadAllData();
-  }, []);
+  }, [page, pageSize]);
 
   return {
     mappings,
     appointmentStatuses,
     searchHireStatuses,
+    mappingsPagination,
     isLoading,
     error,
     loadMappings,

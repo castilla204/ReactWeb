@@ -147,7 +147,10 @@ export function useExpert() {
                 throw new Error('No authentication token found');
             }
 
-            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.hires.listAsExpert}`, {
+            // Agregar paginación (por ahora usamos valores por defecto, se puede hacer configurable después)
+            const page = 1;
+            const pageSize = 20;
+            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.hires.listAsExpert}?page=${page}&pageSize=${pageSize}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -163,7 +166,14 @@ export function useExpert() {
             }
 
             const data = await response.json();
-            setSearches(data);
+            // Manejar respuesta paginada o no paginada
+            if (data.hires && data.pagination) {
+                setSearches(data.hires);
+            } else if (Array.isArray(data)) {
+                setSearches(data);
+            } else {
+                setSearches([]);
+            }
             lastFetchRef.current[cacheKey] = now;
         } catch (error) {
             console.error('Error fetching searches:', error);
