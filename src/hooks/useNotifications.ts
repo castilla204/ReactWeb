@@ -21,15 +21,47 @@ export const useNotifications = () => {
 
     const notificationsQuery = useQuery({
         queryKey: ['notifications'],
-        queryFn: () => fetchApi<Notification[]>(API_CONFIG.endpoints.notifications.list),
+        queryFn: async () => {
+            const response = await fetchApi<any>(API_CONFIG.endpoints.notifications.list);
+            
+            // Manejar diferentes formatos de respuesta del endpoint
+            // 1. Si es un array directamente, devolverlo
+            if (Array.isArray(response)) {
+                return response as Notification[];
+            }
+            
+            // 2. Si viene en formato { notifications: [...], pagination: {...} }
+            if (response?.notifications && Array.isArray(response.notifications)) {
+                return response.notifications as Notification[];
+            }
+            
+            // 3. Si viene en formato { data: [...] }
+            if (response?.data && Array.isArray(response.data)) {
+                return response.data as Notification[];
+            }
+            
+            // 4. Si viene en formato { success: true, data: [...] }
+            if (response?.success && Array.isArray(response.data)) {
+                return response.data as Notification[];
+            }
+            
+            // 5. Fallback: devolver array vacío si no se puede parsear
+            console.warn('[useNotifications] Unexpected response format:', response);
+            return [] as Notification[];
+        },
         enabled: isAuthenticated, // Solo ejecutar si el usuario está autenticado
         retry: false, // No reintentar si falla (evita spam de requests)
     });
 
-    const unreadCount = notificationsQuery.data?.filter(n => !n.read).length ?? 0;
+    // Asegurar que siempre sea un array antes de usar filter
+    const notifications = Array.isArray(notificationsQuery.data) 
+        ? notificationsQuery.data 
+        : [];
+    
+    const unreadCount = notifications.filter(n => !n.read).length;
 
     return {
-        notifications: notificationsQuery.data ?? [],
+        notifications,
         isLoading: notificationsQuery.isLoading,
         error: notificationsQuery.error,
         unreadCount,

@@ -112,16 +112,31 @@ const StripeModePanel: React.FC = () => {
                 throw new Error('No se encontró token de autenticación');
             }
 
-            const body = mode ? { mode } : { mode: 'toggle' };
-
-            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.admin.stripe.toggleMode}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(body),
-            });
+            let response: Response;
+            
+            // Si es 'toggle', usar el endpoint toggle-mode sin body
+            // Si es 'test' o 'production', usar el endpoint mode con body
+            if (mode === 'toggle' || !mode) {
+                // Usar toggle-mode (no requiere body)
+                response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.admin.stripe.toggleMode}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    // No enviar body para toggle-mode
+                });
+            } else {
+                // Usar mode endpoint para establecer modo específico
+                response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.admin.stripe.mode}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ Mode: mode === 'test' ? 'development' : 'production' }),
+                });
+            }
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
