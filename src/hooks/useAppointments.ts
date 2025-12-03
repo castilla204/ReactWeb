@@ -43,11 +43,23 @@ export const useAppointments = () => {
 
   // Función para limpiar los datos antes de enviar
   const cleanAppointmentData = (data: ProposeAppointmentDto) => {
+    // ✅ INTERNACIONALIZACIÓN: El backend usa automáticamente el timezone del experto
+    // guardado en SearchHire.ExpertTimezone. NO es necesario enviar timezone.
+    // Solo se envía si se proporciona explícitamente (para sobrescribir).
+    
     const cleaned: any = {
       proposedDate: data.proposedDate,
       proposedTime: data.proposedTime,
       location: data.location
     };
+    
+    // ✅ OPCIONAL: Solo enviar timezone si se proporciona explícitamente
+    if (data.timezone) {
+      cleaned.timezone = data.timezone;
+      console.log('[useAppointments] Timezone manual enviado:', data.timezone);
+    } else {
+      console.log('[useAppointments] Timezone no enviado - backend usará el del experto automáticamente');
+    }
     
     // Solo incluir campos opcionales si tienen valores válidos
     if (data.latitude !== undefined && data.latitude !== null) {
@@ -317,6 +329,7 @@ export const useAppointmentTimers = (appointment: Appointment | null) => {
 
 /**
  * Hook para verificar si una cita está bloqueada
+ * ✅ INTERNACIONALIZACIÓN: Usa campos UTC para cálculos
  */
 export const useAppointmentLock = (appointment: Appointment | null) => {
   const [isLocked, setIsLocked] = useState(false);
@@ -330,7 +343,10 @@ export const useAppointmentLock = (appointment: Appointment | null) => {
     const checkLockStatus = () => {
       // Solo bloquear si la cita está confirmada y es menos de 12 horas antes
       if (appointment.status === 'appointment_confirmed') {
-        const appointmentDateTime = new Date(`${appointment.proposedDate}T${appointment.proposedTime}`);
+        // ✅ Usar campos UTC para cálculos de tiempo
+        const dateStr = appointment.proposedDateUtc || appointment.proposedDate;
+        const timeStr = appointment.proposedTimeUtc || appointment.proposedTime;
+        const appointmentDateTime = new Date(`${dateStr}T${timeStr}Z`); // Z indica UTC
         const twelveHoursBefore = new Date(appointmentDateTime.getTime() - 12 * 60 * 60 * 1000);
         
         const newLockedStatus = new Date() >= twelveHoursBefore;
@@ -345,13 +361,14 @@ export const useAppointmentLock = (appointment: Appointment | null) => {
     const interval = setInterval(checkLockStatus, 60000); // Verificar cada minuto
     
     return () => clearInterval(interval);
-  }, [appointment?.proposedDate, appointment?.proposedTime, appointment?.status]);
+  }, [appointment?.proposedDateUtc, appointment?.proposedTimeUtc, appointment?.proposedDate, appointment?.proposedTime, appointment?.status]);
 
   return isLocked;
 };
 
 /**
  * Utilidad para calcular si una cita está bloqueada (12 horas antes de la cita)
+ * ✅ INTERNACIONALIZACIÓN: Usa campos UTC para cálculos
  */
 const calculateIsLocked = (appointment: Appointment): boolean => {
   if (appointment.status !== 'appointment_confirmed') {
@@ -359,7 +376,10 @@ const calculateIsLocked = (appointment: Appointment): boolean => {
   }
   
   try {
-    const appointmentDateTime = new Date(`${appointment.proposedDate}T${appointment.proposedTime}`);
+    // ✅ Usar campos UTC para cálculos de tiempo
+    const dateStr = appointment.proposedDateUtc || appointment.proposedDate;
+    const timeStr = appointment.proposedTimeUtc || appointment.proposedTime;
+    const appointmentDateTime = new Date(`${dateStr}T${timeStr}Z`); // Z indica UTC
     const twelveHoursBefore = new Date(appointmentDateTime.getTime() - 12 * 60 * 60 * 1000);
     return new Date() >= twelveHoursBefore;
   } catch {

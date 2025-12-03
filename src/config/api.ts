@@ -1,3 +1,5 @@
+// En desarrollo, siempre usar localhost:7124 directamente
+// En producción, usar la URL completa de la API
 const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : 'https://api.atrapo.io'; 
 const API_PATH = '/api'; 
 
@@ -190,6 +192,11 @@ export const API_CONFIG = {
         },
         financialTransaction: {
             myTransactions: `${API_PATH}/FinancialTransaction/my-transactions`,
+        },
+        userSettings: {
+            get: `${API_PATH}/UserSettings`,
+            update: `${API_PATH}/UserSettings`,
+            timezones: `${API_PATH}/UserSettings/timezones`,
         },
         admin: {
             stripe: {

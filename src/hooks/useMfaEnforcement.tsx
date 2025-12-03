@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { mfaService } from '../services/mfaService';
 import { RoleChecker, UserRole } from '../utils/roleChecker';
+import { API_CONFIG } from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export interface MfaEnforcementState {
     isLoading: boolean;
@@ -24,6 +26,7 @@ export interface MfaEnforcementState {
  */
 export function useMfaEnforcement() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [state, setState] = useState<MfaEnforcementState>({
         isLoading: true,
         requiresSetup: false,
@@ -153,9 +156,16 @@ export function useMfaEnforcement() {
 
     /**
      * Obtiene la fecha de creación de la cuenta
+     * Usa la información del usuario del contexto o intenta obtenerla de los endpoints disponibles
      */
     const getAccountCreationDate = async (): Promise<Date> => {
         try {
+            // 1. Primero intentar usar el usuario del contexto de autenticación
+            if (user?.createdAt) {
+                return new Date(user.createdAt);
+            }
+            
+            // 2. Intentar desde localStorage (datos guardados al hacer login)
             const userData = localStorage.getItem('userData');
             if (userData) {
                 const parsed = JSON.parse(userData);
@@ -164,26 +174,34 @@ export function useMfaEnforcement() {
                 }
             }
             
-            // Fallback: intentar obtener del perfil
+            // 3. Fallback: Si es experto, intentar obtener del endpoint expert-profile
+            // Este endpoint devuelve información del usuario y del experto
             try {
                 const token = authService.getAccessToken();
-                const response = await fetch(`${import.meta.env.DEV ? 'http://localhost:7124' : 'https://api.inspecciono.io'}/api/User/profile`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                if (response.ok) {
-                    const profile = await response.json();
-                    if (profile?.createdAt) {
-                        return new Date(profile.createdAt);
+                if (token) {
+                    // Verificar si el usuario es experto basándose en el token
+                    const userRole = RoleChecker.getUserRole(token);
+                    if (userRole === UserRole.Expert) {
+                        const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.profile}`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        if (response.ok) {
+                            const expertProfile = await response.json();
+                            // El endpoint expert-profile devuelve { user: {...}, expertProfile: {...} }
+                            if (expertProfile?.user?.createdAt) {
+                                return new Date(expertProfile.user.createdAt);
+                            }
+                        }
                     }
                 }
             } catch {
-                // Ignorar error
+                // Ignorar error silenciosamente
             }
             
-            // Fallback final: asumir cuenta nueva (forzar MFA inmediatamente)
+            // 4. Fallback final: asumir cuenta nueva (forzar MFA inmediatamente)
             return new Date();
         } catch (error) {
             // Fallback: asumir cuenta nueva
