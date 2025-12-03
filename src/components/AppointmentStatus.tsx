@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Calendar, Clock, MapPin, AlertTriangle, CheckCircle, XCircle, Timer, Home, Phone, FileText, MessageCircle, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, MapPin, AlertTriangle, CheckCircle, XCircle, Timer, Home, Phone, FileText, MessageCircle, RefreshCw, Globe } from 'lucide-react';
 import { Appointment } from '../types/appointment';
 import { 
   useAppointmentTimers, 
@@ -19,6 +19,7 @@ import {
 import { useExpertReport } from '../hooks/useExpertReport';
 import { CancellationInfoCard } from './CancellationInfoCard';
 import { AccountDeletionInfo } from './AccountDeletionInfo';
+import { formatAppointmentForDisplay, getStoredTimezone } from '../utils/dateService';
 
 interface AppointmentStatusProps {
   appointment: Appointment;
@@ -541,53 +542,59 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       )}
 
       {/* Información de la cita */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-3">
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Calendar className="w-4 h-4" />
-            <span className="text-sm">
-              {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </span>
-          </div>
-          
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Clock className="w-4 h-4" />
-            <span className="text-sm">
-              {appointment.proposedTime.substring(0, 5)}
-            </span>
-          </div>
-          
-          <div className="flex items-start space-x-2 text-gray-600">
-            <MapPin className="w-4 h-4 mt-0.5" />
-            <span className="text-sm">{appointment.location}</span>
-          </div>
-          
-          {appointment.doorNumber && (
-            <div className="flex items-start space-x-2 text-gray-600">
-              <Home className="w-4 h-4 mt-0.5" />
-              <span className="text-sm">{appointment.doorNumber}</span>
+      {/* ✅ INTERNACIONALIZACIÓN: Usar formatAppointmentForDisplay para fechas */}
+      {(() => {
+        const formattedDate = formatAppointmentForDisplay(appointment);
+        const userTimezone = getStoredTimezone();
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2 text-gray-600">
+                <Calendar className="w-4 h-4" />
+                <span className="text-sm capitalize">
+                  {formattedDate.fullDateTime}
+                </span>
+              </div>
+              
+              <div className="flex items-center space-x-2 text-gray-600">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm">
+                  {formattedDate.time}
+                </span>
+              </div>
+              
+              {/* Mostrar zona horaria */}
+              <div className="flex items-center space-x-2 text-gray-500 text-xs">
+                <Globe className="w-3 h-3" />
+                <span>Zona horaria: {userTimezone}</span>
+              </div>
+              
+              <div className="flex items-start space-x-2 text-gray-600">
+                <MapPin className="w-4 h-4 mt-0.5" />
+                <span className="text-sm">{appointment.location}</span>
+              </div>
+              
+              {appointment.doorNumber && (
+                <div className="flex items-start space-x-2 text-gray-600">
+                  <Home className="w-4 h-4 mt-0.5" />
+                  <span className="text-sm">{appointment.doorNumber}</span>
+                </div>
+              )}
+              
+              {appointment.ownerPhone && (
+                <div className="flex items-start space-x-2 text-gray-600">
+                  <Phone className="w-4 h-4 mt-0.5" />
+                  <span className="text-sm">{appointment.ownerPhone}</span>
+                </div>
+              )}
+              
+              {appointment.siteDetails && (
+                <div className="flex items-start space-x-2 text-gray-600">
+                  <FileText className="w-4 h-4 mt-0.5" />
+                  <span className="text-sm">{appointment.siteDetails}</span>
+                </div>
+              )}
             </div>
-          )}
-          
-          {appointment.ownerPhone && (
-            <div className="flex items-start space-x-2 text-gray-600">
-              <Phone className="w-4 h-4 mt-0.5" />
-              <span className="text-sm">{appointment.ownerPhone}</span>
-            </div>
-          )}
-          
-          {appointment.siteDetails && (
-            <div className="flex items-start space-x-2 text-gray-600">
-              <FileText className="w-4 h-4 mt-0.5" />
-              <span className="text-sm">{appointment.siteDetails}</span>
-            </div>
-          )}
-        </div>
 
         <div className="space-y-3">
           <div className="text-sm">
@@ -605,7 +612,9 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
             <span className="ml-2 font-medium text-green-600">€{appointment.amount.toFixed(2)}</span>
           </div>
         </div>
-      </div>
+          </div>
+        );
+      })()}
 
       {/* Timer activo */}
       {activeTimer && (

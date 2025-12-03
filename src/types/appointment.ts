@@ -30,9 +30,28 @@ export interface Appointment {
   // Estado de la cita
   status: AppointmentStatus;
   
-  // Información de la cita
-  proposedDate: string;        // ISO 8601: "2024-01-15"
-  proposedTime: string;        // TimeSpan: "14:30:00"
+  // ═══════════════════════════════════════════════════════════════
+  // ✅ CAMPOS DE FECHA (Multi-país / Internacionalización)
+  // ═══════════════════════════════════════════════════════════════
+  
+  // Fechas en UTC (para cálculos, comparaciones, ordenamiento)
+  proposedDateUtc: string;     // "2025-03-15" (fecha UTC)
+  proposedTimeUtc: string;     // "16:00:00" (hora UTC)
+  
+  // Fechas en hora local del usuario (para mostrar en UI)
+  proposedDateLocal: string;   // "2025-03-15" (fecha local)
+  proposedTimeLocal: string;   // "10:00:00" (hora local)
+  
+  // Timezone usado para la conversión
+  userTimezone: string;        // "America/Mexico_City" o "UTC"
+  
+  // CAMPOS LEGACY (compatibilidad - son alias de UTC)
+  proposedDate: string;        // = proposedDateUtc (alias)
+  proposedTime: string;        // = proposedTimeUtc (alias)
+  
+  // ═══════════════════════════════════════════════════════════════
+  // UBICACIÓN
+  // ═══════════════════════════════════════════════════════════════
   location: string;            // "Calle Mayor 123, Madrid"
   latitude?: number | null;           // 40.4168
   longitude?: number | null;          // -3.7038
@@ -78,9 +97,10 @@ export interface Appointment {
 
 // DTOs para las operaciones
 export interface ProposeAppointmentDto {
-  proposedDate: string;    // "2024-01-15" (YYYY-MM-DD)
-  proposedTime: string;    // "14:30:00" (HH:mm:ss)
-  location: string;        // "Calle Mayor 123, Madrid" - CAMBIADO de 'address' a 'location'
+  proposedDate: string;    // "2024-01-15T14:00:00" (hora LOCAL del usuario)
+  proposedTime: string;    // "14:30:00" (hora LOCAL del usuario)
+  timezone?: string;       // ✅ NUEVO: IANA timezone (ej: "Europe/Madrid", "America/Mexico_City")
+  location: string;        // "Calle Mayor 123, Madrid"
   latitude?: number | null;       // 40.4168
   longitude?: number | null;      // -3.7038
   doorNumber?: string | null;     // "Portal A, 2ºB"
@@ -134,5 +154,30 @@ export interface MoneyDistribution {
   client: number;
   expert: number;
   platform: number;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ✅ TIPOS PARA INTERNACIONALIZACIÓN (Timezone)
+// ═══════════════════════════════════════════════════════════════
+
+// Settings del usuario (incluye timezone)
+export interface UserSettings {
+  isWhatsAppEnabled: boolean;
+  isEmailEnabled: boolean;
+  theme: string;
+  timezone: string;  // ✅ NUEVO: IANA timezone (ej: "Europe/Madrid")
+}
+
+// Timezone disponible (para el selector)
+export interface AvailableTimezone {
+  id: string;          // "Europe/Madrid" (usar este para enviar)
+  displayName: string; // "Madrid, España"
+  offset: string;      // "+01:00/+02:00" (estándar/DST)
+}
+
+// Respuesta del endpoint de timezones
+export interface TimezoneListResponse {
+  timezones: AvailableTimezone[];
+  note: string;
 }
 

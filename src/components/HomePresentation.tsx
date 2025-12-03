@@ -60,6 +60,28 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
         const script = document.createElement('script');
         script.src = 'https://static.elfsight.com/platform/platform.js';
         script.async = true;
+        
+        // Handle script errors (including APP_VIEWS_LIMIT_REACHED)
+        script.onerror = () => {
+            console.warn('Elfsight widget script failed to load. This may be due to platform limitations.');
+            setIsReviewsLoading(false);
+        };
+        
+        // Listen for Elfsight platform errors
+        const handlePlatformError = (event: ErrorEvent) => {
+            if (event.message && event.message.includes('APP_VIEWS_LIMIT_REACHED')) {
+                console.warn('Elfsight widget limit reached. Widget will not be displayed.');
+                setIsReviewsLoading(false);
+                // Remove the widget container if it fails
+                const mountPoint = document.getElementById('widget-mount-point');
+                if (mountPoint && widgetContainer.parentNode === mountPoint) {
+                    mountPoint.removeChild(widgetContainer);
+                }
+            }
+        };
+        
+        window.addEventListener('error', handlePlatformError);
+        
         const widgetDiv = document.createElement('div');
         widgetDiv.className = 'elfsight-app-bcc2528d-c48e-48d1-b03d-f282be8b8c32';
         widgetDiv.setAttribute('data-elfsight-app-lazy', '');
@@ -83,6 +105,18 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 widgetElement.offsetHeight > 0
             );
             
+            // Check for error messages in the widget
+            const hasError = widgetElement && (
+                widgetElement.textContent?.includes('APP_VIEWS_LIMIT_REACHED') ||
+                widgetElement.textContent?.includes("can't be initialized")
+            );
+            
+            if (hasError) {
+                console.warn('Elfsight widget initialization error detected.');
+                setIsReviewsLoading(false);
+                return;
+            }
+            
             if (hasContent) {
                 // Esperar un frame más para asegurar que el contenido está renderizado
                 requestAnimationFrame(() => {
@@ -104,6 +138,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
         // Limpieza al desmontar el componente
         return () => {
             clearInterval(interval);
+            window.removeEventListener('error', handlePlatformError);
             const mountPoint = document.getElementById('widget-mount-point');
             if (mountPoint && widgetContainer.parentNode === mountPoint) {
                 mountPoint.removeChild(widgetContainer);

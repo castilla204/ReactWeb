@@ -887,9 +887,53 @@ export const useAppointmentStatusManagement = (page: number = 1, pageSize: numbe
   }, [page, pageSize, fetchApi]);
 
   // Ejecutar automáticamente cuando cambien page o pageSize
+  // Mover la lógica directamente al useEffect para evitar loops causados por fetchApi
   useEffect(() => {
-    fetchAllStatuses();
-  }, [fetchAllStatuses]);
+    let isMounted = true;
+    
+    const loadStatuses = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const endpoint = `${API_CONFIG.endpoints.appointmentConfig.allStatuses}?page=${page}&pageSize=${pageSize}`;
+        console.log('🔍 DEBUG - useAppointmentStatusManagement - Fetching all statuses...');
+        console.log('🔍 DEBUG - useAppointmentStatusManagement - Endpoint:', endpoint);
+        const response = await fetchApi<any>(endpoint);
+        
+        if (!isMounted) return;
+        
+        console.log('🔍 DEBUG - useAppointmentStatusManagement - Response:', response);
+        
+        // Manejar respuesta paginada o no paginada
+        if (response.statuses && response.pagination) {
+          setStatuses(response.statuses);
+          setPagination(response.pagination);
+        } else if (Array.isArray(response)) {
+          setStatuses(response);
+          setPagination(null);
+        } else {
+          setStatuses([]);
+          setPagination(null);
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        console.error('Error fetching all statuses:', err);
+        setError('Error al obtener todos los estados');
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    loadStatuses();
+    
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize]);
 
   const updateFinalizationStatus = async (statusId: number, isFinalizationStatus: boolean) => {
     try {
