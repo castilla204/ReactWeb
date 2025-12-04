@@ -14,6 +14,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, Dr
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
+import CountryFlag from './CountryFlag';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
 const getZoomLevel = (radius: number) => {
@@ -1061,9 +1062,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-start justify-between gap-2">
                                                                 <div className="flex-1 min-w-0">
-                                                                    <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
-                                                                        {service.expert?.user?.name || 'Experto'}
-                                                                    </h3>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
+                                                                            {service.expert?.user?.name || 'Experto'}
+                                                                        </h3>
+                                                                        {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
+                                                                        {service.expert?.country && (
+                                                                            <CountryFlag countryCode={service.expert.country} size="sm" />
+                                                                        )}
+                                                                    </div>
                                                                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">
                                                                         {service.categoryName || 'Servicio'} · {service.serviceTypeName || 'Revisión'}
                                                                     </p>

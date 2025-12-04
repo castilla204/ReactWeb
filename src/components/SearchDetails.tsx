@@ -2529,6 +2529,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             : null
                     }
                     expertRange={serviceInfo?.locationRange || null}
+                    // ✅ NUEVO: País y timezone del experto
+                    expertCountry={
+                        search?.searchHire?.expertCountry || 
+                        serviceInfo?.expertCountry || 
+                        expertProfile?.country || 
+                        null
+                    }
+                    serviceTimezone={
+                        search?.searchHire?.expertTimezone || 
+                        serviceInfo?.expertTimezone || 
+                        expertProfile?.timezone || 
+                        null
+                    }
                 />
             )}
 

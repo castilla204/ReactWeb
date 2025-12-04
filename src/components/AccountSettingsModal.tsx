@@ -50,6 +50,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  // ✅ Ref para rastrear si el componente está montado y limpiar timeouts
+  const isMountedRef = React.useRef(true);
+  const closeTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   
   // Estados para eliminación de cuenta
   const [deletionStep, setDeletionStep] = useState<'initial' | 'check' | 'confirm' | 'processing' | 'result'>('initial');
@@ -552,11 +555,95 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     </>
   );
 
+  // ✅ TODOS LOS HOOKS DEBEN ESTAR ANTES DE CUALQUIER RETURN CONDICIONAL
+  // ✅ Cleanup effect para limpiar timeouts cuando el componente se desmonta
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Limpiar timeout si existe
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  // ✅ Cerrar drawer anidado cuando el drawer principal se cierra
+  React.useEffect(() => {
+    if (!isOpen) {
+      setMobileMenuOpen(false);
+      // Limpiar timeout si existe
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+    }
+  }, [isOpen]);
+
+  // ✅ Mobile version handlers
+  const handleDrawerOpenChange = React.useCallback((open: boolean) => {
+    if (!open) {
+      // Limpiar timeout anterior si existe
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+      
+      // Cerrar el drawer anidado primero para evitar conflictos de DOM
+      setMobileMenuOpen(false);
+      
+      // Pequeño delay para asegurar que el drawer anidado se cierre antes
+      // Solo llamar onClose si el componente sigue montado
+      closeTimeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          onClose();
+        }
+        closeTimeoutRef.current = null;
+      }, 150);
+    }
+    // Si open es true, no hacemos nada - el drawer se abre automáticamente
+  }, [onClose]);
+
+  const handleNestedDrawerOpenChange = React.useCallback((open: boolean) => {
+    setMobileMenuOpen(open);
+  }, []);
+
+  // ✅ Handler para el Dialog de desktop - debe manejar correctamente el estado
+  const handleDialogOpenChange = React.useCallback((open: boolean) => {
+    if (!open && isMountedRef.current) {
+      // Limpiar timeout si existe
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+      // Cerrar inmediatamente - Radix UI maneja el overlay automáticamente
+      onClose();
+    }
+  }, [onClose]);
+
   if (isDesktop) {
+    // ✅ Solo renderizar el Dialog si está abierto para evitar overlays huérfanos
+    if (!isOpen) {
+      return null;
+    }
+    
     return (
       <>
-        <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="overflow-hidden p-0 md:max-h-[500px] md:max-w-[700px] lg:max-w-[800px] [&>button]:hidden">
+        <Dialog open={isOpen} onOpenChange={handleDialogOpenChange} modal={true}>
+          <DialogContent 
+            className="overflow-hidden p-0 md:max-h-[500px] md:max-w-[700px] lg:max-w-[800px] [&>button]:hidden"
+            onEscapeKeyDown={(e) => {
+              // Permitir cerrar con ESC
+              e.preventDefault();
+              handleDialogOpenChange(false);
+            }}
+            onPointerDownOutside={(e) => {
+              // Permitir cerrar haciendo clic fuera
+              e.preventDefault();
+              handleDialogOpenChange(false);
+            }}
+          >
             <DialogHeader className="sr-only">
               <DialogTitle>Configuración de Cuenta</DialogTitle>
               <DialogDescription>Gestiona tu perfil, seguridad, notificaciones y privacidad</DialogDescription>
@@ -599,7 +686,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                     variant="ghost"
                     size="icon"
                     className="ml-auto h-8 w-8"
-                    onClick={onClose}
+                    onClick={() => handleDialogOpenChange(false)}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -616,22 +703,10 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     );
   }
 
-  // Mobile version
-  const handleDrawerOpenChange = (open: boolean) => {
-    if (!open) {
-      // Cerrar el drawer anidado primero para evitar conflictos de DOM
-      setMobileMenuOpen(false);
-      // Pequeño delay para asegurar que el drawer anidado se cierre antes
-      setTimeout(() => {
-        onClose();
-      }, 100);
-    }
-    // Si open es true, no hacemos nada - el drawer se abre automáticamente
-  };
-
-  const handleNestedDrawerOpenChange = (open: boolean) => {
-    setMobileMenuOpen(open);
-  };
+  // ✅ Solo renderizar el Drawer móvil si está abierto para evitar overlays huérfanos
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <>
@@ -644,13 +719,15 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           <div className="mx-auto w-full max-w-4xl">
             {/* Mobile Header */}
             <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-              <Drawer open={mobileMenuOpen} onOpenChange={handleNestedDrawerOpenChange}>
-                <DrawerTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent className="max-h-[96vh]">
+              {/* ✅ Solo renderizar el drawer anidado si el drawer principal está abierto */}
+              {isOpen && (
+                <Drawer open={mobileMenuOpen && isOpen} onOpenChange={handleNestedDrawerOpenChange}>
+                  <DrawerTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9">
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent className="max-h-[96vh]">
                   <DrawerHeader className="sr-only">
                     <DrawerTitle>Menú de Configuración</DrawerTitle>
                     <DrawerDescription>Navega entre las opciones de configuración</DrawerDescription>
@@ -689,6 +766,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   </div>
                 </DrawerContent>
               </Drawer>
+              )}
 
               <div className="flex-1">
                 <span className="text-sm font-medium">
@@ -700,7 +778,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 variant="ghost"
                 size="icon"
                 className="h-9 w-9"
-                onClick={onClose}
+                onClick={() => handleDrawerOpenChange(false)}
               >
                 <X className="h-5 w-5" />
               </Button>
