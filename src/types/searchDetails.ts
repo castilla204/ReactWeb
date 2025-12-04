@@ -39,6 +39,9 @@ export interface ServiceInfo {
   expertLatitude: number | null;
   expertLongitude: number | null;
   locationRange: number | null;
+  // ✅ NUEVOS CAMPOS DE PAÍS Y TIMEZONE
+  expertTimezone: string | null; // Timezone del experto al momento de contratar
+  expertCountry: string | null; // ✅ NUEVO: País del experto al momento de contratar (ISO 3166-1 alpha-2)
 }
 
 export interface MoneyDistributionConfigDto {
@@ -129,6 +132,9 @@ export interface SearchHireDto {
   createdAt: string;
   expert: UserDto | null;
   service: ServiceInfo | null;
+  // ✅ NUEVOS CAMPOS DE PAÍS Y TIMEZONE
+  expertTimezone: string | null; // Timezone del experto al momento de contratar
+  expertCountry: string | null; // ✅ NUEVO: País del experto al momento de contratar (ISO 3166-1 alpha-2)
 }
 
 export interface CategoryDto {
@@ -289,4 +295,6 @@ export interface ExpertProfileDto {
   onboardingCompleted: boolean;
   isOnVacation: boolean;
   currentAvailability: CurrentExpertAvailabilityDto | null; // ✅ NUEVO CAMPO
+  timezone: string; // "Europe/Madrid", "America/Mexico_City", etc.
+  country: string | null; // ✅ NUEVO: Código ISO 3166-1 alpha-2 (ej: "ES", "US", "MX")
 }
