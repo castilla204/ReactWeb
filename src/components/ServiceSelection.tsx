@@ -16,6 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from './ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from './ui/drawer';
+import CountryFlag from './CountryFlag';
 
 const libraries: ("geometry" | "places")[] = ['geometry', 'places'];
 
@@ -884,6 +885,13 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                                         {service.expert?.user?.email || `${service.price ? `€${service.price}` : '€72'} por servicio`}
                                                     </p>
 
+                                                    {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
+                                                    {service.expert?.country && (
+                                                        <div className="flex items-center justify-center mb-2">
+                                                            <CountryFlag countryCode={service.expert.country} size="sm" />
+                                                        </div>
+                                                    )}
+
                                                     <div className="flex items-center justify-center gap-1.5 mb-2">
                                                         {renderStars(service.averageRating || 0)}
                                                         <span className="text-xs text-slate-600 font-medium">({service.expert?.reviews?.length || 0})</span>
@@ -956,7 +964,13 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                 <Dialog open={!!detailServiceId} onOpenChange={() => setDetailServiceId(null)}>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle>{detailService.expert?.user?.name || 'Detalles del Servicio'}</DialogTitle>
+                            <div className="flex items-center gap-2">
+                                <DialogTitle>{detailService.expert?.user?.name || 'Detalles del Servicio'}</DialogTitle>
+                                {/* ✅ BANDERA DEL PAÍS DEL EXPERTO EN EL MODAL */}
+                                {detailService.expert?.country && (
+                                    <CountryFlag countryCode={detailService.expert.country} size="sm" />
+                                )}
+                            </div>
                             <DialogDescription className="sr-only">Información detallada del servicio seleccionado</DialogDescription>
                         </DialogHeader>
                         <DialogClose asChild>

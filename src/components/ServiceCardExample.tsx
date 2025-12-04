@@ -2,6 +2,7 @@ import React from 'react';
 import { Star, MapPin, Clock, Euro } from 'lucide-react';
 import { Service } from '../hooks/useServices';
 import { CurrentReviewsList } from './CurrentReviewCard';
+import CountryFlag from './CountryFlag';
 
 interface ServiceCardExampleProps {
     service: Service;
@@ -69,9 +70,15 @@ export default function ServiceCardExample({ service }: ServiceCardExampleProps)
                             )}
                         </div>
                         <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">
-                                {service.expert.user.name}
-                            </h4>
+                            <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-gray-900">
+                                    {service.expert.user.name}
+                                </h4>
+                                {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
+                                {service.expert.country && (
+                                    <CountryFlag countryCode={service.expert.country} size="sm" />
+                                )}
+                            </div>
                             <p className="text-sm text-gray-600">
                                 {service.expert.user.email}
                             </p>

@@ -57,6 +57,9 @@ export interface Service {
             };
             imageUrls?: string[];
         }[];
+        // ✅ NUEVOS CAMPOS DE PAÍS Y TIMEZONE
+        timezone?: string | null;
+        country?: string | null;
     } | null;
 }
 

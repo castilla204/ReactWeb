@@ -153,8 +153,9 @@ export function useBodyScrollSafety() {
                         if (isInvisible && zIndex >= 50 && zIndex > parseInt(window.getComputedStyle(target).zIndex || '0')) {
                             hasBlockingOverlay = true;
                             console.warn('[BodyScrollSafety] Detected invisible overlay blocking click', el);
-                            // Intentar eliminar el overlay bloqueante
-                            el.remove();
+                            // ✅ NO eliminar manualmente - React/Radix UI lo gestiona automáticamente
+                            // Eliminar manualmente causa errores de removeChild cuando React intenta desmontar
+                            // En su lugar, solo marcamos que hay un overlay bloqueante para restaurar el scroll
                         }
                     }
                 });
