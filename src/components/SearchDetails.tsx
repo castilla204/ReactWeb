@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw, AlertCircle } from 'lucide-react';
+import CountryFlag from './CountryFlag';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
@@ -1284,18 +1285,23 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 <div className="space-y-2.5">
                                                     {appointment ? (
                                                         <>
-                                                            {appointment.proposedDate && appointment.proposedTime && (
-                                                                <div className="flex items-center gap-2 text-sm text-foreground">
-                                                                    <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                                    <span className="font-medium">
-                                                                        {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
-                                                                            day: 'numeric',
-                                                                            month: 'short',
-                                                                            year: 'numeric'
-                                                                        })} {appointment.proposedTime.substring(0, 5)}
-                                                                    </span>
-                                                                </div>
-                                                            )}
+                                                            {appointment.proposedDate && appointment.proposedTime && (() => {
+                                                                // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
+                                                                const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
+                                                                const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                                                                return (
+                                                                    <div className="flex items-center gap-2 text-sm text-foreground">
+                                                                        <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                                        <span className="font-medium">
+                                                                            {new Date(dateToUse).toLocaleDateString('es-ES', {
+                                                                                day: 'numeric',
+                                                                                month: 'short',
+                                                                                year: 'numeric'
+                                                                            })} {timeToUse.substring(0, 5)}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })()}
                                                             {appointment.location && (
                                                                 <div className="flex items-start gap-2 text-sm text-foreground">
                                                                     <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
@@ -1410,7 +1416,21 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-foreground truncate">{expertData.name}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm font-medium text-foreground truncate">{expertData.name}</p>
+                                                        {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
+                                                        {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
+                                                            <CountryFlag 
+                                                                countryCode={
+                                                                    search?.searchHire?.expertCountry || 
+                                                                    serviceInfo?.expertCountry || 
+                                                                    expertProfile?.country || 
+                                                                    null
+                                                                } 
+                                                                size="sm" 
+                                                            />
+                                                        )}
+                                                    </div>
                                                     <div className="flex items-center gap-1.5 mt-1">
                                                         <CheckCircle className="w-3.5 h-3.5 text-green-600" />
                                                         <span className="text-xs text-muted-foreground">Verificado</span>
@@ -1948,20 +1968,25 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             <div className="space-y-2.5">
                                                 {appointment ? (
                                                     <>
-                                                        {appointment.proposedDate && appointment.proposedTime && (
-                                                            <div className="flex items-center gap-2.5 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl">
-                                                                <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                                                                    <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                                        {appointment.proposedDate && appointment.proposedTime && (() => {
+                                                            // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
+                                                            const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
+                                                            const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                                                            return (
+                                                                <div className="flex items-center gap-2.5 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl">
+                                                                    <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                                                                        <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                                                    </div>
+                                                                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                                                        {new Date(dateToUse).toLocaleDateString('es-ES', {
+                                                                            day: 'numeric',
+                                                                            month: 'short',
+                                                                            year: 'numeric'
+                                                                        })} {timeToUse.substring(0, 5)}
+                                                                    </span>
                                                                 </div>
-                                                                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                                                                    {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
-                                                                        day: 'numeric',
-                                                                        month: 'short',
-                                                                        year: 'numeric'
-                                                                    })} {appointment.proposedTime.substring(0, 5)}
-                                                                </span>
-                                                            </div>
-                                                        )}
+                                                            );
+                                                        })()}
                                                         {appointment.location && (
                                                             <div className="flex items-start gap-2.5 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                                                                 <div className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700/50">
@@ -2230,6 +2255,18 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2">
                                                     <p className="text-base font-bold text-gray-900 dark:text-gray-100 truncate">{expertData.name}</p>
+                                                    {/* ✅ BANDERA DEL PAÍS DEL EXPERTO - Desktop */}
+                                                    {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
+                                                        <CountryFlag 
+                                                            countryCode={
+                                                                search?.searchHire?.expertCountry || 
+                                                                serviceInfo?.expertCountry || 
+                                                                expertProfile?.country || 
+                                                                null
+                                                            } 
+                                                            size="sm" 
+                                                        />
+                                                    )}
                                                     <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded-full">
                                                         <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
                                                         <span className="text-xs font-medium text-green-700 dark:text-green-400">Verificado</span>
@@ -2574,12 +2611,21 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Calendar className="w-4 h-4" />
                                 <span>
-                                    {new Date(appointmentToConfirm.proposedDate).toLocaleDateString('es-ES', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                    })} {appointmentToConfirm.proposedTime?.substring(0, 5)}
+                                    {(() => {
+                                        // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
+                                        const dateToUse = (appointmentToConfirm as any).proposedDateLocal || appointmentToConfirm.proposedDate;
+                                        const timeToUse = (appointmentToConfirm as any).proposedTimeLocal || appointmentToConfirm.proposedTime;
+                                        return (
+                                            <>
+                                                {new Date(dateToUse).toLocaleDateString('es-ES', {
+                                                    weekday: 'long',
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric'
+                                                })} {timeToUse?.substring(0, 5)}
+                                            </>
+                                        );
+                                    })()}
                                 </span>
                             </div>
                             {appointmentToConfirm.location && (

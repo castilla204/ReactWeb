@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
     Star, 
     MapPin, 
@@ -8,7 +8,6 @@ import {
     ChevronRight, 
     X,
     User,
-    Calendar,
     Clock,
     Shield,
     Share2,
@@ -17,15 +16,10 @@ import {
     MessageCircle,
     Award,
     Zap,
-    Lock,
-    Phone,
-    Mail
+    Grid3X3
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
-import { Card, CardContent } from '../components/ui/card';
-import { Separator } from '../components/ui/separator';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
 import { useServices, Service } from '../hooks/useServices';
 import { useServiceTypes } from '../hooks/useServiceTypes';
@@ -46,7 +40,7 @@ interface ServiceReviewPageProps {
     currentStep?: number;
     totalSteps?: number;
     onBack: () => void;
-    onContinue: () => void; // Ir a SearchForm
+    onContinue: () => void;
 }
 
 export function ServiceReviewPage({
@@ -66,12 +60,13 @@ export function ServiceReviewPage({
     onBack,
     onContinue,
 }: ServiceReviewPageProps) {
-    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
+    const [mobileImageIndex, setMobileImageIndex] = useState(0);
+    const [isFavorite, setIsFavorite] = useState(false);
+    const carouselRef = useRef<HTMLDivElement>(null);
     const { serviceTypes } = useServiceTypes();
 
-    // Obtener datos completos del servicio
     const { services, isLoading } = useServices({
         categoryId,
         serviceTypeId,
@@ -81,8 +76,6 @@ export function ServiceReviewPage({
     });
 
     const service = services.find(s => s.id === serviceId);
-    
-    // Usar datos del servicio si están disponibles, sino usar los props
     const finalService: Service | null = service || null;
     const finalImages = finalService?.imageUrls?.length ? finalService.imageUrls : (serviceImageUrls || []);
     const finalExpertName = finalService?.expert?.user?.name || expertName || 'Experto';
@@ -97,24 +90,9 @@ export function ServiceReviewPage({
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('es-ES', {
-            style: 'currency',
-            currency: 'EUR',
             minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
         }).format(price / 100);
-    };
-
-    const renderStars = (rating: number) => {
-        const fullStars = Math.floor(rating);
-        const hasHalfStar = rating % 1 >= 0.5;
-        return Array.from({ length: 5 }, (_, i) => {
-            if (i < fullStars) {
-                return <Star key={i} className="w-[14px] h-[14px] fill-[#0066CC] text-[#0066CC]" />;
-            } else if (i === fullStars && hasHalfStar) {
-                return <Star key={i} className="w-[14px] h-[14px] fill-[#0066CC]/50 text-[#0066CC]" />;
-            } else {
-                return <Star key={i} className="w-[14px] h-[14px] text-[#DDDDDD]" />;
-            }
-        });
     };
 
     const handleImageClick = (index: number) => {
@@ -130,857 +108,536 @@ export function ServiceReviewPage({
         }
     };
 
-    // Galería de fotos estilo Airbnb - imagen grande izquierda + grid 2x2 derecha
+    // Navegación del carrusel móvil
+    const handleMobileCarouselScroll = () => {
+        if (carouselRef.current) {
+            const scrollLeft = carouselRef.current.scrollLeft;
+            const width = carouselRef.current.offsetWidth;
+            const newIndex = Math.round(scrollLeft / width);
+            setMobileImageIndex(newIndex);
+        }
+    };
+
     const heroImage = finalImages[0] || '';
-    const gridImages = finalImages.slice(1, 5); // Para PC: 4 imágenes en grid
-    const mobileGridImages = finalImages.slice(1, 3); // Para móvil: 2 imágenes en grid
+    const gridImages = finalImages.slice(1, 5);
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center bg-white">
                 <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Cargando información del servicio...</p>
+                    <div className="w-10 h-10 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-500 text-sm">Cargando...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-white" style={{ fontFamily: 'Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
-            {/* Header con botón volver estilo Airbnb */}
-            <div className="sticky top-0 z-40 bg-white border-b border-[#EBEBEB] backdrop-blur-sm bg-white/95 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-14">
-                        <div className="flex items-center gap-4">
-                            <Button
-                                variant="ghost"
+        <div className="min-h-screen bg-white">
+            {/* ========== VERSIÓN MÓVIL ========== */}
+            <div className="lg:hidden">
+                {/* Header móvil flotante */}
+                <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/40 to-transparent">
+                    <button
                                 onClick={onBack}
-                                className="flex items-center gap-1.5 hover:bg-gray-100 rounded-full -ml-2"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                            </Button>
-                            {/* Indicador de paso del formulario */}
-                            <div className="flex items-center gap-2 text-sm text-[#717171]">
-                                <span className="font-medium">Paso {currentStep} de {totalSteps}</span>
-                                <div className="flex gap-1">
-                                    {Array.from({ length: totalSteps }).map((_, i) => (
-                                        <div
-                                            key={i}
-                                            className={`w-2 h-2 rounded-full ${
-                                                i + 1 <= currentStep ? 'bg-[#222222]' : 'bg-[#DDDDDD]'
-                                            }`}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-                {/* Título y botones arriba de las imágenes */}
-                <div className="mb-6">
-                    <div className="flex items-start justify-between gap-4">
-                        <h1 className="text-2xl lg:text-[26px] leading-[30px] font-semibold text-[#222222] flex-1" style={{ fontFamily: 'Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
-                            {serviceTypeName} por {finalExpertName}
-                        </h1>
-                        <div className="flex items-center gap-6 flex-shrink-0">
-                            <button className="text-sm font-medium text-[#222222] hover:text-[#0066CC] transition-colors flex items-center gap-2 group">
-                                <div className="p-1.5 rounded-full group-hover:bg-[#0066CC]/10 transition-colors">
-                                    <Share2 className="w-4 h-4 stroke-[1.5]" />
-                                </div>
-                                <span className="underline decoration-1 group-hover:decoration-[#0066CC]">Compartir</span>
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg"
+                    >
+                        <ChevronLeft className="w-5 h-5 text-gray-900" />
+                    </button>
+                    <div className="flex items-center gap-2">
+                        <button className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg">
+                            <Share2 className="w-4 h-4 text-gray-900" />
                             </button>
-                            <button className="text-sm font-medium text-[#222222] hover:text-[#0066CC] transition-colors flex items-center gap-2 group">
-                                <div className="p-1.5 rounded-full group-hover:bg-[#0066CC]/10 transition-colors">
-                                    <Heart className="w-4 h-4 stroke-[1.5]" />
-                                </div>
-                                <span className="underline decoration-1 group-hover:decoration-[#0066CC]">Guardar</span>
+                        <button 
+                            onClick={() => setIsFavorite(!isFavorite)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg"
+                        >
+                            <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-900'}`} />
                             </button>
-                        </div>
                     </div>
                 </div>
 
-                {/* Galería de fotos estilo Airbnb */}
+                {/* Galería móvil con carrusel */}
                 {finalImages.length > 0 && (
-                    <>
-                        {/* PC: 1 grande izquierda + 2x2 derecha - Estilo Airbnb exacto */}
-                        <div className="hidden lg:grid w-full grid-cols-[1fr_1fr] gap-2 h-[400px] rounded-2xl overflow-hidden" style={{ gridAutoRows: 'minmax(0, 1fr)' }}>
-                                    {/* Imagen grande izquierda - ocupa más espacio */}
-                                    <div 
-                                        className="relative overflow-hidden cursor-pointer group bg-gray-100 rounded-l-2xl"
-                                        onClick={() => handleImageClick(0)}
-                                    >
-                                        {heroImage && (
-                                            <img
-                                                src={heroImage}
-                                                alt="Servicio principal"
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                onError={(e) => {
-                                                    (e.target as HTMLImageElement).style.display = 'none';
-                                                }}
-                                            />
-                                        )}
-                                    </div>
-
-                                    {/* Grid 2x2 derecha - TODAS LAS IMÁGENES EXACTAMENTE DEL MISMO TAMAÑO - ALTURA FIJA FORZADA */}
-                                    <div className="grid grid-cols-2 gap-2 h-full" style={{ gridTemplateRows: 'repeat(2, 1fr)' }}>
-                                        {/* Imagen 1 - Top Left */}
-                                        {gridImages[0] ? (
-                                            <div
-                                                className="relative overflow-hidden cursor-pointer group bg-gray-100 rounded-tr-2xl"
-                                                style={{ height: '100%', minHeight: 0 }}
-                                                onClick={() => handleImageClick(1)}
-                                            >
-                                                <img
-                                                    src={gridImages[0]}
-                                                    alt="Foto 2"
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    style={{ height: '100%', objectFit: 'cover' }}
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = 'none';
-                                                    }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="bg-gray-100 rounded-tr-2xl" style={{ height: '100%' }} />
-                                        )}
-                                        
-                                        {/* Imagen 2 - Top Right */}
-                                        {gridImages[1] ? (
-                                            <div
-                                                className="relative overflow-hidden cursor-pointer group bg-gray-100"
-                                                style={{ height: '100%', minHeight: 0 }}
-                                                onClick={() => handleImageClick(2)}
-                                            >
-                                                <img
-                                                    src={gridImages[1]}
-                                                    alt="Foto 3"
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    style={{ height: '100%', objectFit: 'cover' }}
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = 'none';
-                                                    }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="bg-gray-100" style={{ height: '100%' }} />
-                                        )}
-                                        
-                                        {/* Imagen 3 - Bottom Left */}
-                                        {gridImages[2] ? (
-                                            <div
-                                                className="relative overflow-hidden cursor-pointer group bg-gray-100"
-                                                style={{ height: '100%', minHeight: 0 }}
-                                                onClick={() => handleImageClick(3)}
-                                            >
-                                                <img
-                                                    src={gridImages[2]}
-                                                    alt="Foto 4"
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    style={{ height: '100%', objectFit: 'cover' }}
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = 'none';
-                                                    }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="bg-gray-100" style={{ height: '100%' }} />
-                                        )}
-                                        
-                                        {/* Imagen 4 - Bottom Right */}
-                                        {gridImages[3] ? (
-                                            <div
-                                                className="relative overflow-hidden cursor-pointer group bg-gray-100 rounded-br-2xl"
-                                                style={{ height: '100%', minHeight: 0 }}
-                                                onClick={() => handleImageClick(4)}
-                                            >
-                                                <img
-                                                    src={gridImages[3]}
-                                                    alt="Foto 5"
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    style={{ height: '100%', objectFit: 'cover' }}
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = 'none';
-                                                    }}
-                                                />
-                                                {finalImages.length > 5 && (
-                                                    <button
-                                                        className="absolute inset-0 bg-black/50 hover:bg-black/60 flex items-center justify-center text-white font-semibold cursor-pointer transition-colors backdrop-blur-[1px] rounded-br-2xl z-10"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setIsLightboxOpen(true);
-                                                            setLightboxIndex(0);
-                                                        }}
-                                                    >
-                                                        <span className="text-sm">Mostrar todas las fotos</span>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="bg-gray-100 rounded-br-2xl" style={{ height: '100%' }} />
-                                        )}
+                    <div className="relative">
+                        <div 
+                            ref={carouselRef}
+                            className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+                            onScroll={handleMobileCarouselScroll}
+                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        >
+                            {finalImages.map((img, idx) => (
+                                <div 
+                                    key={idx}
+                                    className="w-full flex-shrink-0 snap-center"
+                                    onClick={() => handleImageClick(idx)}
+                                >
+                                    <div className="aspect-[4/3] bg-gray-100">
+                                        <img
+                                            src={img}
+                                            alt={`Foto ${idx + 1}`}
+                                            className="w-full h-full object-cover"
+                                        />
                                     </div>
                                 </div>
-
-                                {/* Móvil: 1 grande izquierda + 2 verticales derecha */}
-                                <div className="lg:hidden w-full grid grid-cols-[2fr_1fr] gap-2 h-[320px] rounded-lg overflow-hidden">
-                                    {/* Imagen grande izquierda */}
-                                    <div 
-                                        className="relative overflow-hidden cursor-pointer group rounded-l-lg bg-gray-100"
-                                        onClick={() => handleImageClick(0)}
-                                    >
-                                        {heroImage && (
-                                            <img
-                                                src={heroImage}
-                                                alt="Servicio principal"
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                onError={(e) => {
-                                                    (e.target as HTMLImageElement).style.display = 'none';
-                                                }}
-                                            />
-                                        )}
+                            ))}
                                     </div>
-                                    {/* Grid derecha - 2 imágenes verticales */}
-                                    <div className="grid grid-rows-2 gap-2 h-full">
-                                        {mobileGridImages[0] ? (
-                                            <div
-                                                className="relative overflow-hidden cursor-pointer group bg-gray-100 rounded-tr-lg"
-                                                onClick={() => handleImageClick(1)}
-                                            >
-                                                <img
-                                                    src={mobileGridImages[0]}
-                                                    alt="Foto 2"
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = 'none';
-                                                    }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="bg-gray-100 rounded-tr-lg" />
-                                        )}
-                                        {mobileGridImages[1] ? (
-                                            <div
-                                                className="relative overflow-hidden cursor-pointer group bg-gray-100 rounded-br-lg"
-                                                onClick={() => handleImageClick(2)}
-                                            >
-                                                <img
-                                                    src={mobileGridImages[1]}
-                                                    alt="Foto 3"
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = 'none';
-                                                    }}
-                                                />
-                                                {finalImages.length > 3 && (
-                                                    <button
-                                                        className="absolute inset-0 bg-black/50 hover:bg-black/60 flex items-center justify-center text-white font-semibold cursor-pointer transition-colors backdrop-blur-[1px] rounded-br-lg"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setIsLightboxOpen(true);
-                                                            setLightboxIndex(0);
-                                                        }}
-                                                    >
-                                                        <span className="text-xs">Mostrar todas las fotos</span>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="bg-gray-100 rounded-br-lg" />
-                                        )}
+                        {/* Indicador de fotos */}
+                        <div className="absolute bottom-4 right-4 bg-gray-900/80 text-white text-xs font-medium px-2.5 py-1 rounded-md">
+                            {mobileImageIndex + 1} / {finalImages.length}
                                     </div>
                                 </div>
-                    </>
                 )}
 
-                {/* Layout de dos columnas después de las imágenes (Desktop) */}
-                <div className="hidden lg:block">
-                    <div className="grid grid-cols-[minmax(0,1fr)_400px] gap-12 mt-8">
-                    {/* Columna izquierda - Contenido principal */}
-                    <div className="space-y-6 w-full">
-                        {/* Header del servicio estilo Airbnb */}
-                        <div className="space-y-3 pt-4">
-                            <div>
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#717171]">
-                                    <div className="flex items-center gap-1.5">
-                                        <Star className="w-[14px] h-[14px] fill-[#0066CC] text-[#0066CC]" />
-                                        <span className="font-semibold text-[#222222]">
-                                            {finalRating > 0 ? finalRating.toFixed(1) : 'Nuevo'}
-                                        </span>
-                                        {finalReviews.length > 0 && (
-                                            <>
+                {/* Contenido móvil */}
+                <div className="px-5 pt-5 pb-32">
+                    {/* Título */}
+                    <h1 className="text-[22px] font-semibold text-gray-900 leading-tight mb-2">
+                        {serviceTypeName} por {finalExpertName}
+                    </h1>
+
+                    {/* Meta info */}
+                    <div className="flex flex-wrap items-center gap-x-2 text-sm text-gray-600 mb-5">
+                        {finalRating > 0 ? (
+                            <>
+                                <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
+                                <span className="font-medium text-gray-900">{finalRating.toFixed(1)}</span>
                                                 <span>·</span>
-                                                <button className="underline cursor-pointer hover:text-[#222222] decoration-1">
-                                                    {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
-                                                </button>
+                                <span className="underline">{finalReviews.length} reseñas</span>
                                             </>
+                        ) : (
+                            <span className="flex items-center gap-1">
+                                <Star className="w-4 h-4" />
+                                Nuevo
+                            </span>
                                         )}
-                                    </div>
                                     {finalCompletedSearches > 0 && (
                                         <>
                                             <span>·</span>
-                                            <div className="flex items-center gap-1.5">
-                                                <CheckCircle className="w-[14px] h-[14px] text-[#00A699]" />
-                                                <span>{finalCompletedSearches} servicios completados</span>
-                                            </div>
-                                        </>
-                                    )}
-                                    {latitude && longitude && (
-                                        <>
-                                            <span>·</span>
-                                            <button className="flex items-center gap-1.5 underline cursor-pointer hover:text-[#222222] decoration-1">
-                                                <MapPin className="w-[14px] h-[14px]" />
-                                                <span>Mostrar mapa</span>
-                                            </button>
+                                <span>{finalCompletedSearches} completados</span>
                                         </>
                                     )}
                                 </div>
+
+                    <div className="h-px bg-gray-200 mb-5" />
+
+                    {/* Info del anfitrión */}
+                    <div className="flex items-center gap-4 mb-5">
+                        <Avatar className="w-12 h-12">
+                            <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
+                            <AvatarFallback className="bg-gray-900 text-white font-semibold">
+                                {finalExpertName.charAt(0)}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <h3 className="font-medium text-gray-900">Anfitrión: {finalExpertName}</h3>
+                            <p className="text-sm text-gray-500">
+                                {finalService?.expert?.createdAt 
+                                    ? (() => {
+                                        const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
+                                        return months < 1 ? 'Menos de 1 mes' : `${months} meses de experiencia`;
+                                    })()
+                                    : 'Profesional verificado'
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="h-px bg-gray-200 mb-5" />
+
+                    {/* Features destacadas */}
+                    <div className="space-y-5 mb-5">
+                        <div className="flex gap-4">
+                            <Shield className="w-6 h-6 text-gray-700 flex-shrink-0" />
+                            <div>
+                                <h4 className="font-medium text-gray-900">Cancelación gratuita</h4>
+                                <p className="text-sm text-gray-500">Cancela hasta 24h antes sin cargos</p>
                             </div>
                         </div>
-
-                        <div className="border-t border-[#EBEBEB] pt-6 mt-4"></div>
-
-                        {/* Información del experto estilo Airbnb */}
-                        <div className="flex items-start gap-4 pb-5 border-b border-[#EBEBEB]">
-                            <Avatar className="w-10 h-10 flex-shrink-0 border border-[#EBEBEB]">
-                                <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                                <AvatarFallback className="bg-[#F7F7F7] text-[#222222] font-semibold">
-                                    {finalExpertName.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                                <div className="mb-1.5">
-                                    <h3 className="text-base font-semibold text-[#222222] mb-0.5" style={{ fontFamily: 'Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
-                                        Anfitrión: {finalExpertName}
-                                    </h3>
-                                    {finalService?.expert?.createdAt && (
-                                        <p className="text-sm text-[#717171]">
-                                            {(() => {
-                                                const monthsSince = Math.floor(
-                                                    (Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)
-                                                );
-                                                if (monthsSince < 1) return 'Menos de 1 mes de experiencia';
-                                                if (monthsSince === 1) return '1 mes de experiencia';
-                                                return `${monthsSince} meses de experiencia`;
-                                            })()}
-                                        </p>
-                                    )}
+                        <div className="flex gap-4">
+                            <Headphones className="w-6 h-6 text-gray-700 flex-shrink-0" />
+                            <div>
+                                <h4 className="font-medium text-gray-900">Soporte 24/7</h4>
+                                <p className="text-sm text-gray-500">Asistencia disponible en cualquier momento</p>
                                 </div>
-                                <div className="flex items-center gap-3 text-sm">
-                                    <div className="flex items-center gap-1.5">
-                                        <Star className="w-3.5 h-3.5 fill-[#0066CC] text-[#0066CC]" />
-                                        <span className="font-semibold text-[#222222]">
-                                            {finalRating > 0 ? finalRating.toFixed(1) : 'Nuevo'}
-                                        </span>
                                     </div>
-                                    {finalReviews.length > 0 && (
-                                        <>
-                                            <span className="text-[#717171]">·</span>
-                                            <button className="text-[#717171] underline cursor-pointer hover:text-[#222222] decoration-1">
-                                                {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
+                        <div className="flex gap-4">
+                            <Award className="w-6 h-6 text-gray-700 flex-shrink-0" />
+                            <div>
+                                <h4 className="font-medium text-gray-900">Garantía de satisfacción</h4>
+                                <p className="text-sm text-gray-500">Si no quedas satisfecho, te devolvemos el dinero</p>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Detalles del servicio estilo Airbnb */}
-                        <div className="space-y-6 pb-6 border-b border-[#EBEBEB]">
-                            {/* Información básica con iconos */}
-                            <div className="space-y-5">
+                    <div className="h-px bg-gray-200 mb-5" />
+
+                    {/* Qué incluye */}
                                 {finalDeliverableTypes.length > 0 && (
-                                    <div>
-                                        <h3 className="text-base font-semibold text-[#222222] mb-3">Qué incluye</h3>
+                        <>
+                            <div className="mb-5">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Qué incluye</h3>
                                         <div className="space-y-3">
                                             {finalDeliverableTypes.map((dt) => (
                                                 <div key={dt.id} className="flex items-start gap-3">
-                                                    <CheckCircle className="w-5 h-5 text-[#222222] flex-shrink-0 mt-0.5" />
-                                                    <div className="flex-1">
-                                                        <div className="text-sm font-semibold text-[#222222] mb-1">
-                                                            {dt.displayName || dt.name}
-                                                        </div>
-                                                        <div className="text-sm text-[#717171] leading-relaxed">
-                                                            {dt.description || `Incluye ${dt.displayName || dt.name} completo con todos los detalles y especificaciones necesarias para garantizar la máxima calidad del servicio. Este elemento forma parte integral de la experiencia y está diseñado para cumplir con los más altos estándares profesionales.`}
-                                                        </div>
+                                            <CheckCircle className="w-5 h-5 text-gray-900 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <span className="text-gray-900">{dt.displayName || dt.name}</span>
+                                                {dt.description && (
+                                                    <p className="text-sm text-gray-500 mt-0.5">{dt.description}</p>
+                                                )}
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
-                                )}
+                            <div className="h-px bg-gray-200 mb-5" />
+                        </>
+                    )}
 
-                                {finalService?.durationInHours && (
-                                    <div className="flex items-start gap-3">
-                                        <Clock className="w-5 h-5 text-[#222222] mt-0.5 flex-shrink-0" />
-                                        <div className="flex-1">
-                                            <h3 className="text-sm font-semibold text-[#222222] mb-1">Duración</h3>
-                                            <p className="text-sm text-[#717171]">
-                                                {finalService.durationInHours} {finalService.durationInHours === 1 ? 'hora' : 'horas'}
+                    {/* Descripción */}
+                    <div className="mb-5">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Acerca del servicio</h3>
+                        <p className="text-gray-600 leading-relaxed">
+                            {finalDescription || 'Este servicio profesional incluye todo lo necesario para garantizar tu satisfacción. Nuestro equipo de expertos está comprometido con brindarte la mejor experiencia posible.'}
                                             </p>
                                         </div>
-                                    </div>
-                                )}
 
-                                {/* Asistencia 24h */}
-                                <div className="flex items-start gap-3">
-                                    <Headphones className="w-5 h-5 text-[#222222] mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-[#222222] mb-1">Asistencia 24/7</h3>
-                                        <p className="text-sm text-[#717171]">
-                                            Nuestro equipo de soporte está disponible las 24 horas del día, los 7 días de la semana para ayudarte con cualquier consulta o problema que puedas tener durante el servicio.
-                                        </p>
+                    {/* Reseñas */}
+                    {finalReviews.length > 0 && (
+                        <>
+                            <div className="h-px bg-gray-200 mb-5" />
+                            <div className="mb-5">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Star className="w-5 h-5 fill-gray-900 text-gray-900" />
+                                    <span className="text-lg font-semibold">{finalRating.toFixed(1)}</span>
+                                    <span className="text-gray-500">·</span>
+                                    <span className="text-gray-600">{finalReviews.length} reseñas</span>
+                                </div>
+                                <EnhancedReviewsList reviews={finalReviews} maxReviews={5} />
                                     </div>
+                        </>
+                    )}
                                 </div>
 
-                                {/* Garantía de calidad */}
-                                <div className="flex items-start gap-3">
-                                    <Award className="w-5 h-5 text-[#222222] mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-[#222222] mb-1">Garantía de satisfacción</h3>
-                                        <p className="text-sm text-[#717171]">
-                                            Estamos tan seguros de la calidad de nuestro trabajo que ofrecemos una garantía completa. Si no quedas satisfecho, trabajaremos contigo hasta resolver cualquier problema.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Respuesta rápida */}
-                                <div className="flex items-start gap-3">
-                                    <Zap className="w-5 h-5 text-[#222222] mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-[#222222] mb-1">Respuesta rápida</h3>
-                                        <p className="text-sm text-[#717171]">
-                                            Respondemos a todas las consultas en menos de 2 horas durante el horario laboral. Comunicación clara y transparente en cada paso del proceso.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Soporte post-servicio */}
-                                <div className="flex items-start gap-3">
-                                    <MessageCircle className="w-5 h-5 text-[#222222] mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-[#222222] mb-1">Soporte continuo</h3>
-                                        <p className="text-sm text-[#717171]">
-                                            El servicio no termina con la entrega. Ofrecemos seguimiento y soporte continuo para asegurarnos de que todo funcione perfectamente y puedas resolver cualquier duda posterior.
-                                        </p>
-                                    </div>
-                                </div>
+                {/* Footer fijo móvil */}
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-5 py-3 z-50">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-base font-semibold text-gray-900">{formatPrice(finalPrice)} €</span>
+                                <span className="text-xs text-gray-500">total</span>
                             </div>
-
-                            {/* Descripción */}
-                            <div>
-                                <h2 className="text-base font-semibold text-[#222222] mb-3">Acerca de este servicio</h2>
-                                <div className="text-sm text-[#222222] leading-relaxed space-y-3">
-                                    {finalDescription && finalDescription.trim() ? (
-                                        <p className="whitespace-pre-line">{finalDescription}</p>
-                                    ) : (
-                                        <>
-                                            <p>
-                                                Este servicio profesional está diseñado para ofrecerte una experiencia completa y de alta calidad. 
-                                                Nuestro equipo de expertos cuenta con años de experiencia en el sector y está comprometido con 
-                                                brindarte los mejores resultados.
-                                            </p>
-                                            <p>
-                                                Trabajamos con metodologías probadas y herramientas de última generación para garantizar que 
-                                                cada detalle sea cuidado al máximo. Desde la planificación inicial hasta la entrega final, 
-                                                nos aseguramos de mantenerte informado en cada paso del proceso.
-                                            </p>
-                                            <p>
-                                                Tu satisfacción es nuestra prioridad. Por eso, ofrecemos un servicio personalizado que se 
-                                                adapta a tus necesidades específicas. No dudes en contactarnos si tienes alguna pregunta 
-                                                o requisito especial que quieras discutir antes de reservar.
-                                            </p>
-                                        </>
-                                    )}
+                            {finalRating > 0 && (
+                                <div className="flex items-center gap-1 text-xs">
+                                    <Star className="w-3 h-3 fill-gray-900 text-gray-900" />
+                                    <span className="font-medium">{finalRating.toFixed(1)}</span>
                                 </div>
-                            </div>
+                            )}
+                        </div>
+                        <button
+                            onClick={onContinue}
+                            className="h-11 px-6 bg-[#0066CC] hover:bg-[#0052A3] text-white font-medium rounded-lg transition-colors"
+                        >
+                            Reservar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* ========== VERSIÓN DESKTOP ========== */}
+            <div className="hidden lg:block">
+                {/* Header desktop */}
+                <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
+                    <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+                        <button
+                            onClick={onBack}
+                            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-gray-800" />
+                        </button>
+                        
+                        {/* Steps */}
+                        <div className="flex items-center gap-2">
+                            {Array.from({ length: totalSteps }).map((_, i) => (
+                                <React.Fragment key={i}>
+                                    <div className={`w-2.5 h-2.5 rounded-full ${i + 1 <= currentStep ? 'bg-gray-900' : 'bg-gray-300'}`} />
+                                    {i < totalSteps - 1 && <div className="w-6 h-0.5 bg-gray-200" />}
+                                </React.Fragment>
+                            ))}
                         </div>
 
-                        {/* Reseñas estilo Airbnb */}
-                        {finalReviews.length > 0 && (
-                            <div className="pb-8 border-b border-[#EBEBEB]">
-                                <div className="flex items-center gap-2.5 mb-6">
-                                    <div className="flex items-center gap-1.5">
-                                        <Star className="w-4 h-4 fill-[#222222] text-[#222222]" />
-                                        <span className="text-base font-semibold text-[#222222]">
-                                            {finalRating.toFixed(1)}
-                                        </span>
+                        <div className="w-9" /> {/* Spacer */}
                                     </div>
-                                    <div className="text-sm text-[#717171]">
-                                        <span className="font-semibold text-[#222222]">{finalReviews.length}</span> {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
-                                    </div>
-                                </div>
-                                <EnhancedReviewsList 
-                                    reviews={finalReviews}
-                                    maxReviews={10}
+                </header>
+
+                <div className="max-w-6xl mx-auto px-6 py-5">
+                    {/* Título y acciones */}
+                    <div className="flex items-start justify-between mb-4">
+                        <h1 className="text-xl font-semibold text-gray-900">
+                            {serviceTypeName} por {finalExpertName}
+                        </h1>
+                        <div className="flex items-center gap-3">
+                            <button className="flex items-center gap-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 px-2.5 py-1.5 rounded-md transition-colors">
+                                <Share2 className="w-3.5 h-3.5" />
+                                <span className="underline">Compartir</span>
+                            </button>
+                            <button 
+                                onClick={() => setIsFavorite(!isFavorite)}
+                                className="flex items-center gap-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 px-2.5 py-1.5 rounded-md transition-colors"
+                            >
+                                <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+                                <span className="underline">Guardar</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Galería desktop */}
+                    {finalImages.length > 0 && (
+                        <div className="grid grid-cols-4 grid-rows-2 gap-1.5 h-[340px] rounded-lg overflow-hidden mb-6">
+                            {/* Imagen principal */}
+                            <div 
+                                className="col-span-2 row-span-2 relative cursor-pointer group rounded-l-lg overflow-hidden"
+                                onClick={() => handleImageClick(0)}
+                            >
+                                <img
+                                    src={heroImage}
+                                    alt="Principal"
+                                    className="w-full h-full object-cover group-hover:brightness-95 transition-all"
                                 />
                             </div>
-                        )}
-                    </div>
-
-                    {/* Columna derecha - Sidebar de reserva estilo Airbnb (Desktop) */}
-                    <div>
-                        <div className="sticky top-24">
-                            <div className="border border-[#DDDDDD] rounded-2xl shadow-[0_6px_16px_rgba(0,0,0,0.12)] overflow-hidden bg-white">
-                                <div className="p-6 space-y-6">
-                                    <div>
-                                        <div className="flex items-baseline gap-1.5 mb-2">
-                                            <span className="text-xl font-semibold text-[#222222]">
-                                                {formatPrice(finalPrice)}
-                                            </span>
-                                            <span className="text-sm text-[#717171]">por servicio</span>
+                            {/* Grid de 4 imágenes */}
+                            {[0, 1, 2, 3].map((idx) => (
+                                <div
+                                    key={idx}
+                                    className={`relative cursor-pointer group bg-gray-100 overflow-hidden ${idx === 1 ? 'rounded-tr-lg' : ''} ${idx === 3 ? 'rounded-br-lg' : ''}`}
+                                    onClick={() => gridImages[idx] && handleImageClick(idx + 1)}
+                                >
+                                    {gridImages[idx] ? (
+                                        <img
+                                            src={gridImages[idx]}
+                                            alt={`Foto ${idx + 2}`}
+                                            className="w-full h-full object-cover group-hover:brightness-95 transition-all"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <User className="w-6 h-6 text-gray-300" />
                                         </div>
-                                        {finalRating > 0 && (
-                                            <div className="flex items-center gap-1.5 text-sm text-[#717171]">
-                                                <Star className="w-3.5 h-3.5 fill-[#0066CC] text-[#0066CC]" />
-                                                <span className="font-semibold text-[#222222]">
-                                                    {finalRating.toFixed(1)}
-                                                </span>
-                                                <span>·</span>
-                                                <button className="underline cursor-pointer hover:text-[#222222] decoration-1">
-                                                    {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <Button
-                                        onClick={onContinue}
-                                        className="w-full h-14 text-base font-semibold bg-[#0066CC] text-white hover:bg-[#0052A3] rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
-                                        size="lg"
-                                    >
-                                        Reservar
-                                    </Button>
-
-                                    <div className="text-center text-sm text-[#717171] leading-relaxed">
-                                        No se te cobrará nada aún
-                                    </div>
-
-                                    <div className="border-t border-[#EBEBEB] pt-6"></div>
-
-                                    <div className="space-y-5 text-sm">
-                                        <div className="flex items-start gap-3">
-                                            <div className="flex-shrink-0 mt-0.5">
-                                                <CheckCircle className="w-4 h-4 text-[#222222]" />
-                                            </div>
-                                            <div>
-                                                <div className="font-semibold text-[#222222] mb-1">Cancelación gratuita</div>
-                                                <div className="text-sm text-[#717171] leading-relaxed">
-                                                    Cancela hasta 24 horas antes de la fecha de inicio para recibir un reembolso completo.
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start gap-3">
-                                            <div className="flex-shrink-0 mt-0.5">
-                                                <Shield className="w-4 h-4 text-[#222222]" />
-                                            </div>
-                                            <div>
-                                                <div className="font-semibold text-[#222222] mb-1">Pago seguro</div>
-                                                <div className="text-sm text-[#717171] leading-relaxed">
-                                                    Tu pago está protegido y seguro.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="border-t border-[#EBEBEB] pt-6"></div>
-
-                                    <div className="text-xs text-[#717171] text-center">
-                                        <button className="underline hover:text-[#222222] decoration-1 transition-colors">
-                                            Denunciar este anuncio
+                                    )}
+                                    {/* Botón mostrar todas */}
+                                    {idx === 3 && finalImages.length > 5 && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setIsLightboxOpen(true);
+                                                setLightboxIndex(0);
+                                            }}
+                                            className="absolute bottom-3 right-3 bg-white px-3 py-1.5 rounded-md text-xs font-medium text-gray-900 shadow-md hover:shadow-lg transition-shadow flex items-center gap-1.5"
+                                        >
+                                            <Grid3X3 className="w-3.5 h-3.5" />
+                                            Ver todas
                                         </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                </div>
-
-                {/* Contenido móvil - sin sidebar */}
-                <div className="lg:hidden space-y-6 pb-24">
-                    {/* Header del servicio estilo Airbnb */}
-                    <div className="space-y-2 pt-2">
-                        <div>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#717171]">
-                                <div className="flex items-center gap-1.5">
-                                    <Star className="w-[14px] h-[14px] fill-[#0066CC] text-[#0066CC]" />
-                                    <span className="font-semibold text-[#222222]">
-                                        {finalRating > 0 ? finalRating.toFixed(1) : 'Nuevo'}
-                                    </span>
-                                    {finalReviews.length > 0 && (
-                                        <>
-                                            <span>·</span>
-                                            <button className="underline cursor-pointer hover:text-[#222222] decoration-1">
-                                                {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
-                                            </button>
-                                        </>
                                     )}
                                 </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Layout de dos columnas */}
+                    <div className="grid grid-cols-[1fr_320px] gap-10">
+                        {/* Columna izquierda */}
+                        <div>
+                            {/* Meta info */}
+                            <div className="flex items-center gap-2 text-xs text-gray-600 pb-4 border-b border-gray-200">
+                                {finalRating > 0 && (
+                                    <>
+                                        <Star className="w-3.5 h-3.5 fill-gray-900 text-gray-900" />
+                                        <span className="font-medium text-gray-900">{finalRating.toFixed(1)}</span>
+                                        <span>·</span>
+                                        <button className="underline hover:text-gray-900">{finalReviews.length} reseñas</button>
+                                        <span>·</span>
+                                    </>
+                                )}
                                 {finalCompletedSearches > 0 && (
                                     <>
-                                        <span>·</span>
-                                        <div className="flex items-center gap-1.5">
-                                            <CheckCircle className="w-[14px] h-[14px] text-[#00A699]" />
-                                            <span>{finalCompletedSearches} servicios completados</span>
-                                        </div>
-                                    </>
-                                )}
-                                {latitude && longitude && (
-                                    <>
-                                        <span>·</span>
-                                        <button className="flex items-center gap-1.5 underline cursor-pointer hover:text-[#222222] decoration-1">
-                                            <MapPin className="w-[14px] h-[14px]" />
-                                            <span>Mostrar mapa</span>
-                                        </button>
+                                        <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                                        <span>{finalCompletedSearches} completados</span>
                                     </>
                                 )}
                             </div>
-                        </div>
-                    </div>
 
-                    <div className="border-t border-[#EBEBEB] pt-4 mt-3"></div>
-
-                    {/* Información del experto estilo Airbnb */}
-                    <div className="flex items-start gap-3 pb-4 border-b border-[#EBEBEB]">
-                        <Avatar className="w-10 h-10 flex-shrink-0 border border-[#EBEBEB]">
-                            <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                            <AvatarFallback className="bg-[#F7F7F7] text-[#222222] font-semibold">
-                                {finalExpertName.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                            <div className="mb-1.5">
-                                <h3 className="text-base font-semibold text-[#222222] mb-0.5">
-                                    Anfitrión: {finalExpertName}
-                                </h3>
-                                {finalService?.expert?.createdAt && (
-                                    <p className="text-sm text-[#717171]">
-                                        {(() => {
-                                            const monthsSince = Math.floor(
-                                                (Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)
-                                            );
-                                            if (monthsSince < 1) return 'Menos de 1 mes de experiencia';
-                                            if (monthsSince === 1) return '1 mes de experiencia';
-                                            return `${monthsSince} meses de experiencia`;
-                                        })()}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-3 text-sm">
-                                <div className="flex items-center gap-1.5">
-                                    <Star className="w-3.5 h-3.5 fill-[#0066CC] text-[#0066CC]" />
-                                    <span className="font-semibold text-[#222222]">
-                                        {finalRating > 0 ? finalRating.toFixed(1) : 'Nuevo'}
-                                    </span>
-                                </div>
-                                {finalReviews.length > 0 && (
-                                    <>
-                                        <span className="text-[#717171]">·</span>
-                                        <button className="text-[#717171] underline cursor-pointer hover:text-[#222222] decoration-1">
-                                            {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Detalles del servicio estilo Airbnb */}
-                    <div className="space-y-6 pb-6 border-b border-[#EBEBEB]">
-                        {/* Información básica con iconos */}
-                        <div className="space-y-5">
-                            {finalDeliverableTypes.length > 0 && (
+                            {/* Anfitrión */}
+                            <div className="flex items-center gap-3 py-4 border-b border-gray-200">
+                                <Avatar className="w-11 h-11">
+                                    <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
+                                    <AvatarFallback className="bg-gray-900 text-white text-base font-semibold">
+                                        {finalExpertName.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
                                 <div>
-                                    <h3 className="text-base font-semibold text-[#222222] mb-3">Qué incluye</h3>
-                                    <div className="space-y-3">
+                                    <h3 className="text-sm font-medium text-gray-900">Anfitrión: {finalExpertName}</h3>
+                                    <p className="text-xs text-gray-500">
+                                        {finalService?.expert?.createdAt 
+                                            ? (() => {
+                                                const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
+                                                return months < 1 ? 'Menos de 1 mes' : `${months} meses de experiencia`;
+                                            })()
+                                            : 'Verificado'
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Features */}
+                            <div className="py-4 border-b border-gray-200 space-y-3">
+                                <div className="flex gap-3">
+                                    <Shield className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-900">Cancelación gratuita</h4>
+                                        <p className="text-xs text-gray-500">Hasta 24h antes sin cargo</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-3">
+                                    <Headphones className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-900">Soporte 24/7</h4>
+                                        <p className="text-xs text-gray-500">Asistencia disponible siempre</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-3">
+                                    <Award className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-900">Garantía de satisfacción</h4>
+                                        <p className="text-xs text-gray-500">Reembolso si no quedas satisfecho</p>
+                                    </div>
+                                </div>
+                                {finalService?.durationInHours && (
+                                    <div className="flex gap-3">
+                                        <Clock className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                                        <div>
+                                            <h4 className="text-sm font-medium text-gray-900">Duración</h4>
+                                            <p className="text-xs text-gray-500">{finalService.durationInHours}h estimadas</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Qué incluye */}
+                            {finalDeliverableTypes.length > 0 && (
+                                <div className="py-4 border-b border-gray-200">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Qué incluye</h3>
+                                    <div className="grid grid-cols-2 gap-2">
                                         {finalDeliverableTypes.map((dt) => (
-                                            <div key={dt.id} className="flex items-start gap-3">
-                                                <CheckCircle className="w-5 h-5 text-[#222222] flex-shrink-0 mt-0.5" />
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-semibold text-[#222222] mb-1">
-                                                        {dt.displayName || dt.name}
-                                                    </div>
-                                                    <div className="text-sm text-[#717171] leading-relaxed">
-                                                        {dt.description || `Incluye ${dt.displayName || dt.name} completo con todos los detalles y especificaciones necesarias para garantizar la máxima calidad del servicio. Este elemento forma parte integral de la experiencia y está diseñado para cumplir con los más altos estándares profesionales.`}
-                                                    </div>
-                                                </div>
+                                            <div key={dt.id} className="flex items-start gap-2">
+                                                <CheckCircle className="w-4 h-4 text-[#0066CC] flex-shrink-0 mt-0.5" />
+                                                <span className="text-xs text-gray-700">{dt.displayName || dt.name}</span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             )}
 
-                            {finalService?.durationInHours && (
-                                <div className="flex items-start gap-3">
-                                    <Clock className="w-5 h-5 text-[#222222] mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <h3 className="text-sm font-semibold text-[#222222] mb-1">Duración</h3>
-                                        <p className="text-sm text-[#717171]">
-                                            {finalService.durationInHours} {finalService.durationInHours === 1 ? 'hora' : 'horas'}
-                                        </p>
+                            {/* Descripción */}
+                            <div className="py-4 border-b border-gray-200">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-2">Acerca del servicio</h3>
+                                <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
+                                    {finalDescription || 'Servicio profesional de alta calidad. Nuestro equipo de expertos está comprometido con brindarte los mejores resultados.'}
+                                </p>
+                            </div>
+
+                            {/* Reseñas */}
+                            {finalReviews.length > 0 && (
+                                <div className="py-4">
+                                    <div className="flex items-center gap-1.5 mb-4">
+                                        <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
+                                        <span className="text-sm font-semibold">{finalRating.toFixed(1)}</span>
+                                        <span className="text-xs text-gray-500">· {finalReviews.length} reseñas</span>
                                     </div>
+                                    <EnhancedReviewsList reviews={finalReviews} maxReviews={6} />
                                 </div>
                             )}
-
-                            {/* Asistencia 24h */}
-                            <div className="flex items-start gap-3">
-                                <Headphones className="w-5 h-5 text-[#222222] mt-0.5 flex-shrink-0" />
-                                <div className="flex-1">
-                                    <h3 className="text-sm font-semibold text-[#222222] mb-1">Asistencia 24/7</h3>
-                                    <p className="text-sm text-[#717171]">
-                                        Nuestro equipo de soporte está disponible las 24 horas del día, los 7 días de la semana para ayudarte con cualquier consulta o problema que puedas tener durante el servicio.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Garantía de calidad */}
-                            <div className="flex items-start gap-3">
-                                <Award className="w-5 h-5 text-[#222222] mt-0.5 flex-shrink-0" />
-                                <div className="flex-1">
-                                    <h3 className="text-sm font-semibold text-[#222222] mb-1">Garantía de satisfacción</h3>
-                                    <p className="text-sm text-[#717171]">
-                                        Estamos tan seguros de la calidad de nuestro trabajo que ofrecemos una garantía completa. Si no quedas satisfecho, trabajaremos contigo hasta resolver cualquier problema.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Respuesta rápida */}
-                            <div className="flex items-start gap-3">
-                                <Zap className="w-5 h-5 text-[#222222] mt-0.5 flex-shrink-0" />
-                                <div className="flex-1">
-                                    <h3 className="text-sm font-semibold text-[#222222] mb-1">Respuesta rápida</h3>
-                                    <p className="text-sm text-[#717171]">
-                                        Respondemos a todas las consultas en menos de 2 horas durante el horario laboral. Comunicación clara y transparente en cada paso del proceso.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Soporte post-servicio */}
-                            <div className="flex items-start gap-3">
-                                <MessageCircle className="w-5 h-5 text-[#222222] mt-0.5 flex-shrink-0" />
-                                <div className="flex-1">
-                                    <h3 className="text-sm font-semibold text-[#222222] mb-1">Soporte continuo</h3>
-                                    <p className="text-sm text-[#717171]">
-                                        El servicio no termina con la entrega. Ofrecemos seguimiento y soporte continuo para asegurarnos de que todo funcione perfectamente y puedas resolver cualquier duda posterior.
-                                    </p>
-                                </div>
-                            </div>
                         </div>
 
-                        {/* Descripción */}
+                        {/* Columna derecha - Sidebar de reserva */}
                         <div>
-                            <h2 className="text-base font-semibold text-[#222222] mb-3">Acerca de este servicio</h2>
-                            <div className="text-sm text-[#222222] leading-relaxed space-y-3">
-                                {finalDescription && finalDescription.trim() ? (
-                                    <p className="whitespace-pre-line">{finalDescription}</p>
-                                ) : (
-                                    <>
-                                        <p>
-                                            Este servicio profesional está diseñado para ofrecerte una experiencia completa y de alta calidad. 
-                                            Nuestro equipo de expertos cuenta con años de experiencia en el sector y está comprometido con 
-                                            brindarte los mejores resultados.
-                                        </p>
-                                        <p>
-                                            Trabajamos con metodologías probadas y herramientas de última generación para garantizar que 
-                                            cada detalle sea cuidado al máximo. Desde la planificación inicial hasta la entrega final, 
-                                            nos aseguramos de mantenerte informado en cada paso del proceso.
-                                        </p>
-                                        <p>
-                                            Tu satisfacción es nuestra prioridad. Por eso, ofrecemos un servicio personalizado que se 
-                                            adapta a tus necesidades específicas. No dudes en contactarnos si tienes alguna pregunta 
-                                            o requisito especial que quieras discutir antes de reservar.
-                                        </p>
-                                    </>
-                                )}
+                            <div className="sticky top-20">
+                                <div className="border border-gray-200 rounded-xl shadow-lg p-5">
+                                    {/* Precio */}
+                                    <div className="mb-4">
+                                        <div className="flex items-baseline gap-1 mb-0.5">
+                                            <span className="text-xl font-semibold text-gray-900">{formatPrice(finalPrice)} €</span>
+                                            <span className="text-xs text-gray-500">total</span>
+                                        </div>
+                                        {finalRating > 0 && (
+                                            <div className="flex items-center gap-1 text-xs">
+                                                <Star className="w-3 h-3 fill-gray-900 text-gray-900" />
+                                                <span className="font-medium">{finalRating.toFixed(1)}</span>
+                                                <span className="text-gray-500">· {finalReviews.length} reseñas</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Botón reservar */}
+                                    <button
+                                        onClick={onContinue}
+                                        className="w-full h-11 bg-[#0066CC] hover:bg-[#0052A3] text-white text-sm font-semibold rounded-lg transition-colors mb-3"
+                                    >
+                                        Reservar
+                                    </button>
+
+                                    <p className="text-center text-xs text-gray-500 mb-4">
+                                        No se te cobrará nada aún
+                                    </p>
+
+                                    <div className="h-px bg-gray-200 mb-4" />
+
+                                    {/* Garantías */}
+                                    <div className="space-y-3 text-xs">
+                                        <div className="flex items-start gap-2">
+                                            <CheckCircle className="w-3.5 h-3.5 text-[#0066CC] mt-0.5 flex-shrink-0" />
+                                            <span className="text-gray-600">Cancelación gratuita 24h antes</span>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <Shield className="w-3.5 h-3.5 text-[#0066CC] mt-0.5 flex-shrink-0" />
+                                            <span className="text-gray-600">Pago 100% seguro</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                        {/* Reseñas estilo Airbnb */}
-                        {finalReviews.length > 0 && (
-                            <div className="pb-5 border-b border-[#EBEBEB] w-full">
-                                <div className="flex items-center gap-2.5 mb-4">
-                                    <div className="flex items-center gap-1.5">
-                                        <Star className="w-4 h-4 fill-[#222222] text-[#222222]" />
-                                        <span className="text-base font-semibold text-[#222222]">
-                                            {finalRating.toFixed(1)}
-                                        </span>
-                                    </div>
-                                    <div className="text-sm text-[#717171]">
-                                        <span className="font-semibold text-[#222222]">{finalReviews.length}</span> {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
-                                    </div>
-                                </div>
-                                <div className="w-full">
-                                    <EnhancedReviewsList 
-                                        reviews={finalReviews}
-                                        maxReviews={10}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                </div>
-
-                {/* Botón de reserva fijo estilo Airbnb (Mobile) */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#DDDDDD] p-3 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] z-50">
-                    <div className="flex items-center justify-between mb-2">
-                        <div>
-                            <div className="text-xs text-[#717171] mb-0.5">Precio</div>
-                            <div className="text-base font-semibold text-[#222222]">
-                                {formatPrice(finalPrice)}
-                                <span className="text-sm font-normal text-[#717171] ml-1">por servicio</span>
-                            </div>
-                        </div>
-                    </div>
-                    <Button
-                        onClick={onContinue}
-                        className="w-full h-10 text-sm font-semibold bg-[#0066CC] text-white hover:bg-[#0052A3] rounded-lg shadow-sm"
-                        size="lg"
-                    >
-                        Reservar
-                    </Button>
                 </div>
             </div>
 
-            {/* Lightbox para ver todas las fotos */}
+            {/* Lightbox */}
             <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
-                <DialogContent className="max-w-7xl w-full p-0 bg-black/95 border-none" aria-describedby="lightbox-description">
-                    <span id="lightbox-description" className="sr-only">Galería de fotos del servicio</span>
-                    <div className="relative">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-4 right-4 z-50 text-white hover:bg-white/20"
+                <DialogContent className="max-w-6xl w-full p-0 bg-black border-none">
+                    <div className="relative h-[85vh]">
+                        <button
                             onClick={() => setIsLightboxOpen(false)}
+                            className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                         >
-                            <X className="w-6 h-6" />
-                        </Button>
+                            <X className="w-6 h-6 text-white" />
+                        </button>
                         
                         {finalImages.length > 1 && (
                             <>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20"
+                                <button
                                     onClick={() => handleLightboxNavigation('prev')}
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white shadow-lg hover:scale-105 transition-transform"
                                 >
-                                    <ChevronLeft className="w-8 h-8" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20"
+                                    <ChevronLeft className="w-6 h-6 text-gray-900" />
+                                </button>
+                                <button
                                     onClick={() => handleLightboxNavigation('next')}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white shadow-lg hover:scale-105 transition-transform"
                                 >
-                                    <ChevronRight className="w-8 h-8" />
-                                </Button>
+                                    <ChevronRight className="w-6 h-6 text-gray-900" />
+                                </button>
                             </>
                         )}
 
-                        <div className="relative w-full h-[80vh] flex items-center justify-center">
+                        <div className="h-full flex items-center justify-center p-8">
                             <img
                                 src={finalImages[lightboxIndex]}
                                 alt={`Foto ${lightboxIndex + 1}`}
@@ -989,14 +646,19 @@ export function ServiceReviewPage({
                         </div>
 
                         {finalImages.length > 1 && (
-                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm backdrop-blur-sm">
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium">
                                 {lightboxIndex + 1} / {finalImages.length}
                             </div>
                         )}
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <style>{`
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+            `}</style>
         </div>
     );
 }
-

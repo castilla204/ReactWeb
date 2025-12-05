@@ -126,7 +126,8 @@ export function getCountryFlagUrl(
 ): string | null {
   if (!countryCode) return null;
   const code = countryCode.toLowerCase();
-  return `https://flagcdn.com/w${size}/${code}.png`;
+  // Usar formato alternativo de flagcdn.com que es más compatible
+  return `https://flagcdn.com/${size}x${Math.round(size * 0.75)}/${code}.png`;
 }
 
 /**

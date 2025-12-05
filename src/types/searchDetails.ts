@@ -160,8 +160,22 @@ export interface AppointmentDto {
   searchHireId: number;
   status: string;
   statusInfo?: SystemStatusDto;  // ✅ ACTUALIZADO: Usar SystemStatusDto
-  proposedDate: string;
-  proposedTime: string;
+  
+  // ═══════════════════════════════════════════════════════════════
+  // ✅ CAMPOS DE FECHA (Internacionalización)
+  // ═══════════════════════════════════════════════════════════════
+  // Fechas en UTC (para cálculos, comparaciones, ordenamiento)
+  proposedDate: string;          // UTC (guardada en BD)
+  proposedTime: string;           // UTC (guardada en BD)
+  
+  // ✅ NUEVOS: Fechas en hora local del experto
+  proposedDateLocal?: string;    // Fecha propuesta en hora local
+  proposedTimeLocal?: string;     // Hora propuesta en hora local
+  
+  // ✅ NUEVOS: Información de internacionalización
+  timezone?: string;              // Timezone IANA (ej: "Europe/Madrid", "America/Mexico_City")
+  country?: string;              // País ISO 3166-1 alpha-2 (ej: "ES", "MX")
+  
   location: string;
   latitude: number | null;
   longitude: number | null;
