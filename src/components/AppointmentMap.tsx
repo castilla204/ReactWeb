@@ -1,51 +1,64 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLoadScript } from '@react-google-maps/api';
+import CountrySelector from './CountrySelector';
+import { getCountryCoordinates } from '../utils/countryCoordinates';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['geometry', 'places'];
 
 interface AppointmentMapProps {
-  onLocationSelect?: (location: {
-    address: string;
-    latitude: number;
-    longitude: number;
-  }) => void;
-  initialLocation?: {
-    latitude: number;
-    longitude: number;
-  };
-  disabled?: boolean;
-  expertLocation?: {
-    latitude: number;
-    longitude: number;
-  } | null;
-  expertRange?: number | null;
-  latitude?: number;
-  longitude?: number;
-  address?: string;
-  className?: string;
-  radius?: number;
-  service?: any;
+  onLocationSelect?: (location: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  }) => void;
+  initialLocation?: {
+    latitude: number;
+    longitude: number;
+  };
+  disabled?: boolean;
+  expertLocation?: {
+    latitude: number;
+    longitude: number;
+  } | null;
+  expertRange?: number | null;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  className?: string;
+  radius?: number;
+  service?: any;
+  expertCountry?: string | null; // ✅ NUEVO: País del experto para mostrar en el selector
 }
 
 const AppointmentMap: React.FC<AppointmentMapProps> = ({
-  latitude,
-  longitude,
-  address = "Ubicación del servicio",
-  className = "w-full h-64",
-  radius,
-  service,
-  expertLocation,
-  expertRange,
-  onLocationSelect,
-  initialLocation
+  latitude,
+  longitude,
+  address = "Ubicación del servicio",
+  className = "w-full h-64",
+  radius,
+  service,
+  expertLocation,
+  expertRange,
+  onLocationSelect,
+  initialLocation,
+  expertCountry
 }) => {
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
-    libraries
-  });
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
+    libraries
+  });
 
-  const searchInputId = React.useMemo(() => `search-input-${Math.random().toString(36).substr(2, 9)}`, []);
-  const mapRef = useRef<HTMLDivElement>(null);
+  const searchInputId = React.useMemo(() => `search-input-${Math.random().toString(36).substr(2, 9)}`, []);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(expertCountry || null);
+
+  // Actualizar selectedCountry cuando cambia expertCountry
+  useEffect(() => {
+    if (expertCountry) {
+      setSelectedCountry(expertCountry);
+    }
+  }, [expertCountry]);
   
   const getCoordinates = () => {
     // Validar y convertir a número (maneja tanto strings como números)
@@ -147,15 +160,18 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       const map = new (window as any).google.maps.Map(mapRef.current, {
         center: { lat: memoizedCoordinates.lat, lng: memoizedCoordinates.lng },
         zoom: 12,
-        mapTypeId: 'roadmap',
-        streetViewControl: false,
-        fullscreenControl: true,
-        zoomControl: true,
-        mapTypeControl: false,
-        scaleControl: false,
-        rotateControl: false,
-        clickableIcons: false
-      });
+        mapTypeId: 'roadmap',
+        streetViewControl: false,
+        fullscreenControl: true,
+        zoomControl: true,
+        mapTypeControl: false,
+        scaleControl: false,
+        rotateControl: false,
+        clickableIcons: false
+      });
+
+      // Guardar referencia del mapa para poder actualizarlo desde el selector de países
+      mapInstanceRef.current = map;
 
       // Solo crear marcador del experto si las coordenadas son válidas
       if (isFinite(memoizedCoordinates.lat) && isFinite(memoizedCoordinates.lng)) {
@@ -500,20 +516,36 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
   }
 
   return (
-    <div className={`${className} rounded-lg border border-border overflow-hidden bg-background`}>
-      <div ref={mapRef} className="w-full h-full" />
+    <div className={`${className} rounded-lg border border-border bg-background relative`}>
+      <div ref={mapRef} className="w-full h-full rounded-lg overflow-hidden" />
       
-      {/* Input de búsqueda minimalista flotante */}
-      <div className="absolute top-4 left-4 right-4 z-10">
-        <div className="relative">
+      {/* Selector de países y búsqueda - Fuera del overflow-hidden */}
+      <div className="absolute top-4 left-4 right-4 z-[9999] flex gap-2 pointer-events-none">
+        {/* Selector de países */}
+        <div className="pointer-events-auto">
+          <CountrySelector
+            onCountrySelect={(countryCode, coordinates) => {
+              setSelectedCountry(countryCode);
+              if (mapInstanceRef.current) {
+                mapInstanceRef.current.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
+                mapInstanceRef.current.setZoom(coordinates.zoom);
+              }
+            }}
+            currentCountry={selectedCountry}
+            className="flex-shrink-0"
+          />
+        </div>
+        
+        {/* Input de búsqueda */}
+        <div className="relative flex-1 min-w-0 pointer-events-auto">
           <input
             type="text"
             placeholder="Buscar dirección..."
-            className="w-full px-4 py-2.5 pr-10 bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-sm text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 transition-all"
+            className="w-full px-4 py-2.5 pr-10 bg-white/98 backdrop-blur-md border-2 border-gray-300 rounded-lg shadow-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:border-blue-500 transition-all"
             id={searchInputId}
           />
           <svg 
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" 
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" 
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24"

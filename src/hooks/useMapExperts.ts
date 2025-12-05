@@ -11,6 +11,8 @@ export interface MapExpert {
   registeredSince: string;
   latitude: string;
   longitude: string;
+  // ✅ NUEVO: Precio del servicio (incluido en map-experts endpoint)
+  price: number;
 }
 
 export interface MapExpertsResponse {

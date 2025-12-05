@@ -43,7 +43,11 @@ export interface Appointment {
   proposedTimeLocal: string;   // "10:00:00" (hora local)
   
   // Timezone usado para la conversión
-  userTimezone: string;        // "America/Mexico_City" o "UTC"
+  userTimezone: string;        // "America/Mexico_City" o "UTC" (legacy - usar timezone)
+  
+  // ✅ NUEVOS: Información de internacionalización (según guía)
+  timezone?: string;           // Timezone IANA (ej: "Europe/Madrid", "America/Mexico_City")
+  country?: string;            // País ISO 3166-1 alpha-2 (ej: "ES", "MX")
   
   // CAMPOS LEGACY (compatibilidad - son alias de UTC)
   proposedDate: string;        // = proposedDateUtc (alias)

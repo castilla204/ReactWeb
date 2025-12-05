@@ -718,13 +718,14 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
             {/* Columna derecha - Mapa */}
               <div className="space-y-4">
-                  <div className="h-[500px] rounded-lg overflow-hidden border border-border relative">
+                  <div className="h-[500px] rounded-lg border border-border relative">
                 <AppointmentMap
                   onLocationSelect={handleLocationSelect}
                   initialLocation={selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude } : undefined}
                   disabled={isLoading}
                   expertLocation={expertLocation}
                   expertRange={expertRange}
+                  expertCountry={expertCountry}
                   className="w-full h-full"
                 />
               </div>

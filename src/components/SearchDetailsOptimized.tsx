@@ -266,11 +266,23 @@ export const SearchDetailsOptimized: React.FC<SearchDetailsOptimizedProps> = ({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Fecha Propuesta</label>
-                  <p className="mt-1 text-sm text-gray-900">{appointment.proposedDate}</p>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {(() => {
+                      // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
+                      const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
+                      return dateToUse;
+                    })()}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Hora</label>
-                  <p className="mt-1 text-sm text-gray-900">{appointment.proposedTime}</p>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {(() => {
+                      // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
+                      const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                      return timeToUse;
+                    })()}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Ubicación</label>

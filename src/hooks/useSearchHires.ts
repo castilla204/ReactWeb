@@ -13,6 +13,9 @@ export interface SearchHireResponseDto {
   statusInfo?: SystemStatusDto; // ✅ NUEVO CAMPO
   amount: number;
   createdAt: string;
+  // ✅ NUEVOS: Información de internacionalización
+  expertTimezone?: string;      // Timezone IANA del experto al momento de la contratación
+  expertCountry?: string;        // País ISO del experto al momento de la contratación
   expert?: {
     id: number;
     name: string;

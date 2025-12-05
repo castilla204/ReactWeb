@@ -15,6 +15,8 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
 import CountryFlag from './CountryFlag';
+import CountrySelector from './CountrySelector';
+import { getCountryCoordinates } from '../utils/countryCoordinates';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
 const getZoomLevel = (radius: number) => {
@@ -45,6 +47,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+    const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
     const initialFormState = {
         keywords: initialKeywords,
@@ -417,279 +420,240 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         onComplete(searchParameterData);
     };
     return (
-        <div className="bg-background h-screen flex flex-col overflow-hidden fixed inset-0 lg:relative lg:h-auto lg:min-h-screen">
-            {/* Header Section - Fixed */}
-            <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b flex-shrink-0">
-                <div className="w-full px-3 py-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setCurrentStep(0)}
-                                className="text-muted-foreground hover:text-foreground"
-                            >
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                                Volver
-                            </Button>
-                            <Separator orientation="vertical" className="h-6" />
-                        <div>
-                                <h1 className="text-lg font-semibold text-foreground mb-2">
-                                    {serviceTypeId === 1 ? 'Inspector especializado' : 'Experto en búsquedas'}
-                            </h1>
-                                {/* Timeline del proceso */}
-                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                    <div className={`flex items-center gap-1 ${formData.latitude && formData.longitude ? 'text-primary' : ''}`}>
-                                        <div className={`w-2 h-2 rounded-full ${formData.latitude && formData.longitude ? 'bg-primary' : 'bg-muted'}`} />
-                                        <span>Ubicación</span>
+        <div className="bg-white h-[100dvh] flex flex-col overflow-hidden fixed inset-0">
+            {/* Header - Estilo Airbnb minimalista */}
+            <header className="z-50 bg-white border-b border-gray-200 flex-shrink-0">
+                <div className="h-14 px-4 flex items-center justify-between">
+                    {/* Botón volver */}
+                    <button
+                        onClick={() => setCurrentStep(0)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-gray-800" />
+                    </button>
+                    
+                    {/* Steps indicator - Estilo Airbnb */}
+                    <div className="flex items-center gap-2">
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
+                            formData.latitude && formData.longitude 
+                                ? 'bg-black text-white' 
+                                : 'bg-gray-100 text-gray-600'
+                        }`}>
+                            <span className="w-4 h-4 rounded-full bg-current/20 flex items-center justify-center text-[10px]">1</span>
+                            Ubicación
                         </div>
-                                    <ArrowRight className="w-3 h-3" />
-                                    <div className={`flex items-center gap-1 ${selectedService ? 'text-primary' : ''}`}>
-                                        <div className={`w-2 h-2 rounded-full ${selectedService ? 'bg-primary' : 'bg-muted'}`} />
-                                        <span>Experto</span>
-                                    </div>
-                                    <ArrowRight className="w-3 h-3" />
-                                    <div className="flex items-center gap-1">
-                                        <div className="w-2 h-2 rounded-full bg-muted" />
-                                        <span>Pago</span>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="w-8 h-[2px] bg-gray-200" />
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
+                            selectedService 
+                                ? 'bg-black text-white' 
+                                : 'bg-gray-100 text-gray-400'
+                        }`}>
+                            <span className="w-4 h-4 rounded-full bg-current/20 flex items-center justify-center text-[10px]">2</span>
+                            Experto
+                        </div>
+                        <div className="w-8 h-[2px] bg-gray-200" />
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-400">
+                            <span className="w-4 h-4 rounded-full bg-current/20 flex items-center justify-center text-[10px]">3</span>
+                            Pago
                         </div>
                     </div>
+                    
+                    {/* Spacer */}
+                    <div className="w-8" />
                 </div>
-            </div>
+            </header>
                    
             {/* Main Layout - Split View */}
             <div className="flex flex-1 min-h-0 overflow-hidden w-full">
-                {/* Left Side - Form & Results (Desktop only) */}
-                <div className="hidden lg:flex flex-col w-2/5 overflow-y-auto border-r bg-background">
-                    <div className="w-full px-3 py-3">
-                        {/* Instrucciones minimalistas */}
-                        <div className="mb-3 text-xs text-muted-foreground">
-                            Selecciona una ubicación en el mapa
+                {/* Left Side - Panel de resultados (Desktop) */}
+                <div className="hidden lg:flex flex-col w-[420px] min-w-[380px] border-r border-gray-200 bg-white">
+                    {/* Header del panel */}
+                    <div className="px-6 py-4 border-b border-gray-100">
+                        <p className="text-sm text-gray-500">
+                            {formData.latitude && formData.longitude 
+                                ? `${services.length} expertos disponibles`
+                                : 'Selecciona una ubicación en el mapa'
+                            }
+                        </p>
+                    </div>
+                    
+                    {/* Filtros estilo Airbnb */}
+                    {formData.latitude && formData.longitude && (
+                        <div className="px-6 py-3 border-b border-gray-100 flex items-center gap-2">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <button className={`h-9 px-4 rounded-full border text-sm font-medium transition-all ${
+                                        filters.priceRange[0] > 0 || filters.priceRange[1] < 100000
+                                            ? 'border-gray-900 bg-gray-900 text-white'
+                                            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-900'
+                                    }`}>
+                                        Precio
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-72 p-5" align="start">
+                                    <div className="space-y-4">
+                                        <h4 className="font-semibold text-gray-900">Rango de precio</h4>
+                                        <Slider
+                                            value={filters.priceRange}
+                                            onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
+                                            min={0}
+                                            max={1000}
+                                            step={10}
+                                            className="w-full"
+                                        />
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex-1">
+                                                <label className="text-xs text-gray-500 mb-1 block">Mínimo</label>
+                                                <div className="h-10 px-3 border border-gray-300 rounded-lg flex items-center text-sm">
+                                                    €{filters.priceRange[0]}
+                                                </div>
+                                            </div>
+                                            <div className="text-gray-400 mt-5">—</div>
+                                            <div className="flex-1">
+                                                <label className="text-xs text-gray-500 mb-1 block">Máximo</label>
+                                                <div className="h-10 px-3 border border-gray-300 rounded-lg flex items-center text-sm">
+                                                    €{filters.priceRange[1]}+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                            
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <button className={`h-9 px-4 rounded-full border text-sm font-medium transition-all flex items-center gap-1.5 ${
+                                        filters.rating > 0
+                                            ? 'border-gray-900 bg-gray-900 text-white'
+                                            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-900'
+                                    }`}>
+                                        <Star className="w-3.5 h-3.5" />
+                                        {filters.rating > 0 ? `${filters.rating}+` : 'Valoración'}
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-64 p-5" align="start">
+                                    <div className="space-y-4">
+                                        <h4 className="font-semibold text-gray-900">Valoración mínima</h4>
+                                        <div className="flex gap-2">
+                                            {[0, 3, 3.5, 4, 4.5].map((rating) => (
+                                                <button
+                                                    key={rating}
+                                                    onClick={() => setFilters({...filters, rating})}
+                                                    className={`flex-1 h-10 rounded-lg border text-sm font-medium transition-all ${
+                                                        filters.rating === rating
+                                                            ? 'border-gray-900 bg-gray-900 text-white'
+                                                            : 'border-gray-300 hover:border-gray-900'
+                                                    }`}
+                                                >
+                                                    {rating === 0 ? 'Todas' : `${rating}+`}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                            
+                            {(filters.priceRange[0] > 0 || filters.priceRange[1] < 100000 || filters.rating > 0) && (
+                                <button 
+                                    onClick={() => setFilters({ priceRange: [0, 100000], rating: 0 })}
+                                    className="text-sm font-medium text-gray-900 underline ml-auto"
+                                >
+                                    Borrar
+                                </button>
+                            )}
                         </div>
-                        {/* Services Results - Only show when location is selected */}
+                    )}
+                    
+                    {/* Lista de servicios */}
+                    <div className="flex-1 overflow-y-auto">
                         {formData.latitude && formData.longitude && (
-                            <>
-                                {/* Filters compactos */}
-                                <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" className="h-7 text-[10px] px-2">
-                                                {filters.priceRange[0] === 0 && filters.priceRange[1] === 100000 ? 'Precio' : `€${filters.priceRange[0]}-€${filters.priceRange[1]}`}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-80 p-4" align="start">
-                                            <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm font-medium">Rango de Precio</Label>
-                                                    <Slider
-                                                        value={filters.priceRange}
-                                                        onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
-                                                        min={0}
-                                                        max={100000}
-                                                        step={10}
-                                                        className="w-full"
-                                                    />
-                                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                                        <span>€{filters.priceRange[0]}</span>
-                                                        <span>€{filters.priceRange[1]}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                                    
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" className="h-7 text-[10px] px-2">
-                                                {filters.rating > 0 ? (
-                                                    <span className="flex items-center gap-1">
-                                                        {filters.rating}+
-                                                        <Star className="w-3 h-3 fill-muted-foreground/40 text-muted-foreground" />
-                                                    </span>
-                                                ) : 'Valoración'}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-80 p-4" align="start">
-                                            <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm font-medium">Valoración Mínima</Label>
-                                                    <Slider
-                                                        value={[filters.rating]}
-                                                        onValueChange={(value) => setFilters({...filters, rating: value[0]})}
-                                                        min={0}
-                                                        max={5}
-                                                        step={0.5}
-                                                        className="w-full"
-                                                    />
-                                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                                        <span className="flex items-center gap-0.5">
-                                                            0
-                                                            <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />
-                                                        </span>
-                                                        <span className="flex items-center gap-0.5">
-                                                            {filters.rating > 0 ? `${filters.rating}` : 'Todas'}
-                                                            {filters.rating > 0 && <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />}
-                                                        </span>
-                                                        <span className="flex items-center gap-0.5">
-                                                            5
-                                                            <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                            </div>
-                                {/* Services List */}
+                            <div className="p-4">
+                                {/* Services List - Estilo Airbnb */}
                                 {services.length > 0 ? (
-                                    <div className="space-y-3 mb-4">
+                                    <div className="space-y-4">
                                         {services.map((service) => {
-                                            const isPro = (service.completedSearches || 0) > 5;
                                             const allImages = service.imageUrls && service.imageUrls.length > 0
                                                 ? service.imageUrls
                                                 : (service.expert?.profilePictureUrl ? [service.expert.profilePictureUrl] : []);
-    return (
+                                            const isSelected = selectedService === service.id;
+                                            const reviewCount = service.expert?.reviews?.length || 0;
+                                            
+                                            return (
                                                 <div
                                                     key={service.id}
-                                                    className={`group cursor-pointer transition-all border rounded-xl overflow-hidden ${
-                                                        selectedService === service.id
-                                                            ? 'border-primary/60 bg-primary/5 shadow-sm'
-                                                            : 'border-border/50 hover:border-border hover:shadow-sm'
+                                                    className={`group cursor-pointer transition-all duration-200 rounded-2xl overflow-hidden ${
+                                                        isSelected
+                                                            ? 'ring-2 ring-black shadow-lg'
+                                                            : 'hover:shadow-md'
                                                     }`}
                                                     onClick={() => handleServiceSelect(service.id)}
                                                 >
-                                                    <div className="flex">
-                                                        {/* Imagen a la izquierda - estilo Airbnb con carousel */}
-                                                        <div
-                                                            className="w-64 h-48 flex-shrink-0"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        >
+                                                    {/* Card horizontal estilo Airbnb */}
+                                                    <div className="flex bg-white">
+                                                        {/* Imagen */}
+                                                        <div className="w-[140px] h-[140px] flex-shrink-0 relative" onClick={(e) => e.stopPropagation()}>
                                                             {allImages.length > 0 ? (
-                                                                <div className="relative w-full h-full">
-                                                                    <ImageCarousel
-                                                                        images={allImages}
-                                                                        alt={service.expert?.user?.name || 'Experto'}
-                                                                        className="w-full h-full rounded-l-xl"
-                                                                    />
-                                                                    {/* Badges en la imagen */}
-                                                                    <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-20">
-                                                                        {isPro && (
-                                                                            <div className="bg-[#0066CC] text-white text-[9px] font-bold px-2 py-0.5 rounded-md shadow-md">
-                                                                                PRO
-                                                                            </div>
-                                                                        )}
-                                                                        {service.averageRating && service.averageRating >= 4.8 && (
-                                                                            <div className="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-md shadow-md flex items-center gap-1">
-                                                                                <Star className="w-2.5 h-2.5 fill-white" />
-                                                                                TOP
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                    {selectedService === service.id && (
-                                                                        <div className="absolute top-2 right-2 z-20">
-                                                                            <div className="bg-[#0066CC]/90 backdrop-blur-sm text-white rounded-full p-1 shadow-md">
-                                                                                <CheckCircle className="w-3.5 h-3.5" />
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
+                                                                <ImageCarousel
+                                                                    images={allImages}
+                                                                    alt={service.expert?.user?.name || 'Experto'}
+                                                                    className="w-full h-full object-cover"
+                                                                />
                                                             ) : (
-                                                                <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center rounded-l-xl relative">
-                                                                    <User className="w-12 h-12 text-muted-foreground/50" />
-                                                                    {selectedService === service.id && (
-                                                                        <div className="absolute top-2 right-2 z-20">
-                                                                            <div className="bg-primary/90 backdrop-blur-sm text-white rounded-full p-1 shadow-md">
-                                                                                <CheckCircle className="w-3.5 h-3.5" />
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
+                                                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                                                    <User className="w-10 h-10 text-gray-300" />
+                                                                </div>
+                                                            )}
+                                                            {/* Badge verificado */}
+                                                            {service.expert?.stripeAccountId && (
+                                                                <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-md text-[10px] font-medium text-gray-800 shadow-sm">
+                                                                    Verificado
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        {/* Información a la derecha - estilo Airbnb mejorado */}
-                                                        <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
-                                                            <div className="flex-1 space-y-2">
-                                                                {/* Badges de marketing */}
-                                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                                    {service.averageRating && service.averageRating >= 4.5 && (
-                                                                        <div className="flex items-center gap-1 bg-[#0066CC]/10 text-[#0066CC] px-2 py-0.5 rounded-full text-[9px] font-semibold">
-                                                                            <Award className="w-2.5 h-2.5" />
-                                                                            Mejor valorado
-                                                                        </div>
-                                                                    )}
-                                                                    {service.completedSearches && service.completedSearches > 10 && (
-                                                                        <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-semibold">
-                                                                            <TrendingUp className="w-2.5 h-2.5" />
-                                                                            Popular
-                                                                        </div>
-                                                                    )}
-                                                                    {service.expert?.stripeAccountId && (
-                                                                        <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-[9px] font-semibold">
-                                                                            <Shield className="w-2.5 h-2.5" />
-                                                                            Verificado
-                                                                        </div>
-                                                                    )}
-                                                                    {service.durationInHours && service.durationInHours <= 24 && (
-                                                                        <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-semibold">
-                                                                            <Zap className="w-2.5 h-2.5" />
-                                                                            Rápido
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-
-                                                                {/* Título */}
-                                                                <h3 className="text-base font-semibold text-foreground leading-tight">
-                                                                    {service.expert?.user?.name || 'Experto'}
+                                                        
+                                                        {/* Contenido */}
+                                                        <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
+                                                            {/* Header */}
+                                                            <div>
+                                                                {/* Categoría y ubicación */}
+                                                                <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-0.5">
+                                                                    {service.categoryName || 'Servicio'}
+                                                                </p>
+                                                                
+                                                                {/* Nombre */}
+                                                                <h3 className="text-[15px] font-medium text-gray-900 leading-snug mb-1 line-clamp-1">
+                                                                    {service.expert?.user?.name || 'Experto profesional'}
                                                                 </h3>
-                                                               
-                                                                {/* Descripción corta */}
-                                                                {service.conditions && (
-                                                                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                                                                        {service.conditions.length > 80
-                                                                            ? `${service.conditions.substring(0, 80)}...`
-                                                                            : service.conditions}
-                                                                    </p>
-                                                                )}
-
-                                                                {/* Detalles con iconos */}
-                                                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
-                                                                    {service.selectedDeliverableTypes?.slice(0, 2).map((deliverable) => (
-                                                                        <div key={deliverable.id} className="flex items-center gap-1">
-                                                                            <CheckCircle className="w-3 h-3 text-[#0066CC]" />
-                                                                            <span>{deliverable.displayName}</span>
-                                                                        </div>
-                                                                    ))}
-                                                                    {service.selectedDeliverableTypes && service.selectedDeliverableTypes.length > 2 && (
-                                                                        <span className="text-[#0066CC] font-medium">
-                                                                            +{service.selectedDeliverableTypes.length - 2} más
+                                                                
+                                                                {/* Descripción */}
+                                                                <p className="text-[13px] text-gray-500 line-clamp-2 leading-relaxed">
+                                                                    {service.conditions || 'Servicio profesional de inspección'}
+                                                                </p>
+                                                            </div>
+                                                            
+                                                            {/* Footer */}
+                                                            <div className="flex items-end justify-between mt-2">
+                                                                {/* Rating */}
+                                                                <div className="flex items-center gap-1">
+                                                                    <Star className="w-3.5 h-3.5 fill-gray-900 text-gray-900" />
+                                                                    <span className="text-[13px] font-medium text-gray-900">
+                                                                        {service.averageRating?.toFixed(1) || 'Nuevo'}
+                                                                    </span>
+                                                                    {reviewCount > 0 && (
+                                                                        <span className="text-[13px] text-gray-500">
+                                                                            ({reviewCount})
                                                                         </span>
                                                                     )}
                                                                 </div>
-
-                                                                {/* Rating, reseñas y precio */}
-                                                                <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <Star className="w-3.5 h-3.5 fill-[#0066CC] text-[#0066CC]" />
-                                                                        <span className="text-xs font-semibold text-foreground">
-                                                                            {service.averageRating?.toFixed(1) || 'Nuevo'}
-                                                                        </span>
-                                                                        {service.expert?.reviews && service.expert.reviews.length > 0 && (
-                                                                            <span className="text-[10px] text-muted-foreground">
-                                                                                ({service.expert.reviews.length})
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="text-right">
-                                                                        <span className="text-base font-bold text-foreground">
-                                                                            €{service.price || 72}
-                                                                        </span>
-                                                                        <span className="text-[10px] text-muted-foreground ml-1">
-                                                                            /servicio
-                                                                        </span>
-                                                                    </div>
+                                                                
+                                                                {/* Precio */}
+                                                                <div className="text-right">
+                                                                    <span className="text-[15px] font-semibold text-gray-900">
+                                                                        {service.price || 0} €
+                                                                    </span>
+                                                                    <span className="text-[12px] text-gray-500 ml-1">
+                                                                        total
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -699,25 +663,39 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         })}
                                     </div>
                                 ) : (
-                                    <Card className="p-8 text-center">
-                                        <p className="text-muted-foreground">No hay servicios disponibles en esta ubicación.</p>
-                                    </Card>
+                                    <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
+                                        <div className="flex flex-col items-center gap-4 max-w-sm">
+                                            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
+                                                <MapPin className="w-10 h-10 text-muted-foreground/50" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <h3 className="text-lg font-semibold text-foreground">
+                                                    No hay servicios disponibles
+                                                </h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    No encontramos expertos en esta ubicación. Intenta seleccionar otra ubicación en el mapa.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                                 {/* Continue Button */}
                                 {services.length > 0 && (
-                                    <div className="mt-3 pb-3">
-                                        <Button
+                                    <div className="mt-4 pt-4 border-t border-gray-100">
+                                        <button
                                             onClick={handleContinue}
                                             disabled={!selectedService}
-                                            size="lg"
-                                            className="w-full h-10 text-sm font-medium shadow-md"
+                                            className={`w-full h-11 rounded-lg text-sm font-semibold transition-all ${
+                                                selectedService
+                                                    ? 'bg-[#0066CC] hover:bg-[#0052A3] text-white'
+                                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            }`}
                                         >
-                                            Continuar
-                                            <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                                        </Button>
+                                            {selectedService ? 'Continuar' : 'Selecciona un experto'}
+                                        </button>
                                     </div>
                                 )}
-                            </>
+                            </div>
                         )}
                         {error && (
                             <Card className="mb-6 border-destructive/50 bg-destructive/5">
@@ -730,159 +708,181 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </div>
                 
                 {/* Mobile: Map View */}
-                <div className="lg:hidden flex flex-col h-full w-full min-h-0">
-                    {/* Instrucciones minimalistas - Mobile */}
-                    <div className="px-3 pt-2 pb-1 flex-shrink-0">
-                        <div className="text-[10px] text-muted-foreground">
-                            Selecciona una ubicación
+                <div className="lg:hidden flex-1 relative w-full">
+                    {loadError ? (
+                        <div className="h-full flex items-center justify-center bg-gray-100">
+                            <div className="text-red-500">Error al cargar el mapa</div>
                         </div>
-                    </div>
-                    
-                    {/* Map Container */}
-                    <div className="flex-1 relative min-h-0 w-full">
-                        {loadError ? (
-                            <div className="h-full flex items-center justify-center bg-muted">
-                                <div className="text-destructive">Error al cargar el mapa</div>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Search Bar */}
-                                <div className="absolute top-3 left-3 right-3 z-20">
-                                        <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                {isGeocoding ? (
-                                                <div className="h-3.5 w-3.5 border-2 border-primary/40 border-t-primary rounded-full animate-spin"></div>
-                                                ) : (
-                                                <Search className="h-4 w-4 text-muted-foreground/60" />
-                                                )}
-                                            </div>
-                                        <Input
+                    ) : (
+                        <>
+                            {/* Barra de búsqueda móvil - Estilo Airbnb */}
+                            <div className="absolute top-3 left-3 right-3 z-[9999] pointer-events-none">
+                                <div className="pointer-events-auto">
+                                    <div className="bg-white rounded-full shadow-lg border border-gray-200 flex items-center overflow-hidden">
+                                        {/* Selector de país */}
+                                        <CountrySelector
+                                            onCountrySelect={(countryCode, coordinates) => {
+                                                setSelectedCountry(countryCode);
+                                                if (map) {
+                                                    map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
+                                                    map.setZoom(coordinates.zoom);
+                                                }
+                                            }}
+                                            currentCountry={selectedCountry}
+                                        />
+                                        
+                                        <div className="w-px h-6 bg-gray-200" />
+                                        
+                                        {/* Campo de búsqueda */}
+                                        <div className="flex-1 relative">
+                                            <input
                                                 ref={searchInputRef}
                                                 type="text"
                                                 value={searchAddress}
                                                 onChange={(e) => setSearchAddress(e.target.value)}
-                                                placeholder={isGeocoding ? "Buscando..." : "Buscar dirección..."}
+                                                placeholder="Buscar ubicación..."
                                                 disabled={isGeocoding}
-                                            className="w-full pl-9 pr-8 h-11 text-sm bg-white backdrop-blur-md border-[#DDDDDD] shadow-lg hover:shadow-xl transition-shadow"
+                                                className="w-full h-11 pl-3 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
                                             />
-                                            {searchAddress && (
+                                            {isGeocoding ? (
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                    <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                                                </div>
+                                            ) : searchAddress ? (
                                                 <button
                                                     onClick={() => {
                                                         setSearchAddress('');
                                                         setSelectedAddress('');
-                                                        if (searchInputRef.current) {
-                                                            searchInputRef.current.focus();
-                                                        }
                                                     }}
-                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                                                 >
-                                                <X className="h-3.5 w-3.5" />
+                                                    <X className="w-4 h-4" />
                                                 </button>
+                                            ) : (
+                                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                             )}
+                                        </div>
                                     </div>
                                 </div>
-                                
-                                {/* Map */}
-                                {isLoaded ? (
-                                    <LocationMap
-                                        selectedLocation={selectedLocation}
-                                        mapExperts={mapExperts}
-                                        services={services}
-                                        selectedService={selectedService}
-                                        onMapClick={(e) => {
-                                            if (e.latLng) {
-                                                const lat = e.latLng.lat();
-                                                const lng = e.latLng.lng();
-                                                const newLocation = { lat, lng };
-                                                setSelectedLocation(newLocation);
-                                                setFormData(prev => ({
-                                                    ...prev,
-                                                    latitude: lat.toString(),
-                                                    longitude: lng.toString(),
-                                                }));
-                                            }
-                                        }}
-                                        onMapLoad={(mapInstance) => {
-                                            setMap(mapInstance);
-                                        }}
-                                        onServiceSelect={handleServiceSelect}
-                                        locationRange={parseInt(formData.locationRange)}
-                                        isMobile={true}
-                                        isLoaded={isLoaded}
-                                    />
-                                ) : null}
-                                
-                                {/* Floating Button to Open Drawer */}
-                                {formData.latitude && formData.longitude && (
-                                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-                                        <Button
-                                            onClick={() => setIsDrawerOpen(true)}
-                                            size="lg"
-                                            className={`shadow-2xl border-2 ${
-                                                services.length === 0 
-                                                    ? 'bg-background/95 backdrop-blur-sm border-muted-foreground/30 text-muted-foreground' 
-                                                    : 'bg-primary border-primary text-primary-foreground hover:bg-primary/90'
-                                            }`}
-                                            disabled={services.length === 0}
-                                        >
-                                            <MapPin className="w-4 h-4 mr-2" />
-                                            {services.length > 0 
-                                                ? `Ver ${services.length} ${services.length === 1 ? 'resultado' : 'resultados'}`
-                                                : 'Ver resultados'
-                                            }
-                                        </Button>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
+                            </div>
+                            
+                            {/* Map - ocupa todo el espacio */}
+                            {isLoaded ? (
+                                <LocationMap
+                                    selectedLocation={selectedLocation}
+                                    mapExperts={mapExperts}
+                                    services={services}
+                                    selectedService={selectedService}
+                                    onMapClick={(e) => {
+                                        if (e.latLng) {
+                                            const lat = e.latLng.lat();
+                                            const lng = e.latLng.lng();
+                                            const newLocation = { lat, lng };
+                                            setSelectedLocation(newLocation);
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                latitude: lat.toString(),
+                                                longitude: lng.toString(),
+                                            }));
+                                        }
+                                    }}
+                                    onMapLoad={(mapInstance) => {
+                                        setMap(mapInstance);
+                                    }}
+                                    onServiceSelect={handleServiceSelect}
+                                    locationRange={parseInt(formData.locationRange)}
+                                    isMobile={true}
+                                    isLoaded={isLoaded}
+                                />
+                            ) : null}
+                            
+                            {/* Floating Button - Siempre visible en la parte inferior */}
+                            {formData.latitude && formData.longitude && (
+                                <div className="absolute bottom-[env(safe-area-inset-bottom,16px)] left-1/2 transform -translate-x-1/2 z-[100] pb-4">
+                                    <Button
+                                        onClick={() => setIsDrawerOpen(true)}
+                                        size="lg"
+                                        className={`shadow-2xl border-2 h-12 px-6 ${
+                                            services.length === 0 
+                                                ? 'bg-background/95 backdrop-blur-sm border-muted-foreground/30 text-muted-foreground' 
+                                                : 'bg-primary border-primary text-primary-foreground hover:bg-primary/90'
+                                        }`}
+                                        disabled={services.length === 0}
+                                    >
+                                        <MapPin className="w-4 h-4 mr-2" />
+                                        {services.length > 0 
+                                            ? `Ver ${services.length} ${services.length === 1 ? 'resultado' : 'resultados'}`
+                                            : 'Ver resultados'
+                                        }
+                                    </Button>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
                 
                 {/* Desktop: Right Side - Map */}
-                <div className="hidden lg:block w-3/5 border-l bg-muted/30">
-                    <div className="h-full sticky top-[73px]">
-                        {loadError ? (
-                            <div className="h-full flex items-center justify-center bg-muted">
-                                <div className="text-destructive">Error al cargar el mapa</div>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Search Bar */}
-                                <div className="absolute top-3 left-3 right-3 z-10 max-w-sm">
-                                        <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                {isGeocoding ? (
-                                                <div className="h-3.5 w-3.5 border-2 border-primary/40 border-t-primary rounded-full animate-spin"></div>
-                                                ) : (
-                                                <Search className="h-4 w-4 text-muted-foreground/60" />
-                                                )}
-                                            </div>
-                                        <Input
+                <div className="hidden lg:flex lg:flex-1 relative bg-gray-100">
+                    {loadError ? (
+                        <div className="h-full w-full flex items-center justify-center bg-gray-100">
+                            <div className="text-red-500">Error al cargar el mapa</div>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Barra de búsqueda estilo Airbnb */}
+                            <div className="absolute top-4 left-4 right-4 z-[9999] pointer-events-none">
+                                <div className="max-w-lg pointer-events-auto">
+                                    <div className="bg-white rounded-full shadow-lg border border-gray-200 flex items-center overflow-hidden hover:shadow-xl transition-shadow">
+                                        {/* Selector de país integrado */}
+                                        <CountrySelector
+                                            onCountrySelect={(countryCode, coordinates) => {
+                                                setSelectedCountry(countryCode);
+                                                if (map) {
+                                                    map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
+                                                    map.setZoom(coordinates.zoom);
+                                                }
+                                            }}
+                                            currentCountry={selectedCountry}
+                                        />
+                                        
+                                        {/* Separador */}
+                                        <div className="w-px h-6 bg-gray-200" />
+                                        
+                                        {/* Campo de búsqueda */}
+                                        <div className="flex-1 relative">
+                                            <input
                                                 ref={searchInputRef}
                                                 type="text"
                                                 value={searchAddress}
                                                 onChange={(e) => setSearchAddress(e.target.value)}
-                                                placeholder={isGeocoding ? "Buscando..." : "Buscar dirección..."}
+                                                placeholder="Buscar ubicación..."
                                                 disabled={isGeocoding}
-                                            className="w-full pl-9 pr-8 h-11 text-sm bg-white backdrop-blur-md border-[#DDDDDD] shadow-lg hover:shadow-xl transition-shadow"
+                                                className="w-full h-12 pl-4 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0"
                                             />
-                                            {searchAddress && (
+                                            {isGeocoding ? (
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                    <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                                                </div>
+                                            ) : searchAddress ? (
                                                 <button
                                                     onClick={() => {
                                                         setSearchAddress('');
                                                         setSelectedAddress('');
-                                                        if (searchInputRef.current) {
-                                                            searchInputRef.current.focus();
-                                                        }
                                                     }}
-                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                                 >
-                                                <X className="h-3.5 w-3.5" />
+                                                    <X className="w-4 h-4" />
                                                 </button>
+                                            ) : (
+                                                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                             )}
+                                        </div>
                                     </div>
                                 </div>
-                                
+                            </div>
+                            
+                            {/* Map ocupa todo el espacio */}
+                            <div className="absolute inset-0">
                                 {isLoaded ? (
                                     <LocationMap
                                         selectedLocation={selectedLocation}
@@ -892,8 +892,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         onMapClick={handleMapClick}
                                         onMapLoad={async (mapInstance) => {
                                             setMap(mapInstance);
-                                        const radius = 25;
-                                        const zoom = getZoomLevel(radius);
+                                            const radius = 25;
+                                            const zoom = getZoomLevel(radius);
                                             mapInstance.setZoom(zoom);
                                         }}
                                         onServiceSelect={handleServiceSelect}
@@ -902,198 +902,157 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         isLoaded={isLoaded}
                                     />
                                 ) : null}
-                            </>
-                        )}
-                        </div>
-                    </div>
+                            </div>
+                        </>
+                    )}
                 </div>
+            </div>
                 
                 {/* Mobile Drawer with Services */}
                 <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                    <DrawerContent className="max-h-[95vh] flex flex-col">
-                        <DrawerHeader className="border-b px-4 py-3 flex-shrink-0">
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                    <DrawerTitle className="text-base font-semibold">
-                                        {services.length} {services.length === 1 ? 'resultado' : 'resultados'} disponibles
+                    <DrawerContent className="max-h-[90vh] flex flex-col rounded-t-[20px]">
+                        {/* Handle */}
+                        <div className="flex justify-center py-2">
+                            <div className="w-10 h-1 bg-gray-300 rounded-full" />
+                        </div>
+                        
+                        <DrawerHeader className="border-b border-gray-200 px-4 pb-3 pt-1 flex-shrink-0">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <DrawerTitle className="text-lg font-semibold text-gray-900">
+                                        {services.length} {services.length === 1 ? 'experto' : 'expertos'}
                                     </DrawerTitle>
-                                    <DrawerDescription className="text-xs mt-1 flex items-center gap-1">
-                                        <MapPin className="w-3 h-3" />
-                                        <span className="truncate">{formData.locationName || 'Ubicación seleccionada'}</span>
+                                    <DrawerDescription className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
+                                        <MapPin className="w-3.5 h-3.5" />
+                                        {formData.locationName || 'Ubicación seleccionada'}
                                     </DrawerDescription>
                                 </div>
                                 <DrawerClose asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                                        <X className="h-4 w-4" />
-                                    </Button>
+                                    <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                                        <X className="w-5 h-5 text-gray-500" />
+                                    </button>
                                 </DrawerClose>
                             </div>
                         </DrawerHeader>
                         
-                        <div className="flex-1 overflow-y-auto">
-                            {/* Filters - Sticky */}
-                            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 py-3">
-                                <div className="flex items-center gap-2">
+                        <div className="flex-1 overflow-y-auto bg-gray-50">
+                            {/* Filters - Estilo Airbnb */}
+                            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
+                                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                                    <button 
+                                        onClick={() => setFilters({ priceRange: [0, 100000], rating: 0 })}
+                                        className={`h-9 px-4 rounded-full border text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                                            filters.priceRange[0] === 0 && filters.priceRange[1] === 100000 && filters.rating === 0
+                                                ? 'border-gray-900 bg-gray-900 text-white'
+                                                : 'border-gray-300 bg-white text-gray-700'
+                                        }`}
+                                    >
+                                        Todos
+                                    </button>
+                                    
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="h-9 flex-1 text-sm">
-                                                {filters.priceRange[0] === 0 && filters.priceRange[1] === 100000 ? 'Precio' : `€${filters.priceRange[0]}-€${filters.priceRange[1]}`}
-                                            </Button>
+                                            <button className={`h-9 px-4 rounded-full border text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                                                filters.priceRange[0] > 0 || filters.priceRange[1] < 100000
+                                                    ? 'border-gray-900 bg-gray-900 text-white'
+                                                    : 'border-gray-300 bg-white text-gray-700'
+                                            }`}>
+                                                Precio
+                                            </button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-80 p-4" align="start">
-                                            <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm font-medium">Rango de Precio</Label>
-                                                    <Slider
-                                                        value={filters.priceRange}
-                                                        onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
-                                                        min={0}
-                                                        max={100000}
-                                                        step={10}
-                                                        className="w-full"
-                                                    />
-                                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                                        <span>€{filters.priceRange[0]}</span>
-                                                        <span>€{filters.priceRange[1]}</span>
-                                                    </div>
-                                                </div>
+                                        <PopoverContent className="w-72 p-4" align="start">
+                                            <h4 className="font-semibold text-gray-900 mb-3">Rango de precio</h4>
+                                            <Slider
+                                                value={filters.priceRange}
+                                                onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
+                                                min={0}
+                                                max={1000}
+                                                step={10}
+                                                className="w-full mb-3"
+                                            />
+                                            <div className="flex items-center justify-between text-sm text-gray-600">
+                                                <span>€{filters.priceRange[0]}</span>
+                                                <span>€{filters.priceRange[1]}+</span>
                                             </div>
                                         </PopoverContent>
                                     </Popover>
                                     
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" className="h-9 flex-1 text-sm">
-                                                {filters.rating > 0 ? (
-                                                    <span className="flex items-center gap-1">
-                                                        {filters.rating}+
-                                                        <Star className="w-3 h-3 fill-muted-foreground/40 text-muted-foreground" />
-                                                    </span>
-                                                ) : 'Valoración'}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-80 p-4" align="start">
-                                            <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm font-medium">Valoración Mínima</Label>
-                                                    <Slider
-                                                        value={[filters.rating]}
-                                                        onValueChange={(value) => setFilters({...filters, rating: value[0]})}
-                                                        min={0}
-                                                        max={5}
-                                                        step={0.5}
-                                                        className="w-full"
-                                                    />
-                                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                                        <span className="flex items-center gap-0.5">
-                                                            0
-                                                            <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />
-                                                        </span>
-                                                        <span className="flex items-center gap-0.5">
-                                                            {filters.rating > 0 ? `${filters.rating}` : 'Todas'}
-                                                            {filters.rating > 0 && <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />}
-                                                        </span>
-                                                        <span className="flex items-center gap-0.5">
-                                                            5
-                                                            <Star className="w-2.5 h-2.5 fill-muted-foreground/40 text-muted-foreground" />
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
+                                    {[4, 4.5].map((rating) => (
+                                        <button
+                                            key={rating}
+                                            onClick={() => setFilters({...filters, rating: filters.rating === rating ? 0 : rating})}
+                                            className={`h-9 px-4 rounded-full border text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-1 ${
+                                                filters.rating === rating
+                                                    ? 'border-gray-900 bg-gray-900 text-white'
+                                                    : 'border-gray-300 bg-white text-gray-700'
+                                            }`}
+                                        >
+                                            <Star className="w-3.5 h-3.5" />
+                                            {rating}+
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                             
-                            {/* Services List */}
-                            <div className="px-4 py-4">
+                            {/* Services List - Mobile Airbnb Style */}
+                            <div className="px-4 py-3">
                                 {services.length > 0 ? (
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         {services.map((service) => {
-                                            const isPro = (service.completedSearches || 0) > 5;
                                             const allImages = service.imageUrls && service.imageUrls.length > 0
                                                 ? service.imageUrls
                                                 : (service.expert?.profilePictureUrl ? [service.expert.profilePictureUrl] : []);
-                                                return (
+                                            const isSelected = selectedService === service.id;
+                                            const reviewCount = service.expert?.reviews?.length || 0;
+                                            
+                                            return (
                                                 <div
                                                     key={service.id}
-                                                    className={`group cursor-pointer transition-all border rounded-lg overflow-hidden ${
-                                                        selectedService === service.id
-                                                            ? 'border-primary bg-primary/5 shadow-sm'
-                                                            : 'border-border/50 hover:border-border'
+                                                    className={`cursor-pointer transition-all duration-200 rounded-xl overflow-hidden bg-white ${
+                                                        isSelected ? 'ring-2 ring-black' : 'border border-gray-200'
                                                     }`}
                                                     onClick={() => handleServiceSelect(service.id)}
                                                 >
-                                                    {/* Layout horizontal compacto tipo lista */}
-                                                    <div className="flex items-center gap-3 p-3">
-                                                        {/* Imagen pequeña */}
-                                                        <div className="relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden">
+                                                    <div className="flex gap-3 p-3">
+                                                        {/* Imagen cuadrada */}
+                                                        <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                                                             {allImages.length > 0 ? (
-                                                                <>
-                                                                    <img
-                                                                        src={allImages[0]}
-                                                                        alt={service.expert?.user?.name || 'Experto'}
-                                                                        className="w-full h-full object-cover"
-                                                                    />
-                                                                    {isPro && (
-                                                                        <div className="absolute top-0.5 left-0.5 bg-primary text-white text-[8px] font-semibold px-1 py-0.5 rounded z-20">
-                                                                            Pro
-                                                                        </div>
-                                                                    )}
-                                                                    {selectedService === service.id && (
-                                                                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center z-10">
-                                                                            <CheckCircle className="w-5 h-5 text-primary" />
-                                                                        </div>
-                                                                    )}
-                                                                </>
+                                                                <img
+                                                                    src={allImages[0]}
+                                                                    alt={service.expert?.user?.name || 'Experto'}
+                                                                    className="w-full h-full object-cover"
+                                                                />
                                                             ) : (
-                                                                <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center relative">
-                                                                    <User className="w-6 h-6 text-muted-foreground/50" />
-                                                                    {selectedService === service.id && (
-                                                                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center z-10">
-                                                                            <CheckCircle className="w-5 h-5 text-primary" />
-                                                                        </div>
-                        )}
-                        </div>
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <User className="w-8 h-8 text-gray-300" />
+                                                                </div>
                                                             )}
-                    </div>
+                                                        </div>
                                                         
-                                                        {/* Información compacta */}
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-start justify-between gap-2">
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
-                                                                            {service.expert?.user?.name || 'Experto'}
-                                                                        </h3>
-                                                                        {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
-                                                                        {service.expert?.country && (
-                                                                            <CountryFlag countryCode={service.expert.country} size="sm" />
-                                                                        )}
-                                                                    </div>
-                                                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">
-                                                                        {service.categoryName || 'Servicio'} · {service.serviceTypeName || 'Revisión'}
-                                                                    </p>
-                                                                    <div className="flex items-center gap-2 mt-1">
-                                                                        <div className="flex items-center gap-0.5">
-                                                                            <Star className="w-2.5 h-2.5 fill-muted-foreground/30 text-muted-foreground" />
-                                                                            <span className="text-xs font-semibold text-foreground">
-                                                                                {service.averageRating?.toFixed(1) || '0.0'}
-                                                                            </span>
-                </div>
-                                                                        <span className="text-[10px] text-muted-foreground">
-                                                                            ({service.expert?.reviews?.length || 0})
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="text-right flex-shrink-0">
-                                                                    <span className="text-sm font-bold text-foreground">
-                                                                        €{service.price || 72}
+                                                        {/* Info */}
+                                                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                                            <div>
+                                                                <p className="text-[10px] text-gray-500 uppercase tracking-wide">
+                                                                    {service.categoryName || 'Servicio'}
+                                                                </p>
+                                                                <h3 className="text-[14px] font-medium text-gray-900 truncate">
+                                                                    {service.expert?.user?.name || 'Experto'}
+                                                                </h3>
+                                                            </div>
+                                                            
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-1">
+                                                                    <Star className="w-3 h-3 fill-gray-900 text-gray-900" />
+                                                                    <span className="text-[12px] font-medium">
+                                                                        {service.averageRating?.toFixed(1) || 'Nuevo'}
                                                                     </span>
-                                                                    <span className="text-[10px] text-muted-foreground block">
-                                                                        /servicio
-                                                                    </span>
+                                                                    {reviewCount > 0 && (
+                                                                        <span className="text-[12px] text-gray-500">({reviewCount})</span>
+                                                                    )}
                                                                 </div>
+                                                                <span className="text-[14px] font-semibold text-gray-900">
+                                                                    {service.price || 0} €
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1102,29 +1061,31 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         })}
                                     </div>
                                 ) : (
-                                    <Card className="p-8 text-center">
-                                        <p className="text-sm text-muted-foreground">No hay servicios disponibles en esta ubicación.</p>
-                                    </Card>
-                        )}
+                                    <div className="py-12 text-center">
+                                        <p className="text-sm text-gray-500">No hay servicios disponibles</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
                         
-                        {/* Continue Button - Fixed at bottom */}
+                        {/* Continue Button */}
                         {services.length > 0 && (
-                            <div className="border-t bg-background px-4 py-3 flex-shrink-0">
-                                <Button
+                            <div className="border-t border-gray-200 bg-white px-4 py-3 flex-shrink-0">
+                                <button
                                     onClick={() => {
                                         handleContinue();
                                         setIsDrawerOpen(false);
                                     }}
                                     disabled={!selectedService}
-                                    size="lg"
-                                    className="w-full h-11 text-base font-medium"
+                                    className={`w-full h-11 rounded-lg text-sm font-semibold transition-all ${
+                                        selectedService
+                                            ? 'bg-[#0066CC] hover:bg-[#0052A3] text-white'
+                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    }`}
                                 >
                                     {selectedService ? 'Continuar' : 'Selecciona un experto'}
-                                    {selectedService && <ArrowRight className="ml-2 h-4 w-4" />}
-                                </Button>
-                </div>
+                                </button>
+                            </div>
                         )}
                     </DrawerContent>
                 </Drawer>
