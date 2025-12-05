@@ -156,11 +156,14 @@ export const formatAppointmentForDisplay = (
   appointment: Appointment,
   timezone?: string
 ): FormattedAppointmentDate => {
-  const tz = getUserTimezone(timezone);
+  // ✅ INTERNACIONALIZACIÓN: Priorizar timezone del appointment, luego el parámetro, luego userTimezone
+  const appointmentTimezone = appointment.timezone || appointment.userTimezone;
+  const tz = appointmentTimezone && appointmentTimezone !== 'UTC' 
+    ? appointmentTimezone 
+    : (timezone || getUserTimezone());
   
-  // Si el backend ya devolvió la conversión y userTimezone no es UTC, usar directamente
-  if (appointment.userTimezone && appointment.userTimezone !== 'UTC' && 
-      appointment.proposedDateLocal && appointment.proposedTimeLocal) {
+  // Si el backend ya devolvió la conversión y tenemos campos locales, usar directamente
+  if (appointment.proposedDateLocal && appointment.proposedTimeLocal) {
     const localDateTime = parseISO(`${appointment.proposedDateLocal}T${appointment.proposedTimeLocal}`);
     
     return {
@@ -172,7 +175,7 @@ export const formatAppointmentForDisplay = (
     };
   }
   
-  // Si userTimezone es UTC o no hay conversión, convertir nosotros
+  // Si no hay campos locales, convertir desde UTC
   const utcDateTime = `${appointment.proposedDateUtc || appointment.proposedDate}T${appointment.proposedTimeUtc || appointment.proposedTime}Z`;
   const utcDate = parseISO(utcDateTime);
   

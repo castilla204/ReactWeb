@@ -57,10 +57,17 @@ export interface Service {
             };
             imageUrls?: string[];
         }[];
-        // ✅ NUEVOS CAMPOS DE PAÍS Y TIMEZONE
+        // ✅ CAMPOS DE PAÍS Y TIMEZONE
         timezone?: string | null;
         country?: string | null;
+        // ✅ COORDENADAS DEL EXPERTO (para mostrar en el mapa)
+        latitude?: string | number | null;
+        longitude?: string | number | null;
+        locationRange?: number | null;
     } | null;
+    // ✅ COORDENADAS A NIVEL DE SERVICIO (alternativa)
+    expertLatitude?: string | number | null;
+    expertLongitude?: string | number | null;
 }
 
 interface UseServicesProps {
