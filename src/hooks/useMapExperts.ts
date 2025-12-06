@@ -51,7 +51,8 @@ export const useMapExperts = (categoryId: number | null, serviceTypeId: number |
         const url = `/api/SearchService/map-experts?categoryId=${categoryId}&serviceTypeId=${serviceTypeId}`;
         console.log('🌐 Fetching map experts:', url);
         
-        const response = await get<MapExpertsResponse>(url);
+        // ✅ No requiere autenticación para ver expertos en el mapa
+        const response = await get<MapExpertsResponse>(url, { requiresAuth: false });
         console.log('📍 Map experts response:', response);
         
         if (response && response.experts) {
