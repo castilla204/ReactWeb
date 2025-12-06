@@ -377,13 +377,155 @@ const SearchCreationPage: React.FC = () => {
                             {/* Header */}
                                     <div className="mb-12">
                                         <h2 className="text-2xl font-medium text-gray-900 mb-1">
-                                            Crea tu inspección
+                                            Sistema de Inspección
                                 </h2>
                                         <p className="text-sm text-gray-500">
-                                            Define tus preferencias
+                                            Roadmap y documentación del sistema
                                         </p>
                                     </div>
                                     <div className="space-y-8 w-full">
+                                        {/* Placeholder - Form removed */}
+                                        <div className="p-8 bg-gray-50 rounded-lg border border-gray-200">
+                                            <p className="text-gray-600 text-center">
+                                                El formulario ha sido removido. Consulta el roadmap del sistema para más información.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* Right Column - Visual Element */}
+                                <div className="hidden lg:block sticky top-8">
+                                    <div className="relative h-full min-h-[800px] rounded-tr-[2.5rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),0_10px_25px_-5px_rgba(0,0,0,0.2)] border border-white/10 backdrop-blur-sm">
+                                        {/* Background Image - HD Real con fallback local */}
+                                        <div className="absolute inset-0">
+                                            {/* Imagen HD principal - Inspección de vehículo profesional en alta calidad */}
+                                            <picture>
+                                                {/* Fuentes HD optimizadas para diferentes resoluciones */}
+                                                <source 
+                                                    media="(min-width: 1920px)" 
+                                                    srcSet="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2560&q=100 1x,
+                                                            https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=3840&q=100 2x"
+                                                />
+                                                <source 
+                                                    media="(min-width: 1280px)" 
+                                                    srcSet="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=100"
+                                                />
+                                                <img 
+                                                    src="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=100"
+                                                    alt="Inspección profesional de vehículos"
+                                                    className="w-full h-full object-cover"
+                                                    loading="eager"
+                                                    decoding="async"
+                                                    onError={(e) => {
+                                                        const img = e.target as HTMLImageElement;
+                                                        // Fallback a imagen HD alternativa de alta calidad
+                                                        img.src = "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=100";
+                                                        img.onerror = () => {
+                                                            // Si falla también, usar imagen local
+                                                            img.src = new URL('../media/landingimage.png', import.meta.url).href;
+                                                            img.onerror = () => {
+                                                                // Último fallback
+                                                                img.src = new URL('../media/fotohome.png', import.meta.url).href;
+                                                            };
+                                                        };
+                                                    }}
+                                                />
+                                            </picture>
+                                            {/* Fallback gradient elegante si todas las imágenes fallan */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-700 to-gray-800 opacity-0" id="gradient-fallback"></div>
+                                        </div>
+                                        
+                                        {/* Overlay sutil para mejorar legibilidad sin ocultar la imagen HD */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/15"></div>
+                                        
+                                        {/* Efecto de brillo sutil en la parte superior */}
+                                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/25 pointer-events-none"></div>
+                                        
+                                        {/* Borde interno sutil para profundidad */}
+                                        <div className="absolute inset-[1px] rounded-tr-[2.5rem] border border-white/5 pointer-events-none"></div>
+                                        
+                                        {/* Content */}
+                                        <div className="relative h-full flex flex-col justify-between p-8">
+                                            {/* Top badge */}
+                                            <div className="flex justify-end">
+                                                <div className="px-5 py-2.5 bg-white/98 backdrop-blur-md rounded-full flex items-center gap-2.5 shadow-[0_4px_14px_0_rgba(0,0,0,0.15)] border border-white/20 hover:shadow-[0_6px_20px_0_rgba(0,0,0,0.2)] transition-all duration-300">
+                                                    <span className="text-sm font-semibold text-gray-900 tracking-tight">inspecciono.com</span>
+                                                    <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Bottom content */}
+                                            <div className="space-y-6">
+                                                <div className="space-y-4">
+                                                    <p className="text-white/95 text-xs font-bold tracking-[0.15em] uppercase letter-spacing-wider">Descubriendo lo mejor</p>
+                                                    <h3 className="text-3xl md:text-4xl font-bold text-white leading-[1.2] drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
+                                                        "Una elección inteligente. La mejor inspección profesional para tu compra"
+                                                    </h3>
+                                                </div>
+                                                
+                                                {/* Feature badges */}
+                                                <div className="flex flex-wrap gap-3">
+                                                    <div className="flex items-center gap-2.5 px-5 py-2.5 bg-white/30 backdrop-blur-lg rounded-full border border-white/40 shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:bg-white/35 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] transition-all duration-300">
+                                                        <div className="w-7 h-7 rounded-full bg-white/40 backdrop-blur-sm border border-white/60 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                            <Shield className="w-4 h-4 text-white drop-shadow-sm" />
+                                                        </div>
+                                                        <span className="text-sm font-bold text-white drop-shadow-sm">100% Garantía</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2.5 px-5 py-2.5 bg-white/30 backdrop-blur-lg rounded-full border border-white/40 shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:bg-white/35 hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] transition-all duration-300">
+                                                        <div className="w-7 h-7 rounded-full bg-white/40 backdrop-blur-sm border border-white/60 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                            <svg className="w-4 h-4 text-white drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                        </div>
+                                                        <span className="text-sm font-bold text-white drop-shadow-sm">Informe detallado</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Pagination dots */}
+                                                <div className="flex items-center justify-center gap-2.5 pt-3">
+                                                    <div className="w-12 h-1.5 bg-white rounded-full shadow-sm"></div>
+                                                    <div className="w-5 h-1.5 bg-white/50 rounded-full"></div>
+                                                    <div className="w-5 h-1.5 bg-white/50 rounded-full"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <footer className="mt-16 bg-background border-t border-border">
+                        <div className="w-full px-4 sm:px-6 mx-auto max-w-7xl">
+                            <div className="py-6 sm:py-8">
+                                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
+                                    {/* Copyright */}
+                                    <p className="text-sm text-gray-600 text-center sm:text-left">
+                                        © 2025 inspecciono.com. Todos los derechos reservados.
+                                    </p>
+                                    
+                                    {/* Links */}
+                                    <div className="flex flex-wrap justify-center sm:justify-end gap-4 sm:gap-6 text-sm">
+                                        <a href="/privacy-policy.html" className="text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1">
+                                            <Shield className="w-3.5 h-3.5" />
+                                            Privacidad
+                                        </a>
+                                        <a href="/terms.html" className="text-gray-500 hover:text-gray-700 transition-colors">
+                                            Términos
+                                        </a>
+                                        <a href="/contact.html" className="text-gray-500 hover:text-gray-700 transition-colors">
+                                            Contacto
+                                        </a>
+                                        <a href="/become-expert" className="text-gray-500 hover:text-blue-600 transition-colors">
+                                            Hazte Experto
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </footer>
+                </>
+            ) : (
                                         {/* Service Type Section */}
                                         <div>
                                             <label className="block text-xs font-medium text-gray-600 mb-3 uppercase tracking-wide">
