@@ -1,14 +1,81 @@
 import { useState, useEffect } from 'react';
-import { Car, Home, Bike, Search, ChevronDown, Link as LinkIcon } from 'lucide-react';
+import { Car, Home, Bike, Search, ChevronDown, Link as LinkIcon, FolderTree } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { GoogleAuth } from './GoogleAuth';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useNavigate } from 'react-router-dom';
 
+// Importar imágenes directamente
+import motoAguaImg from '../media/motoagua.png';
+import motoImg from '../media/motopng.png';
+import cocheImg from '../media/cochepng.png';
+import casaImg from '../media/casapng.png';
+
 interface HomePresentationProps {
     onScrollToForm: () => void;
 }
+
+// Componente para mostrar el icono de la categoría
+const CategoryImage: React.FC<{ categoryName: string; size?: 'sm' | 'md' }> = ({ categoryName, size = 'sm' }) => {
+    const sizeClasses = {
+        sm: 'w-8 h-8',
+        md: 'w-10 h-10'
+    };
+
+    // Determinar qué imagen usar según el nombre de la categoría
+    const isMotoAgua = categoryName.toLowerCase().includes('moto') && categoryName.toLowerCase().includes('agua');
+    const isMoto = categoryName.toLowerCase().includes('moto') && !isMotoAgua;
+    const isCoche = categoryName.toLowerCase().includes('coche') || categoryName.toLowerCase().includes('vehículo');
+    const isCasa = categoryName.toLowerCase().includes('inmobiliaria') || categoryName.toLowerCase().includes('casa') || categoryName.toLowerCase().includes('inmueble');
+
+    if (isMotoAgua) {
+        return (
+            <img 
+                src={motoAguaImg}
+                alt="Moto de agua"
+                className={`${sizeClasses[size]} object-contain rounded-md`}
+            />
+        );
+    }
+    
+    if (isMoto) {
+        return (
+            <img 
+                src={motoImg}
+                alt="Moto"
+                className={`${sizeClasses[size]} object-contain rounded-md`}
+            />
+        );
+    }
+    
+    if (isCoche) {
+        return (
+            <img 
+                src={cocheImg}
+                alt="Coche"
+                className={`${sizeClasses[size]} object-contain rounded-md`}
+            />
+        );
+    }
+    
+    if (isCasa) {
+        return (
+            <img 
+                src={casaImg}
+                alt="Casa"
+                className={`${sizeClasses[size]} object-contain rounded-md`}
+            />
+        );
+    }
+
+    // Fallback: icono por defecto
+    return (
+        <div className={`${sizeClasses[size]} rounded-md bg-gray-100 flex items-center justify-center`}>
+            <FolderTree className="w-4 h-4 text-gray-400" />
+        </div>
+    );
+};
 
 const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     const { isAuthenticated } = useAuth();
@@ -349,8 +416,9 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                                         setSearchForm({...searchForm, categoryId: cat.id});
                                                                         setIsCategoryOpen(false);
                                                                     }}
-                                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3"
                                                                 >
+                                                                    <CategoryImage categoryName={cat.name} size="sm" />
                                                                     <div className="font-medium text-gray-900">{cat.name}</div>
                                                                 </button>
                                                             ))
@@ -456,8 +524,9 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                                 setSearchForm({...searchForm, categoryId: cat.id});
                                                                 setIsCategoryOpen(false);
                                                             }}
-                                                            className="w-full px-5 py-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                                                            className="w-full px-5 py-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 flex items-center gap-3"
                                                         >
+                                                            <CategoryImage categoryName={cat.name} size="sm" />
                                                             <div className="font-medium text-gray-900">{cat.name}</div>
                                                         </button>
                                                     ))
