@@ -2,7 +2,9 @@
 import { ArrowLeft, Wallet, ArrowRight, Shield, Check } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useUserSettings } from '../hooks/useUserSettings';
+import { useAuth } from '../contexts/AuthContext';
 import { showToast } from '../lib/toast';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
@@ -56,6 +58,8 @@ export default function SearchForm({
 }: SearchFormProps) {
     const { createSearchWithHire } = useSearch();
     const { } = useUserSettings();
+    const { isAuthenticated } = useAuth();
+    const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Scroll to top when component loads
@@ -67,6 +71,24 @@ export default function SearchForm({
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        
+        // ✅ Verificar autenticación antes de contratar
+        if (!isAuthenticated) {
+            showToast('error', '🔒 Por favor, inicia sesión para contratar este servicio');
+            // Guardar el estado actual para restaurarlo después del login
+            sessionStorage.setItem('pendingServiceSelection', JSON.stringify({
+                serviceId,
+                parameters,
+                expertName,
+                servicePrice,
+                expertProfilePicture,
+                serviceDescription,
+                serviceImageUrls,
+            }));
+            navigate('/login');
+            return;
+        }
+        
         setIsSubmitting(true);
 
         console.log('SearchForm - Submitting with:', { serviceId, servicePrice });

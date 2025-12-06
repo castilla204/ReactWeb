@@ -114,8 +114,13 @@ export function useServices({
         queryKey: ['services', expertProfileId || categoryId, serviceTypeId, latitude, longitude, locationRange, page, pageSize],
         queryFn: async () => {
             const token = getAuthToken();
-            if (!token) {
-                console.log('No token found, signing out');
+            
+            // ✅ Si es para servicios de un experto específico, requiere autenticación
+            // ✅ Si es para lista pública de servicios, NO requiere autenticación
+            const requiresAuth = !!expertProfileId;
+            
+            if (requiresAuth && !token) {
+                console.log('No token found for expert services, signing out');
                 signOut();
                 throw new Error('No authentication token found');
             }
@@ -147,16 +152,19 @@ export function useServices({
                 url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.list}?${params.toString()}`;
             }
 
-            console.log('Fetching services with URL:', url);
+            console.log('Fetching services with URL:', url, 'Requires auth:', requiresAuth);
+
+            const headers: Record<string, string> = {};
+            if (requiresAuth && token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
 
             const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                headers,
             });
 
             if (!response.ok) {
-                if (response.status === 401) {
+                if (response.status === 401 && requiresAuth) {
                     console.log('401 Unauthorized, signing out');
                     signOut();
                     throw new Error('Request failed with status 401');

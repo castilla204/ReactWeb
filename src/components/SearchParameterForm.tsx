@@ -89,7 +89,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             }
         }
     }, [isLoaded, map, selectedCountry]);
-
+   
     // Sincronizar selectedLocation con formData cuando hay coordenadas
     useEffect(() => {
         if (formData.latitude && formData.longitude) {
@@ -226,7 +226,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }
         return null;
     };
-
+    
     // Función para extraer ciudad y código postal de la dirección
     const extractCityAndPostalCode = (address: string): string => {
         try {
@@ -362,12 +362,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
 
         setIsGeocoding(true);
         
-        const newLocation = {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng()
-        };
-        
-        const address = place.formatted_address || place.name || '';
+                    const newLocation = {
+                        lat: place.geometry.location.lat(),
+                        lng: place.geometry.location.lng()
+                    };
+                    
+                    const address = place.formatted_address || place.name || '';
         
         // Detectar y actualizar el país si es diferente
         const countryCode = extractCountryCode(place);
@@ -376,16 +376,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }
         
         setSearchAddress(address);
-        
-        // Usar la función centralizada para actualizar todo
-        updateLocationAndMap(newLocation, address);
-        
+                    
+                    // Usar la función centralizada para actualizar todo
+                    updateLocationAndMap(newLocation, address);
+                    
         setIsGeocoding(false);
         
         // Centrar el mapa
-        setTimeout(() => {
-            if (map) {
-                map.panTo(newLocation);
+                    setTimeout(() => {
+                        if (map) {
+                            map.panTo(newLocation);
                 const zoom = getZoomLevel(parseInt(formData.locationRange || '25'));
                 map.setZoom(zoom);
             }
@@ -517,20 +517,20 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         onComplete(searchParameterData);
     };
     return (
-        <div className="bg-white h-[100dvh] flex flex-col overflow-hidden fixed inset-0">
+        <div className="bg-white h-[100dvh] flex flex-col overflow-hidden fixed inset-0 z-[100]">
             {/* Header - Estilo Airbnb minimalista */}
-            <header className="z-50 bg-white border-b border-gray-200 flex-shrink-0">
-                <div className="h-14 px-4 flex items-center justify-between">
+            <header className="bg-white border-b border-gray-200 flex-shrink-0 relative z-[101] w-full">
+                <div className="h-14 px-4 flex items-center justify-between w-full">
                     {/* Botón volver */}
                     <button
                         onClick={() => setCurrentStep(0)}
-                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
                     >
                         <ArrowLeft className="w-5 h-5 text-gray-800" />
                     </button>
                     
                     {/* Steps indicator - Estilo Airbnb */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1 justify-center px-4">
                         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
                             formData.latitude && formData.longitude 
                                 ? 'bg-black text-white' 
@@ -556,7 +556,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     </div>
                     
                     {/* Spacer */}
-                    <div className="w-8" />
+                    <div className="w-8 flex-shrink-0" />
                 </div>
             </header>
                    
@@ -572,13 +572,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 : 'Selecciona una ubicación en el mapa'
                             }
                         </p>
-                    </div>
+                        </div>
                     
                     {/* Filtros estilo Airbnb */}
-                    {formData.latitude && formData.longitude && (
+                        {formData.latitude && formData.longitude && (
                         <div className="px-6 py-3 border-b border-gray-100 flex items-center gap-2">
-                            <Popover>
-                                <PopoverTrigger asChild>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
                                     <button className={`h-9 px-4 rounded-full border text-sm font-medium transition-all ${
                                         filters.priceRange[0] > 0 || filters.priceRange[1] < 100000
                                             ? 'border-gray-900 bg-gray-900 text-white'
@@ -586,18 +586,18 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     }`}>
                                         Precio
                                     </button>
-                                </PopoverTrigger>
+                                        </PopoverTrigger>
                                 <PopoverContent className="w-72 p-5" align="start">
-                                    <div className="space-y-4">
+                                            <div className="space-y-4">
                                         <h4 className="font-semibold text-gray-900">Rango de precio</h4>
-                                        <Slider
-                                            value={filters.priceRange}
-                                            onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
-                                            min={0}
+                                                    <Slider
+                                                        value={filters.priceRange}
+                                                        onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
+                                                        min={0}
                                             max={1000}
-                                            step={10}
-                                            className="w-full"
-                                        />
+                                                        step={10}
+                                                        className="w-full"
+                                                    />
                                         <div className="flex items-center justify-between gap-4">
                                             <div className="flex-1">
                                                 <label className="text-xs text-gray-500 mb-1 block">Mínimo</label>
@@ -611,14 +611,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 <div className="h-10 px-3 border border-gray-300 rounded-lg flex items-center text-sm">
                                                     €{filters.priceRange[1]}+
                                                 </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-                            
-                            <Popover>
-                                <PopoverTrigger asChild>
+                                        </PopoverContent>
+                                    </Popover>
+                                    
+                                    <Popover>
+                                        <PopoverTrigger asChild>
                                     <button className={`h-9 px-4 rounded-full border text-sm font-medium transition-all flex items-center gap-1.5 ${
                                         filters.rating > 0
                                             ? 'border-gray-900 bg-gray-900 text-white'
@@ -627,9 +627,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         <Star className="w-3.5 h-3.5" />
                                         {filters.rating > 0 ? `${filters.rating}+` : 'Valoración'}
                                     </button>
-                                </PopoverTrigger>
+                                        </PopoverTrigger>
                                 <PopoverContent className="w-64 p-5" align="start">
-                                    <div className="space-y-4">
+                                            <div className="space-y-4">
                                         <h4 className="font-semibold text-gray-900">Valoración mínima</h4>
                                         <div className="flex gap-2">
                                             {[0, 3, 3.5, 4, 4.5].map((rating) => (
@@ -645,10 +645,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     {rating === 0 ? 'Todas' : `${rating}+`}
                                                 </button>
                                             ))}
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
+                                                </div>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
                             
                             {(filters.priceRange[0] > 0 || filters.priceRange[1] < 100000 || filters.rating > 0) && (
                                 <button 
@@ -658,7 +658,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     Borrar
                                 </button>
                             )}
-                        </div>
+                            </div>
                     )}
                     
                     {/* Lista de servicios */}
@@ -675,7 +675,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             const isSelected = selectedService === service.id;
                                             const reviewCount = service.expert?.reviews?.length || 0;
                                             
-                                            return (
+    return (
                                                 <div
                                                     key={service.id}
                                                     className={`group cursor-pointer transition-all duration-200 rounded-2xl overflow-hidden ${
@@ -690,24 +690,24 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         {/* Imagen */}
                                                         <div className="w-[140px] h-[140px] flex-shrink-0 relative" onClick={(e) => e.stopPropagation()}>
                                                             {allImages.length > 0 ? (
-                                                                <ImageCarousel
-                                                                    images={allImages}
-                                                                    alt={service.expert?.user?.name || 'Experto'}
+                                                                    <ImageCarousel
+                                                                        images={allImages}
+                                                                        alt={service.expert?.user?.name || 'Experto'}
                                                                     className="w-full h-full object-cover"
                                                                 />
                                                             ) : (
                                                                 <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                                                                     <User className="w-10 h-10 text-gray-300" />
-                                                                </div>
-                                                            )}
+                                                                        </div>
+                                                                    )}
                                                             {/* Badge verificado */}
-                                                            {service.expert?.stripeAccountId && (
+                                                                    {service.expert?.stripeAccountId && (
                                                                 <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-md text-[10px] font-medium text-gray-800 shadow-sm">
-                                                                    Verificado
+                                                                            Verificado
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                        
+
                                                         {/* Contenido */}
                                                         <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
                                                             {/* Header */}
@@ -720,37 +720,37 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                                 {/* Nombre */}
                                                                 <h3 className="text-[15px] font-medium text-gray-900 leading-snug mb-1 line-clamp-1">
                                                                     {service.expert?.user?.name || 'Experto profesional'}
-                                                                </h3>
+                                                                    </h3>
                                                                 
                                                                 {/* Descripción */}
                                                                 <p className="text-[13px] text-gray-500 line-clamp-2 leading-relaxed">
                                                                     {service.conditions || 'Servicio profesional de inspección'}
                                                                 </p>
-                                                            </div>
-                                                            
+                                                                </div>
+
                                                             {/* Footer */}
                                                             <div className="flex items-end justify-between mt-2">
                                                                 {/* Rating */}
                                                                 <div className="flex items-center gap-1">
                                                                     <Star className="w-3.5 h-3.5 fill-gray-900 text-gray-900" />
                                                                     <span className="text-[13px] font-medium text-gray-900">
-                                                                        {service.averageRating?.toFixed(1) || 'Nuevo'}
-                                                                    </span>
+                                                                            {service.averageRating?.toFixed(1) || 'Nuevo'}
+                                                                        </span>
                                                                     {reviewCount > 0 && (
                                                                         <span className="text-[13px] text-gray-500">
                                                                             ({reviewCount})
-                                                                        </span>
-                                                                    )}
-                                                                </div>
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 
                                                                 {/* Precio */}
-                                                                <div className="text-right">
+                                                                    <div className="text-right">
                                                                     <span className="text-[15px] font-semibold text-gray-900">
                                                                         {service.price || 0} €
-                                                                    </span>
+                                                                        </span>
                                                                     <span className="text-[12px] text-gray-500 ml-1">
                                                                         total
-                                                                    </span>
+                                                                        </span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -776,7 +776,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         </div>
                                     </div>
                                 )}
-                            </div>
+                                    </div>
                         )}
                         {error && (
                             <Card className="mb-6 border-destructive/50 bg-destructive/5">
@@ -785,8 +785,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 </CardContent>
                             </Card>
                         )}
-                    </div>
-                    
+                </div>
+                
                     {/* Continue Button - Fijo en la parte inferior */}
                     {formData.latitude && formData.longitude && services.length > 0 && (
                         <div className="flex-shrink-0 border-t border-gray-200 bg-white">
@@ -802,19 +802,19 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 >
                                     {selectedService ? 'Continuar' : 'Selecciona un experto'}
                                 </button>
-                            </div>
+                        </div>
                         </div>
                     )}
-                </div>
-                
+                    </div>
+                    
                 {/* Mobile: Map View */}
                 <div className="lg:hidden flex-1 relative w-full">
-                    {loadError ? (
+                        {loadError ? (
                         <div className="h-full flex items-center justify-center bg-gray-100">
                             <div className="text-red-500">Error al cargar el mapa</div>
-                        </div>
-                    ) : (
-                        <>
+                            </div>
+                        ) : (
+                            <>
                             {/* Barra de búsqueda móvil - Estilo Airbnb */}
                             <div className="absolute top-3 left-3 right-3 z-[9999] pointer-events-none">
                                 <div className="pointer-events-auto">
@@ -859,7 +859,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 />
                                             ) : (
                                                 <input
-                                                    type="text"
+                                                type="text"
                                                     placeholder="Cargando mapa..."
                                                     disabled
                                                     className="w-full h-11 pl-3 pr-10 text-sm text-gray-400 placeholder-gray-400 bg-transparent border-0"
@@ -886,17 +886,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                             )}
                                         </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            
+                                
                             {/* Map - ocupa todo el espacio */}
-                            {isLoaded ? (
-                                <LocationMap
-                                    selectedLocation={selectedLocation}
-                                    mapExperts={mapExperts}
-                                    services={services}
-                                    selectedService={selectedService}
+                                {isLoaded ? (
+                                    <LocationMap
+                                        selectedLocation={selectedLocation}
+                                        mapExperts={mapExperts}
+                                        services={services}
+                                        selectedService={selectedService}
                                     onMapClick={handleMapClick}
                                         onMapLoad={(mapInstance) => {
                                             setMap(mapInstance);
@@ -907,46 +907,46 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 mapInstance.setZoom(countryCoords.zoom);
                                             }
                                         }}
-                                    onServiceSelect={handleServiceSelect}
-                                    locationRange={parseInt(formData.locationRange)}
-                                    isMobile={true}
-                                    isLoaded={isLoaded}
-                                />
-                            ) : null}
-                            
+                                        onServiceSelect={handleServiceSelect}
+                                        locationRange={parseInt(formData.locationRange)}
+                                        isMobile={true}
+                                        isLoaded={isLoaded}
+                                    />
+                                ) : null}
+                                
                             {/* Floating Button - Siempre visible en la parte inferior */}
-                            {formData.latitude && formData.longitude && (
+                                {formData.latitude && formData.longitude && (
                                 <div className="absolute bottom-[env(safe-area-inset-bottom,16px)] left-1/2 transform -translate-x-1/2 z-[100] pb-4">
-                                    <Button
-                                        onClick={() => setIsDrawerOpen(true)}
-                                        size="lg"
+                                        <Button
+                                            onClick={() => setIsDrawerOpen(true)}
+                                            size="lg"
                                         className={`shadow-2xl border-2 h-12 px-6 ${
-                                            services.length === 0 
-                                                ? 'bg-background/95 backdrop-blur-sm border-muted-foreground/30 text-muted-foreground' 
-                                                : 'bg-primary border-primary text-primary-foreground hover:bg-primary/90'
-                                        }`}
-                                        disabled={services.length === 0}
-                                    >
-                                        <MapPin className="w-4 h-4 mr-2" />
-                                        {services.length > 0 
-                                            ? `Ver ${services.length} ${services.length === 1 ? 'resultado' : 'resultados'}`
-                                            : 'Ver resultados'
-                                        }
-                                    </Button>
-                                </div>
-                            )}
-                        </>
-                    )}
+                                                services.length === 0 
+                                                    ? 'bg-background/95 backdrop-blur-sm border-muted-foreground/30 text-muted-foreground' 
+                                                    : 'bg-primary border-primary text-primary-foreground hover:bg-primary/90'
+                                            }`}
+                                            disabled={services.length === 0}
+                                        >
+                                            <MapPin className="w-4 h-4 mr-2" />
+                                            {services.length > 0 
+                                                ? `Ver ${services.length} ${services.length === 1 ? 'resultado' : 'resultados'}`
+                                                : 'Ver resultados'
+                                            }
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
+                        )}
                 </div>
                 
                 {/* Desktop: Right Side - Map */}
                 <div className="hidden lg:flex lg:flex-1 relative bg-gray-100">
-                    {loadError ? (
+                        {loadError ? (
                         <div className="h-full w-full flex items-center justify-center bg-gray-100">
                             <div className="text-red-500">Error al cargar el mapa</div>
-                        </div>
-                    ) : (
-                        <>
+                            </div>
+                        ) : (
+                            <>
                             {/* Barra de búsqueda estilo Airbnb */}
                             <div className="absolute top-4 left-4 right-4 z-[9999] pointer-events-none">
                                 <div className="max-w-lg pointer-events-auto">
@@ -992,7 +992,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 />
                                             ) : (
                                                 <input
-                                                    type="text"
+                                                type="text"
                                                     placeholder="Cargando mapa..."
                                                     disabled
                                                     className="w-full h-12 pl-4 pr-10 text-sm text-gray-400 placeholder-gray-400 bg-transparent border-0"
@@ -1019,10 +1019,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                             )}
                                         </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            
+                                
                             {/* Map ocupa todo el espacio */}
                             <div className="absolute inset-0">
                                 {isLoaded ? (
@@ -1040,9 +1040,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 mapInstance.setCenter({ lat: countryCoords.lat, lng: countryCoords.lng });
                                                 mapInstance.setZoom(countryCoords.zoom);
                                             } else {
-                                                const radius = 25;
-                                                const zoom = getZoomLevel(radius);
-                                                mapInstance.setZoom(zoom);
+                                        const radius = 25;
+                                        const zoom = getZoomLevel(radius);
+                                            mapInstance.setZoom(zoom);
                                             }
                                         }}
                                         onServiceSelect={handleServiceSelect}
@@ -1052,10 +1052,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     />
                                 ) : null}
                             </div>
-                        </>
-                    )}
+                            </>
+                        )}
+                    </div>
                 </div>
-            </div>
                 
                 {/* Mobile Drawer with Services */}
                 <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
@@ -1111,16 +1111,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         </PopoverTrigger>
                                         <PopoverContent className="w-72 p-4" align="start">
                                             <h4 className="font-semibold text-gray-900 mb-3">Rango de precio</h4>
-                                            <Slider
-                                                value={filters.priceRange}
-                                                onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
-                                                min={0}
+                                                    <Slider
+                                                        value={filters.priceRange}
+                                                        onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
+                                                        min={0}
                                                 max={1000}
-                                                step={10}
+                                                        step={10}
                                                 className="w-full mb-3"
-                                            />
+                                                    />
                                             <div className="flex items-center justify-between text-sm text-gray-600">
-                                                <span>€{filters.priceRange[0]}</span>
+                                                        <span>€{filters.priceRange[0]}</span>
                                                 <span>€{filters.priceRange[1]}+</span>
                                             </div>
                                         </PopoverContent>
@@ -1154,7 +1154,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             const isSelected = selectedService === service.id;
                                             const reviewCount = service.expert?.reviews?.length || 0;
                                             
-                                            return (
+                                                return (
                                                 <div
                                                     key={service.id}
                                                     className={`cursor-pointer transition-all duration-200 rounded-xl overflow-hidden bg-white ${
@@ -1166,17 +1166,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         {/* Imagen cuadrada */}
                                                         <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                                                             {allImages.length > 0 ? (
-                                                                <img
-                                                                    src={allImages[0]}
-                                                                    alt={service.expert?.user?.name || 'Experto'}
-                                                                    className="w-full h-full object-cover"
-                                                                />
+                                                                    <img
+                                                                        src={allImages[0]}
+                                                                        alt={service.expert?.user?.name || 'Experto'}
+                                                                        className="w-full h-full object-cover"
+                                                                    />
                                                             ) : (
                                                                 <div className="w-full h-full flex items-center justify-center">
                                                                     <User className="w-8 h-8 text-gray-300" />
-                                                                </div>
+                        </div>
                                                             )}
-                                                        </div>
+                    </div>
                                                         
                                                         {/* Info */}
                                                         <div className="flex-1 min-w-0 flex flex-col justify-between">
@@ -1185,23 +1185,23 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                                     {service.categoryName || 'Servicio'}
                                                                 </p>
                                                                 <h3 className="text-[14px] font-medium text-gray-900 truncate">
-                                                                    {service.expert?.user?.name || 'Experto'}
-                                                                </h3>
-                                                            </div>
+                                                                            {service.expert?.user?.name || 'Experto'}
+                                                                        </h3>
+                                                                    </div>
                                                             
                                                             <div className="flex items-center justify-between">
                                                                 <div className="flex items-center gap-1">
                                                                     <Star className="w-3 h-3 fill-gray-900 text-gray-900" />
                                                                     <span className="text-[12px] font-medium">
                                                                         {service.averageRating?.toFixed(1) || 'Nuevo'}
-                                                                    </span>
+                                                                            </span>
                                                                     {reviewCount > 0 && (
                                                                         <span className="text-[12px] text-gray-500">({reviewCount})</span>
                                                                     )}
-                                                                </div>
+                </div>
                                                                 <span className="text-[14px] font-semibold text-gray-900">
                                                                     {service.price || 0} €
-                                                                </span>
+                                                                        </span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1213,9 +1213,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     <div className="py-12 text-center">
                                         <p className="text-sm text-gray-500">No hay servicios disponibles</p>
                                     </div>
-                                )}
-                            </div>
+                        )}
                         </div>
+                    </div>
                         
                         {/* Continue Button */}
                         {services.length > 0 && (
@@ -1234,7 +1234,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 >
                                     {selectedService ? 'Continuar' : 'Selecciona un experto'}
                                 </button>
-                            </div>
+                </div>
                         )}
                     </DrawerContent>
                 </Drawer>

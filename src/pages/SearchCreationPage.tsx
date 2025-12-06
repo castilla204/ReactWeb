@@ -13,7 +13,7 @@ import { ErrorDisplay } from '../components/ErrorDisplay';
 import { useMfaVerification } from '../contexts/MfaVerificationContext';
 import { Button } from '../components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { mfaService } from '../services/mfaService';
 
 
@@ -34,6 +34,7 @@ interface SearchParameters {
 const SearchCreationPage: React.FC = () => {
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const { categories } = useCategories();
     // Removed subscription limits - no longer needed
     const { serviceTypes, isLoading: serviceTypesLoading, error: serviceTypesError } = useServiceTypes();
@@ -80,6 +81,43 @@ const SearchCreationPage: React.FC = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Leer parámetros de sessionStorage (desde la homepage) y prellenar el formulario
+    useEffect(() => {
+        const homeSearchParams = sessionStorage.getItem('homeSearchParams');
+        if (homeSearchParams) {
+            try {
+                const params = JSON.parse(homeSearchParams);
+                if (params.serviceTypeId && params.categoryId) {
+                    // Establecer parámetros primero
+                    setSearchParameters(prev => ({
+                        ...prev,
+                        serviceTypeId: params.serviceTypeId,
+                        category: params.categoryId,
+                        keywords: params.adUrl || prev.keywords,
+                        userSearch: params.adUrl || prev.userSearch,
+                    }));
+                    
+                    // Limpiar sessionStorage después de leer
+                    sessionStorage.removeItem('homeSearchParams');
+                    
+                    // Ocultar scroll durante la transición
+                    document.body.style.overflow = 'hidden';
+                    // Scroll instantáneo al top
+                    window.scrollTo(0, 0);
+                    // Cambiar step inmediatamente (igual que handleStartSearch)
+                    setCurrentStep(1);
+                    // Restaurar scroll después de un delay mínimo
+                    setTimeout(() => {
+                        document.body.style.overflow = '';
+                    }, 50);
+                }
+            } catch (error) {
+                console.error('Error parsing homeSearchParams:', error);
+                sessionStorage.removeItem('homeSearchParams');
+            }
+        }
+    }, []);
+    
     // Scroll automático a la sección del formulario cuando se navega desde otra página
     useEffect(() => {
         const shouldScrollToForm = sessionStorage.getItem('scrollToFormSection');
@@ -205,10 +243,8 @@ const SearchCreationPage: React.FC = () => {
         serviceDescription?: string;
         serviceImageUrls?: string[];
     }) => {
-        if (!isAuthenticated) {
-            showToast('error', '🔒 Por favor, inicia sesión para crear una búsqueda');
-            return;
-        }
+        // ✅ Ya no requiere autenticación para ver servicios y expertos
+        // La autenticación se requerirá solo al contratar (en SearchForm)
         // Removed subscription limits - unlimited searches now available
         console.log('SearchCreationPage - Parameters received:', parameters);
         // Ensure strictMatchOnly is always false
@@ -250,10 +286,8 @@ const SearchCreationPage: React.FC = () => {
     };
 
     const handleStartSearch = () => {
-        if (!isAuthenticated) {
-            showToast('error', '🔒 Por favor, inicia sesión para crear una búsqueda');
-            return;
-        }
+        // ✅ Ya no requiere autenticación para ver servicios y expertos
+        // La autenticación se requerirá solo al contratar (en SearchForm)
         if (!searchParameters.serviceTypeId) {
             showToast('error', '📍 Por favor, selecciona un tipo de servicio');
             return;
@@ -1062,18 +1096,34 @@ const SearchCreationPage: React.FC = () => {
                     </footer>
                 </>
             ) : (
-                <div className="w-full h-screen flex flex-col bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto">
-                    {currentStep === 1 && searchParameters.category && searchParameters.serviceTypeId && (
-                        <div className="flex-1 min-h-0 overflow-hidden">
-                            <SearchParameterForm
-                                onComplete={handleParametersComplete}
-                                setCurrentStep={setCurrentStep}
-                                selectedCategory={searchParameters.category}
-                                initialKeywords={searchParameters.keywords || ''}
-                                initialUserSearch={searchParameters.userSearch || ''}
-                                serviceTypeId={searchParameters.serviceTypeId}
-                            />
-                        </div>
+                <div className="w-full h-screen flex flex-col bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative">
+                    {currentStep === 1 && (
+                        <>
+                            {searchParameters.category && searchParameters.serviceTypeId ? (
+                                <div className="flex-1 min-h-0 overflow-hidden">
+                                    <SearchParameterForm
+                                        onComplete={handleParametersComplete}
+                                        setCurrentStep={setCurrentStep}
+                                        selectedCategory={searchParameters.category}
+                                        initialKeywords={searchParameters.keywords || ''}
+                                        initialUserSearch={searchParameters.userSearch || ''}
+                                        serviceTypeId={searchParameters.serviceTypeId}
+                                    />
+                                </div>
+                            ) : (
+                                // Mostrar el formulario con valores por defecto mientras cargan los parámetros
+                                <div className="flex-1 min-h-0 overflow-hidden">
+                                    <SearchParameterForm
+                                        onComplete={handleParametersComplete}
+                                        setCurrentStep={setCurrentStep}
+                                        selectedCategory={searchParameters.category || null}
+                                        initialKeywords={searchParameters.keywords || ''}
+                                        initialUserSearch={searchParameters.userSearch || ''}
+                                        serviceTypeId={searchParameters.serviceTypeId || null}
+                                    />
+                                </div>
+                            )}
+                        </>
                     )}
                     {currentStep === 2 && selectedServiceId && (
                         <div className="flex-1 overflow-y-auto">

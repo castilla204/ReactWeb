@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Car, Home, Bike } from 'lucide-react';
+import { Car, Home, Bike, Search, ChevronDown, Link as LinkIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { GoogleAuth } from './GoogleAuth';
+import { useCategories } from '../contexts/CategoryContext';
+import { useServiceTypes } from '../hooks/useServiceTypes';
+import { useNavigate } from 'react-router-dom';
 
 interface HomePresentationProps {
     onScrollToForm: () => void;
@@ -9,10 +12,67 @@ interface HomePresentationProps {
 
 const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     const { isAuthenticated } = useAuth();
+    const navigate = useNavigate();
+    const { categories } = useCategories();
+    const { serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
     const [currentWord, setCurrentWord] = useState('coche');
     const [isGlitching, setIsGlitching] = useState(false);
     const [glitchText, setGlitchText] = useState('coche');
     const [isReviewsLoading, setIsReviewsLoading] = useState(true);
+    
+    // Estado del buscador estilo Airbnb
+    const [searchForm, setSearchForm] = useState({
+        serviceTypeId: null as number | null,
+        categoryId: null as number | null,
+        adUrl: '',
+    });
+    
+    const [isServiceTypeOpen, setIsServiceTypeOpen] = useState(false);
+    const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+    
+    // Cerrar dropdowns al hacer clic fuera
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('.service-type-dropdown') && !target.closest('.category-dropdown')) {
+                setIsServiceTypeOpen(false);
+                setIsCategoryOpen(false);
+            }
+        };
+        
+        if (isServiceTypeOpen || isCategoryOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isServiceTypeOpen, isCategoryOpen]);
+    
+    const handleSearch = () => {
+        // Validar que haya tipo de servicio y categoría
+        if (!searchForm.serviceTypeId || !searchForm.categoryId) {
+            // Si no hay selección, hacer scroll al formulario
+            onScrollToForm();
+            return;
+        }
+        
+        // Guardar los parámetros en sessionStorage para que SearchCreationPage los lea
+        sessionStorage.setItem('homeSearchParams', JSON.stringify({
+            serviceTypeId: searchForm.serviceTypeId,
+            categoryId: searchForm.categoryId,
+            adUrl: searchForm.adUrl || '',
+        }));
+        
+        // Navegar a crear-busqueda sin parámetros en la URL
+        // Usar window.location para forzar una recarga completa si ya estamos en esa página
+        if (window.location.pathname === '/crear-busqueda' || window.location.pathname === '/') {
+            // Si ya estamos en la página, forzar recarga
+            window.location.href = '/crear-busqueda';
+        } else {
+            navigate('/crear-busqueda');
+        }
+    };
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -220,56 +280,221 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 </p>
                             </div>
                             
-                                {/* Botones móvil - diseño limpio con mejores prácticas móviles */}
-                                <div className="lg:hidden space-y-4">
-                                {isAuthenticated ? (
-                                    <button
-                                        onClick={onScrollToForm}
-                                            className="group w-full inline-flex items-center justify-center gap-2 bg-gray-900 text-white px-6 py-4 rounded-lg font-medium text-base hover:bg-gray-800 transition-colors min-h-[48px] active:bg-gray-700"
-                                    >
-                                        <span>Comenzar inspección</span>
-                                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
-                                ) : (
-                                    <div className="w-full">
-                                        <GoogleAuth />
+                                {/* Buscador estilo Airbnb - Móvil */}
+                                <div className="lg:hidden mt-6">
+                                    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4">
+                                        <div className="space-y-3">
+                                            {/* Tipo de servicio */}
+                                            <div className="relative service-type-dropdown">
+                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Tipo de servicio</label>
+                                                <button
+                                                    onClick={() => setIsServiceTypeOpen(!isServiceTypeOpen)}
+                                                    className="w-full flex items-center justify-between px-4 py-3 text-left bg-gray-50 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                                                >
+                                                    <span className={searchForm.serviceTypeId ? 'text-gray-900' : 'text-gray-500'}>
+                                                        {searchForm.serviceTypeId 
+                                                            ? serviceTypes.find(st => st.id === searchForm.serviceTypeId)?.name || 'Seleccionar'
+                                                            : 'Seleccionar tipo'}
+                                                    </span>
+                                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isServiceTypeOpen ? 'rotate-180' : ''}`} />
+                                                </button>
+                                                {isServiceTypeOpen && (
+                                                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                                        {serviceTypesLoading ? (
+                                                            <div className="px-4 py-3 text-sm text-gray-500">Cargando...</div>
+                                                        ) : serviceTypes.length > 0 ? (
+                                                            serviceTypes.map((st) => (
+                                                                <button
+                                                                    key={st.id}
+                                                                    onClick={() => {
+                                                                        setSearchForm({...searchForm, serviceTypeId: st.id});
+                                                                        setIsServiceTypeOpen(false);
+                                                                    }}
+                                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                                                                >
+                                                                    <div className="font-medium text-gray-900">{st.name}</div>
+                                                                    {st.description && (
+                                                                        <div className="text-xs text-gray-500 mt-0.5">{st.description}</div>
+                                                                    )}
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <div className="px-4 py-3 text-sm text-gray-500">No hay tipos disponibles</div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Categoría */}
+                                            <div className="relative category-dropdown">
+                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Categoría</label>
+                                                <button
+                                                    onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                                                    className="w-full flex items-center justify-between px-4 py-3 text-left bg-gray-50 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                                                >
+                                                    <span className={searchForm.categoryId ? 'text-gray-900' : 'text-gray-500'}>
+                                                        {searchForm.categoryId 
+                                                            ? categories.find(c => c.id === searchForm.categoryId)?.name || 'Seleccionar'
+                                                            : 'Seleccionar categoría'}
+                                                    </span>
+                                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} />
+                                                </button>
+                                                {isCategoryOpen && (
+                                                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                                        {categories.length > 0 ? (
+                                                            categories.map((cat) => (
+                                                                <button
+                                                                    key={cat.id}
+                                                                    onClick={() => {
+                                                                        setSearchForm({...searchForm, categoryId: cat.id});
+                                                                        setIsCategoryOpen(false);
+                                                                    }}
+                                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                                                                >
+                                                                    <div className="font-medium text-gray-900">{cat.name}</div>
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <div className="px-4 py-3 text-sm text-gray-500">No hay categorías disponibles</div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {/* URL del anuncio */}
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">URL del anuncio</label>
+                                                <div className="relative">
+                                                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Pega la URL del anuncio"
+                                                        value={searchForm.adUrl}
+                                                        onChange={(e) => setSearchForm({...searchForm, adUrl: e.target.value})}
+                                                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    />
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Botón buscar */}
+                                            <button
+                                                onClick={handleSearch}
+                                                className="w-full bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                                            >
+                                                <Search className="w-5 h-5" />
+                                                <span>Buscar</span>
+                                            </button>
+                                        </div>
                                     </div>
-                                )}
-                                
-                                    <button className="w-full inline-flex items-center justify-center gap-2 text-gray-700 px-6 py-4 rounded-lg font-medium text-base hover:bg-gray-50 active:bg-gray-100 transition-colors border border-gray-200 min-h-[48px]">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v5a2 2 0 002 2z" />
-                                    </svg>
-                                    <span>Ver demo</span>
-                                </button>
-                            </div>
+                                </div>
                             
-                            {/* Botones desktop - mantener original */}
-                            <div className="hidden lg:flex flex-row gap-4">
-                                {isAuthenticated ? (
-                                    <button
-                                        onClick={onScrollToForm}
-                                        className="group inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-lg font-semibold text-base hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl"
-                                    >
-                                        <span>Comenzar inspección</span>
-                                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
-                                ) : (
-                                    <div>
-                                        <GoogleAuth />
+                            {/* Buscador estilo Airbnb - Desktop */}
+                            <div className="hidden lg:block mt-8">
+                                <div className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center overflow-visible hover:shadow-2xl transition-shadow">
+                                    {/* Tipo de servicio */}
+                                    <div className="relative flex-shrink-0 service-type-dropdown">
+                                        <button
+                                            onClick={() => setIsServiceTypeOpen(!isServiceTypeOpen)}
+                                            className="px-6 py-4 text-left hover:bg-gray-50 rounded-l-full transition-colors min-w-[200px]"
+                                        >
+                                            <div className="text-xs font-medium text-gray-700 mb-0.5">Tipo de servicio</div>
+                                            <div className={searchForm.serviceTypeId ? 'text-sm text-gray-900 font-medium' : 'text-sm text-gray-500'}>
+                                                {searchForm.serviceTypeId 
+                                                    ? serviceTypes.find(st => st.id === searchForm.serviceTypeId)?.name || 'Seleccionar'
+                                                    : 'Seleccionar'}
+                                            </div>
+                                        </button>
+                                        {isServiceTypeOpen && (
+                                            <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 max-h-96 overflow-y-auto">
+                                                {serviceTypesLoading ? (
+                                                    <div className="px-5 py-4 text-sm text-gray-500">Cargando...</div>
+                                                ) : serviceTypes.length > 0 ? (
+                                                    serviceTypes.map((st) => (
+                                                        <button
+                                                            key={st.id}
+                                                            onClick={() => {
+                                                                setSearchForm({...searchForm, serviceTypeId: st.id});
+                                                                setIsServiceTypeOpen(false);
+                                                            }}
+                                                            className="w-full px-5 py-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                                                        >
+                                                            <div className="font-medium text-gray-900">{st.name}</div>
+                                                            {st.description && (
+                                                                <div className="text-xs text-gray-500 mt-1">{st.description}</div>
+                                                            )}
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-5 py-4 text-sm text-gray-500">No hay tipos disponibles</div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                
-                                <button className="inline-flex items-center justify-center gap-2 text-gray-700 px-5 py-3.5 rounded-lg font-medium text-base hover:bg-gray-50 transition-all duration-300 border border-gray-200">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v5a2 2 0 002 2z" />
-                                    </svg>
-                                    <span>Ver demo</span>
-                                </button>
+                                    
+                                    <div className="w-px h-8 bg-gray-200" />
+                                    
+                                    {/* Categoría */}
+                                    <div className="relative flex-shrink-0 category-dropdown">
+                                        <button
+                                            onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                                            className="px-6 py-4 text-left hover:bg-gray-50 transition-colors min-w-[180px]"
+                                        >
+                                            <div className="text-xs font-medium text-gray-700 mb-0.5">Categoría</div>
+                                            <div className={searchForm.categoryId ? 'text-sm text-gray-900 font-medium' : 'text-sm text-gray-500'}>
+                                                {searchForm.categoryId 
+                                                    ? categories.find(c => c.id === searchForm.categoryId)?.name || 'Seleccionar'
+                                                    : 'Seleccionar'}
+                                            </div>
+                                        </button>
+                                        {isCategoryOpen && (
+                                            <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 max-h-96 overflow-y-auto">
+                                                {categories.length > 0 ? (
+                                                    categories.map((cat) => (
+                                                        <button
+                                                            key={cat.id}
+                                                            onClick={() => {
+                                                                setSearchForm({...searchForm, categoryId: cat.id});
+                                                                setIsCategoryOpen(false);
+                                                            }}
+                                                            className="w-full px-5 py-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                                                        >
+                                                            <div className="font-medium text-gray-900">{cat.name}</div>
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-5 py-4 text-sm text-gray-500">No hay categorías disponibles</div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="w-px h-8 bg-gray-200" />
+                                    
+                                    {/* URL del anuncio */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="px-6 py-4">
+                                            <div className="text-xs font-medium text-gray-700 mb-0.5">URL del anuncio</div>
+                                            <div className="relative">
+                                                <LinkIcon className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Pega la URL del anuncio"
+                                                    value={searchForm.adUrl}
+                                                    onChange={(e) => setSearchForm({...searchForm, adUrl: e.target.value})}
+                                                    className="w-full pl-6 pr-2 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Botón buscar */}
+                                    <button
+                                        onClick={handleSearch}
+                                        className="flex-shrink-0 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-full p-3.5 m-2 transition-colors shadow-md hover:shadow-lg"
+                                    >
+                                        <Search className="w-5 h-5" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
