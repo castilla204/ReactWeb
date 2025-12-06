@@ -80,7 +80,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
         )}
         <span className="text-sm font-medium text-gray-700 max-w-[80px] truncate hidden sm:block">
           {currentCountryName}
-        </span>
+          </span>
         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -89,14 +89,14 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
         <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[99999] overflow-hidden" style={{ position: 'absolute' }}>
           {/* Header con búsqueda */}
           <div className="p-3 bg-gray-50 border-b border-gray-100">
-            <input
+              <input
               ref={inputRef}
-              type="text"
-              placeholder="Buscar país..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+                type="text"
+                placeholder="Buscar país..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-            />
+              />
           </div>
 
           {/* Lista de países */}

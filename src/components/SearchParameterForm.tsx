@@ -17,6 +17,7 @@ import { Label } from './ui/label';
 import CountryFlag from './CountryFlag';
 import CountrySelector from './CountrySelector';
 import { getCountryCoordinates } from '../utils/countryCoordinates';
+import { getCountryName } from '../utils/countries';
 import Autocomplete from 'react-google-autocomplete';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
@@ -43,7 +44,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     });
     const [error, setError] = useState<string | null>(null);
     const [map, setMap] = useState<google.maps.Map | null>(null);
-    const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+    // País por defecto: España
+    const [selectedCountry, setSelectedCountry] = useState<string>('es');
     const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
     const [searchAddress, setSearchAddress] = useState<string>('');
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +63,33 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [formData, setFormData] = useState(initialFormState);
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
    
+    // Inicializar coordenadas con el país por defecto al cargar
+    useEffect(() => {
+        if (selectedCountry && !formData.latitude && !formData.longitude) {
+            const countryCoords = getCountryCoordinates(selectedCountry);
+            if (countryCoords) {
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: countryCoords.lat.toString(),
+                    longitude: countryCoords.lng.toString(),
+                    locationName: getCountryName(selectedCountry) || '',
+                }));
+                setSelectedLocation({ lat: countryCoords.lat, lng: countryCoords.lng });
+            }
+        }
+    }, [selectedCountry]);
+
+    // Inicializar el mapa con el país por defecto cuando se carga
+    useEffect(() => {
+        if (isLoaded && map && selectedCountry) {
+            const countryCoords = getCountryCoordinates(selectedCountry);
+            if (countryCoords) {
+                map.setCenter({ lat: countryCoords.lat, lng: countryCoords.lng });
+                map.setZoom(countryCoords.zoom);
+            }
+        }
+    }, [isLoaded, map, selectedCountry]);
+
     // Sincronizar selectedLocation con formData cuando hay coordenadas
     useEffect(() => {
         if (formData.latitude && formData.longitude) {
@@ -186,6 +215,18 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     }, [allServices, services, isLoadingServices, filters]);
    
     
+    // Función para extraer el código de país desde los resultados de geocodificación o place
+    const extractCountryCode = (result: google.maps.GeocoderResult | google.maps.places.PlaceResult): string | null => {
+        if (!result.address_components) return null;
+        
+        for (const component of result.address_components) {
+            if (component.types.includes('country') && component.short_name) {
+                return component.short_name.toLowerCase();
+            }
+        }
+        return null;
+    };
+
     // Función para extraer ciudad y código postal de la dirección
     const extractCityAndPostalCode = (address: string): string => {
         try {
@@ -328,6 +369,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         
         const address = place.formatted_address || place.name || '';
         
+        // Detectar y actualizar el país si es diferente
+        const countryCode = extractCountryCode(place);
+        if (countryCode && countryCode !== selectedCountry.toLowerCase()) {
+            setSelectedCountry(countryCode);
+        }
+        
         setSearchAddress(address);
         
         // Usar la función centralizada para actualizar todo
@@ -414,6 +461,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     setIsGeocoding(false);
                     if (status === 'OK' && results && results[0]) {
                         const address = results[0].formatted_address;
+                        // Detectar y actualizar el país si es diferente
+                        const countryCode = extractCountryCode(results[0]);
+                        if (countryCode && countryCode !== selectedCountry.toLowerCase()) {
+                            setSelectedCountry(countryCode);
+                        }
                         updateLocationAndMap(newLocation, address);
                     } else {
                         updateLocationAndMap(newLocation);
@@ -612,7 +664,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     {/* Lista de servicios */}
                     <div className="flex-1 overflow-y-auto">
                         {formData.latitude && formData.longitude && (
-                            <div className="p-4">
+                            <div className="p-4 pb-6">
                                 {/* Services List - Estilo Airbnb */}
                                 {services.length > 0 ? (
                                     <div className="space-y-4">
@@ -724,22 +776,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         </div>
                                     </div>
                                 )}
-                                {/* Continue Button */}
-                                {services.length > 0 && (
-                                    <div className="mt-4 pt-4 border-t border-gray-100">
-                                        <button
-                                            onClick={handleContinue}
-                                            disabled={!selectedService}
-                                            className={`w-full h-11 rounded-lg text-sm font-semibold transition-all ${
-                                                selectedService
-                                                    ? 'bg-[#0066CC] hover:bg-[#0052A3] text-white'
-                                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            }`}
-                                        >
-                                            {selectedService ? 'Continuar' : 'Selecciona un experto'}
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                         )}
                         {error && (
@@ -750,6 +786,25 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </Card>
                         )}
                     </div>
+                    
+                    {/* Continue Button - Fijo en la parte inferior */}
+                    {formData.latitude && formData.longitude && services.length > 0 && (
+                        <div className="flex-shrink-0 border-t border-gray-200 bg-white">
+                            <div className="px-6 py-4">
+                                <button
+                                    onClick={handleContinue}
+                                    disabled={!selectedService}
+                                    className={`w-full h-12 rounded-lg text-base font-semibold transition-all shadow-sm ${
+                                        selectedService
+                                            ? 'bg-[#0066CC] hover:bg-[#0052A3] text-white shadow-md hover:shadow-lg'
+                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    }`}
+                                >
+                                    {selectedService ? 'Continuar' : 'Selecciona un experto'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
                 
                 {/* Mobile: Map View */}
@@ -772,8 +827,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
                                                     map.setZoom(coordinates.zoom);
                                                 }
+                                                // Actualizar coordenadas automáticamente al cambiar país
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    latitude: coordinates.lat.toString(),
+                                                    longitude: coordinates.lng.toString(),
+                                                    locationName: getCountryName(countryCode) || '',
+                                                }));
+                                                setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
                                                 // Limpiar búsqueda al cambiar país
                                                 setSearchAddress('');
+                                                setSelectedAddress('');
                                             }}
                                             currentCountry={selectedCountry}
                                         />
@@ -784,23 +848,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         <div className="flex-1 relative">
                                             {isLoaded ? (
                                                 <Autocomplete
-                                                    apiKey="__REDACTED_GOOGLE_API_KEY__"
                                                     onPlaceSelected={handlePlaceSelected}
                                                     options={{
-                                                        types: ['address'],
-                                                        componentRestrictions: selectedCountry ? { country: selectedCountry.toLowerCase() } : undefined,
-                                                        fields: ['formatted_address', 'geometry', 'name', 'place_id']
+                                                        componentRestrictions: { country: selectedCountry.toLowerCase() },
+                                                        fields: ['formatted_address', 'geometry', 'name', 'place_id', 'address_components']
                                                     }}
                                                     className="w-full h-11 pl-3 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
-                                                    placeholder="Buscar ubicación..."
+                                                    placeholder="Buscar ciudad o dirección..."
                                                     disabled={isGeocoding}
                                                 />
                                             ) : (
                                                 <input
                                                     type="text"
-                                                    placeholder="Cargando..."
+                                                    placeholder="Cargando mapa..."
                                                     disabled
-                                                    className="w-full h-11 pl-3 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
+                                                    className="w-full h-11 pl-3 pr-10 text-sm text-gray-400 placeholder-gray-400 bg-transparent border-0"
                                                 />
                                             )}
                                             {isGeocoding ? (
@@ -835,22 +897,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     mapExperts={mapExperts}
                                     services={services}
                                     selectedService={selectedService}
-                                    onMapClick={(e) => {
-                                        if (e.latLng) {
-                                            const lat = e.latLng.lat();
-                                            const lng = e.latLng.lng();
-                                            const newLocation = { lat, lng };
-                                            setSelectedLocation(newLocation);
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                latitude: lat.toString(),
-                                                longitude: lng.toString(),
-                                            }));
-                                        }
-                                    }}
-                                    onMapLoad={(mapInstance) => {
-                                        setMap(mapInstance);
-                                    }}
+                                    onMapClick={handleMapClick}
+                                        onMapLoad={(mapInstance) => {
+                                            setMap(mapInstance);
+                                            // Centrar en el país por defecto al cargar
+                                            const countryCoords = getCountryCoordinates(selectedCountry);
+                                            if (countryCoords) {
+                                                mapInstance.setCenter({ lat: countryCoords.lat, lng: countryCoords.lng });
+                                                mapInstance.setZoom(countryCoords.zoom);
+                                            }
+                                        }}
                                     onServiceSelect={handleServiceSelect}
                                     locationRange={parseInt(formData.locationRange)}
                                     isMobile={true}
@@ -903,8 +959,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
                                                     map.setZoom(coordinates.zoom);
                                                 }
+                                                // Actualizar coordenadas automáticamente al cambiar país
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    latitude: coordinates.lat.toString(),
+                                                    longitude: coordinates.lng.toString(),
+                                                    locationName: getCountryName(countryCode) || '',
+                                                }));
+                                                setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
                                                 // Limpiar búsqueda al cambiar país
                                                 setSearchAddress('');
+                                                setSelectedAddress('');
                                             }}
                                             currentCountry={selectedCountry}
                                         />
@@ -916,23 +981,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         <div className="flex-1 relative">
                                             {isLoaded ? (
                                                 <Autocomplete
-                                                    apiKey="__REDACTED_GOOGLE_API_KEY__"
                                                     onPlaceSelected={handlePlaceSelected}
                                                     options={{
-                                                        types: ['address'],
-                                                        componentRestrictions: selectedCountry ? { country: selectedCountry.toLowerCase() } : undefined,
-                                                        fields: ['formatted_address', 'geometry', 'name', 'place_id']
+                                                        componentRestrictions: { country: selectedCountry.toLowerCase() },
+                                                        fields: ['formatted_address', 'geometry', 'name', 'place_id', 'address_components']
                                                     }}
                                                     className="w-full h-12 pl-4 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0"
-                                                    placeholder="Buscar ubicación..."
+                                                    placeholder="Buscar ciudad o dirección..."
                                                     disabled={isGeocoding}
                                                 />
                                             ) : (
                                                 <input
                                                     type="text"
-                                                    placeholder="Cargando..."
+                                                    placeholder="Cargando mapa..."
                                                     disabled
-                                                    className="w-full h-12 pl-4 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0"
+                                                    className="w-full h-12 pl-4 pr-10 text-sm text-gray-400 placeholder-gray-400 bg-transparent border-0"
                                                 />
                                             )}
                                             {isGeocoding ? (
@@ -971,9 +1034,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         onMapClick={handleMapClick}
                                         onMapLoad={async (mapInstance) => {
                                             setMap(mapInstance);
-                                            const radius = 25;
-                                            const zoom = getZoomLevel(radius);
-                                            mapInstance.setZoom(zoom);
+                                            // Centrar en el país por defecto al cargar
+                                            const countryCoords = getCountryCoordinates(selectedCountry);
+                                            if (countryCoords) {
+                                                mapInstance.setCenter({ lat: countryCoords.lat, lng: countryCoords.lng });
+                                                mapInstance.setZoom(countryCoords.zoom);
+                                            } else {
+                                                const radius = 25;
+                                                const zoom = getZoomLevel(radius);
+                                                mapInstance.setZoom(zoom);
+                                            }
                                         }}
                                         onServiceSelect={handleServiceSelect}
                                         locationRange={25}
