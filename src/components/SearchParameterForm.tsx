@@ -17,6 +17,7 @@ import { Label } from './ui/label';
 import CountryFlag from './CountryFlag';
 import CountrySelector from './CountrySelector';
 import { getCountryCoordinates } from '../utils/countryCoordinates';
+import Autocomplete from 'react-google-autocomplete';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
 const getZoomLevel = (radius: number) => {
@@ -42,12 +43,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     });
     const [error, setError] = useState<string | null>(null);
     const [map, setMap] = useState<google.maps.Map | null>(null);
-    const [searchAddress, setSearchAddress] = useState<string>('');
-    const [selectedAddress, setSelectedAddress] = useState<string>('');
-    const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
-    const searchInputRef = useRef<HTMLInputElement>(null);
-    const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
     const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+    const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
+    const [searchAddress, setSearchAddress] = useState<string>('');
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     const initialFormState = {
         keywords: initialKeywords,
@@ -247,7 +246,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         let locationName = '';
         
         if (address) {
-            setSelectedAddress(address);
             setSearchAddress(address);
             // ✅ NUEVO: Extraer ciudad y código postal automáticamente
             locationName = extractCityAndPostalCode(address);
@@ -315,38 +313,85 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             );
         }
     }, [map]);
-    // Inicializar Google Places Autocomplete
-    useEffect(() => {
-        if (isLoaded && searchInputRef.current && !autocomplete) {
-            const autoCompleteInstance = new google.maps.places.Autocomplete(searchInputRef.current, {
-                types: ['address'],
-                componentRestrictions: { country: 'es' }, // Restringir a España
-                fields: ['formatted_address', 'geometry', 'name']
-            });
-            autoCompleteInstance.addListener('place_changed', () => {
-                const place = autoCompleteInstance.getPlace();
-                if (place.geometry && place.geometry.location) {
-                    const newLocation = {
-                        lat: place.geometry.location.lat(),
-                        lng: place.geometry.location.lng()
-                    };
-                    
-                    const address = place.formatted_address || place.name || '';
-                    
-                    // Usar la función centralizada para actualizar todo
-                    updateLocationAndMap(newLocation, address);
-                    
-                    // Pequeño delay adicional para asegurar que el mapa se centre correctamente
-                    setTimeout(() => {
-                        if (map) {
-                            map.panTo(newLocation);
-                        }
-                    }, 150);
-                }
-            });
-            setAutocomplete(autoCompleteInstance);
+    // Handler para cuando se selecciona un lugar
+    const handlePlaceSelected = (place: any) => {
+        if (!place || !place.geometry || !place.geometry.location) {
+            return;
         }
-    }, [isLoaded, autocomplete, map, formData.locationRange]);
+
+        setIsGeocoding(true);
+        
+        const newLocation = {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng()
+        };
+        
+        const address = place.formatted_address || place.name || '';
+        
+        setSearchAddress(address);
+        
+        // Usar la función centralizada para actualizar todo
+        updateLocationAndMap(newLocation, address);
+        
+        setIsGeocoding(false);
+        
+        // Centrar el mapa
+        setTimeout(() => {
+            if (map) {
+                map.panTo(newLocation);
+                const zoom = getZoomLevel(parseInt(formData.locationRange || '25'));
+                map.setZoom(zoom);
+            }
+        }, 200);
+    };
+
+    // Agregar estilos para las sugerencias de Google Places
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.id = 'google-places-autocomplete-styles';
+        style.textContent = `
+            .pac-container {
+                z-index: 99999 !important;
+                border-radius: 8px !important;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+                border: 1px solid #e5e7eb !important;
+                margin-top: 4px !important;
+            }
+            .pac-item {
+                padding: 12px 16px !important;
+                cursor: pointer !important;
+                border-bottom: 1px solid #f3f4f6 !important;
+            }
+            .pac-item:hover {
+                background-color: #f9fafb !important;
+            }
+            .pac-item-selected {
+                background-color: #f3f4f6 !important;
+            }
+            .pac-icon {
+                display: none !important;
+            }
+            .pac-item-query {
+                font-size: 14px !important;
+                color: #111827 !important;
+                font-weight: 500 !important;
+            }
+            .pac-matched {
+                font-weight: 600 !important;
+            }
+        `;
+        
+        if (!document.getElementById('google-places-autocomplete-styles')) {
+            document.head.appendChild(style);
+        }
+        
+        return () => {
+            const existingStyle = document.getElementById('google-places-autocomplete-styles');
+            if (existingStyle) {
+                document.head.removeChild(existingStyle);
+            }
+        };
+    }, []);
     // Efecto para asegurar que el mapa se actualice cuando cambie la ubicación
     useEffect(() => {
         if (map && selectedLocation && formData.latitude && formData.longitude) {
@@ -409,7 +454,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             modelId: null,
             platformIds: [1, 2],
             serviceTypeId,
-            locationName: formData.locationName || selectedAddress,
+            locationName: formData.locationName || searchAddress,
             serviceId: selectedService,
             expertProfilePicture: selectedServiceData.expert?.profilePictureUrl,
             expertName: selectedServiceData.expert?.user?.name,
@@ -718,7 +763,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             {/* Barra de búsqueda móvil - Estilo Airbnb */}
                             <div className="absolute top-3 left-3 right-3 z-[9999] pointer-events-none">
                                 <div className="pointer-events-auto">
-                                    <div className="bg-white rounded-full shadow-lg border border-gray-200 flex items-center overflow-hidden">
+                                    <div className="bg-white rounded-full shadow-lg border border-gray-200 flex items-center overflow-visible">
                                         {/* Selector de país */}
                                         <CountrySelector
                                             onCountrySelect={(countryCode, coordinates) => {
@@ -727,6 +772,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
                                                     map.setZoom(coordinates.zoom);
                                                 }
+                                                // Limpiar búsqueda al cambiar país
+                                                setSearchAddress('');
                                             }}
                                             currentCountry={selectedCountry}
                                         />
@@ -735,31 +782,46 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         
                                         {/* Campo de búsqueda */}
                                         <div className="flex-1 relative">
-                                            <input
-                                                ref={searchInputRef}
-                                                type="text"
-                                                value={searchAddress}
-                                                onChange={(e) => setSearchAddress(e.target.value)}
-                                                placeholder="Buscar ubicación..."
-                                                disabled={isGeocoding}
-                                                className="w-full h-11 pl-3 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
-                                            />
+                                            {isLoaded ? (
+                                                <Autocomplete
+                                                    apiKey="AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM"
+                                                    onPlaceSelected={handlePlaceSelected}
+                                                    options={{
+                                                        types: ['address'],
+                                                        componentRestrictions: selectedCountry ? { country: selectedCountry.toLowerCase() } : undefined,
+                                                        fields: ['formatted_address', 'geometry', 'name', 'place_id']
+                                                    }}
+                                                    className="w-full h-11 pl-3 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
+                                                    placeholder="Buscar ubicación..."
+                                                    disabled={isGeocoding}
+                                                />
+                                            ) : (
+                                                <input
+                                                    type="text"
+                                                    placeholder="Cargando..."
+                                                    disabled
+                                                    className="w-full h-11 pl-3 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
+                                                />
+                                            )}
                                             {isGeocoding ? (
-                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                                                     <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
                                                 </div>
                                             ) : searchAddress ? (
                                                 <button
                                                     onClick={() => {
                                                         setSearchAddress('');
-                                                        setSelectedAddress('');
+                                                        if (searchInputRef.current) {
+                                                            searchInputRef.current.value = '';
+                                                            searchInputRef.current.focus();
+                                                        }
                                                     }}
-                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                                 >
                                                     <X className="w-4 h-4" />
                                                 </button>
                                             ) : (
-                                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                             )}
                                         </div>
                                     </div>
@@ -832,7 +894,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             {/* Barra de búsqueda estilo Airbnb */}
                             <div className="absolute top-4 left-4 right-4 z-[9999] pointer-events-none">
                                 <div className="max-w-lg pointer-events-auto">
-                                    <div className="bg-white rounded-full shadow-lg border border-gray-200 flex items-center overflow-hidden hover:shadow-xl transition-shadow">
+                                    <div className="bg-white rounded-full shadow-lg border border-gray-200 flex items-center overflow-visible hover:shadow-xl transition-shadow">
                                         {/* Selector de país integrado */}
                                         <CountrySelector
                                             onCountrySelect={(countryCode, coordinates) => {
@@ -841,6 +903,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
                                                     map.setZoom(coordinates.zoom);
                                                 }
+                                                // Limpiar búsqueda al cambiar país
+                                                setSearchAddress('');
                                             }}
                                             currentCountry={selectedCountry}
                                         />
@@ -850,31 +914,46 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         
                                         {/* Campo de búsqueda */}
                                         <div className="flex-1 relative">
-                                            <input
-                                                ref={searchInputRef}
-                                                type="text"
-                                                value={searchAddress}
-                                                onChange={(e) => setSearchAddress(e.target.value)}
-                                                placeholder="Buscar ubicación..."
-                                                disabled={isGeocoding}
-                                                className="w-full h-12 pl-4 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0"
-                                            />
+                                            {isLoaded ? (
+                                                <Autocomplete
+                                                    apiKey="AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM"
+                                                    onPlaceSelected={handlePlaceSelected}
+                                                    options={{
+                                                        types: ['address'],
+                                                        componentRestrictions: selectedCountry ? { country: selectedCountry.toLowerCase() } : undefined,
+                                                        fields: ['formatted_address', 'geometry', 'name', 'place_id']
+                                                    }}
+                                                    className="w-full h-12 pl-4 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0"
+                                                    placeholder="Buscar ubicación..."
+                                                    disabled={isGeocoding}
+                                                />
+                                            ) : (
+                                                <input
+                                                    type="text"
+                                                    placeholder="Cargando..."
+                                                    disabled
+                                                    className="w-full h-12 pl-4 pr-10 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0"
+                                                />
+                                            )}
                                             {isGeocoding ? (
-                                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                                                     <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
                                                 </div>
                                             ) : searchAddress ? (
                                                 <button
                                                     onClick={() => {
                                                         setSearchAddress('');
-                                                        setSelectedAddress('');
+                                                        if (searchInputRef.current) {
+                                                            searchInputRef.current.value = '';
+                                                            searchInputRef.current.focus();
+                                                        }
                                                     }}
                                                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                                 >
                                                     <X className="w-4 h-4" />
                                                 </button>
                                             ) : (
-                                                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                             )}
                                         </div>
                                     </div>

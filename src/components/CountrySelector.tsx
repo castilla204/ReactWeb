@@ -59,7 +59,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
   const currentCountryFlag = currentCountry ? getCountryFlagUrl(currentCountry, 24) : null;
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div className={`relative z-50 ${className}`} ref={dropdownRef}>
       {/* Botón trigger - estilo integrado */}
       <button
         type="button"
@@ -86,7 +86,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[100] overflow-hidden">
+        <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[99999] overflow-hidden" style={{ position: 'absolute' }}>
           {/* Header con búsqueda */}
           <div className="p-3 bg-gray-50 border-b border-gray-100">
             <input
