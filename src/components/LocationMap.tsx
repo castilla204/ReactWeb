@@ -183,17 +183,9 @@ export function LocationMap({
     };
 
     const handleMapIdle = () => {
-        if (radarOverlay && radarOverlay.getMap()) {
-            const mapInstance = radarOverlay.getMap();
-            if (mapInstance) {
-                google.maps.event.trigger(mapInstance, 'resize');
-            }
-        }
-        // Asegurar que el radar se dibuje cuando el mapa está idle
-        if (radarOverlay && selectedLocation) {
-            setTimeout(() => {
-                radarOverlay.updatePosition(new google.maps.LatLng(selectedLocation.lat, selectedLocation.lng));
-            }, 50);
+        // El Circle nativo se actualiza automáticamente, no necesita manejo manual
+        if (map) {
+            google.maps.event.trigger(map, 'resize');
         }
     };
 
