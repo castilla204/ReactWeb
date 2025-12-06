@@ -186,7 +186,7 @@ export function LocationMap({
         // El Circle nativo se actualiza automáticamente, no necesita manejo manual
         if (map) {
             google.maps.event.trigger(map, 'resize');
-        }
+            }
     };
 
     // Renderizar marcadores de precios estilo Airbnb
@@ -194,8 +194,8 @@ export function LocationMap({
         if (mapExperts.length === 0) return null;
 
         return mapExperts.map((expert) => {
-            const expertLat = parseFloat(expert.latitude);
-            const expertLng = parseFloat(expert.longitude);
+                const expertLat = parseFloat(expert.latitude);
+                const expertLng = parseFloat(expert.longitude);
 
             if (isNaN(expertLat) || isNaN(expertLng)) return null;
 
@@ -203,7 +203,7 @@ export function LocationMap({
             const matchingService = services.find(s => 
                 s.expertProfileId === expert.id || 
                 s.expert?.id === expert.id
-            );
+                );
 
             const priceInEuros = expert.price ? Math.round(expert.price) : 0;
             const priceText = `${priceInEuros} €`;
@@ -219,10 +219,10 @@ export function LocationMap({
                 ? `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="13" fill="#222"/><text x="${w/2}" y="${h/2+1}" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle" dominant-baseline="middle">${priceText}</text></svg>`
                 : `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="13" fill="#fff" stroke="#ddd"/><text x="${w/2}" y="${h/2+1}" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#222" text-anchor="middle" dominant-baseline="middle">${priceText}</text></svg>`;
 
-            return (
-                <Marker
+                return (
+                    <Marker
                     key={`price-${expert.id}`}
-                    position={{ lat: expertLat, lng: expertLng }}
+                        position={{ lat: expertLat, lng: expertLng }}
                     onClick={() => {
                         // 1. Seleccionar el servicio
                         if (matchingService) {
@@ -240,17 +240,17 @@ export function LocationMap({
                         }
                     }}
                     zIndex={isSelected ? 1000 : 5}
-                    clickable={true}
+                        clickable={true}
                     optimized={true}
                     title={`${expert.name} - ${priceText}`}
-                    icon={{
+                        icon={{
                         url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
                         scaledSize: new window.google.maps.Size(w, h),
                         anchor: new window.google.maps.Point(w / 2, h),
                         origin: new window.google.maps.Point(0, 0)
-                    }}
-                />
-            );
+                        }}
+                    />
+                );
         }).filter(Boolean);
     }, [mapExperts, services, selectedService, onServiceSelect]);
 
