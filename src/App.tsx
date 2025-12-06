@@ -104,7 +104,8 @@ const AppContent: React.FC = () => {
         };
     }, []);
     
-    // Solo ocultar header en móvil cuando estamos en la página de creación Y en un paso de formulario (1 o 2)
+    // Ocultar header en móvil cuando estamos en la página de creación Y en un paso de formulario (1, 2 o 3)
+    // En desktop, el header se mantiene visible pero el SearchParameterForm tiene su propio header con roadmap
     const shouldHideHeaderOnMobile = isSearchCreationPage && isInFormStep;
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -142,8 +143,8 @@ const AppContent: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
-            {/* Header - Oculto en móvil cuando se está en creación de búsqueda */}
-            <header className={`h-14 bg-background/95 backdrop-blur-md border-b border-border/20 relative z-50 ${shouldHideHeaderOnMobile ? 'hidden lg:block' : ''}`}>
+            {/* Header - Oculto en móvil cuando se está en creación de búsqueda, oculto en desktop cuando estamos en paso 1, 2 o 3 */}
+            <header className={`h-14 bg-background/95 backdrop-blur-md border-b border-border/20 relative z-50 ${shouldHideHeaderOnMobile ? 'hidden' : ''}`}>
                     <div className="max-w-7xl mx-auto h-full px-4 lg:px-6 flex items-center justify-between">
                         {/* Marca inspecciono.com - Moderna con gradiente sutil */}
                         <h1 
@@ -161,6 +162,38 @@ const AppContent: React.FC = () => {
                             <div className="hidden md:flex items-center gap-1">
                                 <NavigationMenu>
                                     <NavigationMenuList className="gap-0.5">
+                                        <NavigationMenuItem>
+                                            <NavigationMenuLink asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        if (location.pathname === '/') {
+                                                            // Si ya estamos en la home, hacer scroll al formulario
+                                                            const formSection = document.getElementById('form-section');
+                                                            if (formSection) {
+                                                                const elementPosition = formSection.getBoundingClientRect().top + window.pageYOffset;
+                                                                window.scrollTo({
+                                                                    top: elementPosition - 20,
+                                                                    behavior: 'smooth'
+                                                                });
+                                                            } else {
+                                                                // Si no existe, guardar para que se haga scroll cuando se cargue
+                                                                sessionStorage.setItem('scrollToFormSection', 'true');
+                                                            }
+                                                        } else {
+                                                            // Si estamos en otra página, navegar a home y hacer scroll
+                                                            sessionStorage.setItem('scrollToFormSection', 'true');
+                                                            navigate('/');
+                                                        }
+                                                    }}
+                                                    className="flex items-center gap-1.5 h-9 px-3 text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-accent/60 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
+                                                >
+                                                    <Sparkles className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                                                    <span>Ver servicios</span>
+                                                </Button>
+                                            </NavigationMenuLink>
+                                        </NavigationMenuItem>
                                         <NavigationMenuItem>
                                             <NavigationMenuLink asChild>
                                                 <Button
@@ -324,6 +357,33 @@ const AppContent: React.FC = () => {
                                 <div className="space-y-1">
                                     <button
                                         onClick={() => {
+                                            if (location.pathname === '/') {
+                                                // Si ya estamos en la home, hacer scroll al formulario
+                                                const formSection = document.getElementById('form-section');
+                                                if (formSection) {
+                                                    const elementPosition = formSection.getBoundingClientRect().top + window.pageYOffset;
+                                                    window.scrollTo({
+                                                        top: elementPosition - 20,
+                                                        behavior: 'smooth'
+                                                    });
+                                                } else {
+                                                    // Si no existe, guardar para que se haga scroll cuando se cargue
+                                                    sessionStorage.setItem('scrollToFormSection', 'true');
+                                                }
+                                            } else {
+                                                // Si estamos en otra página, navegar a home y hacer scroll
+                                                sessionStorage.setItem('scrollToFormSection', 'true');
+                                                navigate('/');
+                                            }
+                                            setSidebarOpen(false);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-accent/60 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                                    >
+                                        <Sparkles className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                                        Ver servicios
+                                    </button>
+                                    <button
+                                        onClick={() => {
                                             if (isAuthenticated) {
                                                 window.location.href = '/busquedas';
                                             } else {
@@ -485,6 +545,7 @@ const AppContent: React.FC = () => {
                             <Route path="/become-expert" element={<ProtectedRoute><BecomeExpertPage /></ProtectedRoute>} />
                             <Route path="/expert-panel" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><ExpertPanelPage /></ProtectedRouteWithMFA>} />
                             <Route path="/transacciones" element={<ProtectedRouteWithMFA><TransactionsPage /></ProtectedRouteWithMFA>} />
+                            <Route path="/crear-busqueda" element={<SearchCreationPage />} />
                             <Route path="/" element={<SearchCreationPage />} />
                         </Routes>
                     </section>
