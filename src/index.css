@@ -393,3 +393,13 @@ input, textarea {
 }
 
 /* Calendar styles - Minimal CSS to avoid conflicts */
+
+/* Forzar que las banderas no tengan border-radius */
+img[alt*="España"],
+img[alt*="País"],
+img[alt*="country"],
+.country-flag-img {
+    border-radius: 0 !important;
+    -webkit-border-radius: 0 !important;
+    -moz-border-radius: 0 !important;
+}

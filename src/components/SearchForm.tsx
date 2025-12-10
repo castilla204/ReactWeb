@@ -191,96 +191,74 @@ export default function SearchForm({
 
     return (
         <div className="bg-background min-h-screen">
-            {/* Header Section - Fixed */}
-            <div className="sticky top-0 z-50 bg-background border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleBack}
-                                className="text-muted-foreground hover:text-foreground"
-                            >
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                                Volver
-                            </Button>
-                            <Separator orientation="vertical" className="h-6" />
-                            <div>
-                                <h1 className="text-lg font-semibold text-foreground mb-2">
-                                    Checkout
-                                </h1>
-                                {/* Timeline del proceso */}
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1 text-primary">
-                                        <div className="w-2 h-2 rounded-full bg-primary" />
-                                        <span>Ubicación</span>
-                                    </div>
-                                    <ArrowRight className="w-3 h-3" />
-                                    <div className="flex items-center gap-1 text-primary">
-                                        <div className="w-2 h-2 rounded-full bg-primary" />
-                                        <span>Experto</span>
-                                    </div>
-                                    <ArrowRight className="w-3 h-3" />
-                                    <div className="flex items-center gap-1 text-primary">
-                                        <div className="w-2 h-2 rounded-full bg-primary" />
-                                        <span>Pago</span>
-                                    </div>
-                                </div>
-                            </div>
+            {/* Header Section - Fixed - Estilo Airbnb */}
+            <div className="fixed top-0 left-0 right-0 z-[9999] bg-white border-b border-gray-200 shadow-sm">
+                <div className="h-14 px-4 flex items-center justify-between w-full">
+                    {/* Botón volver */}
+                    <button
+                        onClick={handleBack}
+                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-gray-800" />
+                    </button>
+                    
+                    {/* Steps indicator - Estilo Airbnb - Responsive */}
+                    <div className="flex items-center gap-1.5 sm:gap-3 flex-1 justify-center px-2 sm:px-4">
+                        {/* Paso 1: Ubicación */}
+                        <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all bg-gray-900 text-white shadow-md">
+                            <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold bg-white/20 text-white">1</span>
+                            <span className="hidden sm:inline">Ubicación</span>
+                        </div>
+                        <div className="w-4 sm:w-10 h-[2px] bg-gray-900" />
+                        
+                        {/* Paso 2: Experto */}
+                        <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all bg-gray-900 text-white shadow-md">
+                            <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold bg-white/20 text-white">2</span>
+                            <span className="hidden sm:inline">Experto</span>
+                        </div>
+                        <div className="w-4 sm:w-10 h-[2px] bg-gray-900" />
+                        
+                        {/* Paso 3: Pago */}
+                        <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all bg-gray-900 text-white shadow-md">
+                            <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold bg-white/20 text-white">3</span>
+                            <span className="hidden sm:inline">Pago</span>
                         </div>
                     </div>
+
+                    <div className="w-8" /> {/* Spacer */}
                 </div>
             </div>
+            
+            {/* Spacer para compensar el header fijo */}
+            <div className="h-14"></div>
 
-            {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-6">
+            {/* Main Content - Estilo moderno minimalista */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
                         {!isDataComplete && (
-                    <Card className="mb-6 border-destructive/50 bg-destructive/5">
-                        <CardContent className="p-4">
-                            <p className="text-sm text-destructive">
-                                ❌ Los datos del servicio están incompletos. Vuelve a seleccionar un servicio válido.
-                            </p>
-                        </CardContent>
-                    </Card>
+                    <div className="mb-8 p-4 rounded-xl bg-red-50 border border-red-200">
+                        <p className="text-[15px] text-red-700">
+                            ❌ Los datos del servicio están incompletos. Vuelve a seleccionar un servicio válido.
+                        </p>
+                    </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Accordion con información de seguridad */}
-                    <Accordion type="single" collapsible defaultValue="security" className="mb-6">
-                        <AccordionItem value="security" className="border-border">
-                            <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-3">
-                                <div className="flex items-center gap-2">
-                                    <Shield className="w-4 h-4 text-primary" />
-                                    <span>Seguridad y Garantías</span>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="text-sm text-muted-foreground leading-relaxed pt-2 pb-4">
-                                <p>
-                                    <span className="font-medium text-primary">inspecciono.com</span> actúa como intermediario seguro. 
-                                    Tu pago está protegido y solo se libera una vez completado el servicio satisfactoriamente.
-                                    Garantía de devolución completa si el servicio no cumple con lo acordado.
-                                </p>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-
-                    {/* Layout - Service Details and Summary */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                        {/* Left Column - Service Details (Plan Style) */}
-                        <Card className="bg-white">
-                            <CardHeader className="pb-4">
-                                <CardTitle className="text-xl font-bold text-foreground">
+                <form onSubmit={handleSubmit} className="space-y-10">
+                    {/* Layout - Service Details and Summary - Estilo moderno */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left Column - Service Details - Moderno */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-[#DDDDDD]/50 overflow-hidden">
+                            <div className="px-8 pt-8 pb-6">
+                                <h2 className="text-[24px] font-semibold text-[#222222] leading-tight mb-8">
                                     Servicio Contratado
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                {/* Service Info Row - Horizontal */}
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-3 rounded-lg bg-muted/30 border border-border">
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                </h2>
+                            </div>
+                            <div className="px-8 pb-8 space-y-8">
+                                {/* Service Info - Moderno */}
+                                <div className="bg-[#F7F7F7] rounded-2xl p-6 border border-[#DDDDDD]/30">
+                                    <div className="flex items-start gap-4 mb-6">
                                         {/* Expert Photo */}
                                         {expertProfilePicture && (
-                                            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-border">
+                                            <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
                                                 <img 
                                                     src={expertProfilePicture} 
                                                     alt={expertName || 'Experto'}
@@ -289,141 +267,155 @@ export default function SearchForm({
                                             </div>
                                         )}
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="text-base font-semibold text-foreground mb-0.5">
-                                                {expertName || 'Servicio Seleccionado'}
-                                            </h3>
-                                            <div className="mb-1">
-                                                <Badge variant="secondary" className="text-xs">
+                                            <div className="flex items-start justify-between gap-3 mb-2">
+                                                <h3 className="text-[18px] font-semibold text-[#222222] leading-tight">
+                                                    {expertName || 'Servicio Seleccionado'}
+                                                </h3>
+                                                {/* Botón Cambiar servicio */}
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => setCurrentStep(2)}
+                                                    className="h-9 px-4 text-[#222222] hover:bg-[#F7F7F7] text-[13px] font-medium rounded-lg transition-colors border border-[#DDDDDD] flex-shrink-0"
+                                                >
+                                                    Cambiar
+                                                </Button>
+                                            </div>
+                                            <div className="mb-3">
+                                                <Badge variant="secondary" className="text-[13px] font-normal px-3 py-1 bg-[#F7F7F7] text-[#222222] border-[#DDDDDD]">
                                                     {parameters.serviceTypeId === 1 ? 'Solo Revisión' : 
                                                      parameters.serviceTypeId === 2 ? 'Búsqueda + Revisión' : 
                                                      'Servicio Personalizado'}
                                                 </Badge>
                                             </div>
                                             {serviceDescription && (
-                                                <p className="text-xs text-muted-foreground line-clamp-1">
+                                                <p className="text-[15px] text-[#717171] leading-relaxed line-clamp-2">
                                                     {serviceDescription}
                                                 </p>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="text-right sm:text-right flex-shrink-0 sm:pl-3 sm:border-l sm:border-border pt-2 sm:pt-0 border-t sm:border-t-0 border-border">
-                                        <div className="text-xl font-bold text-foreground">
-                                            €{servicePrice !== undefined ? servicePrice.toFixed(2) : '0.00'}
+                                    <div className="pt-6 border-t border-[#DDDDDD]">
+                                        <div className="flex items-baseline justify-between">
+                                            <span className="text-[15px] text-[#717171]">Precio total</span>
+                                            <div className="text-right">
+                                                <div className="text-[22px] font-semibold text-[#222222]">
+                                                    €{servicePrice !== undefined ? (servicePrice / 100).toFixed(2) : '0.00'}
+                                                </div>
+                                                <p className="text-[13px] text-[#717171] mt-1">
+                                                    Pago único
+                                                </p>
+                                            </div>
                                         </div>
-                                        <p className="text-xs text-muted-foreground">
-                                            Pago único
-                                        </p>
                                     </div>
                                 </div>
                             
-                                {/* Includes Section */}
+                                {/* Includes Section - Moderno */}
                                 <div>
-                                    <h4 className="text-sm font-semibold text-foreground mb-3">Incluye:</h4>
-                                    <ul className="space-y-2">
-                                        <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                                            <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                                            <span>Servicio profesional certificado</span>
+                                    <h4 className="text-[18px] font-semibold text-[#222222] mb-5 leading-tight">Incluye:</h4>
+                                    <ul className="space-y-4">
+                                        <li className="flex items-start gap-3">
+                                            <div className="w-5 h-5 rounded-full bg-[#0066CC] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Check className="w-3.5 h-3.5 text-white" />
+                                            </div>
+                                            <span className="text-[15px] text-[#222222] leading-relaxed">Servicio profesional certificado</span>
                                         </li>
-                                        <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                                            <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                                            <span>Garantía de satisfacción</span>
+                                        <li className="flex items-start gap-3">
+                                            <div className="w-5 h-5 rounded-full bg-[#0066CC] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Check className="w-3.5 h-3.5 text-white" />
+                                            </div>
+                                            <span className="text-[15px] text-[#222222] leading-relaxed">Garantía de satisfacción</span>
                                         </li>
-                                        <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                                            <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                                            <span>Soporte durante todo el proceso</span>
+                                        <li className="flex items-start gap-3">
+                                            <div className="w-5 h-5 rounded-full bg-[#0066CC] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Check className="w-3.5 h-3.5 text-white" />
+                                            </div>
+                                            <span className="text-[15px] text-[#222222] leading-relaxed">Soporte durante todo el proceso</span>
                                         </li>
-                                        <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                                            <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                                            <span>Informe detallado del servicio</span>
+                                        <li className="flex items-start gap-3">
+                                            <div className="w-5 h-5 rounded-full bg-[#0066CC] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Check className="w-3.5 h-3.5 text-white" />
+                                            </div>
+                                            <span className="text-[15px] text-[#222222] leading-relaxed">Informe detallado del servicio</span>
                                         </li>
                                         {parameters.serviceTypeId === 2 && (
-                                            <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                                                <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                                                <span>Búsqueda activa de opciones</span>
+                                            <li className="flex items-start gap-3">
+                                                <div className="w-5 h-5 rounded-full bg-[#0066CC] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                    <Check className="w-3.5 h-3.5 text-white" />
+                                                </div>
+                                                <span className="text-[15px] text-[#222222] leading-relaxed">Búsqueda activa de opciones</span>
                                             </li>
                                         )}
                                     </ul>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     
-                        {/* Right Column - Payment Summary Only */}
-                        <Card className="bg-white">
-                            <CardHeader className="pb-4">
-                                <CardTitle className="text-lg font-semibold text-foreground">
+                        {/* Right Column - Payment Summary - Moderno */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-[#DDDDDD]/50 sticky top-20 overflow-hidden">
+                            <div className="px-8 pt-8 pb-6">
+                                <h2 className="text-[24px] font-semibold text-[#222222] leading-tight">
                                     Resumen
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-3">
-                                    {/* Service Info */}
-                                    <div>
-                                        <p className="text-sm font-medium text-foreground">
-                                            {expertName || 'Servicio'}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground mt-0.5">
-                                            {parameters.serviceTypeId === 1 ? 'Solo Revisión' : 
-                                             parameters.serviceTypeId === 2 ? 'Búsqueda + Revisión' : 
-                                             'Servicio Personalizado'}
-                                        </p>
-                                    </div>
-
-                                    <Separator />
-
+                                </h2>
+                            </div>
+                            <div className="px-8 pb-8 space-y-6">
+                                <div className="space-y-4">
                                     {/* Subtotal */}
-                                    <div className="flex justify-between items-center pt-1">
-                                        <span className="text-sm text-muted-foreground">Subtotal</span>
-                                        <span className="text-sm font-medium text-foreground">
-                                            €{servicePrice !== undefined ? servicePrice.toFixed(2) : '0.00'}
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[15px] text-[#222222]">Subtotal</span>
+                                        <span className="text-[15px] font-normal text-[#222222]">
+                                            €{servicePrice !== undefined ? (servicePrice / 100).toFixed(2) : '0.00'}
                                         </span>
                                     </div>
                                     
                                     {/* Total */}
-                                    <div className="flex justify-between items-center pt-3 border-t border-border">
-                                        <span className="text-base font-semibold text-foreground">Total</span>
-                                        <span className="text-2xl font-bold text-foreground">
+                                    <div className="flex justify-between items-center pt-4 border-t border-[#DDDDDD]">
+                                        <span className="text-[16px] font-semibold text-[#222222]">Total</span>
+                                        <span className="text-[18px] font-semibold text-[#222222]">
                                                 {servicePrice !== undefined ? (
-                                                    `€${servicePrice.toFixed(2)}`
+                                                    `€${(servicePrice / 100).toFixed(2)}`
                                                 ) : (
-                                                <div className="w-6 h-6 sm:w-5 sm:h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+                                                <div className="w-5 h-5 border-2 border-[#222222]/20 border-t-[#222222] rounded-full animate-spin" />
                                                 )}
                                             </span>
-                                        </div>
                                     </div>
+                                </div>
                                     
-                                {/* Security Note */}
+                                {/* Security Note - Moderno */}
                                     {servicePrice !== undefined && (
-                                    <div className="pt-4 border-t border-border">
-                                        <div className="flex items-start gap-2">
-                                            <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                                            <p className="text-xs text-muted-foreground">
+                                    <div className="pt-6 border-t border-[#DDDDDD]">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-5 h-5 rounded-full bg-[#0066CC]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Shield className="w-3.5 h-3.5 text-[#0066CC]" />
+                                            </div>
+                                            <p className="text-[13px] text-[#717171] leading-relaxed">
                                                 Pago procesado mediante Stripe de forma segura. Tu información está protegida.
                                             </p>
                                         </div>
                                         </div>
                                     )}
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Submit Button */}
-                    <div className="flex justify-end pt-4 border-t border-border">
+                    {/* Submit Button - Moderno */}
+                    <div className="flex justify-end pt-10 border-t border-[#DDDDDD]">
                         <Button
                                 type="submit"
                                 disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete}
                             size="lg"
-                            className="w-full sm:w-auto min-w-[200px]"
+                            className="w-full sm:w-auto min-w-[220px] h-14 px-10 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] text-[16px]"
                             >
                                 {createSearchWithHire.isPending || isSubmitting ? (
                                     <>
-                                    <div className="w-5 h-5 sm:w-4 sm:h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
+                                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
                                     {servicePrice !== undefined ? 'Procesando...' : 'Creando...'}
                                     </>
                                 ) : (
                                     <>
-                                    <Wallet className="w-4 h-4 mr-2" />
-                                    {servicePrice !== undefined ? 'Pagar' : 'Confirmar'}
-                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                    <Wallet className="w-5 h-5 mr-2" />
+                                    {servicePrice !== undefined ? 'Pagar ahora' : 'Confirmar'}
+                                    <ArrowRight className="w-5 h-5 ml-2" />
                                     </>
                                 )}
                         </Button>

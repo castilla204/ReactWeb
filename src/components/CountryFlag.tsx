@@ -62,7 +62,7 @@ export function CountryFlag({
       <img 
         src={flagUrl || undefined}
         alt={countryName}
-        className="object-cover rounded border border-gray-200"
+        className="object-cover border border-gray-200 country-flag-img"
         style={{
           width: `${dimensions.width}px`,
           height: `${dimensions.height}px`,
