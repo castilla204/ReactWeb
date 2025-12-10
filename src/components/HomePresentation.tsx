@@ -288,6 +288,65 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:24px_24px]"></div>
             </div>
 
+            {/* Hero móvil fullscreen - estilo Bolt */}
+            <div className="lg:hidden absolute inset-0 z-20">
+                <div className="relative h-full flex flex-col">
+                    <div className="absolute inset-0">
+                        <img 
+                            src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80" 
+                            alt="Inspección profesional"
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/90"></div>
+                    </div>
+                    <div className="relative z-10 flex-1 flex flex-col justify-end px-5 pb-8">
+                        <div className="mb-3">
+                            <span className="inline-flex items-center gap-1.5 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Inspección en 48h
+                            </span>
+                        </div>
+                        <h1 className="text-[28px] font-bold text-white leading-[1.1] mb-3">
+                            No compres a ciegas.{' '}
+                            <span className="text-blue-400">Inspecciona</span>{' '}
+                            antes.
+                        </h1>
+                        <p className="text-sm text-gray-300 mb-5">
+                            Mecánicos profesionales revisan tu{' '}
+                            <span className="text-white font-medium">{currentWord}</span>{' '}
+                            y te envían un informe completo.
+                        </p>
+                        <button
+                            onClick={onScrollToForm}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl text-base"
+                        >
+                            Calcular precio
+                        </button>
+                        <div className="flex items-center justify-between mt-5 pt-5 border-t border-white/10">
+                            <div className="flex items-center gap-1.5">
+                                <div className="flex">
+                                    {[1,2,3,4,5].map(i => (
+                                        <svg key={i} className="w-3.5 h-3.5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                        </svg>
+                                    ))}
+                                </div>
+                                <span className="text-white font-semibold text-xs">4.9</span>
+                            </div>
+                            <div className="text-gray-400 text-xs">+2.500 inspecciones</div>
+                            <div className="flex items-center gap-1 text-green-400 text-xs font-medium">
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span>Garantizado</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div className="relative z-10 w-full h-full lg:h-auto px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 md:py-16 lg:py-20 flex flex-col lg:block">
                 {/* Contenido principal centrado verticalmente en móvil, normal en desktop */}
                 <div className="flex-1 lg:flex-none flex items-center lg:block">

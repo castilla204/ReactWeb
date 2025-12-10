@@ -146,15 +146,24 @@ const AppContent: React.FC = () => {
             {/* Header - Oculto en móvil cuando se está en creación de búsqueda, oculto en desktop cuando estamos en paso 1, 2 o 3 */}
             <header className={`h-14 bg-background/95 backdrop-blur-md border-b border-border/20 relative z-50 ${shouldHideHeaderOnMobile ? 'hidden' : ''}`}>
                     <div className="max-w-7xl mx-auto h-full px-4 lg:px-6 flex items-center justify-between">
-                        {/* Marca inspecciono.com - Moderna con gradiente sutil */}
-                        <h1 
-                            onClick={() => navigate('/')}
-                            className="text-base font-normal text-foreground/90 tracking-tight cursor-pointer hover:text-foreground transition-all duration-200 hover:scale-[1.02] group"
-                        >
-                            <span className="bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent group-hover:from-foreground group-hover:to-foreground/90">
-                                inspecciono.com
-                            </span>
-                        </h1>
+                        {/* Logo + País */}
+                        <div className="flex items-center gap-3">
+                            {/* Marca inspecciono.com */}
+                            <h1 
+                                onClick={() => navigate('/')}
+                                className="text-base font-normal text-foreground/90 tracking-tight cursor-pointer hover:text-foreground transition-all duration-200 hover:scale-[1.02] group"
+                            >
+                                <span className="bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent group-hover:from-foreground group-hover:to-foreground/90">
+                                    inspecciono.com
+                                </span>
+                            </h1>
+                            
+                            {/* Selector de país - estilo Bolt */}
+                            <button className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-accent/60 transition-colors text-xs text-muted-foreground">
+                                <span className="text-base">🇪🇸</span>
+                                <span className="hidden sm:inline">ES</span>
+                            </button>
+                        </div>
 
                         {/* Navegación compacta */}
                         <div className="flex items-center gap-1.5">

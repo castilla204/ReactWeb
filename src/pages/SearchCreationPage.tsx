@@ -526,12 +526,16 @@ const SearchCreationPage: React.FC = () => {
                     </footer>
                 </>
             ) : (
-                                        {/* Service Type Section */}
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-600 mb-3 uppercase tracking-wide">
-                                                Tipo de servicio
-                                            </label>
-                                            <div className="space-y-3">
+                                        <>
+                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+                                                {/* Left Column - Form */}
+                                                <div>
+                                            {/* Service Type Section */}
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-600 mb-3 uppercase tracking-wide">
+                                                    Tipo de servicio
+                                                </label>
+                                                <div className="space-y-3">
                                         {serviceTypesLoading ? (
                                             // Loading state
                                             <>
@@ -1096,9 +1100,8 @@ const SearchCreationPage: React.FC = () => {
                                             Crear búsqueda
                                         </button>
                                 </div>
-                            </div>
                             {isAuthenticated && (
-                                        <div className="mt-6 text-sm text-gray-500">
+                                <div className="mt-6 text-sm text-gray-500">
                                     <span>Búsquedas ilimitadas disponibles</span>
                                 </div>
                             )}
@@ -1205,8 +1208,6 @@ const SearchCreationPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
                     <footer className="mt-16 bg-background border-t border-border">
                         <div className="w-full px-4 sm:px-6 mx-auto max-w-7xl">
                             <div className="py-6 sm:py-8">
@@ -1237,7 +1238,8 @@ const SearchCreationPage: React.FC = () => {
                         </div>
                     </footer>
                 </>
-            ) : (
+            )}
+            {(currentStep === 1 || currentStep === 2 || currentStep === 3) && (
                 <div className="w-full h-screen flex flex-col bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative">
                     {currentStep === 1 && (
                         <>
