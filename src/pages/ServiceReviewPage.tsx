@@ -257,29 +257,84 @@ export function ServiceReviewPage({
     }
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* ========== VERSIÓN MÓVIL ========== */}
-            <div className="lg:hidden">
-                {/* Header móvil flotante */}
-                <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/40 to-transparent">
+        <>
+            {/* Header Timeline - Estilo Airbnb - Fixed arriba del todo */}
+            <div className="fixed top-0 left-0 right-0 z-[9999] bg-white border-b border-gray-200 shadow-sm">
+                <div className="h-14 px-4 flex items-center justify-between w-full">
+                    {/* Botón volver */}
                     <button
-                                onClick={onBack}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg"
+                        onClick={onBack}
+                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
                     >
-                        <ChevronLeft className="w-5 h-5 text-gray-900" />
+                        <ArrowLeft className="w-5 h-5 text-gray-800" />
                     </button>
-                    <div className="flex items-center gap-2">
+                    
+                    {/* Steps indicator - Estilo Airbnb - Responsive */}
+                    <div className="flex items-center gap-1.5 sm:gap-3 flex-1 justify-center px-2 sm:px-4">
+                        {/* Paso 1: Ubicación */}
+                        <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all bg-gray-900 text-white shadow-md">
+                            <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold bg-white/20 text-white">1</span>
+                            <span className="hidden sm:inline">Ubicación</span>
+                        </div>
+                        <div className="w-4 sm:w-10 h-[2px] bg-gray-900" />
+                        
+                        {/* Paso 2: Experto */}
+                        <div className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${
+                            currentStep >= 2
+                                ? 'bg-gray-900 text-white shadow-md' 
+                                : 'bg-gray-100 text-gray-400'
+                        }`}>
+                            <span className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${
+                                currentStep >= 2
+                                    ? 'bg-white/20 text-white' 
+                                    : 'bg-gray-300 text-gray-400'
+                            }`}>2</span>
+                            <span className="hidden sm:inline">Experto</span>
+                        </div>
+                        <div className={`w-4 sm:w-10 h-[2px] transition-colors ${
+                            currentStep >= 3 ? 'bg-gray-900' : 'bg-gray-200'
+                        }`} />
+                        
+                        {/* Paso 3: Pago */}
+                        <div className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${
+                            currentStep >= 3
+                                ? 'bg-gray-900 text-white shadow-md' 
+                                : 'bg-gray-100 text-gray-400'
+                        }`}>
+                            <span className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${
+                                currentStep >= 3
+                                    ? 'bg-white/20 text-white' 
+                                    : 'bg-gray-300 text-gray-400'
+                            }`}>3</span>
+                            <span className="hidden sm:inline">Pago</span>
+                        </div>
+                    </div>
+
+                    <div className="w-8" /> {/* Spacer */}
+                </div>
+            </div>
+            
+            <div className="min-h-screen bg-white">
+                {/* Spacer para compensar el header fijo */}
+                <div className="h-14"></div>
+                
+                {/* ========== VERSIÓN MÓVIL ========== */}
+                <div className="lg:hidden">
+                    {/* Botones de acción móvil - Debajo del timeline */}
+                    <div className="fixed top-14 left-0 right-0 z-50 flex items-center justify-end gap-2 px-4 py-2 bg-gradient-to-b from-black/40 to-transparent">
                         <button className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg">
                             <Share2 className="w-4 h-4 text-gray-900" />
-                            </button>
+                        </button>
                         <button 
                             onClick={() => setIsFavorite(!isFavorite)}
                             className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg"
                         >
                             <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-900'}`} />
-                            </button>
+                        </button>
                     </div>
-                </div>
+                    
+                    {/* Spacer adicional para los botones de acción en móvil */}
+                    <div className="h-12"></div>
 
                 {/* Galería móvil con carrusel */}
                 {finalImages.length > 0 && (
@@ -313,88 +368,97 @@ export function ServiceReviewPage({
                                 </div>
                 )}
 
-                {/* Contenido móvil */}
-                <div className="px-5 pt-5 pb-32">
-                    {/* Título */}
-                    <h1 className="text-[22px] font-semibold text-gray-900 leading-tight mb-2">
-                        {serviceTypeName} por {finalExpertName}
-                    </h1>
-
-                    {/* Meta info */}
-                    <div className="flex flex-wrap items-center gap-x-2 text-sm text-gray-600 mb-5">
-                        {finalRating > 0 ? (
-                            <>
-                                <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
-                                <span className="font-medium text-gray-900">{finalRating.toFixed(1)}</span>
-                                                <span>·</span>
-                                <span className="underline">{finalReviews.length} reseñas</span>
-                                            </>
-                        ) : (
-                            <span className="flex items-center gap-1">
-                                <Star className="w-4 h-4" />
-                                Nuevo
-                            </span>
-                                        )}
+                {/* Contenido móvil - Estilo Airbnb */}
+                <div className="px-6 pt-6 pb-32">
+                    {/* Título y ubicación */}
+                    <div className="mb-8">
+                        <h1 className="text-[26px] font-semibold text-[#222222] leading-[1.2] mb-3 tracking-tight">
+                            {serviceTypeName} por {finalExpertName}
+                        </h1>
+                        {/* Meta info - Estilo Airbnb */}
+                        <div className="flex flex-wrap items-center gap-x-2 text-[15px] text-[#717171]">
+                            {finalRating > 0 ? (
+                                <>
+                                    <div className="flex items-center gap-1">
+                                        <Star className="w-[14px] h-[14px] fill-[#222222] text-[#222222]" />
+                                        <span className="font-semibold text-[#222222]">{finalRating.toFixed(1)}</span>
+                                    </div>
+                                    <span>·</span>
+                                    <button className="underline hover:no-underline text-[#222222] font-normal">
+                                        {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
+                                    </button>
                                     {finalCompletedSearches > 0 && (
                                         <>
                                             <span>·</span>
-                                <span>{finalCompletedSearches} completados</span>
+                                            <span className="text-[#717171]">{finalCompletedSearches} completados</span>
                                         </>
                                     )}
-                                </div>
-
-                    <div className="h-px bg-gray-200 mb-5" />
-
-                    {/* Info del anfitrión */}
-                    <div className="flex items-center gap-4 mb-5">
-                        <Avatar className="w-12 h-12">
-                            <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                            <AvatarFallback className="bg-gray-900 text-white font-semibold">
-                                {finalExpertName.charAt(0)}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <h3 className="font-medium text-gray-900">Anfitrión: {finalExpertName}</h3>
-                            <p className="text-sm text-gray-500">
-                                {finalService?.expert?.createdAt 
-                                    ? (() => {
-                                        const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
-                                        return months < 1 ? 'Menos de 1 mes' : `${months} meses de experiencia`;
-                                    })()
-                                    : 'Profesional verificado'
-                                }
-                            </p>
+                                </>
+                            ) : (
+                                <span className="flex items-center gap-1 text-[#717171]">
+                                    <Star className="w-[14px] h-[14px]" />
+                                    <span>Nuevo</span>
+                                </span>
+                            )}
                         </div>
                     </div>
 
-                    <div className="h-px bg-gray-200 mb-5" />
+                    <div className="h-px bg-[#DDDDDD] my-8" />
 
-                    {/* Features destacadas */}
-                    <div className="space-y-5 mb-5">
-                        <div className="flex gap-4">
-                            <Shield className="w-6 h-6 text-gray-700 flex-shrink-0" />
-                            <div>
-                                <h4 className="font-medium text-gray-900">Cancelación gratuita</h4>
-                                <p className="text-sm text-gray-500">Cancela hasta 24h antes sin cargos</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-4">
-                            <Headphones className="w-6 h-6 text-gray-700 flex-shrink-0" />
-                            <div>
-                                <h4 className="font-medium text-gray-900">Soporte 24/7</h4>
-                                <p className="text-sm text-gray-500">Asistencia disponible en cualquier momento</p>
-                                </div>
-                                    </div>
-                        <div className="flex gap-4">
-                            <Award className="w-6 h-6 text-gray-700 flex-shrink-0" />
-                            <div>
-                                <h4 className="font-medium text-gray-900">Garantía de satisfacción</h4>
-                                <p className="text-sm text-gray-500">Si no quedas satisfecho, te devolvemos el dinero</p>
+                    {/* Info del anfitrión - Estilo Airbnb */}
+                    <div className="mb-8">
+                        <div className="flex items-start gap-4 mb-4">
+                            <Avatar className="w-16 h-16">
+                                <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
+                                <AvatarFallback className="bg-[#222222] text-white font-semibold text-lg">
+                                    {finalExpertName.charAt(0)}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 pt-1">
+                                <h3 className="text-[18px] font-semibold text-[#222222] mb-2 leading-tight">
+                                    Anfitrión: {finalExpertName}
+                                </h3>
+                                <p className="text-[15px] text-[#717171] leading-relaxed">
+                                    {finalService?.expert?.createdAt 
+                                        ? (() => {
+                                            const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
+                                            return months < 1 ? 'Menos de 1 mes' : `${months} ${months === 1 ? 'mes' : 'meses'} de experiencia`;
+                                        })()
+                                        : 'Profesional verificado'
+                                    }
+                                </p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="h-px bg-gray-200 mb-5" />
+                    <div className="h-px bg-[#DDDDDD] mb-8" />
+
+                    {/* Features destacadas - Estilo Airbnb */}
+                    <div className="grid grid-cols-1 gap-8 mb-8">
+                        <div className="flex items-start gap-4">
+                            <Shield className="w-6 h-6 text-[#222222] flex-shrink-0 mt-0.5" />
+                            <div>
+                                <h4 className="text-[16px] font-semibold text-[#222222] mb-2 leading-tight">Cancelación gratuita</h4>
+                                <p className="text-[15px] text-[#717171] leading-relaxed">Cancela hasta 24h antes sin cargos</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-4">
+                            <Headphones className="w-6 h-6 text-[#222222] flex-shrink-0 mt-0.5" />
+                            <div>
+                                <h4 className="text-[16px] font-semibold text-[#222222] mb-2 leading-tight">Soporte 24/7</h4>
+                                <p className="text-[15px] text-[#717171] leading-relaxed">Asistencia disponible en cualquier momento</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-4">
+                            <Award className="w-6 h-6 text-[#222222] flex-shrink-0 mt-0.5" />
+                            <div>
+                                <h4 className="text-[16px] font-semibold text-[#222222] mb-2 leading-tight">Garantía de satisfacción</h4>
+                                <p className="text-[15px] text-[#717171] leading-relaxed">Si no quedas satisfecho, te devolvemos el dinero</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="h-px bg-[#DDDDDD] mb-8" />
 
                     {/* Qué incluye */}
                                 {finalDeliverableTypes.length > 0 && (
@@ -419,13 +483,13 @@ export function ServiceReviewPage({
                         </>
                     )}
 
-                    {/* Descripción */}
-                    <div className="mb-5">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Acerca del servicio</h3>
-                        <p className="text-gray-600 leading-relaxed">
+                    {/* Descripción - Estilo Airbnb */}
+                    <div className="mb-8">
+                        <h3 className="text-[22px] font-semibold text-[#222222] mb-6 leading-tight">Acerca del servicio</h3>
+                        <p className="text-[16px] text-[#222222] leading-[1.6] whitespace-pre-line">
                             {finalDescription || 'Este servicio profesional incluye todo lo necesario para garantizar tu satisfacción. Nuestro equipo de expertos está comprometido con brindarte la mejor experiencia posible.'}
-                                            </p>
-                                        </div>
+                        </p>
+                    </div>
 
                     {/* Reseñas */}
                     {finalReviews.length > 0 && (
@@ -444,40 +508,42 @@ export function ServiceReviewPage({
                     )}
                                 </div>
 
-                {/* Footer fijo móvil */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-5 py-3 z-50">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-base font-semibold text-gray-900">{formatPrice(finalPrice)} €</span>
-                                <span className="text-xs text-gray-500">total</span>
+                {/* Footer fijo móvil - Estilo Airbnb */}
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#DDDDDD] shadow-[0_-2px_10px_rgba(0,0,0,0.1)] px-6 py-4 z-50">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-1 mb-0.5">
+                                <span className="text-xl font-semibold text-[#222222]">{formatPrice(finalPrice)} €</span>
+                                <span className="text-sm text-[#717171]">total</span>
                             </div>
                             {finalRating > 0 && (
-                                <div className="flex items-center gap-1 text-xs">
-                                    <Star className="w-3 h-3 fill-gray-900 text-gray-900" />
+                                <div className="flex items-center gap-1 text-xs text-[#717171]">
+                                    <Star className="w-3 h-3 fill-[#222222] text-[#222222]" />
                                     <span className="font-medium">{finalRating.toFixed(1)}</span>
+                                    <span>·</span>
+                                    <span>{finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}</span>
                                 </div>
                             )}
                         </div>
                         {isAuthenticated ? (
                             <button
                                 onClick={handleReserveClick}
-                                className="h-11 px-6 bg-[#0066CC] hover:bg-[#0052A3] text-white font-medium rounded-lg transition-colors"
+                                className="h-12 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex-shrink-0"
                             >
                                 Reservar
                             </button>
                         ) : (
-                            <div className="relative">
+                            <div className="relative flex-shrink-0">
                                 {/* Hidden Google button */}
                                 <div ref={googleButtonRef} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }}></div>
                                 {/* Custom button */}
                                 <button
                                     onClick={handleGoogleSignIn}
                                     disabled={!isGoogleReady}
-                                    className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors inline-flex items-center justify-center gap-3 w-full"
+                                    className="h-12 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl inline-flex items-center justify-center gap-3"
                                 >
                                     <GoogleIcon />
-                                    <span>Inicia sesión para contratar</span>
+                                    <span>Inicia sesión</span>
                                 </button>
                             </div>
                         )}
@@ -487,30 +553,6 @@ export function ServiceReviewPage({
 
             {/* ========== VERSIÓN DESKTOP ========== */}
             <div className="hidden lg:block">
-                {/* Header desktop */}
-                <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
-                    <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                        <button
-                            onClick={onBack}
-                            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5 text-gray-800" />
-                        </button>
-                        
-                        {/* Steps */}
-                        <div className="flex items-center gap-2">
-                            {Array.from({ length: totalSteps }).map((_, i) => (
-                                <React.Fragment key={i}>
-                                    <div className={`w-2.5 h-2.5 rounded-full ${i + 1 <= currentStep ? 'bg-gray-900' : 'bg-gray-300'}`} />
-                                    {i < totalSteps - 1 && <div className="w-6 h-0.5 bg-gray-200" />}
-                                </React.Fragment>
-                            ))}
-                        </div>
-
-                        <div className="w-9" /> {/* Spacer */}
-                                    </div>
-                </header>
-
                 <div className="max-w-6xl mx-auto px-6 py-5">
                     {/* Título y acciones */}
                     <div className="flex items-start justify-between mb-4">
@@ -607,16 +649,16 @@ export function ServiceReviewPage({
                             </div>
 
                             {/* Anfitrión */}
-                            <div className="flex items-center gap-3 py-4 border-b border-gray-200">
+                            <div className="flex items-center gap-3 py-4 border-b border-[#DDDDDD]">
                                 <Avatar className="w-11 h-11">
                                     <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                                    <AvatarFallback className="bg-gray-900 text-white text-base font-semibold">
+                                    <AvatarFallback className="bg-[#222222] text-white text-base font-semibold">
                                         {finalExpertName.charAt(0)}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <h3 className="text-sm font-medium text-gray-900">Anfitrión: {finalExpertName}</h3>
-                                    <p className="text-xs text-gray-500">
+                                    <h3 className="text-sm font-semibold text-[#222222]">Anfitrión: {finalExpertName}</h3>
+                                    <p className="text-xs text-[#717171]">
                                         {finalService?.expert?.createdAt 
                                             ? (() => {
                                                 const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
@@ -721,7 +763,7 @@ export function ServiceReviewPage({
                                     {isAuthenticated ? (
                                         <button
                                             onClick={handleReserveClick}
-                                            className="w-full h-11 bg-[#0066CC] hover:bg-[#0052A3] text-white text-sm font-semibold rounded-lg transition-colors mb-3"
+                                            className="w-full h-12 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[16px] font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl mb-3"
                                         >
                                             Reservar
                                         </button>
@@ -733,7 +775,7 @@ export function ServiceReviewPage({
                                             <button
                                                 onClick={handleGoogleSignIn}
                                                 disabled={!isGoogleReady}
-                                                className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors inline-flex items-center justify-center gap-3"
+                                                className="w-full h-12 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[16px] font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl inline-flex items-center justify-center gap-3"
                                             >
                                                 <GoogleIcon />
                                                 <span>Inicia sesión para contratar</span>
@@ -815,6 +857,7 @@ export function ServiceReviewPage({
                     display: none;
                 }
             `}</style>
-        </div>
+            </div>
+        </>
     );
 }

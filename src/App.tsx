@@ -49,6 +49,8 @@ import { authService } from './services/authService';
 import { MFASetupPage } from './pages/MFASetupPage';
 import { ProtectedRouteWithMFA } from './components/layout/ProtectedRouteWithMFA';
 import { UserRole } from './utils/roleChecker';
+import CountryFlag from './components/CountryFlag';
+import CountrySelector from './components/CountrySelector';
 
 const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const navigate = useNavigate();
@@ -67,6 +69,7 @@ const AppContent: React.FC = () => {
     const { user, isAuthenticated, signOut } = useAuth();
     const [showNotifications, setShowNotifications] = useState(false);
     const [showAccountSettings, setShowAccountSettings] = useState(false);
+    const [selectedCountry, setSelectedCountry] = useState<string>('ES');
 
     // Inicializar servicios de seguridad
     useEffect(() => {
@@ -143,26 +146,24 @@ const AppContent: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
-            {/* Header - Oculto en móvil cuando se está en creación de búsqueda, oculto en desktop cuando estamos en paso 1, 2 o 3 */}
-            <header className={`h-14 bg-background/95 backdrop-blur-md border-b border-border/20 relative z-50 ${shouldHideHeaderOnMobile ? 'hidden' : ''}`}>
-                    <div className="max-w-7xl mx-auto h-full px-4 lg:px-6 flex items-center justify-between">
-                        {/* Logo + País */}
+            {/* Header mejorado - Oculto en móvil cuando se está en creación de búsqueda */}
+            <header className={`h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 relative z-50 shadow-sm ${shouldHideHeaderOnMobile ? 'hidden' : ''}`}>
+                    <div className="max-w-7xl mx-auto h-full px-4 lg:px-8 flex items-center justify-between">
+                        {/* Logo mejorado */}
                         <div className="flex items-center gap-3">
                             {/* Marca inspecciono.com */}
                             <h1 
                                 onClick={() => navigate('/')}
-                                className="text-base font-normal text-foreground/90 tracking-tight cursor-pointer hover:text-foreground transition-all duration-200 hover:scale-[1.02] group"
+                                className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 group"
                             >
-                                <span className="bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent group-hover:from-foreground group-hover:to-foreground/90">
-                                    inspecciono.com
+                                <span className="relative">
+                                    <span className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-400 dark:to-blue-500 bg-clip-text text-transparent">
+                                        inspecciono
+                                    </span>
+                                    <span className="text-gray-400 dark:text-gray-500">.com</span>
+                                    <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-blue-600 dark:bg-blue-400 group-hover:w-full transition-all duration-300"></span>
                                 </span>
                             </h1>
-                            
-                            {/* Selector de país - estilo Bolt */}
-                            <button className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-accent/60 transition-colors text-xs text-muted-foreground">
-                                <span className="text-base">🇪🇸</span>
-                                <span className="hidden sm:inline">ES</span>
-                            </button>
                         </div>
 
                         {/* Navegación compacta */}
@@ -196,10 +197,10 @@ const AppContent: React.FC = () => {
                                                             navigate('/');
                                                         }
                                                     }}
-                                                    className="flex items-center gap-1.5 h-9 px-3 text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-accent/60 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
+                                                    className="flex items-center gap-2 h-9 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 group"
                                                 >
-                                                    <Sparkles className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                                                    <span>Ver servicios</span>
+                                                    <Sparkles className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                                    <span>Servicios</span>
                                                 </Button>
                                             </NavigationMenuLink>
                                         </NavigationMenuItem>
@@ -209,9 +210,9 @@ const AppContent: React.FC = () => {
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => isAuthenticated ? window.location.href = '/busquedas' : handleRequireAuth('Ver tus inspecciones')}
-                                                    className="flex items-center gap-1.5 h-9 px-3 text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-accent/60 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
+                                                    className="flex items-center gap-2 h-9 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 group"
                                                 >
-                                                    <Search className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                                                    <Search className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                                                     <span>Inspecciones</span>
                                                 </Button>
                                             </NavigationMenuLink>
@@ -222,12 +223,12 @@ const AppContent: React.FC = () => {
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => isAuthenticated ? setShowNotifications(true) : handleRequireAuth('Ver tus notificaciones')}
-                                                    className="relative flex items-center gap-1.5 h-9 px-3 text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-accent/60 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
+                                                    className="relative flex items-center gap-2 h-9 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 group"
                                                 >
-                                                    <Bell className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                                                    <Bell className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                                                     <span>Notificaciones</span>
                                                     {isAuthenticated && unreadCount > 0 && (
-                                                        <Badge variant="destructive" className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 text-[10px] flex items-center justify-center font-normal animate-pulse">
+                                                        <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 text-[10px] flex items-center justify-center font-semibold bg-red-500 hover:bg-red-600">
                                                             {unreadCount > 9 ? '9+' : unreadCount}
                                                         </Badge>
                                                     )}
@@ -243,9 +244,9 @@ const AppContent: React.FC = () => {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => window.location.href = '/expert-panel'}
-                                                        className="flex items-center gap-1.5 h-9 px-3 text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-accent/60 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
+                                                        className="flex items-center gap-2 h-9 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 group"
                                                     >
-                                                        <Briefcase className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                                                        <Briefcase className="w-4 h-4 transition-transform duration-200 group-hover:scale-110 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                                                         <span>Panel</span>
                                                     </Button>
                                                 </NavigationMenuLink>
@@ -255,8 +256,23 @@ const AppContent: React.FC = () => {
                                 </NavigationMenu>
                             </div>
 
-                            {/* Separador antes del avatar/login - Más sutil */}
-                            <Separator orientation="vertical" className="h-6 mx-2 hidden md:block opacity-20" />
+                            {/* Separador antes del selector de país */}
+                            <Separator orientation="vertical" className="h-6 mx-3 opacity-30" />
+
+                            {/* Selector de país - compacto para topbar */}
+                            <div className="flex items-center">
+                                <CountrySelector
+                                    onCountrySelect={(countryCode) => {
+                                        setSelectedCountry(countryCode);
+                                        // Aquí puedes agregar lógica adicional si necesitas actualizar algo al cambiar país
+                                    }}
+                                    currentCountry={selectedCountry}
+                                    variant="compact"
+                                />
+                            </div>
+
+                            {/* Separador antes del avatar/login */}
+                            <Separator orientation="vertical" className="h-6 mx-3 hidden md:block opacity-30" />
 
                             {/* Botón menú móvil */}
                             <Button
@@ -320,8 +336,8 @@ const AppContent: React.FC = () => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             ) : (
-                                /* Botón de login con GoogleAuth integrado */
-                                <div className="relative">
+                                /* Botón de login con GoogleAuth integrado - oculto en móvil */
+                                <div className="relative hidden lg:block">
                                     {/* GoogleAuth oculto */}
                                     <div className="absolute opacity-0 pointer-events-none">
                                         <GoogleAuth />
@@ -337,7 +353,7 @@ const AppContent: React.FC = () => {
                                                 googleButton.click();
                                             }
                                         }}
-                                        className="h-9 px-4 text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-accent/60 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] border border-border/30 hover:border-border/50"
+                                        className="h-9 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-white hover:bg-blue-600 dark:hover:bg-blue-500 rounded-lg transition-all duration-200 border border-gray-300 dark:border-gray-700 hover:border-blue-600 dark:hover:border-blue-500"
                                     >
                                         Iniciar Sesión
                                     </Button>

@@ -1,10 +1,27 @@
 import { useState, useEffect } from 'react';
-import { Car, Home, Bike, Search, ChevronDown, Link as LinkIcon, FolderTree } from 'lucide-react';
+import { Car, Home, Bike, Search, ChevronDown, Link as LinkIcon, FolderTree, X, MoreHorizontal } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { GoogleAuth } from './GoogleAuth';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useNavigate } from 'react-router-dom';
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerClose,
+} from './ui/drawer';
+
+// Google SVG Icon Component
+const GoogleIcon = () => (
+    <svg className="w-5 h-5" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+);
 
 // Importar imágenes directamente
 import motoAguaImg from '../media/motoagua.png';
@@ -94,8 +111,9 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
         adUrl: '',
     });
     
-    const [isServiceTypeOpen, setIsServiceTypeOpen] = useState(false);
+    const [isServiceTypeOpen, setIsServiceTypeOpen] = useState(true);
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+    const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
     
     // Cerrar dropdowns al hacer clic fuera
     useEffect(() => {
@@ -225,7 +243,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
         
         const checkWidgetLoaded = () => {
             checkCount++;
-            const widgetElement = widgetContainer.querySelector('.elfsight-app-bcc2528d-c48e-48d1-b03d-f282be8b8c32');
+            const widgetElement = widgetContainer.querySelector('.elfsight-app-bcc2528d-c48e-48d1-b03d-f282be8b8c32') as HTMLElement;
             const hasContent = widgetElement && (
                 widgetElement.children.length > 0 || 
                 widgetElement.innerHTML.trim().length > 0 ||
@@ -274,7 +292,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     }, []);
 
     return (
-        <div className="relative w-full h-screen lg:h-auto bg-background overflow-hidden">
+        <div className="relative w-full min-h-[100dvh] lg:min-h-0 lg:h-auto bg-background overflow-hidden">
             {/* Professional subtle background */}
             <div className="absolute inset-0 overflow-hidden">
                 {/* Minimal gradient overlay */}
@@ -288,43 +306,96 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:24px_24px]"></div>
             </div>
 
-            {/* Hero móvil fullscreen - estilo Bolt */}
-            <div className="lg:hidden absolute inset-0 z-20">
-                <div className="relative h-full flex flex-col">
-                    <div className="absolute inset-0">
-                        <img 
-                            src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&q=80" 
-                            alt="Inspección profesional"
-                            className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/90"></div>
+            {/* Hero móvil moderno con glassmorphism y animaciones */}
+            <div className="lg:hidden relative h-[calc(100dvh-60px)] max-h-[calc(100dvh-60px)] z-20 overflow-hidden">
+                {/* Background con gradiente animado */}
+                <div className="absolute inset-0">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 animate-gradient-shift"></div>
+                    {/* Patrón de ondas */}
+                    <div className="absolute inset-0 opacity-20">
+                        <div className="absolute top-0 left-0 w-full h-full" style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+                        }}></div>
                     </div>
-                    <div className="relative z-10 flex-1 flex flex-col justify-end px-5 pb-8">
-                        <div className="mb-3">
-                            <span className="inline-flex items-center gap-1.5 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    {/* Formas geométricas flotantes */}
+                    <div className="absolute top-20 right-10 w-32 h-32 bg-white/10 rounded-full blur-3xl animate-float"></div>
+                    <div className="absolute bottom-40 left-10 w-40 h-40 bg-blue-400/20 rounded-full blur-3xl animate-float-delayed"></div>
+                </div>
+                
+                {/* Contenido con glassmorphism */}
+                <div className="relative z-10 h-full flex flex-col justify-end px-6 pb-12">
+                    <div className="w-full">
+                        {/* Badge glassmorphism moderno */}
+                        <div className="mb-5 animate-fade-in-up">
+                            <div className="inline-flex items-center gap-2.5 bg-white/20 backdrop-blur-xl text-white px-5 py-2.5 rounded-2xl shadow-2xl border border-white/30">
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
+                                <span className="text-sm font-bold tracking-wide">Inspección en 48h</span>
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                 </svg>
-                                Inspección en 48h
-                            </span>
+                            </div>
                         </div>
-                        <h1 className="text-[28px] font-bold text-white leading-[1.1] mb-3">
-                            No compres a ciegas.{' '}
-                            <span className="text-blue-400">Inspecciona</span>{' '}
-                            antes.
+                        
+                        {/* Título moderno con efecto neón */}
+                        <h1 className="text-5xl font-black text-white leading-[1.1] mb-5 animate-fade-in-up-delayed">
+                            <span className="block mb-2 drop-shadow-2xl">No compres</span>
+                            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-white to-blue-300 animate-gradient-text drop-shadow-2xl">
+                                a ciegas
+                            </span>
+                            <span className="block mt-2 text-4xl">
+                                <span className="relative inline-block">
+                                    Inspecciona
+                                    <span className="absolute -bottom-1 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-white to-blue-400 rounded-full animate-underline"></span>
+                                </span>
+                                {' '}antes
+                            </span>
                         </h1>
-                        <p className="text-sm text-gray-300 mb-5">
-                            Mecánicos profesionales revisan tu{' '}
-                            <span className="text-white font-medium">{currentWord}</span>{' '}
-                            y te envían un informe completo.
-                        </p>
-                        <button
-                            onClick={onScrollToForm}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl text-base"
-                        >
-                            Calcular precio
-                        </button>
-                        <div className="flex items-center justify-between mt-5 pt-5 border-t border-white/10">
+                        
+                        {/* Descripción con glassmorphism */}
+                        <div className="mb-8 animate-fade-in-up-delayed-2">
+                            <p className="text-lg text-white/90 leading-relaxed font-medium drop-shadow-lg mb-3">
+                                Expertos certificados revisan tu{' '}
+                                <span className="text-white font-bold text-xl">{currentWord}</span>
+                            </p>
+                            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-xl">
+                                <p className="text-sm text-white/80 leading-relaxed">
+                                    Informe detallado en menos de 48 horas con garantía de calidad
+                                </p>
+                            </div>
+                        </div>
+                        
+                        {/* Botones modernos con glassmorphism */}
+                        <div className="flex gap-3 animate-fade-in-up-delayed-3">
+                            <button
+                                onClick={onScrollToForm}
+                                className="flex-1 bg-white text-blue-600 font-bold py-4 px-6 rounded-2xl text-base transition-all duration-300 shadow-2xl hover:shadow-blue-500/50 transform hover:scale-105 active:scale-95 hover:bg-blue-50"
+                            >
+                                Calcular precio
+                            </button>
+                            {!isAuthenticated && (
+                                <div className="flex-1 relative">
+                                    <div className="absolute opacity-0 pointer-events-none">
+                                        <GoogleAuth />
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const googleButton = document.querySelector('#googleButton div[role="button"]') as HTMLElement;
+                                            if (googleButton) {
+                                                googleButton.click();
+                                            }
+                                        }}
+                                        className="w-full bg-white/20 backdrop-blur-xl hover:bg-white/30 text-white font-bold py-4 px-4 rounded-2xl text-base transition-all duration-300 shadow-2xl border border-white/30 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <GoogleIcon />
+                                        <span className="hidden sm:inline">Iniciar Sesión</span>
+                                        <span className="sm:hidden">Entrar</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Barra de confianza */}
+                        <div className="flex items-center justify-between pt-6 border-t border-white/20 mt-6 animate-fade-in-up-delayed-3">
                             <div className="flex items-center gap-1.5">
                                 <div className="flex">
                                     {[1,2,3,4,5].map(i => (
@@ -335,7 +406,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 </div>
                                 <span className="text-white font-semibold text-xs">4.9</span>
                             </div>
-                            <div className="text-gray-400 text-xs">+2.500 inspecciones</div>
+                            <div className="text-white/80 text-xs">+2.500 inspecciones</div>
                             <div className="flex items-center gap-1 text-green-400 text-xs font-medium">
                                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -347,9 +418,185 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 </div>
             </div>
 
-            <div className="relative z-10 w-full h-full lg:h-auto px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 md:py-16 lg:py-20 flex flex-col lg:block">
-                {/* Contenido principal centrado verticalmente en móvil, normal en desktop */}
-                <div className="flex-1 lg:flex-none flex items-center lg:block">
+            {/* Sección de formulario móvil - Estilo Airbnb */}
+            <div id="form-section" className="lg:hidden relative z-10 w-full bg-white py-10 px-4">
+                <div className="max-w-lg mx-auto">
+                    {/* Header compacto */}
+                    <div className="mb-5 text-center">
+                        <h2 className="text-xl font-bold text-gray-900 mb-1 leading-tight">
+                            Calcula el precio de tu inspección
+                        </h2>
+                        <p className="text-xs text-gray-600 leading-relaxed max-w-md mx-auto">
+                            Completa el formulario y obtén una cotización personalizada
+                        </p>
+                    </div>
+
+                    {/* Formulario estilo Airbnb - Contenedor redondeado con sombra */}
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                        {/* Tipo de servicio - Estilo Airbnb */}
+                        <div className="relative service-type-dropdown border-b border-gray-200">
+                            <button
+                                onClick={() => {
+                                    setIsCategoryOpen(false);
+                                    setIsServiceTypeOpen(!isServiceTypeOpen);
+                                }}
+                                className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                            >
+                                <div className="flex-1">
+                                    <div className="text-xs font-semibold text-gray-900 mb-0.5">Tipo de servicio</div>
+                                    <div className={searchForm.serviceTypeId ? 'text-sm text-gray-900 font-medium' : 'text-sm text-gray-500'}>
+                                        {searchForm.serviceTypeId 
+                                            ? serviceTypes.find(st => st.id === searchForm.serviceTypeId)?.name || 'Seleccionar'
+                                            : 'Seleccionar'}
+                                    </div>
+                                </div>
+                                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${isServiceTypeOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {isServiceTypeOpen && (
+                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-80 overflow-y-auto">
+                                    {serviceTypesLoading ? (
+                                        <div className="px-6 py-4 text-sm text-gray-500">Cargando...</div>
+                                    ) : serviceTypes.length > 0 ? (
+                                        serviceTypes.map((st) => (
+                                            <button
+                                                key={st.id}
+                                                onClick={() => {
+                                                    setSearchForm({...searchForm, serviceTypeId: st.id});
+                                                    setIsServiceTypeOpen(false);
+                                                }}
+                                                className="w-full px-6 py-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                                            >
+                                                <div className="font-medium text-gray-900 text-sm">{st.name}</div>
+                                                {st.description && (
+                                                    <div className="text-xs text-gray-500 mt-0.5">{st.description}</div>
+                                                )}
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="px-6 py-4 text-sm text-gray-500">No hay tipos disponibles</div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Categoría - Estilo Airbnb con chips arriba */}
+                        <div className="border-b border-gray-200 pb-4">
+                            <div className="text-xs font-semibold text-gray-900 mb-3 px-6 pt-4">Categoría</div>
+                            
+                            {/* Categorías visibles (primeras 3-4) */}
+                            <div className="px-6">
+                                <div className="flex flex-wrap gap-2">
+                                    {categories.slice(0, 4).map((cat) => (
+                                        <button
+                                            key={cat.id}
+                                            onClick={() => {
+                                                setSearchForm({...searchForm, categoryId: cat.id});
+                                            }}
+                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+                                                searchForm.categoryId === cat.id
+                                                    ? 'bg-gray-900 text-white'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            <CategoryImage categoryName={cat.name} size="sm" />
+                                            <span>{cat.name}</span>
+                                        </button>
+                                    ))}
+                                    
+                                    {/* Botón "Ver más" si hay más categorías */}
+                                    {categories.length > 4 && (
+                                        <button
+                                            onClick={() => {
+                                                setIsServiceTypeOpen(false);
+                                                setIsCategoryDrawerOpen(true);
+                                            }}
+                                            className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
+                                        >
+                                            <MoreHorizontal className="w-4 h-4" />
+                                            <span>Más</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {/* Drawer con todas las categorías */}
+                            <Drawer open={isCategoryDrawerOpen} onOpenChange={setIsCategoryDrawerOpen}>
+                                <DrawerContent className="max-h-[85vh]">
+                                    <DrawerHeader className="border-b border-gray-200">
+                                        <div className="flex items-center justify-between">
+                                            <DrawerTitle className="text-lg font-semibold text-gray-900">
+                                                Todas las categorías
+                                            </DrawerTitle>
+                                            <DrawerClose asChild>
+                                                <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+                                                    <X className="w-5 h-5 text-gray-500" />
+                                                </button>
+                                            </DrawerClose>
+                                        </div>
+                                    </DrawerHeader>
+                                    
+                                    <div className="overflow-y-auto px-4 py-4">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {categories.map((cat) => (
+                                                <button
+                                                    key={cat.id}
+                                                    onClick={() => {
+                                                        setSearchForm({...searchForm, categoryId: cat.id});
+                                                        setIsCategoryDrawerOpen(false);
+                                                    }}
+                                                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                                                        searchForm.categoryId === cat.id
+                                                            ? 'border-gray-900 bg-gray-50'
+                                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                                    }`}
+                                                >
+                                                    <CategoryImage categoryName={cat.name} size="md" />
+                                                    <span className={`text-sm font-medium ${
+                                                        searchForm.categoryId === cat.id ? 'text-gray-900' : 'text-gray-700'
+                                                    }`}>
+                                                        {cat.name}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </DrawerContent>
+                            </Drawer>
+                        </div>
+                        
+                        {/* URL del anuncio - Estilo Airbnb */}
+                        <div className="relative">
+                            <div className="px-6 py-4">
+                                <div className="text-xs font-semibold text-gray-900 mb-0.5">URL del anuncio</div>
+                                <div className="relative">
+                                    <LinkIcon className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Pega la URL del anuncio"
+                                        value={searchForm.adUrl}
+                                        onChange={(e) => setSearchForm({...searchForm, adUrl: e.target.value})}
+                                        className="w-full pl-6 pr-2 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Botón buscar - Estilo Airbnb circular */}
+                        <div className="px-6 pb-6 pt-2">
+                            <button
+                                onClick={handleSearch}
+                                className="w-full bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-full p-3.5 transition-colors shadow-md hover:shadow-lg flex items-center justify-center"
+                            >
+                                <Search className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="relative z-10 w-full hidden lg:block px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 md:py-16 lg:py-20">
+                {/* Contenido principal - solo desktop */}
+                <div className="lg:block">
                     <div className="max-w-6xl mx-auto w-full">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                         <div className="space-y-6 lg:space-y-7 text-left lg:text-left">
@@ -359,9 +606,9 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     <div>
                                         <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-3">
                                                 Inspecciona tu{' '}
-                                                <span className="relative inline-block">
+                                                <span className="relative inline-block min-w-[80px] text-left">
                                                     <span 
-                                                        className={`${isGlitching ? 'glitch-effect' : 'glitch-text-gradient'} bg-clip-text text-transparent font-extrabold transition-all duration-300`}
+                                                        className={`${isGlitching ? 'glitch-effect' : 'glitch-text-gradient'} bg-clip-text text-transparent font-extrabold transition-all duration-300 inline-block`}
                                                         data-text={isGlitching ? glitchText : currentWord}
                                                     >
                                                         {isGlitching ? glitchText : currentWord}
@@ -387,9 +634,9 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-[1.1] tracking-tight">
                                     <div className="block whitespace-nowrap">
                                         Inspecciona tu{' '}
-                                        <span className="relative inline-block">
+                                        <span className="relative inline-block min-w-[120px] lg:min-w-[140px] xl:min-w-[160px] text-left">
                                             <span 
-                                                className={`${isGlitching ? 'glitch-effect' : 'glitch-text-gradient'} bg-clip-text text-transparent font-extrabold transition-all duration-300`}
+                                                className={`${isGlitching ? 'glitch-effect' : 'glitch-text-gradient'} bg-clip-text text-transparent font-extrabold transition-all duration-300 inline-block`}
                                                 data-text={isGlitching ? glitchText : currentWord}
                                             >
                                                 {isGlitching ? glitchText : currentWord}
@@ -406,122 +653,16 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 </p>
                             </div>
                             
-                                {/* Buscador estilo Airbnb - Móvil */}
-                                <div className="lg:hidden mt-6">
-                                    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4">
-                                        <div className="space-y-3">
-                                            {/* Tipo de servicio */}
-                                            <div className="relative service-type-dropdown">
-                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Tipo de servicio</label>
-                                                <button
-                                                    onClick={() => setIsServiceTypeOpen(!isServiceTypeOpen)}
-                                                    className="w-full flex items-center justify-between px-4 py-3 text-left bg-gray-50 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
-                                                >
-                                                    <span className={searchForm.serviceTypeId ? 'text-gray-900' : 'text-gray-500'}>
-                                                        {searchForm.serviceTypeId 
-                                                            ? serviceTypes.find(st => st.id === searchForm.serviceTypeId)?.name || 'Seleccionar'
-                                                            : 'Seleccionar tipo'}
-                                                    </span>
-                                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isServiceTypeOpen ? 'rotate-180' : ''}`} />
-                                                </button>
-                                                {isServiceTypeOpen && (
-                                                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                                        {serviceTypesLoading ? (
-                                                            <div className="px-4 py-3 text-sm text-gray-500">Cargando...</div>
-                                                        ) : serviceTypes.length > 0 ? (
-                                                            serviceTypes.map((st) => (
-                                                                <button
-                                                                    key={st.id}
-                                                                    onClick={() => {
-                                                                        setSearchForm({...searchForm, serviceTypeId: st.id});
-                                                                        setIsServiceTypeOpen(false);
-                                                                    }}
-                                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-                                                                >
-                                                                    <div className="font-medium text-gray-900">{st.name}</div>
-                                                                    {st.description && (
-                                                                        <div className="text-xs text-gray-500 mt-0.5">{st.description}</div>
-                                                                    )}
-                                                                </button>
-                                                            ))
-                                                        ) : (
-                                                            <div className="px-4 py-3 text-sm text-gray-500">No hay tipos disponibles</div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            
-                                            {/* Categoría */}
-                                            <div className="relative category-dropdown">
-                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Categoría</label>
-                                                <button
-                                                    onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-                                                    className="w-full flex items-center justify-between px-4 py-3 text-left bg-gray-50 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
-                                                >
-                                                    <span className={searchForm.categoryId ? 'text-gray-900' : 'text-gray-500'}>
-                                                        {searchForm.categoryId 
-                                                            ? categories.find(c => c.id === searchForm.categoryId)?.name || 'Seleccionar'
-                                                            : 'Seleccionar categoría'}
-                                                    </span>
-                                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} />
-                                                </button>
-                                                {isCategoryOpen && (
-                                                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                                        {categories.length > 0 ? (
-                                                            categories.map((cat) => (
-                                                                <button
-                                                                    key={cat.id}
-                                                                    onClick={() => {
-                                                                        setSearchForm({...searchForm, categoryId: cat.id});
-                                                                        setIsCategoryOpen(false);
-                                                                    }}
-                                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3"
-                                                                >
-                                                                    <CategoryImage categoryName={cat.name} size="sm" />
-                                                                    <div className="font-medium text-gray-900">{cat.name}</div>
-                                                                </button>
-                                                            ))
-                                                        ) : (
-                                                            <div className="px-4 py-3 text-sm text-gray-500">No hay categorías disponibles</div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            
-                                            {/* URL del anuncio */}
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">URL del anuncio</label>
-                                                <div className="relative">
-                                                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Pega la URL del anuncio"
-                                                        value={searchForm.adUrl}
-                                                        onChange={(e) => setSearchForm({...searchForm, adUrl: e.target.value})}
-                                                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                    />
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Botón buscar */}
-                                            <button
-                                                onClick={handleSearch}
-                                                className="w-full bg-[#0066CC] hover:bg-[#0052A3] text-white font-semibold py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-                                            >
-                                                <Search className="w-5 h-5" />
-                                                <span>Buscar</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            
                             {/* Buscador estilo Airbnb - Desktop */}
-                            <div className="hidden lg:block mt-8">
-                                <div className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center overflow-visible hover:shadow-2xl transition-shadow">
+                            <div className="hidden lg:block mt-8 relative z-50">
+                                <div className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center overflow-visible hover:shadow-2xl transition-shadow relative z-50">
                                     {/* Tipo de servicio */}
-                                    <div className="relative flex-shrink-0 service-type-dropdown">
+                                    <div className="relative flex-shrink-0 service-type-dropdown z-50">
                                         <button
-                                            onClick={() => setIsServiceTypeOpen(!isServiceTypeOpen)}
+                                            onClick={() => {
+                                                setIsCategoryOpen(false);
+                                                setIsServiceTypeOpen(!isServiceTypeOpen);
+                                            }}
                                             className="px-6 py-4 text-left hover:bg-gray-50 rounded-l-full transition-colors min-w-[200px]"
                                         >
                                             <div className="text-xs font-medium text-gray-700 mb-0.5">Tipo de servicio</div>
@@ -532,7 +673,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                             </div>
                                         </button>
                                         {isServiceTypeOpen && (
-                                            <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 max-h-96 overflow-y-auto">
+                                            <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl z-[100] max-h-96 overflow-y-auto">
                                                 {serviceTypesLoading ? (
                                                     <div className="px-5 py-4 text-sm text-gray-500">Cargando...</div>
                                                 ) : serviceTypes.length > 0 ? (
@@ -561,9 +702,12 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     <div className="w-px h-8 bg-gray-200" />
                                     
                                     {/* Categoría */}
-                                    <div className="relative flex-shrink-0 category-dropdown">
+                                    <div className="relative flex-shrink-0 category-dropdown z-50">
                                         <button
-                                            onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                                            onClick={() => {
+                                                setIsServiceTypeOpen(false);
+                                                setIsCategoryOpen(!isCategoryOpen);
+                                            }}
                                             className="px-6 py-4 text-left hover:bg-gray-50 transition-colors min-w-[180px]"
                                         >
                                             <div className="text-xs font-medium text-gray-700 mb-0.5">Categoría</div>
@@ -574,7 +718,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                             </div>
                                         </button>
                                         {isCategoryOpen && (
-                                            <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 max-h-96 overflow-y-auto">
+                                            <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl z-[100] max-h-96 overflow-y-auto">
                                                 {categories.length > 0 ? (
                                                     categories.map((cat) => (
                                                         <button
@@ -664,83 +808,83 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     alt="Verificación profesional de vehículos"
                                     className="w-full max-w-md object-cover relative z-10"
                                 />
-                                </div>
-                            </div>
                             </div>
                         </div>
                     </div>
-                    
-                {/* Widget de reseñas - fuera del viewport inicial en móvil, normal en desktop */}
-                    <div className="mt-4 lg:mt-24">
-                    <div className="w-full lg:max-w-[calc(80rem-2rem)] lg:mx-auto px-4 md:px-6 lg:px-8">
-                        {/* Contenedor con altura mínima para evitar saltos */}
-                        <div className="relative min-h-[240px]">
-                            {/* Skeleton loader mientras carga - posición absoluta */}
-                            {isReviewsLoading && (
-                                <div className="absolute inset-0 w-full space-y-4 -top-2">
-                                    {/* Header skeleton */}
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="h-6 bg-gray-200 rounded-lg w-40 shimmer-animation"></div>
-                                        <div className="h-4 bg-gray-200 rounded-lg w-24 shimmer-animation shimmer-delay-1"></div>
-                                    </div>
-                                    {/* Cards skeleton - horizontal scroll como el widget real */}
-                                    <div className="flex gap-4 overflow-x-hidden">
-                                        {[1, 2, 3, 4].map((i) => (
-                                            <div 
-                                                key={i} 
-                                                className="flex-shrink-0 w-[320px] bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow"
-                                            >
-                                                {/* Avatar y nombre */}
-                                                <div className="flex items-start gap-3 mb-4">
-                                                    <div className="relative flex-shrink-0">
-                                                        <div className="w-11 h-11 bg-gray-200 rounded-full shimmer-animation"></div>
-                                                        {/* Google G badge skeleton */}
-                                                        <div className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 bg-blue-200 rounded-full border-2 border-white shimmer-animation shimmer-delay-2"></div>
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2 mb-1.5">
-                                                            <div className="h-4 bg-gray-200 rounded-md w-28 shimmer-animation shimmer-delay-1"></div>
-                                                            {/* Checkmark skeleton */}
-                                                            <div className="w-4 h-4 bg-green-200 rounded-full flex-shrink-0 shimmer-animation shimmer-delay-3"></div>
-                                                        </div>
-                                                        {/* Timestamp */}
-                                                        <div className="h-3 bg-gray-200 rounded w-20 shimmer-animation shimmer-delay-1"></div>
-                                                    </div>
-                                                </div>
-                                                {/* Estrellas */}
-                                                <div className="flex gap-1 mb-3">
-                                                    {[1, 2, 3, 4, 5].map((star) => (
-                                                        <div 
-                                                            key={star} 
-                                                            className="w-4.5 h-4.5 bg-yellow-200 rounded-sm shimmer-animation"
-                                                            style={{ 
-                                                                animationDelay: `${star * 0.1}s`,
-                                                                clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
-                                                            }}
-                                                        ></div>
-                                                    ))}
-                                                </div>
-                                                {/* Texto de la reseña */}
-                                                <div className="space-y-2 mb-3">
-                                                    <div className="h-3.5 bg-gray-200 rounded-md w-full shimmer-animation"></div>
-                                                    <div className="h-3.5 bg-gray-200 rounded-md w-11/12 shimmer-animation shimmer-delay-1"></div>
-                                                    <div className="h-3.5 bg-gray-200 rounded-md w-4/5 shimmer-animation shimmer-delay-2"></div>
-                                                </div>
-                                                {/* Read more link skeleton */}
-                                                <div className="h-3 bg-blue-200 rounded w-24 shimmer-animation shimmer-delay-2"></div>
-                                            </div>
-                                        ))}
-                                    </div>
+                </div>
+                </div>
+            </div>
+
+            {/* Widget de reseñas - visible solo en desktop */}
+            <div className="hidden lg:block mt-2 lg:mt-2 relative z-0">
+                <div className="w-full lg:max-w-[calc(80rem-2rem)] lg:mx-auto px-4 md:px-6 lg:px-8">
+                    {/* Contenedor con altura mínima para evitar saltos */}
+                    <div className="relative min-h-[240px]">
+                        {/* Skeleton loader mientras carga - posición absoluta */}
+                        {isReviewsLoading && (
+                            <div className="absolute inset-0 w-full space-y-4 -top-2">
+                                {/* Header skeleton */}
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="h-6 bg-gray-200 rounded-lg w-40 shimmer-animation"></div>
+                                    <div className="h-4 bg-gray-200 rounded-lg w-24 shimmer-animation shimmer-delay-1"></div>
                                 </div>
-                            )}
-                            {/* Widget - se muestra cuando está listo, con opacidad para transición suave */}
-                            <div 
-                                id="widget-mount-point" 
-                                className={`w-full transition-opacity duration-300 ${isReviewsLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-                                style={{ minHeight: isReviewsLoading ? '240px' : 'auto' }}
-                            >
-                            {/* Widget de reseñas se inyectará aquí dinámicamente */}
+                                {/* Cards skeleton - horizontal scroll como el widget real */}
+                                <div className="flex gap-4 overflow-x-hidden">
+                                    {[1, 2, 3, 4].map((i) => (
+                                        <div 
+                                            key={i} 
+                                            className="flex-shrink-0 w-[320px] bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow"
+                                        >
+                                            {/* Avatar y nombre */}
+                                            <div className="flex items-start gap-3 mb-4">
+                                                <div className="relative flex-shrink-0">
+                                                    <div className="w-11 h-11 bg-gray-200 rounded-full shimmer-animation"></div>
+                                                    {/* Google G badge skeleton */}
+                                                    <div className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 bg-blue-200 rounded-full border-2 border-white shimmer-animation shimmer-delay-2"></div>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1.5">
+                                                        <div className="h-4 bg-gray-200 rounded-md w-28 shimmer-animation shimmer-delay-1"></div>
+                                                        {/* Checkmark skeleton */}
+                                                        <div className="w-4 h-4 bg-green-200 rounded-full flex-shrink-0 shimmer-animation shimmer-delay-3"></div>
+                                                    </div>
+                                                    {/* Timestamp */}
+                                                    <div className="h-3 bg-gray-200 rounded w-20 shimmer-animation shimmer-delay-1"></div>
+                                                </div>
+                                            </div>
+                                            {/* Estrellas */}
+                                            <div className="flex gap-1 mb-3">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <div 
+                                                        key={star} 
+                                                        className="w-4.5 h-4.5 bg-yellow-200 rounded-sm shimmer-animation"
+                                                        style={{ 
+                                                            animationDelay: `${star * 0.1}s`,
+                                                            clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+                                                        }}
+                                                    ></div>
+                                                ))}
+                                            </div>
+                                            {/* Texto de la reseña */}
+                                            <div className="space-y-2 mb-3">
+                                                <div className="h-3.5 bg-gray-200 rounded-md w-full shimmer-animation"></div>
+                                                <div className="h-3.5 bg-gray-200 rounded-md w-11/12 shimmer-animation shimmer-delay-1"></div>
+                                                <div className="h-3.5 bg-gray-200 rounded-md w-4/5 shimmer-animation shimmer-delay-2"></div>
+                                            </div>
+                                            {/* Read more link skeleton */}
+                                            <div className="h-3 bg-blue-200 rounded w-24 shimmer-animation shimmer-delay-2"></div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
+                        )}
+                        {/* Widget - se muestra cuando está listo, con opacidad para transición suave */}
+                        <div 
+                            id="widget-mount-point" 
+                            className={`w-full transition-opacity duration-300 ${isReviewsLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'} hide-widget-navigation`}
+                            style={{ minHeight: isReviewsLoading ? '240px' : 'auto' }}
+                        >
+                        {/* Widget de reseñas se inyectará aquí dinámicamente */}
                         </div>
                     </div>
                 </div>
@@ -957,6 +1101,100 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                     animation-delay: 4s;
                 }
                 
+                /* Animación de rotación lenta para el globo */
+                @keyframes spin-slow {
+                    from {
+                        transform: rotate(0deg);
+                    }
+                    to {
+                        transform: rotate(360deg);
+                    }
+                }
+                .animate-spin-slow {
+                    animation: spin-slow 20s linear infinite;
+                }
+                
+                /* Animaciones modernas para el banner */
+                @keyframes gradient-shift {
+                    0%, 100% {
+                        background-position: 0% 50%;
+                    }
+                    50% {
+                        background-position: 100% 50%;
+                    }
+                }
+                .animate-gradient-shift {
+                    background-size: 200% 200%;
+                    animation: gradient-shift 8s ease infinite;
+                }
+                
+                @keyframes float {
+                    0%, 100% {
+                        transform: translateY(0px) translateX(0px);
+                    }
+                    33% {
+                        transform: translateY(-20px) translateX(10px);
+                    }
+                    66% {
+                        transform: translateY(-10px) translateX(-10px);
+                    }
+                }
+                .animate-float {
+                    animation: float 6s ease-in-out infinite;
+                }
+                .animate-float-delayed {
+                    animation: float 8s ease-in-out infinite;
+                    animation-delay: 2s;
+                }
+                
+                @keyframes fade-in-up {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                .animate-fade-in-up {
+                    animation: fade-in-up 0.6s ease-out;
+                }
+                .animate-fade-in-up-delayed {
+                    animation: fade-in-up 0.8s ease-out 0.2s both;
+                }
+                .animate-fade-in-up-delayed-2 {
+                    animation: fade-in-up 1s ease-out 0.4s both;
+                }
+                .animate-fade-in-up-delayed-3 {
+                    animation: fade-in-up 1.2s ease-out 0.6s both;
+                }
+                
+                @keyframes gradient-text {
+                    0%, 100% {
+                        background-position: 0% 50%;
+                    }
+                    50% {
+                        background-position: 100% 50%;
+                    }
+                }
+                .animate-gradient-text {
+                    background-size: 200% 200%;
+                    animation: gradient-text 3s ease infinite;
+                }
+                
+                @keyframes underline {
+                    0% {
+                        transform: scaleX(0);
+                    }
+                    100% {
+                        transform: scaleX(1);
+                    }
+                }
+                .animate-underline {
+                    animation: underline 1s ease-out 1.5s both;
+                }
+                
                 /* Shimmer animation para skeleton - efecto moderno y suave */
                 @keyframes shimmer {
                     0% {
@@ -1004,6 +1242,28 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 
                 .shimmer-delay-3 {
                     animation-delay: 0.45s;
+                }
+                
+                /* Ocultar botones de navegación del widget de Elfsight */
+                .hide-widget-navigation button[aria-label*="Previous"],
+                .hide-widget-navigation button[aria-label*="Next"],
+                .hide-widget-navigation button[aria-label*="Anterior"],
+                .hide-widget-navigation button[aria-label*="Siguiente"],
+                .hide-widget-navigation .elfsight-app button[class*="arrow"],
+                .hide-widget-navigation .elfsight-app button[class*="prev"],
+                .hide-widget-navigation .elfsight-app button[class*="next"],
+                .hide-widget-navigation .elfsight-app [class*="navigation"],
+                .hide-widget-navigation .elfsight-app [class*="arrow"],
+                .hide-widget-navigation .elfsight-app [class*="prev"],
+                .hide-widget-navigation .elfsight-app [class*="next"],
+                .hide-widget-navigation .elfsight-app [class*="slider-control"],
+                .hide-widget-navigation .elfsight-app [class*="carousel-button"],
+                .hide-widget-navigation .elfsight-app [class*="nav-button"],
+                .hide-widget-navigation .elfsight-app [class*="swiper-button"] {
+                    display: none !important;
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                    pointer-events: none !important;
                 }
             `}</style>
         </div>
