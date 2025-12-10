@@ -827,11 +827,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                         ) : (
                             <>
-                            {/* Barra de búsqueda móvil - Responsive para pantallas grandes */}
-                            <div className="absolute top-4 md:top-6 left-4 md:left-6 right-4 md:right-6 z-[9999] pointer-events-none">
+                            {/* Barra de búsqueda móvil - Más grande en pantallas grandes */}
+                            <div className="absolute top-4 sm:top-6 left-4 sm:left-6 right-4 sm:right-6 z-[9999] pointer-events-none">
                                 <div className="pointer-events-auto max-w-2xl mx-auto">
                                     <div className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center overflow-visible">
-                                        {/* Selector de país - Responsive */}
+                                        {/* Selector de país - Más grande */}
                                         <div className="flex-shrink-0">
                                             <CountrySelector
                                                 onCountrySelect={(countryCode, coordinates) => {
@@ -853,13 +853,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     setSelectedAddress('');
                                                 }}
                                                 currentCountry={selectedCountry}
-                                                className="[&>button]:h-12 md:[&>button]:h-14 [&>button]:px-4 md:[&>button]:px-5 [&>button]:min-w-[100px] md:[&>button]:min-w-[140px]"
+                                                className="[&>button]:h-14 sm:[&>button]:h-16 [&>button]:px-5 sm:[&>button]:px-6 [&>button]:min-w-[120px] sm:[&>button]:min-w-[160px]"
                                             />
                                         </div>
                                         
-                                        <div className="w-px h-7 md:h-9 bg-gray-200 flex-shrink-0" />
+                                        <div className="w-px h-9 sm:h-11 bg-gray-200 flex-shrink-0" />
                                         
-                                        {/* Campo de búsqueda - Responsive */}
+                                        {/* Campo de búsqueda - Más grande */}
                                         <div className="flex-1 relative min-w-0">
                                             {isLoaded ? (
                                                 <Autocomplete
@@ -868,7 +868,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         componentRestrictions: { country: selectedCountry.toLowerCase() },
                                                         fields: ['formatted_address', 'geometry', 'name', 'place_id', 'address_components']
                                                     }}
-                                                    className="w-full h-12 md:h-14 pl-4 md:pl-5 pr-11 md:pr-12 text-sm md:text-base text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
+                                                    className="w-full h-14 sm:h-16 pl-5 sm:pl-6 pr-12 sm:pr-14 text-base sm:text-lg text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
                                                     placeholder="Buscar ciudad o dirección..."
                                                     disabled={isGeocoding}
                                                 />
@@ -877,12 +877,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 type="text"
                                                     placeholder="Cargando mapa..."
                                                     disabled
-                                                    className="w-full h-12 md:h-14 pl-4 md:pl-5 pr-11 md:pr-12 text-sm md:text-base text-gray-400 placeholder-gray-400 bg-transparent border-0"
+                                                    className="w-full h-14 sm:h-16 pl-5 sm:pl-6 pr-12 sm:pr-14 text-base sm:text-lg text-gray-400 placeholder-gray-400 bg-transparent border-0"
                                                 />
                                             )}
                                             {isGeocoding ? (
-                                                <div className="absolute right-4 md:right-5 top-1/2 -translate-y-1/2 pointer-events-none">
-                                                    <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                                                <div className="absolute right-5 sm:right-6 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                    <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
                                                 </div>
                                             ) : searchAddress ? (
                                                 <button
@@ -893,12 +893,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                             searchInputRef.current.focus();
                                                         }
                                                     }}
-                                                    className="absolute right-4 md:right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    className="absolute right-5 sm:right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                                 >
-                                                    <X className="w-4 h-4 md:w-5 md:h-5" />
+                                                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
                                                 </button>
                                             ) : (
-                                                <Search className="absolute right-4 md:right-5 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400 pointer-events-none" />
+                                                <Search className="absolute right-5 sm:right-6 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-gray-400 pointer-events-none" />
                                             )}
                                         </div>
                                     </div>
@@ -935,14 +935,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         <Button
                                             onClick={() => setIsDrawerOpen(true)}
                                             size="lg"
-                                        className={`shadow-2xl border-2 h-12 px-6 ${
+                                        className={`shadow-2xl border-2 h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base rounded-full font-semibold transition-all ${
                                                 services.length === 0 
                                                     ? 'bg-background/95 backdrop-blur-sm border-muted-foreground/30 text-muted-foreground' 
                                                     : 'bg-primary border-primary text-primary-foreground hover:bg-primary/90'
                                             }`}
                                             disabled={services.length === 0}
                                         >
-                                            <MapPin className="w-4 h-4 mr-2" />
+                                            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                                             {services.length > 0 
                                                 ? `Ver ${services.length} ${services.length === 1 ? 'resultado' : 'resultados'}`
                                                 : 'Ver resultados'

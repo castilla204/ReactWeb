@@ -626,34 +626,34 @@ const SearchCreationPage: React.FC = () => {
                     </footer>
                 </>
             )}
-            {currentStep === 1 && (
+                    {currentStep === 1 && (
                 <div className="w-full h-screen flex flex-col lg:flex-row bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative">
                     {/* Left Side - Content */}
                     <div className="flex-1 flex flex-col overflow-hidden lg:overflow-y-auto">
-                        {searchParameters.category && searchParameters.serviceTypeId ? (
-                            <div className="flex-1 min-h-0 overflow-hidden">
-                                <SearchParameterForm
-                                    onComplete={handleParametersComplete}
-                                    setCurrentStep={setCurrentStep}
-                                    selectedCategory={searchParameters.category}
-                                    initialKeywords={searchParameters.keywords || ''}
-                                    initialUserSearch={searchParameters.userSearch || ''}
-                                    serviceTypeId={searchParameters.serviceTypeId}
-                                />
-                            </div>
-                        ) : (
-                            // Mostrar el formulario con valores por defecto mientras cargan los parámetros
-                            <div className="flex-1 min-h-0 overflow-hidden">
-                                <SearchParameterForm
-                                    onComplete={handleParametersComplete}
-                                    setCurrentStep={setCurrentStep}
-                                    selectedCategory={searchParameters.category || null}
-                                    initialKeywords={searchParameters.keywords || ''}
-                                    initialUserSearch={searchParameters.userSearch || ''}
-                                    serviceTypeId={searchParameters.serviceTypeId || null}
-                                />
-                            </div>
-                        )}
+                            {searchParameters.category && searchParameters.serviceTypeId ? (
+                                <div className="flex-1 min-h-0 overflow-hidden">
+                                    <SearchParameterForm
+                                        onComplete={handleParametersComplete}
+                                        setCurrentStep={setCurrentStep}
+                                        selectedCategory={searchParameters.category}
+                                        initialKeywords={searchParameters.keywords || ''}
+                                        initialUserSearch={searchParameters.userSearch || ''}
+                                        serviceTypeId={searchParameters.serviceTypeId}
+                                    />
+                                </div>
+                            ) : (
+                                // Mostrar el formulario con valores por defecto mientras cargan los parámetros
+                                <div className="flex-1 min-h-0 overflow-hidden">
+                                    <SearchParameterForm
+                                        onComplete={handleParametersComplete}
+                                        setCurrentStep={setCurrentStep}
+                                        selectedCategory={searchParameters.category || null}
+                                        initialKeywords={searchParameters.keywords || ''}
+                                        initialUserSearch={searchParameters.userSearch || ''}
+                                        serviceTypeId={searchParameters.serviceTypeId || null}
+                                    />
+                                </div>
+                            )}
                     </div>
                     
                     {/* Right Side - Map (Desktop only, solo en paso 1) */}
@@ -664,85 +664,7 @@ const SearchCreationPage: React.FC = () => {
                                 </div>
                             ) : (
                                 <>
-                                    {/* Barra de búsqueda estilo Airbnb - Solo en paso 1 */}
-                                    {currentStep === 1 && (
-                                        <div className="absolute top-4 left-4 right-4 z-[9999] pointer-events-none">
-                                            <div className="max-w-2xl pointer-events-auto">
-                                                <div className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center overflow-visible hover:shadow-2xl transition-shadow">
-                                                    {/* Selector de país */}
-                                                    <div className="flex-shrink-0">
-                                                        <CountrySelector
-                                                            onCountrySelect={(countryCode, coordinates) => {
-                                                                setSelectedCountry(countryCode);
-                                                                if (mapInstance) {
-                                                                    mapInstance.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
-                                                                    mapInstance.setZoom(coordinates.zoom);
-                                                                }
-                                                                setSearchParameters(prev => ({
-                                                                    ...prev,
-                                                                    latitude: coordinates.lat.toString(),
-                                                                    longitude: coordinates.lng.toString(),
-                                                                    locationName: getCountryName(countryCode) || '',
-                                                                }));
-                                                                setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
-                                                                setSearchAddress('');
-                                                            }}
-                                                            currentCountry={selectedCountry}
-                                                            className="[&>button]:h-14 [&>button]:px-5 [&>button]:min-w-[140px]"
-                                                        />
-                                                    </div>
-                                                    
-                                                    {/* Separador */}
-                                                    <div className="w-px h-8 bg-gray-200 flex-shrink-0" />
-                                                    
-                                                    {/* Campo de búsqueda */}
-                                                    <div className="flex-1 relative min-w-0">
-                                                        {isMapLoaded ? (
-                                                            <Autocomplete
-                                                                onPlaceSelected={handlePlaceSelected}
-                                                                options={{
-                                                                    componentRestrictions: { country: selectedCountry.toLowerCase() },
-                                                                    fields: ['formatted_address', 'geometry', 'name', 'place_id', 'address_components']
-                                                                }}
-                                                                className="w-full h-14 pl-5 pr-12 text-base text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0"
-                                                                placeholder="Buscar ciudad o dirección..."
-                                                                disabled={isGeocoding}
-                                                            />
-                                                        ) : (
-                                                            <input
-                                                                type="text"
-                                                                placeholder="Cargando mapa..."
-                                                                disabled
-                                                                className="w-full h-14 pl-5 pr-12 text-base text-gray-400 placeholder-gray-400 bg-transparent border-0"
-                                                            />
-                                                        )}
-                                                        {isGeocoding ? (
-                                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
-                                                                <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-                                                            </div>
-                                                        ) : searchAddress ? (
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSearchAddress('');
-                                                                    if (searchInputRef.current) {
-                                                                        searchInputRef.current.value = '';
-                                                                        searchInputRef.current.focus();
-                                                                    }
-                                                                }}
-                                                                className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                                            >
-                                                                <X className="w-5 h-5" />
-                                                            </button>
-                                                        ) : (
-                                                            <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {/* Map ocupa todo el espacio */}
+                                    {/* Map ocupa todo el espacio - La barra de búsqueda está en SearchParameterForm */}
                                     <div className="absolute inset-0">
                                         {isMapLoaded && selectedLocation ? (
                                             <LocationMap
@@ -769,50 +691,50 @@ const SearchCreationPage: React.FC = () => {
                                             />
                                         ) : null}
                                     </div>
-                                </>
-                            )}
+                        </>
+                    )}
                         </div>
                 </div>
             )}
             
-            {currentStep === 2 && selectedServiceId && (
+                    {currentStep === 2 && selectedServiceId && (
                 <div className="w-full min-h-screen bg-gray-50 relative">
-                    <ServiceReviewPage
-                        serviceId={selectedServiceId}
-                        expertProfilePicture={expertProfilePicture}
-                        expertName={expertName}
-                        servicePrice={servicePrice}
-                        serviceDescription={serviceDescription}
-                        serviceImageUrls={serviceImageUrls}
-                        categoryId={searchParameters.category}
-                        serviceTypeId={searchParameters.serviceTypeId}
-                        latitude={searchParameters.latitude}
-                        longitude={searchParameters.longitude}
-                        locationRange={searchParameters.locationRange}
-                        currentStep={2}
-                        totalSteps={3}
-                        onBack={() => setCurrentStep(1)}
-                        onContinue={() => setCurrentStep(3)}
-                    />
-                </div>
-            )}
+                            <ServiceReviewPage
+                                serviceId={selectedServiceId}
+                                expertProfilePicture={expertProfilePicture}
+                                expertName={expertName}
+                                servicePrice={servicePrice}
+                                serviceDescription={serviceDescription}
+                                serviceImageUrls={serviceImageUrls}
+                                categoryId={searchParameters.category}
+                                serviceTypeId={searchParameters.serviceTypeId}
+                                latitude={searchParameters.latitude}
+                                longitude={searchParameters.longitude}
+                                locationRange={searchParameters.locationRange}
+                                currentStep={2}
+                                totalSteps={3}
+                                onBack={() => setCurrentStep(1)}
+                                onContinue={() => setCurrentStep(3)}
+                            />
+                        </div>
+                    )}
             
-            {currentStep === 3 && selectedServiceId && (
+                    {currentStep === 3 && selectedServiceId && (
                 <div className="w-full h-screen flex flex-col bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative">
-                    <div className="flex-1 overflow-y-auto">
-                        <SearchForm
-                            parameters={searchParameters as SearchParameters & { latitude: string; longitude: string; locationRange: number }}
-                            setCurrentStep={setCurrentStep}
-                            onComplete={handleSearchComplete}
-                            serviceId={selectedServiceId}
-                            setShowSubscriptions={() => (window.location.href = '/suscripciones')}
-                            expertProfilePicture={expertProfilePicture}
-                            expertName={expertName}
-                            servicePrice={servicePrice}
-                            serviceDescription={serviceDescription}
-                            serviceImageUrls={serviceImageUrls}
-                        />
-                    </div>
+                        <div className="flex-1 overflow-y-auto">
+                            <SearchForm
+                                parameters={searchParameters as SearchParameters & { latitude: string; longitude: string; locationRange: number }}
+                                setCurrentStep={setCurrentStep}
+                                onComplete={handleSearchComplete}
+                                serviceId={selectedServiceId}
+                                setShowSubscriptions={() => (window.location.href = '/suscripciones')}
+                                expertProfilePicture={expertProfilePicture}
+                                expertName={expertName}
+                                servicePrice={servicePrice}
+                                serviceDescription={serviceDescription}
+                                serviceImageUrls={serviceImageUrls}
+                            />
+                        </div>
                 </div>
             )}
             

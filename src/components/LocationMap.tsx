@@ -113,6 +113,20 @@ export function LocationMap({
 }: LocationMapProps) {
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [selectedCountry, setSelectedCountry] = useState<string | null>(expertCountry || null);
+    const [isLargeMobile, setIsLargeMobile] = useState(false);
+
+    // Detectar si es una pantalla móvil grande (414px+)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        
+        const checkSize = () => {
+            setIsLargeMobile(window.innerWidth >= 414);
+        };
+        
+        checkSize();
+        window.addEventListener('resize', checkSize);
+        return () => window.removeEventListener('resize', checkSize);
+    }, []);
 
     // Actualizar selectedCountry cuando cambia expertCountry
     useEffect(() => {
@@ -209,15 +223,19 @@ export function LocationMap({
             const priceText = `${priceInEuros} €`;
             const isSelected = matchingService && selectedService === matchingService.id;
 
-            // Tamaño compacto estilo Airbnb
+            // Tamaño responsive: más grande en móvil, especialmente en pantallas grandes
             const textLen = priceText.length;
-            const w = Math.max(44, textLen * 7 + 16);
-            const h = 26;
+            // En móvil, hacer más grande. Para pantallas grandes de móvil (414px+), usar tamaño aún mayor
+            const baseWidth = isMobile ? (isLargeMobile ? 60 : 50) : 44; // iPhone XR y similares tienen 414px+
+            const baseHeight = isMobile ? (isLargeMobile ? 32 : 28) : 26;
+            const fontSize = isMobile ? (isLargeMobile ? 13 : 12) : 11;
+            const w = Math.max(baseWidth, textLen * (isMobile ? 8 : 7) + (isMobile ? 20 : 16));
+            const h = baseHeight;
 
-            // SVG minimalista estilo Airbnb
+            // SVG minimalista estilo Airbnb - Responsive
             const svg = isSelected 
-                ? `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="13" fill="#222"/><text x="${w/2}" y="${h/2+1}" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle" dominant-baseline="middle">${priceText}</text></svg>`
-                : `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="13" fill="#fff" stroke="#ddd"/><text x="${w/2}" y="${h/2+1}" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#222" text-anchor="middle" dominant-baseline="middle">${priceText}</text></svg>`;
+                ? `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${h/2}" fill="#222"/><text x="${w/2}" y="${h/2+1}" font-family="system-ui,sans-serif" font-size="${fontSize}" font-weight="600" fill="#fff" text-anchor="middle" dominant-baseline="middle">${priceText}</text></svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${h/2}" fill="#fff" stroke="#ddd" stroke-width="1"/><text x="${w/2}" y="${h/2+1}" font-family="system-ui,sans-serif" font-size="${fontSize}" font-weight="600" fill="#222" text-anchor="middle" dominant-baseline="middle">${priceText}</text></svg>`;
 
                 return (
                     <Marker
