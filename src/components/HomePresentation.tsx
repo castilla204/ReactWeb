@@ -111,7 +111,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
         adUrl: '',
     });
     
-    const [isServiceTypeOpen, setIsServiceTypeOpen] = useState(true);
+    const [isServiceTypeOpen, setIsServiceTypeOpen] = useState(false);
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
     
