@@ -14,6 +14,11 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
   showDescription = false,
   className = ''
 }) => {
+  // Validación: si statusInfo es undefined o null, no renderizar nada
+  if (!statusInfo) {
+    return null;
+  }
+
   const sizeClasses = {
     sm: 'px-2 py-1 text-xs',
     md: 'px-3 py-1.5 text-sm', 
@@ -21,7 +26,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
   };
 
   const defaultColor = '#6C757D';
-  const statusColor = statusInfo.color || defaultColor;
+  const statusColor = statusInfo?.color || defaultColor;
   
   // Crear colores con transparencia para el fondo
   const backgroundColor = `${statusColor}20`;

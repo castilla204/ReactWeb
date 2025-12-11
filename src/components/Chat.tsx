@@ -387,9 +387,9 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
             return 'bg-gray-600';
         }
         if (senderId === 'other') {
-            return isClient ? 'bg-green-500' : 'bg-purple-500';
+            return isClient ? 'bg-green-500' : 'bg-blue-500';
         }
-        return String(senderId) === String(expertId) ? 'bg-green-500' : 'bg-purple-500';
+        return String(senderId) === String(expertId) ? 'bg-green-500' : 'bg-blue-500';
     };
 
     const getAvatarImage = (senderId: string | number | null) => {
@@ -497,33 +497,25 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
     }, []) || [];
 
     return (
-        <div className="relative flex flex-col h-full w-full bg-background overflow-hidden">
-            {/* Messages Container - Fixed height with internal scroll */}
-            <div 
-                className="w-full overflow-y-auto overflow-x-hidden px-3 sm:px-4 lg:px-6 chat-scroll-area" 
-                style={{ 
-                    flex: '1 1 0%',
-                    minHeight: 0,
-                    height: 0,
-                    scrollBehavior: 'smooth'
-                }}
-            >
-                <div className="space-y-4 sm:space-y-6 pb-20 sm:pb-24 lg:pb-20 pt-3 sm:pt-4 lg:pt-8" data-chat-messages>
+        <div className="flex flex-col h-full w-full bg-gray-50" style={{ minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: '1 1 0%', margin: 0, padding: 0 }}>
+            {/* Messages Container - Takes remaining space with padding for input */}
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8" style={{ minHeight: 0, flex: '1 1 0%', overflowY: 'auto', overflowX: 'hidden', margin: 0, paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: 0, marginBottom: 0 }}>
+                <div className="space-y-3 sm:space-y-4 pt-4 sm:pt-6 lg:pt-8" data-chat-messages style={{ paddingBottom: 0, marginBottom: 0 }}>
                     {/* Mensajes de bienvenida - Siempre se muestran */}
                     {isExpert ? (
-                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-8 lg:pt-16' : 'pt-6 lg:pt-12'} pb-8 text-center px-4`}>
-                            <div className="max-w-2xl w-full space-y-4">
+                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-8 lg:pt-12' : 'pt-4 lg:pt-6'} pb-6 text-center px-4`}>
+                            <div className="max-w-2xl w-full space-y-3">
                                 {/* Primer mensaje de bienvenida - Experto */}
-                                <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    <Avatar className="w-8 h-8 flex-shrink-0 border border-border/50">
+                                <div className="flex gap-3 justify-start">
+                                    <Avatar className="w-8 h-8 flex-shrink-0">
                                         <AvatarImage src={expertData?.profilePictureUrl} alt="Sistema" />
-                                        <AvatarFallback className="bg-muted text-muted-foreground font-medium text-xs">
+                                        <AvatarFallback className="bg-gray-200 text-gray-600 font-medium text-xs">
                                             AI
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted/60 border border-border/50 text-foreground rounded-xl px-4 py-3 shadow-sm">
-                                            <p className="text-sm text-foreground leading-relaxed">
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
+                                            <p className="text-sm text-gray-700 leading-relaxed">
                                                 ¡Hola! 👋 Bienvenido al chat de este servicio. El cliente te ha contratado y está esperando poder comunicarse contigo.
                                             </p>
                                         </div>
@@ -531,35 +523,35 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                 </div>
                                 
                                 {/* Segundo mensaje de bienvenida - Experto con sugerencias */}
-                                <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300 delay-100">
-                                    <Avatar className="w-8 h-8 flex-shrink-0 border border-border/50">
+                                <div className="flex gap-3 justify-start">
+                                    <Avatar className="w-8 h-8 flex-shrink-0">
                                         <AvatarImage src={expertData?.profilePictureUrl} alt="Sistema" />
-                                        <AvatarFallback className="bg-muted text-muted-foreground font-medium text-xs">
+                                        <AvatarFallback className="bg-gray-200 text-gray-600 font-medium text-xs">
                                             AI
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-muted/60 border border-border/50 text-foreground rounded-xl px-4 py-3 shadow-sm">
-                                            <div className="space-y-2.5">
-                                                <p className="text-sm text-foreground leading-relaxed mb-2.5 font-medium">
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
+                                            <div className="space-y-2">
+                                                <p className="text-sm text-gray-700 leading-relaxed mb-2 font-medium">
                                                     Aquí tienes algunas cosas que puedes hacer:
                                                 </p>
-                                                <ul className="space-y-2 text-xs">
-                                                    <li className="flex items-start gap-2.5">
-                                                        <MessageSquare className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                                        <span className="text-foreground">Responder preguntas sobre el servicio</span>
+                                                <ul className="space-y-1.5 text-xs text-gray-600">
+                                                    <li className="flex items-start gap-2">
+                                                        <MessageSquare className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                                                        <span>Responder preguntas sobre el servicio</span>
                                                     </li>
-                                                    <li className="flex items-start gap-2.5">
-                                                        <Calendar className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                                        <span className="text-foreground">Coordinar detalles de la inspección</span>
+                                                    <li className="flex items-start gap-2">
+                                                        <Calendar className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                                                        <span>Coordinar detalles de la inspección</span>
                                                     </li>
-                                                    <li className="flex items-start gap-2.5">
-                                                        <Paperclip className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                                        <span className="text-foreground">Compartir archivos e imágenes</span>
+                                                    <li className="flex items-start gap-2">
+                                                        <Paperclip className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                                                        <span>Compartir archivos e imágenes</span>
                                                     </li>
                                                 </ul>
                                                 {conversation.messages?.length === 0 && (
-                                                    <p className="text-xs text-muted-foreground italic mt-3 pt-2.5 border-t border-border/40">
+                                                    <p className="text-xs text-gray-500 italic mt-3 pt-2 border-t border-gray-200">
                                                         Escribe un mensaje para comenzar la conversación con el cliente.
                                                     </p>
                                                 )}
@@ -570,54 +562,50 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                             </div>
                         </div>
                     ) : (
-                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-8 lg:pt-16' : 'pt-6 lg:pt-12'} pb-8 text-center px-4`}>
-                            <div className="max-w-2xl w-full space-y-4">
+                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-8 lg:pt-12' : 'pt-4 lg:pt-6'} pb-6 text-center px-4`}>
+                            <div className="max-w-2xl w-full space-y-3">
                                 {/* Primer mensaje de bienvenida - Cliente */}
-                                <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-3 duration-500">
-                                    <Avatar className="w-10 h-10 flex-shrink-0 border-2 border-blue-500/30 ring-2 ring-blue-500/20 shadow-lg shadow-blue-500/20">
+                                <div className="flex gap-3 justify-start">
+                                    <Avatar className="w-10 h-10 flex-shrink-0">
                                         <AvatarImage src={expertData?.profilePictureUrl} alt="Experto" />
-                                        <AvatarFallback className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold text-sm shadow-lg">
+                                        <AvatarFallback className="bg-blue-600 text-white font-semibold text-sm">
                                             {expertData?.name?.charAt(0).toUpperCase() || 'E'}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-gradient-to-br from-blue-50 via-indigo-50 to-orange-50/30 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-orange-950/20 border border-blue-200/50 dark:border-blue-800/50 text-foreground rounded-2xl px-5 py-4 shadow-lg shadow-blue-500/10 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 relative overflow-hidden">
-                                            {/* Efecto de brillo sutil */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]"></div>
-                                            <p className="text-sm text-foreground leading-relaxed relative z-10 font-medium">
-                                                ¡Hola! 👋 Soy <span className="font-semibold bg-gradient-to-r from-blue-600 to-orange-500 dark:from-blue-400 dark:to-orange-400 bg-clip-text text-transparent">{expertData?.name || 'tu experto'}</span>. Estoy aquí para ayudarte con tu búsqueda. Puedes preguntarme cualquier cosa sobre el servicio.
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
+                                            <p className="text-sm text-gray-700 leading-relaxed">
+                                                ¡Hola! 👋 Soy <span className="font-semibold text-gray-900">{expertData?.name || 'tu experto'}</span>. Estoy aquí para ayudarte con tu búsqueda. Puedes preguntarme cualquier cosa sobre el servicio.
                                             </p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Segundo mensaje de bienvenida - Cliente con sugerencias */}
-                                <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-3 duration-500 delay-150">
-                                    <Avatar className="w-10 h-10 flex-shrink-0 border-2 border-blue-500/30 ring-2 ring-blue-500/20 shadow-lg shadow-blue-500/20">
+                                <div className="flex gap-3 justify-start">
+                                    <Avatar className="w-10 h-10 flex-shrink-0">
                                         <AvatarImage src={expertData?.profilePictureUrl} alt="Experto" />
-                                        <AvatarFallback className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white font-semibold text-sm shadow-lg">
+                                        <AvatarFallback className="bg-blue-600 text-white font-semibold text-sm">
                                             {expertData?.name?.charAt(0).toUpperCase() || 'E'}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-gradient-to-br from-blue-50 via-indigo-50 to-orange-50/30 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-orange-950/20 border border-blue-200/50 dark:border-blue-800/50 text-foreground rounded-2xl px-5 py-4 shadow-lg shadow-blue-500/10 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 relative overflow-hidden">
-                                            {/* Efecto de brillo sutil */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite]"></div>
-                                            <div className="space-y-3 relative z-10">
-                                                <p className="text-sm text-foreground leading-relaxed mb-3 font-semibold">
+                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
+                                            <div className="space-y-2">
+                                                <p className="text-sm text-gray-700 leading-relaxed mb-2 font-medium">
                                                     ¿En qué puedo ayudarte hoy?
                                                 </p>
                                                 {conversation.messages?.length === 0 && (
                                                     <>
-                                                        <div className="grid grid-cols-1 gap-2.5">
+                                                        <div className="grid grid-cols-1 gap-2">
                                                             <button 
                                                                 onClick={() => {
                                                                     setNewMessage("¿Podrías explicarme cómo funciona el servicio?");
                                                                 }}
-                                                                className="text-left px-4 py-3 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/50 hover:bg-white hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md hover:scale-[1.02] transition-all duration-200 text-sm text-foreground group flex items-center gap-3 font-medium"
+                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-sm text-gray-700 group flex items-center gap-2 font-medium"
                                                             >
-                                                                <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm group-hover:scale-110 transition-transform">
-                                                                    <HelpCircle className="w-4 h-4" />
+                                                                <div className="p-1 rounded-md bg-blue-600 text-white">
+                                                                    <HelpCircle className="w-3.5 h-3.5" />
                                                                 </div>
                                                                 <span>Explicación del servicio</span>
                                                             </button>
@@ -625,10 +613,10 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                                                 onClick={() => {
                                                                     setNewMessage("¿Cuándo podemos coordinar la cita?");
                                                                 }}
-                                                                className="text-left px-4 py-3 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-orange-200/50 dark:border-orange-700/50 hover:bg-white hover:border-orange-400 dark:hover:border-orange-500 hover:shadow-md hover:scale-[1.02] transition-all duration-200 text-sm text-foreground group flex items-center gap-3 font-medium"
+                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-sm text-gray-700 group flex items-center gap-2 font-medium"
                                                             >
-                                                                <div className="p-1.5 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-sm group-hover:scale-110 transition-transform">
-                                                                    <Calendar className="w-4 h-4" />
+                                                                <div className="p-1 rounded-md bg-orange-500 text-white">
+                                                                    <Calendar className="w-3.5 h-3.5" />
                                                                 </div>
                                                                 <span>Coordinar cita</span>
                                                             </button>
@@ -636,15 +624,15 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                                                 onClick={() => {
                                                                     setNewMessage("¿Qué documentos necesito?");
                                                                 }}
-                                                                className="text-left px-4 py-3 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/50 hover:bg-white hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md hover:scale-[1.02] transition-all duration-200 text-sm text-foreground group flex items-center gap-3 font-medium"
+                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-sm text-gray-700 group flex items-center gap-2 font-medium"
                                                             >
-                                                                <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-sm group-hover:scale-110 transition-transform">
-                                                                    <FileText className="w-4 h-4" />
+                                                                <div className="p-1 rounded-md bg-blue-600 text-white">
+                                                                    <FileText className="w-3.5 h-3.5" />
                                                                 </div>
                                                                 <span>Documentos necesarios</span>
                                                             </button>
                                                         </div>
-                                                        <p className="text-xs text-muted-foreground italic mt-4 pt-3 border-t border-blue-200/50 dark:border-blue-800/50">
+                                                        <p className="text-xs text-gray-500 italic mt-3 pt-2 border-t border-gray-200">
                                                             O simplemente escribe tu pregunta y te responderé lo antes posible.
                                                         </p>
                                                     </>
@@ -673,8 +661,8 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                         if (!display) return null;
                                         
                                         return (
-                                            <div key={message.id} className="w-full flex justify-center my-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                                <div className={`w-full max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] rounded-lg border-2 ${display.borderColor} ${display.bgColor} shadow-md overflow-hidden`}>
+                                            <div key={message.id} className="w-full flex justify-center my-2">
+                                                <div className={`w-full max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] rounded-lg border ${display.borderColor} ${display.bgColor} shadow-sm overflow-hidden`}>
                                                     {/* Header con icono, mensaje e info */}
                                                     <div className="flex items-start gap-2 px-3 py-2">
                                                         <div className={`${display.color} flex-shrink-0 mt-0.5`}>
@@ -682,12 +670,12 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center gap-2 mb-0.5">
-                                                                <p className={`text-sm font-semibold ${display.color}`}>
+                                                                <p className={`text-sm font-medium ${display.color}`}>
                                                                     {display.message}
                                                                 </p>
                                                             </div>
                                                             {/* Timestamp */}
-                                                            <div className={`text-xs ${display.color} opacity-70`}>
+                                                            <div className={`text-xs ${display.color} opacity-60`}>
                                                                 {(() => {
                                                                     const date = new Date(message.sentAt);
                                                                     return isNaN(date.getTime()) 
@@ -706,14 +694,14 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                                         <div className="px-3 pb-2">
                                                             <Accordion type="single" collapsible className="w-full">
                                                                 <AccordionItem value="status-info" className="border-none">
-                                                                    <AccordionTrigger className={`py-1 hover:no-underline ${display.color} opacity-80 hover:opacity-100`}>
+                                                                    <AccordionTrigger className={`py-1 hover:no-underline ${display.color} opacity-70 hover:opacity-100`}>
                                                                         <div className="flex items-center gap-1.5 text-xs">
                                                                             <Info className="w-3 h-3" />
                                                                             <span>Más información</span>
                                                                         </div>
                                                                     </AccordionTrigger>
                                                                     <AccordionContent className="pt-0.5 pb-0">
-                                                                        <p className={`text-xs ${display.color} opacity-90 leading-relaxed`}>
+                                                                        <p className={`text-xs ${display.color} opacity-80 leading-relaxed`}>
                                                                             {display.description}
                                                                         </p>
                                                                     </AccordionContent>
@@ -731,7 +719,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                     <div key={message.id} className={`flex gap-3 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'} ${msgIndex === 0 ? 'mt-3' : 'mt-1'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                                         {/* Avatar solo en el primer mensaje del grupo */}
                                         {msgIndex === 0 && (
-                                            <Avatar className="w-8 h-8 flex-shrink-0 border-2 border-border ring-1 ring-primary/10">
+                                            <Avatar className="w-8 h-8 flex-shrink-0">
                                                 <AvatarImage 
                                                     src={getAvatarImage(group.senderId) || undefined} 
                                                     alt="Avatar"
@@ -745,27 +733,22 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                         {msgIndex > 0 && <div className="w-8" />}
 
                                         <div className="flex-1 space-y-2">
-                                        {/* Message Content - Diseño más limpio inspirado en Vercel */}
+                                        {/* Message Content - Diseño más limpio y moderno */}
                                             <div className={`${group.isOwn ? 'flex justify-end' : 'flex justify-start'}`}>
                                             {message.content && (
                                                 <div className={`group relative max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] ${
                                                     group.isOwn 
-                                                        ? 'bg-primary text-primary-foreground' 
-                                                        : 'bg-muted text-foreground'
-                                                } rounded-2xl px-4 py-2.5 shadow-sm hover:shadow-md transition-shadow`}
-                                                style={{
-                                                    borderRadius: group.isOwn 
-                                                        ? '1.125rem 1.125rem 0.25rem 1.125rem' 
-                                                        : '1.125rem 1.125rem 1.125rem 0.25rem'
-                                                }}>
+                                                        ? 'bg-blue-600 text-white' 
+                                                        : 'bg-white text-gray-900 border border-gray-200'
+                                                } rounded-2xl px-4 py-2.5 shadow-sm`}>
                                                     <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                                                         {message.content}
                                                     </p>
                                                     {/* Timestamp y botón compartir */}
                                                     <div className={`flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t ${
                                                         group.isOwn 
-                                                            ? 'border-primary-foreground/20 text-primary-foreground/70' 
-                                                            : 'border-border text-muted-foreground'
+                                                            ? 'border-white/20 text-white/70' 
+                                                            : 'border-gray-200 text-gray-500'
                                                     }`}>
                                                         <span className="text-xs">
                                                             {(() => {
@@ -793,7 +776,6 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                                                         showToast('success', 'Mensaje copiado al portapapeles');
                                                                     }
                                                                 } catch (error) {
-                                                                    // Si el usuario cancela el share, no mostrar error
                                                                     if (error instanceof Error && error.name !== 'AbortError') {
                                                                         try {
                                                                             await navigator.clipboard.writeText(message.content || '');
@@ -804,17 +786,17 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                                                     }
                                                                 }
                                                             }}
-                                                            className={`opacity-70 hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-black/10 ${
+                                                            className={`opacity-70 hover:opacity-100 transition-opacity p-1 rounded-md ${
                                                                 group.isOwn 
-                                                                    ? 'hover:bg-primary-foreground/20' 
-                                                                    : 'hover:bg-muted-foreground/20'
+                                                                    ? 'hover:bg-white/20' 
+                                                                    : 'hover:bg-gray-100'
                                                             }`}
                                                             title="Compartir mensaje"
                                                         >
                                                             <Share2 className={`w-3.5 h-3.5 ${
                                                                 group.isOwn 
-                                                                    ? 'text-primary-foreground/70' 
-                                                                    : 'text-muted-foreground'
+                                                                    ? 'text-white/70' 
+                                                                    : 'text-gray-500'
                                                             }`} />
                                                         </button>
                                                 </div>
@@ -990,158 +972,152 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                         </div>
                     ))
                     )}
-                    <div ref={messagesEndRef} className="h-1" />
+                    <div ref={messagesEndRef} style={{ height: '1px', margin: 0, padding: 0, minHeight: '1px', maxHeight: '1px', lineHeight: '1px' }} />
                 </div>
             </div>
 
-            {/* Fixed Input Area at Bottom - Optimizado para móvil y desktop */}
-            <div className="sticky bottom-0 left-0 right-0 bg-background z-10 border-t border-border/50 shadow-lg lg:shadow-none">
-                <div className="w-full px-2 pt-1.5 pb-1.5 sm:px-3 sm:pt-2 sm:pb-2 lg:px-4 lg:pt-2.5 lg:pb-2.5" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+            {/* Fixed Input Area at Bottom - Optimizado para móvil y desktop - Siempre visible */}
+            <div className="flex-shrink-0 bg-white z-10" style={{ flexShrink: 0, minHeight: 'auto', margin: 0, padding: 0, borderTop: 'none', boxShadow: 'none', marginBottom: 0, paddingBottom: 0 }}>
+                <div className="w-full px-3 pt-2 pb-1 sm:px-4 sm:pt-2 sm:pb-1 lg:px-6 lg:pt-2.5 lg:pb-1" style={{ paddingBottom: '0.125rem', paddingTop: '0.5rem', marginBottom: 0 }}>
                     <div className="max-w-4xl mx-auto">
-                        {/* PromptInput Container - Más compacto */}
-                        <div className="relative bg-white dark:bg-gray-900 border border-gray-300/70 dark:border-gray-600/60 rounded-lg sm:rounded-xl shadow-md overflow-hidden">
-                            {/* Borde decorativo con gradiente */}
-                            <div className="absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-r from-blue-400/10 via-indigo-400/10 via-purple-400/10 to-orange-400/10 dark:from-blue-500/8 dark:via-indigo-500/8 dark:via-purple-500/8 dark:to-orange-500/8 -z-10 blur-sm"></div>
-                            {/* Fondo con gradiente sutil */}
-                            <div className="absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-50/25 via-indigo-50/20 to-orange-50/20 dark:from-blue-950/15 dark:via-indigo-950/12 dark:to-orange-950/10 -z-10"></div>
-                            <div className="relative bg-white dark:bg-gray-900 rounded-lg sm:rounded-xl">
-                                {/* Header - Attachments */}
-                {(selectedFiles.length > 0 || location) && (
-                                    <div className="px-2 py-1.5 sm:px-2.5 sm:py-2 border-b border-gray-200/60 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/20 via-indigo-50/15 to-orange-50/15 dark:from-blue-950/12 dark:via-indigo-950/10 dark:to-orange-950/8">
-                                        <div className="flex flex-wrap gap-1.5">
-                            {selectedFiles.map((file, index) => (
-                                                <div
-                                                    key={index}
-                                                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-background border border-border/50 text-xs"
-                                                >
-                                                    <Paperclip className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-foreground truncate max-w-[100px] sm:max-w-[120px]">
-                                        {file.name}
-                                        </p>
-                                                        <p className="text-muted-foreground text-[10px]">
-                                        {formatFileSize(file.size)}
-                                        </p>
-                                    </div>
-                                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const newFiles = [...selectedFiles];
-                                            newFiles.splice(index, 1);
-                                            setSelectedFiles(newFiles);
-                                        }}
-                                                        className="ml-0.5 p-0.5 rounded hover:bg-muted transition-colors"
-                                                    >
-                                                        <X className="w-3 h-3 text-muted-foreground" />
-                                                    </button>
-                                                </div>
-                            ))}
-                {location && (
-                                                <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-green-50/50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/50 text-xs">
-                                                    <MapPin className="w-3 h-3 text-green-600 dark:text-green-400 flex-shrink-0" />
-                                                    <div className="font-medium text-green-700 dark:text-green-400 text-[10px] sm:text-xs">
-                                {parseFloat(location.latitude).toFixed(4)}, {parseFloat(location.longitude).toFixed(4)}
-                            </div>
-                                                    <button
-                                        type="button"
-                                        onClick={() => setLocation(null)}
-                                                        className="ml-0.5 p-0.5 rounded hover:bg-green-100/50 dark:hover:bg-green-900/30 transition-colors"
-                                                    >
-                                                        <X className="w-3 h-3 text-green-700 dark:text-green-400" />
-                                                    </button>
-                                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                                {/* Body - Textarea - Más compacto */}
-                                <div className="px-2 py-1.5 sm:px-2.5 sm:py-2">
-                                    <textarea
-                                        value={newMessage}
-                                        onChange={(e) => {
-                                            setNewMessage(e.target.value);
-                                            // Auto-resize
-                                            e.target.style.height = 'auto';
-                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                                        }}
-                                        placeholder="Escribe un mensaje..."
-                                        className="w-full bg-transparent resize-none text-foreground placeholder:text-muted-foreground text-sm sm:text-base leading-relaxed focus:outline-none border-0"
-                                        rows={1}
-                                        style={{ minHeight: '36px', maxHeight: '120px' }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
-                                                e.preventDefault();
-                                                handleSendMessage();
-                                            }
-                                        }}
-                                        disabled={isSending}
-                                    />
-                                </div>
-
-                                {/* Footer - Tools and Submit - Más compacto */}
-                                <div className="px-2 py-1.5 sm:px-2.5 sm:py-2 border-t border-gray-200/60 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/20 via-indigo-50/15 to-orange-50/15 dark:from-blue-950/12 dark:via-indigo-950/10 dark:to-orange-950/8 flex items-center justify-between gap-1.5 sm:gap-2 min-w-0">
-                                    {/* Tools - Left side */}
-                                    <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-                                        <label className="cursor-pointer">
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                asChild
-                                                className="h-6 w-6 sm:h-7 sm:w-7 rounded-md hover:bg-muted transition-colors"
+                        {/* PromptInput Container - Más limpio */}
+                        <div className="relative bg-white border border-gray-300 rounded-xl shadow-sm overflow-hidden">
+                            {/* Header - Attachments */}
+                            {(selectedFiles.length > 0 || location) && (
+                                <div className="px-3 py-2 border-b border-gray-200 bg-gray-50">
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedFiles.map((file, index) => (
+                                            <div
+                                                key={index}
+                                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white border border-gray-200 text-xs"
                                             >
-                                                <span>
-                                                    <Paperclip className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
-                                                    <span className="sr-only">Adjuntar archivo</span>
-                                                </span>
-                                            </Button>
-                                            <input
-                                                type="file"
-                                                multiple
-                                                accept=".jpg,.jpeg,.png,.mp4"
-                                                onChange={handleFileChange}
-                                                className="hidden"
-                                                disabled={isSending}
-                                            />
-                                        </label>
+                                                <Paperclip className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-gray-900 truncate max-w-[100px] sm:max-w-[120px]">
+                                                        {file.name}
+                                                    </p>
+                                                    <p className="text-gray-500 text-[10px]">
+                                                        {formatFileSize(file.size)}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newFiles = [...selectedFiles];
+                                                        newFiles.splice(index, 1);
+                                                        setSelectedFiles(newFiles);
+                                                    }}
+                                                    className="ml-0.5 p-0.5 rounded hover:bg-gray-100 transition-colors"
+                                                >
+                                                    <X className="w-3 h-3 text-gray-500" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {location && (
+                                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-green-50 border border-green-200 text-xs">
+                                                <MapPin className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                                <div className="font-medium text-green-700 text-[10px] sm:text-xs">
+                                                    {parseFloat(location.latitude).toFixed(4)}, {parseFloat(location.longitude).toFixed(4)}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setLocation(null)}
+                                                    className="ml-0.5 p-0.5 rounded hover:bg-green-100 transition-colors"
+                                                >
+                                                    <X className="w-3 h-3 text-green-700" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Body - Textarea - Más limpio */}
+                            <div className="px-3 py-2">
+                                <textarea
+                                    value={newMessage}
+                                    onChange={(e) => {
+                                        setNewMessage(e.target.value);
+                                        // Auto-resize
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                                    }}
+                                    placeholder="Escribe un mensaje..."
+                                    className="w-full bg-transparent resize-none text-gray-900 placeholder:text-gray-400 text-sm sm:text-base leading-relaxed focus:outline-none border-0"
+                                    rows={1}
+                                    style={{ minHeight: '40px', maxHeight: '120px' }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
+                                            e.preventDefault();
+                                            handleSendMessage();
+                                        }
+                                    }}
+                                    disabled={isSending}
+                                />
+                            </div>
+
+                            {/* Footer - Tools and Submit - Más limpio */}
+                            <div className="px-3 py-2 border-t border-gray-200 bg-gray-50 flex items-center justify-between gap-2 min-w-0">
+                                {/* Tools - Left side */}
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                    <label className="cursor-pointer">
                                         <Button
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            onClick={handleOpenMapModal}
-                                            className="h-6 w-6 sm:h-7 sm:w-7 rounded-md hover:bg-muted transition-colors"
-                                            title="Seleccionar ubicación"
+                                            asChild
+                                            className="h-8 w-8 rounded-md hover:bg-gray-200 transition-colors"
                                         >
-                                            <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
-                                            <span className="sr-only">Ubicación</span>
+                                            <span>
+                                                <Paperclip className="w-4 h-4 text-gray-600" />
+                                                <span className="sr-only">Adjuntar archivo</span>
+                                            </span>
                                         </Button>
-                                    </div>
-
-                                    {/* Submit Button - Right side */}
-                                        <Button
-                                            type="button"
-                                            onClick={handleSendMessage}
-                                            size="icon"
-                                        className={`h-6 w-6 sm:h-7 sm:w-7 rounded-md transition-all duration-200 shrink-0 ${
-                                                isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
-                                                    ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
-                                                    : messageSent
-                                                    ? 'bg-green-500 text-white hover:bg-green-600 shadow-md'
-                                                    : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md'
-                                            }`}
-                                            disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
-                                        >
-                                            {isSending ? (
-                                            <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
-                                            ) : messageSent ? (
-                                            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                            ) : (
-                                            <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                            )}
-                                        <span className="sr-only">Enviar mensaje</span>
-                                        </Button>
+                                        <input
+                                            type="file"
+                                            multiple
+                                            accept=".jpg,.jpeg,.png,.mp4"
+                                            onChange={handleFileChange}
+                                            className="hidden"
+                                            disabled={isSending}
+                                        />
+                                    </label>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={handleOpenMapModal}
+                                        className="h-8 w-8 rounded-md hover:bg-gray-200 transition-colors"
+                                        title="Seleccionar ubicación"
+                                    >
+                                        <MapPin className="w-4 h-4 text-gray-600" />
+                                        <span className="sr-only">Ubicación</span>
+                                    </Button>
                                 </div>
+
+                                {/* Submit Button - Right side */}
+                                <Button
+                                    type="button"
+                                    onClick={handleSendMessage}
+                                    size="icon"
+                                    className={`h-8 w-8 rounded-md transition-all duration-200 shrink-0 ${
+                                        isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
+                                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                            : messageSent
+                                            ? 'bg-green-500 text-white hover:bg-green-600'
+                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    }`}
+                                    disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
+                                >
+                                    {isSending ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : messageSent ? (
+                                        <CheckCircle2 className="w-4 h-4" />
+                                    ) : (
+                                        <Send className="w-4 h-4" />
+                                    )}
+                                    <span className="sr-only">Enviar mensaje</span>
+                                </Button>
                             </div>
                         </div>
                     </div>
