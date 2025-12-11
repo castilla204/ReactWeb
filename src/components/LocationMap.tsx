@@ -279,13 +279,13 @@ export function LocationMap({
             zoom={selectedLocation ? getZoomLevel(locationRange) : 10}
             options={{
                 styles: mapStyles,
-                disableDefaultUI: false,
-                zoomControl: true,
+                disableDefaultUI: true, // Deshabilitar todos los controles por defecto
+                zoomControl: false,
                 mapTypeControl: false,
                 scaleControl: false,
                 streetViewControl: false,
                 rotateControl: false,
-                fullscreenControl: true,
+                fullscreenControl: false,
                 gestureHandling: 'greedy', // Mejora interacción táctil
                 clickableIcons: false, // Evita que POIs capturen clicks
             }}
