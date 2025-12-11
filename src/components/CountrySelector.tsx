@@ -23,12 +23,18 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const countries = getAvailableCountries();
+  const isCompact = variant === 'compact';
 
-  // Filtrar países según la búsqueda
-  const filteredCountries = countries.filter(country =>
-    country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    country.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Países permitidos para el modo compacto: España, Inglaterra, Estados Unidos, Francia, Italia
+  const allowedCountries = ['ES', 'GB', 'US', 'FR', 'IT'];
+  
+  // Filtrar países según la búsqueda o solo los permitidos si es compacto
+  const filteredCountries = isCompact 
+    ? countries.filter(country => allowedCountries.includes(country.code.toUpperCase()))
+    : countries.filter(country =>
+        country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        country.code.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
@@ -43,12 +49,12 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Focus en el input cuando se abre
+  // Focus en el input cuando se abre (solo si no es compacto)
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    if (isOpen && inputRef.current && !isCompact) {
       inputRef.current.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, isCompact]);
 
   const handleCountryClick = (countryCode: string) => {
     const coordinates = getCountryCoordinates(countryCode);
@@ -61,8 +67,6 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
 
   const currentCountryName = currentCountry ? getCountryName(currentCountry) : 'País';
   const currentCountryFlag = currentCountry ? getCountryFlagUrl(currentCountry, 24) : null;
-
-  const isCompact = variant === 'compact';
   
   return (
     <div className={`relative z-50 ${className}`} ref={dropdownRef} style={{ width: 'auto', minWidth: 'auto' }}>
@@ -133,29 +137,32 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className={`absolute top-full ${isCompact ? 'right-0' : 'left-0'} mt-2 w-72 bg-background rounded-2xl shadow-2xl border border-border z-[99999] overflow-hidden backdrop-blur-md`} style={{ position: 'absolute' }}>
-          {/* Header con búsqueda */}
-          <div className="p-3 bg-accent/30 border-b border-border">
+        <div className={`absolute top-full ${isCompact ? 'right-0' : 'left-0'} mt-1.5 ${isCompact ? 'w-14' : 'w-72'} bg-background ${isCompact ? 'rounded-md' : 'rounded-2xl'} shadow-lg border border-border z-[99999] overflow-hidden backdrop-blur-md`} style={{ position: 'absolute' }}>
+          {/* Header con búsqueda - Solo si no es compacto */}
+          {!isCompact && (
+            <div className="p-3 bg-accent/30 border-b border-border">
               <input
-              ref={inputRef}
+                ref={inputRef}
                 type="text"
                 placeholder="Buscar país..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 px-4 text-sm bg-background border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder:text-muted-foreground"
+                className="w-full h-10 px-4 text-sm bg-background border border-border rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder:text-muted-foreground"
               />
-          </div>
+            </div>
+          )}
 
           {/* Lista de países */}
-          <div className="max-h-64 overflow-y-auto">
+          <div className={isCompact ? 'py-1' : 'max-h-64 overflow-y-auto'}>
             {filteredCountries.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground text-sm">
                 No se encontraron países
               </div>
             ) : (
-              <div className="py-2">
+              <div className={isCompact ? 'flex flex-col gap-0.5' : 'py-2'}>
                 {filteredCountries.map((country) => {
-                  const flagUrl = getCountryFlagUrl(country.code, 32);
+                  // Usar tamaño más grande para mejor calidad pero mostrar más pequeño con CSS
+                  const flagUrl = getCountryFlagUrl(country.code, isCompact ? 40 : 32);
                   const isSelected = currentCountry?.toUpperCase() === country.code.toUpperCase();
                   
                   return (
@@ -163,25 +170,38 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
                       key={country.code}
                       type="button"
                       onClick={() => handleCountryClick(country.code)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/60 transition-colors text-left ${
-                        isSelected ? 'bg-accent/40' : ''
-                      }`}
+                      className={isCompact 
+                        ? `w-full flex items-center justify-center px-1 py-1.5 hover:bg-accent/60 transition-colors ${
+                            isSelected ? 'bg-accent/40' : ''
+                          }`
+                        : `w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/60 transition-colors text-left ${
+                            isSelected ? 'bg-accent/40' : ''
+                          }`
+                      }
                     >
                       {flagUrl ? (
                         <img
                           src={flagUrl}
                           alt={country.name}
-                          className="w-7 h-5 object-cover shadow-sm country-flag-img"
+                          className={isCompact 
+                            ? "w-10 h-7 object-cover shadow-sm country-flag-img rounded border border-gray-200/50"
+                            : "w-7 h-5 object-cover shadow-sm country-flag-img"
+                          }
+                          style={isCompact ? { imageRendering: 'crisp-edges' } : {}}
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-7 h-5 bg-muted flex items-center justify-center">
+                        <div className={isCompact ? "w-10 h-7 bg-muted flex items-center justify-center rounded border border-gray-200/50" : "w-7 h-5 bg-muted flex items-center justify-center"}>
                           <span className="text-[10px] text-muted-foreground">{country.code}</span>
                         </div>
                       )}
-                      <span className="flex-1 text-sm font-medium text-foreground">{country.name}</span>
-                      {isSelected && (
-                        <Check className="w-4 h-4 text-primary" />
+                      {!isCompact && (
+                        <>
+                          <span className="flex-1 text-sm font-medium text-foreground">{country.name}</span>
+                          {isSelected && (
+                            <Check className="w-4 h-4 text-primary" />
+                          )}
+                        </>
                       )}
                     </button>
                   );
