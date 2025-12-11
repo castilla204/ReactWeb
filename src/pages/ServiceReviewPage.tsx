@@ -18,6 +18,7 @@ import {
     Zap,
     Grid3X3
 } from 'lucide-react';
+import { FormProgressTimeline } from '../components/FormProgressTimeline';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
@@ -258,65 +259,12 @@ export function ServiceReviewPage({
 
     return (
         <>
-            {/* Header Timeline - Estilo Airbnb - Fixed arriba del todo */}
-            <div className="fixed top-0 left-0 right-0 z-[9999] bg-white border-b border-gray-200 shadow-sm">
-                <div className="h-14 px-4 flex items-center justify-between w-full">
-                    {/* Botón volver */}
-                    <button
-                        onClick={onBack}
-                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-gray-800" />
-                    </button>
-                    
-                    {/* Steps indicator - Estilo Airbnb - Responsive */}
-                    <div className="flex items-center gap-1.5 sm:gap-3 flex-1 justify-center px-2 sm:px-4">
-                        {/* Paso 1: Ubicación */}
-                        <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all bg-gray-900 text-white shadow-md">
-                            <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold bg-white/20 text-white">1</span>
-                            <span className="hidden sm:inline">Ubicación</span>
-                        </div>
-                        <div className="w-4 sm:w-10 h-[2px] bg-gray-900" />
-                        
-                        {/* Paso 2: Experto */}
-                        <div className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${
-                            currentStep >= 2
-                                ? 'bg-gray-900 text-white shadow-md' 
-                                : 'bg-gray-100 text-gray-400'
-                        }`}>
-                            <span className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${
-                                currentStep >= 2
-                                    ? 'bg-white/20 text-white' 
-                                    : 'bg-gray-300 text-gray-400'
-                            }`}>2</span>
-                            <span className="hidden sm:inline">Experto</span>
-                        </div>
-                        <div className={`w-4 sm:w-10 h-[2px] transition-colors ${
-                            currentStep >= 3 ? 'bg-gray-900' : 'bg-gray-200'
-                        }`} />
-                        
-                        {/* Paso 3: Pago */}
-                        <div className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${
-                            currentStep >= 3
-                                ? 'bg-gray-900 text-white shadow-md' 
-                                : 'bg-gray-100 text-gray-400'
-                        }`}>
-                            <span className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${
-                                currentStep >= 3
-                                    ? 'bg-white/20 text-white' 
-                                    : 'bg-gray-300 text-gray-400'
-                            }`}>3</span>
-                            <span className="hidden sm:inline">Pago</span>
-                        </div>
-                    </div>
-
-                    <div className="w-8" /> {/* Spacer */}
-                </div>
-            </div>
+            {/* Header Timeline - Componente reutilizable */}
+            <FormProgressTimeline currentStep={currentStep} onBack={onBack} />
             
             <div className="min-h-screen bg-white">
                 {/* Spacer para compensar el header fijo */}
-                <div className="h-14"></div>
+                <div className="h-16"></div>
                 
                 {/* ========== VERSIÓN MÓVIL ========== */}
                 <div className="lg:hidden">
@@ -338,7 +286,7 @@ export function ServiceReviewPage({
 
                 {/* Galería móvil con carrusel */}
                 {finalImages.length > 0 && (
-                    <div className="relative">
+                    <div className="relative -mt-16">
                         <div 
                             ref={carouselRef}
                             className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
@@ -360,27 +308,27 @@ export function ServiceReviewPage({
                                     </div>
                                 </div>
                             ))}
-                                    </div>
+                        </div>
                         {/* Indicador de fotos */}
                         <div className="absolute bottom-4 right-4 bg-gray-900/80 text-white text-xs font-medium px-2.5 py-1 rounded-md">
                             {mobileImageIndex + 1} / {finalImages.length}
-                                    </div>
-                                </div>
+                        </div>
+                    </div>
                 )}
 
-                {/* Contenido móvil - Estilo Airbnb */}
-                <div className="px-6 pt-6 pb-32">
+                {/* Contenido móvil - Estilo Airbnb compacto */}
+                <div className="px-5 pt-4 pb-32">
                     {/* Título y ubicación */}
-                    <div className="mb-8">
-                        <h1 className="text-[26px] font-semibold text-[#222222] leading-[1.2] mb-3 tracking-tight">
+                    <div className="mb-6">
+                        <h1 className="text-[20px] font-semibold text-[#222222] leading-[1.2] mb-2 tracking-tight">
                             {serviceTypeName} por {finalExpertName}
                         </h1>
                         {/* Meta info - Estilo Airbnb */}
-                        <div className="flex flex-wrap items-center gap-x-2 text-[15px] text-[#717171]">
+                        <div className="flex flex-wrap items-center gap-x-2 text-[13px] text-[#717171]">
                             {finalRating > 0 ? (
                                 <>
                                     <div className="flex items-center gap-1">
-                                        <Star className="w-[14px] h-[14px] fill-[#222222] text-[#222222]" />
+                                        <Star className="w-[12px] h-[12px] fill-[#222222] text-[#222222]" />
                                         <span className="font-semibold text-[#222222]">{finalRating.toFixed(1)}</span>
                                     </div>
                                     <span>·</span>
@@ -396,29 +344,29 @@ export function ServiceReviewPage({
                                 </>
                             ) : (
                                 <span className="flex items-center gap-1 text-[#717171]">
-                                    <Star className="w-[14px] h-[14px]" />
+                                    <Star className="w-[12px] h-[12px]" />
                                     <span>Nuevo</span>
                                 </span>
                             )}
                         </div>
                     </div>
 
-                    <div className="h-px bg-[#DDDDDD] my-8" />
+                    <div className="h-px bg-[#DDDDDD] my-6" />
 
                     {/* Info del anfitrión - Estilo Airbnb */}
-                    <div className="mb-8">
-                        <div className="flex items-start gap-4 mb-4">
-                            <Avatar className="w-16 h-16">
+                    <div className="mb-6">
+                        <div className="flex items-start gap-3 mb-3">
+                            <Avatar className="w-12 h-12">
                                 <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                                <AvatarFallback className="bg-[#222222] text-white font-semibold text-lg">
+                                <AvatarFallback className="bg-[#222222] text-white font-semibold text-sm">
                                     {finalExpertName.charAt(0)}
                                 </AvatarFallback>
                             </Avatar>
-                            <div className="flex-1 pt-1">
-                                <h3 className="text-[18px] font-semibold text-[#222222] mb-2 leading-tight">
+                            <div className="flex-1 pt-0.5">
+                                <h3 className="text-[15px] font-semibold text-[#222222] mb-1 leading-tight">
                                     Anfitrión: {finalExpertName}
                                 </h3>
-                                <p className="text-[15px] text-[#717171] leading-relaxed">
+                                <p className="text-[13px] text-[#717171] leading-relaxed">
                                     {finalService?.expert?.createdAt 
                                         ? (() => {
                                             const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
@@ -431,62 +379,62 @@ export function ServiceReviewPage({
                         </div>
                     </div>
 
-                    <div className="h-px bg-[#DDDDDD] mb-8" />
+                    <div className="h-px bg-[#DDDDDD] mb-6" />
 
                     {/* Features destacadas - Estilo Airbnb */}
-                    <div className="grid grid-cols-1 gap-8 mb-8">
-                        <div className="flex items-start gap-4">
-                            <Shield className="w-6 h-6 text-[#222222] flex-shrink-0 mt-0.5" />
+                    <div className="grid grid-cols-1 gap-5 mb-6">
+                        <div className="flex items-start gap-3">
+                            <Shield className="w-5 h-5 text-[#222222] flex-shrink-0 mt-0.5" />
                             <div>
-                                <h4 className="text-[16px] font-semibold text-[#222222] mb-2 leading-tight">Cancelación gratuita</h4>
-                                <p className="text-[15px] text-[#717171] leading-relaxed">Cancela hasta 24h antes sin cargos</p>
+                                <h4 className="text-[14px] font-semibold text-[#222222] mb-1 leading-tight">Cancelación gratuita</h4>
+                                <p className="text-[13px] text-[#717171] leading-relaxed">Cancela hasta 24h antes sin cargos</p>
                             </div>
                         </div>
-                        <div className="flex items-start gap-4">
-                            <Headphones className="w-6 h-6 text-[#222222] flex-shrink-0 mt-0.5" />
+                        <div className="flex items-start gap-3">
+                            <Headphones className="w-5 h-5 text-[#222222] flex-shrink-0 mt-0.5" />
                             <div>
-                                <h4 className="text-[16px] font-semibold text-[#222222] mb-2 leading-tight">Soporte 24/7</h4>
-                                <p className="text-[15px] text-[#717171] leading-relaxed">Asistencia disponible en cualquier momento</p>
+                                <h4 className="text-[14px] font-semibold text-[#222222] mb-1 leading-tight">Soporte 24/7</h4>
+                                <p className="text-[13px] text-[#717171] leading-relaxed">Asistencia disponible en cualquier momento</p>
                             </div>
                         </div>
-                        <div className="flex items-start gap-4">
-                            <Award className="w-6 h-6 text-[#222222] flex-shrink-0 mt-0.5" />
+                        <div className="flex items-start gap-3">
+                            <Award className="w-5 h-5 text-[#222222] flex-shrink-0 mt-0.5" />
                             <div>
-                                <h4 className="text-[16px] font-semibold text-[#222222] mb-2 leading-tight">Garantía de satisfacción</h4>
-                                <p className="text-[15px] text-[#717171] leading-relaxed">Si no quedas satisfecho, te devolvemos el dinero</p>
+                                <h4 className="text-[14px] font-semibold text-[#222222] mb-1 leading-tight">Garantía de satisfacción</h4>
+                                <p className="text-[13px] text-[#717171] leading-relaxed">Si no quedas satisfecho, te devolvemos el dinero</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="h-px bg-[#DDDDDD] mb-8" />
+                    <div className="h-px bg-[#DDDDDD] mb-6" />
 
                     {/* Qué incluye */}
                                 {finalDeliverableTypes.length > 0 && (
                         <>
-                            <div className="mb-5">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Qué incluye</h3>
-                                        <div className="space-y-3">
+                            <div className="mb-4">
+                                <h3 className="text-[15px] font-semibold text-gray-900 mb-3">Qué incluye</h3>
+                                        <div className="space-y-2.5">
                                             {finalDeliverableTypes.map((dt) => (
-                                                <div key={dt.id} className="flex items-start gap-3">
-                                            <CheckCircle className="w-5 h-5 text-gray-900 flex-shrink-0 mt-0.5" />
+                                                <div key={dt.id} className="flex items-start gap-2.5">
+                                            <CheckCircle className="w-4 h-4 text-gray-900 flex-shrink-0 mt-0.5" />
                                             <div>
-                                                <span className="text-gray-900">{dt.displayName || dt.name}</span>
+                                                <span className="text-[13px] text-gray-900">{dt.displayName || dt.name}</span>
                                                 {dt.description && (
-                                                    <p className="text-sm text-gray-500 mt-0.5">{dt.description}</p>
+                                                    <p className="text-[12px] text-gray-500 mt-0.5">{dt.description}</p>
                                                 )}
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
-                            <div className="h-px bg-gray-200 mb-5" />
+                            <div className="h-px bg-gray-200 mb-4" />
                         </>
                     )}
 
                     {/* Descripción - Estilo Airbnb */}
-                    <div className="mb-8">
-                        <h3 className="text-[22px] font-semibold text-[#222222] mb-6 leading-tight">Acerca del servicio</h3>
-                        <p className="text-[16px] text-[#222222] leading-[1.6] whitespace-pre-line">
+                    <div className="mb-6">
+                        <h3 className="text-[16px] font-semibold text-[#222222] mb-4 leading-tight">Acerca del servicio</h3>
+                        <p className="text-[14px] text-[#222222] leading-[1.5] whitespace-pre-line">
                             {finalDescription || 'Este servicio profesional incluye todo lo necesario para garantizar tu satisfacción. Nuestro equipo de expertos está comprometido con brindarte la mejor experiencia posible.'}
                         </p>
                     </div>
@@ -494,13 +442,13 @@ export function ServiceReviewPage({
                     {/* Reseñas */}
                     {finalReviews.length > 0 && (
                         <>
-                            <div className="h-px bg-gray-200 mb-5" />
-                            <div className="mb-5">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Star className="w-5 h-5 fill-gray-900 text-gray-900" />
-                                    <span className="text-lg font-semibold">{finalRating.toFixed(1)}</span>
+                            <div className="h-px bg-gray-200 mb-4" />
+                            <div className="mb-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
+                                    <span className="text-[15px] font-semibold">{finalRating.toFixed(1)}</span>
                                     <span className="text-gray-500">·</span>
-                                    <span className="text-gray-600">{finalReviews.length} reseñas</span>
+                                    <span className="text-[13px] text-gray-600">{finalReviews.length} reseñas</span>
                                 </div>
                                 <EnhancedReviewsList reviews={finalReviews} maxReviews={5} />
                                     </div>
@@ -508,45 +456,49 @@ export function ServiceReviewPage({
                     )}
                                 </div>
 
-                {/* Footer fijo móvil - Estilo Airbnb */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#DDDDDD] shadow-[0_-2px_10px_rgba(0,0,0,0.1)] px-6 py-4 z-50">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-1 mb-0.5">
-                                <span className="text-xl font-semibold text-[#222222]">{formatPrice(finalPrice)} €</span>
-                                <span className="text-sm text-[#717171]">total</span>
+                {/* Footer fijo móvil - Estilo Airbnb moderno */}
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#DDDDDD] shadow-[0_-2px_16px_rgba(0,0,0,0.08)] z-50">
+                    <div className="px-6 py-4">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-1.5 mb-1">
+                                    <span className="text-[22px] font-semibold text-[#222222]">{formatPrice(finalPrice)} €</span>
+                                    <span className="text-[14px] text-[#717171] font-normal">total</span>
+                                </div>
+                                {finalRating > 0 && (
+                                    <div className="flex items-center gap-1.5 text-[13px] text-[#717171]">
+                                        <Star className="w-4 h-4 fill-[#222222] text-[#222222]" />
+                                        <span className="font-semibold text-[#222222]">{finalRating.toFixed(1)}</span>
+                                        <span>·</span>
+                                        <button className="underline hover:no-underline text-[#222222] font-medium">
+                                            {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                            {finalRating > 0 && (
-                                <div className="flex items-center gap-1 text-xs text-[#717171]">
-                                    <Star className="w-3 h-3 fill-[#222222] text-[#222222]" />
-                                    <span className="font-medium">{finalRating.toFixed(1)}</span>
-                                    <span>·</span>
-                                    <span>{finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}</span>
+                            {isAuthenticated ? (
+                                <Button
+                                    onClick={handleReserveClick}
+                                    className="h-11 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[15px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex-shrink-0"
+                                >
+                                    Reservar
+                                </Button>
+                            ) : (
+                                <div className="relative flex-shrink-0">
+                                    {/* Hidden Google button */}
+                                    <div ref={googleButtonRef} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }}></div>
+                                    {/* Custom button */}
+                                    <Button
+                                        onClick={handleGoogleSignIn}
+                                        disabled={!isGoogleReady}
+                                        className="h-11 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[15px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-2.5"
+                                    >
+                                        <GoogleIcon />
+                                        <span>Inicia sesión</span>
+                                    </Button>
                                 </div>
                             )}
                         </div>
-                        {isAuthenticated ? (
-                            <button
-                                onClick={handleReserveClick}
-                                className="h-12 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex-shrink-0"
-                            >
-                                Reservar
-                            </button>
-                        ) : (
-                            <div className="relative flex-shrink-0">
-                                {/* Hidden Google button */}
-                                <div ref={googleButtonRef} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }}></div>
-                                {/* Custom button */}
-                                <button
-                                    onClick={handleGoogleSignIn}
-                                    disabled={!isGoogleReady}
-                                    className="h-12 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl inline-flex items-center justify-center gap-3"
-                                >
-                                    <GoogleIcon />
-                                    <span>Inicia sesión</span>
-                                </button>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>

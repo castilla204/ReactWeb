@@ -24,6 +24,7 @@ import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
 import Autocomplete from 'react-google-autocomplete';
 import { Search } from 'lucide-react';
+import { FormProgressTimeline } from '../components/FormProgressTimeline';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
 
@@ -628,8 +629,11 @@ const SearchCreationPage: React.FC = () => {
             )}
                     {currentStep === 1 && (
                 <div className="w-full h-screen flex flex-col lg:flex-row bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative">
+                    {/* Timeline Header */}
+                    <FormProgressTimeline currentStep={1} onBack={() => setCurrentStep(0)} />
+                    
                     {/* Left Side - Content */}
-                    <div className="flex-1 flex flex-col overflow-hidden lg:overflow-y-auto">
+                    <div className="flex-1 flex flex-col overflow-hidden lg:overflow-y-auto" style={{ paddingTop: '64px' }}>
                             {searchParameters.category && searchParameters.serviceTypeId ? (
                                 <div className="flex-1 min-h-0 overflow-hidden">
                                     <SearchParameterForm

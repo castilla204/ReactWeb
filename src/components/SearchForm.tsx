@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Wallet, ArrowRight, Shield, Check } from 'lucide-react';
+import { FormProgressTimeline } from './FormProgressTimeline';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { useAuth } from '../contexts/AuthContext';
@@ -191,46 +192,11 @@ export default function SearchForm({
 
     return (
         <div className="bg-background min-h-screen">
-            {/* Header Section - Fixed - Estilo Airbnb */}
-            <div className="fixed top-0 left-0 right-0 z-[9999] bg-white border-b border-gray-200 shadow-sm">
-                <div className="h-14 px-4 flex items-center justify-between w-full">
-                    {/* Botón volver */}
-                    <button
-                        onClick={handleBack}
-                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-gray-800" />
-                    </button>
-                    
-                    {/* Steps indicator - Estilo Airbnb - Responsive */}
-                    <div className="flex items-center gap-1.5 sm:gap-3 flex-1 justify-center px-2 sm:px-4">
-                        {/* Paso 1: Ubicación */}
-                        <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all bg-gray-900 text-white shadow-md">
-                            <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold bg-white/20 text-white">1</span>
-                            <span className="hidden sm:inline">Ubicación</span>
-                        </div>
-                        <div className="w-4 sm:w-10 h-[2px] bg-gray-900" />
-                        
-                        {/* Paso 2: Experto */}
-                        <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all bg-gray-900 text-white shadow-md">
-                            <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold bg-white/20 text-white">2</span>
-                            <span className="hidden sm:inline">Experto</span>
-                        </div>
-                        <div className="w-4 sm:w-10 h-[2px] bg-gray-900" />
-                        
-                        {/* Paso 3: Pago */}
-                        <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all bg-gray-900 text-white shadow-md">
-                            <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold bg-white/20 text-white">3</span>
-                            <span className="hidden sm:inline">Pago</span>
-                        </div>
-                    </div>
-
-                    <div className="w-8" /> {/* Spacer */}
-                </div>
-            </div>
+            {/* Header Timeline - Componente reutilizable con shadcn Stepper */}
+            <FormProgressTimeline currentStep={3} onBack={handleBack} />
             
             {/* Spacer para compensar el header fijo */}
-            <div className="h-14"></div>
+            <div className="h-16"></div>
 
             {/* Main Content - Estilo moderno minimalista */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
