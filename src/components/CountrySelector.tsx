@@ -8,13 +8,15 @@ interface CountrySelectorProps {
   currentCountry?: string | null;
   className?: string;
   variant?: 'default' | 'compact'; // Nueva prop para variante compacta
+  style?: React.CSSProperties; // Estilos inline para control dinámico
 }
 
 const CountrySelector: React.FC<CountrySelectorProps> = ({
   onCountrySelect,
   currentCountry,
   className = '',
-  variant = 'default'
+  variant = 'default',
+  style
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,31 +65,53 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
   const isCompact = variant === 'compact';
   
   return (
-    <div className={`relative z-50 ${className}`} ref={dropdownRef}>
-      {/* Botón trigger - estilo adaptativo */}
+    <div className={`relative z-50 ${className}`} ref={dropdownRef} style={{ width: 'auto', minWidth: 'auto' }}>
+      {/* Botón trigger - estilo adaptativo - Sin padding derecho para pegar separador */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={isCompact 
           ? "flex items-center gap-1.5 h-9 px-2.5 hover:bg-accent/60 transition-all border border-border/40 hover:border-border/60 text-xs font-medium text-foreground/80 hover:text-foreground bg-background/50"
-          : "flex items-center gap-2 h-12 px-4 hover:bg-accent/60 transition-colors text-foreground"
+          : "flex items-center hover:bg-gray-50 transition-colors text-foreground"
         }
-        style={{ borderRadius: '0', boxShadow: 'none' }}
+        style={{ 
+          ...style,
+          borderRadius: '0', 
+          boxShadow: 'none', 
+          paddingRight: isCompact ? undefined : '0',
+          marginRight: '0'
+        }}
       >
         {currentCountryFlag ? (
           <img
             src={currentCountryFlag}
             alt={currentCountryName}
-            className={`${isCompact ? "w-4 h-3" : "w-5 h-4"} object-cover country-flag-img`}
+            className="object-cover country-flag-img flex-shrink-0"
+            style={{ 
+              width: isCompact ? '16px' : (style?.height ? `${parseInt(style.height.toString()) * 0.35}px` : '20px'),
+              height: isCompact ? '12px' : (style?.height ? `${parseInt(style.height.toString()) * 0.25}px` : '16px')
+            }}
             loading="lazy"
           />
         ) : (
-          <div className={isCompact ? "w-4 h-3 bg-muted flex items-center justify-center" : "w-5 h-4 bg-muted flex items-center justify-center"}>
-            <span className={isCompact ? "text-[6px] text-muted-foreground" : "text-[8px] text-muted-foreground"}>🌍</span>
+          <div 
+            className="bg-muted flex items-center justify-center flex-shrink-0"
+            style={{ 
+              width: isCompact ? '16px' : (style?.height ? `${parseInt(style.height.toString()) * 0.35}px` : '20px'),
+              height: isCompact ? '12px' : (style?.height ? `${parseInt(style.height.toString()) * 0.25}px` : '16px')
+            }}
+          >
+            <span className="text-muted-foreground" style={{ fontSize: isCompact ? '6px' : '8px' }}>🌍</span>
           </div>
         )}
         {!isCompact && (
-          <span className="text-sm font-medium text-foreground max-w-[80px] truncate hidden sm:block">
+          <span 
+            className="font-medium text-foreground truncate hidden sm:block"
+            style={{ 
+              fontSize: style?.height ? `${parseInt(style.height.toString()) * 0.25}px` : '14px',
+              maxWidth: style?.minWidth ? `${parseInt(style.minWidth.toString()) - 60}px` : '80px'
+            }}
+          >
             {currentCountryName}
           </span>
         )}
@@ -96,7 +120,15 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
             {currentCountry?.toUpperCase()}
           </span>
         )}
-        <ChevronDown className={`${isCompact ? 'w-3 h-3' : 'w-4 h-4'} text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown 
+          className="text-muted-foreground transition-transform flex-shrink-0"
+          style={{ 
+            width: isCompact ? '12px' : (style?.height ? `${parseInt(style.height.toString()) * 0.3}px` : '16px'),
+            height: isCompact ? '12px' : (style?.height ? `${parseInt(style.height.toString()) * 0.3}px` : '16px'),
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            marginRight: '0px'
+          }}
+        />
       </button>
 
       {/* Dropdown */}

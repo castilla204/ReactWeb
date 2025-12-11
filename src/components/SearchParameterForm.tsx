@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useWindowSize } from '../hooks/useWindowSize';
 import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock } from 'lucide-react';
 import { ImageCarousel } from './ui/image-carousel';
 import { useLoadScript } from '@react-google-maps/api';
@@ -38,6 +39,21 @@ interface SearchParameterFormProps {
     serviceTypeId: number | null;
 }
 export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId }: SearchParameterFormProps) {
+    const { width } = useWindowSize();
+    
+    // Calcular tamaños basados en el ancho real de la pantalla
+    // iPhone SE: 375px, iPhone XR: 414px, iPhone 12 Pro Max: 428px
+    const isLargeMobile = width >= 414; // iPhone XR y superiores
+    const isMediumMobile = width >= 375 && width < 414; // iPhone SE y similares
+    const isSmallMobile = width < 375; // Pantallas muy pequeñas
+    
+    // Tamaños dinámicos basados en el ancho real
+    const searchBarHeight = isLargeMobile ? 64 : isMediumMobile ? 56 : 48; // h-16, h-14, h-12
+    const searchBarPadding = isLargeMobile ? 24 : isMediumMobile ? 20 : 16; // px-6, px-5, px-4
+    const searchBarTextSize = isLargeMobile ? 18 : isMediumMobile ? 16 : 14; // text-lg, text-base, text-sm
+    const iconSize = isLargeMobile ? 24 : isMediumMobile ? 20 : 16; // w-6, w-5, w-4
+    const countrySelectorMinWidth = isLargeMobile ? 160 : isMediumMobile ? 130 : 100;
+    
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
         libraries
@@ -517,9 +533,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         onComplete(searchParameterData);
     };
     return (
-        <div className="bg-white h-[100dvh] flex flex-col overflow-hidden fixed inset-0 z-[100]">
-            {/* Header - Estilo Airbnb minimalista */}
-            <header className="bg-white border-b border-gray-200 flex-shrink-0 relative z-[101] w-full">
+        <div className="bg-white h-[100dvh] flex flex-col overflow-hidden fixed inset-0 z-[100]" style={{ paddingTop: '64px' }}>
+            {/* Header - Oculto porque el timeline ya lo maneja */}
+            <header className="hidden">
                 <div className="h-14 px-4 flex items-center justify-between w-full">
                     {/* Botón volver */}
                     <button
@@ -827,12 +843,18 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                         ) : (
                             <>
-                            {/* Barra de búsqueda móvil - Más grande en pantallas grandes */}
-                            <div className="absolute top-4 sm:top-6 left-4 sm:left-6 right-4 sm:right-6 z-[9999] pointer-events-none">
-                                <div className="pointer-events-auto max-w-2xl mx-auto">
-                                    <div className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center overflow-visible">
-                                        {/* Selector de país - Más grande */}
-                                        <div className="flex-shrink-0">
+                            {/* Barra de búsqueda móvil - Tamaños dinámicos basados en ancho real */}
+                            <div className="absolute top-4 left-4 right-4 z-[9998] pointer-events-none" style={{ top: isLargeMobile ? '24px' : '16px', left: isLargeMobile ? '24px' : '16px', right: isLargeMobile ? '24px' : '16px' }}>
+                                <div className="pointer-events-auto w-full mx-auto" style={{ maxWidth: isLargeMobile ? '800px' : isMediumMobile ? '700px' : '600px' }}>
+                                    <div 
+                                        className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center overflow-hidden"
+                                        style={{ 
+                                            height: `${searchBarHeight}px`,
+                                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                                        }}
+                                    >
+                                        {/* Selector de país y separador juntos - Sin espacio entre ellos */}
+                                        <div className="flex items-center flex-shrink-0" style={{ marginRight: '0' }}>
                                             <CountrySelector
                                                 onCountrySelect={(countryCode, coordinates) => {
                                                     setSelectedCountry(countryCode);
@@ -840,7 +862,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
                                                         map.setZoom(coordinates.zoom);
                                                     }
-                                                    // Actualizar coordenadas automáticamente al cambiar país
                                                     setFormData(prev => ({
                                                         ...prev,
                                                         latitude: coordinates.lat.toString(),
@@ -848,18 +869,33 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         locationName: getCountryName(countryCode) || '',
                                                     }));
                                                     setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
-                                                    // Limpiar búsqueda al cambiar país
                                                     setSearchAddress('');
                                                     setSelectedAddress('');
                                                 }}
                                                 currentCountry={selectedCountry}
-                                                className="[&>button]:h-14 sm:[&>button]:h-16 [&>button]:px-5 sm:[&>button]:px-6 [&>button]:min-w-[120px] sm:[&>button]:min-w-[160px]"
+                                                style={{
+                                                    height: `${searchBarHeight}px`,
+                                                    paddingLeft: `${searchBarPadding}px`,
+                                                    paddingRight: '0px',
+                                                    marginRight: '0px',
+                                                    gap: isLargeMobile ? '8px' : '6px',
+                                                    width: 'auto',
+                                                    minWidth: 'auto'
+                                                }}
+                                                className="flex items-center"
+                                            />
+                                            {/* Separador - Inmediatamente después del botón, sin espacio */}
+                                            <div 
+                                                className="w-px bg-gray-200 flex-shrink-0" 
+                                                style={{ 
+                                                    height: `${searchBarHeight * 0.6}px`,
+                                                    marginLeft: '0px',
+                                                    marginRight: '0px'
+                                                }}
                                             />
                                         </div>
                                         
-                                        <div className="w-px h-9 sm:h-11 bg-gray-200 flex-shrink-0" />
-                                        
-                                        {/* Campo de búsqueda - Más grande */}
+                                        {/* Campo de búsqueda - Tamaños dinámicos */}
                                         <div className="flex-1 relative min-w-0">
                                             {isLoaded ? (
                                                 <Autocomplete
@@ -868,7 +904,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         componentRestrictions: { country: selectedCountry.toLowerCase() },
                                                         fields: ['formatted_address', 'geometry', 'name', 'place_id', 'address_components']
                                                     }}
-                                                    className="w-full h-14 sm:h-16 pl-5 sm:pl-6 pr-12 sm:pr-14 text-base sm:text-lg text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
+                                                    style={{
+                                                        height: `${searchBarHeight}px`,
+                                                        paddingLeft: `${searchBarPadding}px`,
+                                                        paddingRight: `${iconSize + searchBarPadding}px`,
+                                                        fontSize: `${searchBarTextSize}px`
+                                                    }}
+                                                    className="w-full text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none truncate"
                                                     placeholder="Buscar ciudad o dirección..."
                                                     disabled={isGeocoding}
                                                 />
@@ -877,12 +919,24 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 type="text"
                                                     placeholder="Cargando mapa..."
                                                     disabled
-                                                    className="w-full h-14 sm:h-16 pl-5 sm:pl-6 pr-12 sm:pr-14 text-base sm:text-lg text-gray-400 placeholder-gray-400 bg-transparent border-0"
+                                                    style={{
+                                                        height: `${searchBarHeight}px`,
+                                                        paddingLeft: `${searchBarPadding}px`,
+                                                        paddingRight: `${iconSize + searchBarPadding}px`,
+                                                        fontSize: `${searchBarTextSize}px`
+                                                    }}
+                                                    className="w-full text-gray-400 placeholder-gray-400 bg-transparent border-0 truncate"
                                                 />
                                             )}
                                             {isGeocoding ? (
-                                                <div className="absolute right-5 sm:right-6 top-1/2 -translate-y-1/2 pointer-events-none">
-                                                    <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                                                <div 
+                                                    className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
+                                                    style={{ right: `${searchBarPadding}px` }}
+                                                >
+                                                    <div 
+                                                        className="border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"
+                                                        style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
+                                                    />
                                                 </div>
                                             ) : searchAddress ? (
                                                 <button
@@ -893,12 +947,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                             searchInputRef.current.focus();
                                                         }
                                                     }}
-                                                    className="absolute right-5 sm:right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    className="absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                                                    style={{ right: `${searchBarPadding}px` }}
                                                 >
-                                                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                                                    <X style={{ width: `${iconSize}px`, height: `${iconSize}px` }} />
                                                 </button>
                                             ) : (
-                                                <Search className="absolute right-5 sm:right-6 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-gray-400 pointer-events-none" />
+                                                <Search 
+                                                    className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                                    style={{ right: `${searchBarPadding}px`, width: `${iconSize}px`, height: `${iconSize}px` }}
+                                                />
                                             )}
                                         </div>
                                     </div>
@@ -962,11 +1020,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                         ) : (
                             <>
-                            {/* Barra de búsqueda estilo Airbnb - Mejorada */}
+                            {/* Barra de búsqueda desktop - Estilo Airbnb */}
                             <div className="absolute top-4 left-4 right-4 z-[9999] pointer-events-none">
                                 <div className="max-w-2xl pointer-events-auto">
-                                    <div className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center overflow-visible hover:shadow-2xl transition-shadow">
-                                        {/* Selector de país integrado - Más grande */}
+                                    <div className="bg-white rounded-full shadow-lg hover:shadow-xl border border-gray-200 flex items-center overflow-hidden transition-shadow">
+                                        {/* Selector de país - Compacto */}
                                         <div className="flex-shrink-0">
                                             <CountrySelector
                                                 onCountrySelect={(countryCode, coordinates) => {
@@ -975,7 +1033,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
                                                         map.setZoom(coordinates.zoom);
                                                     }
-                                                    // Actualizar coordenadas automáticamente al cambiar país
                                                     setFormData(prev => ({
                                                         ...prev,
                                                         latitude: coordinates.lat.toString(),
@@ -983,19 +1040,18 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         locationName: getCountryName(countryCode) || '',
                                                     }));
                                                     setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
-                                                    // Limpiar búsqueda al cambiar país
                                                     setSearchAddress('');
                                                     setSelectedAddress('');
                                                 }}
                                                 currentCountry={selectedCountry}
-                                                className="[&>button]:h-14 [&>button]:px-5 [&>button]:min-w-[140px]"
+                                                className="[&>button]:h-14 [&>button]:px-4 [&>button]:min-w-[110px] [&>button]:gap-2"
                                             />
                                         </div>
                                         
-                                        {/* Separador */}
-                                        <div className="w-px h-8 bg-gray-200 flex-shrink-0" />
+                                        {/* Separador - Más cerca */}
+                                        <div className="w-px h-7 bg-gray-200 flex-shrink-0 mx-1" />
                                         
-                                        {/* Campo de búsqueda - Más grande */}
+                                        {/* Campo de búsqueda */}
                                         <div className="flex-1 relative min-w-0">
                                             {isLoaded ? (
                                                 <Autocomplete
@@ -1004,7 +1060,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         componentRestrictions: { country: selectedCountry.toLowerCase() },
                                                         fields: ['formatted_address', 'geometry', 'name', 'place_id', 'address_components']
                                                     }}
-                                                    className="w-full h-14 pl-5 pr-12 text-base text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0"
+                                                    className="w-full h-14 pl-4 pr-12 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0 truncate"
                                                     placeholder="Buscar ciudad o dirección..."
                                                     disabled={isGeocoding}
                                                 />
@@ -1013,11 +1069,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 type="text"
                                                     placeholder="Cargando mapa..."
                                                     disabled
-                                                    className="w-full h-14 pl-5 pr-12 text-base text-gray-400 placeholder-gray-400 bg-transparent border-0"
+                                                    className="w-full h-14 pl-4 pr-12 text-sm text-gray-400 placeholder-gray-400 bg-transparent border-0 truncate"
                                                 />
                                             )}
                                             {isGeocoding ? (
-                                                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                                                     <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
                                                 </div>
                                             ) : searchAddress ? (
@@ -1029,12 +1085,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                             searchInputRef.current.focus();
                                                         }
                                                     }}
-                                                    className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
                                                 >
                                                     <X className="w-5 h-5" />
                                                 </button>
                                             ) : (
-                                                <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                                                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                                             )}
                                         </div>
                                     </div>
