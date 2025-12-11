@@ -137,10 +137,37 @@
         background: #f1f5f9;
     }
 
-    /* Professional focus rings for scrollable areas */
+    /* Professional focus rings for scrollable areas - REMOVED */
     *:focus-visible {
-        outline: 2px solid #3b82f6;
-        outline-offset: 2px;
+        outline: none !important;
+        outline-offset: 0 !important;
+    }
+    
+    /* Remove any purple/violet outlines and borders */
+    * {
+        outline-color: transparent !important;
+    }
+    
+    *:focus,
+    *:focus-visible,
+    *:active,
+    *:focus-within {
+        outline: none !important;
+        outline-offset: 0 !important;
+        box-shadow: none !important;
+    }
+    
+    /* Remove selection outline */
+    *::selection {
+        background-color: transparent;
+    }
+    
+    /* Remove any purple borders from Radix UI or other libraries */
+    [data-radix-collection-item],
+    [data-radix-focus-guard],
+    [data-radix-portal] {
+        outline: none !important;
+        border: none !important;
     }
 
         /* Remove focus outline from range sliders */

@@ -83,7 +83,7 @@ const categoryBanners: { [key: number]: string } = {
 const statusRoadmap = [
     { label: 'Pendiente', status: 'pending', color: 'bg-yellow-600' },
     { label: 'En progreso', status: 'in_progress', color: 'bg-blue-600' },
-    { label: 'En revisión', status: 'awaiting_client_decision', color: 'bg-purple-600' },
+    { label: 'En revisión', status: 'awaiting_client_decision', color: 'bg-blue-600' },
     { label: 'Completado', status: 'completed', color: 'bg-green-600' },
 ];
 
@@ -152,25 +152,27 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     const [showMoneyDistribution, setShowMoneyDistribution] = useState(false);
     const [selectedDistributionStatus, setSelectedDistributionStatus] = useState<string>('');
 
-    // Prevent body scroll when chat is active on mobile and ensure scroll to bottom
+    // Prevent body scroll completely - no scroll on main page EVER
     useEffect(() => {
         const originalOverflow = document.body.style.overflow;
         const originalPosition = document.body.style.position;
         const originalWidth = document.body.style.width;
+        const originalHeight = document.body.style.height;
         
-        if (activeTab === 'chat') {
-            document.body.style.overflow = 'hidden';
-            document.body.style.position = 'fixed';
-            document.body.style.width = '100%';
-            
-            // Scroll chat to bottom when switching to chat tab - multiple attempts for reliability
+        // Always prevent body scroll
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.body.style.height = '100vh';
+        
+        // Scroll chat to bottom when switching to chat tab - multiple attempts for reliability
+        if (activeTab === 'chat' || !activeTab) {
             const scrollToBottom = () => {
-                const chatContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
+                const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
                 if (chatContainer) {
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 }
-                // Also try to find the messagesEndRef element
-                const messagesEnd = chatContainer?.querySelector('[ref]') || chatContainer?.lastElementChild;
+                const messagesEnd = document.querySelector('[data-chat-messages]')?.lastElementChild as HTMLElement;
                 if (messagesEnd) {
                     messagesEnd.scrollIntoView({ behavior: 'auto', block: 'end' });
                 }
@@ -180,16 +182,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             setTimeout(scrollToBottom, 100);
             setTimeout(scrollToBottom, 250);
             setTimeout(scrollToBottom, 400);
-        } else {
-            document.body.style.overflow = originalOverflow || '';
-            document.body.style.position = originalPosition || '';
-            document.body.style.width = originalWidth || '';
         }
 
         return () => {
             document.body.style.overflow = originalOverflow || '';
             document.body.style.position = originalPosition || '';
             document.body.style.width = originalWidth || '';
+            document.body.style.height = originalHeight || '';
         };
     }, [activeTab]);
 
@@ -1046,8 +1045,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     // Only show loading for critical queries
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-white text-black">
-                <p className="text-lg">Cargando...</p>
+            <div className="flex items-center justify-center h-screen bg-gray-50">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-3 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+                    <p className="text-sm text-gray-600">Cargando...</p>
+                </div>
             </div>
         );
     }
@@ -1058,18 +1060,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     // Solo mostrar pantalla de error si es crítico y no es un error de red (los de red se manejan con toast)
     if (isError && error && !isNetworkErr) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 p-4">
-                <div className="text-center space-y-6 max-w-md">
-                    <div className="flex justify-center">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-full blur-xl opacity-50"></div>
-                            <div className="relative w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-200 dark:border-gray-700">
-                                <AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500" strokeWidth={1.5} />
-                            </div>
-                        </div>
+            <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+                <div className="text-center space-y-4 max-w-md">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                        <AlertCircle className="w-8 h-8 text-gray-400" />
                     </div>
-                    <div className="space-y-2">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-900">Error al cargar</p>
+                        <p className="text-xs text-gray-500">
                             {error?.message || 'Ha ocurrido un error inesperado'}
                         </p>
                     </div>
@@ -1077,7 +1075,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         onClick={() => invalidateAll()}
                         variant="outline"
                         size="sm"
-                        className="mt-4"
+                        className="mt-2"
                     >
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Reintentar
@@ -1088,34 +1086,39 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            {/* Header - Mejorado con más información */}
-            <header className="bg-background/95 backdrop-blur-md border-b border-border/50 sticky top-0 z-50 shadow-sm">
-                <div className="px-4 sm:px-6 lg:px-8 py-4">
+        <div className="bg-gray-50 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 64px)', maxHeight: 'calc(100vh - 64px)', minHeight: 'calc(100vh - 64px)', margin: 0, padding: 0 }}>
+            {/* Header - Minimalista y limpio */}
+            <header className="hidden lg:flex bg-white border-b border-gray-200/60 flex-shrink-0 z-50" style={{ margin: 0 }}>
+                <div className="px-6 py-3 w-full">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={onBack || (() => navigate('/busquedas'))}
-                                className="h-10 w-10 hover:bg-muted rounded-lg"
+                                className="h-8 w-8 hover:bg-gray-50 rounded-md transition-colors"
                             >
-                                <ArrowLeft className="w-5 h-5" />
+                                <ArrowLeft className="w-4 h-4 text-gray-700" />
                             </Button>
                             <div className="flex flex-col min-w-0 flex-1">
-                                <h1 className="text-xl font-semibold text-foreground tracking-tight truncate">
+                                <h1 className="text-base font-semibold text-gray-900 tracking-tight truncate">
                                     {search?.title || serviceInfo?.name || category?.name || 'Contratación'}
                                 </h1>
+                                {searchHireStatusInfo && (
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <StatusBadge statusInfo={searchHireStatusInfo} />
+                                    </div>
+                                )}
                             </div>
                         </div>
                         
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-muted rounded-lg" title="Compartir">
-                                <Share2 className="w-5 h-5" />
+                        <div className="hidden lg:flex items-center gap-1 flex-shrink-0">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-50 rounded-md transition-colors" title="Compartir">
+                                <Share2 className="w-4 h-4 text-gray-600" />
                             </Button>
                             {canViewChat && (
-                                <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-muted rounded-lg" title="Mensajes">
-                                    <MessageCircle className="w-5 h-5" />
+                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-50 rounded-md transition-colors" title="Mensajes">
+                                    <MessageCircle className="w-4 h-4 text-gray-600" />
                                 </Button>
                             )}
                         </div>
@@ -1125,16 +1128,16 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
             {/* ✅ Mensaje simple para errores de red */}
             {isNetworkErr && (
-                <div className="flex flex-col items-center justify-center py-16 px-4 min-h-[60vh]">
+                <div className="flex flex-col items-center justify-center py-16 px-4 flex-1 bg-gray-50 overflow-y-auto">
                     <div className="flex flex-col items-center gap-4 max-w-sm text-center">
-                        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                            <WifiOff className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                            <WifiOff className="w-8 h-8 text-gray-400" />
                         </div>
-                        <div className="space-y-2">
-                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-900">
                                 No se pudo conectar con el servidor
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-500">
+                            <p className="text-xs text-gray-500">
                                 Intenta nuevamente en unos minutos
                             </p>
                         </div>
@@ -1151,75 +1154,89 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 </div>
             )}
 
-            {/* Main Layout - Dos columnas en desktop, tabs en móvil */}
+            {/* Main Layout - Sin scroll, solo scroll interno en componentes */}
             {!isNetworkErr && (
-            <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)] lg:h-[calc(100vh-80px)] bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-950 dark:to-gray-900 lg:gap-6 lg:p-6 overflow-hidden">
-                {/* Chat Section - Izquierda en desktop, tabs en móvil */}
+            <div className="flex flex-col lg:flex-row flex-1 min-h-0 bg-gray-50 lg:gap-2 overflow-hidden" style={{ minHeight: 0, flex: '1 1 0%', overflow: 'hidden', padding: 0 }}>
+                {/* Chat Section - Izquierda en desktop, tabs en móvil - Más grande */}
                 {canViewChat && (
-                    <div className="flex-1 lg:w-[60%] xl:w-[65%] bg-white dark:bg-gray-900 flex flex-col lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-200/50 dark:border-gray-800/50 lg:overflow-hidden flex-shrink-0 h-full lg:h-auto">
-                        {/* Tabs - Solo en móvil */}
-                        <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')} className="w-full flex flex-col flex-1 min-h-0 h-full">
-                            <div className="border-b border-border bg-background/95 backdrop-blur-sm p-2 sticky top-0 z-40 lg:hidden flex-shrink-0">
-                                <TabsList className="w-full grid grid-cols-2 h-10">
-                                    <TabsTrigger value="chat" className="flex items-center gap-2 text-sm font-medium">
+                    <div className="flex-1 lg:w-[70%] xl:w-[75%] bg-white flex flex-col lg:rounded-lg lg:border lg:border-gray-200/60 lg:overflow-hidden flex-shrink-0 min-h-0" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', margin: 0 }}>
+                        {/* Tabs - Solo en móvil - Minimalista */}
+                        <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')} className="w-full flex flex-col flex-1 min-h-0" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                            <div className="bg-white sticky top-0 z-40 lg:hidden flex-shrink-0 border-b border-gray-200/60">
+                                <TabsList className="w-full grid grid-cols-2 h-11 bg-transparent p-0 gap-0 border-none">
+                                    <TabsTrigger 
+                                        value="chat" 
+                                        className="flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 relative border-b-2 border-transparent data-[state=active]:text-gray-900 data-[state=active]:border-gray-900 data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:border-gray-300"
+                                    >
                                         <MessageSquare className="w-4 h-4" />
                                         Chat
                                     </TabsTrigger>
-                                    <TabsTrigger value="details" className="flex items-center gap-2 text-sm font-medium">
+                                    <TabsTrigger 
+                                        value="details" 
+                                        className="flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 relative border-b-2 border-transparent data-[state=active]:text-gray-900 data-[state=active]:border-gray-900 data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:border-gray-300"
+                                    >
                                         <FileText className="w-4 h-4" />
                                         Detalles
                                     </TabsTrigger>
                                 </TabsList>
                             </div>
 
-                            {/* Chat Content - Visible siempre en desktop, solo en tab chat en móvil */}
-                            <TabsContent value="chat" className="mt-0 flex-1 flex flex-col lg:mt-0 lg:flex min-h-0 h-full">
-                                <div className="h-full flex-1 min-h-0 relative flex flex-col overflow-hidden">
-                                    <Chat 
-                                        searchId={searchId} 
-                                        searchHireId={searchHireId}
-                                        isExpert={!!isExpert} 
-                                        expertData={{
-                                            name: expertData?.name, 
-                                            profilePictureUrl: expertData?.profilePictureUrl 
-                                        }}
-                                    />
-                                </div>
-                            </TabsContent>
+                            {/* Chat Content - Visible siempre en desktop, solo en tab chat en móvil - Con scroll interno */}
+                            {(activeTab === 'chat' || !activeTab) && (
+                                <TabsContent value="chat" className="mt-0 flex-1 flex flex-col lg:mt-0 lg:flex min-h-0 overflow-hidden" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', flex: '1 1 0%', overflow: 'hidden' }}>
+                                    <div className="h-full flex-1 min-h-0 flex flex-col overflow-hidden" style={{ minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', marginBottom: 0, paddingBottom: 0 }}>
+                                        <Chat 
+                                            searchId={searchId} 
+                                            searchHireId={searchHireId}
+                                            isExpert={!!isExpert} 
+                                            expertData={{
+                                                name: expertData?.name, 
+                                                profilePictureUrl: expertData?.profilePictureUrl 
+                                            }}
+                                        />
+                                    </div>
+                                </TabsContent>
+                            )}
                                     
-                            {/* Details Content - Solo visible en móvil (en desktop está en la columna derecha) */}
-                            <TabsContent value="details" className="mt-0 flex-1 flex flex-col lg:hidden">
-                                <div className="flex-1 flex flex-col bg-background">
-                                    <div className="flex-1 overflow-y-auto p-5 space-y-5 pb-24 lg:pb-5">
-                                {/* Service Info */}
-                                <div className="bg-card rounded-xl border border-border/50 p-4 space-y-3 shadow-sm transition-shadow hover:shadow-md">
-                                    <h3 className="text-sm font-semibold text-foreground">Servicio</h3>
-                                    <div className="space-y-2.5">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Tag className="w-4 h-4" />
+                            {/* Details Content - Solo visible en móvil (en desktop está en la columna derecha) - Con scroll interno */}
+                            {activeTab === 'details' && (
+                                <div className="mt-0 flex-1 flex flex-col lg:hidden min-h-0 overflow-hidden">
+                                <div className="flex-1 flex flex-col bg-background min-h-0 overflow-hidden">
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: '0.5rem' }}>
+                                {/* Service Info - Minimalista */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-semibold text-gray-900">Servicio</h3>
+                                        {searchHireStatusInfo && (
+                                            <StatusBadge statusInfo={searchHireStatusInfo} />
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-sm text-gray-900">
+                                            <Tag className="w-3.5 h-3.5 text-gray-500" />
                                             <span>{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
-                                                </div>
+                                        </div>
                                         {serviceInfo?.serviceTypeName && (
                                             <div className="text-sm">
-                                                <span className="text-muted-foreground">Tipo: </span>
-                                                <span className="text-foreground font-medium">{serviceInfo.serviceTypeName}</span>
+                                                <span className="text-gray-500">Tipo: </span>
+                                                <span className="text-gray-900 font-medium">{serviceInfo.serviceTypeName}</span>
                                             </div>
                                         )}
                                         {search?.description && (
                                             <div className="text-sm">
-                                                <span className="text-muted-foreground">Descripción: </span>
-                                                <span className="text-foreground">{search.description}</span>
+                                                <span className="text-gray-500">Descripción: </span>
+                                                <span className="text-gray-700 leading-relaxed">{search.description}</span>
                                             </div>
                                         )}
                                         {serviceInfo?.locationRange && (
-                                            <div className="text-xs text-muted-foreground">
-                                                Radio de servicio: {serviceInfo.locationRange} km
+                                            <div className="text-xs text-gray-500">
+                                                Radio de servicio: <span className="font-medium text-gray-900">{serviceInfo.locationRange} km</span>
                                             </div>
                                         )}
                                         {serviceInfo?.price && (
-                                            <div className="text-sm text-muted-foreground">
-                                                <span>Precio: </span>
-                                                <span className="text-foreground font-medium">
+                                            <div className="text-sm">
+                                                <span className="text-gray-500">Precio: </span>
+                                                <span className="text-gray-900 font-semibold">
                                                     {new Intl.NumberFormat('es-ES', {
                                                         style: 'currency',
                                                         currency: 'EUR',
@@ -1269,91 +1286,88 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                                 {/* Sección de Cita - Móvil - Siempre visible si necesita cita */}
                                 {needsAppointment && (
-                                    <div className="mt-4 pt-4 border-t border-border/50 lg:hidden">
-                                        <div className="relative bg-gradient-to-br from-blue-50/50 via-indigo-50/40 to-orange-50/35 dark:from-blue-950/30 dark:via-indigo-950/25 dark:to-orange-950/20 border-2 border-blue-300/70 dark:border-blue-700/60 rounded-xl p-4 space-y-3 shadow-md overflow-hidden">
-                                            {/* Borde decorativo con gradiente */}
-                                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/40 via-indigo-400/40 via-purple-400/40 to-orange-400/40 dark:from-blue-500/35 dark:via-indigo-500/35 dark:via-purple-500/35 dark:to-orange-500/35 -z-10 blur-sm"></div>
-                                            <div className="relative">
-                                                <h3 className="text-sm font-semibold text-foreground mb-3">
-                                                    {appointment ? (
-                                                        appointmentStatusInfo?.displayName || 
-                                                        (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
-                                                         appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
-                                                         'Cita')
-                                                    ) : 'Cita Pendiente'}
-                                                </h3>
-                                                <div className="space-y-2.5">
-                                                    {appointment ? (
-                                                        <>
-                                                            {appointment.proposedDate && appointment.proposedTime && (() => {
-                                                                // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
-                                                                const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
-                                                                const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
-                                                                return (
-                                                                    <div className="flex items-center gap-2 text-sm text-foreground">
-                                                                        <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                                        <span className="font-medium">
-                                                                            {new Date(dateToUse).toLocaleDateString('es-ES', {
-                                                                                day: 'numeric',
-                                                                                month: 'short',
-                                                                                year: 'numeric'
-                                                                            })} {timeToUse.substring(0, 5)}
-                                                                        </span>
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                            {appointment.location && (
-                                                                <div className="flex items-start gap-2 text-sm text-foreground">
-                                                                    <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                                                                    <span className="leading-relaxed">{appointment.location}</span>
+                                    <div className="mt-4 pt-4 border-t border-gray-200/60 lg:hidden">
+                                        <div className="space-y-2">
+                                            <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                                                {appointment ? (
+                                                    appointmentStatusInfo?.displayName || 
+                                                    (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
+                                                     appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
+                                                     'Cita')
+                                                ) : 'Cita Pendiente'}
+                                            </h3>
+                                            <div className="space-y-3">
+                                                {appointment ? (
+                                                    <>
+                                                        {appointment.proposedDate && appointment.proposedTime && (() => {
+                                                            // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
+                                                            const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
+                                                            const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                                                            return (
+                                                                <div className="flex items-center gap-2 text-sm text-gray-900">
+                                                                    <Calendar className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                                                                    <span className="font-medium">
+                                                                        {new Date(dateToUse).toLocaleDateString('es-ES', {
+                                                                            day: 'numeric',
+                                                                            month: 'short',
+                                                                            year: 'numeric'
+                                                                        })} {timeToUse.substring(0, 5)}
+                                                                    </span>
                                                                 </div>
-                                                            )}
-                                                            {appointment.doorNumber && (
-                                                                <div className="text-sm text-foreground ml-6">
-                                                                    <span className="text-muted-foreground">Puerta: </span>
-                                                                    <span className="font-medium">{appointment.doorNumber}</span>
-                                                                </div>
-                                                            )}
-                                                            {/* Reportes del Experto - Dentro del cuadro de cita */}
-                                                            {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
-                                                                <div className="mt-3 pt-3 border-t border-border/30">
-                                                                    <div className="flex items-center gap-2 text-sm text-foreground mb-2">
-                                                                        <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                                                        <span className="font-medium">Informe Enviado</span>
-                                                                    </div>
-                                                                    <div className="space-y-1.5 ml-6">
-                                                                        {deliverables.map((deliverable) => {
-                                                                            const fileName = deliverable.url.split('/').pop() || 'archivo';
-                                                                            return (
-                                                                                <button
-                                                                                    key={deliverable.id}
-                                                                                    onClick={() => window.open(deliverable.url, '_blank')}
-                                                                                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-left"
-                                                                                >
-                                                                                    <FileText className="w-3 h-3 flex-shrink-0" />
-                                                                                    <span className="truncate">{fileName}</span>
-                                                                                </button>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </>
-                                                    ) : (
-                                                        <div className="space-y-2">
-                                                            <div className="flex items-center gap-2 text-sm text-foreground">
-                                                                <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                                <span>Debes proponer una cita</span>
+                                                            );
+                                                        })()}
+                                                        {appointment.location && (
+                                                            <div className="flex items-start gap-2 text-sm text-gray-900">
+                                                                <MapPin className="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-0.5" />
+                                                                <span className="leading-relaxed">{appointment.location}</span>
                                                             </div>
-                                                            {timeRemaining && timeRemaining !== '00:00:00' && (
-                                                                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 ml-6">
-                                                                    <Clock className="w-4 h-4 flex-shrink-0" />
-                                                                    <span className="font-medium">Tiempo restante: {timeRemaining}</span>
+                                                        )}
+                                                        {appointment.doorNumber && (
+                                                            <div className="text-sm text-gray-900 ml-6">
+                                                                <span className="text-gray-500">Puerta: </span>
+                                                                <span className="font-medium">{appointment.doorNumber}</span>
+                                                            </div>
+                                                        )}
+                                                        {/* Reportes del Experto - Dentro del cuadro de cita */}
+                                                        {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
+                                                            <div className="mt-3 pt-3 border-t border-gray-200">
+                                                                <div className="flex items-center gap-2 text-sm text-gray-900 mb-2">
+                                                                    <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                                                    <span className="font-medium">Informe Enviado</span>
                                                                 </div>
-                                                            )}
+                                                                <div className="space-y-1.5 ml-6">
+                                                                    {deliverables.map((deliverable) => {
+                                                                        const fileName = deliverable.url.split('/').pop() || 'archivo';
+                                                                        return (
+                                                                            <button
+                                                                                key={deliverable.id}
+                                                                                onClick={() => window.open(deliverable.url, '_blank')}
+                                                                                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors w-full text-left"
+                                                                            >
+                                                                                <FileText className="w-3 h-3 flex-shrink-0" />
+                                                                                <span className="truncate">{fileName}</span>
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center gap-2 text-sm text-gray-700">
+                                                            <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                                            <span>Debes proponer una cita</span>
                                                         </div>
-                                                    )}
-                                                </div>
+                                                        {timeRemaining && timeRemaining !== '00:00:00' && (
+                                                            <div className="flex items-center gap-2 text-sm text-amber-600 ml-6">
+                                                                <Clock className="w-4 h-4 flex-shrink-0" />
+                                                                <span className="font-medium">Tiempo restante: {timeRemaining}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                                 {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
                                                     <Accordion type="single" collapsible className="w-full mt-3">
                                                         <AccordionItem value="appointment-timeline" className="border-none">
@@ -1370,54 +1384,53 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         </AccordionItem>
                                                     </Accordion>
                                                 )}
-                                            </div>
                                         </div>
                                     </div>
                                 )}
 
-                                <Separator />
+                                <div className="border-t border-gray-200/60 pt-4"></div>
 
-                                {/* Cliente */}
+                                {/* Cliente - Minimalista */}
                                 {search?.user && (
-                                    <div className="space-y-3">
-                                        <h3 className="text-sm font-semibold text-foreground">Cliente</h3>
+                                    <div className="space-y-2">
+                                        <h3 className="text-sm font-semibold text-gray-900">Cliente</h3>
                                         <div className="flex items-center gap-3">
-                                            <Avatar className="h-10 w-10">
+                                            <Avatar className="h-9 w-9">
                                                 <AvatarImage 
                                                     src={search.user.profilePictureUrl || undefined} 
                                                     alt={search.user.name}
                                                 />
-                                                <AvatarFallback className="bg-muted text-foreground text-sm font-medium">
+                                                <AvatarFallback className="bg-gray-100 text-gray-700 text-sm font-medium">
                                                     {search.user.name?.charAt(0).toUpperCase() || 'C'}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-foreground truncate">{search.user.name}</p>
-                                                <p className="text-xs text-muted-foreground truncate">{search.user.email}</p>
+                                                <p className="text-sm font-medium text-gray-900 truncate">{search.user.name}</p>
+                                                <p className="text-xs text-gray-500 truncate mt-0.5">{search.user.email}</p>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Experto */}
+                                {/* Experto - Minimalista */}
                                 {expertData && (
                                     <>
-                                        <Separator />
-                                        <div className="space-y-3">
-                                            <h3 className="text-sm font-semibold text-foreground">Experto</h3>
+                                        <div className="border-t border-gray-200/60 pt-4"></div>
+                                        <div className="space-y-2">
+                                            <h3 className="text-sm font-semibold text-gray-900">Experto</h3>
                                             <div className="flex items-center gap-3">
-                                                <Avatar className="h-11 w-11">
+                                                <Avatar className="h-9 w-9">
                                                     <AvatarImage 
                                                         src={expertData.profilePictureUrl || undefined} 
                                                         alt={expertData.name}
                                                     />
-                                                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                                    <AvatarFallback className="bg-gray-100 text-gray-700 text-sm font-medium">
                                                         {expertData.name?.charAt(0).toUpperCase()}
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="text-sm font-medium text-foreground truncate">{expertData.name}</p>
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <p className="text-sm font-medium text-gray-900 truncate">{expertData.name}</p>
                                                         {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
                                                         {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
                                                             <CountryFlag 
@@ -1433,13 +1446,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     </div>
                                                     <div className="flex items-center gap-1.5 mt-1">
                                                         <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                                                        <span className="text-xs text-muted-foreground">Verificado</span>
+                                                        <span className="text-xs text-gray-500">Verificado</span>
                                                     </div>
                                                 </div>
                                             </div>
                                             {/* ✅ Disponibilidad del experto en móvil */}
                                             {expertProfile?.currentAvailability && (
-                                                <div className="pl-14">
+                                                <div className="pl-10">
                                                     <ExpertAvailability 
                                                         availability={expertProfile.currentAvailability}
                                                         compact={true}
@@ -1606,7 +1619,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     
                                     {/* ✅ Botones de acción fijos en móvil - Según la guía */}
                                     {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
-                                        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 p-4 space-y-2 shadow-lg">
+                                        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 p-4 space-y-2 shadow-lg">
                                             <div className="flex gap-2">
                                                 {/* ✅ BOTÓN: Aceptar (Solo Experto, solo cuando appointment_proposed) */}
                                                 {appointmentButtons.showAccept && (
@@ -1850,43 +1863,44 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         </Button>
                                     )}
                                 </div>
-                            </TabsContent>
+                                </div>
+                            )}
                         </Tabs>
                     </div>
                 )}
 
-                {/* Sidebar - Info + Acciones - Derecha en desktop, oculto en móvil (usa tabs) */}
-                <aside className="hidden lg:flex lg:flex-col lg:w-[40%] xl:w-[35%] bg-white dark:bg-gray-900 lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-200/50 dark:border-gray-800/50 lg:overflow-hidden">
-                    <ScrollArea className="flex-1">
-                        <div className="p-6 space-y-5">
+                {/* Sidebar - Info + Acciones - Derecha en desktop, oculto en móvil (usa tabs) - Con scroll interno */}
+                <aside className="hidden lg:flex lg:flex-col lg:w-[30%] xl:w-[25%] bg-white lg:rounded-lg lg:border lg:border-gray-200/60 lg:overflow-hidden min-h-0" style={{ margin: 0 }}>
+                    <ScrollArea className="flex-1 min-h-0">
+                        <div className="p-4 space-y-4" style={{ padding: '1rem' }}>
                             
-                            {/* Resumen del Servicio */}
-                            <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-gray-300/60 dark:hover:border-gray-700/60">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-1 h-5 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full"></div>
-                                    <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Información del Servicio</h3>
+                            {/* Resumen del Servicio - Minimalista */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold text-gray-900">Información del Servicio</h3>
+                                    {searchHireStatusInfo && (
+                                        <StatusBadge status={searchHireStatusInfo} />
+                                    )}
                                 </div>
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2.5 text-sm">
-                                        <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30">
-                                            <Tag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <span className="font-medium text-gray-700 dark:text-gray-300">{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
-                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <Tag className="w-3.5 h-3.5 text-gray-500" />
+                                        <span className="text-gray-900 font-medium">{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
+                                    </div>
                                     {serviceInfo?.serviceTypeName && (
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <span className="text-gray-500 dark:text-gray-400">Tipo:</span>
-                                            <span className="text-gray-900 dark:text-gray-100 font-semibold">{serviceInfo.serviceTypeName}</span>
+                                        <div className="text-sm">
+                                            <span className="text-gray-500">Tipo: </span>
+                                            <span className="text-gray-900 font-medium">{serviceInfo.serviceTypeName}</span>
                                         </div>
                                     )}
                                     {search?.description && (
-                                        <div className="text-sm leading-relaxed">
-                                            <span className="text-gray-500 dark:text-gray-400 block mb-1">Descripción:</span>
-                                            <span className="text-gray-700 dark:text-gray-300">{search.description}</span>
+                                        <div className="text-sm">
+                                            <span className="text-gray-500 block mb-1">Descripción:</span>
+                                            <span className="text-gray-700 leading-relaxed">{search.description}</span>
                                         </div>
                                     )}
                                     {search?.createdAt && (
-                                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg">
+                                        <div className="flex items-center gap-2 text-xs text-gray-500">
                                             <Clock className="w-3.5 h-3.5" />
                                             <span>Creado el {new Date(search.createdAt).toLocaleDateString('es-ES', {
                                                 day: 'numeric',
@@ -1896,14 +1910,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         </div>
                                     )}
                                     {serviceInfo?.locationRange && (
-                                        <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg">
-                                            Radio de servicio: <span className="font-medium text-gray-700 dark:text-gray-300">{serviceInfo.locationRange} km</span>
+                                        <div className="text-xs text-gray-500">
+                                            Radio de servicio: <span className="font-medium text-gray-900">{serviceInfo.locationRange} km</span>
                                         </div>
                                     )}
                                     {serviceInfo?.price && (
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <span className="text-gray-500 dark:text-gray-400">Precio:</span>
-                                            <span className="text-gray-900 dark:text-gray-100 font-semibold">
+                                        <div className="text-sm">
+                                            <span className="text-gray-500">Precio: </span>
+                                            <span className="text-gray-900 font-semibold">
                                                 {new Intl.NumberFormat('es-ES', {
                                                     style: 'currency',
                                                     currency: 'EUR',
@@ -1913,7 +1927,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             </span>
                                         </div>
                                     )}
-                            </div>
+                                </div>
                             
                                 {/* Accordion para explicar el estado */}
                                 {searchHireStatusInfo && (
@@ -1950,22 +1964,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </Accordion>
                                 )}
 
-                                {/* Sección de Cita - Desktop - Siempre visible si necesita cita */}
+                                {/* Sección de Cita - Desktop - Siempre visible si necesita cita - Minimalista */}
                                 {needsAppointment && (
-                                    <div className="mt-5 hidden lg:block">
-                                        <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <div className="w-1 h-5 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full"></div>
-                                                <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-                                                    {appointment ? (
-                                                        appointmentStatusInfo?.displayName || 
-                                                        (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
-                                                         appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
-                                                         'Cita')
-                                                    ) : 'Cita Pendiente'}
-                                                </h3>
-                                            </div>
-                                            <div className="space-y-2.5">
+                                    <div className="mt-4 hidden lg:block border-t border-gray-200/60 pt-4">
+                                        <div className="space-y-2">
+                                            <h3 className="text-sm font-semibold text-gray-900">
+                                                {appointment ? (
+                                                    appointmentStatusInfo?.displayName || 
+                                                    (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
+                                                     appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
+                                                     'Cita')
+                                                ) : 'Cita Pendiente'}
+                                            </h3>
+                                            <div className="space-y-2">
                                                 {appointment ? (
                                                     <>
                                                         {appointment.proposedDate && appointment.proposedTime && (() => {
@@ -1973,11 +1984,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
                                                             const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
                                                             return (
-                                                                <div className="flex items-center gap-2.5 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl">
-                                                                    <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                                                                        <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                                                    </div>
-                                                                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                                                <div className="flex items-center gap-2 text-sm">
+                                                                    <Calendar className="w-3.5 h-3.5 text-gray-500" />
+                                                                    <span className="text-gray-900 font-medium">
                                                                         {new Date(dateToUse).toLocaleDateString('es-ES', {
                                                                             day: 'numeric',
                                                                             month: 'short',
@@ -1988,31 +1997,29 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             );
                                                         })()}
                                                         {appointment.location && (
-                                                            <div className="flex items-start gap-2.5 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                                                                <div className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700/50">
-                                                                    <MapPin className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5" />
-                                                                </div>
+                                                            <div className="flex items-start gap-2 text-sm">
+                                                                <MapPin className="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-0.5" />
                                                                 <div className="flex-1">
-                                                                    <span className="leading-relaxed text-gray-700 dark:text-gray-300">{appointment.location}</span>
+                                                                    <span className="text-gray-900 leading-relaxed">{appointment.location}</span>
                                                                     {appointment.doorNumber && (
-                                                                        <div className="text-sm text-gray-700 dark:text-gray-300 mt-2 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg">
-                                                                            <span className="text-gray-500 dark:text-gray-400">Puerta: </span>
-                                                                            <span className="font-semibold">{appointment.doorNumber}</span>
+                                                                        <div className="text-sm text-gray-900 mt-2">
+                                                                            <span className="text-gray-500">Puerta: </span>
+                                                                            <span className="font-medium">{appointment.doorNumber}</span>
                                                                         </div>
                                                                     )}
                                                                 </div>
                                                             </div>
                                                         )}
                                                         {appointment.doorNumber && !appointment.location && (
-                                                            <div className="text-sm text-gray-700 dark:text-gray-300 ml-6 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg">
-                                                                <span className="text-gray-500 dark:text-gray-400">Puerta: </span>
-                                                                <span className="font-semibold">{appointment.doorNumber}</span>
+                                                            <div className="text-sm text-gray-900">
+                                                                <span className="text-gray-500">Puerta: </span>
+                                                                <span className="font-medium">{appointment.doorNumber}</span>
                                                             </div>
                                                         )}
                                                         {/* Reportes del Experto - Dentro del cuadro de cita (Desktop) */}
                                                         {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
-                                                            <div className="mt-3 pt-3 border-t border-border/30">
-                                                                <div className="flex items-center gap-2 text-sm text-foreground mb-2">
+                                                            <div className="mt-3 pt-3 border-t border-gray-200">
+                                                                <div className="flex items-center gap-2 text-sm text-gray-900 mb-2">
                                                                     <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
                                                                     <span className="font-medium">Informe Enviado</span>
                                                                 </div>
@@ -2023,7 +2030,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                             <button
                                                                                 key={deliverable.id}
                                                                                 onClick={() => window.open(deliverable.url, '_blank')}
-                                                                                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+                                                                                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors w-full text-left"
                                                                             >
                                                                                 <FileText className="w-3 h-3 flex-shrink-0" />
                                                                                 <span className="truncate">{fileName}</span>
@@ -2036,12 +2043,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     </>
                                                 ) : (
                                                     <div className="space-y-2">
-                                                        <div className="flex items-center gap-2 text-sm text-foreground">
-                                                            <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                        <div className="flex items-center gap-2 text-sm text-gray-700">
+                                                            <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
                                                             <span>Debes proponer una cita</span>
                                                         </div>
                                                         {timeRemaining && timeRemaining !== '00:00:00' && (
-                                                            <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 ml-6">
+                                                            <div className="flex items-center gap-2 text-sm text-amber-600 ml-6">
                                                                 <Clock className="w-4 h-4 flex-shrink-0" />
                                                                 <span className="font-medium">Tiempo restante: {timeRemaining}</span>
                                                             </div>
@@ -2071,8 +2078,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                                 {/* ✅ Botones de acción para desktop - Según la guía - Fuera de needsAppointment para que siempre se muestren */}
                                 {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject) && (
-                                    <div className="mt-5 hidden lg:block">
-                                        <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
+                                    <div className="mt-4 hidden lg:block">
+                                        <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
                                             <div className="flex gap-2">
                                                 {/* ✅ BOTÓN: Aceptar (Solo Experto, solo cuando appointment_proposed) */}
                                                 {appointmentButtons.showAccept && (
@@ -2210,51 +2217,45 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 )}
                             </div>
 
-                            {/* Cliente */}
+                            {/* Cliente - Minimalista */}
                             {search?.user && (
-                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-1 h-5 bg-gradient-to-b from-purple-500 to-pink-600 rounded-full"></div>
-                                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Cliente</h3>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <Avatar className="h-14 w-14 ring-2 ring-gray-200 dark:ring-gray-700 ring-offset-2 ring-offset-white dark:ring-offset-gray-900">
+                                <div className="space-y-2 border-t border-gray-200/60 pt-4">
+                                    <h3 className="text-sm font-semibold text-gray-900">Cliente</h3>
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-9 w-9">
                                             <AvatarImage 
                                                 src={search.user.profilePictureUrl || undefined} 
                                                 alt={search.user.name}
                                             />
-                                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-base font-bold">
+                                            <AvatarFallback className="bg-gray-100 text-gray-700 text-sm font-medium">
                                                 {search.user.name?.charAt(0).toUpperCase() || 'C'}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-base font-bold text-gray-900 dark:text-gray-100 truncate">{search.user.name}</p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">{search.user.email}</p>
+                                            <p className="text-sm font-medium text-gray-900 truncate">{search.user.name}</p>
+                                            <p className="text-xs text-gray-500 truncate mt-0.5">{search.user.email}</p>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Experto */}
+                            {/* Experto - Minimalista */}
                         {expertData && (
-                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-1 h-5 bg-gradient-to-b from-blue-500 to-cyan-600 rounded-full"></div>
-                                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Experto</h3>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                            <Avatar className="h-14 w-14 ring-2 ring-blue-200 dark:ring-blue-800 ring-offset-2 ring-offset-white dark:ring-offset-gray-900">
+                                <div className="space-y-2 border-t border-gray-200/60 pt-4">
+                                    <h3 className="text-sm font-semibold text-gray-900">Experto</h3>
+                                    <div className="flex items-center gap-3">
+                                            <Avatar className="h-9 w-9">
                                                 <AvatarImage 
                                                     src={expertData.profilePictureUrl || undefined} 
                                             alt={expertData.name}
                                                 />
-                                                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-base font-bold">
+                                                <AvatarFallback className="bg-gray-100 text-gray-700 text-sm font-medium">
                                                     {expertData.name?.charAt(0).toUpperCase()}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-base font-bold text-gray-900 dark:text-gray-100 truncate">{expertData.name}</p>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="text-sm font-medium text-gray-900 truncate">{expertData.name}</p>
                                                     {/* ✅ BANDERA DEL PAÍS DEL EXPERTO - Desktop */}
                                                     {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
                                                         <CountryFlag 
@@ -2267,16 +2268,16 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             size="sm" 
                                                         />
                                                     )}
-                                                    <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded-full">
-                                                        <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-                                                        <span className="text-xs font-medium text-green-700 dark:text-green-400">Verificado</span>
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                                                        <span className="text-xs text-gray-500">Verificado</span>
                                                     </div>
                                                 </div>
                                         </div>
                                     </div>
                                         {/* ✅ NUEVO: Mostrar disponibilidad del experto en desktop */}
                                         {expertProfile?.currentAvailability && (
-                                            <div className="pl-14">
+                                            <div className="pl-10">
                                                 <ExpertAvailability 
                                                     availability={expertProfile.currentAvailability}
                                                     compact={true}
@@ -2289,19 +2290,16 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                             {/* Acciones Principales */}
                             {(canDispute || canApprove || canExpertRespond) && (
-                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-3 shadow-sm">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-1 h-5 bg-gradient-to-b from-orange-500 to-red-600 rounded-full"></div>
-                                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Acciones</h3>
-                                    </div>
-                                    <div className="space-y-2.5">
+                                <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+                                    <h3 className="text-base font-semibold text-gray-900">Acciones</h3>
+                                    <div className="space-y-2">
                                         {canApprove && (
                                             <Button
                                                 onClick={handleApproveService}
-                                                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 h-11"
-                                                size="lg"
+                                                className="w-full bg-green-600 hover:bg-green-700 text-white h-10"
+                                                size="sm"
                                             >
-                                                <CheckCircle className="w-5 h-5 mr-2" />
+                                                <CheckCircle className="w-4 h-4 mr-2" />
                                                 Aprobar Servicio
                                             </Button>
                                         )}
@@ -2309,10 +2307,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             <Button
                                                 onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
                                                 variant="outline"
-                                                className="w-full border-2 border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 font-semibold h-11"
-                                                size="lg"
+                                                className="w-full border border-red-300 text-red-600 hover:bg-red-50 h-10"
+                                                size="sm"
                                             >
-                                                <AlertTriangle className="w-5 h-5 mr-2" />
+                                                <AlertTriangle className="w-4 h-4 mr-2" />
                                                 Disputar
                                             </Button>
                                         )}
@@ -2320,10 +2318,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             <Button
                                                 onClick={() => setShowExpertResponseModal(true)}
                                                 variant="outline"
-                                                className="w-full border-2 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 font-semibold h-11"
-                                                size="lg"
+                                                className="w-full border border-gray-300 hover:bg-gray-50 h-10"
+                                                size="sm"
                                             >
-                                                <MessageCircle className="w-5 h-5 mr-2" />
+                                                <MessageCircle className="w-4 h-4 mr-2" />
                                                 Responder Disputa
                                             </Button>
                                         )}
@@ -2334,11 +2332,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                             {/* Subir Informe */}
                         {isExpert && appointment?.status === 'appointment_awaiting_report' && (
-                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-1 h-5 bg-gradient-to-b from-green-500 to-emerald-600 rounded-full"></div>
-                                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Subir Informe</h3>
-                                    </div>
+                                <div className="space-y-3">
+                                    <h3 className="text-[16px] font-semibold text-[#222222]">Subir Informe</h3>
                                 {fileValidation && (
                                             <div className={`p-3 rounded-xl text-sm font-medium ${
                                         fileValidation.canSubmit 
@@ -2454,37 +2449,34 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                             {/* Reseña */}
                             {canReview && (
-                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-1 h-5 bg-gradient-to-b from-yellow-500 to-orange-600 rounded-full"></div>
-                                        <div className="flex items-center gap-2">
-                                            <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                                            <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 tracking-tight">Reseña</h3>
-                                        </div>
-                                </div>
-                                        <Button
-                                            onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 h-11"
-                                            size="lg"
-                                        >
-                                            <Star className="w-5 h-5 mr-2" />
-                                            Escribir Reseña
-                                        </Button>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                        <h3 className="text-[16px] font-semibold text-[#222222]">Reseña</h3>
+                                    </div>
+                                    <Button
+                                        onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
+                                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                                        size="sm"
+                                    >
+                                        <Star className="w-3.5 h-3.5 mr-2" />
+                                        Escribir Reseña
+                                    </Button>
                             </div>
                             )}
 
                             {review && (
-                                <div className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/30 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 p-6 space-y-4 shadow-sm">
+                                <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                                            <span className="text-base font-bold text-gray-900 dark:text-gray-100">Reseña</span>
+                                            <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                            <span className="text-[16px] font-semibold text-[#222222]">Reseña</span>
                                         </div>
-                                        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold px-3 py-1 text-sm">{review.score}/5</Badge>
+                                        <Badge className="bg-yellow-500 text-white px-2 py-1 text-[12px]">{review.score}/5</Badge>
                                     </div>
                                     {review.description && (
-                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-                                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                        <div className="bg-gray-50 p-3 rounded-lg">
+                                            <p className="text-[14px] text-[#222222] leading-relaxed">
                                                 {review.description}
                                             </p>
                                 </div>
@@ -2530,11 +2522,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             )}
                             </div>
 
-                            <div className="h-6"></div>
-
-
-                        {/* Espacio adicional para asegurar que todos los botones sean visibles */}
-                        <div className="h-8"></div>
+                            {/* Espacio mínimo para el final del contenido */}
+                            <div className="h-2"></div>
                     </div>
                     </ScrollArea>
                 </aside>

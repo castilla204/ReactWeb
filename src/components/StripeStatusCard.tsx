@@ -2,6 +2,7 @@ import React from 'react';
 import { CheckCircle, AlertTriangle, Clock, XCircle, UserX, Loader2, Settings, RefreshCw, MessageCircle, HelpCircle } from 'lucide-react';
 import { useExpertStripeStatus, STRIPE_STATUS } from '../hooks/useExpertStripeStatus';
 import { ErrorDisplay } from './ErrorDisplay';
+import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from './ui/empty';
 
 interface StripeStatusCardProps {
     onSetupStripe?: () => void;
@@ -143,12 +144,16 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
 
     if (loading) {
         return (
-            <div className={`bg-white rounded-xl p-6 border border-gray-200 shadow-sm ${className}`}>
-                <div className="flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                    <span className="ml-2 text-gray-600">Cargando estado de Stripe...</span>
-                </div>
-            </div>
+            <Empty className={`py-12 ${className}`}>
+                <EmptyMedia variant="icon">
+                    <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                </EmptyMedia>
+                <EmptyHeader>
+                    <EmptyDescription className="text-xs text-gray-500">
+                        Cargando estado de Stripe...
+                    </EmptyDescription>
+                </EmptyHeader>
+            </Empty>
         );
     }
 
@@ -165,11 +170,16 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
 
     if (!status || !statusInfo) {
         return (
-            <div className={`bg-white rounded-xl p-6 border border-gray-200 shadow-sm ${className}`}>
-                <div className="text-center text-gray-500">
-                    No hay datos de estado disponibles
-                </div>
-            </div>
+            <Empty className={`py-12 ${className}`}>
+                <EmptyMedia variant="icon">
+                    <AlertTriangle className="w-5 h-5 text-gray-400" />
+                </EmptyMedia>
+                <EmptyHeader>
+                    <EmptyDescription className="text-xs text-gray-500">
+                        No hay datos de estado disponibles
+                    </EmptyDescription>
+                </EmptyHeader>
+            </Empty>
         );
     }
 
@@ -199,147 +209,161 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
 
     const futureRequirementsText = status.stripeFutureRequirements || statusInfo.futureRequirementsText;
 
-    return (
-        <div 
-            className={`bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-lg p-8 lg:p-10 shadow-lg shadow-gray-200/30 w-full max-w-4xl ${className}`}
-            style={{ 
-                borderLeftColor: statusInfo.color,
-                borderLeftWidth: '4px',
-                background: `linear-gradient(135deg, ${statusInfo.bgColor}06 0%, rgba(255,255,255,0.95) 100%)`
-            }}
-        >
-            <div className="mb-6 lg:mb-8">
-                {/* Barra de progreso para NotRequested */}
-                {status.stripeStatus === STRIPE_STATUS.NOT_REQUESTED && (
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-medium text-gray-500">Paso 1: Registro</span>
-                            <span className="text-xs font-medium text-blue-600">Paso 2: Configuración</span>
+    // Para NOT_REQUESTED, usar diseño discreto con Empty
+    if (status.stripeStatus === STRIPE_STATUS.NOT_REQUESTED) {
+        return (
+            <div className={`w-full max-w-4xl ${className}`}>
+                <Empty className="py-12">
+                    <EmptyMedia variant="icon">
+                        <Settings className="w-5 h-5 text-gray-400" />
+                    </EmptyMedia>
+                    <EmptyHeader>
+                        <EmptyTitle className="text-base font-medium text-gray-900">
+                            Termina de Configurar tu Cuenta de Experto
+                        </EmptyTitle>
+                        <EmptyDescription className="text-sm text-gray-500 mt-2 max-w-md">
+                            {statusInfo.message}
+                        </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                        {/* Barra de progreso discreta */}
+                        <div className="mt-6 mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-medium text-gray-400">Paso 1: Registro</span>
+                                <span className="text-xs font-medium text-gray-600">Paso 2: Configuración</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-1">
+                                <div className="bg-gray-400 h-1 rounded-full" style={{width: '50%'}}></div>
+                            </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div className="bg-blue-600 h-2 rounded-full" style={{width: '50%'}}></div>
+                        
+                        {/* Botón de acción */}
+                        {(status.stripeStatus !== STRIPE_STATUS.REJECTED || status.canRetryOnboarding !== false) && (
+                            <button 
+                                onClick={handleAction}
+                                disabled={loading || isLoadingOnboarding}
+                                className={`px-6 py-2.5 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 rounded-lg ${getButtonClass(statusInfo.action)} ${(loading || isLoadingOnboarding) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {(statusInfo.action === 'wait' || isLoadingOnboarding) && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {!isLoadingOnboarding && getActionIcon(statusInfo.action)}
+                                {isLoadingOnboarding ? 'Cargando...' : statusInfo.buttonText}
+                            </button>
+                        )}
+                        
+                        {/* Documentación requerida - discreta */}
+                        <div className="mt-8 pt-6 border-t border-gray-100">
+                            <p className="text-xs text-gray-500 mb-3">Documentación requerida:</p>
+                            <ul className="space-y-1.5 text-xs text-gray-400">
+                                <li>• Documento de identidad (DNI, pasaporte o carnet de conducir)</li>
+                                <li>• Datos de tu cuenta bancaria para recibir pagos</li>
+                                <li>• Proceso completado en aproximadamente 5 minutos</li>
+                            </ul>
                         </div>
-                    </div>
-                )}
-                
-                    <div className="mb-3 lg:mb-4">
-                        <h3 className="text-lg lg:text-xl font-semibold text-gray-900">
-                            {status.stripeStatus === STRIPE_STATUS.NOT_REQUESTED ? 'Termina de Configurar tu Cuenta de Experto' : 'Estado de Cuenta de Pagos'}
-                        </h3>
-                    </div>
-                <p className="text-gray-600 text-xs lg:text-sm">
-                    {status.stripeStatus === STRIPE_STATUS.NOT_REQUESTED 
-                        ? 'Completa la configuración de tu cuenta de pagos para finalizar tu registro como experto'
-                        : 'Estado actual de tu cuenta de pagos de Inspecciono'
-                    }
-                </p>
+                    </EmptyContent>
+                </Empty>
             </div>
-            
-            <div className="mb-6 lg:mb-8">
-                <p className="text-gray-700 leading-relaxed text-sm lg:text-base whitespace-pre-line">{statusInfo.message}</p>
-                
-                {/* Display detailed status information if available */}
-                {status.stripeStatusDetails && status.stripeStatusDetails !== statusInfo.message && (
-                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm text-blue-800">
+        );
+    }
+
+    // Para otros estados, mantener el diseño original pero más discreto
+    return (
+        <div className={`w-full max-w-4xl ${className}`}>
+            <Empty className="py-12">
+                <EmptyMedia variant="icon">
+                    {getStatusIcon(status.stripeStatus)}
+                </EmptyMedia>
+                <EmptyHeader>
+                    <EmptyTitle className="text-base font-medium text-gray-900">
+                        Estado de Cuenta de Pagos
+                    </EmptyTitle>
+                    <EmptyDescription className="text-sm text-gray-500 mt-2 max-w-md">
+                        {statusInfo.message}
+                    </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                    {/* Display detailed status information if available */}
+                    {status.stripeStatusDetails && status.stripeStatusDetails !== statusInfo.message && (
+                        <p className="text-xs text-gray-500 mt-3">
                             <span className="font-medium">Detalles:</span> {status.stripeStatusDetails}
                         </p>
-                    </div>
-                )}
-                
-                {(statusInfo.deadlineText || futureRequirementsText) && (
-                    <div className="mt-3 space-y-2">
-                        {statusInfo.deadlineText && (
-                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                <p className="text-sm text-amber-900">
+                    )}
+                    
+                    {(statusInfo.deadlineText || futureRequirementsText) && (
+                        <div className="mt-3 space-y-2">
+                            {statusInfo.deadlineText && (
+                                <p className="text-xs text-gray-500">
                                     <span className="font-medium">Plazo:</span> {statusInfo.deadlineText}
                                 </p>
-                            </div>
-                        )}
-                        {futureRequirementsText && (
-                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                <p className="text-sm text-amber-900">
+                            )}
+                            {futureRequirementsText && (
+                                <p className="text-xs text-gray-500">
                                     <span className="font-medium">Requisitos detectados:</span> {futureRequirementsText}
                                 </p>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-            
-            {/* Ocultar botón si Rejected y canRetryOnboarding es false */}
-            {(status.stripeStatus !== STRIPE_STATUS.REJECTED || status.canRetryOnboarding !== false) && (
-                <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
-                    <button 
-                        onClick={handleAction}
-                        disabled={loading || isLoadingOnboarding}
-                        className={`px-4 lg:px-6 py-2 lg:py-3 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 rounded-md shadow-sm hover:shadow-md transform hover:-translate-y-0.5 ${getButtonClass(statusInfo.action)} ${(loading || isLoadingOnboarding) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        {(statusInfo.action === 'wait' || isLoadingOnboarding) && <Loader2 className="w-4 h-4 animate-spin" />}
-                        {!isLoadingOnboarding && getActionIcon(statusInfo.action)}
-                        {isLoadingOnboarding ? 'Cargando...' : statusInfo.buttonText}
-                    </button>
-                </div>
-            )}
-            
-            {/* Mostrar información de contacto cuando Rejected y canRetryOnboarding es false */}
-            {status.stripeStatus === STRIPE_STATUS.REJECTED && status.canRetryOnboarding === false && (
-                <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                    <p className="text-sm text-gray-700">
-                        <span className="font-medium">Soporte técnico:</span>{' '}
-                        <a href="mailto:info@inspecciono.io" className="text-blue-600 hover:text-blue-700 underline">
-                            info@inspecciono.io
-                        </a>
-                    </p>
-                </div>
-            )}
-            
-            {(status.stripeAccountId || status.canCreateServices || status.rejectionReason || status.stripeStatus === STRIPE_STATUS.NOT_REQUESTED) && (
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                    <div className="space-y-4">
-                        {status.stripeStatus === STRIPE_STATUS.NOT_REQUESTED && (
-                            <div className="bg-gray-50 rounded-lg p-4 lg:p-6 border border-gray-200">
-                                <div className="text-xs lg:text-sm text-gray-700">
-                                    <div className="font-semibold mb-2 lg:mb-3 text-sm lg:text-base text-gray-800">Documentación requerida</div>
-                                    <ul className="space-y-1.5 lg:space-y-2 text-gray-600">
-                                        <li className="text-xs lg:text-sm">• Documento de identidad (DNI, pasaporte o carnet de conducir)</li>
-                                        <li className="text-xs lg:text-sm">• Datos de tu cuenta bancaria para recibir pagos</li>
-                                        <li className="text-xs lg:text-sm">• Proceso completado en aproximadamente 5 minutos</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {status.stripeAccountId && (
-                            <div className="text-sm text-gray-600">
-                                <span className="font-medium">ID de Cuenta:</span> 
-                                <span className="ml-2 font-mono text-gray-800">{status.stripeAccountId}</span>
-                            </div>
-                        )}
-                        
-                        {status.canCreateServices && (
-                            <div className="flex items-center gap-2 text-sm text-green-700">
-                                <CheckCircle className="w-4 h-4" />
-                                <span className="font-medium">Listo para trabajar - Puedes crear servicios y recibir pagos</span>
-                            </div>
-                        )}
-                        
-                        {!status.canReceivePayments && status.stripeStatus !== STRIPE_STATUS.NOT_REQUESTED && (
-                            <div className="flex items-center gap-2 text-sm text-red-700">
-                                <XCircle className="w-4 h-4" />
-                                <span className="font-medium">Los pagos están bloqueados hasta completar los requisitos en Stripe</span>
-                            </div>
-                        )}
-                        
-                        {status.rejectionReason && (
-                            <div className="text-sm text-red-700">
-                                <span className="font-medium">Motivo del rechazo:</span> 
-                                <span className="ml-2">{status.rejectionReason}</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+                            )}
+                        </div>
+                    )}
+                    
+                    {/* Botón de acción */}
+                    {(status.stripeStatus !== STRIPE_STATUS.REJECTED || status.canRetryOnboarding !== false) && (
+                        <div className="mt-6">
+                            <button 
+                                onClick={handleAction}
+                                disabled={loading || isLoadingOnboarding}
+                                className={`px-6 py-2.5 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 rounded-lg ${getButtonClass(statusInfo.action)} ${(loading || isLoadingOnboarding) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {(statusInfo.action === 'wait' || isLoadingOnboarding) && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {!isLoadingOnboarding && getActionIcon(statusInfo.action)}
+                                {isLoadingOnboarding ? 'Cargando...' : statusInfo.buttonText}
+                            </button>
+                        </div>
+                    )}
+                    
+                    {/* Mostrar información de contacto cuando Rejected y canRetryOnboarding es false */}
+                    {status.stripeStatus === STRIPE_STATUS.REJECTED && status.canRetryOnboarding === false && (
+                        <div className="mt-6 pt-6 border-t border-gray-100">
+                            <p className="text-xs text-gray-500">
+                                <span className="font-medium">Soporte técnico:</span>{' '}
+                                <a href="mailto:info@inspecciono.io" className="text-gray-600 hover:text-gray-700 underline">
+                                    info@inspecciono.io
+                                </a>
+                            </p>
+                        </div>
+                    )}
+                    
+                    {/* Información adicional */}
+                    {(status.stripeAccountId || status.canCreateServices || status.rejectionReason) && (
+                        <div className="mt-6 pt-6 border-t border-gray-100 space-y-2">
+                            {status.stripeAccountId && (
+                                <p className="text-xs text-gray-500">
+                                    <span className="font-medium">ID de Cuenta:</span> 
+                                    <span className="ml-2 font-mono text-gray-600">{status.stripeAccountId}</span>
+                                </p>
+                            )}
+                            
+                            {status.canCreateServices && (
+                                <p className="text-xs text-gray-500 flex items-center gap-2">
+                                    <CheckCircle className="w-3 h-3 text-gray-400" />
+                                    <span>Listo para trabajar - Puedes crear servicios y recibir pagos</span>
+                                </p>
+                            )}
+                            
+                            {!status.canReceivePayments && status.stripeStatus !== STRIPE_STATUS.NOT_REQUESTED && (
+                                <p className="text-xs text-gray-500 flex items-center gap-2">
+                                    <XCircle className="w-3 h-3 text-gray-400" />
+                                    <span>Los pagos están bloqueados hasta completar los requisitos en Stripe</span>
+                                </p>
+                            )}
+                            
+                            {status.rejectionReason && (
+                                <p className="text-xs text-gray-500">
+                                    <span className="font-medium">Motivo del rechazo:</span> 
+                                    <span className="ml-2">{status.rejectionReason}</span>
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </EmptyContent>
+            </Empty>
         </div>
     );
 };
