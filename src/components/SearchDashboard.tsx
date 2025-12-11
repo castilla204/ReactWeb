@@ -516,12 +516,12 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         <div className="min-h-screen bg-gray-50">
             {/* Header Section */}
             <div className="bg-white border-b border-gray-200/60">
-                <div className="max-w-7xl mx-auto px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center gap-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-12 sm:h-16">
+                        <div className="flex items-center gap-3 sm:gap-6">
                             <button
                                 onClick={() => navigate('/')}
-                                className="p-2 -ml-2 hover:bg-gray-50/80 rounded-lg transition-colors duration-150 text-gray-400 hover:text-gray-700"
+                                className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 hover:bg-gray-50/80 rounded-lg transition-colors duration-150 text-gray-400 hover:text-gray-700"
                                 aria-label="Volver"
                             >
                                 <ArrowLeft className="w-4 h-4" strokeWidth={2} />
@@ -532,9 +532,9 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                             {isAdmin && (
                                 <button
                                     onClick={() => navigate('/admin')}
-                                    className="inline-flex items-center px-3 py-1.5 text-xs font-normal text-gray-600 hover:text-gray-900 hover:bg-gray-50/80 rounded-lg transition-all duration-150"
+                                    className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-normal text-gray-600 hover:text-gray-900 hover:bg-gray-50/80 rounded-lg transition-all duration-150"
                                 >
-                                    <Settings className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
+                                    <Settings className="w-3.5 h-3.5 sm:mr-1.5" strokeWidth={1.5} />
                                     <span className="hidden sm:inline">Admin</span>
                                 </button>
                             )}
@@ -561,7 +561,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-8 py-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-10">
                 {/* ✅ Mensaje simple para errores de red */}
                 {isNetworkErr && (
                     <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -798,7 +798,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                     </EmptyHeader>
                 </Empty>
             ) : (viewMode === 'grid' || isMobile) ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 auto-rows-fr">
                     {filteredSearches.map((search) => {
                         const hasUnreadMessages = search.unreadMessagesCount > 0;
 
@@ -806,143 +806,162 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                             <div
                                 key={search.id}
                                 onClick={() => handleSearchClick(search.id)}
-                                className={`group bg-white border border-gray-200 rounded-lg p-5 hover:shadow-lg hover:border-gray-300 cursor-pointer transition-all duration-200 ${isAdmin && !search.isRevised
+                                className={`group bg-white border border-gray-200/60 rounded-xl p-4 hover:shadow-lg hover:border-blue-300/60 hover:shadow-blue-100/30 cursor-pointer transition-all duration-300 flex flex-col h-full min-h-[280px] ${isAdmin && !search.isRevised
                                         ? 'border-red-200 bg-red-50/30'
                                         : ''
-                                    } relative overflow-hidden`}
+                                    } relative overflow-hidden hover:-translate-y-0.5`}
                             >
+                                {/* Accent gradient on hover */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/0 via-transparent to-purple-50/0 group-hover:from-blue-50/30 group-hover:to-purple-50/20 transition-all duration-300 rounded-xl pointer-events-none"></div>
                                 {/* Status indicator */}
                                 {isAdmin && !search.isRevised && (
-                                    <div className="absolute top-4 right-4 w-2 h-2 bg-red-500 rounded-full"></div>
+                                    <div className="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full z-10"></div>
                                 )}
                                 
                                 {/* Header */}
-                                <div className="flex items-start justify-between mb-5">
-                                    <div className="flex-1 min-w-0 pr-3">
-                                        <h3 className="text-lg font-semibold text-gray-900 line-clamp-1 leading-snug group-hover:text-blue-600 transition-colors mb-3 tracking-tight">
-                                                    {search.title}
-                                                </h3>
-                                        {search.description && (
-                                            <div>
-                                                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Descripción</p>
-                                                <p className="text-sm text-gray-700 line-clamp-2 leading-relaxed font-normal">
-                                            {search.description}
-                                        </p>
-                                        </div>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                            {isAdmin && search.isRevised && (
-                                            <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center" title="Revisada">
-                                                <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                                                </div>
-                                            )}
-                                        <div className="relative" title={hasUnreadMessages ? `${search.unreadMessagesCount} mensajes sin leer` : 'Sin mensajes nuevos'}>
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                                    hasUnreadMessages 
-                                                        ? 'bg-red-100' 
-                                                        : 'bg-gray-100'
-                                                }`}>
-                                                <MessageSquare className={`w-3.5 h-3.5 ${
-                                                        hasUnreadMessages 
-                                                            ? 'text-red-600' 
-                                                            : 'text-gray-400'
-                                                    }`} />
-                                                </div>
-                                                {search.unreadMessagesCount > 0 && (
-                                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                                                        {search.unreadMessagesCount > 9 ? '9+' : search.unreadMessagesCount}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {search.hasPendingAppointment ? (
-                                            <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center" title={getLocalAppointmentStatusText(search.pendingAppointmentStatus)}>
-                                                <Calendar className="w-3.5 h-3.5 text-orange-600" />
+                                <div className="flex items-start justify-between mb-4 flex-shrink-0 relative z-10">
+                                    <div className="flex-1 min-w-0 pr-2">
+                                        <h3 className="text-base font-semibold text-gray-900 line-clamp-1 leading-snug group-hover:text-blue-600 transition-colors mb-2 tracking-tight">
+                                            {search.title}
+                                        </h3>
+                                        <div className="min-h-[52px]">
+                                            {search.description ? (
+                                                <div>
+                                                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1">Descripción</p>
+                                                    <p className="text-xs text-gray-700 line-clamp-2 leading-relaxed font-normal">
+                                                        {search.description}
+                                                    </p>
                                                 </div>
                                             ) : (
-                                            <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center" title="Sin cita contratada">
-                                                <CalendarX className="w-3.5 h-3.5 text-gray-500" />
+                                                <div className="h-[36px]"></div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 flex-shrink-0 relative z-10">
+                                        {isAdmin && search.isRevised && (
+                                            <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center ring-1 ring-emerald-200 group-hover:ring-emerald-300 transition-all" title="Revisada">
+                                                <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                            </div>
+                                        )}
+                                        <div className="relative" title={hasUnreadMessages ? `${search.unreadMessagesCount} mensajes sin leer` : 'Sin mensajes nuevos'}>
+                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                                                hasUnreadMessages 
+                                                    ? 'bg-red-100 ring-1 ring-red-200 group-hover:ring-red-300' 
+                                                    : 'bg-gray-100 group-hover:bg-gray-200'
+                                            }`}>
+                                                <MessageSquare className={`w-3 h-3 transition-colors ${
+                                                    hasUnreadMessages 
+                                                        ? 'text-red-600' 
+                                                        : 'text-gray-400 group-hover:text-gray-500'
+                                                }`} />
+                                            </div>
+                                            {search.unreadMessagesCount > 0 && (
+                                                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-gradient-to-br from-red-500 to-red-600 text-white text-[9px] rounded-full flex items-center justify-center font-bold shadow-sm ring-1 ring-white">
+                                                    {search.unreadMessagesCount > 9 ? '9+' : search.unreadMessagesCount}
                                                 </div>
                                             )}
                                         </div>
+                                        {search.hasPendingAppointment ? (
+                                            <div className="w-5 h-5 bg-amber-100 rounded-full flex items-center justify-center ring-1 ring-amber-200 group-hover:ring-amber-300 transition-all" title={getLocalAppointmentStatusText(search.pendingAppointmentStatus)}>
+                                                <Calendar className="w-3 h-3 text-amber-600" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-gray-200 transition-all" title="Sin cita contratada">
+                                                <CalendarX className="w-3 h-3 text-gray-500 group-hover:text-gray-600 transition-colors" />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 
                                 {/* Meta Info */}
-                                <div className="flex items-center justify-between mb-5 pb-5 border-b border-gray-100">
-                                    <div className="flex items-center gap-3">
-                                        <CategoryImage categoryId={search.category} categoryName={Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'} size="sm" />
+                                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100/80 flex-shrink-0 relative z-10">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="p-1.5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg ring-1 ring-blue-100/50 group-hover:ring-blue-200/50 transition-all">
+                                            <CategoryImage categoryId={search.category} categoryName={Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'} size="sm" />
+                                        </div>
                                         <div>
-                                            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">Categoría</p>
-                                            <p className="text-sm font-semibold text-gray-900 tracking-tight">{Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'}</p>
+                                            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">Categoría</p>
+                                            <p className="text-xs font-semibold text-gray-900 tracking-tight line-clamp-1 group-hover:text-blue-600 transition-colors">{Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'}</p>
                                         </div>
                                     </div>
                                     
-                                    {/* Location and Date */}
-                                    <div className="flex flex-col items-end gap-2 text-right">
-                                        {search.locationName && (
-                                            <div>
-                                                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">Ubicación</p>
-                                                <div className="flex items-center gap-1.5 text-sm text-gray-800 font-normal">
-                                                    <MapPin className="w-3.5 h-3.5 text-gray-500" />
-                                                <span className="truncate max-w-32">{search.locationName}</span>
-                                                </div>
-                                            </div>
-                                        )}
+                                    {/* Date */}
+                                    <div className="flex flex-col items-end text-right">
                                         <div>
-                                            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">Fecha de creación</p>
-                                            <div className="flex items-center gap-1.5 text-sm text-gray-800 font-normal">
-                                                <Calendar className="w-3.5 h-3.5 text-gray-500" />
-                                            <span>{new Date(search.createdAt).toLocaleDateString('es-ES', { 
-                                                day: 'numeric', 
+                                            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-0.5">Fecha de creación</p>
+                                            <div className="flex items-center gap-1.5 text-xs text-gray-700 font-normal">
+                                                <Calendar className="w-3.5 h-3.5 text-blue-400 group-hover:text-blue-500 transition-colors" />
+                                                <span>{new Date(search.createdAt).toLocaleDateString('es-ES', { 
+                                                    day: 'numeric', 
                                                     month: 'short',
                                                     year: 'numeric'
-                                            })}</span>
+                                                })}</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 {/* Status and Expert */}
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3 flex-wrap">
-                                        <div>
-                                            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Estado</p>
-                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium ${getActivityStatus(search) === 'Activa' 
-                                                ? 'bg-green-50 text-green-700 border border-green-200' 
-                                                : 'bg-gray-50 text-gray-600 border border-gray-200'}`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${getActivityStatus(search) === 'Activa' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                                                {getActivityStatus(search)}
-                                        </span>
+                                <div className="flex flex-col justify-between mt-auto flex-shrink-0 min-h-[80px] relative z-10">
+                                    <div className="flex items-end gap-3 mb-3">
+                                        <div className="flex-shrink-0">
+                                            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Estado</p>
+                                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-medium transition-all ${
+                                                getActivityStatus(search) === 'Activa' 
+                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm shadow-emerald-100/50' 
+                                                    : 'bg-gray-100 text-gray-700 border-gray-200'
+                                            }`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getActivityStatus(search) === 'Activa' ? 'bg-emerald-500 shadow-sm' : 'bg-gray-500'}`}></span>
+                                                <span className="truncate">{getActivityStatus(search)}</span>
+                                            </span>
                                         </div>
-                                            {search.searchHire && (
-                                            <div>
-                                                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Contratación</p>
-                                                <StatusBadge 
-                                                    statusInfo={getStatusInfoWithFallback(
-                                                        search.searchHire.statusInfo,
-                                                        search.searchHire.status
-                                                    )}
-                                                    size="sm"
-                                                />
-                                    </div>
-                                            )}
-                                        {search.searchHire?.expert && (
-                                            <div>
-                                                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Experto</p>
-                                                <div className="flex items-center gap-2">
-                                                <img
-                                                    src={search.searchHire.expert.profilePictureUrl || '/default-avatar.png'}
-                                                    alt={`${search.searchHire.expert.name}'s profile`}
-                                                        className="w-6 h-6 rounded-full object-cover border border-gray-200"
-                                        />
-                                                    <span className="text-sm font-medium text-gray-900 truncate max-w-24 tracking-tight">
-                                                {search.searchHire.expert.name}
-                                                    </span>
-                                        </div>
+                                        {search.searchHire ? (
+                                            <div className="flex-shrink-0 min-w-0 flex-1 max-w-[160px]">
+                                                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Contratación</p>
+                                                <div className="min-w-[100px] max-w-full overflow-hidden">
+                                                    <StatusBadge 
+                                                        statusInfo={getStatusInfoWithFallback(
+                                                            search.searchHire.statusInfo,
+                                                            search.searchHire.status
+                                                        )}
+                                                        size="sm"
+                                                        className="w-full"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex-shrink-0 min-w-[100px]">
+                                                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5 opacity-0">Contratación</p>
+                                                <div className="h-[22px]"></div>
                                             </div>
                                         )}
                                     </div>
-                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors flex-shrink-0" />
+                                    <div className="flex items-center justify-between">
+                                        {search.searchHire?.expert ? (
+                                            <div className="flex-shrink-0 min-w-0">
+                                                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Experto</p>
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <div className="relative">
+                                                        <img
+                                                            src={search.searchHire.expert.profilePictureUrl || '/default-avatar.png'}
+                                                            alt={`${search.searchHire.expert.name}'s profile`}
+                                                            className="w-5 h-5 rounded-full object-cover ring-2 ring-gray-200 group-hover:ring-blue-300 transition-all flex-shrink-0"
+                                                        />
+                                                        <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white"></div>
+                                                    </div>
+                                                    <span className="text-xs font-medium text-gray-900 truncate max-w-[90px] tracking-tight group-hover:text-blue-600 transition-colors">
+                                                        {search.searchHire.expert.name}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex-shrink-0 min-w-[100px]">
+                                                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5 opacity-0">Experto</p>
+                                                <div className="h-[20px]"></div>
+                                            </div>
+                                        )}
+                                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                                    </div>
                                 </div>
                             </div>
                         );

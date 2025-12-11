@@ -12,6 +12,13 @@ import {
     DrawerTitle,
     DrawerClose,
 } from './ui/drawer';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from './ui/dialog';
 
 // Google SVG Icon Component
 const GoogleIcon = () => (
@@ -114,6 +121,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     const [isServiceTypeOpen, setIsServiceTypeOpen] = useState(false);
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
+    const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
     
     // Cerrar dropdowns al hacer clic fuera
     useEffect(() => {
@@ -312,9 +320,9 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-white"></div>
                 
                 {/* Contenido principal */}
-                <div className="relative z-10 px-6 pt-12 pb-8">
+                <div className="relative z-10 px-6 pt-8 pb-6">
                     {/* Badge simple */}
-                    <div className="mb-6">
+                    <div className="mb-4">
                         <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold border border-blue-100">
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -324,12 +332,12 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                     </div>
                     
                     {/* Título principal - Limpio y claro */}
-                    <h1 className="text-4xl font-bold text-gray-900 leading-tight mb-4">
+                    <h1 className="text-4xl font-bold text-gray-900 leading-tight mb-3">
                         No compres a ciegas
                     </h1>
                     
                     {/* Subtítulo */}
-                    <p className="text-lg text-gray-600 leading-relaxed mb-6">
+                    <p className="text-lg text-gray-600 leading-relaxed mb-4">
                         Expertos certificados revisan tu{' '}
                         <span className="text-gray-900 font-semibold">{currentWord}</span>
                         {' '}y te envían un informe detallado en menos de 48 horas.
@@ -559,12 +567,12 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 </div>
             </div>
 
-            <div className="relative z-10 w-full hidden lg:block px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 md:py-16 lg:py-20">
+            <div className="relative z-10 w-full hidden lg:block px-4 sm:px-6 md:px-12 lg:px-16 py-6 sm:py-8 md:py-10 lg:py-12">
                 {/* Contenido principal - solo desktop */}
                 <div className="lg:block">
                     <div className="max-w-6xl mx-auto w-full">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-                        <div className="space-y-6 lg:space-y-7 text-left lg:text-left">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-center">
+                        <div className="space-y-5 lg:space-y-6 text-left lg:text-left">
                                 {/* Versión móvil - diseño limpio y profesional */}
                                 <div className="lg:hidden space-y-6">
                                     {/* Título simple y claro */}
@@ -710,19 +718,63 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     {/* URL del anuncio */}
                                     <div className="flex-1 min-w-0">
                                         <div className="px-6 py-4">
-                                            <div className="text-xs font-medium text-gray-700 mb-0.5">URL del anuncio</div>
+                                            <div className="text-xs font-medium text-gray-700 mb-0.5">URL del anuncio <span className="text-gray-400 font-normal">(opcional)</span></div>
                                             <div className="relative">
                                                 <LinkIcon className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                                 <input
                                                     type="text"
                                                     placeholder="Pega la URL del anuncio"
                                                     value={searchForm.adUrl}
-                                                    onChange={(e) => setSearchForm({...searchForm, adUrl: e.target.value})}
-                                                    className="w-full pl-6 pr-2 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none"
+                                                    onClick={() => setIsUrlDialogOpen(true)}
+                                                    readOnly
+                                                    className="w-full pl-6 pr-2 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none cursor-pointer"
                                                 />
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    {/* Dialog para URL */}
+                                    <Dialog open={isUrlDialogOpen} onOpenChange={setIsUrlDialogOpen}>
+                                        <DialogContent className="sm:max-w-[420px] rounded-3xl p-6">
+                                            <DialogHeader className="text-left pb-3">
+                                                <DialogTitle className="text-lg font-semibold text-gray-900">URL del anuncio</DialogTitle>
+                                                <DialogDescription className="text-xs text-gray-500 mt-1">
+                                                    Opcional
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-3">
+                                                <div className="relative">
+                                                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <input
+                                                        type="url"
+                                                        placeholder="https://..."
+                                                        value={searchForm.adUrl}
+                                                        onChange={(e) => setSearchForm({...searchForm, adUrl: e.target.value})}
+                                                        className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-gray-50 focus:bg-white"
+                                                        autoFocus
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 flex justify-end gap-2 pt-3 border-t border-gray-100">
+                                                {searchForm.adUrl && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSearchForm({...searchForm, adUrl: ''})}
+                                                        className="px-4 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                                                    >
+                                                        Limpiar
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsUrlDialogOpen(false)}
+                                                    className="px-5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-colors shadow-sm"
+                                                >
+                                                    Guardar
+                                                </button>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
                                     
                                     {/* Botón buscar */}
                                     <button
