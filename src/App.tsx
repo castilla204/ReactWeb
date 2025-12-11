@@ -542,7 +542,7 @@ const AppContent: React.FC = () => {
 
                 <main className="relative">
                     <Background />
-                    <section className="w-full min-h-screen flex flex-col relative z-10">
+                    <section className="w-full flex flex-col relative z-10" style={{ minHeight: 0, height: 'auto' }}>
                         <Routes>
                             {/* Verificación de teléfono desactivada temporalmente */}
                             {/* <Route path="/verify-phone" element={<PhoneVerificationPage />} /> */}
