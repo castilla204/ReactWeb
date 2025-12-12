@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Car, Home, Bike, Search, ChevronDown, Link as LinkIcon, FolderTree, X, MoreHorizontal } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { GoogleAuth } from './GoogleAuth';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +28,129 @@ const GoogleIcon = () => (
         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
     </svg>
 );
+
+// Declaración de tipos para Google Sign-In
+declare global {
+    interface Window {
+        google?: {
+            accounts: {
+                id: {
+                    initialize: (config: any) => void;
+                    prompt: () => void;
+                };
+            };
+        };
+    }
+}
+
+// Componente para botón de inicio de sesión con Google en Homepage
+const GoogleSignInButton = () => {
+    const [isReady, setIsReady] = useState(false);
+    const { setUser } = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        // Inicializar Google Auth cuando el componente se monta
+        const initGoogleAuth = () => {
+            if (window.google?.accounts?.id) {
+                const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
+                
+                window.google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: async (response: any) => {
+                        try {
+                            if (!response.credential) {
+                                throw new Error('No credential received from Google');
+                            }
+
+                            const { authService } = await import('../services/authService');
+                            const result = await authService.googleAuth(response.credential);
+                            
+                            if (!result.success) {
+                                throw new Error('Authentication failed');
+                            }
+
+                            setUser(result.user);
+                            localStorage.setItem('userData', JSON.stringify(result.user));
+                            
+                            // Redirigir según el rol
+                            const token = authService.getAccessToken();
+                            if (token) {
+                                const { RoleChecker } = await import('../utils/roleChecker');
+                                const userRole = RoleChecker.getUserRole(token);
+                                const requiresMfa = RoleChecker.requiresMfa(userRole);
+                                
+                                if (requiresMfa) {
+                                    const { mfaService } = await import('../services/mfaService');
+                                    try {
+                                        const mfaStatus = await mfaService.getMFAStatus();
+                                        if (mfaStatus.isEnabled) {
+                                            navigate('/mfa/verify', { state: { returnTo: '/busquedas' } });
+                                            return;
+                                        }
+                                    } catch (error) {
+                                        console.error('Error checking MFA status:', error);
+                                    }
+                                }
+                            }
+                            
+                            navigate('/busquedas');
+                        } catch (error) {
+                            console.error('Error during Google authentication:', error);
+                        }
+                    },
+                    auto_select: false,
+                    cancel_on_tap_outside: false,
+                });
+                
+                setIsReady(true);
+            } else {
+                // Reintentar después de un delay
+                setTimeout(initGoogleAuth, 500);
+            }
+        };
+
+        // Esperar a que el script de Google se cargue
+        if (document.readyState === 'complete') {
+            initGoogleAuth();
+        } else {
+            window.addEventListener('load', initGoogleAuth);
+        }
+
+        return () => {
+            window.removeEventListener('load', initGoogleAuth);
+        };
+    }, [setUser, navigate]);
+
+    const handleClick = () => {
+        if (!isReady) {
+            console.warn('Google Sign-In not ready yet');
+            return;
+        }
+
+        try {
+            // Usar el método prompt() directamente
+            if (window.google?.accounts?.id?.prompt) {
+                window.google.accounts.id.prompt();
+            } else {
+                console.error('Google prompt method not available');
+            }
+        } catch (error) {
+            console.error('Error triggering Google Sign-In:', error);
+        }
+    };
+
+    return (
+        <button
+            onClick={handleClick}
+            disabled={!isReady}
+            className="w-full bg-white text-gray-900 font-semibold py-4 px-6 rounded-xl text-base transition-colors border-2 border-gray-200 hover:border-gray-300 active:bg-gray-50 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+            <GoogleIcon />
+            <span>Iniciar Sesión</span>
+        </button>
+    );
+};
 
 // Importar imágenes directamente
 import motoAguaImg from '../media/motoagua.png';
@@ -353,23 +475,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                     
                     {/* Botón secundario */}
                     {!isAuthenticated && (
-                        <div className="relative">
-                            <div className="absolute opacity-0 pointer-events-none">
-                                <GoogleAuth />
-                            </div>
-                            <button
-                                onClick={() => {
-                                    const googleButton = document.querySelector('#googleButton div[role="button"]') as HTMLElement;
-                                    if (googleButton) {
-                                        googleButton.click();
-                                    }
-                                }}
-                                className="w-full bg-white text-gray-900 font-semibold py-4 px-6 rounded-xl text-base transition-colors border-2 border-gray-200 hover:border-gray-300 active:bg-gray-50 flex items-center justify-center gap-2"
-                            >
-                                <GoogleIcon />
-                                <span>Iniciar Sesión</span>
-                            </button>
-                        </div>
+                        <GoogleSignInButton />
                     )}
                     
                     {/* Barra de confianza - Simplificada */}

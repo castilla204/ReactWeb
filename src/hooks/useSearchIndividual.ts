@@ -29,6 +29,21 @@ export interface SearchResponseDto {
     statusTranslated: string;
     statusInfo?: SystemStatusDto; // ✅ NUEVO CAMPO
     createdAt: string;
+    /**
+     * Monto total pagado (con IVA incluido).
+     * Este es el precio final que pagó el cliente.
+     */
+    amount?: number;
+    /**
+     * Base amount sin IVA/tax (pre-tax).
+     * Si es null, usar Amount como fallback (datos antiguos).
+     */
+    baseAmount?: number;
+    /**
+     * Monto de IVA/tax calculado por Stripe Tax.
+     * Si es null o 0, no hay tax aplicado.
+     */
+    taxAmount?: number;
     expert?: {
       id: number;
       name: string;

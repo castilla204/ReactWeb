@@ -265,8 +265,11 @@ export default function SearchForm({
                                         <div className="flex items-baseline justify-between">
                                             <span className="text-[15px] text-[#717171]">Precio total</span>
                                             <div className="text-right">
-                                                <div className="text-[22px] font-semibold text-[#222222]">
-                                                    €{servicePrice !== undefined ? (servicePrice / 100).toFixed(2) : '0.00'}
+                                                <div className="flex items-center gap-2 justify-end">
+                                                    <div className="text-[22px] font-semibold text-[#222222]">
+                                                        €{servicePrice !== undefined ? (servicePrice / 100).toFixed(2) : '0.00'}
+                                                    </div>
+                                                    <span className="text-[11px] text-[#717171]">IVA incluido</span>
                                                 </div>
                                                 <p className="text-[13px] text-[#717171] mt-1">
                                                     Pago único

@@ -1244,6 +1244,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         maximumFractionDigits: 0,
                                                     }).format(serviceInfo.price)}
                                                 </span>
+                                                <span className="text-xs text-gray-500">IVA incluido</span>
                                             </div>
                                         )}
                                     </div>
@@ -1917,14 +1918,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     {serviceInfo?.price && (
                                         <div className="text-sm">
                                             <span className="text-gray-500">Precio: </span>
-                                            <span className="text-gray-900 font-semibold">
-                                                {new Intl.NumberFormat('es-ES', {
-                                                    style: 'currency',
-                                                    currency: 'EUR',
-                                                    minimumFractionDigits: 0,
-                                                    maximumFractionDigits: 0,
-                                                }).format(serviceInfo.price)}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-gray-900 font-semibold">
+                                                    {new Intl.NumberFormat('es-ES', {
+                                                        style: 'currency',
+                                                        currency: 'EUR',
+                                                        minimumFractionDigits: 0,
+                                                        maximumFractionDigits: 0,
+                                                    }).format(serviceInfo.price)}
+                                                </span>
+                                                <span className="text-xs text-gray-500">IVA incluido</span>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
