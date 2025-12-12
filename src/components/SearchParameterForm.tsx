@@ -855,24 +855,24 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     >
                                         {/* Selector de país y separador juntos - Sin espacio entre ellos */}
                                         <div className="flex items-center flex-shrink-0" style={{ marginRight: '0' }}>
-                                            <CountrySelector
-                                                onCountrySelect={(countryCode, coordinates) => {
-                                                    setSelectedCountry(countryCode);
-                                                    if (map) {
-                                                        map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
-                                                        map.setZoom(coordinates.zoom);
-                                                    }
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        latitude: coordinates.lat.toString(),
-                                                        longitude: coordinates.lng.toString(),
-                                                        locationName: getCountryName(countryCode) || '',
-                                                    }));
-                                                    setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
-                                                    setSearchAddress('');
-                                                    setSelectedAddress('');
-                                                }}
-                                                currentCountry={selectedCountry}
+                                        <CountrySelector
+                                            onCountrySelect={(countryCode, coordinates) => {
+                                                setSelectedCountry(countryCode);
+                                                if (map) {
+                                                    map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
+                                                    map.setZoom(coordinates.zoom);
+                                                }
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    latitude: coordinates.lat.toString(),
+                                                    longitude: coordinates.lng.toString(),
+                                                    locationName: getCountryName(countryCode) || '',
+                                                }));
+                                                setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
+                                                setSearchAddress('');
+                                                setSelectedAddress('');
+                                            }}
+                                            currentCountry={selectedCountry}
                                                 style={{
                                                     height: `${searchBarHeight}px`,
                                                     paddingLeft: `${searchBarPadding}px`,
@@ -883,7 +883,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     minWidth: 'auto'
                                                 }}
                                                 className="flex items-center"
-                                            />
+                                        />
                                             {/* Separador - Inmediatamente después del botón, sin espacio */}
                                             <div 
                                                 className="w-px bg-gray-200 flex-shrink-0" 
@@ -959,9 +959,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 />
                                             )}
                                         </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
                                 
                             {/* Map - ocupa todo el espacio */}
                                 {isLoaded ? (
@@ -1026,26 +1026,26 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     <div className="bg-white rounded-full shadow-lg hover:shadow-xl border border-gray-200 flex items-center overflow-hidden transition-shadow">
                                         {/* Selector de país - Compacto */}
                                         <div className="flex-shrink-0">
-                                            <CountrySelector
-                                                onCountrySelect={(countryCode, coordinates) => {
-                                                    setSelectedCountry(countryCode);
-                                                    if (map) {
-                                                        map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
-                                                        map.setZoom(coordinates.zoom);
-                                                    }
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        latitude: coordinates.lat.toString(),
-                                                        longitude: coordinates.lng.toString(),
-                                                        locationName: getCountryName(countryCode) || '',
-                                                    }));
-                                                    setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
-                                                    setSearchAddress('');
-                                                    setSelectedAddress('');
-                                                }}
-                                                currentCountry={selectedCountry}
+                                        <CountrySelector
+                                            onCountrySelect={(countryCode, coordinates) => {
+                                                setSelectedCountry(countryCode);
+                                                if (map) {
+                                                    map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
+                                                    map.setZoom(coordinates.zoom);
+                                                }
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    latitude: coordinates.lat.toString(),
+                                                    longitude: coordinates.lng.toString(),
+                                                    locationName: getCountryName(countryCode) || '',
+                                                }));
+                                                setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
+                                                setSearchAddress('');
+                                                setSelectedAddress('');
+                                            }}
+                                            currentCountry={selectedCountry}
                                                 className="[&>button]:h-14 [&>button]:px-4 [&>button]:min-w-[110px] [&>button]:gap-2"
-                                            />
+                                        />
                                         </div>
                                         
                                         {/* Separador - Más cerca */}
@@ -1093,39 +1093,39 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                                             )}
                                         </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
                                 
                             {/* Map ocupa todo el espacio */}
                             <div className="absolute inset-0">
-                                    {isLoaded ? (
-                                        <LocationMap
-                                            selectedLocation={selectedLocation}
-                                            mapExperts={mapExperts}
-                                            services={services}
-                                            selectedService={selectedService}
-                                            onMapClick={handleMapClick}
-                                            onMapLoad={async (mapInstance) => {
-                                                setMap(mapInstance);
-                                                // Centrar en el país por defecto al cargar
-                                                const countryCoords = getCountryCoordinates(selectedCountry);
-                                                if (countryCoords) {
-                                                    mapInstance.setCenter({ lat: countryCoords.lat, lng: countryCoords.lng });
-                                                    mapInstance.setZoom(countryCoords.zoom);
-                                                } else {
-                                                    const radius = 25;
-                                                    const zoom = getZoomLevel(radius);
-                                                    mapInstance.setZoom(zoom);
-                                                }
-                                            }}
-                                            onServiceSelect={handleServiceSelect}
-                                            locationRange={25}
-                                            isMobile={false}
-                                            isLoaded={isLoaded}
-                                        />
-                                    ) : null}
-                                </div>
+                                {isLoaded ? (
+                                    <LocationMap
+                                        selectedLocation={selectedLocation}
+                                        mapExperts={mapExperts}
+                                        services={services}
+                                        selectedService={selectedService}
+                                        onMapClick={handleMapClick}
+                                        onMapLoad={async (mapInstance) => {
+                                            setMap(mapInstance);
+                                            // Centrar en el país por defecto al cargar
+                                            const countryCoords = getCountryCoordinates(selectedCountry);
+                                            if (countryCoords) {
+                                                mapInstance.setCenter({ lat: countryCoords.lat, lng: countryCoords.lng });
+                                                mapInstance.setZoom(countryCoords.zoom);
+                                            } else {
+                                        const radius = 25;
+                                        const zoom = getZoomLevel(radius);
+                                            mapInstance.setZoom(zoom);
+                                            }
+                                        }}
+                                        onServiceSelect={handleServiceSelect}
+                                        locationRange={25}
+                                        isMobile={false}
+                                        isLoaded={isLoaded}
+                                    />
+                                ) : null}
+                            </div>
                             </>
                         )}
                     </div>

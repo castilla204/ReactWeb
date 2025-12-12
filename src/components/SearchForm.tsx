@@ -203,8 +203,8 @@ export default function SearchForm({
                         {!isDataComplete && (
                     <div className="mb-8 p-4 rounded-xl bg-red-50 border border-red-200">
                         <p className="text-[15px] text-red-700">
-                            ❌ Los datos del servicio están incompletos. Vuelve a seleccionar un servicio válido.
-                        </p>
+                                ❌ Los datos del servicio están incompletos. Vuelve a seleccionar un servicio válido.
+                            </p>
                     </div>
                 )}
 
@@ -235,8 +235,8 @@ export default function SearchForm({
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-3 mb-2">
                                                 <h3 className="text-[18px] font-semibold text-[#222222] leading-tight">
-                                                    {expertName || 'Servicio Seleccionado'}
-                                                </h3>
+                                                {expertName || 'Servicio Seleccionado'}
+                                            </h3>
                                                 {/* Botón Cambiar servicio */}
                                                 <Button
                                                     type="button"
@@ -326,7 +326,7 @@ export default function SearchForm({
                                 <h2 className="text-[24px] font-semibold text-[#222222] leading-tight">
                                     Resumen
                                 </h2>
-                            </div>
+                                    </div>
                             <div className="px-8 pb-8 space-y-6">
                                 <div className="space-y-4">
                                     {/* Subtotal */}
@@ -347,8 +347,8 @@ export default function SearchForm({
                                                 <div className="w-5 h-5 border-2 border-[#222222]/20 border-t-[#222222] rounded-full animate-spin" />
                                                 )}
                                             </span>
+                                        </div>
                                     </div>
-                                </div>
                                     
                                 {/* Security Note - Moderno */}
                                     {servicePrice !== undefined && (
