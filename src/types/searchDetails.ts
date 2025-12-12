@@ -135,6 +135,27 @@ export interface SearchHireDto {
   // ✅ NUEVOS CAMPOS DE PAÍS Y TIMEZONE
   expertTimezone: string | null; // Timezone del experto al momento de contratar
   expertCountry: string | null; // ✅ NUEVO: País del experto al momento de contratar (ISO 3166-1 alpha-2)
+  // ✅ NUEVOS CAMPOS DE STRIPE TAX
+  /**
+   * Monto total pagado (con IVA incluido).
+   * Este es el precio final que pagó el cliente.
+   * Ejemplo: €110 (incluye 21% IVA = €19.09)
+   */
+  amount?: number;
+  /**
+   * Base amount sin IVA/tax (pre-tax).
+   * Se calcula desde Stripe Tax breakdown.
+   * Si es null, significa que es un dato antiguo o no hay tax calculado.
+   * En ese caso, usar Amount como fallback.
+   * Ejemplo: €90.91 (base sin IVA)
+   */
+  baseAmount?: number;
+  /**
+   * Monto de IVA/tax calculado por Stripe Tax.
+   * Si es null o 0, no hay tax aplicado.
+   * Ejemplo: €19.09 (IVA del 21%)
+   */
+  taxAmount?: number;
 }
 
 export interface CategoryDto {

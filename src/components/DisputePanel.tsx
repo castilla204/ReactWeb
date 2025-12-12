@@ -25,6 +25,7 @@ import { isAdmin } from '../utils/admin';
 import { showToast } from '../lib/toast';
 import type { DisputeFilters, DisputeDto } from '../types/dispute';
 import { Pagination } from './Pagination';
+import { getPriceDisplay, formatCurrency } from '../utils/priceUtils';
 
 interface DisputePanelProps {
   onBack?: () => void;
@@ -128,13 +129,6 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
     });
   };
 
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
 
   if (selectedDispute) {
     return (
@@ -317,7 +311,6 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
                     dispute={dispute}
                     onClick={() => setSelectedDispute(dispute)}
                     formatDate={formatDate}
-                    formatCurrency={formatCurrency}
                   />
                 ))}
               </div>
@@ -383,8 +376,7 @@ const DisputeCard: React.FC<{
   dispute: DisputeDto;
   onClick: () => void;
   formatDate: (date: string) => string;
-  formatCurrency: (amount: number) => string;
-}> = ({ dispute, onClick, formatDate, formatCurrency }) => {
+}> = ({ dispute, onClick, formatDate }) => {
   const statusColors = {
     Pending: 'bg-orange-100 text-orange-800',
     Resolved: 'bg-green-100 text-green-800',
@@ -458,7 +450,12 @@ const DisputeCard: React.FC<{
             )}
             <div className="flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
-              <span>{formatCurrency(dispute.searchHire.amount)}</span>
+              <div className="flex flex-col">
+                <span>{getPriceDisplay(dispute.searchHire).formattedTotal}</span>
+                {getPriceDisplay(dispute.searchHire).hasTaxInfo && (
+                  <span className="text-xs text-gray-400">IVA incluido</span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -541,13 +538,6 @@ const DisputeDetails: React.FC<{
       default:
         return <File className="w-4 h-4 text-gray-500" />;
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
   };
 
   const handleResolve = () => {
@@ -933,7 +923,12 @@ const DisputeDetails: React.FC<{
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Monto</label>
-                  <p className="text-xl font-bold text-gray-900">{formatCurrency(dispute.searchHire.amount)}</p>
+                  <div className="flex flex-col">
+                    <p className="text-xl font-bold text-gray-900">{getPriceDisplay(dispute.searchHire).formattedTotal}</p>
+                    {getPriceDisplay(dispute.searchHire).hasTaxInfo && (
+                      <p className="text-xs text-gray-500 mt-1">IVA incluido</p>
+                    )}
+                  </div>
                 </div>
                 
                 <div>

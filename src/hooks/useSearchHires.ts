@@ -11,7 +11,26 @@ export interface SearchHireResponseDto {
   status: string;
   statusTranslated: string;
   statusInfo?: SystemStatusDto; // ✅ NUEVO CAMPO
+  /**
+   * Monto total pagado (con IVA incluido).
+   * Este es el precio final que pagó el cliente.
+   * Ejemplo: €110 (incluye 21% IVA = €19.09)
+   */
   amount: number;
+  /**
+   * Base amount sin IVA/tax (pre-tax).
+   * Se calcula desde Stripe Tax breakdown.
+   * Si es null, significa que es un dato antiguo o no hay tax calculado.
+   * En ese caso, usar Amount como fallback.
+   * Ejemplo: €90.91 (base sin IVA)
+   */
+  baseAmount?: number;
+  /**
+   * Monto de IVA/tax calculado por Stripe Tax.
+   * Si es null o 0, no hay tax aplicado.
+   * Ejemplo: €19.09 (IVA del 21%)
+   */
+  taxAmount?: number;
   createdAt: string;
   // ✅ NUEVOS: Información de internacionalización
   expertTimezone?: string;      // Timezone IANA del experto al momento de la contratación
