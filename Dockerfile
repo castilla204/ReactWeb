@@ -1,4 +1,4 @@
-FROM node:24@sha256:9a2ed90cd91b1f3412affe080b62e69b057ba8661d9844e143a6bbd76a23260f AS build
+FROM node:24@sha256:20988bcdc6dc76690023eb2505dd273bdeefddcd0bde4bfd1efe4ebf8707f747 AS build
 WORKDIR /app
 COPY package*.json ./
     COPY package*.json ./
