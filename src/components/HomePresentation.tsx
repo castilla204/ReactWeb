@@ -628,7 +628,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             
                             {/* Buscador estilo Airbnb - Desktop */}
                             <div className="hidden lg:block mt-8 relative z-50">
-                                <div className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center overflow-visible hover:shadow-2xl transition-shadow relative z-50">
+                                <div className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center hover:shadow-2xl transition-shadow relative z-50">
                                     {/* Tipo de servicio */}
                                     <div className="relative flex-shrink-0 service-type-dropdown z-50">
                                         <button
@@ -636,7 +636,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                 setIsCategoryOpen(false);
                                                 setIsServiceTypeOpen(!isServiceTypeOpen);
                                             }}
-                                            className="px-6 py-4 text-left hover:bg-gray-50 rounded-l-full transition-colors min-w-[200px]"
+                                            className="px-6 py-6 text-left hover:bg-gray-50 rounded-l-full transition-colors min-w-[200px]"
                                         >
                                             <div className="text-xs font-medium text-gray-700 mb-0.5">Tipo de servicio</div>
                                             <div className={searchForm.serviceTypeId ? 'text-sm text-gray-900 font-medium' : 'text-sm text-gray-500'}>
@@ -646,7 +646,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                             </div>
                                         </button>
                                         {isServiceTypeOpen && (
-                                            <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl z-[100] max-h-96 overflow-y-auto">
+                                            <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl z-[200] max-h-96 overflow-y-auto">
                                                 {serviceTypesLoading ? (
                                                     <div className="px-5 py-4 text-sm text-gray-500">Cargando...</div>
                                                 ) : serviceTypes.length > 0 ? (
@@ -672,7 +672,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                         )}
                                     </div>
                                     
-                                    <div className="w-px h-8 bg-gray-200" />
+                                    <div className="w-px h-12 bg-gray-200" />
                                     
                                     {/* Categoría */}
                                     <div className="relative flex-shrink-0 category-dropdown z-50">
@@ -681,7 +681,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                 setIsServiceTypeOpen(false);
                                                 setIsCategoryOpen(!isCategoryOpen);
                                             }}
-                                            className="px-6 py-4 text-left hover:bg-gray-50 transition-colors min-w-[180px]"
+                                            className="px-4 py-6 text-left hover:bg-gray-50 transition-colors min-w-[100px]"
                                         >
                                             <div className="text-xs font-medium text-gray-700 mb-0.5">Categoría</div>
                                             <div className={searchForm.categoryId ? 'text-sm text-gray-900 font-medium' : 'text-sm text-gray-500'}>
@@ -691,7 +691,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                             </div>
                                         </button>
                                         {isCategoryOpen && (
-                                            <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl z-[100] max-h-96 overflow-y-auto">
+                                            <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl z-[200] max-h-96 overflow-y-auto">
                                                 {categories.length > 0 ? (
                                                     categories.map((cat) => (
                                                         <button
@@ -713,21 +713,21 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                         )}
                                     </div>
                                     
-                                    <div className="w-px h-8 bg-gray-200" />
+                                    <div className="w-px h-12 bg-gray-200" />
                                     
                                     {/* URL del anuncio */}
                                     <div className="flex-1 min-w-0">
-                                        <div className="px-6 py-4">
-                                            <div className="text-xs font-medium text-gray-700 mb-0.5">URL del anuncio <span className="text-gray-400 font-normal">(opcional)</span></div>
+                                        <div className="px-5 py-6">
+                                            <div className="text-[10px] font-medium text-gray-700 mb-0.5">URL del anuncio <span className="text-gray-400 font-normal">(opcional)</span></div>
                                             <div className="relative">
-                                                <LinkIcon className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <LinkIcon className="absolute left-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                                                 <input
                                                     type="text"
                                                     placeholder="Pega la URL del anuncio"
                                                     value={searchForm.adUrl}
                                                     onClick={() => setIsUrlDialogOpen(true)}
                                                     readOnly
-                                                    className="w-full pl-6 pr-2 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none cursor-pointer"
+                                                    className="w-full pl-5 pr-2 text-xs text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none cursor-pointer truncate"
                                                 />
                                             </div>
                                         </div>
@@ -776,13 +776,17 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                         </DialogContent>
                                     </Dialog>
                                     
-                                    {/* Botón buscar */}
-                                    <button
-                                        onClick={handleSearch}
-                                        className="flex-shrink-0 bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-full p-3.5 m-2 transition-colors shadow-md hover:shadow-lg"
-                                    >
-                                        <Search className="w-5 h-5" />
-                                    </button>
+                                    <div className="w-px h-12 bg-gray-200" />
+                                    
+                                    {/* Botón buscar - integrado en el contenedor */}
+                                    <div className="flex-shrink-0 px-2">
+                                        <button
+                                            onClick={handleSearch}
+                                            className="bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-full w-11 h-11 transition-colors shadow-md hover:shadow-lg flex items-center justify-center"
+                                        >
+                                            <Search className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
