@@ -262,24 +262,24 @@ export function ServiceReviewPage({
             {/* Header Timeline - Componente reutilizable */}
             <FormProgressTimeline currentStep={currentStep} onBack={onBack} />
             
-            <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white">
                 {/* Spacer para compensar el header fijo */}
                 <div className="h-16"></div>
                 
-                {/* ========== VERSIÓN MÓVIL ========== */}
-                <div className="lg:hidden">
+            {/* ========== VERSIÓN MÓVIL ========== */}
+            <div className="lg:hidden">
                     {/* Botones de acción móvil - Debajo del timeline */}
                     <div className="fixed top-14 left-0 right-0 z-50 flex items-center justify-end gap-2 px-4 py-2 bg-gradient-to-b from-black/40 to-transparent">
                         <button className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg">
                             <Share2 className="w-4 h-4 text-gray-900" />
-                        </button>
+                            </button>
                         <button 
                             onClick={() => setIsFavorite(!isFavorite)}
                             className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg"
                         >
                             <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-900'}`} />
-                        </button>
-                    </div>
+                            </button>
+                </div>
                     
                     {/* Spacer adicional para los botones de acción en móvil */}
                     <div className="h-12"></div>
@@ -308,12 +308,12 @@ export function ServiceReviewPage({
                                     </div>
                                 </div>
                             ))}
-                        </div>
+                                    </div>
                         {/* Indicador de fotos */}
                         <div className="absolute bottom-4 right-4 bg-gray-900/80 text-white text-xs font-medium px-2.5 py-1 rounded-md">
                             {mobileImageIndex + 1} / {finalImages.length}
-                        </div>
-                    </div>
+                                    </div>
+                                </div>
                 )}
 
                 {/* Contenido móvil - Estilo Airbnb compacto */}
@@ -321,17 +321,17 @@ export function ServiceReviewPage({
                     {/* Título y ubicación */}
                     <div className="mb-6">
                         <h1 className="text-[20px] font-semibold text-[#222222] leading-[1.2] mb-2 tracking-tight">
-                            {serviceTypeName} por {finalExpertName}
-                        </h1>
+                        {serviceTypeName} por {finalExpertName}
+                    </h1>
                         {/* Meta info - Estilo Airbnb */}
                         <div className="flex flex-wrap items-center gap-x-2 text-[13px] text-[#717171]">
-                            {finalRating > 0 ? (
-                                <>
+                        {finalRating > 0 ? (
+                            <>
                                     <div className="flex items-center gap-1">
                                         <Star className="w-[12px] h-[12px] fill-[#222222] text-[#222222]" />
                                         <span className="font-semibold text-[#222222]">{finalRating.toFixed(1)}</span>
                                     </div>
-                                    <span>·</span>
+                                                <span>·</span>
                                     <button className="underline hover:no-underline text-[#222222] font-normal">
                                         {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
                                     </button>
@@ -349,32 +349,32 @@ export function ServiceReviewPage({
                                 </span>
                             )}
                         </div>
-                    </div>
+                                </div>
 
                     <div className="h-px bg-[#DDDDDD] my-6" />
 
                     {/* Info del anfitrión - Estilo Airbnb */}
                     <div className="mb-6">
                         <div className="flex items-start gap-3 mb-3">
-                            <Avatar className="w-12 h-12">
-                                <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
+                        <Avatar className="w-12 h-12">
+                            <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
                                 <AvatarFallback className="bg-[#222222] text-white font-semibold text-sm">
-                                    {finalExpertName.charAt(0)}
-                                </AvatarFallback>
-                            </Avatar>
+                                {finalExpertName.charAt(0)}
+                            </AvatarFallback>
+                        </Avatar>
                             <div className="flex-1 pt-0.5">
                                 <h3 className="text-[15px] font-semibold text-[#222222] mb-1 leading-tight">
                                     Anfitrión: {finalExpertName}
                                 </h3>
                                 <p className="text-[13px] text-[#717171] leading-relaxed">
-                                    {finalService?.expert?.createdAt 
-                                        ? (() => {
-                                            const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
+                                {finalService?.expert?.createdAt 
+                                    ? (() => {
+                                        const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
                                             return months < 1 ? 'Menos de 1 mes' : `${months} ${months === 1 ? 'mes' : 'meses'} de experiencia`;
-                                        })()
-                                        : 'Profesional verificado'
-                                    }
-                                </p>
+                                    })()
+                                    : 'Profesional verificado'
+                                }
+                            </p>
                             </div>
                         </div>
                     </div>
@@ -395,8 +395,8 @@ export function ServiceReviewPage({
                             <div>
                                 <h4 className="text-[14px] font-semibold text-[#222222] mb-1 leading-tight">Soporte 24/7</h4>
                                 <p className="text-[13px] text-[#717171] leading-relaxed">Asistencia disponible en cualquier momento</p>
-                            </div>
-                        </div>
+                                </div>
+                                    </div>
                         <div className="flex items-start gap-3">
                             <Award className="w-5 h-5 text-[#222222] flex-shrink-0 mt-0.5" />
                             <div>
@@ -436,8 +436,8 @@ export function ServiceReviewPage({
                         <h3 className="text-[16px] font-semibold text-[#222222] mb-4 leading-tight">Acerca del servicio</h3>
                         <p className="text-[14px] text-[#222222] leading-[1.5] whitespace-pre-line">
                             {finalDescription || 'Este servicio profesional incluye todo lo necesario para garantizar tu satisfacción. Nuestro equipo de expertos está comprometido con brindarte la mejor experiencia posible.'}
-                        </p>
-                    </div>
+                                            </p>
+                                        </div>
 
                     {/* Reseñas */}
                     {finalReviews.length > 0 && (
@@ -464,8 +464,8 @@ export function ServiceReviewPage({
                                 <div className="flex items-baseline gap-1.5 mb-1">
                                     <span className="text-[22px] font-semibold text-[#222222]">{formatPrice(finalPrice)} €</span>
                                     <span className="text-[14px] text-[#717171] font-normal">total</span>
-                                </div>
-                                {finalRating > 0 && (
+                            </div>
+                            {finalRating > 0 && (
                                     <div className="flex items-center gap-1.5 text-[13px] text-[#717171]">
                                         <Star className="w-4 h-4 fill-[#222222] text-[#222222]" />
                                         <span className="font-semibold text-[#222222]">{finalRating.toFixed(1)}</span>
@@ -473,31 +473,31 @@ export function ServiceReviewPage({
                                         <button className="underline hover:no-underline text-[#222222] font-medium">
                                             {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
                                         </button>
-                                    </div>
-                                )}
-                            </div>
-                            {isAuthenticated ? (
-                                <Button
-                                    onClick={handleReserveClick}
-                                    className="h-11 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[15px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex-shrink-0"
-                                >
-                                    Reservar
-                                </Button>
-                            ) : (
-                                <div className="relative flex-shrink-0">
-                                    {/* Hidden Google button */}
-                                    <div ref={googleButtonRef} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }}></div>
-                                    {/* Custom button */}
-                                    <Button
-                                        onClick={handleGoogleSignIn}
-                                        disabled={!isGoogleReady}
-                                        className="h-11 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[15px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-2.5"
-                                    >
-                                        <GoogleIcon />
-                                        <span>Inicia sesión</span>
-                                    </Button>
                                 </div>
                             )}
+                        </div>
+                        {isAuthenticated ? (
+                                <Button
+                                onClick={handleReserveClick}
+                                    className="h-11 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[15px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex-shrink-0"
+                            >
+                                Reservar
+                                </Button>
+                        ) : (
+                                <div className="relative flex-shrink-0">
+                                {/* Hidden Google button */}
+                                <div ref={googleButtonRef} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }}></div>
+                                {/* Custom button */}
+                                    <Button
+                                    onClick={handleGoogleSignIn}
+                                    disabled={!isGoogleReady}
+                                        className="h-11 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[15px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-2.5"
+                                >
+                                    <GoogleIcon />
+                                        <span>Inicia sesión</span>
+                                    </Button>
+                            </div>
+                        )}
                         </div>
                     </div>
                 </div>
@@ -809,7 +809,7 @@ export function ServiceReviewPage({
                     display: none;
                 }
             `}</style>
-            </div>
+        </div>
         </>
     );
 }
