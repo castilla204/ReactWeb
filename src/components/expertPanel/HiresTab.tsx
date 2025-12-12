@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { Pagination } from '../Pagination';
+import { getPriceDisplay } from '../../utils/priceUtils';
 
 interface Hire { 
     id: number; 
@@ -283,14 +284,16 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                             
                                             <div className="flex items-center gap-1.5">
                                                 <Euro className="w-3 h-3 text-muted-foreground" />
-                                                <span className="font-bold text-foreground">
-                                                    {new Intl.NumberFormat('es-ES', {
-                                                        style: 'currency',
-                                                        currency: 'EUR',
-                                                        minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2,
-                                                    }).format(hire.amount)}
-                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-foreground">
+                                                        {getPriceDisplay(hire).formattedTotal}
+                                                    </span>
+                                                    {getPriceDisplay(hire).hasTaxInfo && (
+                                                        <span className="text-xs text-muted-foreground">
+                                                            IVA incluido
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
