@@ -27,8 +27,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101
-        fsGroup: 101
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
       - name: react-web
         image: erizo9/reactweb:latest@sha256:e044a036fd22edc462d625efeed8a135ec792b1f521621c74f46cfa4fc7045b7
