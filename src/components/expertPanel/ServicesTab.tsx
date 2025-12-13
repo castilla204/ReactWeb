@@ -202,15 +202,20 @@ export function ServicesTab({
                                             <Badge variant="outline" className="text-xs">{categoryName}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-0.5 sm:gap-1">
-                                                <Euro className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-muted-foreground" />
-                                                <span className="font-semibold text-sm sm:text-base">
-                                                    {new Intl.NumberFormat('es-ES', {
-                                                        style: 'currency',
-                                                        currency: 'EUR',
-                                                        minimumFractionDigits: 0,
-                                                        maximumFractionDigits: 2,
-                                                    }).format(service.price).replace('€', '').trim()}
+                                            <div className="flex flex-col items-end gap-0.5">
+                                                <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+                                                    <Euro className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-muted-foreground" />
+                                                    <span className="font-semibold text-sm sm:text-base">
+                                                        {new Intl.NumberFormat('es-ES', {
+                                                            style: 'currency',
+                                                            currency: 'EUR',
+                                                            minimumFractionDigits: 0,
+                                                            maximumFractionDigits: 2,
+                                                        }).format(service.price).replace('€', '').trim()}
+                                                    </span>
+                                                </div>
+                                                <span className="text-[10px] text-muted-foreground">
+                                                    IVA incluido
                                                 </span>
                                             </div>
                                         </TableCell>

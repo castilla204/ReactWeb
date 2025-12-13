@@ -773,12 +773,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                                 
                                                                 {/* Precio */}
                                                                     <div className="text-right">
-                                                                    <span className="text-[15px] font-semibold text-gray-900">
-                                                                        {service.price || 0} €
+                                                                    <div className="flex items-center gap-1.5 justify-end">
+                                                                        <span className="text-[15px] font-semibold text-gray-900">
+                                                                            {service.price || 0} €
                                                                         </span>
-                                                                    <span className="text-[12px] text-gray-500 ml-1">
+                                                                        <span className="text-[11px] text-gray-500">
+                                                                            IVA incluido
+                                                                        </span>
+                                                                    </div>
+                                                                    <span className="text-[12px] text-gray-500">
                                                                         total
-                                                                        </span>
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1273,9 +1278,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                                         <span className="text-[12px] text-gray-500">({reviewCount})</span>
                                                                     )}
                 </div>
-                                                                <span className="text-[14px] font-semibold text-gray-900">
-                                                                    {service.price || 0} €
-                                                                        </span>
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-[14px] font-semibold text-gray-900">
+                                                                        {service.price || 0} €
+                                                                    </span>
+                                                                    <span className="text-[10px] text-gray-500">
+                                                                        IVA incluido
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
