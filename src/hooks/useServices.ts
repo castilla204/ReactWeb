@@ -11,6 +11,7 @@ export interface Service {
     categoryId: number;
     serviceTypeId: number;
     serviceTypeName?: string;
+    serviceTypeDescription?: string; // ✅ NUEVO: Descripción del tipo de servicio
     serviceTypeCategoryId?: number;
     serviceTypeCategoryName?: string;
     requiresAppointment?: boolean;
@@ -42,6 +43,14 @@ export interface Service {
             name: string;
             email: string;
             profilePictureUrl?: string;
+        };
+        // ✅ NUEVO: Disponibilidad del experto
+        currentAvailability?: {
+            id: number;
+            daysOfWeek: string[];
+            startTime: string;
+            endTime: string;
+            effectiveFrom?: string;
         };
         reviews?: {
             id: number;

@@ -427,13 +427,13 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 {/* 1. Fondo base limpio */}
                 <div className="absolute inset-0 bg-white"></div>
-
+                
                 {/* 2. Onda principal vibrante (Azul Eléctrico a Violeta) */}
                 <div className="absolute -top-[30%] -right-[10%] w-[90%] h-[120%] bg-gradient-to-b from-blue-600 via-indigo-600 to-violet-600 opacity-[0.15] rounded-[100%] blur-[80px] animate-float-delayed z-0 transform rotate-12"></div>
                 
                 {/* 3. Onda secundaria de contraste (Cian Brillante) */}
                 <div className="absolute top-[-10%] right-[-20%] w-[70%] h-[100%] bg-gradient-to-bl from-cyan-400 via-blue-500 to-indigo-500 opacity-[0.12] rounded-[100%] blur-[60px] animate-pulse-slow z-0"></div>
-
+                
                 {/* 4. Acentos de luz (Orbes brillantes) */}
                 <div className="absolute top-[15%] right-[15%] w-64 h-64 bg-blue-400/20 rounded-full blur-[50px] mix-blend-overlay animate-float"></div>
                 <div className="absolute top-[40%] right-[5%] w-48 h-48 bg-cyan-300/20 rounded-full blur-[40px] mix-blend-overlay animate-float-delayed"></div>
@@ -447,7 +447,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 
                 {/* 6. Brillo cenital sutil */}
                 <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-white/80 to-transparent z-0"></div>
-            </div>
+                    </div>
 
             {/* Hero móvil - Diseño Premium y Vibrante */}
             <div className="lg:hidden relative min-h-[calc(100dvh-60px)] z-20 flex flex-col justify-center px-6 pt-4 pb-12">
@@ -459,16 +459,16 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                         <span className="relative flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                        </span>
+                                </span>
                         <span>Verificación experta en 48h</span>
-                    </div>
-                    
+                            </div>
+                            
                     {/* Título principal - Grande y centrado */}
                     <h1 className="text-4xl xs:text-5xl font-extrabold text-gray-900 leading-[1.1] tracking-tight">
                         No compres <br/>
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">a ciegas</span>
-                    </h1>
-                    
+                            </h1>
+                            
                     {/* Subtítulo y palabra cambiante */}
                     <div className="text-lg text-gray-600 leading-relaxed font-medium">
                         Revisamos tu{' '}
@@ -480,25 +480,25 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                         </span>
                         {' '}antes de que pagues.
                     </div>
-                    
+                            
                     {/* Botón principal CTA - Full width con sombra */}
                     <div className="pt-4 w-full">
-                        <button
-                            onClick={onScrollToForm}
+                                <button
+                                    onClick={onScrollToForm}
                             className="w-full bg-gray-900 text-white font-bold text-lg py-4 px-8 rounded-2xl shadow-xl shadow-blue-900/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
-                        >
+                                >
                             <span>Calcular precio</span>
                             <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-                        </button>
+                                </button>
                     </div>
                     
                     {/* Botón secundario Google */}
-                    {!isAuthenticated && (
+                                {!isAuthenticated && (
                         <div className="w-full scale-95 opacity-90">
                             <GoogleSignInButton />
-                        </div>
-                    )}
-                    
+                                    </div>
+                                )}
+                            
                     {/* Social proof minimalista */}
                     <div className="pt-8 flex items-center justify-center gap-4 opacity-80">
                         <div className="flex -space-x-2">
@@ -506,8 +506,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500 overflow-hidden`}>
                                     <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" className="w-full h-full object-cover" />
                                 </div>
-                            ))}
-                        </div>
+                                        ))}
+                                    </div>
                         <div className="text-left">
                             <div className="flex text-yellow-400 text-xs">★★★★★</div>
                             <div className="text-xs font-semibold text-gray-600">+2.5k clientes felices</div>
@@ -692,7 +692,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 </div>
             </div>
 
-            <div className="relative z-10 w-full hidden lg:block px-4 sm:px-6 md:px-12 lg:px-16 py-6 sm:py-8 md:py-10 lg:py-12">
+            <div className="relative z-10 w-full hidden lg:flex lg:flex-col lg:justify-center min-h-[calc(100vh-64px)] px-4 sm:px-6 md:px-12 lg:px-16 py-6 sm:py-8 md:py-10 lg:py-12">
                 {/* Contenido principal - solo desktop */}
                 <div className="lg:block">
                     <div className="max-w-6xl mx-auto w-full">
@@ -873,13 +873,13 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                     <input
                                                         type="url"
                                                         placeholder="https://..."
-                                                        value={searchForm.adUrl}
-                                                        onChange={(e) => setSearchForm({...searchForm, adUrl: e.target.value})}
+                                                    value={searchForm.adUrl}
+                                                    onChange={(e) => setSearchForm({...searchForm, adUrl: e.target.value})}
                                                         className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-gray-50 focus:bg-white"
                                                         autoFocus
-                                                    />
-                                                </div>
+                                                />
                                             </div>
+                                        </div>
                                             <div className="mt-4 flex justify-end gap-2 pt-3 border-t border-gray-100">
                                                 {searchForm.adUrl && (
                                                     <button
@@ -897,7 +897,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                 >
                                                     Guardar
                                                 </button>
-                                            </div>
+                                    </div>
                                         </DialogContent>
                                     </Dialog>
                                     
@@ -905,12 +905,12 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     
                                     {/* Botón buscar - integrado en el contenedor */}
                                     <div className="flex-shrink-0 px-2">
-                                        <button
-                                            onClick={handleSearch}
+                                    <button
+                                        onClick={handleSearch}
                                             className="bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-full w-11 h-11 transition-colors shadow-md hover:shadow-lg flex items-center justify-center"
-                                        >
+                                    >
                                             <Search className="w-4 h-4" />
-                                        </button>
+                                    </button>
                                     </div>
                                 </div>
                             </div>

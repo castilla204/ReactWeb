@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
-import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video } from 'lucide-react';
 import { ImageCarousel } from './ui/image-carousel';
 import { useLoadScript } from '@react-google-maps/api';
 import { useServices } from '../hooks/useServices';
@@ -693,106 +693,117 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     <div className="flex-1 overflow-y-auto">
                         {formData.latitude && formData.longitude && (
                             <div className="p-4 pb-6">
-                                {/* Services List - Estilo Airbnb */}
-                                {services.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {services.map((service) => {
-                                            const allImages = service.imageUrls && service.imageUrls.length > 0
-                                                ? service.imageUrls
-                                                : (service.expert?.profilePictureUrl ? [service.expert.profilePictureUrl] : []);
-                                            const isSelected = selectedService === service.id;
-                                            const reviewCount = service.expert?.reviews?.length || 0;
-                                            
-    return (
-                                                <div
-                                                    key={service.id}
-                                                    className={`group cursor-pointer transition-all duration-200 rounded-2xl overflow-hidden ${
-                                                        isSelected
-                                                            ? 'ring-2 ring-black shadow-lg'
-                                                            : 'hover:shadow-md'
-                                                    }`}
-                                                    onClick={() => handleServiceSelect(service.id)}
-                                                >
-                                                    {/* Card horizontal estilo Airbnb */}
-                                                    <div className="flex bg-white">
-                                                        {/* Imagen */}
-                                                        <div className="w-[140px] h-[140px] flex-shrink-0 relative" onClick={(e) => e.stopPropagation()}>
-                                                            {allImages.length > 0 ? (
-                                                                    <ImageCarousel
-                                                                        images={allImages}
-                                                                        alt={service.expert?.user?.name || 'Experto'}
+                            {/* Services List - Desktop Balanced Professional Style */}
+                            {services.length > 0 ? (
+                                <div className="space-y-4">
+                                    {services.map((service) => {
+                                        const isSelected = selectedService === service.id;
+                                        
+                                        // Datos detallados
+                                        const availability = service.expert?.currentAvailability;
+                                        const days = availability?.daysOfWeek?.map(d => d.slice(0, 3)).join(', ') || 'Consultar';
+                                        const hours = availability ? `${availability.startTime?.slice(0,5)} - ${availability.endTime?.slice(0,5)}` : '';
+                                        
+                                        const deliverables = [
+                                            { type: 'pdf', label: 'Informe' },
+                                            { type: 'image', label: 'Fotos' },
+                                            { type: 'video', label: 'Video' }
+                                        ];
+
+                                        return (
+                                            <div
+                                                key={service.id}
+                                                className={`group cursor-pointer transition-all duration-300 bg-white rounded-xl overflow-hidden border ${
+                                                    isSelected 
+                                                        ? 'border-blue-600 ring-1 ring-blue-600 shadow-md' 
+                                                        : 'border-gray-200 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:border-blue-300 hover:shadow-md'
+                                                }`}
+                                                onClick={() => handleServiceSelect(service.id)}
+                                            >
+                                                <div className="p-4 flex gap-4">
+                                                    {/* 1. AVATAR EXPERTO (Balanced) */}
+                                                    <div className="flex-shrink-0 flex flex-col items-center gap-2">
+                                                        <div className="w-[68px] h-[68px] rounded-full border-[3px] border-white shadow-sm overflow-hidden bg-gray-50 ring-1 ring-gray-100 group-hover:ring-blue-200 transition-all">
+                                                            {service.expert?.profilePictureUrl ? (
+                                                                <img
+                                                                    src={service.expert.profilePictureUrl}
+                                                                    alt={service.expert?.user?.name}
                                                                     className="w-full h-full object-cover"
                                                                 />
                                                             ) : (
-                                                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                                                    <User className="w-10 h-10 text-gray-300" />
-                                                                        </div>
-                                                                    )}
-                                                            {/* Badge verificado */}
-                                                                    {service.expert?.stripeAccountId && (
-                                                                <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-md text-[10px] font-medium text-gray-800 shadow-sm">
-                                                                            Verificado
-                                                                        </div>
-                                                                    )}
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <User className="w-8 h-8 text-gray-300" />
                                                                 </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-1 bg-white border border-gray-100 px-2 py-0.5 rounded-full shadow-sm">
+                                                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                                            <span className="text-xs font-bold text-gray-700">{service.averageRating?.toFixed(1) || '5.0'}</span>
+                                                        </div>
+                                                    </div>
 
-                                                        {/* Contenido */}
-                                                        <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
-                                                            {/* Header */}
+                                                    {/* 2. INFO TÉCNICA (Balanced) */}
+                                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                        {/* Header */}
+                                                        <div className="flex justify-between items-start mb-3">
                                                             <div>
-                                                                {/* Categoría y ubicación */}
-                                                                <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-0.5">
-                                                                    {service.categoryName || 'Servicio'}
+                                                                <h3 className="text-[15px] font-bold text-gray-900 leading-tight mb-0.5 group-hover:text-blue-700 transition-colors">
+                                                                    {service.expert?.user?.name || 'Experto Profesional'}
+                                                                </h3>
+                                                                <p className="text-xs text-slate-500 font-medium">
+                                                                    {service.categoryName}
                                                                 </p>
-                                                                
-                                                                {/* Nombre */}
-                                                                <h3 className="text-[15px] font-medium text-gray-900 leading-snug mb-1 line-clamp-1">
-                                                                    {service.expert?.user?.name || 'Experto profesional'}
-                                                                    </h3>
-                                                                
-                                                                {/* Descripción */}
-                                                                <p className="text-[13px] text-gray-500 line-clamp-2 leading-relaxed">
-                                                                    {service.conditions || 'Servicio profesional de inspección'}
-                                                                </p>
+                                                            </div>
+                                                            <div className="text-right pl-2">
+                                                                <span className="text-lg font-bold text-gray-900 block leading-none">{service.price}€</span>
+                                                                <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Total</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Detalles Grid con Toques de Color Suave */}
+                                                        <div className="bg-slate-50/80 rounded-lg p-2.5 border border-slate-100">
+                                                            <div className="grid grid-cols-1 gap-2.5">
+                                                                {/* Disponibilidad */}
+                                                                <div className="flex items-start gap-2.5">
+                                                                    <div className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                                        <Clock className="w-3 h-3 text-blue-600" />
+                                                                    </div>
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Disponibilidad</p>
+                                                                        <p className="text-xs text-slate-700 font-medium truncate">
+                                                                            {days} <span className="text-slate-300 mx-1">|</span> {hours || 'Flexible'}
+                                                                        </p>
+                                                                    </div>
                                                                 </div>
 
-                                                            {/* Footer */}
-                                                            <div className="flex items-end justify-between mt-2">
-                                                                {/* Rating */}
-                                                                <div className="flex items-center gap-1">
-                                                                    <Star className="w-3.5 h-3.5 fill-gray-900 text-gray-900" />
-                                                                    <span className="text-[13px] font-medium text-gray-900">
-                                                                            {service.averageRating?.toFixed(1) || 'Nuevo'}
-                                                                        </span>
-                                                                    {reviewCount > 0 && (
-                                                                        <span className="text-[13px] text-gray-500">
-                                                                            ({reviewCount})
-                                                                            </span>
-                                                                        )}
+                                                                {/* Entrega */}
+                                                                <div className="flex items-start gap-2.5">
+                                                                    <div className="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                                        <CheckCircle className="w-3 h-3 text-emerald-600" />
                                                                     </div>
-                                                                
-                                                                {/* Precio */}
-                                                                    <div className="text-right">
-                                                                    <div className="flex items-center gap-1.5 justify-end">
-                                                                        <span className="text-[15px] font-semibold text-gray-900">
-                                                                            {service.price || 0} €
-                                                                        </span>
-                                                                        <span className="text-[11px] text-gray-500">
-                                                                            IVA incluido
-                                                                        </span>
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Incluye</p>
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {deliverables.map((d, i) => (
+                                                                                <div key={i} className="flex items-center gap-1 text-[11px] text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-100 shadow-sm">
+                                                                                    {d.type === 'pdf' && <FileText className="w-3 h-3 text-slate-400" />}
+                                                                                    {d.type === 'image' && <Image className="w-3 h-3 text-slate-400" />}
+                                                                                    {d.type === 'video' && <Video className="w-3 h-3 text-slate-400" />}
+                                                                                    <span>{d.label}</span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
                                                                     </div>
-                                                                    <span className="text-[12px] text-gray-500">
-                                                                        total
-                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
                                     <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
                                         <div className="flex flex-col items-center gap-4 max-w-sm">
                                             <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
@@ -1025,10 +1036,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                         ) : (
                             <>
-                            {/* Barra de búsqueda desktop - Estilo Airbnb */}
-                            <div className="absolute top-4 left-4 right-4 z-[9999] pointer-events-none">
-                                <div className="max-w-2xl pointer-events-auto">
-                                    <div className="bg-white rounded-full shadow-lg hover:shadow-xl border border-gray-200 flex items-center overflow-hidden transition-shadow">
+                            {/* Barra de búsqueda desktop - Estilo Airbnb Compacto */}
+                            <div className="absolute top-6 left-6 z-[9999] pointer-events-none">
+                                <div className="w-[400px] pointer-events-auto">
+                                    <div className="bg-white rounded-full shadow-2xl hover:shadow-3xl border border-gray-200 flex items-center overflow-hidden transition-all duration-300">
                                         {/* Selector de país - Compacto */}
                                         <div className="flex-shrink-0">
                                         <CountrySelector
@@ -1138,153 +1149,120 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 
                 {/* Mobile Drawer with Services */}
                 <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                    <DrawerContent className="max-h-[90vh] flex flex-col rounded-t-[20px]">
-                        {/* Handle */}
-                        <div className="flex justify-center py-2">
-                            <div className="w-10 h-1 bg-gray-300 rounded-full" />
+                    <DrawerContent className="max-h-[85vh] flex flex-col rounded-t-[24px] bg-gray-50 outline-none">
+                        {/* Handle minimalista */}
+                        <div className="flex justify-center pt-3 pb-2 bg-white rounded-t-[24px]">
+                            <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
                         </div>
                         
-                        <DrawerHeader className="border-b border-gray-200 px-4 pb-3 pt-1 flex-shrink-0">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <DrawerTitle className="text-lg font-semibold text-gray-900">
-                                        {services.length} {services.length === 1 ? 'experto' : 'expertos'}
-                                    </DrawerTitle>
-                                    <DrawerDescription className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
-                                        <MapPin className="w-3.5 h-3.5" />
-                                        {formData.locationName || 'Ubicación seleccionada'}
-                                    </DrawerDescription>
-                                </div>
-                                <DrawerClose asChild>
-                                    <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
-                                        <X className="w-5 h-5 text-gray-500" />
-                                    </button>
-                                </DrawerClose>
-                            </div>
-                        </DrawerHeader>
-                        
-                        <div className="flex-1 overflow-y-auto bg-gray-50">
-                            {/* Filters - Estilo Airbnb */}
-                            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
-                                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                                    <button 
-                                        onClick={() => setFilters({ priceRange: [0, 100000], rating: 0 })}
-                                        className={`h-9 px-4 rounded-full border text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-                                            filters.priceRange[0] === 0 && filters.priceRange[1] === 100000 && filters.rating === 0
-                                                ? 'border-gray-900 bg-gray-900 text-white'
-                                                : 'border-gray-300 bg-white text-gray-700'
-                                        }`}
-                                    >
-                                        Todos
-                                    </button>
-                                    
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <button className={`h-9 px-4 rounded-full border text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-                                                filters.priceRange[0] > 0 || filters.priceRange[1] < 100000
-                                                    ? 'border-gray-900 bg-gray-900 text-white'
-                                                    : 'border-gray-300 bg-white text-gray-700'
-                                            }`}>
-                                                Precio
-                                            </button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-72 p-4" align="start">
-                                            <h4 className="font-semibold text-gray-900 mb-3">Rango de precio</h4>
-                                                    <Slider
-                                                        value={filters.priceRange}
-                                                        onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
-                                                        min={0}
-                                                max={1000}
-                                                        step={10}
-                                                className="w-full mb-3"
-                                                    />
-                                            <div className="flex items-center justify-between text-sm text-gray-600">
-                                                        <span>€{filters.priceRange[0]}</span>
-                                                <span>€{filters.priceRange[1]}+</span>
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                                    
-                                    {[4, 4.5].map((rating) => (
-                                        <button
-                                            key={rating}
-                                            onClick={() => setFilters({...filters, rating: filters.rating === rating ? 0 : rating})}
-                                            className={`h-9 px-4 rounded-full border text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-1 ${
-                                                filters.rating === rating
-                                                    ? 'border-gray-900 bg-gray-900 text-white'
-                                                    : 'border-gray-300 bg-white text-gray-700'
-                                            }`}
-                                        >
-                                            <Star className="w-3.5 h-3.5" />
-                                            {rating}+
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            
-                            {/* Services List - Mobile Airbnb Style */}
-                            <div className="px-4 py-3">
+                        {/* Sin Header ni Filtros molestos, directo al contenido limpio */}
+                        <div className="flex-1 overflow-y-auto bg-gray-50/50">
+                            {/* Services List - Balanced Professional Style */}
+                            <div className="px-3 py-3">
                                 {services.length > 0 ? (
-                                    <div className="space-y-3">
+                                    <div className="space-y-4">
                                         {services.map((service) => {
-                                            const allImages = service.imageUrls && service.imageUrls.length > 0
-                                                ? service.imageUrls
-                                                : (service.expert?.profilePictureUrl ? [service.expert.profilePictureUrl] : []);
                                             const isSelected = selectedService === service.id;
-                                            const reviewCount = service.expert?.reviews?.length || 0;
                                             
-                                                return (
+                                            // Datos detallados
+                                            const availability = service.expert?.currentAvailability;
+                                            const days = availability?.daysOfWeek?.map(d => d.slice(0, 3)).join(', ') || 'Consultar';
+                                            const hours = availability ? `${availability.startTime?.slice(0,5)} - ${availability.endTime?.slice(0,5)}` : '';
+                                            
+                                            const deliverables = [
+                                                { type: 'pdf', label: 'Informe' },
+                                                { type: 'image', label: 'Fotos' },
+                                                { type: 'video', label: 'Video' }
+                                            ];
+
+                                            return (
                                                 <div
                                                     key={service.id}
-                                                    className={`cursor-pointer transition-all duration-200 rounded-xl overflow-hidden bg-white ${
-                                                        isSelected ? 'ring-2 ring-black' : 'border border-gray-200'
+                                                    className={`group cursor-pointer transition-all duration-300 bg-white rounded-xl overflow-hidden border ${
+                                                        isSelected 
+                                                            ? 'border-blue-600 ring-1 ring-blue-600 shadow-md' 
+                                                            : 'border-gray-200 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:border-blue-300 hover:shadow-md'
                                                     }`}
                                                     onClick={() => handleServiceSelect(service.id)}
                                                 >
-                                                    <div className="flex gap-3 p-3">
-                                                        {/* Imagen cuadrada */}
-                                                        <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                                                            {allImages.length > 0 ? (
+                                                    <div className="p-4 flex gap-4">
+                                                        {/* 1. AVATAR EXPERTO (Balanced) */}
+                                                        <div className="flex-shrink-0 flex flex-col items-center gap-2">
+                                                            <div className="w-[68px] h-[68px] rounded-full border-[3px] border-white shadow-sm overflow-hidden bg-gray-50 ring-1 ring-gray-100 group-hover:ring-blue-200 transition-all">
+                                                                {service.expert?.profilePictureUrl ? (
                                                                     <img
-                                                                        src={allImages[0]}
-                                                                        alt={service.expert?.user?.name || 'Experto'}
+                                                                        src={service.expert.profilePictureUrl}
+                                                                        alt={service.expert?.user?.name}
                                                                         className="w-full h-full object-cover"
                                                                     />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center">
-                                                                    <User className="w-8 h-8 text-gray-300" />
-                        </div>
-                                                            )}
-                    </div>
-                                                        
-                                                        {/* Info */}
-                                                        <div className="flex-1 min-w-0 flex flex-col justify-between">
-                                                            <div>
-                                                                <p className="text-[10px] text-gray-500 uppercase tracking-wide">
-                                                                    {service.categoryName || 'Servicio'}
-                                                                </p>
-                                                                <h3 className="text-[14px] font-medium text-gray-900 truncate">
-                                                                            {service.expert?.user?.name || 'Experto'}
-                                                                        </h3>
+                                                                ) : (
+                                                                    <div className="w-full h-full flex items-center justify-center">
+                                                                        <User className="w-8 h-8 text-gray-300" />
                                                                     </div>
-                                                            
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-1">
-                                                                    <Star className="w-3 h-3 fill-gray-900 text-gray-900" />
-                                                                    <span className="text-[12px] font-medium">
-                                                                        {service.averageRating?.toFixed(1) || 'Nuevo'}
-                                                                            </span>
-                                                                    {reviewCount > 0 && (
-                                                                        <span className="text-[12px] text-gray-500">({reviewCount})</span>
-                                                                    )}
-                </div>
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <span className="text-[14px] font-semibold text-gray-900">
-                                                                        {service.price || 0} €
-                                                                    </span>
-                                                                    <span className="text-[10px] text-gray-500">
-                                                                        IVA incluido
-                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {/* Rating (Solo si tiene) */}
+                                                            {service.averageRating && service.averageRating > 0 && (
+                                                                <div className="flex items-center gap-1 bg-white border border-gray-100 px-2 py-0.5 rounded-full shadow-sm">
+                                                                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                                                    <span className="text-xs font-bold text-gray-700">{service.averageRating.toFixed(1)}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* 2. INFO TÉCNICA (Balanced) */}
+                                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                            {/* Header */}
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <div>
+                                                                    <h3 className="text-[15px] font-bold text-gray-900 leading-tight mb-0.5 group-hover:text-blue-700 transition-colors">
+                                                                        {service.expert?.user?.name || 'Experto Profesional'}
+                                                                    </h3>
+                                                                    <p className="text-xs text-slate-500 font-medium">
+                                                                        {service.categoryName}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="text-right pl-2">
+                                                                    <span className="text-lg font-bold text-gray-900 block leading-none">{service.price}€</span>
+                                                                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Total</span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Detalles Grid con Toques de Color Suave */}
+                                                            <div className="bg-slate-50/80 rounded-lg p-2.5 border border-slate-100">
+                                                                <div className="grid grid-cols-1 gap-2.5">
+                                                                    {/* Disponibilidad */}
+                                                                    <div className="flex items-start gap-2.5">
+                                                                        <div className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                                            <Clock className="w-3 h-3 text-blue-600" />
+                                                                        </div>
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Disponibilidad</p>
+                                                                            <p className="text-xs text-slate-700 font-medium truncate">
+                                                                                {days} <span className="text-slate-300 mx-1">|</span> {hours || 'Flexible'}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Entrega */}
+                                                                    <div className="flex items-start gap-2.5">
+                                                                        <div className="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                                            <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                                                        </div>
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Incluye</p>
+                                                                            <div className="flex flex-wrap gap-1.5">
+                                                                                {deliverables.map((d, i) => (
+                                                                                    <div key={i} className="flex items-center gap-1 text-[11px] text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-100 shadow-sm">
+                                                                                        {d.type === 'pdf' && <FileText className="w-3 h-3 text-slate-400" />}
+                                                                                        {d.type === 'image' && <Image className="w-3 h-3 text-slate-400" />}
+                                                                                        {d.type === 'video' && <Video className="w-3 h-3 text-slate-400" />}
+                                                                                        <span>{d.label}</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>

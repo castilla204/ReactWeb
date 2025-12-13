@@ -50,6 +50,7 @@ import { useMoneyDistributionConfig, shouldShowMoneyDistribution } from '../hook
 import StatusBadge from './StatusBadge';
 import { getStatusInfoWithFallback } from '../utils/statusUtils';
 import { useExpertResponse } from '../hooks/useExpertResponse';
+import { getPriceDisplay } from '../utils/priceUtils';
 
 // ? NUEVOS HOOKS OPTIMIZADOS
 import { useSearchDetailsOptimized } from '../hooks/useSearchDetailsOptimized';
@@ -1233,20 +1234,48 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 Radio de servicio: <span className="font-medium text-gray-900">{serviceInfo.locationRange} km</span>
                                             </div>
                                         )}
-                                        {serviceInfo?.price && (
-                                            <div className="text-sm">
-                                                <span className="text-gray-500">Precio: </span>
-                                                <span className="text-gray-900 font-semibold">
-                                                    {new Intl.NumberFormat('es-ES', {
-                                                        style: 'currency',
-                                                        currency: 'EUR',
-                                                        minimumFractionDigits: 0,
-                                                        maximumFractionDigits: 0,
-                                                    }).format(serviceInfo.price)}
-                                                </span>
-                                                <span className="text-xs text-gray-500">IVA incluido</span>
-                                            </div>
-                                        )}
+                                        {/* Precio con desglose mejorado */}
+                                        {(() => {
+                                            const priceSource = search?.searchHire || (serviceInfo?.price ? { amount: serviceInfo.price } : null);
+                                            if (!priceSource) return null;
+                                            const priceDisplay = getPriceDisplay(priceSource);
+                                            
+                                            return (
+                                                <div className="bg-gray-50/50 rounded-lg border border-gray-100 p-3 mt-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-sm font-medium text-gray-600">Precio total</span>
+                                                        <div className="text-right">
+                                                            <div className="flex items-center justify-end gap-1.5">
+                                                                <span className="text-lg font-bold text-gray-900">{priceDisplay.formattedTotal}</span>
+                                                            </div>
+                                                            {priceDisplay.hasTaxInfo && (
+                                                                <p className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full inline-block mt-0.5">IVA incluido</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {priceDisplay.hasTaxInfo && (
+                                                        <Accordion type="single" collapsible className="w-full mt-2 border-t border-gray-200/50">
+                                                            <AccordionItem value="price-breakdown" className="border-none">
+                                                                <AccordionTrigger className="text-xs py-1.5 text-gray-500 hover:text-gray-700 hover:no-underline font-normal justify-start gap-2 h-auto min-h-0">
+                                                                    <span>Ver desglose de impuestos</span>
+                                                                </AccordionTrigger>
+                                                                <AccordionContent className="pb-0 pt-1 space-y-1">
+                                                                    <div className="flex justify-between text-xs">
+                                                                        <span className="text-gray-500">Base imponible</span>
+                                                                        <span className="text-gray-700 font-medium">{priceDisplay.formattedBase}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between text-xs">
+                                                                        <span className="text-gray-500">IVA</span>
+                                                                        <span className="text-gray-700 font-medium">{priceDisplay.formattedTax}</span>
+                                                                    </div>
+                                                                </AccordionContent>
+                                                            </AccordionItem>
+                                                        </Accordion>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
 
                                     {/* Accordion para explicar el estado - Múltiples desplegables */}
@@ -1915,22 +1944,48 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             Radio de servicio: <span className="font-medium text-gray-900">{serviceInfo.locationRange} km</span>
                                         </div>
                                     )}
-                                    {serviceInfo?.price && (
-                                        <div className="text-sm">
-                                            <span className="text-gray-500">Precio: </span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-gray-900 font-semibold">
-                                                    {new Intl.NumberFormat('es-ES', {
-                                                        style: 'currency',
-                                                        currency: 'EUR',
-                                                        minimumFractionDigits: 0,
-                                                        maximumFractionDigits: 0,
-                                                    }).format(serviceInfo.price)}
-                                                </span>
-                                                <span className="text-xs text-gray-500">IVA incluido</span>
+                                    {/* Precio con desglose mejorado */}
+                                    {(() => {
+                                        const priceSource = search?.searchHire || (serviceInfo?.price ? { amount: serviceInfo.price } : null);
+                                        if (!priceSource) return null;
+                                        const priceDisplay = getPriceDisplay(priceSource);
+                                        
+                                        return (
+                                            <div className="bg-gray-50/50 rounded-lg border border-gray-100 p-3 mt-1">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm font-medium text-gray-600">Precio total</span>
+                                                    <div className="text-right">
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            <span className="text-lg font-bold text-gray-900">{priceDisplay.formattedTotal}</span>
+                                                        </div>
+                                                        {priceDisplay.hasTaxInfo && (
+                                                            <p className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full inline-block mt-0.5">IVA incluido</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                
+                                                {priceDisplay.hasTaxInfo && (
+                                                    <Accordion type="single" collapsible className="w-full mt-2 border-t border-gray-200/50">
+                                                        <AccordionItem value="price-breakdown" className="border-none">
+                                                            <AccordionTrigger className="text-xs py-1.5 text-gray-500 hover:text-gray-700 hover:no-underline font-normal justify-start gap-2 h-auto min-h-0">
+                                                                <span>Ver desglose de impuestos</span>
+                                                            </AccordionTrigger>
+                                                            <AccordionContent className="pb-0 pt-1 space-y-1">
+                                                                <div className="flex justify-between text-xs">
+                                                                    <span className="text-gray-500">Base imponible</span>
+                                                                    <span className="text-gray-700 font-medium">{priceDisplay.formattedBase}</span>
+                                                                </div>
+                                                                <div className="flex justify-between text-xs">
+                                                                    <span className="text-gray-500">IVA</span>
+                                                                    <span className="text-gray-700 font-medium">{priceDisplay.formattedTax}</span>
+                                                                </div>
+                                                            </AccordionContent>
+                                                        </AccordionItem>
+                                                    </Accordion>
+                                                )}
                                             </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
                                 </div>
                             
                                 {/* Accordion para explicar el estado */}
