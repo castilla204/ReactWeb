@@ -16,7 +16,9 @@ import {
     MessageCircle,
     Award,
     Zap,
-    Grid3X3
+    Grid3X3,
+    Lock,
+    BadgeCheck
 } from 'lucide-react';
 import { FormProgressTimeline } from '../components/FormProgressTimeline';
 import { Button } from '../components/ui/button';
@@ -99,7 +101,7 @@ export function ServiceReviewPage({
         return new Intl.NumberFormat('es-ES', {
             minimumFractionDigits: 0,
             maximumFractionDigits: 2,
-        }).format(price / 100);
+        }).format(price);
     };
 
     // Google Icon Component
@@ -284,89 +286,95 @@ export function ServiceReviewPage({
                     {/* Spacer adicional para los botones de acción en móvil */}
                     <div className="h-12"></div>
 
-                {/* Galería móvil con carrusel */}
-                {finalImages.length > 0 && (
-                    <div className="relative -mt-16">
-                        <div 
-                            ref={carouselRef}
-                            className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-                            onScroll={handleMobileCarouselScroll}
-                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                        >
-                            {finalImages.map((img, idx) => (
-                                <div 
-                                    key={idx}
-                                    className="w-full flex-shrink-0 snap-center"
-                                    onClick={() => handleImageClick(idx)}
-                                >
-                                    <div className="aspect-[4/3] bg-gray-100">
-                                        <img
-                                            src={img}
-                                            alt={`Foto ${idx + 1}`}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                                    </div>
-                        {/* Indicador de fotos */}
-                        <div className="absolute bottom-4 right-4 bg-gray-900/80 text-white text-xs font-medium px-2.5 py-1 rounded-md">
-                            {mobileImageIndex + 1} / {finalImages.length}
-                                    </div>
-                                </div>
-                )}
+                {/* Galería móvil ESTILO ÁLBUM APILADO MEJORADO */}
+                <div className="px-5 mb-8 -mt-6">
+                    <div className="relative group cursor-pointer perspective-1000 mx-auto w-full max-w-[340px]" onClick={() => handleImageClick(0)}>
+                        {/* Capa Decorativa 3 */}
+                        {finalImages.length > 2 && (
+                            <div className="absolute top-0 left-0 w-full h-full bg-white rounded-xl shadow-md transform rotate-[-6deg] translate-x-[-10px] scale-90 border-4 border-white z-0">
+                                <div className="w-full h-full bg-gray-200 rounded-lg overflow-hidden opacity-50"></div>
+                            </div>
+                        )}
+                        
+                        {/* Capa Decorativa 2 */}
+                        {finalImages.length > 1 && (
+                            <div className="absolute top-0 left-0 w-full h-full bg-white rounded-xl shadow-lg transform rotate-[4deg] translate-x-[10px] scale-[0.96] border-4 border-white z-10 overflow-hidden">
+                                <img src={finalImages[1]} className="w-full h-full object-cover opacity-90 filter contrast-75" alt="Background" />
+                            </div>
+                        )}
 
-                {/* Contenido móvil - Estilo Airbnb compacto */}
-                <div className="px-5 pt-4 pb-32">
+                        {/* Foto Principal */}
+                        <div className="relative z-20 w-full aspect-[4/3] bg-white rounded-xl shadow-[0_15px_35px_-10px_rgba(0,0,0,0.25)] transform transition-all duration-500 border-[5px] border-white overflow-hidden active:scale-95">
+                             <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent z-10 pointer-events-none" />
+                            <img 
+                                src={finalImages[0]} 
+                                alt="Principal" 
+                                className="w-full h-full object-cover"
+                            />
+                            
+                            {/* Badge */}
+                            {finalImages.length > 1 && (
+                                <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-lg flex items-center gap-1 z-20">
+                                    <Grid3X3 className="w-3 h-3" />
+                                    <span>+{finalImages.length - 1}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Contenido móvil - Estilo Airbnb moderno (COMPACTO) */}
+                <div className="px-5 pt-0 pb-32">
                     {/* Título y ubicación */}
-                    <div className="mb-6">
-                        <h1 className="text-[20px] font-semibold text-[#222222] leading-[1.2] mb-2 tracking-tight">
+                    <div className="mb-4 text-center">
+                        <h1 className="text-xl font-bold text-gray-900 leading-tight mb-1.5 tracking-tight">
                         {serviceTypeName} por {finalExpertName}
                     </h1>
                         {/* Meta info - Estilo Airbnb */}
-                        <div className="flex flex-wrap items-center gap-x-2 text-[13px] text-[#717171]">
+                        <div className="flex flex-wrap items-center justify-center gap-x-2 text-xs text-gray-600">
                         {finalRating > 0 ? (
                             <>
                                     <div className="flex items-center gap-1">
-                                        <Star className="w-[12px] h-[12px] fill-[#222222] text-[#222222]" />
-                                        <span className="font-semibold text-[#222222]">{finalRating.toFixed(1)}</span>
+                                        <Star className="w-3 h-3 fill-gray-900 text-gray-900" />
+                                        <span className="font-semibold text-gray-900">{finalRating.toFixed(1)}</span>
                                     </div>
                                                 <span>·</span>
-                                    <button className="underline hover:no-underline text-[#222222] font-normal">
+                                    <button className="underline hover:no-underline text-gray-900 font-medium">
                                         {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
                                     </button>
-                                    {finalCompletedSearches > 0 && (
-                                        <>
-                                            <span>·</span>
-                                            <span className="text-[#717171]">{finalCompletedSearches} completados</span>
-                                        </>
-                                    )}
                                 </>
                             ) : (
-                                <span className="flex items-center gap-1 text-[#717171]">
-                                    <Star className="w-[12px] h-[12px]" />
+                                <span className="flex items-center gap-1 text-gray-600">
+                                    <Star className="w-3 h-3" />
                                     <span>Nuevo</span>
                                 </span>
                             )}
                         </div>
-                                </div>
+                    </div>
 
-                    <div className="h-px bg-[#DDDDDD] my-6" />
+                    {/* Descripción - MOVIDA AQUÍ PARA MÓVIL TAMBIÉN */}
+                    <div className="mb-5 text-center">
+                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line px-2">
+                            {finalDescription || 'Este servicio profesional incluye todo lo necesario para garantizar tu satisfacción.'}
+                        </p>
+                    </div>
 
-                    {/* Info del anfitrión - Estilo Airbnb */}
-                    <div className="mb-6">
-                        <div className="flex items-start gap-3 mb-3">
-                        <Avatar className="w-12 h-12">
+                    <div className="h-px bg-gray-100 my-5" />
+
+                    {/* Info del anfitrión - Estilo Airbnb (COMPACTO) */}
+                    <div className="mb-5">
+                        <div className="flex items-center gap-3 mb-2">
+                        <Avatar className="w-10 h-10 border border-gray-100">
                             <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                                <AvatarFallback className="bg-[#222222] text-white font-semibold text-sm">
+                                <AvatarFallback className="bg-gray-900 text-white font-bold text-sm">
                                 {finalExpertName.charAt(0)}
                             </AvatarFallback>
                         </Avatar>
-                            <div className="flex-1 pt-0.5">
-                                <h3 className="text-[15px] font-semibold text-[#222222] mb-1 leading-tight">
+                            <div className="flex-1">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-0 leading-tight">
                                     Anfitrión: {finalExpertName}
                                 </h3>
-                                <p className="text-[13px] text-[#717171] leading-relaxed">
+                                <p className="text-xs text-gray-500 leading-relaxed">
                                 {finalService?.expert?.createdAt 
                                     ? (() => {
                                         const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
@@ -379,76 +387,70 @@ export function ServiceReviewPage({
                         </div>
                     </div>
 
-                    <div className="h-px bg-[#DDDDDD] mb-6" />
+                    <div className="h-px bg-gray-100 mb-5" />
 
-                    {/* Features destacadas - Estilo Airbnb */}
-                    <div className="grid grid-cols-1 gap-5 mb-6">
+                    {/* Features destacadas - Estilo Airbnb (COMPACTO) */}
+                    <div className="grid grid-cols-1 gap-4 mb-5">
                         <div className="flex items-start gap-3">
-                            <Shield className="w-5 h-5 text-[#222222] flex-shrink-0 mt-0.5" />
+                            <Shield className="w-4 h-4 text-gray-900 flex-shrink-0 mt-0.5" />
                             <div>
-                                <h4 className="text-[14px] font-semibold text-[#222222] mb-1 leading-tight">Cancelación gratuita</h4>
-                                <p className="text-[13px] text-[#717171] leading-relaxed">Cancela hasta 24h antes sin cargos</p>
+                                <h4 className="text-sm font-semibold text-gray-900 mb-0.5 leading-tight">Cancelación gratuita</h4>
+                                <p className="text-xs text-gray-500 leading-relaxed">Cancela hasta 24h antes sin cargos.</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
-                            <Headphones className="w-5 h-5 text-[#222222] flex-shrink-0 mt-0.5" />
+                            <Headphones className="w-4 h-4 text-gray-900 flex-shrink-0 mt-0.5" />
                             <div>
-                                <h4 className="text-[14px] font-semibold text-[#222222] mb-1 leading-tight">Soporte 24/7</h4>
-                                <p className="text-[13px] text-[#717171] leading-relaxed">Asistencia disponible en cualquier momento</p>
+                                <h4 className="text-sm font-semibold text-gray-900 mb-0.5 leading-tight">Soporte 24/7</h4>
+                                <p className="text-xs text-gray-500 leading-relaxed">Nuestro equipo está disponible siempre.</p>
                                 </div>
                                     </div>
                         <div className="flex items-start gap-3">
-                            <Award className="w-5 h-5 text-[#222222] flex-shrink-0 mt-0.5" />
+                            <Award className="w-4 h-4 text-gray-900 flex-shrink-0 mt-0.5" />
                             <div>
-                                <h4 className="text-[14px] font-semibold text-[#222222] mb-1 leading-tight">Garantía de satisfacción</h4>
-                                <p className="text-[13px] text-[#717171] leading-relaxed">Si no quedas satisfecho, te devolvemos el dinero</p>
+                                <h4 className="text-sm font-semibold text-gray-900 mb-0.5 leading-tight">Garantía total</h4>
+                                <p className="text-xs text-gray-500 leading-relaxed">Si no cumple, te devolvemos el dinero.</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="h-px bg-[#DDDDDD] mb-6" />
+                    <div className="h-px bg-gray-100 mb-6" />
 
                     {/* Qué incluye */}
                                 {finalDeliverableTypes.length > 0 && (
                         <>
-                            <div className="mb-4">
-                                <h3 className="text-[15px] font-semibold text-gray-900 mb-3">Qué incluye</h3>
-                                        <div className="space-y-2.5">
+                            <div className="mb-6">
+                                <h3 className="text-[20px] font-semibold text-gray-900 mb-4">Qué incluye</h3>
+                                        <div className="space-y-3">
                                             {finalDeliverableTypes.map((dt) => (
-                                                <div key={dt.id} className="flex items-start gap-2.5">
-                                            <CheckCircle className="w-4 h-4 text-gray-900 flex-shrink-0 mt-0.5" />
+                                                <div key={dt.id} className="flex items-start gap-3">
+                                            <CheckCircle className="w-5 h-5 text-gray-900 flex-shrink-0 mt-0.5" />
                                             <div>
-                                                <span className="text-[13px] text-gray-900">{dt.displayName || dt.name}</span>
+                                                <span className="text-[15px] text-gray-800">{dt.displayName || dt.name}</span>
                                                 {dt.description && (
-                                                    <p className="text-[12px] text-gray-500 mt-0.5">{dt.description}</p>
+                                                    <p className="text-[13px] text-gray-500 mt-0.5 leading-relaxed">{dt.description}</p>
                                                 )}
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
-                            <div className="h-px bg-gray-200 mb-4" />
+                            <div className="h-px bg-gray-100 mb-6" />
                         </>
                     )}
 
-                    {/* Descripción - Estilo Airbnb */}
-                    <div className="mb-6">
-                        <h3 className="text-[16px] font-semibold text-[#222222] mb-4 leading-tight">Acerca del servicio</h3>
-                        <p className="text-[14px] text-[#222222] leading-[1.5] whitespace-pre-line">
-                            {finalDescription || 'Este servicio profesional incluye todo lo necesario para garantizar tu satisfacción. Nuestro equipo de expertos está comprometido con brindarte la mejor experiencia posible.'}
-                                            </p>
-                                        </div>
-
+                    {/* Descripción - Estilo Airbnb (ELIMINADO AQUÍ PORQUE SE MOVIÓ ARRIBA) */}
+                    
                     {/* Reseñas */}
                     {finalReviews.length > 0 && (
                         <>
-                            <div className="h-px bg-gray-200 mb-4" />
+                            <div className="h-px bg-gray-100 mb-6" />
                             <div className="mb-4">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
-                                    <span className="text-[15px] font-semibold">{finalRating.toFixed(1)}</span>
-                                    <span className="text-gray-500">·</span>
-                                    <span className="text-[13px] text-gray-600">{finalReviews.length} reseñas</span>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Star className="w-5 h-5 fill-gray-900 text-gray-900" />
+                                    <span className="text-[20px] font-semibold text-gray-900">{finalRating.toFixed(1)}</span>
+                                    <span className="text-[20px] text-gray-900">·</span>
+                                    <span className="text-[20px] font-semibold text-gray-900">{finalReviews.length} reseñas</span>
                                 </div>
                                 <EnhancedReviewsList reviews={finalReviews} maxReviews={5} />
                                     </div>
@@ -457,30 +459,23 @@ export function ServiceReviewPage({
                                 </div>
 
                 {/* Footer fijo móvil - Estilo Airbnb moderno */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#DDDDDD] shadow-[0_-2px_16px_rgba(0,0,0,0.08)] z-50">
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50 pb-safe">
                     <div className="px-6 py-4">
                         <div className="flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline gap-1.5 mb-1">
-                                    <span className="text-[22px] font-semibold text-[#222222]">{formatPrice(finalPrice)} €</span>
-                                    <span className="text-[14px] text-[#717171] font-normal">total</span>
-                            </div>
-                            {finalRating > 0 && (
-                                    <div className="flex items-center gap-1.5 text-[13px] text-[#717171]">
-                                        <Star className="w-4 h-4 fill-[#222222] text-[#222222]" />
-                                        <span className="font-semibold text-[#222222]">{finalRating.toFixed(1)}</span>
-                                        <span>·</span>
-                                        <button className="underline hover:no-underline text-[#222222] font-medium">
-                                            {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
-                                        </button>
+                                <div className="flex items-baseline gap-1.5 mb-0.5">
+                                    <span className="text-[20px] font-bold text-gray-900">{formatPrice(finalPrice)} €</span>
+                                    <span className="text-[14px] text-gray-500 font-normal">total</span>
                                 </div>
-                            )}
-                        </div>
-                        {isAuthenticated ? (
+                                <div className="flex items-center gap-1">
+                                    <span className="text-[12px] font-medium text-gray-500">IVA incluido</span>
+                                </div>
+                            </div>
+                            {isAuthenticated ? (
                                 <Button
                                 onClick={handleReserveClick}
-                                    className="h-11 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[15px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex-shrink-0"
-                            >
+                                    className="h-12 px-8 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 active:scale-[0.98] text-white text-[16px] font-bold rounded-xl shadow-lg transition-all duration-200 flex-shrink-0"
+                                >
                                 Reservar
                                 </Button>
                         ) : (
@@ -491,7 +486,7 @@ export function ServiceReviewPage({
                                     <Button
                                     onClick={handleGoogleSignIn}
                                     disabled={!isGoogleReady}
-                                        className="h-11 px-8 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[15px] font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-2.5"
+                                        className="h-12 px-6 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 active:scale-[0.98] text-white text-[15px] font-bold rounded-xl shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-2.5"
                                 >
                                     <GoogleIcon />
                                         <span>Inicia sesión</span>
@@ -503,253 +498,241 @@ export function ServiceReviewPage({
                 </div>
             </div>
 
-            {/* ========== VERSIÓN DESKTOP ========== */}
-            <div className="hidden lg:block">
-                <div className="max-w-6xl mx-auto px-6 py-5">
-                    {/* Título y acciones */}
-                    <div className="flex items-start justify-between mb-4">
-                        <h1 className="text-xl font-semibold text-gray-900">
-                            {serviceTypeName} por {finalExpertName}
-                        </h1>
-                        <div className="flex items-center gap-3">
-                            <button className="flex items-center gap-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 px-2.5 py-1.5 rounded-md transition-colors">
-                                <Share2 className="w-3.5 h-3.5" />
-                                <span className="underline">Compartir</span>
-                            </button>
-                            <button 
-                                onClick={() => setIsFavorite(!isFavorite)}
-                                className="flex items-center gap-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 px-2.5 py-1.5 rounded-md transition-colors"
-                            >
-                                <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
-                                <span className="underline">Guardar</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Galería desktop */}
-                    {finalImages.length > 0 && (
-                        <div className="grid grid-cols-4 grid-rows-2 gap-1.5 h-[340px] rounded-lg overflow-hidden mb-6">
-                            {/* Imagen principal */}
-                            <div 
-                                className="col-span-2 row-span-2 relative cursor-pointer group rounded-l-lg overflow-hidden"
-                                onClick={() => handleImageClick(0)}
-                            >
-                                <img
-                                    src={heroImage}
-                                    alt="Principal"
-                                    className="w-full h-full object-cover group-hover:brightness-95 transition-all"
-                                />
-                            </div>
-                            {/* Grid de 4 imágenes */}
-                            {[0, 1, 2, 3].map((idx) => (
-                                <div
-                                    key={idx}
-                                    className={`relative cursor-pointer group bg-gray-100 overflow-hidden ${idx === 1 ? 'rounded-tr-lg' : ''} ${idx === 3 ? 'rounded-br-lg' : ''}`}
-                                    onClick={() => gridImages[idx] && handleImageClick(idx + 1)}
-                                >
-                                    {gridImages[idx] ? (
-                                        <img
-                                            src={gridImages[idx]}
-                                            alt={`Foto ${idx + 2}`}
-                                            className="w-full h-full object-cover group-hover:brightness-95 transition-all"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                            <User className="w-6 h-6 text-gray-300" />
+            {/* ========== VERSIÓN DESKTOP COMPACTA Y REFINADA ========== */}
+            <div className="hidden lg:block min-h-screen bg-white">
+                <div className="max-w-6xl mx-auto px-6 py-8">
+                    <div className="grid grid-cols-[45%_1fr] gap-12 items-start">
+                        
+                        {/* COLUMNA IZQUIERDA: ÁLBUM DE FOTOS + RESEÑAS PREMIUM */}
+                        <div className="space-y-12">
+                            {/* ÁLBUM DE FOTOS (STACK EFFECT REALISTA - MEJORADO) */}
+                            <div className="relative group cursor-pointer perspective-1000 mx-auto w-full max-w-[480px] mt-4 mb-12" onClick={() => handleImageClick(0)}>
+                                {/* Capa Decorativa 3 (Fondo) */}
+                                {finalImages.length > 2 && (
+                                    <div className="absolute top-0 left-0 w-full h-full bg-white rounded-xl shadow-lg transform rotate-[-8deg] translate-x-[-15px] border-4 border-white z-0 transition-transform duration-500 group-hover:rotate-[-12deg] group-hover:translate-x-[-30px]">
+                                         <div className="w-full h-full bg-gray-200 rounded-lg overflow-hidden opacity-40"></div>
+                                    </div>
+                                )}
+                                
+                                {/* Capa Decorativa 2 (Medio) */}
+                                {finalImages.length > 1 && (
+                                    <div className="absolute top-0 left-0 w-full h-full bg-white rounded-xl shadow-xl transform rotate-[5deg] translate-x-[15px] border-4 border-white z-10 transition-transform duration-500 group-hover:rotate-[8deg] group-hover:translate-x-[30px]">
+                                        <div className="w-full h-full rounded-lg overflow-hidden">
+                                            <img src={finalImages[1]} className="w-full h-full object-cover opacity-90 filter contrast-75" alt="Background" />
                                         </div>
-                                    )}
-                                    {/* Botón mostrar todas */}
-                                    {idx === 3 && finalImages.length > 5 && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setIsLightboxOpen(true);
-                                                setLightboxIndex(0);
-                                            }}
-                                            className="absolute bottom-3 right-3 bg-white px-3 py-1.5 rounded-md text-xs font-medium text-gray-900 shadow-md hover:shadow-lg transition-shadow flex items-center gap-1.5"
-                                        >
+                                    </div>
+                                )}
+
+                                {/* Foto Principal (Frente) */}
+                                <div className="relative z-20 w-full aspect-[4/3] bg-white rounded-xl shadow-2xl transform transition-all duration-500 border-[6px] border-white overflow-hidden group-hover:-translate-y-2">
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent z-10 pointer-events-none" />
+                                    <img 
+                                        src={finalImages[0]} 
+                                        alt="Principal" 
+                                        className="w-full h-full object-cover"
+                                    />
+                                    
+                                    {/* Badge de contador de fotos */}
+                                    {finalImages.length > 1 && (
+                                        <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 transform transition-transform group-hover:scale-105 border border-white/10 z-20">
                                             <Grid3X3 className="w-3.5 h-3.5" />
-                                            Ver todas
-                                        </button>
+                                            <span>+{finalImages.length - 1} fotos</span>
+                                        </div>
                                     )}
                                 </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Layout de dos columnas */}
-                    <div className="grid grid-cols-[1fr_320px] gap-10">
-                        {/* Columna izquierda */}
-                        <div>
-                            {/* Meta info */}
-                            <div className="flex items-center gap-2 text-xs text-gray-600 pb-4 border-b border-gray-200">
-                                {finalRating > 0 && (
-                                    <>
-                                        <Star className="w-3.5 h-3.5 fill-gray-900 text-gray-900" />
-                                        <span className="font-medium text-gray-900">{finalRating.toFixed(1)}</span>
-                                        <span>·</span>
-                                        <button className="underline hover:text-gray-900">{finalReviews.length} reseñas</button>
-                                        <span>·</span>
-                                    </>
-                                )}
-                                {finalCompletedSearches > 0 && (
-                                    <>
-                                        <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                                        <span>{finalCompletedSearches} completados</span>
-                                    </>
-                                )}
                             </div>
 
-                            {/* Anfitrión */}
-                            <div className="flex items-center gap-3 py-4 border-b border-[#DDDDDD]">
-                                <Avatar className="w-11 h-11">
-                                    <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                                    <AvatarFallback className="bg-[#222222] text-white text-base font-semibold">
-                                        {finalExpertName.charAt(0)}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <h3 className="text-sm font-semibold text-[#222222]">Anfitrión: {finalExpertName}</h3>
-                                    <p className="text-xs text-[#717171]">
-                                        {finalService?.expert?.createdAt 
-                                            ? (() => {
-                                                const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
-                                                return months < 1 ? 'Menos de 1 mes' : `${months} meses de experiencia`;
-                                            })()
-                                            : 'Verificado'
-                                        }
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Features */}
-                            <div className="py-4 border-b border-gray-200 space-y-3">
-                                <div className="flex gap-3">
-                                    <Shield className="w-5 h-5 text-gray-600 flex-shrink-0" />
-                                    <div>
-                                        <h4 className="text-sm font-medium text-gray-900">Cancelación gratuita</h4>
-                                        <p className="text-xs text-gray-500">Hasta 24h antes sin cargo</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-3">
-                                    <Headphones className="w-5 h-5 text-gray-600 flex-shrink-0" />
-                                    <div>
-                                        <h4 className="text-sm font-medium text-gray-900">Soporte 24/7</h4>
-                                        <p className="text-xs text-gray-500">Asistencia disponible siempre</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-3">
-                                    <Award className="w-5 h-5 text-gray-600 flex-shrink-0" />
-                                    <div>
-                                        <h4 className="text-sm font-medium text-gray-900">Garantía de satisfacción</h4>
-                                        <p className="text-xs text-gray-500">Reembolso si no quedas satisfecho</p>
-                                    </div>
-                                </div>
-                                {finalService?.durationInHours && (
-                                    <div className="flex gap-3">
-                                        <Clock className="w-5 h-5 text-gray-600 flex-shrink-0" />
-                                        <div>
-                                            <h4 className="text-sm font-medium text-gray-900">Duración</h4>
-                                            <p className="text-xs text-gray-500">{finalService.durationInHours}h estimadas</p>
+                            {/* RESEÑAS O ESTADO VACÍO */}
+                            <div className="animate-fade-in-up">
+                                {finalReviews.length > 0 ? (
+                                    <>
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                                <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
+                                                <span>{finalRating.toFixed(1)}</span>
+                                                <span className="text-gray-400 font-normal text-lg">({finalReviews.length} reseñas)</span>
+                                            </h3>
                                         </div>
+
+                                        <div className="space-y-6">
+                                            {finalReviews.slice(0, 3).map((review, idx) => (
+                                                <div key={idx} className="bg-white rounded-xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300">
+                                                    {/* Header Reseña */}
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar className="w-11 h-11 border-2 border-white shadow-sm">
+                                                                <AvatarImage src={review.client?.profilePictureUrl} />
+                                                                <AvatarFallback className="bg-gray-900 text-white font-bold text-sm">
+                                                                    {review.client?.name?.charAt(0) || 'U'}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div>
+                                                                <p className="text-sm font-bold text-gray-900 leading-none mb-1">{review.client?.name || 'Usuario'}</p>
+                                                                <p className="text-xs text-gray-400 font-medium">{new Date(review.createdAt).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-0.5 bg-yellow-50 px-2 py-1 rounded-full">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star 
+                                                                    key={i} 
+                                                                    className={`w-3.5 h-3.5 ${i < (review.rating || 5) ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`} 
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Cuerpo Reseña */}
+                                                    <div className="relative pl-4">
+                                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gray-100 rounded-full"></div>
+                                                        <p className="text-gray-600 text-[15px] leading-relaxed italic">
+                                                            "{review.comment}"
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        
+                                        {finalReviews.length > 3 && (
+                                            <button className="w-full mt-6 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                                                Leer las {finalReviews.length} reseñas
+                                            </button>
+                                        )}
+                                    </>
+                                ) : (
+                                    /* ESTADO SIN RESEÑAS */
+                                    <div className="bg-gray-50/80 rounded-2xl p-8 text-center border border-gray-100">
+                                        <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-gray-100">
+                                            <Star className="w-7 h-7 text-gray-300 fill-gray-100" />
+                                        </div>
+                                        <h3 className="text-gray-900 font-bold text-lg mb-2">Sin reseñas todavía</h3>
+                                        <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
+                                            Este es un servicio nuevo en Inspecciono. <br/>
+                                            <span className="font-semibold text-gray-700">¡Sé el primero en probarlo y compartir tu experiencia!</span>
+                                        </p>
                                     </div>
                                 )}
                             </div>
+                        </div>
 
-                            {/* Qué incluye */}
-                            {finalDeliverableTypes.length > 0 && (
-                                <div className="py-4 border-b border-gray-200">
-                                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Qué incluye</h3>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {finalDeliverableTypes.map((dt) => (
-                                            <div key={dt.id} className="flex items-start gap-2">
-                                                <CheckCircle className="w-4 h-4 text-[#0066CC] flex-shrink-0 mt-0.5" />
-                                                <span className="text-xs text-gray-700">{dt.displayName || dt.name}</span>
-                                            </div>
-                                        ))}
+                        {/* COLUMNA DERECHA: INFO + RESERVA */}
+                        <div className="relative">
+                            {/* Header Info Compacto */}
+                            <div className="mb-6 border-b border-gray-100 pb-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+                                        {serviceTypeName}
+                                    </h1>
+                                    <div className="flex gap-2">
+                                        <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
+                                            <Share2 className="w-4 h-4" />
+                                        </button>
+                                        <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors" onClick={() => setIsFavorite(!isFavorite)}>
+                                            <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+                                        </button>
                                     </div>
                                 </div>
-                            )}
+                                <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                                    <span>Anfitrión: <span className="text-gray-900 font-medium">{finalExpertName}</span></span>
+                                    {finalCompletedSearches > 0 && (
+                                        <>
+                                            <span>·</span>
+                                            <span className="text-green-600 font-medium">{finalCompletedSearches} trabajos hechos</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
 
-                            {/* Descripción */}
-                            <div className="py-4 border-b border-gray-200">
-                                <h3 className="text-sm font-semibold text-gray-900 mb-2">Acerca del servicio</h3>
-                                <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
-                                    {finalDescription || 'Servicio profesional de alta calidad. Nuestro equipo de expertos está comprometido con brindarte los mejores resultados.'}
+                            {/* Descripción Compacta */}
+                            <div className="mb-6">
+                                <h3 className="text-base font-semibold text-gray-900 mb-2">Acerca del servicio</h3>
+                                <p className="text-[15px] leading-relaxed text-gray-600 whitespace-pre-line">
+                                    {finalDescription || 'Este experto garantiza un servicio profesional siguiendo los estándares de calidad de la plataforma.'}
                                 </p>
                             </div>
 
-                            {/* Reseñas */}
-                            {finalReviews.length > 0 && (
-                                <div className="py-4">
-                                    <div className="flex items-center gap-1.5 mb-4">
-                                        <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
-                                        <span className="text-sm font-semibold">{finalRating.toFixed(1)}</span>
-                                        <span className="text-xs text-gray-500">· {finalReviews.length} reseñas</span>
+                            {/* Features Compactas */}
+                            <div className="grid grid-cols-2 gap-4 mb-8">
+                                <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
+                                    <Shield className="w-5 h-5 text-gray-900 mt-0.5" />
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-900">Pago seguro</h4>
+                                        <p className="text-xs text-gray-500">Retenemos el pago hasta finalizar.</p>
                                     </div>
-                                    <EnhancedReviewsList reviews={finalReviews} maxReviews={6} />
                                 </div>
-                            )}
-                        </div>
+                                <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
+                                    <Clock className="w-5 h-5 text-gray-900 mt-0.5" />
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-900">Rápido</h4>
+                                        <p className="text-xs text-gray-500">Entrega en el plazo acordado.</p>
+                                    </div>
+                                </div>
+                            </div>
 
-                        {/* Columna derecha - Sidebar de reserva */}
-                        <div>
-                            <div className="sticky top-20">
-                                <div className="border border-gray-200 rounded-xl shadow-lg p-5">
-                                    {/* Precio */}
-                                    <div className="mb-4">
-                                        <div className="flex items-baseline gap-1 mb-0.5">
-                                            <span className="text-xl font-semibold text-gray-900">{formatPrice(finalPrice)} €</span>
-                                            <span className="text-xs text-gray-500">total</span>
+                            {/* TARJETA DE RESERVA COMPACTA */}
+                            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                                <div className="flex items-end justify-between mb-6">
+                                    <div>
+                                        <span className="text-2xl font-bold text-gray-900">{formatPrice(finalPrice)}€</span>
+                                        <span className="text-sm text-gray-500 ml-1">total</span>
+                                    </div>
+                                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">IVA incluido</span>
+                                </div>
+
+                                {isAuthenticated ? (
+                                    <button
+                                        onClick={handleReserveClick}
+                                        className="w-full py-3 bg-gray-900 hover:bg-black text-white text-base font-semibold rounded-lg shadow-sm transition-all active:scale-[0.99]"
+                                    >
+                                        Reservar
+                                    </button>
+                                ) : (
+                                    <div className="relative">
+                                        <div ref={googleButtonRef} className="absolute inset-0 opacity-0 z-10" />
+                                        <button
+                                            onClick={handleGoogleSignIn}
+                                            disabled={!isGoogleReady}
+                                            className="w-full py-3 bg-gray-900 hover:bg-black text-white text-base font-semibold rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <GoogleIcon />
+                                            <span>Iniciar sesión</span>
+                                        </button>
+                                    </div>
+                                )}
+                                
+                                <p className="mt-3 text-center text-xs text-gray-400">
+                                    No se te cobrará nada todavía
+                                </p>
+                            </div>
+
+                            {/* GARANTÍA INSPECCIONO (DESKTOP - DISEÑO BRANDED AZUL REFINADO) */}
+                            <div className="mt-6 border border-gray-200 rounded-xl p-6 shadow-sm bg-white">
+                                <div className="flex items-center gap-1 mb-6">
+                                    <span className="text-lg font-bold text-[#0066CC] tracking-tight">inspecciono</span>
+                                    <span className="text-lg font-light text-gray-900">protección</span>
+                                </div>
+                                
+                                <div className="space-y-5">
+                                    <div className="flex gap-4 items-start">
+                                        <div className="mt-0.5">
+                                            <BadgeCheck className="w-6 h-6 text-[#0066CC] stroke-[2]" />
                                         </div>
-                                        {finalRating > 0 && (
-                                            <div className="flex items-center gap-1 text-xs">
-                                                <Star className="w-3 h-3 fill-gray-900 text-gray-900" />
-                                                <span className="font-medium">{finalRating.toFixed(1)}</span>
-                                                <span className="text-gray-500">· {finalReviews.length} reseñas</span>
-                                            </div>
-                                        )}
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 text-sm">Calidad verificada</h4>
+                                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                                                Auditamos manualmente la inspección para garantizar estándares profesionales.
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    {/* Botón reservar */}
-                                    {isAuthenticated ? (
-                                        <button
-                                            onClick={handleReserveClick}
-                                            className="w-full h-12 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[16px] font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl mb-3"
-                                        >
-                                            Reservar
-                                        </button>
-                                    ) : (
-                                        <div className="relative mb-3">
-                                            {/* Hidden Google button */}
-                                            <div ref={googleButtonRef} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }}></div>
-                                            {/* Custom button */}
-                                            <button
-                                                onClick={handleGoogleSignIn}
-                                                disabled={!isGoogleReady}
-                                                className="w-full h-12 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white text-[16px] font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl inline-flex items-center justify-center gap-3"
-                                            >
-                                                <GoogleIcon />
-                                                <span>Inicia sesión para contratar</span>
-                                            </button>
+                                    <div className="flex gap-4 items-start">
+                                        <div className="mt-0.5">
+                                            <Lock className="w-6 h-6 text-[#0066CC] stroke-[2]" />
                                         </div>
-                                    )}
-
-                                    <p className="text-center text-xs text-gray-500 mb-4">
-                                        No se te cobrará nada aún
-                                    </p>
-
-                                    <div className="h-px bg-gray-200 mb-4" />
-
-                                    {/* Garantías */}
-                                    <div className="space-y-3 text-xs">
-                                        <div className="flex items-start gap-2">
-                                            <CheckCircle className="w-3.5 h-3.5 text-[#0066CC] mt-0.5 flex-shrink-0" />
-                                            <span className="text-gray-600">Cancelación gratuita 24h antes</span>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <Shield className="w-3.5 h-3.5 text-[#0066CC] mt-0.5 flex-shrink-0" />
-                                            <span className="text-gray-600">Pago 100% seguro</span>
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 text-sm">Pago en custodia</h4>
+                                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                                                Tu dinero se retiene seguro. El experto no cobra hasta que recibes y apruebas el informe.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>

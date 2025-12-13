@@ -267,7 +267,7 @@ export default function SearchForm({
                                             <div className="text-right">
                                                 <div className="flex items-center gap-2 justify-end">
                                                     <div className="text-[22px] font-semibold text-[#222222]">
-                                                        €{servicePrice !== undefined ? (servicePrice / 100).toFixed(2) : '0.00'}
+                                                        €{servicePrice !== undefined ? servicePrice.toFixed(2) : '0.00'}
                                                     </div>
                                                     <span className="text-[11px] text-[#717171]">IVA incluido</span>
                                                 </div>
@@ -333,7 +333,7 @@ export default function SearchForm({
                                     <div className="flex justify-between items-center">
                                         <span className="text-[15px] text-[#222222]">Subtotal</span>
                                         <span className="text-[15px] font-normal text-[#222222]">
-                                            €{servicePrice !== undefined ? (servicePrice / 100).toFixed(2) : '0.00'}
+                                            €{servicePrice !== undefined ? servicePrice.toFixed(2) : '0.00'}
                                         </span>
                                     </div>
                                     
@@ -342,7 +342,7 @@ export default function SearchForm({
                                         <span className="text-[16px] font-semibold text-[#222222]">Total</span>
                                         <span className="text-[18px] font-semibold text-[#222222]">
                                                 {servicePrice !== undefined ? (
-                                                    `€${(servicePrice / 100).toFixed(2)}`
+                                                    `€${servicePrice.toFixed(2)}`
                                                 ) : (
                                                 <div className="w-5 h-5 border-2 border-[#222222]/20 border-t-[#222222] rounded-full animate-spin" />
                                                 )}
