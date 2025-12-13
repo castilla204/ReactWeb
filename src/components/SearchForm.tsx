@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Wallet, ArrowRight, Shield, Check } from 'lucide-react';
+import { ArrowLeft, Wallet, ArrowRight, Shield, Check, Lock, BadgeCheck, FileText, Image, Video, ShieldCheck, Info } from 'lucide-react';
 import { FormProgressTimeline } from './FormProgressTimeline';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useUserSettings } from '../hooks/useUserSettings';
@@ -12,6 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
 import { StripeLoadingOverlay } from './StripeLoadingOverlay';
+import { getPriceDisplay } from '../utils/priceUtils';
 
 export interface SearchParameters {
     keywords: string;
@@ -209,150 +210,204 @@ export default function SearchForm({
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-10">
-                    {/* Layout - Service Details and Summary - Estilo moderno */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left Column - Service Details - Moderno */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-[#DDDDDD]/50 overflow-hidden">
-                            <div className="px-8 pt-8 pb-6">
-                                <h2 className="text-[24px] font-semibold text-[#222222] leading-tight mb-8">
-                                    Servicio Contratado
-                                </h2>
-                            </div>
-                            <div className="px-8 pb-8 space-y-8">
-                                {/* Service Info - Moderno */}
-                                <div className="bg-[#F7F7F7] rounded-2xl p-6 border border-[#DDDDDD]/30">
-                                    <div className="flex items-start gap-4 mb-6">
-                                        {/* Expert Photo */}
-                                        {expertProfilePicture && (
-                                            <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                    {/* Layout - Service Details and Summary - Estilo moderno Compacto */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Left Column - Service Details - Moderno Compacto (7 columnas) */}
+                        <div className="lg:col-span-7 space-y-5">
+                            <div className="bg-white rounded-xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+                                {/* Header con Experto - Más compacto */}
+                                <div className="p-5 border-b border-[#F3F4F6] bg-[#FAFBFC]">
+                                    <div className="flex items-center gap-4">
+                                        {/* Expert Photo Compacta */}
+                                        {expertProfilePicture ? (
+                                            <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 border-2 border-white shadow-sm ring-1 ring-gray-100">
                                                 <img 
                                                     src={expertProfilePicture} 
                                                     alt={expertName || 'Experto'}
                                                     className="w-full h-full object-cover"
                                                 />
                                             </div>
+                                        ) : (
+                                            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center border-2 border-white shadow-sm ring-1 ring-gray-100">
+                                                <span className="text-lg font-bold text-gray-400">
+                                                    {(expertName || 'E').charAt(0)}
+                                                </span>
+                                            </div>
                                         )}
+                                        
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-3 mb-2">
-                                                <h3 className="text-[18px] font-semibold text-[#222222] leading-tight">
-                                                {expertName || 'Servicio Seleccionado'}
-                                            </h3>
-                                                {/* Botón Cambiar servicio */}
+                                            <div className="flex items-center justify-between mb-1">
+                                                <h3 className="text-[16px] font-bold text-[#111827] leading-tight truncate pr-2">
+                                                    {expertName || 'Servicio Profesional'}
+                                                </h3>
                                                 <Button
                                                     type="button"
-                                                    variant="outline"
+                                                    variant="ghost"
                                                     onClick={() => setCurrentStep(2)}
-                                                    className="h-9 px-4 text-[#222222] hover:bg-[#F7F7F7] text-[13px] font-medium rounded-lg transition-colors border border-[#DDDDDD] flex-shrink-0"
+                                                    className="h-7 px-2.5 text-[#6B7280] hover:text-[#111827] hover:bg-gray-100 text-[11px] font-medium rounded-md transition-colors -mr-2"
                                                 >
                                                     Cambiar
                                                 </Button>
                                             </div>
-                                            <div className="mb-3">
-                                                <Badge variant="secondary" className="text-[13px] font-normal px-3 py-1 bg-[#F7F7F7] text-[#222222] border-[#DDDDDD]">
-                                                    {parameters.serviceTypeId === 1 ? 'Solo Revisión' : 
-                                                     parameters.serviceTypeId === 2 ? 'Búsqueda + Revisión' : 
-                                                     'Servicio Personalizado'}
-                                                </Badge>
-                                            </div>
-                                            {serviceDescription && (
-                                                <p className="text-[15px] text-[#717171] leading-relaxed line-clamp-2">
-                                                    {serviceDescription}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="pt-6 border-t border-[#DDDDDD]">
-                                        <div className="flex items-baseline justify-between">
-                                            <span className="text-[15px] text-[#717171]">Precio total</span>
-                                            <div className="text-right">
-                                                <div className="flex items-center gap-2 justify-end">
-                                                    <div className="text-[22px] font-semibold text-[#222222]">
-                                            €{servicePrice !== undefined ? servicePrice.toFixed(2) : '0.00'}
-                                        </div>
-                                                    <span className="text-[11px] text-[#717171]">IVA incluido</span>
-                                                </div>
-                                                <p className="text-[13px] text-[#717171] mt-1">
-                                            Pago único
-                                        </p>
+                                            <div className="flex items-center gap-1.5">
+                                                <BadgeCheck className="w-3.5 h-3.5 text-[#0066CC]" />
+                                                <span className="text-[12px] text-[#4B5563] font-medium">Experto Verificado</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            
-                                {/* Includes Section - Moderno */}
-                                <div>
-                                    <h4 className="text-[18px] font-semibold text-[#222222] mb-5 leading-tight">Incluye:</h4>
-                                    <ul className="space-y-4">
-                                        <li className="flex items-start gap-3">
-                                            <div className="w-5 h-5 rounded-full bg-[#0066CC] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                <Check className="w-3.5 h-3.5 text-white" />
+                                
+                                <div className="p-5 space-y-5">
+                                    {/* Detalles técnicos - Grid Compacto */}
+                                    <div className="grid grid-cols-3 gap-2 text-[11px] text-gray-600 bg-gray-50/80 p-2.5 rounded-lg border border-gray-100">
+                                        {parameters.locationName && (
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-gray-900 mb-0.5">Ubicación</span>
+                                                <span className="truncate" title={parameters.locationName}>{parameters.locationName}</span>
                                             </div>
-                                            <span className="text-[15px] text-[#222222] leading-relaxed">Servicio profesional certificado</span>
-                                        </li>
-                                        <li className="flex items-start gap-3">
-                                            <div className="w-5 h-5 rounded-full bg-[#0066CC] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                <Check className="w-3.5 h-3.5 text-white" />
-                                            </div>
-                                            <span className="text-[15px] text-[#222222] leading-relaxed">Garantía de satisfacción</span>
-                                        </li>
-                                        <li className="flex items-start gap-3">
-                                            <div className="w-5 h-5 rounded-full bg-[#0066CC] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                <Check className="w-3.5 h-3.5 text-white" />
-                                            </div>
-                                            <span className="text-[15px] text-[#222222] leading-relaxed">Soporte durante todo el proceso</span>
-                                        </li>
-                                        <li className="flex items-start gap-3">
-                                            <div className="w-5 h-5 rounded-full bg-[#0066CC] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                <Check className="w-3.5 h-3.5 text-white" />
-                                            </div>
-                                            <span className="text-[15px] text-[#222222] leading-relaxed">Informe detallado del servicio</span>
-                                        </li>
-                                        {parameters.serviceTypeId === 2 && (
-                                            <li className="flex items-start gap-3">
-                                                <div className="w-5 h-5 rounded-full bg-[#0066CC] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                    <Check className="w-3.5 h-3.5 text-white" />
-                                                </div>
-                                                <span className="text-[15px] text-[#222222] leading-relaxed">Búsqueda activa de opciones</span>
-                                            </li>
                                         )}
-                                    </ul>
+                                        <div className="flex flex-col">
+                                            <span className="font-semibold text-gray-900 mb-0.5">Radio</span>
+                                            <span>{parameters.locationRange} km</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-semibold text-gray-900 mb-0.5">Duración</span>
+                                            <span>{parameters.frequency}h aprox.</span>
+                                        </div>
+                                    </div>
+
+                                    {serviceDescription && (
+                                        <div className="text-[13px] text-[#4B5563] leading-relaxed line-clamp-2">
+                                            {serviceDescription}
+                                        </div>
+                                    )}
+
+                                    <Separator className="bg-gray-100" />
+                                
+                                    {/* Incluye (Badges más sutiles) */}
+                                    <div>
+                                        <h4 className="text-[12px] font-bold text-[#374151] uppercase tracking-wide mb-3">
+                                            El servicio incluye
+                                        </h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            <div className="inline-flex items-center gap-1.5 bg-blue-50/50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-100/50">
+                                                <FileText className="w-3 h-3" />
+                                                <span className="text-[11px] font-medium">Informe</span>
+                                            </div>
+                                            <div className="inline-flex items-center gap-1.5 bg-blue-50/50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-100/50">
+                                                <Image className="w-3 h-3" />
+                                                <span className="text-[11px] font-medium">Fotos HD</span>
+                                            </div>
+                                            <div className="inline-flex items-center gap-1.5 bg-blue-50/50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-100/50">
+                                                <Video className="w-3 h-3" />
+                                                <span className="text-[11px] font-medium">Video</span>
+                                            </div>
+                                            <div className="inline-flex items-center gap-1.5 bg-blue-50/50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-100/50">
+                                                <ShieldCheck className="w-3 h-3" />
+                                                <span className="text-[11px] font-medium">Garantía</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* GARANTÍA INSPECCIONO PROTECCIÓN - INTEGRADO Y COMPACTO */}
+                            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center border border-gray-200 shadow-sm flex-shrink-0">
+                                        <Shield className="w-4 h-4 text-[#0066CC]" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-1 mb-0.5">
+                                            <span className="text-sm font-bold text-[#0066CC] tracking-tight">inspecciono</span>
+                                            <span className="text-sm font-light text-gray-900">protección</span>
+                                        </div>
+                                        <p className="text-[11px] text-gray-500 leading-tight max-w-sm">
+                                            Pago retenido hasta finalización. Calidad 100% garantizada.
+                                        </p>
+                                    </div>
+                                </div>
+                                {/* Iconos de confianza pequeños */}
+                                <div className="flex gap-3 pl-12 sm:pl-0">
+                                    <div className="flex items-center gap-1.5 text-gray-400" title="Pago Seguro">
+                                        <Lock className="w-3.5 h-3.5" />
+                                        <span className="text-[10px] font-medium">Seguro</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-gray-400" title="Verificado">
+                                        <BadgeCheck className="w-3.5 h-3.5" />
+                                        <span className="text-[10px] font-medium">Verificado</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     
                         {/* Right Column - Payment Summary - Moderno */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-[#DDDDDD]/50 sticky top-20 overflow-hidden">
+                        <div className="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-[#DDDDDD]/50 sticky top-20 overflow-hidden">
                             <div className="px-8 pt-8 pb-6">
                                 <h2 className="text-[24px] font-semibold text-[#222222] leading-tight">
                                     Resumen
                                 </h2>
-                                    </div>
+                            </div>
                             <div className="px-8 pb-8 space-y-6">
-                                <div className="space-y-4">
-                                    {/* Subtotal */}
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-[15px] text-[#222222]">Subtotal</span>
-                                        <span className="text-[15px] font-normal text-[#222222]">
-                                            €{servicePrice !== undefined ? servicePrice.toFixed(2) : '0.00'}
-                                        </span>
-                                    </div>
-                                    
-                                    {/* Total */}
-                                    <div className="flex justify-between items-center pt-4 border-t border-[#DDDDDD]">
-                                        <span className="text-[16px] font-semibold text-[#222222]">Total</span>
-                                        <span className="text-[18px] font-semibold text-[#222222]">
-                                                {servicePrice !== undefined ? (
-                                                    `€${servicePrice.toFixed(2)}`
-                                                ) : (
+                                {/* Resumen del pago con desglose calculado */}
+                                {(() => {
+                                    if (servicePrice === undefined) {
+                                        return (
+                                            <div className="flex justify-center p-4">
                                                 <div className="w-5 h-5 border-2 border-[#222222]/20 border-t-[#222222] rounded-full animate-spin" />
-                                                )}
-                                            </span>
+                                            </div>
+                                        );
+                                    }
+                                    
+                                    // Cálculo visual del desglose (21% IVA incluido)
+                                    // Total = Base * 1.21 => Base = Total / 1.21
+                                    const total = servicePrice;
+                                    const base = total / 1.21;
+                                    const tax = total - base;
+                                    
+                                    return (
+                                        <div className="space-y-4">
+                                            {/* Subtotal */}
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[15px] text-[#222222]">Subtotal</span>
+                                                <span className="text-[15px] font-normal text-[#222222]">
+                                                    €{total.toFixed(2)}
+                                                </span>
+                                            </div>
+                                            
+                                            {/* Total */}
+                                            <div className="pt-4 border-t border-[#DDDDDD]">
+                                                <div className="bg-gray-50/50 rounded-lg border border-gray-100 p-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[16px] font-semibold text-[#222222]">Total</span>
+                                                        <div className="text-right">
+                                                            <div className="flex items-center justify-end gap-1.5">
+                                                                <span className="text-[20px] font-bold text-[#222222]">€{total.toFixed(2)}</span>
+                                                            </div>
+                                                            <p className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full inline-block mt-0.5">IVA incluido</p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Desglose de impuestos (Simulado/Calculado) - Siempre visible */}
+                                                    <div className="mt-3 pt-3 border-t border-gray-200/50 space-y-2">
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="text-gray-500">Base imponible</span>
+                                                            <span className="text-gray-700 font-medium">€{base.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="text-gray-500">IVA (21%)</span>
+                                                            <span className="text-gray-700 font-medium">€{tax.toFixed(2)}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    );
+                                })()}
                                     
                                 {/* Security Note - Moderno */}
                                     {servicePrice !== undefined && (
-                                    <div className="pt-6 border-t border-[#DDDDDD]">
+                                    <div className="pt-4 border-t border-[#DDDDDD]">
                                         <div className="flex items-start gap-3">
                                             <div className="w-5 h-5 rounded-full bg-[#0066CC]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                                                 <Shield className="w-3.5 h-3.5 text-[#0066CC]" />

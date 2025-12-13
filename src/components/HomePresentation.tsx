@@ -692,7 +692,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 </div>
             </div>
 
-            <div className="relative z-10 w-full hidden lg:flex lg:flex-col lg:justify-center min-h-[calc(100vh-64px)] px-4 sm:px-6 md:px-12 lg:px-16 py-6 sm:py-8 md:py-10 lg:py-12">
+            <div className="relative z-10 w-full hidden lg:block px-4 sm:px-6 md:px-12 lg:px-16 py-6 sm:py-8 md:py-10 lg:py-12">
                 {/* Contenido principal - solo desktop */}
                 <div className="lg:block">
                     <div className="max-w-6xl mx-auto w-full">

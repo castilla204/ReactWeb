@@ -1108,6 +1108,9 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 {searchHireStatusInfo && (
                                     <div className="flex items-center gap-2 mt-0.5">
                                         <StatusBadge statusInfo={searchHireStatusInfo} />
+                                        {appointment && appointmentStatusInfo && (
+                                            <StatusBadge statusInfo={appointmentStatusInfo} />
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -1208,9 +1211,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-sm font-semibold text-gray-900">Servicio</h3>
-                                        {searchHireStatusInfo && (
-                                            <StatusBadge statusInfo={searchHireStatusInfo} />
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {searchHireStatusInfo && (
+                                                <StatusBadge statusInfo={searchHireStatusInfo} />
+                                            )}
+                                            {appointment && appointmentStatusInfo && (
+                                                <StatusBadge statusInfo={appointmentStatusInfo} />
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 text-sm text-gray-900">
