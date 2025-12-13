@@ -19,6 +19,19 @@ export const useNotifications = () => {
     const { fetchApi } = useApi();
     const { isAuthenticated } = useAuth();
 
+    // Query para obtener el conteo de notificaciones no leídas (Polling cada 30s)
+    const unreadCountQuery = useQuery({
+        queryKey: ['notifications-unread-count'],
+        queryFn: async () => {
+            const response = await fetchApi<any>(API_CONFIG.endpoints.notifications.unreadCount);
+            return response?.unreadCount || 0;
+        },
+        enabled: isAuthenticated,
+        refetchInterval: 30000, // Polling cada 30 segundos
+        retry: false,
+    });
+
+    // Query para obtener la lista de notificaciones (sin polling automático, se invalida manualmente)
     const notificationsQuery = useQuery({
         queryKey: ['notifications'],
         queryFn: async () => {
@@ -53,17 +66,20 @@ export const useNotifications = () => {
         retry: false, // No reintentar si falla (evita spam de requests)
     });
 
-    // Asegurar que siempre sea un array antes de usar filter
+    // Asegurar que siempre sea un array
     const notifications = Array.isArray(notificationsQuery.data) 
         ? notificationsQuery.data 
         : [];
     
-    const unreadCount = notifications.filter(n => !n.read).length;
+    // Usar el contador del endpoint dedicado, fallback al cálculo local si falla la query
+    const unreadCount = unreadCountQuery.data ?? notifications.filter(n => !n.read).length;
 
     return {
         notifications,
         isLoading: notificationsQuery.isLoading,
         error: notificationsQuery.error,
         unreadCount,
+        refetchUnreadCount: unreadCountQuery.refetch,
+        refetchNotifications: notificationsQuery.refetch,
     };
 };
