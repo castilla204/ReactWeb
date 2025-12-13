@@ -422,76 +422,95 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     }, []);
 
     return (
-        <div className="relative w-full min-h-[100dvh] lg:min-h-0 lg:h-auto bg-background overflow-hidden">
-            {/* Professional subtle background */}
-            <div className="absolute inset-0 overflow-hidden">
-                {/* Minimal gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-50/50 via-blue-50/30 to-slate-50/40"></div>
+        <div className="relative w-full min-h-[100dvh] lg:min-h-0 lg:h-auto bg-white overflow-hidden">
+            {/* Fondo Premium "Electric Wave" */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {/* 1. Fondo base limpio */}
+                <div className="absolute inset-0 bg-white"></div>
+
+                {/* 2. Onda principal vibrante (Azul Eléctrico a Violeta) */}
+                <div className="absolute -top-[30%] -right-[10%] w-[90%] h-[120%] bg-gradient-to-b from-blue-600 via-indigo-600 to-violet-600 opacity-[0.15] rounded-[100%] blur-[80px] animate-float-delayed z-0 transform rotate-12"></div>
                 
-                {/* Subtle geometric elements */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-blue-50/40 to-transparent rounded-full -translate-y-48 translate-x-48"></div>
-                <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-indigo-50/30 to-transparent rounded-full translate-y-40 -translate-x-40"></div>
+                {/* 3. Onda secundaria de contraste (Cian Brillante) */}
+                <div className="absolute top-[-10%] right-[-20%] w-[70%] h-[100%] bg-gradient-to-bl from-cyan-400 via-blue-500 to-indigo-500 opacity-[0.12] rounded-[100%] blur-[60px] animate-pulse-slow z-0"></div>
+
+                {/* 4. Acentos de luz (Orbes brillantes) */}
+                <div className="absolute top-[15%] right-[15%] w-64 h-64 bg-blue-400/20 rounded-full blur-[50px] mix-blend-overlay animate-float"></div>
+                <div className="absolute top-[40%] right-[5%] w-48 h-48 bg-cyan-300/20 rounded-full blur-[40px] mix-blend-overlay animate-float-delayed"></div>
+
+                {/* 5. Malla de puntos técnica (Alta definición) */}
+                <div className="absolute inset-0 z-0 opacity-[0.4]" style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, #3b82f6 1px, transparent 0)',
+                    backgroundSize: '40px 40px',
+                    maskImage: 'linear-gradient(to bottom right, rgba(0,0,0,0.8), rgba(0,0,0,0))'
+                }}></div>
                 
-                {/* Grid pattern */}
-                <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                {/* 6. Brillo cenital sutil */}
+                <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-white/80 to-transparent z-0"></div>
             </div>
 
-            {/* Hero móvil - Diseño limpio y profesional */}
-            <div className="lg:hidden relative min-h-[calc(100dvh-60px)] z-20 bg-white">
-                {/* Background sutil */}
-                <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-white"></div>
-                
-                {/* Contenido principal */}
-                <div className="relative z-10 px-6 pt-8 pb-6">
-                    {/* Badge simple */}
-                    <div className="mb-4">
-                        <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold border border-blue-100">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                            <span>Inspección en 48h</span>
-                        </div>
+            {/* Hero móvil - Diseño Premium y Vibrante */}
+            <div className="lg:hidden relative min-h-[calc(100dvh-60px)] z-20 flex flex-col justify-center px-6 pt-4 pb-12">
+                {/* Contenido principal con Glassmorphism suave */}
+                <div className="relative z-10 w-full max-w-sm mx-auto text-center space-y-6">
+                    
+                    {/* Badge destacado */}
+                    <div className="inline-flex items-center gap-2 bg-blue-50/80 backdrop-blur-sm text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold border border-blue-100 shadow-sm mx-auto mb-2">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                        </span>
+                        <span>Verificación experta en 48h</span>
                     </div>
                     
-                    {/* Título principal - Limpio y claro */}
-                    <h1 className="text-4xl font-bold text-gray-900 leading-tight mb-3">
-                        No compres a ciegas
+                    {/* Título principal - Grande y centrado */}
+                    <h1 className="text-4xl xs:text-5xl font-extrabold text-gray-900 leading-[1.1] tracking-tight">
+                        No compres <br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">a ciegas</span>
                     </h1>
                     
-                    {/* Subtítulo */}
-                    <p className="text-lg text-gray-600 leading-relaxed mb-4">
-                        Expertos certificados revisan tu{' '}
-                        <span className="text-gray-900 font-semibold">{currentWord}</span>
-                        {' '}y te envían un informe detallado en menos de 48 horas.
-                    </p>
+                    {/* Subtítulo y palabra cambiante */}
+                    <div className="text-lg text-gray-600 leading-relaxed font-medium">
+                        Revisamos tu{' '}
+                        <span className="relative inline-block font-bold text-gray-900 min-w-[70px] text-left">
+                            <span className={`${isGlitching ? 'glitch-effect' : ''} transition-all`}>
+                                {isGlitching ? glitchText : currentWord}
+                            </span>
+                            <span className="absolute bottom-0 left-0 w-full h-[3px] bg-blue-500/30 rounded-full"></span>
+                        </span>
+                        {' '}antes de que pagues.
+                    </div>
                     
-                    {/* Botón principal */}
-                    <button
-                        onClick={onScrollToForm}
-                        className="w-full bg-gray-900 text-white font-semibold py-4 px-6 rounded-xl text-base transition-colors hover:bg-gray-800 active:bg-gray-700 mb-4"
-                    >
-                        Calcular precio
-                    </button>
+                    {/* Botón principal CTA - Full width con sombra */}
+                    <div className="pt-4 w-full">
+                        <button
+                            onClick={onScrollToForm}
+                            className="w-full bg-gray-900 text-white font-bold text-lg py-4 px-8 rounded-2xl shadow-xl shadow-blue-900/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
+                        >
+                            <span>Calcular precio</span>
+                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                        </button>
+                    </div>
                     
-                    {/* Botón secundario */}
+                    {/* Botón secundario Google */}
                     {!isAuthenticated && (
-                        <GoogleSignInButton />
+                        <div className="w-full scale-95 opacity-90">
+                            <GoogleSignInButton />
+                        </div>
                     )}
                     
-                    {/* Barra de confianza - Simplificada */}
-                    <div className="mt-8 pt-6 border-t border-gray-200">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="flex">
-                                    {[1,2,3,4,5].map(i => (
-                                        <svg key={i} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                        </svg>
-                                    ))}
+                    {/* Social proof minimalista */}
+                    <div className="pt-8 flex items-center justify-center gap-4 opacity-80">
+                        <div className="flex -space-x-2">
+                            {[1,2,3].map(i => (
+                                <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500 overflow-hidden`}>
+                                    <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" className="w-full h-full object-cover" />
                                 </div>
-                                <span className="text-gray-900 font-semibold text-sm">4.9</span>
-                            </div>
-                            <div className="text-gray-600 text-sm">+2.500 inspecciones</div>
+                            ))}
+                        </div>
+                        <div className="text-left">
+                            <div className="flex text-yellow-400 text-xs">★★★★★</div>
+                            <div className="text-xs font-semibold text-gray-600">+2.5k clientes felices</div>
                         </div>
                     </div>
                 </div>
@@ -1239,6 +1258,14 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 }
                 .animate-spin-slow {
                     animation: spin-slow 20s linear infinite;
+                }
+                
+                @keyframes pulse-slow {
+                    0%, 100% { opacity: 0.6; transform: scale(1); }
+                    50% { opacity: 0.3; transform: scale(1.1); }
+                }
+                .animate-pulse-slow {
+                    animation: pulse-slow 8s ease-in-out infinite;
                 }
                 
                 /* Animaciones modernas para el banner */

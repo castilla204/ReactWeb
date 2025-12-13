@@ -503,9 +503,16 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                                 </h3>
                                                      
                                                      {/* Email/Price - Smaller, lighter, centered */}
-                                                     <p className="text-xs text-slate-700 text-center mb-2 font-medium">
-                                                         {service.expert?.user?.email || `${service.price ? `€${service.price}` : '€72'} por servicio`}
-                                                     </p>
+                                                     <div className="text-center mb-2">
+                                                         <p className="text-xs text-slate-700 font-medium">
+                                                             {service.expert?.user?.email || `${service.price ? `€${service.price}` : '€72'} por servicio`}
+                                                         </p>
+                                                         {service.price && (
+                                                             <p className="text-[10px] text-slate-500 mt-0.5">
+                                                                 IVA incluido
+                                                             </p>
+                                                         )}
+                                                     </div>
 
                                                      {/* Rating - Centered */}
                                                      <div className="flex items-center justify-center gap-1.5 mb-2">
