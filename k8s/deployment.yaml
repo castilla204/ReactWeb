@@ -31,7 +31,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: react-web
-        image: erizo9/reactweb:latest@sha256:e044a036fd22edc462d625efeed8a135ec792b1f521621c74f46cfa4fc7045b7
+        image: erizo9/reactweb:latest@sha256:4c67b41e7a472a24ae0be12eaebde1737a9aac326dcaad3945ceaee8dc8c78f9
         imagePullPolicy: Always
         ports:
         - name: http
