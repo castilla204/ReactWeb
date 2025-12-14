@@ -231,7 +231,6 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     const [currentWord, setCurrentWord] = useState('coche');
     const [isGlitching, setIsGlitching] = useState(false);
     const [glitchText, setGlitchText] = useState('coche');
-    const [isReviewsLoading, setIsReviewsLoading] = useState(true);
     
     // Estado del buscador estilo Airbnb
     const [searchForm, setSearchForm] = useState({
@@ -316,113 +315,14 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
             }, 200);
         }, 5000); // Cambia cada 5 segundos para ser más sutil
 
-        // Inyectar el widget de Elfsight dinámicamente
-        const widgetContainer = document.createElement('div');
-        widgetContainer.id = 'elfsight-widget-container';
-        widgetContainer.style.width = '100%'; // Ocupa todo el ancho disponible
-        widgetContainer.style.height = 'auto'; // Altura automática para adaptarse al contenido
-        widgetContainer.style.overflow = 'visible'; // Permitir que muestre más contenido
-        
-        // Escalado uniforme en móvil
-        if (window.innerWidth < 768) {
-            widgetContainer.style.transform = 'scale(0.9)';
-            widgetContainer.style.transformOrigin = 'center top';
-            widgetContainer.style.width = '100%';
-            widgetContainer.style.maxWidth = '100%';
-            widgetContainer.style.overflow = 'hidden';
-            widgetContainer.style.maxHeight = '180px';
-        }
-        const script = document.createElement('script');
-        script.src = 'https://static.elfsight.com/platform/platform.js';
-        script.async = true;
-        
-        // Handle script errors (including APP_VIEWS_LIMIT_REACHED)
-        script.onerror = () => {
-            console.warn('Elfsight widget script failed to load. This may be due to platform limitations.');
-            setIsReviewsLoading(false);
-        };
-        
-        // Listen for Elfsight platform errors
-        const handlePlatformError = (event: ErrorEvent) => {
-            if (event.message && event.message.includes('APP_VIEWS_LIMIT_REACHED')) {
-                console.warn('Elfsight widget limit reached. Widget will not be displayed.');
-                setIsReviewsLoading(false);
-                // Remove the widget container if it fails
-                const mountPoint = document.getElementById('widget-mount-point');
-                if (mountPoint && widgetContainer.parentNode === mountPoint) {
-                    mountPoint.removeChild(widgetContainer);
-                }
-            }
-        };
-        
-        window.addEventListener('error', handlePlatformError);
-        
-        const widgetDiv = document.createElement('div');
-        widgetDiv.className = 'elfsight-app-bcc2528d-c48e-48d1-b03d-f282be8b8c32';
-        widgetDiv.setAttribute('data-elfsight-app-lazy', '');
-        widgetContainer.appendChild(script);
-        widgetContainer.appendChild(widgetDiv);
-        const mountPoint = document.getElementById('widget-mount-point');
-        if (mountPoint) {
-            mountPoint.appendChild(widgetContainer);
-        }
-
-        // Detectar cuando el widget está cargado
-        let checkCount = 0;
-        const maxChecks = 100; // Máximo 10 segundos (100 * 100ms)
-        
-        const checkWidgetLoaded = () => {
-            checkCount++;
-            const widgetElement = widgetContainer.querySelector('.elfsight-app-bcc2528d-c48e-48d1-b03d-f282be8b8c32') as HTMLElement;
-            const hasContent = widgetElement && (
-                widgetElement.children.length > 0 || 
-                widgetElement.innerHTML.trim().length > 0 ||
-                widgetElement.offsetHeight > 0
-            );
-            
-            // Check for error messages in the widget
-            const hasError = widgetElement && (
-                widgetElement.textContent?.includes('APP_VIEWS_LIMIT_REACHED') ||
-                widgetElement.textContent?.includes("can't be initialized")
-            );
-            
-            if (hasError) {
-                console.warn('Elfsight widget initialization error detected.');
-                setIsReviewsLoading(false);
-                return;
-            }
-            
-            if (hasContent) {
-                // Esperar un frame más para asegurar que el contenido está renderizado
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        setIsReviewsLoading(false);
-                    });
-                });
-            } else if (checkCount < maxChecks) {
-                setTimeout(checkWidgetLoaded, 100);
-            } else {
-                // Si no se carga después de 10 segundos, ocultar skeleton
-                setIsReviewsLoading(false);
-            }
-        };
-
-        // Esperar un poco antes de empezar a verificar (dar tiempo a que el script se cargue)
-        setTimeout(checkWidgetLoaded, 1000);
-
         // Limpieza al desmontar el componente
         return () => {
             clearInterval(interval);
-            window.removeEventListener('error', handlePlatformError);
-            const mountPoint = document.getElementById('widget-mount-point');
-            if (mountPoint && widgetContainer.parentNode === mountPoint) {
-                mountPoint.removeChild(widgetContainer);
-            }
         };
-    }, []);
+    }, [currentWord]);
 
     return (
-        <div className="relative w-full min-h-[100dvh] lg:min-h-0 lg:h-auto bg-white overflow-hidden">
+        <div className="relative w-full min-h-[100dvh] lg:min-h-screen bg-white overflow-hidden">
             {/* Fondo Premium "Electric Wave" */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 {/* 1. Fondo base limpio */}
@@ -962,77 +862,125 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 </div>
             </div>
 
-            {/* Widget de reseñas - visible solo en desktop */}
-            <div className="hidden lg:block mt-2 lg:mt-2 relative z-0">
-                <div className="w-full lg:max-w-[calc(80rem-2rem)] lg:mx-auto px-4 md:px-6 lg:px-8">
-                    {/* Contenedor con altura mínima para evitar saltos */}
-                    <div className="relative min-h-[240px]">
-                        {/* Skeleton loader mientras carga - posición absoluta */}
-                        {isReviewsLoading && (
-                            <div className="absolute inset-0 w-full space-y-4 -top-2">
-                                {/* Header skeleton */}
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="h-6 bg-gray-200 rounded-lg w-40 shimmer-animation"></div>
-                                    <div className="h-4 bg-gray-200 rounded-lg w-24 shimmer-animation shimmer-delay-1"></div>
+            {/* Sección "Cómo funciona" - visible solo en desktop */}
+            <div className="hidden lg:block py-20 bg-gradient-to-b from-white to-gray-50/50 relative z-0">
+                <div className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8">
+                    {/* Header */}
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">
+                            ¿Cómo funciona?
+                        </h2>
+                        <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                            Contrata un experto verificado en 3 pasos simples y protege tu inversión
+                        </p>
+                    </div>
+
+                    {/* Steps */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+                        {/* Step 1 */}
+                        <div className="relative group">
+                            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-100 transition-all duration-300 h-full">
+                                {/* Number Badge */}
+                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600 font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
+                                    1
                                 </div>
-                                {/* Cards skeleton - horizontal scroll como el widget real */}
-                                <div className="flex gap-4 overflow-x-hidden">
-                                    {[1, 2, 3, 4].map((i) => (
-                                        <div 
-                                            key={i} 
-                                            className="flex-shrink-0 w-[320px] bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow"
-                                        >
-                                            {/* Avatar y nombre */}
-                                            <div className="flex items-start gap-3 mb-4">
-                                                <div className="relative flex-shrink-0">
-                                                    <div className="w-11 h-11 bg-gray-200 rounded-full shimmer-animation"></div>
-                                                    {/* Google G badge skeleton */}
-                                                    <div className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 bg-blue-200 rounded-full border-2 border-white shimmer-animation shimmer-delay-2"></div>
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1.5">
-                                                        <div className="h-4 bg-gray-200 rounded-md w-28 shimmer-animation shimmer-delay-1"></div>
-                                                        {/* Checkmark skeleton */}
-                                                        <div className="w-4 h-4 bg-green-200 rounded-full flex-shrink-0 shimmer-animation shimmer-delay-3"></div>
-                                                    </div>
-                                                    {/* Timestamp */}
-                                                    <div className="h-3 bg-gray-200 rounded w-20 shimmer-animation shimmer-delay-1"></div>
-                                                </div>
-                                            </div>
-                                            {/* Estrellas */}
-                                            <div className="flex gap-1 mb-3">
-                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                    <div 
-                                                        key={star} 
-                                                        className="w-4.5 h-4.5 bg-yellow-200 rounded-sm shimmer-animation"
-                                                        style={{ 
-                                                            animationDelay: `${star * 0.1}s`,
-                                                            clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
-                                                        }}
-                                                    ></div>
-                                                ))}
-                                            </div>
-                                            {/* Texto de la reseña */}
-                                            <div className="space-y-2 mb-3">
-                                                <div className="h-3.5 bg-gray-200 rounded-md w-full shimmer-animation"></div>
-                                                <div className="h-3.5 bg-gray-200 rounded-md w-11/12 shimmer-animation shimmer-delay-1"></div>
-                                                <div className="h-3.5 bg-gray-200 rounded-md w-4/5 shimmer-animation shimmer-delay-2"></div>
-                                            </div>
-                                            {/* Read more link skeleton */}
-                                            <div className="h-3 bg-blue-200 rounded w-24 shimmer-animation shimmer-delay-2"></div>
-                                        </div>
-                                    ))}
+                                
+                                {/* Icon */}
+                                <div className="mb-6">
+                                    <Search className="w-12 h-12 text-blue-600" />
                                 </div>
+                                
+                                {/* Content */}
+                                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                                    Encuentra tu experto
+                                </h3>
+                                <p className="text-gray-600 leading-relaxed">
+                                    Introduce la URL del anuncio y selecciona tu categoría. Busca entre expertos verificados cerca de ti.
+                                </p>
                             </div>
-                        )}
-                        {/* Widget - se muestra cuando está listo, con opacidad para transición suave */}
-                        <div 
-                            id="widget-mount-point" 
-                            className={`w-full transition-opacity duration-300 ${isReviewsLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'} hide-widget-navigation`}
-                            style={{ minHeight: isReviewsLoading ? '240px' : 'auto' }}
-                        >
-                        {/* Widget de reseñas se inyectará aquí dinámicamente */}
+                            
+                            {/* Connector Arrow */}
+                            <div className="hidden md:block absolute top-1/2 -right-6 transform -translate-y-1/2 z-10">
+                                <svg className="w-12 h-12 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                            </div>
                         </div>
+
+                        {/* Step 2 */}
+                        <div className="relative group">
+                            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-100 transition-all duration-300 h-full">
+                                {/* Number Badge */}
+                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600 font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
+                                    2
+                                </div>
+                                
+                                {/* Icon */}
+                                <div className="mb-6">
+                                    <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                
+                                {/* Content */}
+                                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                                    Reserva y paga seguro
+                                </h3>
+                                <p className="text-gray-600 leading-relaxed">
+                                    Elige fecha y hora. Paga de forma segura con Stripe. Tu dinero queda protegido hasta que confirmes el servicio.
+                                </p>
+                            </div>
+                            
+                            {/* Connector Arrow */}
+                            <div className="hidden md:block absolute top-1/2 -right-6 transform -translate-y-1/2 z-10">
+                                <svg className="w-12 h-12 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Step 3 */}
+                        <div className="relative group">
+                            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-100 transition-all duration-300 h-full">
+                                {/* Number Badge */}
+                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600 font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
+                                    3
+                                </div>
+                                
+                                {/* Icon */}
+                                <div className="mb-6">
+                                    <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                
+                                {/* Content */}
+                                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                                    Recibe tu informe
+                                </h3>
+                                <p className="text-gray-600 leading-relaxed">
+                                    El experto realiza la inspección y te entrega un informe completo con fotos y vídeos. Compra con confianza.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* CTA inferior */}
+                    <div className="text-center mt-16">
+                        <button
+                            onClick={() => {
+                                const formSection = document.getElementById('form-section');
+                                if (formSection) {
+                                    formSection.scrollIntoView({ behavior: 'smooth' });
+                                }
+                            }}
+                            className="inline-flex items-center gap-2 bg-gray-900 text-white font-semibold px-8 py-4 rounded-xl hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 group"
+                        >
+                            <span>Comenzar ahora</span>
+                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>
