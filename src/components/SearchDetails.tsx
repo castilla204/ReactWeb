@@ -161,12 +161,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         const originalHeight = document.body.style.height;
         
         // Always prevent body scroll
-        document.body.style.overflow = 'hidden';
-        document.body.style.position = 'fixed';
-        document.body.style.width = '100%';
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
         document.body.style.height = '100vh';
-        
-        // Scroll chat to bottom when switching to chat tab - multiple attempts for reliability
+            
+            // Scroll chat to bottom when switching to chat tab - multiple attempts for reliability
         if (activeTab === 'chat' || !activeTab) {
             const scrollToBottom = () => {
                 const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
@@ -1065,7 +1065,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                 <div className="text-center space-y-4 max-w-md">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
                         <AlertCircle className="w-8 h-8 text-gray-400" />
-                    </div>
+                            </div>
                     <div className="space-y-1">
                         <p className="text-sm font-medium text-gray-900">Error al cargar</p>
                         <p className="text-xs text-gray-500">
@@ -1189,17 +1189,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             {(activeTab === 'chat' || !activeTab) && (
                                 <TabsContent value="chat" className="mt-0 flex-1 flex flex-col lg:mt-0 lg:flex min-h-0 overflow-hidden" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', flex: '1 1 0%', overflow: 'hidden' }}>
                                     <div className="h-full flex-1 min-h-0 flex flex-col overflow-hidden" style={{ minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', marginBottom: 0, paddingBottom: 0 }}>
-                                        <Chat 
-                                            searchId={searchId} 
-                                            searchHireId={searchHireId}
-                                            isExpert={!!isExpert} 
-                                            expertData={{
-                                                name: expertData?.name, 
-                                                profilePictureUrl: expertData?.profilePictureUrl 
-                                            }}
-                                        />
-                                    </div>
-                                </TabsContent>
+                                    <Chat 
+                                        searchId={searchId} 
+                                        searchHireId={searchHireId}
+                                        isExpert={!!isExpert} 
+                                        expertData={{
+                                            name: expertData?.name, 
+                                            profilePictureUrl: expertData?.profilePictureUrl 
+                                        }}
+                                    />
+                                </div>
+                            </TabsContent>
                             )}
                                     
                             {/* Details Content - Solo visible en móvil (en desktop está en la columna derecha) - Con scroll interno */}
@@ -1224,7 +1224,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         <div className="flex items-center gap-2 text-sm text-gray-900">
                                             <Tag className="w-3.5 h-3.5 text-gray-500" />
                                             <span>{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
-                                        </div>
+                                                </div>
                                         {serviceInfo?.serviceTypeName && (
                                             <div className="text-sm">
                                                 <span className="text-gray-500">Tipo: </span>
@@ -1255,7 +1255,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         <div className="text-right">
                                                             <div className="flex items-center justify-end gap-1.5">
                                                                 <span className="text-lg font-bold text-gray-900">{priceDisplay.formattedTotal}</span>
-                                                            </div>
+                                            </div>
                                                             {priceDisplay.hasTaxInfo && (
                                                                 <p className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full inline-block mt-0.5">IVA incluido</p>
                                                             )}
@@ -1327,85 +1327,85 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     <div className="mt-4 pt-4 border-t border-gray-200/60 lg:hidden">
                                         <div className="space-y-2">
                                             <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                                                {appointment ? (
-                                                    appointmentStatusInfo?.displayName || 
-                                                    (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
-                                                     appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
-                                                     'Cita')
-                                                ) : 'Cita Pendiente'}
-                                            </h3>
+                                                    {appointment ? (
+                                                        appointmentStatusInfo?.displayName || 
+                                                        (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
+                                                         appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
+                                                         'Cita')
+                                                    ) : 'Cita Pendiente'}
+                                                </h3>
                                             <div className="space-y-3">
-                                                {appointment ? (
-                                                    <>
-                                                        {appointment.proposedDate && appointment.proposedTime && (() => {
-                                                            // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
-                                                            const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
-                                                            const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
-                                                            return (
+                                                    {appointment ? (
+                                                        <>
+                                                            {appointment.proposedDate && appointment.proposedTime && (() => {
+                                                                // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
+                                                                const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
+                                                                const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                                                                return (
                                                                 <div className="flex items-center gap-2 text-sm text-gray-900">
                                                                     <Calendar className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-                                                                    <span className="font-medium">
-                                                                        {new Date(dateToUse).toLocaleDateString('es-ES', {
-                                                                            day: 'numeric',
-                                                                            month: 'short',
-                                                                            year: 'numeric'
-                                                                        })} {timeToUse.substring(0, 5)}
-                                                                    </span>
-                                                                </div>
-                                                            );
-                                                        })()}
-                                                        {appointment.location && (
+                                                                        <span className="font-medium">
+                                                                            {new Date(dateToUse).toLocaleDateString('es-ES', {
+                                                                                day: 'numeric',
+                                                                                month: 'short',
+                                                                                year: 'numeric'
+                                                                            })} {timeToUse.substring(0, 5)}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                            {appointment.location && (
                                                             <div className="flex items-start gap-2 text-sm text-gray-900">
                                                                 <MapPin className="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-0.5" />
-                                                                <span className="leading-relaxed">{appointment.location}</span>
-                                                            </div>
-                                                        )}
-                                                        {appointment.doorNumber && (
+                                                                    <span className="leading-relaxed">{appointment.location}</span>
+                                                                </div>
+                                                            )}
+                                                            {appointment.doorNumber && (
                                                             <div className="text-sm text-gray-900 ml-6">
                                                                 <span className="text-gray-500">Puerta: </span>
-                                                                <span className="font-medium">{appointment.doorNumber}</span>
-                                                            </div>
-                                                        )}
-                                                        {/* Reportes del Experto - Dentro del cuadro de cita */}
-                                                        {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
+                                                                    <span className="font-medium">{appointment.doorNumber}</span>
+                                                                </div>
+                                                            )}
+                                                            {/* Reportes del Experto - Dentro del cuadro de cita */}
+                                                            {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
                                                             <div className="mt-3 pt-3 border-t border-gray-200">
                                                                 <div className="flex items-center gap-2 text-sm text-gray-900 mb-2">
-                                                                    <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                                                    <span className="font-medium">Informe Enviado</span>
-                                                                </div>
-                                                                <div className="space-y-1.5 ml-6">
-                                                                    {deliverables.map((deliverable) => {
-                                                                        const fileName = deliverable.url.split('/').pop() || 'archivo';
-                                                                        return (
-                                                                            <button
-                                                                                key={deliverable.id}
-                                                                                onClick={() => window.open(deliverable.url, '_blank')}
+                                                                        <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                                                        <span className="font-medium">Informe Enviado</span>
+                                                                    </div>
+                                                                    <div className="space-y-1.5 ml-6">
+                                                                        {deliverables.map((deliverable) => {
+                                                                            const fileName = deliverable.url.split('/').pop() || 'archivo';
+                                                                            return (
+                                                                                <button
+                                                                                    key={deliverable.id}
+                                                                                    onClick={() => window.open(deliverable.url, '_blank')}
                                                                                 className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors w-full text-left"
-                                                                            >
-                                                                                <FileText className="w-3 h-3 flex-shrink-0" />
-                                                                                <span className="truncate">{fileName}</span>
-                                                                            </button>
-                                                                        );
-                                                                    })}
+                                                                                >
+                                                                                    <FileText className="w-3 h-3 flex-shrink-0" />
+                                                                                    <span className="truncate">{fileName}</span>
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <div className="space-y-2">
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <div className="space-y-2">
                                                         <div className="flex items-center gap-2 text-sm text-gray-700">
                                                             <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                                            <span>Debes proponer una cita</span>
-                                                        </div>
-                                                        {timeRemaining && timeRemaining !== '00:00:00' && (
-                                                            <div className="flex items-center gap-2 text-sm text-amber-600 ml-6">
-                                                                <Clock className="w-4 h-4 flex-shrink-0" />
-                                                                <span className="font-medium">Tiempo restante: {timeRemaining}</span>
+                                                                <span>Debes proponer una cita</span>
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
+                                                            {timeRemaining && timeRemaining !== '00:00:00' && (
+                                                            <div className="flex items-center gap-2 text-sm text-amber-600 ml-6">
+                                                                    <Clock className="w-4 h-4 flex-shrink-0" />
+                                                                    <span className="font-medium">Tiempo restante: {timeRemaining}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
                                                     <Accordion type="single" collapsible className="w-full mt-3">
                                                         <AccordionItem value="appointment-timeline" className="border-none">
@@ -1913,18 +1913,18 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                         <div className="p-4 space-y-4" style={{ padding: '1rem' }}>
                             
                             {/* Resumen del Servicio - Minimalista */}
-                            <div className="space-y-3">
+                                <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-sm font-semibold text-gray-900">Información del Servicio</h3>
                                     {searchHireStatusInfo && (
                                         <StatusBadge status={searchHireStatusInfo} />
                                     )}
-                                </div>
+                                        </div>
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2 text-sm">
                                         <Tag className="w-3.5 h-3.5 text-gray-500" />
                                         <span className="text-gray-900 font-medium">{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
-                                    </div>
+                                </div>
                                     {serviceInfo?.serviceTypeName && (
                                         <div className="text-sm">
                                             <span className="text-gray-500">Tipo: </span>
@@ -1965,7 +1965,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     <div className="text-right">
                                                         <div className="flex items-center justify-end gap-1.5">
                                                             <span className="text-lg font-bold text-gray-900">{priceDisplay.formattedTotal}</span>
-                                                        </div>
+                                        </div>
                                                         {priceDisplay.hasTaxInfo && (
                                                             <p className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full inline-block mt-0.5">IVA incluido</p>
                                                         )}
@@ -1994,7 +1994,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             </div>
                                         );
                                     })()}
-                                </div>
+                            </div>
                             
                                 {/* Accordion para explicar el estado */}
                                 {searchHireStatusInfo && (
@@ -2036,13 +2036,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     <div className="mt-4 hidden lg:block border-t border-gray-200/60 pt-4">
                                         <div className="space-y-2">
                                             <h3 className="text-sm font-semibold text-gray-900">
-                                                {appointment ? (
-                                                    appointmentStatusInfo?.displayName || 
-                                                    (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
-                                                     appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
-                                                     'Cita')
-                                                ) : 'Cita Pendiente'}
-                                            </h3>
+                                                    {appointment ? (
+                                                        appointmentStatusInfo?.displayName || 
+                                                        (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
+                                                         appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
+                                                         'Cita')
+                                                    ) : 'Cita Pendiente'}
+                                                </h3>
                                             <div className="space-y-2">
                                                 {appointment ? (
                                                     <>
@@ -2517,18 +2517,18 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             {/* Reseña */}
                             {canReview && (
                                 <div className="space-y-3">
-                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2">
                                         <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
                                         <h3 className="text-[16px] font-semibold text-[#222222]">Reseña</h3>
-                                    </div>
-                                    <Button
-                                        onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
+                                </div>
+                                        <Button
+                                            onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
                                         className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
                                         size="sm"
-                                    >
+                                        >
                                         <Star className="w-3.5 h-3.5 mr-2" />
-                                        Escribir Reseña
-                                    </Button>
+                                            Escribir Reseña
+                                        </Button>
                             </div>
                             )}
 
