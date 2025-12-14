@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Car, Home, Bike, Search, ChevronDown, Link as LinkIcon, FolderTree, X, MoreHorizontal, Sparkles } from 'lucide-react';
+import { Car, Home, Bike, Search, ChevronDown, Link as LinkIcon, FolderTree, X, MoreHorizontal } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServiceTypes } from '../hooks/useServiceTypes';
@@ -460,7 +460,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                                 </span>
-                        <span>Verificación experta en 48h</span>
+                        <span>Servicios desde 25€ en todo el mundo</span>
                             </div>
                             
                     {/* Título principal - Grande y centrado */}
@@ -517,20 +517,20 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
             </div>
 
             {/* Sección de formulario móvil - Diseño limpio */}
-            <div id="form-section" className="lg:hidden relative z-10 w-full bg-gray-50 py-8 px-4">
-                <div className="max-w-lg mx-auto">
+            <div id="form-section" className="lg:hidden relative z-10 w-full bg-gray-50 px-4 min-h-[calc(100dvh-60px)] flex flex-col justify-center py-8">
+                <div className="max-w-lg mx-auto w-full flex flex-col gap-8 sm:gap-12">
                     {/* Header */}
-                    <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    <div>
+                        <h2 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">
                             Calcula el precio
                         </h2>
-                        <p className="text-sm text-gray-600">
-                            Completa el formulario y obtén una cotización personalizada
+                        <p className="text-base text-gray-600 leading-relaxed">
+                            Completa el formulario y obtén una cotización personalizada en segundos.
                         </p>
                     </div>
 
                     {/* Formulario - Contenedor limpio */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                         {/* Tipo de servicio - Estilo Airbnb */}
                         <div className="relative service-type-dropdown border-b border-gray-200">
                             <button
