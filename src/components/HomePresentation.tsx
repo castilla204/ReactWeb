@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Car, Home, Bike, Search, ChevronDown, Link as LinkIcon, FolderTree, X, MoreHorizontal } from 'lucide-react';
+import { Car, Home, Bike, Search, ChevronDown, Link as LinkIcon, FolderTree, X, MoreHorizontal, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServiceTypes } from '../hooks/useServiceTypes';
@@ -722,10 +722,11 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             
                             {/* Versión desktop - mantener original */}
                             <div className="hidden lg:block space-y-4 lg:space-y-5">
-                                {/* Badge/Tag optimizado para desktop */}
-                                <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium border border-blue-100">
-                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                                    <span>Búsqueda inteligente de vehículos</span>
+                                {/* Badge/Tag optimizado para desktop - Diseño Premium */}
+                                <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white border border-gray-100 shadow-[0_2px_10px_rgba(59,130,246,0.1)] hover:shadow-[0_4px_15px_rgba(59,130,246,0.15)] hover:-translate-y-0.5 transition-all duration-300 group cursor-default">
+                                    <span className="text-sm font-medium text-gray-600">
+                                        Servicios profesionales desde <span className="text-lg font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-800">25€</span>
+                                    </span>
                                 </div>
                                 
                                 {/* Título desktop */}

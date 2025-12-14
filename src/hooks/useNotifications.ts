@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useApi } from './useApi';
 import { useAuth } from '../contexts/AuthContext';
 import { API_CONFIG } from '../config/api';
@@ -13,6 +13,20 @@ export interface Notification {
     read: boolean;
     createdAt: string;
     readAt: string | null;
+}
+
+interface Pagination {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+}
+
+interface NotificationsResponse {
+    notifications: Notification[];
+    pagination: Pagination;
 }
 
 export const useNotifications = () => {
@@ -31,47 +45,73 @@ export const useNotifications = () => {
         retry: false,
     });
 
-    // Query para obtener la lista de notificaciones (sin polling automático, se invalida manualmente)
-    const notificationsQuery = useQuery({
+    // Infinite Query para obtener la lista de notificaciones paginada
+    const notificationsQuery = useInfiniteQuery({
         queryKey: ['notifications'],
-        queryFn: async () => {
-            const response = await fetchApi<any>(API_CONFIG.endpoints.notifications.list);
+        queryFn: async ({ pageParam = 1 }) => {
+            const url = `${API_CONFIG.endpoints.notifications.list}?page=${pageParam}&pageSize=20`;
+            const response = await fetchApi<any>(url);
             
-            // Manejar diferentes formatos de respuesta del endpoint
-            // 1. Si es un array directamente, devolverlo
-            if (Array.isArray(response)) {
-                return response as Notification[];
-            }
-            
-            // 2. Si viene en formato { notifications: [...], pagination: {...} }
+            // Normalizar respuesta
             if (response?.notifications && Array.isArray(response.notifications)) {
-                return response.notifications as Notification[];
+                return response as NotificationsResponse;
             }
             
-            // 3. Si viene en formato { data: [...] }
+            // Fallback para estructura antigua o simple array (simulamos paginación)
+            if (Array.isArray(response)) {
+                return {
+                    notifications: response as Notification[],
+                    pagination: {
+                        page: 1,
+                        pageSize: response.length,
+                        totalCount: response.length,
+                        totalPages: 1,
+                        hasNextPage: false,
+                        hasPreviousPage: false
+                    }
+                };
+            }
+            
             if (response?.data && Array.isArray(response.data)) {
-                return response.data as Notification[];
+                 return {
+                    notifications: response.data as Notification[],
+                    pagination: {
+                        page: 1,
+                        pageSize: 20,
+                        totalCount: response.total || response.data.length,
+                        totalPages: 1,
+                        hasNextPage: false,
+                        hasPreviousPage: false
+                    }
+                };
             }
-            
-            // 4. Si viene en formato { success: true, data: [...] }
-            if (response?.success && Array.isArray(response.data)) {
-                return response.data as Notification[];
-            }
-            
-            // 5. Fallback: devolver array vacío si no se puede parsear
+
             console.warn('[useNotifications] Unexpected response format:', response);
-            return [] as Notification[];
+            return {
+                notifications: [],
+                pagination: {
+                    page: 1,
+                    pageSize: 20,
+                    totalCount: 0,
+                    totalPages: 0,
+                    hasNextPage: false,
+                    hasPreviousPage: false
+                }
+            };
         },
-        enabled: isAuthenticated, // Solo ejecutar si el usuario está autenticado
-        retry: false, // No reintentar si falla (evita spam de requests)
+        getNextPageParam: (lastPage) => {
+            return lastPage.pagination.hasNextPage ? lastPage.pagination.page + 1 : undefined;
+        },
+        initialPageParam: 1,
+        enabled: isAuthenticated,
+        retry: false,
     });
 
-    // Asegurar que siempre sea un array
-    const notifications = Array.isArray(notificationsQuery.data) 
-        ? notificationsQuery.data 
-        : [];
+    // Aplanar las páginas en un solo array de notificaciones
+    const notifications = notificationsQuery.data?.pages.flatMap(page => page.notifications) || [];
     
     // Usar el contador del endpoint dedicado, fallback al cálculo local si falla la query
+    // Nota: El cálculo local solo considerará las notificaciones cargadas, por lo que el endpoint es vital.
     const unreadCount = unreadCountQuery.data ?? notifications.filter(n => !n.read).length;
 
     return {
@@ -81,5 +121,8 @@ export const useNotifications = () => {
         unreadCount,
         refetchUnreadCount: unreadCountQuery.refetch,
         refetchNotifications: notificationsQuery.refetch,
+        fetchNextPage: notificationsQuery.fetchNextPage,
+        hasNextPage: notificationsQuery.hasNextPage,
+        isFetchingNextPage: notificationsQuery.isFetchingNextPage,
     };
 };

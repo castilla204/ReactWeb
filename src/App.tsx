@@ -8,6 +8,7 @@ import { useNotifications } from './hooks/useNotifications';
 // import { PhoneVerification as PhoneVerificationPage } from './pages/PhoneVerificationPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
+import { TermsPage } from './pages/TermsPage';
 import { AdDetails } from './components/AdDetails';
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 import { PaymentCancelPage } from './pages/PaymentCancelPage';
@@ -51,6 +52,7 @@ import { ProtectedRouteWithMFA } from './components/layout/ProtectedRouteWithMFA
 import { UserRole } from './utils/roleChecker';
 import CountryFlag from './components/CountryFlag';
 import CountrySelector from './components/CountrySelector';
+import logoImg from './media/logoi.png';
 
 const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const navigate = useNavigate();
@@ -257,10 +259,10 @@ const AppContent: React.FC = () => {
                             </div>
 
                             {/* Separador antes del selector de país */}
-                            <Separator orientation="vertical" className="h-6 mx-3 opacity-30" />
+                            <Separator orientation="vertical" className="h-6 mx-3 opacity-30 hidden md:block" />
 
                             {/* Selector de país - compacto para topbar */}
-                            <div className="flex items-center">
+                            <div className="hidden md:flex items-center">
                                 <CountrySelector
                                     onCountrySelect={(countryCode) => {
                                         setSelectedCountry(countryCode);
@@ -374,9 +376,12 @@ const AppContent: React.FC = () => {
                 >
                         <div className="flex flex-col h-full">
                             <div className="p-4 border-b border-border/20">
-                                <h1 className="text-base font-normal text-foreground/90 tracking-tight bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent">
-                                    inspecciono.com
-                                </h1>
+                                <div className="flex items-center gap-2">
+                                    <img src={logoImg} alt="Logo" className="w-6 h-6 object-contain" />
+                                    <h1 className="text-base font-normal text-foreground/90 tracking-tight bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent">
+                                        inspecciono.com
+                                    </h1>
+                                </div>
                             </div>
                             <nav className="flex-1 overflow-y-auto p-4">
                                 <div className="space-y-1">
@@ -482,6 +487,16 @@ const AppContent: React.FC = () => {
                                 </div>
                             </nav>
                             <div className="p-4 border-t border-border/20">
+                                <div className="mb-4">
+                                    <p className="text-xs font-medium text-muted-foreground mb-2 px-1">País / Región</p>
+                                    <CountrySelector
+                                        onCountrySelect={(countryCode) => setSelectedCountry(countryCode)}
+                                        currentCountry={selectedCountry}
+                                        variant="default"
+                                        className="w-full"
+                                    />
+                                </div>
+                                <Separator className="mb-4 opacity-20" />
                                 {isAuthenticated ? (
                                     <>
                                         <div className="flex items-center gap-3 mb-3">
@@ -547,6 +562,7 @@ const AppContent: React.FC = () => {
                             {/* Verificación de teléfono desactivada temporalmente */}
                             {/* <Route path="/verify-phone" element={<PhoneVerificationPage />} /> */}
                             <Route path="/privacy-policy.html" element={<PrivacyPolicy />} />
+                            <Route path="/terms.html" element={<TermsPage />} />
                             <Route path="/success" element={<PaymentSuccessPage />} />
                             <Route path="/cancel" element={<PaymentCancelPage />} />
                             <Route path="/ad/:id" element={<AdDetails onBack={() => window.history.back()} />} />

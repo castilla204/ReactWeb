@@ -1,4 +1,4 @@
-import { Bell, X, Check, Info, AlertTriangle, AlertCircle, ArrowRight, Trash2, Calendar, MessageSquare, Tag } from 'lucide-react';
+import { Bell, X, ArrowRight, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../hooks/useApi';
 import { useNotifications, type Notification } from '../hooks/useNotifications';
@@ -17,9 +17,21 @@ export interface NotificationCenterProps {
 export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
-    const { notifications, isLoading, error, unreadCount, refetchNotifications, refetchUnreadCount } = useNotifications();
+    const { 
+        notifications, 
+        isLoading, 
+        error, 
+        unreadCount, 
+        refetchNotifications, 
+        refetchUnreadCount,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage
+    } = useNotifications();
+    
     const observerRef = useRef<IntersectionObserver | null>(null);
     const notificationRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+    const scrollSentinelRef = useRef<HTMLDivElement>(null);
 
     const markAsReadMutation = useMutation({
         mutationFn: (id: string) =>
@@ -54,6 +66,24 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
             }
         }
     }, [isOpen]);
+
+    // Infinite scroll observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                    fetchNextPage();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (scrollSentinelRef.current) {
+            observer.observe(scrollSentinelRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage, isOpen]);
 
     // Auto-mark as read when notification is viewed (for individual ones, if not handled by mark-all)
     useEffect(() => {
@@ -103,20 +133,6 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
         }
     };
 
-
-    const getIcon = (type: Notification['type']) => {
-        switch (type) {
-            case 'info':
-                return <Info className="w-5 h-5 text-blue-500" />;
-            case 'success':
-                return <Check className="w-5 h-5 text-green-500" />;
-            case 'warning':
-                return <AlertTriangle className="w-5 h-5 text-amber-500" />;
-            case 'error':
-                return <AlertCircle className="w-5 h-5 text-red-500" />;
-        }
-    };
-
     if (!isOpen) return null;
 
     return (
@@ -153,9 +169,9 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                 {/* Content Area */}
                 <ScrollArea className="flex-1 bg-white">
                     <div className="px-6 py-4 space-y-4">
-                        {isLoading ? (
+                        {isLoading && notifications.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-12 space-y-3">
-                                <div className="w-6 h-6 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+                                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
                                 <span className="text-sm text-gray-500 font-medium">Cargando...</span>
                             </div>
                         ) : error ? (
@@ -193,15 +209,6 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                                         }`}
                                     >
                                         <div className="flex gap-4">
-                                            {/* Icon Wrapper */}
-                                            <div className={`mt-0.5 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center border ${
-                                                !notification.read 
-                                                    ? 'bg-white border-blue-100 shadow-sm' 
-                                                    : 'bg-gray-50 border-gray-100'
-                                            }`}>
-                                                {getIcon(notification.type)}
-                                            </div>
-                                            
                                             {/* Content */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between gap-4 mb-1">
@@ -247,21 +254,6 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                                                                 <ArrowRight className="w-3.5 h-3.5 ml-1 transition-transform group-hover/link:translate-x-0.5" />
                                                             </a>
                                                         )}
-                                                        
-                                                        {/* Optional: manual mark as read if needed, though auto-read is on */}
-                                                        {/* 
-                                                        {!notification.read && (
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    markAsReadMutation.mutate(notification.id);
-                                                                }}
-                                                                className="text-[12px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
-                                                            >
-                                                                Marcar como leído
-                                                            </button>
-                                                        )}
-                                                        */}
                                                     </div>
                                                 )}
                                             </div>
@@ -273,17 +265,17 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                                         </div>
                                     </div>
                                 ))}
+                                
+                                {/* Loading Spinner for Infinite Scroll */}
+                                <div ref={scrollSentinelRef} className="py-4 flex justify-center w-full">
+                                    {isFetchingNextPage && (
+                                        <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
                 </ScrollArea>
-                
-                {/* Footer (Optional) */}
-                {/* <div className="flex-none p-4 border-t border-gray-100 bg-gray-50/50">
-                    <Button variant="outline" className="w-full text-xs h-8">
-                        Configuración de notificaciones
-                    </Button>
-                </div> */}
             </div>
         </div>
     );
