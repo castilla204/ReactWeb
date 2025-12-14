@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 
-export function PrivacyPolicy() {
+export function TermsPage() {
     const navigate = useNavigate();
     const { fetchApi } = useApi();
     const [content, setContent] = useState<string>('');
@@ -12,19 +12,19 @@ export function PrivacyPolicy() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchPrivacy = async () => {
+        const fetchTerms = async () => {
             try {
-                const response = await fetchApi<{ content: string; version: string }>(API_CONFIG.endpoints.legal.privacy);
+                const response = await fetchApi<{ content: string; version: string; variables: any }>(API_CONFIG.endpoints.legal.terms);
                 setContent(response.content);
             } catch (err) {
-                console.error('Error fetching privacy policy:', err);
-                setError('No se pudo cargar la política de privacidad. Por favor, inténtelo de nuevo más tarde.');
+                console.error('Error fetching terms:', err);
+                setError('No se pudieron cargar los términos y condiciones. Por favor, inténtelo de nuevo más tarde.');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchPrivacy();
+        fetchTerms();
     }, [fetchApi]);
 
     return (
@@ -58,3 +58,4 @@ export function PrivacyPolicy() {
         </div>
     );
 }
+

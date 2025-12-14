@@ -25,6 +25,9 @@ import { getCountryName } from '../utils/countries';
 import Autocomplete from 'react-google-autocomplete';
 import { Search } from 'lucide-react';
 import { FormProgressTimeline } from '../components/FormProgressTimeline';
+import logoImg from '../media/logoi.png';
+
+import { Footer } from '../components/Footer';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
 
@@ -549,10 +552,8 @@ const SearchCreationPage: React.FC = () => {
                                             {/* Top badge */}
                                             <div className="flex justify-end">
                                                 <div className="px-5 py-2.5 bg-white/98 backdrop-blur-md rounded-full flex items-center gap-2.5 shadow-[0_4px_14px_0_rgba(0,0,0,0.15)] border border-white/20 hover:shadow-[0_6px_20px_0_rgba(0,0,0,0.2)] transition-all duration-300">
+                                                    <img src={logoImg} alt="Logo" className="w-5 h-5 object-contain" />
                                                     <span className="text-sm font-semibold text-gray-900 tracking-tight">inspecciono.com</span>
-                                                    <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                    </svg>
                                                 </div>
                                             </div>
                                             
@@ -596,35 +597,9 @@ const SearchCreationPage: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    <footer className="mt-16 bg-background border-t border-border">
-                        <div className="w-full px-4 sm:px-6 mx-auto max-w-7xl">
-                            <div className="py-6 sm:py-8">
-                                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
-                                    {/* Copyright */}
-                                    <p className="text-sm text-gray-600 text-center sm:text-left">
-                                        © 2025 inspecciono.com. Todos los derechos reservados.
-                                    </p>
-                                    
-                                    {/* Links */}
-                                    <div className="flex flex-wrap justify-center sm:justify-end gap-4 sm:gap-6 text-sm">
-                                        <a href="/privacy-policy.html" className="text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1">
-                                            <Shield className="w-3.5 h-3.5" />
-                                            Privacidad
-                                        </a>
-                                        <a href="/terms.html" className="text-gray-500 hover:text-gray-700 transition-colors">
-                                            Términos
-                                        </a>
-                                        <a href="/contact.html" className="text-gray-500 hover:text-gray-700 transition-colors">
-                                            Contacto
-                                        </a>
-                                        <a href="/become-expert" className="text-gray-500 hover:text-blue-600 transition-colors">
-                                            Hazte Experto
-                                        </a>
+                    <div className="mt-16">
+                        <Footer />
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </footer>
                 </>
             )}
                     {currentStep === 1 && (

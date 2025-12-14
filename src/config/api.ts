@@ -207,5 +207,9 @@ export const API_CONFIG = {
                 webhook: (webhookId: string) => `${API_PATH}/Admin/stripe/webhooks/${webhookId}`,
             },
         },
+        legal: {
+            terms: `${API_PATH}/Legal/terms`,
+            privacy: `${API_PATH}/Legal/privacy`,
+        },
     },
 };
