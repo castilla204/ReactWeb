@@ -156,7 +156,8 @@ const AppContent: React.FC = () => {
                             {/* Marca inspecciono.com */}
                             <h1 
                                 onClick={() => navigate('/')}
-                                className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 group"
+                                className="text-sm md:text-lg font-semibold text-gray-900 dark:text-white tracking-tight cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 group antialiased"
+                                style={{ fontFeatureSettings: '"kern" 1', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}
                             >
                                 <span className="relative">
                                     <span className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-400 dark:to-blue-500 bg-clip-text text-transparent">
@@ -377,8 +378,8 @@ const AppContent: React.FC = () => {
                         <div className="flex flex-col h-full">
                             <div className="p-4 border-b border-border/20">
                                 <div className="flex items-center gap-2">
-                                    <img src={logoImg} alt="Logo" className="w-6 h-6 object-contain" />
-                                    <h1 className="text-base font-normal text-foreground/90 tracking-tight bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent">
+                                    <img src={logoImg} alt="Logo" className="w-5 h-5 object-contain" style={{ imageRendering: '-webkit-optimize-contrast' }} />
+                                    <h1 className="text-sm font-medium text-foreground/90 tracking-tight bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent antialiased" style={{ fontFeatureSettings: '"kern" 1', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
                                         inspecciono.com
                                     </h1>
                                 </div>
