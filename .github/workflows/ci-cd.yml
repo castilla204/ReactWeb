@@ -90,7 +90,3 @@ jobs:
       (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     needs: ci
 # Concurrency control - Best Practice 2025: Evita ejecuciones duplicadas
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
