@@ -1,54 +1,24 @@
-# Dependabot configuration - Best Practice 2025: Actualizaciones automáticas
 version: 2
 updates:
-  # Actualizar dependencias de .NET
-  - package-ecosystem: "nuget"
+  - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    reviewers:
-      - "castilla204"
-    labels:
+    open-pull-requests-limit: 10
+    review-labels:
       - "dependencies"
-      - "nuget"
+      - "ReactWeb"
     commit-message:
-      prefix: "chore"
+      prefix: "deps"
       include: "scope"
-
-  # Actualizar GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 3
-    reviewers:
-      - "castilla204"
-    labels:
-      - "dependencies"
-      - "github-actions"
+    open-pull-requests-limit: 5
+    review-labels:
+      - "github_actions"
+      - "ReactWeb"
     commit-message:
-      prefix: "chore"
+      prefix: "deps"
       include: "scope"
-
-  # Actualizar Docker
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 3
-    reviewers:
-      - "castilla204"
-    labels:
-      - "dependencies"
-      - "docker"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-
