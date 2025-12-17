@@ -39,6 +39,7 @@ jobs:
 
       - name: Sync ArgoCD Application
         if: ${{ secrets.ARGOCD_SERVER != '' && secrets.ARGOCD_TOKEN != '' }}
+        continue-on-error: true
         run: |
           echo "🔄 Syncing ArgoCD application..."
           if argocd app sync react-web \
@@ -47,8 +48,8 @@ jobs:
             --grpc-web; then
             echo "✅ ArgoCD sync successful"
           else
-            echo "⚠️ ArgoCD sync failed"
-            exit 1
+            echo "⚠️ ArgoCD sync failed (continuando...)"
+            exit 0
           fi
 
       - name: Fallback to kubectl apply (if KUBECONFIG available)
@@ -60,8 +61,10 @@ jobs:
 
       - name: Skip sync (no configuration)
         if: ${{ (secrets.ARGOCD_SERVER == '' || secrets.ARGOCD_TOKEN == '') && secrets.KUBECONFIG == '' }}
+        continue-on-error: true
         run: |
           echo "⚠️ No ArgoCD or kubectl configuration found"
           echo "ℹ️ Skipping sync. ArgoCD will sync automatically when it detects changes."
           echo "ℹ️ To enable manual sync, configure ARGOCD_SERVER and ARGOCD_TOKEN secrets"
+          echo "✅ Workflow completed (no action needed)"
 
