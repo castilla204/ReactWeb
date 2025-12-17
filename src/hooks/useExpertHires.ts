@@ -47,14 +47,32 @@ interface ExpertHire {
     } | null;
 }
 
-export const useExpertHires = () => {
+export const useExpertHires = (page: number = 1, pageSize: number = 20) => {
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
 
     const hiresQuery = useQuery({
-        queryKey: ['expertHires'],
-        queryFn: () =>
-            fetchApi<ExpertHire[]>(API_CONFIG.endpoints.expert.hires.listAsExpert),
+        queryKey: ['expertHires', page, pageSize],
+        queryFn: async () => {
+            const response = await fetchApi<any>(`${API_CONFIG.endpoints.expert.hires.listAsExpert}?page=${page}&pageSize=${pageSize}`);
+            // Manejar respuesta paginada o no paginada
+            if (response.hires && response.pagination) {
+                return {
+                    hires: response.hires as ExpertHire[],
+                    pagination: response.pagination
+                };
+            } else if (Array.isArray(response)) {
+                return {
+                    hires: response as ExpertHire[],
+                    pagination: null
+                };
+            } else {
+                return {
+                    hires: [] as ExpertHire[],
+                    pagination: null
+                };
+            }
+        },
     });
 
     const updateStatusMutation = useMutation({
@@ -77,7 +95,8 @@ export const useExpertHires = () => {
     });
 
     return {
-        hires: hiresQuery.data || [],
+        hires: hiresQuery.data?.hires || [],
+        pagination: hiresQuery.data?.pagination || null,
         isLoading: hiresQuery.isLoading,
         error: hiresQuery.error,
         updateStatus: updateStatusMutation.mutate,

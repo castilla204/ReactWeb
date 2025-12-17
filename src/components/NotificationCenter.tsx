@@ -1,10 +1,13 @@
-import { Bell, X, Check, Info, AlertTriangle, AlertCircle, ArrowRight, Trash2 } from 'lucide-react';
+import { Bell, X, ArrowRight, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../hooks/useApi';
 import { useNotifications, type Notification } from '../hooks/useNotifications';
 import { API_CONFIG } from '../config/api';
 import { useEffect, useRef } from 'react';
 import { ErrorDisplay } from './ErrorDisplay';
+import { ScrollArea } from './ui/scroll-area';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 
 export interface NotificationCenterProps {
     isOpen: boolean;
@@ -14,9 +17,21 @@ export interface NotificationCenterProps {
 export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
-    const { notifications, isLoading, error } = useNotifications();
+    const { 
+        notifications, 
+        isLoading, 
+        error, 
+        unreadCount, 
+        refetchNotifications, 
+        refetchUnreadCount,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage
+    } = useNotifications();
+    
     const observerRef = useRef<IntersectionObserver | null>(null);
     const notificationRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+    const scrollSentinelRef = useRef<HTMLDivElement>(null);
 
     const markAsReadMutation = useMutation({
         mutationFn: (id: string) =>
@@ -25,6 +40,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
         }
     });
 
@@ -35,10 +51,41 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+            refetchUnreadCount();
         }
     });
 
-    // Auto-mark as read when notification is viewed
+    // Auto-fetch and mark all as read when opening panel
+    useEffect(() => {
+        if (isOpen) {
+            refetchNotifications();
+            // Si hay notificaciones sin leer, marcarlas todas como leídas automáticamente
+            if (unreadCount > 0) {
+                markAllAsReadMutation.mutate();
+            }
+        }
+    }, [isOpen]);
+
+    // Infinite scroll observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                    fetchNextPage();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (scrollSentinelRef.current) {
+            observer.observe(scrollSentinelRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage, isOpen]);
+
+    // Auto-mark as read when notification is viewed (for individual ones, if not handled by mark-all)
     useEffect(() => {
         if (!isOpen || !notifications.length) return;
 
@@ -86,163 +133,149 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
         }
     };
 
-
-    const getIcon = (type: Notification['type']) => {
-        switch (type) {
-            case 'info':
-                return <Info className="w-5 h-5 text-blue-500" />;
-            case 'success':
-                return <Check className="w-5 h-5 text-green-500" />;
-            case 'warning':
-                return <AlertTriangle className="w-5 h-5 text-amber-500" />;
-            case 'error':
-                return <AlertCircle className="w-5 h-5 text-red-500" />;
-        }
-    };
-
     if (!isOpen) return null;
 
-    const unreadCount = notifications.filter(n => !n.read).length;
-
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-end">
-            <div className="w-full max-w-md bg-white h-screen shadow-xl flex flex-col">
-                {/* Header mejorado */}
-                <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-                    <div className="flex items-center justify-between mb-2">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-50 flex items-start justify-end animate-in fade-in duration-200">
+            {/* Backdrop close area */}
+            <div className="absolute inset-0" onClick={onClose} />
+            
+            {/* Drawer */}
+            <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-gray-100">
+                {/* Header Clean & Professional */}
+                <div className="flex-none px-6 py-5 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                    <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <Bell className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-semibold text-gray-900">Notificaciones</h2>
-                                {unreadCount > 0 && (
-                                    <p className="text-sm text-gray-600">{unreadCount} sin leer</p>
-                                )}
-                            </div>
+                            <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+                                Notificaciones
+                            </h2>
+                            {unreadCount > 0 && (
+                                <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100/50">
+                                    {unreadCount} nuevas
+                                </Badge>
+                            )}
                         </div>
-                        <button
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={onClose}
-                            className="p-2 hover:bg-white/70 rounded-lg transition-colors"
+                            className="h-8 w-8 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
                         >
-                            <X className="w-5 h-5 text-gray-500" />
-                        </button>
+                            <X className="w-5 h-5" />
+                        </Button>
                     </div>
-                    
-                    {/* Botón marcar todas como leídas */}
-                    {unreadCount > 0 && (
-                        <button
-                            onClick={() => markAllAsReadMutation.mutate()}
-                            disabled={markAllAsReadMutation.isPending}
-                            className="w-full py-2 px-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                        >
-                            {markAllAsReadMutation.isPending ? 'Marcando...' : 'Marcar todas como leídas'}
-                        </button>
-                    )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {isLoading ? (
-                        <div className="text-center text-gray-500">Loading notifications...</div>
-                    ) : error ? (
-                        <ErrorDisplay
-                          message={error instanceof Error ? error.message : 'Error loading notifications'}
-                          fullScreen={false}
-                          noBackground={true}
-                          compact={true}
-                        />
-                    ) : notifications.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                            <Bell className="w-12 h-12 text-gray-300 mb-4" />
-                            <p className="text-lg font-medium">No hay notificaciones</p>
-                            <p className="text-sm text-gray-400">Cuando tengas nuevas notificaciones aparecerán aquí</p>
-                        </div>
-                    ) : (
-                        notifications.map((notification) => (
-                            <div
-                                key={notification.id}
-                                ref={(el) => setNotificationRef(notification.id, el)}
-                                data-notification-id={notification.id}
-                                className={`relative rounded-xl p-4 border transition-all duration-200 hover:shadow-md ${notification.read
-                                        ? 'bg-white border-gray-200'
-                                        : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-sm'
-                                    }`}
-                            >
-                                {/* Indicador de no leído */}
-                                {!notification.read && (
-                                    <div className="absolute top-4 left-2 w-2 h-2 bg-blue-500 rounded-full"></div>
-                                )}
-                                
-                                <div className="flex items-start gap-4">
-                                    <div className={`p-2 rounded-lg ${notification.read ? 'bg-gray-100' : 'bg-white shadow-sm'}`}>
-                                        {getIcon(notification.type)}
-                                    </div>
-                                    
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-2 mb-2">
-                                            <h3 className={`text-sm font-semibold ${notification.read ? 'text-gray-700' : 'text-gray-900'}`}>
-                                                {notification.title}
-                                            </h3>
-                                            <div className="flex items-center gap-1">
-                                                {notification.read && (
-                                                    <div className="flex items-center gap-1 text-green-600 text-xs">
-                                                        <Check className="w-3 h-3" />
-                                                        <span>Leído</span>
+                {/* Content Area */}
+                <ScrollArea className="flex-1 bg-white">
+                    <div className="px-6 py-4 space-y-4">
+                        {isLoading && notifications.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                                <span className="text-sm text-gray-500 font-medium">Cargando...</span>
+                            </div>
+                        ) : error ? (
+                            <div className="p-4">
+                                <ErrorDisplay
+                                  message={error instanceof Error ? error.message : 'Error loading notifications'}
+                                  fullScreen={false}
+                                  noBackground={true}
+                                  compact={true}
+                                />
+                            </div>
+                        ) : notifications.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-gray-100">
+                                    <Bell className="w-8 h-8 text-gray-300" />
+                                </div>
+                                <h3 className="text-base font-semibold text-gray-900 mb-1">
+                                    Todo al día
+                                </h3>
+                                <p className="text-sm text-gray-500 max-w-[200px]">
+                                    No tienes notificaciones pendientes en este momento.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {notifications.map((notification) => (
+                                    <div
+                                        key={notification.id}
+                                        ref={(el) => setNotificationRef(notification.id, el)}
+                                        data-notification-id={notification.id}
+                                        className={`group relative p-4 rounded-xl transition-all duration-200 border ${
+                                            !notification.read
+                                                ? 'bg-blue-50/30 border-blue-100 shadow-sm' 
+                                                : 'bg-white border-gray-100 hover:border-gray-200'
+                                        }`}
+                                    >
+                                        <div className="flex gap-4">
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-start justify-between gap-4 mb-1">
+                                                    <h3 className={`text-[15px] font-semibold leading-snug ${
+                                                        !notification.read ? 'text-gray-900' : 'text-gray-700'
+                                                    }`}>
+                                                        {notification.title}
+                                                    </h3>
+                                                    <span className="text-[11px] text-gray-400 whitespace-nowrap flex-shrink-0 font-medium">
+                                                        {new Date(notification.createdAt).toLocaleDateString('es-ES', {
+                                                            day: 'numeric',
+                                                            month: 'short'
+                                                        })}
+                                                    </span>
+                                                </div>
+                                                
+                                                <p className="text-[14px] text-gray-600 leading-relaxed mb-3">
+                                                    {notification.message}
+                                                </p>
+                                                
+                                                {/* Image Attachment */}
+                                                {notification.imageUrl && (
+                                                    <div className="mb-3 rounded-lg overflow-hidden border border-gray-100 shadow-sm max-w-[200px]">
+                                                        <img
+                                                            src={notification.imageUrl}
+                                                            alt=""
+                                                            className="w-full h-24 object-cover hover:scale-105 transition-transform duration-500"
+                                                        />
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Actions */}
+                                                {(notification.url || !notification.read) && (
+                                                    <div className="flex items-center gap-3 pt-1">
+                                                        {notification.url && (
+                                                            <a
+                                                                href={notification.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors group/link"
+                                                            >
+                                                                Ver detalles
+                                                                <ArrowRight className="w-3.5 h-3.5 ml-1 transition-transform group-hover/link:translate-x-0.5" />
+                                                            </a>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
-                                        
-                                        <p className={`text-sm leading-relaxed ${notification.read ? 'text-gray-500' : 'text-gray-700'}`}>
-                                            {notification.message}
-                                        </p>
-                                        
-                                        {notification.imageUrl && (
-                                            <img
-                                                src={notification.imageUrl}
-                                                alt=""
-                                                className="mt-3 rounded-lg w-full h-32 object-cover border border-gray-200"
-                                            />
-                                        )}
-                                        
-                                        {notification.url && (
-                                            <a
-                                                href={notification.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="mt-3 inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                                            >
-                                                Ver detalles
-                                                <ArrowRight className="w-4 h-4" />
-                                            </a>
-                                        )}
-                                        
-                                        <div className="mt-3 flex items-center justify-between">
-                                            <span className="text-xs text-gray-400">
-                                                {new Date(notification.createdAt).toLocaleDateString('es-ES', {
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </span>
                                             
+                                            {/* Unread Indicator Dot */}
                                             {!notification.read && (
-                                                <button
-                                                    onClick={() => markAsReadMutation.mutate(notification.id)}
-                                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                                                    title="Marcar como leído"
-                                                >
-                                                    Marcar como leído
-                                                </button>
+                                                <div className="absolute top-5 right-5 w-2 h-2 bg-blue-500 rounded-full shadow-sm ring-2 ring-blue-50" />
                                             )}
                                         </div>
                                     </div>
+                                ))}
+                                
+                                {/* Loading Spinner for Infinite Scroll */}
+                                <div ref={scrollSentinelRef} className="py-4 flex justify-center w-full">
+                                    {isFetchingNextPage && (
+                                        <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                                    )}
                                 </div>
                             </div>
-                        ))
-                    )}
-                </div>
+                        )}
+                    </div>
+                </ScrollArea>
             </div>
         </div>
     );

@@ -14,6 +14,7 @@ import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '../ui/empty';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 // Componente para mostrar imagen de categoría
 const CategoryImage: React.FC<{ categoryName: string; size?: 'sm' | 'md' }> = ({ categoryName, size = 'sm' }) => {
@@ -658,25 +659,50 @@ export function ServiceForm({
         </>
     );
 
-    // Prevenir scroll del body cuando el drawer está abierto
-    useEffect(() => {
-        if (showServiceForm) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-        return () => {
-            document.body.style.overflow = '';
-        };
-    }, [showServiceForm]);
+    // Prevenir scroll del body cuando el drawer está abierto usando el hook seguro
+    useBodyScrollLock(showServiceForm);
 
-    // Usar Drawer en ambos casos, como en el ejemplo de shadcn/ui
+    // Estado para rastrear si el drawer está cerrando (para evitar cambios de key durante el cierre)
+    const [isClosing, setIsClosing] = React.useState(false);
+    const drawerKeyRef = React.useRef<string>(editingService ? `edit-${editingService.id}` : 'create');
+
+    // Actualizar la key cuando editingService cambia (solo cuando el drawer está abierto y no está cerrando)
+    React.useEffect(() => {
+        if (showServiceForm && !isClosing) {
+            drawerKeyRef.current = editingService ? `edit-${editingService.id}` : 'create';
+        }
+    }, [editingService, showServiceForm, isClosing]);
+
+    // Manejar el cierre del Drawer de forma controlada
+    const handleDrawerOpenChange = (open: boolean) => {
+        if (!open) {
+            // Marcar que está cerrando y mantener la key actual
+            setIsClosing(true);
+            setShowServiceForm(false);
+            // Esperar a que la animación termine antes de permitir cambios de key
+            setTimeout(() => {
+                setIsClosing(false);
+                // Actualizar la key después de que el drawer se haya cerrado completamente
+                drawerKeyRef.current = editingService ? `edit-${editingService.id}` : 'create';
+            }, 350); // Tiempo de animación del drawer + margen de seguridad
+        } else {
+            setIsClosing(false);
+            // Actualizar la key cuando se abre
+            drawerKeyRef.current = editingService ? `edit-${editingService.id}` : 'create';
+            setShowServiceForm(true);
+        }
+    };
+
+    // Key única para forzar remount del Drawer cuando cambia editingService
+    // Usar la referencia mientras está cerrando para evitar cambios durante el desmontaje del Portal
+    const drawerKey = isClosing ? drawerKeyRef.current : (editingService ? `edit-${editingService.id}` : 'create');
 
     return (
         <>
         <Drawer 
+            key={drawerKey}
             open={showServiceForm} 
-            onOpenChange={setShowServiceForm}
+            onOpenChange={handleDrawerOpenChange}
         >
             <DrawerContent className="max-h-[96vh] flex flex-col h-[96vh]">
                 <div className="mx-auto w-full max-w-7xl flex flex-col h-full max-h-[96vh]">

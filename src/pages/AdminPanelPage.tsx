@@ -4,14 +4,15 @@ import { UserManagement } from '../components/UserManagement';
 import AdminPanel from '../components/AdminPanel';
 import NotificationManagement from '../components/NotificationManagement';
 import { DisputePanel } from '../components/DisputePanel';
-import { ArrowLeft, Users, Settings, Bell, AlertTriangle } from 'lucide-react';
+import HangfirePanel from '../components/HangfirePanel';
+import { ArrowLeft, Users, Settings, Bell, AlertTriangle, Activity } from 'lucide-react';
 import Background from '../components/Background';
 import { useAuth } from '../contexts/AuthContext';
 
 const AdminPanelPage: React.FC = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated, isLoading } = useAuth();
-    const [activeTab, setActiveTab] = useState<'users' | 'config' | 'notifications' | 'disputes'>('users');
+    const [activeTab, setActiveTab] = useState<'users' | 'config' | 'notifications' | 'disputes' | 'hangfire'>('users');
 
     useEffect(() => {
         console.log('AdminPanelPage - User:', user);
@@ -118,6 +119,19 @@ const AdminPanelPage: React.FC = () => {
                                     <span>Panel de Disputas</span>
                                 </div>
                             </button>
+                            <button
+                                onClick={() => setActiveTab('hangfire')}
+                                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                                    activeTab === 'hangfire'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <Activity className="w-4 h-4" />
+                                    <span>Hangfire</span>
+                                </div>
+                            </button>
                         </nav>
                     </div>
                 </div>
@@ -128,6 +142,7 @@ const AdminPanelPage: React.FC = () => {
                     {activeTab === 'config' && <AdminPanel />}
                     {activeTab === 'notifications' && <NotificationManagement />}
                     {activeTab === 'disputes' && <DisputePanel />}
+                    {activeTab === 'hangfire' && <HangfirePanel />}
                 </div>
             </div>
         </div>

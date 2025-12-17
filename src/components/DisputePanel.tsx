@@ -9,8 +9,6 @@ import {
   DollarSign,
   CheckCircle,
   Clock,
-  ChevronLeft,
-  ChevronRight,
   Eye,
   ArrowLeft,
   ExternalLink,
@@ -26,6 +24,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { showToast } from '../lib/toast';
 import type { DisputeFilters, DisputeDto } from '../types/dispute';
+import { Pagination } from './Pagination';
+import { getPriceDisplay, formatCurrency } from '../utils/priceUtils';
 
 interface DisputePanelProps {
   onBack?: () => void;
@@ -129,13 +129,6 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
     });
   };
 
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
 
   if (selectedDispute) {
     return (
@@ -318,18 +311,24 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
                     dispute={dispute}
                     onClick={() => setSelectedDispute(dispute)}
                     formatDate={formatDate}
-                    formatCurrency={formatCurrency}
                   />
                 ))}
               </div>
 
               {/* Pagination */}
-              {disputesData.pagination.totalPages > 1 && (
+              {disputesData.pagination && (
                 <div className="p-6 border-t border-gray-200">
                   <Pagination
-                    currentPage={disputesData.pagination.currentPage}
+                    page={disputesData.pagination.currentPage || disputesData.pagination.page || 1}
+                    pageSize={disputesData.pagination.pageSize || filters.pageSize}
+                    totalCount={disputesData.pagination.totalCount || disputesData.pagination.totalItems || 0}
                     totalPages={disputesData.pagination.totalPages}
+                    hasNextPage={disputesData.pagination.hasNextPage || false}
+                    hasPreviousPage={disputesData.pagination.hasPreviousPage || (disputesData.pagination.currentPage || 1) > 1}
                     onPageChange={handlePageChange}
+                    onPageSizeChange={(newPageSize) => {
+                      setFilters(prev => ({ ...prev, pageSize: newPageSize, page: 1 }));
+                    }}
                   />
                 </div>
               )}
@@ -377,8 +376,7 @@ const DisputeCard: React.FC<{
   dispute: DisputeDto;
   onClick: () => void;
   formatDate: (date: string) => string;
-  formatCurrency: (amount: number) => string;
-}> = ({ dispute, onClick, formatDate, formatCurrency }) => {
+}> = ({ dispute, onClick, formatDate }) => {
   const statusColors = {
     Pending: 'bg-orange-100 text-orange-800',
     Resolved: 'bg-green-100 text-green-800',
@@ -452,7 +450,12 @@ const DisputeCard: React.FC<{
             )}
             <div className="flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
-              <span>{formatCurrency(dispute.searchHire.amount)}</span>
+              <div className="flex flex-col">
+                <span>{getPriceDisplay(dispute.searchHire).formattedTotal}</span>
+                {getPriceDisplay(dispute.searchHire).hasTaxInfo && (
+                  <span className="text-xs text-gray-400">IVA incluido</span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -479,66 +482,6 @@ const DisputeCard: React.FC<{
   );
 };
 
-// Componente de paginación
-const Pagination: React.FC<{
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}> = ({ currentPage, totalPages, onPageChange }) => {
-  const pages = [];
-  const maxVisiblePages = 5;
-  
-  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-  
-  if (endPage - startPage + 1 < maxVisiblePages) {
-    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-  }
-  
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i);
-  }
-
-  return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-        
-        {pages.map((page) => (
-          <button
-            key={page}
-            onClick={() => onPageChange(page)}
-            className={`px-3 py-2 rounded-lg border ${
-              page === currentPage
-                ? 'bg-blue-500 text-white border-blue-500'
-                : 'border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            {page}
-          </button>
-        ))}
-        
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-      
-      <p className="text-sm text-gray-600">
-        Página {currentPage} de {totalPages}
-      </p>
-    </div>
-  );
-};
 
 // Componente para los detalles de una disputa
 const DisputeDetails: React.FC<{
@@ -595,13 +538,6 @@ const DisputeDetails: React.FC<{
       default:
         return <File className="w-4 h-4 text-gray-500" />;
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
   };
 
   const handleResolve = () => {
@@ -987,7 +923,12 @@ const DisputeDetails: React.FC<{
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Monto</label>
-                  <p className="text-xl font-bold text-gray-900">{formatCurrency(dispute.searchHire.amount)}</p>
+                  <div className="flex flex-col">
+                    <p className="text-xl font-bold text-gray-900">{getPriceDisplay(dispute.searchHire).formattedTotal}</p>
+                    {getPriceDisplay(dispute.searchHire).hasTaxInfo && (
+                      <p className="text-xs text-gray-500 mt-1">IVA incluido</p>
+                    )}
+                  </div>
                 </div>
                 
                 <div>

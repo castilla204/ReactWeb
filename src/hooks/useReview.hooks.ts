@@ -71,14 +71,30 @@ export const useReview = () => {
         },
     });
 
-    const getExpertReviews = (expertId: number) =>
-        useQuery<ReviewResponse[]>({
-            queryKey: ['expertReviews', expertId],
+    const getExpertReviews = (expertId: number, page: number = 1, pageSize: number = 20) =>
+        useQuery<{ reviews: ReviewResponse[]; pagination?: any }>({
+            queryKey: ['expertReviews', expertId, page, pageSize],
             queryFn: async () => {
-                const response = await fetchApi(`/api/review/expert/${expertId}`, {
+                const response = await fetchApi(`/api/review/expert/${expertId}?page=${page}&pageSize=${pageSize}`, {
                     method: 'GET',
                 });
-                return response.reviews as ReviewResponse[];
+                // Manejar respuesta paginada o no paginada
+                if (response.reviews && response.pagination) {
+                    return {
+                        reviews: response.reviews as ReviewResponse[],
+                        pagination: response.pagination
+                    };
+                } else if (Array.isArray(response)) {
+                    return {
+                        reviews: response as ReviewResponse[],
+                        pagination: null
+                    };
+                } else {
+                    return {
+                        reviews: response.reviews || [],
+                        pagination: null
+                    };
+                }
             },
             enabled: !!expertId,
             retry: false,

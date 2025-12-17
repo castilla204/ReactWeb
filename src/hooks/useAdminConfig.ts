@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 import {
@@ -563,10 +563,18 @@ export const useConfigValidation = () => {
 };
 
 // Hook para configuraciones granulares (Category + ServiceTypeCategory)
-export const useCategoryServiceTypeConfigs = () => {
+export const useCategoryServiceTypeConfigs = (page: number = 1, pageSize: number = 20) => {
   const [configs, setConfigs] = useState<CategoryServiceTypeConfigDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  } | null>(null);
   const { fetchApi } = useApi();
 
   const fetchConfigs = async () => {
@@ -574,12 +582,23 @@ export const useCategoryServiceTypeConfigs = () => {
     setError(null);
     
     try {
-      // Usar el endpoint específico para configuraciones granulares
-      console.log('🔍 DEBUG - useCategoryServiceTypeConfigs - Endpoint:', API_CONFIG.endpoints.appointmentConfig.granularConfigurations);
-      const response = await fetchApi<CategoryServiceTypeConfigDto[]>(API_CONFIG.endpoints.appointmentConfig.granularConfigurations);
+      // Usar el endpoint específico para configuraciones granulares con paginación
+      const endpoint = `${API_CONFIG.endpoints.appointmentConfig.granularConfigurations}?page=${page}&pageSize=${pageSize}`;
+      console.log('🔍 DEBUG - useCategoryServiceTypeConfigs - Endpoint:', endpoint);
+      const response = await fetchApi<any>(endpoint);
       console.log('🔍 DEBUG - useCategoryServiceTypeConfigs - Response:', response);
-      console.log('🔍 DEBUG - useCategoryServiceTypeConfigs - Response length:', response?.length);
-      setConfigs(response);
+      
+      // Manejar respuesta paginada o no paginada
+      if (response.configs && response.pagination) {
+        setConfigs(response.configs);
+        setPagination(response.pagination);
+      } else if (Array.isArray(response)) {
+        setConfigs(response);
+        setPagination(null);
+      } else {
+        setConfigs([]);
+        setPagination(null);
+      }
     } catch (err) {
       console.error('Error fetching category service type configs:', err);
       setError('Error al cargar configuraciones granulares');
@@ -603,10 +622,10 @@ export const useCategoryServiceTypeConfigs = () => {
     }
   };
 
-  // Cargar configuraciones automáticamente al montar el componente
+  // Cargar configuraciones automáticamente al montar el componente o cuando cambian los parámetros de paginación
   useEffect(() => {
     fetchConfigs();
-  }, []);
+  }, [page, pageSize]);
 
   const getConfigsByServiceType = async (serviceTypeCategoryId: number) => {
     setIsLoading(true);
@@ -742,6 +761,7 @@ export const useCategoryServiceTypeConfigs = () => {
     configs,
     isLoading,
     error,
+    pagination,
     fetchConfigs,
     getConfigsByCategory,
     getConfigsByServiceType,
@@ -804,49 +824,116 @@ export const loadConfigurationsByTab = async (activeTab: 'status' | 'category' |
   }
 };
 
-// ✅ HOOK PARA GESTIÓN DE ESTADOS DE FINALIZACIÓN
-export const useAppointmentStatusManagement = () => {
+// ✅ HOOK PARA GESTIÓN DE ESTADOS DE FINALIZACIÓN CON PAGINACIÓN
+export const useAppointmentStatusManagement = (page: number = 1, pageSize: number = 20) => {
   const { fetchApi } = useApi();
   const [statuses, setStatuses] = useState<AppointmentStatusDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  } | null>(null);
 
-  const fetchAllStatuses = async () => {
+  const fetchAllStatuses = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     
     try {
+      const endpoint = `${API_CONFIG.endpoints.appointmentConfig.allStatuses}?page=${page}&pageSize=${pageSize}`;
       console.log('🔍 DEBUG - useAppointmentStatusManagement - Fetching all statuses...');
-      console.log('🔍 DEBUG - useAppointmentStatusManagement - Endpoint:', API_CONFIG.endpoints.appointmentConfig.allStatuses);
-      const response = await fetchApi<AppointmentStatusDto[]>(API_CONFIG.endpoints.appointmentConfig.allStatuses);
+      console.log('🔍 DEBUG - useAppointmentStatusManagement - Endpoint:', endpoint);
+      const response = await fetchApi<any>(endpoint);
       console.log('🔍 DEBUG - useAppointmentStatusManagement - Response:', response);
-      console.log('🔍 DEBUG - useAppointmentStatusManagement - Response length:', response?.length);
       
-      // Log detallado de cada estado
-      if (response && response.length > 0) {
-        response.forEach((status, index) => {
-          console.log(`🔍 DEBUG - Estado ${index + 1}:`, {
-            id: status.id,
-            statusType: status.statusType,
-            statusName: status.statusName,
-            statusValue: status.statusValue,
-            displayName: status.displayName,
-            description: status.description,
-            sortOrder: status.sortOrder,
-            isActive: status.isActive,
-            isFinalizationStatus: status.isFinalizationStatus
+      // Manejar respuesta paginada o no paginada
+      if (response.statuses && response.pagination) {
+        setStatuses(response.statuses);
+        setPagination(response.pagination);
+        
+        // Log detallado de cada estado
+        if (response.statuses && response.statuses.length > 0) {
+          response.statuses.forEach((status: AppointmentStatusDto, index: number) => {
+            console.log(`🔍 DEBUG - Estado ${index + 1}:`, {
+              id: status.id,
+              statusType: status.statusType,
+              statusName: status.statusName,
+              statusValue: status.statusValue,
+              displayName: status.displayName,
+              description: status.description,
+              sortOrder: status.sortOrder,
+              isActive: status.isActive,
+              isFinalizationStatus: status.isFinalizationStatus
+            });
           });
-        });
+        }
+      } else if (Array.isArray(response)) {
+        setStatuses(response);
+        setPagination(null);
+      } else {
+        setStatuses([]);
+        setPagination(null);
       }
-      
-      setStatuses(response);
     } catch (err) {
       console.error('Error fetching all statuses:', err);
       setError('Error al obtener todos los estados');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, pageSize, fetchApi]);
+
+  // Ejecutar automáticamente cuando cambien page o pageSize
+  // Mover la lógica directamente al useEffect para evitar loops causados por fetchApi
+  useEffect(() => {
+    let isMounted = true;
+    
+    const loadStatuses = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const endpoint = `${API_CONFIG.endpoints.appointmentConfig.allStatuses}?page=${page}&pageSize=${pageSize}`;
+        console.log('🔍 DEBUG - useAppointmentStatusManagement - Fetching all statuses...');
+        console.log('🔍 DEBUG - useAppointmentStatusManagement - Endpoint:', endpoint);
+        const response = await fetchApi<any>(endpoint);
+        
+        if (!isMounted) return;
+        
+        console.log('🔍 DEBUG - useAppointmentStatusManagement - Response:', response);
+        
+        // Manejar respuesta paginada o no paginada
+        if (response.statuses && response.pagination) {
+          setStatuses(response.statuses);
+          setPagination(response.pagination);
+        } else if (Array.isArray(response)) {
+          setStatuses(response);
+          setPagination(null);
+        } else {
+          setStatuses([]);
+          setPagination(null);
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        console.error('Error fetching all statuses:', err);
+        setError('Error al obtener todos los estados');
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    loadStatuses();
+    
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize]);
 
   const updateFinalizationStatus = async (statusId: number, isFinalizationStatus: boolean) => {
     try {
@@ -886,6 +973,7 @@ export const useAppointmentStatusManagement = () => {
     statuses,
     isLoading,
     error,
+    pagination,
     fetchAllStatuses,
     updateFinalizationStatus,
   };

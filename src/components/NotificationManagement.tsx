@@ -3,6 +3,7 @@ import { Bell, Info, AlertTriangle, AlertCircle, CheckCircle, ArrowRight } from 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../hooks/useApi';
 import { ErrorDisplay } from './ErrorDisplay';
+import { Pagination } from './Pagination';
 
 interface Notification {
   id: string;
@@ -19,6 +20,8 @@ interface Notification {
 const NotificationManagement: React.FC = () => {
   const { fetchApi } = useApi();
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [newNotification, setNewNotification] = useState({
     title: '',
     message: '',
@@ -29,8 +32,48 @@ const NotificationManagement: React.FC = () => {
   });
 
   const notificationsQuery = useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => fetchApi<Notification[]>('/api/Notification'),
+    queryKey: ['notifications', page, pageSize],
+    queryFn: async () => {
+      const response = await fetchApi<any>(`/api/Notification?page=${page}&pageSize=${pageSize}`);
+      // Manejar respuesta paginada o no paginada
+      if (response.notifications && response.pagination) {
+        return {
+          notifications: response.notifications as Notification[],
+          pagination: response.pagination
+        };
+      } else if (Array.isArray(response)) {
+        // Si el backend retorna un array directamente, crear paginación simulada
+        const totalCount = response.length;
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return {
+          notifications: response.slice((page - 1) * pageSize, page * pageSize) as Notification[],
+          pagination: {
+            page,
+            pageSize,
+            totalCount,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1
+          }
+        };
+      } else {
+        // Si viene en otro formato, intentar extraer los datos
+        const notifications = response.notifications || response.data || [];
+        const totalCount = response.pagination?.totalCount || notifications.length;
+        const totalPages = response.pagination?.totalPages || Math.ceil(totalCount / pageSize);
+        return {
+          notifications: Array.isArray(notifications) ? notifications : [],
+          pagination: response.pagination || {
+            page,
+            pageSize,
+            totalCount,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1
+          }
+        };
+      }
+    },
   });
 
   const createNotificationMutation = useMutation({
@@ -192,10 +235,10 @@ const NotificationManagement: React.FC = () => {
               noBackground={true}
               compact={true}
             />
-          ) : notificationsQuery.data?.length === 0 ? (
+          ) : (notificationsQuery.data?.notifications || []).length === 0 ? (
             <div className="text-center text-gray-500">No notifications</div>
           ) : (
-            notificationsQuery.data?.map((notification) => (
+            (notificationsQuery.data?.notifications || []).map((notification) => (
               <div
                 key={notification.id}
                 className={`relative bg-white rounded-xl p-4 border transition-colors ${notification.read
@@ -242,6 +285,27 @@ const NotificationManagement: React.FC = () => {
             ))
           )}
         </div>
+        {/* Paginación - Mostrar siempre si hay datos */}
+        {notificationsQuery.data && (notificationsQuery.data.notifications?.length > 0 || notificationsQuery.data.pagination) && (
+          <div className="mt-6">
+            <Pagination
+              page={notificationsQuery.data.pagination?.page || page}
+              pageSize={notificationsQuery.data.pagination?.pageSize || pageSize}
+              totalCount={notificationsQuery.data.pagination?.totalCount || notificationsQuery.data.notifications?.length || 0}
+              totalPages={notificationsQuery.data.pagination?.totalPages || 1}
+              hasNextPage={notificationsQuery.data.pagination?.hasNextPage || false}
+              hasPreviousPage={notificationsQuery.data.pagination?.hasPreviousPage || page > 1}
+              onPageChange={(newPage) => {
+                setPage(newPage);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onPageSizeChange={(newPageSize) => {
+                setPageSize(newPageSize);
+                setPage(1);
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

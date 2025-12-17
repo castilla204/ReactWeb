@@ -46,9 +46,15 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
     const queryClient = useQueryClient();
     const [newMessage, setNewMessage] = useState('');
     const [connection, setConnection] = useState<HubConnection | null>(null);
+    const connectionRef = useRef<HubConnection | null>(null); // ✅ Ref para evitar dependencias problemáticas
     const failedMessageIds = useRef<Set<number>>(new Set());
     const lastDeliverableFetch = useRef<number>(0);
     const lastSearchHireId = useRef<number | null>(null);
+    
+    // ✅ Sincronizar ref con state
+    useEffect(() => {
+        connectionRef.current = connection;
+    }, [connection]);
 
     // Validate API_CONFIG.endpoints.chat.deliverable
     useEffect(() => {
@@ -208,6 +214,13 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
         if (connection) {
             console.log('[10:45 CEST] Stopping existing SignalR connection');
+            if (conversation?.id) {
+                try {
+                    await connection.invoke('LeaveConversation', conversation.id);
+                } catch (err) {
+                    console.warn('[10:45 CEST] Failed to leave previous conversation before reconnecting:', err);
+                }
+            }
             await connection.stop();
             setConnection(null);
         }
@@ -255,15 +268,15 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
         conn.onreconnected((connectionId) => {
             console.log('[10:45 CEST] SignalR reconnected, new Connection ID:', connectionId);
-            if (conversation?.id && user?.id) {
-                conn.invoke('JoinConversation', conversation.id, user.id).catch((err) =>
+            if (conversation?.id) {
+                conn.invoke('JoinConversation', conversation.id).catch((err) =>
                     console.error('[10:45 CEST] Failed to rejoin conversation:', err)
                 );
             }
         });
 
         conn.on('ReceiveMessage', (message: any) => {
-            console.log('[10:45 CEST] Received SignalR message (raw):', {
+            console.log('[10:45 CEST] 📨 Received SignalR message (raw):', {
                 message,
                 conversationId: conversation?.id,
                 userId: user?.id,
@@ -284,22 +297,49 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     attachmentUrls: Array.isArray(message.attachmentUrls) ? message.attachmentUrls : [],
                 };
                 console.log('[10:45 CEST] Updating conversation state with new message:', typedMessage);
-                queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
-                    if (!prev) {
-                        console.log('[10:45 CEST] No previous conversation, creating new with message');
-                        return conversation ? { ...conversation, messages: [typedMessage] } : undefined;
+                
+                // Update both query keys (searchId and searchHireId) to ensure consistency
+                const updateQueryData = (queryKey: any[]) => {
+                    queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
+                        if (!prev) {
+                            console.log('[10:45 CEST] No previous conversation, creating new with message');
+                            return conversation ? { ...conversation, messages: [typedMessage] } : undefined;
+                        }
+                        const updatedMessages = [
+                            ...prev.messages.filter((m) => m.id !== typedMessage.id),
+                            { ...typedMessage, conversation: undefined },
+                        ].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
+                        console.log('[10:45 CEST] Updated messages:', updatedMessages);
+                        return {
+                            ...prev,
+                            messages: updatedMessages,
+                        };
+                    });
+                };
+                
+                // Update both possible query keys
+                if (useSearchHireEndpoint && searchHireId) {
+                    updateQueryData(['conversation', 'searchHire', searchHireId]);
+                }
+                if (searchId) {
+                    updateQueryData(['conversation', searchId]);
+                }
+                
+                // Invalidate queries to trigger re-render and scroll
+                queryClient.invalidateQueries({ queryKey: ['conversation'] });
+                
+                // Trigger scroll to bottom after message is added
+                setTimeout(() => {
+                    const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                    if (chatContainer) {
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
                     }
-                    const updatedMessages = [
-                        ...prev.messages.filter((m) => m.id !== typedMessage.id),
-                        { ...typedMessage, conversation: undefined },
-                    ].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
-                    console.log('[10:45 CEST] Updated messages:', updatedMessages);
-                    return {
-                        ...prev,
-                        messages: updatedMessages,
-                    };
-                });
-                queryClient.invalidateQueries({ queryKey: ['conversation', searchId] });
+                    // Also try the messages container directly
+                    const messagesContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
+                    if (messagesContainer) {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }
+                }, 100);
             } else {
                 console.log('[10:45 CEST] Message ignored: not for this conversation', {
                     receivedConversationId: message?.conversationId,
@@ -309,8 +349,13 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         });
 
         conn.on('MessageRead', (messageId: number) => {
-            console.log(`[10:45 CEST] Message ${messageId} marked as read via SignalR`);
-            queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
+            console.log(`[10:45 CEST] ✅ Message ${messageId} marked as read via SignalR`);
+            // ✅ Usar la queryKey correcta según si se usa searchHireId o searchId
+            const useSearchHire = !!searchHireId;
+            const conversationQueryKey = useSearchHire 
+                ? ['conversation', 'searchHire', searchHireId]
+                : ['conversation', searchId];
+            queryClient.setQueryData(conversationQueryKey, (prev: Conversation | undefined) => {
                 if (!prev) return prev;
                 return {
                     ...prev,
@@ -335,15 +380,18 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         try {
             await conn.start();
             console.log(`[10:45 CEST] SignalR connected for conversation ${conversation.id}, Connection ID: ${conn.connectionId}`);
-            await conn.invoke('JoinConversation', conversation.id, user.id);
-            console.log(`[10:45 CEST] Successfully joined conversation ${conversation.id} with user ${user.id}`);
+            await conn.invoke('JoinConversation', conversation.id);
+            console.log(`[10:45 CEST] Successfully joined conversation ${conversation.id}`);
             setConnection(conn);
+            connectionRef.current = conn;
         } catch (err) {
             console.error('[10:45 CEST] SignalR connection error:', err);
             showToast('error', 'Error al conectar con el chat en tiempo real. Reintentando...', 5000);
             setTimeout(() => connectSignalR(), 1000);
         }
-    }, [user, conversation?.id, connection, searchId, queryClient]);
+        // ✅ Removido connection de dependencias - usar ref en su lugar
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id, conversation?.id, searchId, searchHireId, queryClient]);
 
     const sendMessageMutation = useMutation({
         mutationFn: async ({
@@ -403,25 +451,49 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         },
         onSuccess: (message) => {
             console.log('[10:45 CEST] Message sent successfully:', message);
-            queryClient.setQueryData(['conversation', searchId], (prev: Conversation | undefined) => {
-                if (!prev && conversation) {
-                    console.log('[10:45 CEST] No previous conversation, using current conversation');
-                    return { ...conversation, messages: [message] };
-                }
-                if (!prev) {
-                    console.warn('[10:45 CEST] No previous or current conversation, cannot update');
-                    refetch();
-                    return undefined;
-                }
-                return {
-                    ...prev,
-                    messages: [...prev.messages.filter((m) => m.id !== message.id), message].sort(
-                        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-                    ),
-                };
-            });
+            
+            const updateQueryData = (queryKey: any[]) => {
+                queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
+                    if (!prev && conversation) {
+                        console.log('[10:45 CEST] No previous conversation, using current conversation');
+                        return { ...conversation, messages: [message] };
+                    }
+                    if (!prev) {
+                        console.warn('[10:45 CEST] No previous or current conversation, cannot update');
+                        return undefined;
+                    }
+                    return {
+                        ...prev,
+                        messages: [...prev.messages.filter((m) => m.id !== message.id), message].sort(
+                            (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+                        ),
+                    };
+                });
+            };
+            
+            // Update both possible query keys
+            if (useSearchHireEndpoint && searchHireId) {
+                updateQueryData(['conversation', 'searchHire', searchHireId]);
+            }
+            if (searchId) {
+                updateQueryData(['conversation', searchId]);
+            }
+            
             setNewMessage('');
             showToast('success', 'Mensaje enviado con éxito.', 3000);
+            
+            // Trigger scroll to bottom after message is sent
+            setTimeout(() => {
+                const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+                // Also try the messages container directly
+                const messagesContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }, 100);
             /*
             setNotifications((prev) => [
                 ...prev,
@@ -540,11 +612,19 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                 method: 'PUT',
             }),
         onSuccess: (_, messageId) => {
-            console.log('[10:45 CEST] Successfully marked message as read:', messageId);
-            queryClient.setQueryData(useSearchHireEndpoint 
+            console.log('[10:45 CEST] ✅ Successfully marked message as read:', messageId);
+            // ✅ Usar la queryKey correcta según si se usa searchHireId o searchId
+            const conversationQueryKey = useSearchHireEndpoint 
                 ? ['conversation', 'searchHire', searchHireId]
-                : ['conversation', searchId], (prev: Conversation | undefined) => {
+                : ['conversation', searchId];
+            queryClient.setQueryData(conversationQueryKey, (prev: Conversation | undefined) => {
                 if (!prev) return prev;
+                // ✅ Solo actualizar si el mensaje realmente no está marcado como leído
+                const message = prev.messages.find(m => m.id === messageId);
+                if (message && message.isRead) {
+                    console.log('[10:45 CEST] Message already marked as read, skipping update:', messageId);
+                    return prev;
+                }
                 return {
                     ...prev,
                     messages: prev.messages.map((msg) =>
@@ -578,35 +658,79 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
     // Trigger SignalR connection
     useEffect(() => {
-        if (conversation?.id && user && !connection) {
+        const currentConnection = connectionRef.current;
+        const shouldConnect = conversation?.id && user?.id && !currentConnection;
+        
+        if (shouldConnect) {
             console.log('[10:45 CEST] Initiating SignalR connection for conversation:', conversation.id);
             connectSignalR();
         }
 
         return () => {
-            if (connection) {
+            const cleanupConnection = connectionRef.current;
+            if (cleanupConnection) {
                 console.log('[10:45 CEST] Cleaning up SignalR connection');
-                connection.stop();
+                const currentConversationId = conversation?.id;
+                const state = cleanupConnection.state;
+                
+                // ✅ Verificar que la conexión esté en un estado válido antes de intentar limpiarla
+                if (state === 'Connected' || state === 'Connecting') {
+                    if (currentConversationId) {
+                        // Usar Promise.race para evitar esperar indefinidamente si la conexión está cerrando
+                        Promise.race([
+                            cleanupConnection.invoke('LeaveConversation', currentConversationId),
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1000))
+                        ]).catch((err) => {
+                            // Ignorar errores si la conexión ya está cerrada
+                            if (err.message !== 'Invocation canceled due to the underlying connection being closed') {
+                                console.warn('[10:45 CEST] Failed to leave conversation gracefully:', err);
+                            }
+                        });
+                    }
+                    // Detener la conexión sin esperar
+                    cleanupConnection.stop().catch((err) => {
+                        // Ignorar errores si ya está cerrada
+                        if (!err.message?.includes('connection being closed')) {
+                            console.warn('[10:45 CEST] Error stopping connection:', err);
+                        }
+                    });
+                }
                 setConnection(null);
+                connectionRef.current = null;
             }
         };
-    }, [conversation?.id, user, connection, connectSignalR]);
+        // ✅ CRÍTICO: Removido connection?.state de dependencias - causaba re-renders infinitos
+        // Solo depender de conversation?.id y user?.id que son estables
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [conversation?.id, user?.id]);
+
+    // ✅ Limpiar mensajes fallidos cuando cambia la conversación
+    useEffect(() => {
+        if (conversation?.id) {
+            console.log('[10:45 CEST] Conversation changed, clearing failed message IDs');
+            failedMessageIds.current.clear();
+        }
+    }, [conversation?.id]);
 
     // Mark unread messages
+    const unreadMessageIds = conversation?.messages
+        ?.filter(
+            (msg) => 
+                !msg.isRead && 
+                msg.senderId !== user?.id && 
+                !failedMessageIds.current.has(msg.id)
+        )
+        .map(msg => msg.id) || [];
+
     useEffect(() => {
-        if (conversation?.messages && user) {
-            console.log('[10:45 CEST] Checking for unread messages:', conversation.messages.length);
-            const unreadMessages = conversation.messages.filter(
-                (msg) => !msg.isRead && msg.senderId !== user.id && !failedMessageIds.current.has(msg.id)
-            );
-            if (unreadMessages.length > 0) {
-                console.log('[10:45 CEST] Marking unread messages:', unreadMessages.map((msg) => msg.id));
-                unreadMessages.forEach((msg) => {
-                    markAsReadMutation.mutate(msg.id);
-                });
-            }
+        if (unreadMessageIds.length > 0) {
+            console.log('[10:45 CEST] Marking unread messages:', unreadMessageIds);
+            unreadMessageIds.forEach((messageId) => {
+                markAsReadMutation.mutate(messageId);
+            });
         }
-    }, [conversation?.messages, user, markAsReadMutation]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [unreadMessageIds.length]);
 
     // Refetch deliverables only when searchHireId changes (but not on every render)
     useEffect(() => {
