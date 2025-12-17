@@ -24,13 +24,22 @@ const getStatusIcon = (status: string, size: 'sm' | 'md' | 'lg' = 'md') => {
         case STRIPE_STATUS.APPROVED:
             return <CheckCircle className={`${iconClass} text-green-600`} />;
         case STRIPE_STATUS.PENDING:
+        case STRIPE_STATUS.PENDING_VERIFICATION:
             return <Clock className={`${iconClass} text-blue-600`} />;
+        case STRIPE_STATUS.ACTION_REQUIRED:
+        case STRIPE_STATUS.REQUIREMENTS_DUE:
+        case STRIPE_STATUS.RESTRICTED_SOON:
+            return <AlertTriangle className={`${iconClass} text-amber-500`} />;
+        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
+        case STRIPE_STATUS.RESTRICTED:
+            return <AlertTriangle className={`${iconClass} text-orange-600`} />;
+        case STRIPE_STATUS.DISABLED:
         case STRIPE_STATUS.REJECTED:
             return <XCircle className={`${iconClass} text-red-600`} />;
         case STRIPE_STATUS.DEAUTHORIZED:
             return <UserX className={`${iconClass} text-purple-600`} />;
         case STRIPE_STATUS.NOT_REQUESTED:
-            return null; // Sin icono para NotRequested
+            return <AlertTriangle className={`${iconClass} text-gray-500`} />;
         default:
             return <AlertTriangle className={`${iconClass} text-orange-600`} />;
     }
@@ -41,7 +50,16 @@ const getStatusColor = (status: string) => {
         case STRIPE_STATUS.APPROVED:
             return 'text-green-600 bg-green-100 border-green-200';
         case STRIPE_STATUS.PENDING:
+        case STRIPE_STATUS.PENDING_VERIFICATION:
             return 'text-blue-600 bg-blue-100 border-blue-200';
+        case STRIPE_STATUS.ACTION_REQUIRED:
+        case STRIPE_STATUS.REQUIREMENTS_DUE:
+        case STRIPE_STATUS.RESTRICTED_SOON:
+            return 'text-amber-700 bg-amber-100 border-amber-200';
+        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
+        case STRIPE_STATUS.RESTRICTED:
+            return 'text-orange-700 bg-orange-100 border-orange-200';
+        case STRIPE_STATUS.DISABLED:
         case STRIPE_STATUS.REJECTED:
             return 'text-red-600 bg-red-100 border-red-200';
         case STRIPE_STATUS.DEAUTHORIZED:
@@ -59,8 +77,22 @@ const getStatusText = (status: string) => {
             return 'Aprobado';
         case STRIPE_STATUS.PENDING:
             return 'Pendiente';
+        case STRIPE_STATUS.PENDING_VERIFICATION:
+            return 'Verificación';
+        case STRIPE_STATUS.ACTION_REQUIRED:
+            return 'Acción requerida';
+        case STRIPE_STATUS.REQUIREMENTS_DUE:
+            return 'Requisitos próximos';
+        case STRIPE_STATUS.RESTRICTED_SOON:
+            return 'Restricción inminente';
+        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
+            return 'Requisitos vencidos';
+        case STRIPE_STATUS.RESTRICTED:
+            return 'Restringida';
+        case STRIPE_STATUS.DISABLED:
+            return 'Deshabilitada';
         case STRIPE_STATUS.REJECTED:
-            return 'Rechazado';
+            return 'Rechazada';
         case STRIPE_STATUS.DEAUTHORIZED:
             return 'Desautorizado';
         case STRIPE_STATUS.NOT_REQUESTED:
@@ -139,11 +171,21 @@ export const useStripeStatusDisplay = () => {
             details,
             isApproved: status === STRIPE_STATUS.APPROVED,
             isPending: status === STRIPE_STATUS.PENDING,
-            isRejected: status === STRIPE_STATUS.REJECTED,
+                isRejected: status === STRIPE_STATUS.REJECTED,
             isDeauthorized: status === STRIPE_STATUS.DEAUTHORIZED,
             isNotRequested: status === STRIPE_STATUS.NOT_REQUESTED,
-            canCreateServices: status === STRIPE_STATUS.APPROVED,
-            needsOnboarding: status === STRIPE_STATUS.NOT_REQUESTED || status === STRIPE_STATUS.REJECTED,
+                canCreateServices: status === STRIPE_STATUS.APPROVED,
+                needsOnboarding: status === STRIPE_STATUS.NOT_REQUESTED || status === STRIPE_STATUS.DEAUTHORIZED,
+                needsImmediateAction: [
+                    STRIPE_STATUS.ACTION_REQUIRED,
+                    STRIPE_STATUS.REQUIREMENTS_PAST_DUE,
+                    STRIPE_STATUS.RESTRICTED,
+                    STRIPE_STATUS.DISABLED
+                ].includes(status as any),
+                isWarning: [
+                    STRIPE_STATUS.REQUIREMENTS_DUE,
+                    STRIPE_STATUS.RESTRICTED_SOON
+                ].includes(status as any),
             shouldShowDetails: details && details.trim().length > 0
         };
     };
@@ -164,10 +206,47 @@ export const useStripeStatusDisplay = () => {
                     title: 'Cuenta Rechazada',
                     message: baseMessage
                 };
+            case STRIPE_STATUS.ACTION_REQUIRED:
+                return {
+                    type: 'warning' as const,
+                    title: 'Acción requerida en Stripe',
+                    message: baseMessage
+                };
+            case STRIPE_STATUS.REQUIREMENTS_DUE:
+            case STRIPE_STATUS.RESTRICTED_SOON:
+                return {
+                    type: 'warning' as const,
+                    title: 'Actualiza tus datos de pago',
+                    message: baseMessage
+                };
+            case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
+                return {
+                    type: 'error' as const,
+                    title: 'Pagos bloqueados',
+                    message: baseMessage
+                };
+            case STRIPE_STATUS.RESTRICTED:
+                return {
+                    type: 'warning' as const,
+                    title: 'Cuenta restringida',
+                    message: baseMessage
+                };
+            case STRIPE_STATUS.DISABLED:
+                return {
+                    type: 'error' as const,
+                    title: 'Pagos deshabilitados',
+                    message: baseMessage
+                };
             case STRIPE_STATUS.PENDING:
                 return {
                     type: 'info' as const,
                     title: 'Verificación en Proceso',
+                    message: baseMessage
+                };
+            case STRIPE_STATUS.PENDING_VERIFICATION:
+                return {
+                    type: 'info' as const,
+                    title: 'Stripe verificando documentos',
                     message: baseMessage
                 };
             case STRIPE_STATUS.DEAUTHORIZED:

@@ -1,11 +1,12 @@
 ﻿import { useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Upload, Loader2, UserPlus, Clock, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, UserPlus, Clock, AlertTriangle, CheckCircle2, Hourglass } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleMap, useLoadScript, Marker, DrawingManager } from '@react-google-maps/api';
 import { useBecomeExpert } from '../hooks/useBecomeExpert';
 import { VALID_DAYS_OF_WEEK, DAY_NAMES_ES } from '../types/stripe';
 import { AvailabilityFormData } from '../hooks/useExpertProfile';
 import { showToast } from '../lib/toast';
+import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription } from '../components/ui/empty';
 
 // Define a local type to match the Library enum values
 type GoogleMapLibrary = 'drawing' | 'geometry' | 'places';
@@ -532,14 +533,29 @@ function BecomeExpertPage() {
                                         <div className="relative h-[180px] sm:h-[200px] lg:h-[220px]">
                                     {!isLoaded ? (
                                         <div className="h-full flex items-center justify-center bg-gray-50">
-                                                    <div className="flex items-center gap-2 text-gray-500">
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                            <Empty className="py-8">
+                                                <EmptyMedia variant="icon">
+                                                    <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                                                </EmptyMedia>
+                                                <EmptyHeader>
+                                                    <EmptyDescription className="text-xs text-gray-500">
                                                         Cargando mapa...
-                                                    </div>
+                                                    </EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
                                         </div>
                                     ) : loadError ? (
                                         <div className="h-full flex items-center justify-center bg-gray-50">
-                                            <div className="text-red-500">Error al cargar el mapa</div>
+                                            <Empty className="py-8">
+                                                <EmptyMedia variant="icon">
+                                                    <AlertTriangle className="w-5 h-5 text-gray-400" />
+                                                </EmptyMedia>
+                                                <EmptyHeader>
+                                                    <EmptyDescription className="text-xs text-gray-500">
+                                                        Error al cargar el mapa
+                                                    </EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
                                         </div>
                                     ) : (
                                         <>
@@ -686,14 +702,17 @@ function BecomeExpertPage() {
 
                                 {/* Error message - Solo mostrar si NO es error de contrataciones activas (ese se muestra como toast) */}
                         {error && !error.includes('contrataciones activas') && !error.includes('contratación(es) activa(s)') && (
-                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                                <div className="flex items-start gap-3">
-                                    <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-red-600 dark:text-red-400" />
-                                    <p className="text-sm text-red-800 dark:text-red-200">
+                            <Empty className="py-8">
+                                <EmptyMedia variant="icon">
+                                    <AlertTriangle className="w-6 h-6 text-gray-400" />
+                                </EmptyMedia>
+                                <EmptyHeader>
+                                    <EmptyTitle className="text-base">Error al procesar la solicitud</EmptyTitle>
+                                    <EmptyDescription className="text-sm text-gray-500 mt-1">
                                         {error}
-                                    </p>
-                                </div>
-                            </div>
+                                    </EmptyDescription>
+                                </EmptyHeader>
+                            </Empty>
                         )}
 
                                 {/* Submit button */}
@@ -705,7 +724,7 @@ function BecomeExpertPage() {
                             {isSubmitting ? (
                                 <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            <span>Registrando...</span>
+                                            <span>Procesando solicitud...</span>
                                 </>
                             ) : (
                                 <>
@@ -714,6 +733,20 @@ function BecomeExpertPage() {
                                 </>
                             )}
                         </button>
+                        
+                        {/* Estado de carga profesional cuando se está enviando */}
+                        {isSubmitting && (
+                            <Empty className="py-6 border-t border-gray-100 mt-4">
+                                <EmptyMedia variant="icon">
+                                    <Hourglass className="w-5 h-5 text-gray-400 animate-pulse" />
+                                </EmptyMedia>
+                                <EmptyHeader>
+                                    <EmptyDescription className="text-xs text-gray-500">
+                                        Estamos procesando tu solicitud. Por favor, espera un momento...
+                                    </EmptyDescription>
+                                </EmptyHeader>
+                            </Empty>
+                        )}
                     </form>
                         </div>
                     </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { MapPin, FileText, Clock, AlertCircle, CalendarIcon } from 'lucide-react';
+import { MapPin, FileText, Clock, AlertCircle, CalendarIcon, Globe } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ProposeAppointmentDto } from '../types/appointment';
@@ -21,6 +21,12 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { CurrentExpertAvailabilityDto, formatDaysOfWeek, formatTimeSpan, isDayAvailable } from '../utils/availability';
 import ExpertAvailability from './ExpertAvailability';
+import { useTimezones } from '../hooks/useTimezones';
+import CountryFlag from './CountryFlag';
+import { getCountryName } from '../utils/countries';
+
+// ✅ TIMEZONE DEFAULT PARA SERVICIOS EN ESPAÑA
+const DEFAULT_SERVICE_TIMEZONE = 'Europe/Madrid';
 
 interface AppointmentFormProps {
   searchHireId: number;
@@ -34,6 +40,19 @@ interface AppointmentFormProps {
   } | null;
   expertRange?: number | null;
   expertAvailability?: CurrentExpertAvailabilityDto | null;
+  /**
+   * ✅ INTERNACIONALIZACIÓN: Timezone del lugar donde se presta el servicio
+   * - Se usa como DEFAULT en lugar del timezone del navegador
+   * - Soluciona el problema de VPN (ej: usuario en Tailandia contratando en España)
+   * - Si no se proporciona, usa "Europe/Madrid" como default
+   */
+  serviceTimezone?: string;
+  /**
+   * ✅ NUEVO: País del experto (ISO 3166-1 alpha-2)
+   * - Se usa para mostrar la bandera del país
+   * - Puede venir de SearchHire.expertCountry o ExpertProfile.country
+   */
+  expertCountry?: string | null;
 }
 
 const AppointmentForm: React.FC<AppointmentFormProps> = ({ 
@@ -44,14 +63,30 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   error: externalError = null,
   expertLocation,
   expertRange,
-  expertAvailability
+  expertAvailability,
+  serviceTimezone, // ✅ Timezone del servicio (donde se presta)
+  expertCountry // ✅ País del experto
 }) => {
   console.log('AppointmentForm initialized for searchHireId:', searchHireId);
+  
+  // ═══════════════════════════════════════════════════════════════
+  // ✅ INTERNACIONALIZACIÓN: El backend maneja timezone automáticamente
+  // ═══════════════════════════════════════════════════════════════
+  // El backend usa el timezone del experto guardado en SearchHire.ExpertTimezone
+  // No es necesario detectar ni enviar timezone desde el frontend
+  
+  // Timezone del servicio (solo para mostrar info al usuario)
+  const effectiveServiceTimezone = serviceTimezone || DEFAULT_SERVICE_TIMEZONE;
+  
+  const { getTimezoneDisplayName } = useTimezones();
+  
+  console.log('[AppointmentForm] Timezone del servicio (informativo):', effectiveServiceTimezone);
   
   const form = useForm<ProposeAppointmentDto>({
     defaultValues: {
       proposedDate: '',
       proposedTime: '',
+      // timezone: NO se necesita - el backend lo detecta automáticamente
       location: '',
       latitude: null,
       longitude: null,
@@ -64,6 +99,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const [formData, setFormData] = useState<ProposeAppointmentDto>({
     proposedDate: '',
     proposedTime: '',
+    // timezone: NO se necesita - el backend lo detecta automáticamente
     location: '',
     latitude: null,
     longitude: null,
@@ -149,34 +185,42 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
+      // ✅ INTERNACIONALIZACIÓN: El backend usa automáticamente el timezone del experto
+      // No es necesario enviar timezone - se maneja automáticamente
+      const dataToSubmit: ProposeAppointmentDto = {
+        ...formData
+        // timezone: NO se envía - el backend lo detecta automáticamente del experto
+      };
+      
       console.log('🚀 ENVIANDO AL BACKEND:');
-      console.log('📋 DTO de creación de cita que se enviará:', formData);
+      console.log('📋 DTO de creación de cita que se enviará:', dataToSubmit);
       console.log('📍 Ubicación seleccionada:', selectedLocation);
       console.log('🔍 searchHireId:', searchHireId);
-      console.log('📝 Location que se envía:', formData.location);
-      console.log('📝 Latitude que se envía:', formData.latitude);
-      console.log('📝 Longitude que se envía:', formData.longitude);
-      console.log('📝 DoorNumber que se envía:', formData.doorNumber);
-      console.log('📝 OwnerPhone que se envía:', formData.ownerPhone);
-      console.log('📝 SiteDetails que se envía:', formData.siteDetails);
-      console.log('📝 ProposedDate que se envía:', formData.proposedDate);
-      console.log('📝 ProposedTime que se envía:', formData.proposedTime);
+      console.log('📝 Location que se envía:', dataToSubmit.location);
+      console.log('📝 Latitude que se envía:', dataToSubmit.latitude);
+      console.log('📝 Longitude que se envía:', dataToSubmit.longitude);
+      console.log('📝 DoorNumber que se envía:', dataToSubmit.doorNumber);
+      console.log('📝 OwnerPhone que se envía:', dataToSubmit.ownerPhone);
+      console.log('📝 SiteDetails que se envía:', dataToSubmit.siteDetails);
+      console.log('📝 ProposedDate que se envía:', dataToSubmit.proposedDate);
+      console.log('📝 ProposedTime que se envía:', dataToSubmit.proposedTime);
+      console.log('🌍 Timezone que se envía:', dataToSubmit.timezone); // ✅ Log timezone
       
       // Verificar que el location no esté vacío
-      if (!formData.location || formData.location.trim() === '') {
+      if (!dataToSubmit.location || dataToSubmit.location.trim() === '') {
         console.error('❌ ERROR: El campo location está vacío!');
       } else {
-        console.log('✅ Location válido:', formData.location);
+        console.log('✅ Location válido:', dataToSubmit.location);
       }
       
       // Verificar que las coordenadas no sean null
-      if (formData.latitude === null || formData.longitude === null) {
+      if (dataToSubmit.latitude === null || dataToSubmit.longitude === null) {
         console.error('❌ ERROR: Las coordenadas son null!');
       } else {
-        console.log('✅ Coordenadas válidas:', formData.latitude, formData.longitude);
+        console.log('✅ Coordenadas válidas:', dataToSubmit.latitude, dataToSubmit.longitude);
       }
       
-      onSubmit(formData);
+      onSubmit(dataToSubmit);
     }
   };
 
@@ -428,6 +472,24 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                     </div>
                   </div>
                   
+                  {/* ✅ INTERNACIONALIZACIÓN: Info de zona horaria y país (el backend lo maneja automáticamente) */}
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-3 p-2 bg-green-50/50 rounded-md border border-green-100">
+                    <Globe className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {expertCountry && (
+                        <CountryFlag countryCode={expertCountry} size="sm" />
+                      )}
+                      <span>
+                        ✅ El servicio está en <strong className="text-gray-700">{getTimezoneDisplayName(effectiveServiceTimezone) || effectiveServiceTimezone}</strong>
+                        {expertCountry && (
+                          <span className="ml-1">
+                            ({getCountryName(expertCountry)})
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  
                   {/* Accordion con horario del experto */}
                   {expertAvailability && (
                     <Accordion type="single" defaultValue="schedule-info" collapsible className="w-full mt-4">
@@ -625,8 +687,29 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                           <div className="flex items-center gap-2 text-xs">
                             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                             <span>Tu selección</span>
-                  </div>
-                </div>
+                          </div>
+                        </div>
+                        
+                        {/* ✅ INTERNACIONALIZACIÓN: Info de zona horaria y país */}
+                        <div className="pt-3 border-t border-border/50 space-y-2">
+                          <p className="text-xs font-medium text-foreground flex items-center gap-1">
+                            <Globe className="w-3 h-3" />
+                            Zona horaria y país:
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {expertCountry && (
+                              <CountryFlag countryCode={expertCountry} size="sm" />
+                            )}
+                            <p>
+                              ✅ Se usa automáticamente la zona del experto: <strong>{effectiveServiceTimezone}</strong>
+                              {expertCountry && (
+                                <span className="ml-1">
+                                  ({getCountryName(expertCountry)})
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
               </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -635,13 +718,14 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
             {/* Columna derecha - Mapa */}
               <div className="space-y-4">
-                  <div className="h-[500px] rounded-lg overflow-hidden border border-border relative">
+                  <div className="h-[500px] rounded-lg border border-border relative">
                 <AppointmentMap
                   onLocationSelect={handleLocationSelect}
                   initialLocation={selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude } : undefined}
                   disabled={isLoading}
                   expertLocation={expertLocation}
                   expertRange={expertRange}
+                  expertCountry={expertCountry}
                   className="w-full h-full"
                 />
               </div>

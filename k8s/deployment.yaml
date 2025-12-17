@@ -27,11 +27,11 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101
-        fsGroup: 101
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
       - name: react-web
-        image: erizo9/reactweb:latest
+        image: erizo9/reactweb:latest@sha256:283771d124626fc338cec58c8ca4b145b5954399e6e0d61f9524812c6b222e5d
         imagePullPolicy: Always
         ports:
         - name: http
@@ -46,10 +46,10 @@ spec:
         resources:
           requests:
             memory: "128Mi"
-            cpu: "100m"
+            cpu: "50m"
           limits:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "100m"
         livenessProbe:
           httpGet:
             path: /

@@ -11,6 +11,7 @@ export interface Service {
     categoryId: number;
     serviceTypeId: number;
     serviceTypeName?: string;
+    serviceTypeDescription?: string; // ✅ NUEVO: Descripción del tipo de servicio
     serviceTypeCategoryId?: number;
     serviceTypeCategoryName?: string;
     requiresAppointment?: boolean;
@@ -43,6 +44,14 @@ export interface Service {
             email: string;
             profilePictureUrl?: string;
         };
+        // ✅ NUEVO: Disponibilidad del experto
+        currentAvailability?: {
+            id: number;
+            daysOfWeek: string[];
+            startTime: string;
+            endTime: string;
+            effectiveFrom?: string;
+        };
         reviews?: {
             id: number;
             score: number;
@@ -57,7 +66,17 @@ export interface Service {
             };
             imageUrls?: string[];
         }[];
+        // ✅ CAMPOS DE PAÍS Y TIMEZONE
+        timezone?: string | null;
+        country?: string | null;
+        // ✅ COORDENADAS DEL EXPERTO (para mostrar en el mapa)
+        latitude?: string | number | null;
+        longitude?: string | number | null;
+        locationRange?: number | null;
     } | null;
+    // ✅ COORDENADAS A NIVEL DE SERVICIO (alternativa)
+    expertLatitude?: string | number | null;
+    expertLongitude?: string | number | null;
 }
 
 interface UseServicesProps {
@@ -67,6 +86,20 @@ interface UseServicesProps {
     longitude?: string;
     locationRange?: number;
     expertProfileId?: number;
+    page?: number;
+    pageSize?: number;
+}
+
+interface PaginatedResponse<T> {
+    services?: T[];
+    pagination?: {
+        page: number;
+        pageSize: number;
+        totalCount: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+    };
 }
 
 export function useServices({
@@ -76,6 +109,8 @@ export function useServices({
     longitude,
     locationRange,
     expertProfileId,
+    page = 1,
+    pageSize = 20,
 }: UseServicesProps = {}) {
     const { signOut } = useAuth();
     const { fetchApi } = useApi();
@@ -85,21 +120,31 @@ export function useServices({
     const [isUpdatingService, setIsUpdatingService] = useState(false);
 
     const servicesQuery = useQuery({
-        queryKey: ['services', expertProfileId || categoryId, serviceTypeId, latitude, longitude, locationRange],
+        queryKey: ['services', expertProfileId || categoryId, serviceTypeId, latitude, longitude, locationRange, page, pageSize],
         queryFn: async () => {
             const token = getAuthToken();
-            if (!token) {
-                console.log('No token found, signing out');
+            
+            // ✅ Si es para servicios de un experto específico, requiere autenticación
+            // ✅ Si es para lista pública de servicios, NO requiere autenticación
+            const requiresAuth = !!expertProfileId;
+            
+            if (requiresAuth && !token) {
+                console.log('No token found for expert services, signing out');
                 signOut();
                 throw new Error('No authentication token found');
             }
 
             let url: string;
             if (expertProfileId) {
-                url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.getByExpert(expertProfileId)}`;
+                // Construir URL con parámetros de paginación y filtros
+                const params = new URLSearchParams();
                 if (serviceTypeId && serviceTypeId > 0) {
-                    url += `?serviceTypeId=${serviceTypeId}`;
+                    params.append('serviceTypeId', serviceTypeId.toString());
                 }
+                params.append('page', page.toString());
+                params.append('pageSize', pageSize.toString());
+                
+                url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.getByExpert(expertProfileId)}?${params.toString()}`;
             } else {
                 if (!categoryId || categoryId <= 0 || !serviceTypeId || serviceTypeId <= 0 || !latitude || !longitude || !locationRange || locationRange <= 0) {
                     console.warn('Invalid parameters:', { categoryId, serviceTypeId, latitude, longitude, locationRange });
@@ -116,16 +161,19 @@ export function useServices({
                 url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.list}?${params.toString()}`;
             }
 
-            console.log('Fetching services with URL:', url);
+            console.log('Fetching services with URL:', url, 'Requires auth:', requiresAuth);
+
+            const headers: Record<string, string> = {};
+            if (requiresAuth && token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
 
             const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                headers,
             });
 
             if (!response.ok) {
-                if (response.status === 401) {
+                if (response.status === 401 && requiresAuth) {
                     console.log('401 Unauthorized, signing out');
                     signOut();
                     throw new Error('Request failed with status 401');
@@ -144,60 +192,41 @@ export function useServices({
             console.log('🔍 useServices: Fetched services:', data);
             console.log('🔍 useServices: Data type:', typeof data, 'Array?', Array.isArray(data));
             
-            if (Array.isArray(data)) {
-                console.log('🔍 useServices: Services count:', data.length);
-                
-                // Buscar específicamente el servicio 154
-                const service154 = data.find((s: any) => s.id === 154);
-                if (service154) {
-                    console.log('✅ useServices: Service 154 FOUND in response:', {
-                        id: service154.id,
-                        isActive: service154.isActive,
-                        categoryId: service154.categoryId,
-                        serviceTypeId: service154.serviceTypeId,
-                        price: service154.price,
-                        expert: service154.expert ? {
-                            id: service154.expert.id,
-                            stripeAccountId: service154.expert.stripeAccountId
-                        } : null
-                    });
+            // Manejar respuesta paginada (cuando se usa expertProfileId)
+            let services: Service[] = [];
+            if (expertProfileId) {
+                // El endpoint ahora devuelve { services: [...], pagination: {...} }
+                const paginatedResponse = data as PaginatedResponse<Service>;
+                if (paginatedResponse.services && Array.isArray(paginatedResponse.services)) {
+                    services = paginatedResponse.services;
+                    console.log('🔍 useServices: Paginated response - services count:', services.length);
+                    console.log('🔍 useServices: Pagination info:', paginatedResponse.pagination);
+                } else if (Array.isArray(data)) {
+                    // Fallback: si viene como array directo (compatibilidad hacia atrás)
+                    services = data;
+                    console.log('🔍 useServices: Array response (fallback) - services count:', services.length);
                 } else {
-                    console.warn('⚠️ useServices: Service 154 NOT FOUND in response');
+                    console.warn('⚠️ useServices: Unexpected response format for expert services:', data);
+                    services = [];
                 }
-                
-                data.forEach((service, index) => {
-                    console.log(`🔍 useServices: Service ${index} (ID: ${service.id}):`, {
-                        id: service.id,
-                        isActive: service.isActive,
-                        selectedDeliverableTypes: (service as any).selectedDeliverableTypes,
-                        selectedDeliverableTypesLength: (service as any).selectedDeliverableTypes?.length || 0,
-                        allKeys: Object.keys(service)
-                    });
-                    if ((service as any).selectedDeliverableTypes) {
-                        console.log(`🔍 useServices: Service ${index} selectedDeliverableTypes details:`, (service as any).selectedDeliverableTypes);
-                        // NOTA: Esta es la estructura del endpoint de LISTADO:
-                        // [{ id, name, displayName, isRequired, isActive }]
-                        // NO tiene deliverableTypeId ni isSelected
-                    }
-                });
+            } else {
+                // Para otros endpoints, esperar array directo
+                if (Array.isArray(data)) {
+                    services = data;
+                    console.log('🔍 useServices: Array response - services count:', services.length);
+                } else {
+                    console.warn('⚠️ useServices: Expected array but got:', typeof data);
+                    services = [];
+                }
             }
             
             // Filtrar solo servicios activos (tanto para panel de experto como para clientes)
-            const filteredData = (data as Service[]).filter(service => {
+            const filteredData = services.filter(service => {
                 const isActive = service.isActive !== false;
-                if (service.id === 154) {
-                    console.log(`🔍 useServices: Filtering service 154 - isActive: ${service.isActive}, will pass: ${isActive}`);
-                }
                 return isActive;
             });
             
             console.log('🔍 useServices: Filtered services count:', filteredData.length);
-            const service154AfterFilter = filteredData.find(s => s.id === 154);
-            if (service154AfterFilter) {
-                console.log('✅ useServices: Service 154 PASSED filter');
-            } else {
-                console.warn('⚠️ useServices: Service 154 FILTERED OUT');
-            }
             
             return filteredData;
         },

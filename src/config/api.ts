@@ -1,3 +1,5 @@
+// En desarrollo, siempre usar localhost:7124 directamente
+// En producción, usar la URL completa de la API
 const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : 'https://api.atrapo.io'; 
 const API_PATH = '/api'; 
 
@@ -77,7 +79,8 @@ export const API_CONFIG = {
             create: `${API_PATH}/Notification`,
             delete: (id: string) => `${API_PATH}/Notification/${id}`,
             markAsRead: (id: string) => `${API_PATH}/Notification/${id}/read`,
-            markAllAsRead: `${API_PATH}/Notification/mark-all-read`,
+            markAllAsRead: `${API_PATH}/Notification/read-all`,
+            unreadCount: `${API_PATH}/Notification/unread-count`,
         },
         expert: {
             profile: `${API_PATH}/User/expert-profile`,
@@ -172,6 +175,15 @@ export const API_CONFIG = {
             // Mapeos de estado
             mappings: `${API_PATH}/SystemStatus/mappings`,
             mappingsById: (id: number) => `${API_PATH}/SystemStatus/mappings/${id}`,
+            
+            // Configuraciones
+            configurations: `${API_PATH}/SystemStatus/configurations`,
+        },
+        review: {
+            expert: (expertId: number) => `${API_PATH}/Review/expert/${expertId}`,
+        },
+        log: {
+            critical: `${API_PATH}/Log/critical`,
         },
         accountDeletion: {
             status: `${API_PATH}/AccountDeletion/status`,
@@ -181,6 +193,23 @@ export const API_CONFIG = {
         },
         financialTransaction: {
             myTransactions: `${API_PATH}/FinancialTransaction/my-transactions`,
+        },
+        userSettings: {
+            get: `${API_PATH}/UserSettings`,
+            update: `${API_PATH}/UserSettings`,
+            timezones: `${API_PATH}/UserSettings/timezones`,
+        },
+        admin: {
+            stripe: {
+                mode: `${API_PATH}/Admin/stripe/mode`,
+                toggleMode: `${API_PATH}/Admin/stripe/toggle-mode`,
+                webhooks: `${API_PATH}/Admin/stripe/webhooks`,
+                webhook: (webhookId: string) => `${API_PATH}/Admin/stripe/webhooks/${webhookId}`,
+            },
+        },
+        legal: {
+            terms: `${API_PATH}/Legal/terms`,
+            privacy: `${API_PATH}/Legal/privacy`,
         },
     },
 };

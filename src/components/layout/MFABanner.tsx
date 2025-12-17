@@ -26,13 +26,16 @@ export const MFABanner: React.FC = () => {
         }
     }, []);
 
+    // ✅ DESACTIVADO: MFA ya no es obligatorio - Banner siempre oculto
+    return null;
+    
     // No mostrar si:
     // 1. No requiere setup
     // 2. Usuario lo dismissió
     // 3. No hay período de gracia (ya configuró MFA)
-    if (!requiresSetup || isDismissed || gracePeriodDays === null) {
-        return null;
-    }
+    // if (!requiresSetup || isDismissed || gracePeriodDays === null) {
+    //     return null;
+    // }
 
     const handleDismiss = () => {
         setIsDismissed(true);

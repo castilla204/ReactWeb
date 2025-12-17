@@ -39,6 +39,9 @@ export interface ServiceInfo {
   expertLatitude: number | null;
   expertLongitude: number | null;
   locationRange: number | null;
+  // ✅ NUEVOS CAMPOS DE PAÍS Y TIMEZONE
+  expertTimezone: string | null; // Timezone del experto al momento de contratar
+  expertCountry: string | null; // ✅ NUEVO: País del experto al momento de contratar (ISO 3166-1 alpha-2)
 }
 
 export interface MoneyDistributionConfigDto {
@@ -129,6 +132,30 @@ export interface SearchHireDto {
   createdAt: string;
   expert: UserDto | null;
   service: ServiceInfo | null;
+  // ✅ NUEVOS CAMPOS DE PAÍS Y TIMEZONE
+  expertTimezone: string | null; // Timezone del experto al momento de contratar
+  expertCountry: string | null; // ✅ NUEVO: País del experto al momento de contratar (ISO 3166-1 alpha-2)
+  // ✅ NUEVOS CAMPOS DE STRIPE TAX
+  /**
+   * Monto total pagado (con IVA incluido).
+   * Este es el precio final que pagó el cliente.
+   * Ejemplo: €110 (incluye 21% IVA = €19.09)
+   */
+  amount?: number;
+  /**
+   * Base amount sin IVA/tax (pre-tax).
+   * Se calcula desde Stripe Tax breakdown.
+   * Si es null, significa que es un dato antiguo o no hay tax calculado.
+   * En ese caso, usar Amount como fallback.
+   * Ejemplo: €90.91 (base sin IVA)
+   */
+  baseAmount?: number;
+  /**
+   * Monto de IVA/tax calculado por Stripe Tax.
+   * Si es null o 0, no hay tax aplicado.
+   * Ejemplo: €19.09 (IVA del 21%)
+   */
+  taxAmount?: number;
 }
 
 export interface CategoryDto {
@@ -154,8 +181,22 @@ export interface AppointmentDto {
   searchHireId: number;
   status: string;
   statusInfo?: SystemStatusDto;  // ✅ ACTUALIZADO: Usar SystemStatusDto
-  proposedDate: string;
-  proposedTime: string;
+  
+  // ═══════════════════════════════════════════════════════════════
+  // ✅ CAMPOS DE FECHA (Internacionalización)
+  // ═══════════════════════════════════════════════════════════════
+  // Fechas en UTC (para cálculos, comparaciones, ordenamiento)
+  proposedDate: string;          // UTC (guardada en BD)
+  proposedTime: string;           // UTC (guardada en BD)
+  
+  // ✅ NUEVOS: Fechas en hora local del experto
+  proposedDateLocal?: string;    // Fecha propuesta en hora local
+  proposedTimeLocal?: string;     // Hora propuesta en hora local
+  
+  // ✅ NUEVOS: Información de internacionalización
+  timezone?: string;              // Timezone IANA (ej: "Europe/Madrid", "America/Mexico_City")
+  country?: string;              // País ISO 3166-1 alpha-2 (ej: "ES", "MX")
+  
   location: string;
   latitude: number | null;
   longitude: number | null;
@@ -289,4 +330,6 @@ export interface ExpertProfileDto {
   onboardingCompleted: boolean;
   isOnVacation: boolean;
   currentAvailability: CurrentExpertAvailabilityDto | null; // ✅ NUEVO CAMPO
+  timezone: string; // "Europe/Madrid", "America/Mexico_City", etc.
+  country: string | null; // ✅ NUEVO: Código ISO 3166-1 alpha-2 (ej: "ES", "US", "MX")
 }

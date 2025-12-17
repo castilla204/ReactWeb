@@ -41,6 +41,55 @@ export const handleStripeStatusChange = (data: StripeNotificationData) => {
                     message: baseMessage,
                     duration: 6000
                 };
+
+            case STRIPE_STATUS.ACTION_REQUIRED:
+                return {
+                    type: 'warning' as const,
+                    title: 'Acción requerida en Stripe',
+                    message: baseMessage,
+                    duration: 8000
+                };
+
+            case STRIPE_STATUS.PENDING_VERIFICATION:
+                return {
+                    type: 'info' as const,
+                    title: 'Stripe está verificando tu cuenta',
+                    message: baseMessage,
+                    duration: 6000
+                };
+
+            case STRIPE_STATUS.REQUIREMENTS_DUE:
+            case STRIPE_STATUS.RESTRICTED_SOON:
+                return {
+                    type: 'warning' as const,
+                    title: 'Actualiza tus datos en Stripe',
+                    message: baseMessage,
+                    duration: 7000
+                };
+
+            case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
+                return {
+                    type: 'error' as const,
+                    title: 'Pagos bloqueados en Stripe',
+                    message: baseMessage,
+                    duration: 9000
+                };
+
+            case STRIPE_STATUS.RESTRICTED:
+                return {
+                    type: 'warning' as const,
+                    title: 'Stripe restringió tu cuenta',
+                    message: baseMessage,
+                    duration: 9000
+                };
+
+            case STRIPE_STATUS.DISABLED:
+                return {
+                    type: 'error' as const,
+                    title: 'Stripe deshabilitó pagos/payouts',
+                    message: baseMessage,
+                    duration: 10000
+                };
                 
             case STRIPE_STATUS.DEAUTHORIZED:
                 return {
@@ -97,6 +146,20 @@ const getDefaultMessage = (status: string): string => {
             return 'Tu cuenta de Stripe ha sido rechazada. Por favor, revisa los requisitos e intenta nuevamente.';
         case STRIPE_STATUS.PENDING:
             return 'Tu cuenta está siendo verificada. Te notificaremos cuando esté lista.';
+        case STRIPE_STATUS.ACTION_REQUIRED:
+            return 'Stripe necesita información adicional para continuar. Completa los requisitos marcados.';
+        case STRIPE_STATUS.PENDING_VERIFICATION:
+            return 'Stripe está verificando tus documentos. Te avisaremos en cuanto finalice.';
+        case STRIPE_STATUS.REQUIREMENTS_DUE:
+            return 'Stripe detectó requisitos futuros. Actualiza tus datos para evitar bloqueos.';
+        case STRIPE_STATUS.RESTRICTED_SOON:
+            return 'Stripe restringirá tu cuenta pronto si no completas los requisitos.';
+        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
+            return 'Algunos requisitos vencieron y tus cobros están bloqueados.';
+        case STRIPE_STATUS.RESTRICTED:
+            return 'Stripe limitó temporalmente tu cuenta; revisa tu panel para resolverlo.';
+        case STRIPE_STATUS.DISABLED:
+            return 'Stripe deshabilitó tu cuenta por un incidente grave. Contacta a soporte.';
         case STRIPE_STATUS.DEAUTHORIZED:
             return 'Tu cuenta de Stripe ha sido desactivada. Contacta soporte para más información.';
         case STRIPE_STATUS.NOT_REQUESTED:
@@ -114,11 +177,15 @@ export const shouldNotifyStatusChange = (newStatus: string, oldStatus?: string):
     if (newStatus === oldStatus) return false;
     
     // Always notify for these status changes
-    const importantStatuses = [
-        STRIPE_STATUS.APPROVED,
-        STRIPE_STATUS.REJECTED,
-        STRIPE_STATUS.DEAUTHORIZED
-    ];
+      const importantStatuses = [
+          STRIPE_STATUS.APPROVED,
+          STRIPE_STATUS.REJECTED,
+          STRIPE_STATUS.DEAUTHORIZED,
+          STRIPE_STATUS.ACTION_REQUIRED,
+          STRIPE_STATUS.REQUIREMENTS_PAST_DUE,
+          STRIPE_STATUS.RESTRICTED,
+          STRIPE_STATUS.DISABLED
+      ];
     
     return importantStatuses.includes(newStatus as any) || 
            importantStatuses.includes(oldStatus as any);

@@ -7,7 +7,7 @@ interface StripeStatusModalProps {
     onClose: () => void;
     title: string;
     message: string;
-    action: 'setup' | 'wait' | 'success' | 'retry' | 'contact';
+    action: 'setup' | 'wait' | 'success' | 'retry' | 'contact' | 'complete_requirements' | 'edit_account';
     canRetry?: boolean;
     stripeStatus?: string;
     statusInfo?: any;
@@ -17,6 +17,7 @@ interface StripeStatusModalProps {
 const getStatusIcon = (action: string) => {
     switch (action) {
         case 'success':
+        case 'edit_account':
             return <CheckCircle className="w-12 h-12 text-green-600" />;
         case 'wait':
             return <Clock className="w-12 h-12 text-blue-600" />;
@@ -24,6 +25,8 @@ const getStatusIcon = (action: string) => {
             return <XCircle className="w-12 h-12 text-red-600" />;
         case 'contact':
             return <UserX className="w-12 h-12 text-purple-600" />;
+        case 'complete_requirements':
+            return <AlertTriangle className="w-12 h-12 text-amber-500" />;
         default:
             return <AlertTriangle className="w-12 h-12 text-orange-600" />;
     }
@@ -37,7 +40,10 @@ const getButtonClass = (action: string) => {
         case 'wait':
             return 'bg-blue-600 hover:bg-blue-700 text-white';
         case 'success':
+        case 'edit_account':
             return 'bg-green-600 hover:bg-green-700 text-white';
+        case 'complete_requirements':
+            return 'bg-amber-600 hover:bg-amber-700 text-white';
         case 'contact':
             return 'bg-purple-600 hover:bg-purple-700 text-white';
         default:
@@ -54,11 +60,38 @@ const getButtonText = (action: string) => {
         case 'wait':
             return 'Verificar Estado';
         case 'success':
-            return 'Acceder al Dashboard';
+        case 'edit_account':
+            return 'Abrir panel de Stripe';
+        case 'complete_requirements':
+            return 'Resolver en Stripe';
         case 'contact':
             return 'Contactar Soporte';
         default:
             return 'Continuar';
+    }
+};
+
+const getStripeBadgeClass = (status?: string) => {
+    switch (status) {
+        case STRIPE_STATUS.APPROVED:
+            return 'bg-green-100 text-green-800';
+        case STRIPE_STATUS.PENDING:
+        case STRIPE_STATUS.PENDING_VERIFICATION:
+            return 'bg-blue-100 text-blue-800';
+        case STRIPE_STATUS.ACTION_REQUIRED:
+        case STRIPE_STATUS.REQUIREMENTS_DUE:
+        case STRIPE_STATUS.RESTRICTED_SOON:
+            return 'bg-amber-100 text-amber-800';
+        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
+        case STRIPE_STATUS.RESTRICTED:
+            return 'bg-orange-100 text-orange-800';
+        case STRIPE_STATUS.DISABLED:
+        case STRIPE_STATUS.REJECTED:
+            return 'bg-red-100 text-red-800';
+        case STRIPE_STATUS.DEAUTHORIZED:
+            return 'bg-purple-100 text-purple-800';
+        default:
+            return 'bg-gray-100 text-gray-800';
     }
 };
 
@@ -82,15 +115,24 @@ export const StripeStatusModal: React.FC<StripeStatusModalProps> = ({
 
         if (isOpen) {
             document.addEventListener('keydown', handleEscape);
+            const originalOverflow = document.body.style.overflow;
             document.body.style.overflow = 'hidden';
-        }
+            
+            // Timeout de seguridad: restaurar después de 5 minutos si el modal no se cierra
+            const safetyTimeout = setTimeout(() => {
+                console.warn('[StripeStatusModal] Safety timeout - restoring body scroll');
+                document.body.style.overflow = originalOverflow || '';
+            }, 5 * 60 * 1000);
 
-        return () => {
-            document.removeEventListener('keydown', handleEscape);
-            document.body.style.overflow = 'unset';
-        };
+            return () => {
+                document.removeEventListener('keydown', handleEscape);
+                clearTimeout(safetyTimeout);
+                document.body.style.overflow = originalOverflow || '';
+            };
+        }
     }, [isOpen, onClose]);
 
+    // React manejará la eliminación del DOM cuando isOpen es false
     if (!isOpen) return null;
 
     const handleAction = () => {
@@ -101,7 +143,10 @@ export const StripeStatusModal: React.FC<StripeStatusModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            data-stripe-status-modal="true"
+        >
             {/* Backdrop */}
             <div 
                 className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
@@ -132,24 +177,25 @@ export const StripeStatusModal: React.FC<StripeStatusModalProps> = ({
                             {message}
                         </p>
                         
-                        {/* Display detailed status information if available */}
-                        {stripeStatus && statusInfo?.stripeStatusDetails && statusInfo.stripeStatusDetails !== message && (
-                            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                <p className="text-sm text-blue-800">
-                                    <span className="font-medium">Información adicional:</span> {statusInfo.stripeStatusDetails}
+                        {statusInfo?.deadlineText && (
+                            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                <p className="text-sm text-amber-900">
+                                    <span className="font-medium">Plazo:</span> {statusInfo.deadlineText}
+                                </p>
+                            </div>
+                        )}
+                        
+                        {statusInfo?.futureRequirementsText && (
+                            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                <p className="text-sm text-amber-900">
+                                    <span className="font-medium">Requisitos detectados:</span> {statusInfo.futureRequirementsText}
                                 </p>
                             </div>
                         )}
                         
                         {stripeStatus && (
                             <div className="mb-4">
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                    stripeStatus === STRIPE_STATUS.APPROVED ? 'bg-green-100 text-green-800' :
-                                    stripeStatus === STRIPE_STATUS.PENDING ? 'bg-blue-100 text-blue-800' :
-                                    stripeStatus === STRIPE_STATUS.REJECTED ? 'bg-red-100 text-red-800' :
-                                    stripeStatus === STRIPE_STATUS.DEAUTHORIZED ? 'bg-purple-100 text-purple-800' :
-                                    'bg-orange-100 text-orange-800'
-                                }`}>
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStripeBadgeClass(stripeStatus)}`}>
                                     Estado: {stripeStatus}
                                 </span>
                             </div>
@@ -210,7 +256,7 @@ export const useStripeStatusModal = () => {
     const showModal = (data: {
         title: string;
         message: string;
-        action: 'setup' | 'wait' | 'success' | 'retry' | 'contact';
+        action: 'setup' | 'wait' | 'success' | 'retry' | 'contact' | 'complete_requirements' | 'edit_account';
         canRetry?: boolean;
         stripeStatus?: string;
         statusInfo?: any;
