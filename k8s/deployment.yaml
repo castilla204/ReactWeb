@@ -27,8 +27,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
+        runAsUser: 101  # nginx user UID in nginx:alpine
+        fsGroup: 101
       containers:
       - name: react-web
         image: erizo9/reactweb:latest@sha256:283771d124626fc338cec58c8ca4b145b5954399e6e0d61f9524812c6b222e5d
