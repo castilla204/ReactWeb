@@ -11,8 +11,30 @@ export interface SearchHireResponseDto {
   status: string;
   statusTranslated: string;
   statusInfo?: SystemStatusDto; // ✅ NUEVO CAMPO
+  /**
+   * Monto total pagado (con IVA incluido).
+   * Este es el precio final que pagó el cliente.
+   * Ejemplo: €110 (incluye 21% IVA = €19.09)
+   */
   amount: number;
+  /**
+   * Base amount sin IVA/tax (pre-tax).
+   * Se calcula desde Stripe Tax breakdown.
+   * Si es null, significa que es un dato antiguo o no hay tax calculado.
+   * En ese caso, usar Amount como fallback.
+   * Ejemplo: €90.91 (base sin IVA)
+   */
+  baseAmount?: number;
+  /**
+   * Monto de IVA/tax calculado por Stripe Tax.
+   * Si es null o 0, no hay tax aplicado.
+   * Ejemplo: €19.09 (IVA del 21%)
+   */
+  taxAmount?: number;
   createdAt: string;
+  // ✅ NUEVOS: Información de internacionalización
+  expertTimezone?: string;      // Timezone IANA del experto al momento de la contratación
+  expertCountry?: string;        // País ISO del experto al momento de la contratación
   expert?: {
     id: number;
     name: string;
@@ -27,11 +49,19 @@ export interface SearchHireResponseDto {
   };
 }
 
-// ✅ HOOK PARA SEARCHHIRE/EXPERT
-export const useSearchHires = (type: 'client' | 'expert') => {
+// ✅ HOOK PARA SEARCHHIRE/EXPERT CON PAGINACIÓN
+export const useSearchHires = (type: 'client' | 'expert', page: number = 1, pageSize: number = 20) => {
   const [hires, setHires] = useState<SearchHireResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  } | null>(null);
   const { fetchApi } = useApi();
 
   useEffect(() => {
@@ -40,10 +70,10 @@ export const useSearchHires = (type: 'client' | 'expert') => {
         setLoading(true);
         setError(null);
         
-        console.log(`[useSearchHires] Fetching ${type} hires...`);
+        console.log(`[useSearchHires] Fetching ${type} hires (page ${page}, pageSize ${pageSize})...`);
         
-        const response = await fetchApi<SearchHireResponseDto[]>(
-          `/api/SearchHire/${type}`,
+        const response = await fetchApi<any>(
+          `/api/SearchHire/${type}?page=${page}&pageSize=${pageSize}`,
           {
             requiresAuth: true,
             headers: {
@@ -53,23 +83,36 @@ export const useSearchHires = (type: 'client' | 'expert') => {
         );
         
         console.log(`[useSearchHires] ${type} hires response:`, response);
-        setHires(response);
+        
+        // Manejar respuesta paginada o no paginada
+        if (response.hires && response.pagination) {
+          setHires(response.hires);
+          setPagination(response.pagination);
+        } else if (Array.isArray(response)) {
+          setHires(response);
+          setPagination(null);
+        } else {
+          setHires([]);
+          setPagination(null);
+        }
       } catch (err) {
         console.error(`[useSearchHires] Error fetching ${type} hires:`, err);
         setError(err instanceof Error ? err.message : 'Error desconocido');
         setHires([]);
+        setPagination(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchHires();
-  }, [type, fetchApi]);
+  }, [type, page, pageSize, fetchApi]);
 
   return { 
     hires, 
     loading, 
     error,
+    pagination,
     refetch: () => {
       setLoading(true);
       setError(null);

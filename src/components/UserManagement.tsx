@@ -1,7 +1,9 @@
-﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../hooks/useApi';
 import { Shield, CheckCircle, XCircle, Users, Search, CreditCard, Calendar, ArrowLeft } from 'lucide-react';
 import { UserAccountActions } from './UserAccountActions';
+import { Pagination } from './Pagination';
 
 interface User {
     id: number;
@@ -15,6 +17,18 @@ interface User {
     subscriptionPlan: string;
 }
 
+interface PaginatedUsersResponse {
+    users: User[];
+    pagination: {
+        page: number;
+        pageSize: number;
+        totalCount: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+    };
+}
+
 interface UserManagementProps {
     onBack: () => void;
 }
@@ -23,10 +37,12 @@ interface UserManagementProps {
 export function UserManagement({ onBack }: UserManagementProps) {
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
 
     const usersQuery = useQuery({
-        queryKey: ['users'],
-        queryFn: () => fetchApi<User[]>(`/api/User/all`),
+        queryKey: ['users', page, pageSize],
+        queryFn: () => fetchApi<PaginatedUsersResponse>(`/api/User/all?page=${page}&pageSize=${pageSize}`),
     });
 
 
@@ -117,7 +133,7 @@ export function UserManagement({ onBack }: UserManagementProps) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {usersQuery.data?.map((user) => (
+                                {usersQuery.data?.users?.map((user) => (
                                     <tr key={user.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
@@ -189,6 +205,24 @@ export function UserManagement({ onBack }: UserManagementProps) {
                             </tbody>
                         </table>
                     </div>
+                    {usersQuery.data?.pagination && (
+                        <Pagination
+                            page={usersQuery.data.pagination.page}
+                            pageSize={usersQuery.data.pagination.pageSize}
+                            totalCount={usersQuery.data.pagination.totalCount}
+                            totalPages={usersQuery.data.pagination.totalPages}
+                            hasNextPage={usersQuery.data.pagination.hasNextPage}
+                            hasPreviousPage={usersQuery.data.pagination.hasPreviousPage}
+                            onPageChange={(newPage) => {
+                                setPage(newPage);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            onPageSizeChange={(newPageSize) => {
+                                setPageSize(newPageSize);
+                                setPage(1);
+                            }}
+                        />
+                    )}
                 </div>
             </div>
         </div>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -29,7 +29,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
 import { ErrorDisplay } from '../components/ErrorDisplay';
-import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError } from '../hooks/useExpertStripeStatus';
+import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError, STRIPE_STATUS } from '../hooks/useExpertStripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
 import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
@@ -119,6 +119,8 @@ export function ExpertPanelPage() {
         dateTo: '',
     });
     const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: number]: number }>({});
+    const [hiresPage, setHiresPage] = useState(1);
+    const [hiresPageSize, setHiresPageSize] = useState(20);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -141,9 +143,9 @@ export function ExpertPanelPage() {
 
     const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService, updateService, isUpdatingService, deleteService, isDeletingService } = useServices({ expertProfileId: profile?.id });
 
-    const { hires, isLoading: isLoadingHires, error: hiresError } = useExpertHires();
+    const { hires, pagination: hiresPagination, isLoading: isLoadingHires, error: hiresError } = useExpertHires(hiresPage, hiresPageSize);
 
-    const { status: stripeStatus, statusInfo: stripeStatusInfo } = useExpertStripeStatus();
+    const { status: stripeStatus } = useExpertStripeStatus();
     const { modalState, hideModal } = useStripeStatusModal();
     const { openAccountLink, isLoading: isAccountLinkLoading } = useStripeAccountLink();
     const { toggleVacationMode, isToggling } = useVacationMode();
@@ -165,6 +167,12 @@ export function ExpertPanelPage() {
 
     // Limpiar cache cuando el estado cambia a aprobado (solo una vez)
     const [hasClearedCache, setHasClearedCache] = useState(false);
+    
+    // ✅ Estado para banner dismissible (debe estar antes de cualquier early return)
+    const [bannerDismissed, setBannerDismissed] = React.useState(() => {
+        const dismissed = localStorage.getItem('stripe-verification-banner-dismissed');
+        return dismissed === 'true';
+    });
     
     // Función para manejar el toggle del modo vacaciones
     const handleVacationModeToggle = async () => {
@@ -198,7 +206,7 @@ export function ExpertPanelPage() {
     };
     
     useEffect(() => {
-        if (stripeStatus?.stripeStatus === 'Approved' && stripeStatus?.onboardingCompleted && !hasClearedCache) {
+        if (stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted && !hasClearedCache) {
             console.log('🧹 ExpertPanelPage: Status changed to APPROVED, clearing cache and refreshing data');
             setHasClearedCache(true);
             // Limpiar cache y refrescar datos
@@ -448,8 +456,13 @@ export function ExpertPanelPage() {
                 selectedDeliverableTypes: formData.selectedDeliverableTypes,
             });
 
+            // Cerrar el Drawer primero y esperar a que se cierre completamente antes de resetear
             setShowServiceForm(false);
-            resetForm();
+            // Esperar a que la animación del Drawer termine completamente antes de resetear el estado
+            // Usar 600ms para asegurar que el Portal se desmonte completamente y evitar errores de removeChild
+            setTimeout(() => {
+                resetForm();
+            }, 600);
 
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
@@ -498,8 +511,13 @@ export function ExpertPanelPage() {
                 selectedDeliverableTypes: formData.selectedDeliverableTypes,
             });
 
+            // Cerrar el Drawer primero y esperar a que se cierre completamente antes de resetear
             setShowServiceForm(false);
-            resetForm();
+            // Esperar a que la animación del Drawer termine completamente antes de resetear el estado
+            // Usar 600ms para asegurar que el Portal se desmonte completamente y evitar errores de removeChild
+            setTimeout(() => {
+                resetForm();
+            }, 600);
 
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
@@ -725,7 +743,7 @@ export function ExpertPanelPage() {
                                 setIsStripeLoading(true);
                                 try {
                                     // Si es Rejected y puede reintentar, usar restart-onboarding
-                                    if (stripeStatus?.stripeStatus === 'Rejected' && stripeStatus?.canRetryOnboarding !== false) {
+                                    if (stripeStatus?.stripeStatus === STRIPE_STATUS.REJECTED && stripeStatus?.canRetryOnboarding !== false) {
                                         await restartAndStartOnboarding();
                                     } else {
                                         // Para NotRequested, Pending (onboardingCompleted=false), y Deauthorized
@@ -777,6 +795,11 @@ export function ExpertPanelPage() {
             </>
         );
     }
+
+    const handleDismissBanner = () => {
+        setBannerDismissed(true);
+        localStorage.setItem('stripe-verification-banner-dismissed', 'true');
+    };
 
     return (
         <div className="min-h-screen bg-background flex">
@@ -1117,7 +1140,10 @@ export function ExpertPanelPage() {
                                     showServiceForm={showServiceForm}
                                     setShowServiceForm={(value) => {
                                         if (value) {
-                                            resetForm(); // Resetear cuando se abre para crear nuevo servicio
+                                            // Solo resetear si el drawer no está abierto (para evitar conflictos)
+                                            if (!showServiceForm) {
+                                                resetForm(); // Resetear cuando se abre para crear nuevo servicio
+                                            }
                                         }
                                         setShowServiceForm(value);
                                     }}
@@ -1141,6 +1167,9 @@ export function ExpertPanelPage() {
                                     setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as any })}
                                     handleViewHire={handleViewHire}
                                     categories={categories}
+                                    pagination={hiresPagination}
+                                    onPageChange={setHiresPage}
+                                    onPageSizeChange={setHiresPageSize}
                                 />
                                     )}
                                 </CardContent>
@@ -1154,7 +1183,11 @@ export function ExpertPanelPage() {
                         showServiceForm={showServiceForm}
                         setShowServiceForm={(value) => {
                             if (!value) {
-                                resetForm(); // Resetear cuando se cierra el formulario
+                                // Esperar a que el drawer se cierre completamente antes de resetear
+                                // para evitar errores de removeChild cuando React intenta desmontar el Portal
+                                setTimeout(() => {
+                                    resetForm();
+                                }, 600);
                             }
                             setShowServiceForm(value);
                         }}

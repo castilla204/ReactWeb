@@ -20,6 +20,8 @@ import {
     Plus,
     WifiOff,
     RefreshCw,
+    Shield,
+    X,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
@@ -28,6 +30,7 @@ import { useAppointmentStatuses, getAppointmentStatusText } from '../hooks/useAp
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from './ui/empty';
 import { Button } from './ui/button';
+import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 
 // ✅ NUEVOS IMPORTS PARA SISTEMA DE ESTADOS
 import StatusBadge from './StatusBadge';
@@ -35,7 +38,7 @@ import { getStatusInfoWithFallback } from '../utils/statusUtils';
 import { useErrorHandler, isNetworkError } from '../hooks/useErrorHandler';
 import type { SearchItem, SearchFilters, PaginationMetadata } from '../hooks/useSearch.hooks';
 import { useNavigate } from 'react-router-dom';
-import { MFABanner } from './layout/MFABanner';
+import { mfaService } from '../services/mfaService';
 
 
 interface SearchDashboardProps {
@@ -115,13 +118,15 @@ interface Filters {
 }
 
 const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
-    const { user } = useAuth();
+    const { user, isAuthenticated } = useAuth();
     const { categories } = useCategories();
     const {
         searchesWithFilters, // ✅ NUEVO: Hook unificado con filtros
         reviseSearch: reviseSearchMutation,
     } = useSearch();
     const navigate = useNavigate();
+    const [showMfaRecommendationBanner, setShowMfaRecommendationBanner] = useState(false);
+    const [mfaEnabled, setMfaEnabled] = useState<boolean | null>(null);
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [filters, setFilters] = useState<Filters>({
@@ -246,6 +251,47 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         
         return () => window.removeEventListener('resize', checkIsMobile);
     }, []);
+
+    // ✅ Verificar estado de MFA para mostrar recomendación
+    useEffect(() => {
+        const checkMfaStatus = async () => {
+            if (!isAuthenticated) {
+                setMfaEnabled(null);
+                setShowMfaRecommendationBanner(false);
+                return;
+            }
+
+            try {
+                const mfaStatus = await mfaService.getMFAStatus();
+                setMfaEnabled(mfaStatus.isEnabled);
+                
+                // Mostrar banner solo si:
+                // 1. MFA no está habilitado
+                // 2. El banner no ha sido cerrado (localStorage)
+                const bannerDismissed = localStorage.getItem('mfa-recommendation-banner-dismissed') === 'true';
+                if (!mfaStatus.isEnabled && !bannerDismissed) {
+                    setShowMfaRecommendationBanner(true);
+                } else {
+                    setShowMfaRecommendationBanner(false);
+                }
+            } catch (error) {
+                console.error('[SearchDashboard] Error checking MFA status:', error);
+                setMfaEnabled(null);
+                setShowMfaRecommendationBanner(false);
+            }
+        };
+
+        checkMfaStatus();
+    }, [isAuthenticated]);
+
+    const handleDismissMfaRecommendation = () => {
+        setShowMfaRecommendationBanner(false);
+        localStorage.setItem('mfa-recommendation-banner-dismissed', 'true');
+    };
+
+    const handleSetupMfa = () => {
+        navigate('/mfa/setup');
+    };
 
 
     const isAdmin = user?.role === 'Admin' || user?.email?.trim().toLowerCase() === 'dcastillaa@gmail.com'.toLowerCase();
@@ -468,19 +514,14 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* MFA Banner */}
-            <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-6">
-                <MFABanner />
-            </div>
-            
             {/* Header Section */}
             <div className="bg-white border-b border-gray-200/60">
-                <div className="max-w-7xl mx-auto px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center gap-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-12 sm:h-16">
+                        <div className="flex items-center gap-3 sm:gap-6">
                             <button
                                 onClick={() => navigate('/')}
-                                className="p-2 -ml-2 hover:bg-gray-50/80 rounded-lg transition-colors duration-150 text-gray-400 hover:text-gray-700"
+                                className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 hover:bg-gray-50/80 rounded-lg transition-colors duration-150 text-gray-400 hover:text-gray-700"
                                 aria-label="Volver"
                             >
                                 <ArrowLeft className="w-4 h-4" strokeWidth={2} />
@@ -491,9 +532,9 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                             {isAdmin && (
                                 <button
                                     onClick={() => navigate('/admin')}
-                                    className="inline-flex items-center px-3 py-1.5 text-xs font-normal text-gray-600 hover:text-gray-900 hover:bg-gray-50/80 rounded-lg transition-all duration-150"
+                                    className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-normal text-gray-600 hover:text-gray-900 hover:bg-gray-50/80 rounded-lg transition-all duration-150"
                                 >
-                                    <Settings className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
+                                    <Settings className="w-3.5 h-3.5 sm:mr-1.5" strokeWidth={1.5} />
                                     <span className="hidden sm:inline">Admin</span>
                                 </button>
                             )}
@@ -520,7 +561,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-8 py-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-10">
                 {/* ✅ Mensaje simple para errores de red */}
                 {isNetworkErr && (
                     <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -757,7 +798,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                     </EmptyHeader>
                 </Empty>
             ) : (viewMode === 'grid' || isMobile) ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 auto-rows-fr">
                     {filteredSearches.map((search) => {
                         const hasUnreadMessages = search.unreadMessagesCount > 0;
 
@@ -765,143 +806,109 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                             <div
                                 key={search.id}
                                 onClick={() => handleSearchClick(search.id)}
-                                className={`group bg-white border border-gray-200 rounded-lg p-5 hover:shadow-lg hover:border-gray-300 cursor-pointer transition-all duration-200 ${isAdmin && !search.isRevised
-                                        ? 'border-red-200 bg-red-50/30'
-                                        : ''
-                                    } relative overflow-hidden`}
+                                className={`group bg-white rounded-2xl p-5 cursor-pointer transition-all duration-300 relative overflow-hidden
+                                    border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] hover:border-blue-100/50 hover:-translate-y-1
+                                    ${isAdmin && !search.isRevised ? 'ring-2 ring-red-100 bg-red-50/10' : ''}
+                                `}
                             >
-                                {/* Status indicator */}
-                                {isAdmin && !search.isRevised && (
-                                    <div className="absolute top-4 right-4 w-2 h-2 bg-red-500 rounded-full"></div>
-                                )}
-                                
-                                {/* Header */}
-                                <div className="flex items-start justify-between mb-5">
-                                    <div className="flex-1 min-w-0 pr-3">
-                                        <h3 className="text-lg font-semibold text-gray-900 line-clamp-1 leading-snug group-hover:text-blue-600 transition-colors mb-3 tracking-tight">
-                                                    {search.title}
-                                                </h3>
-                                        {search.description && (
-                                            <div>
-                                                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Descripción</p>
-                                                <p className="text-sm text-gray-700 line-clamp-2 leading-relaxed font-normal">
-                                            {search.description}
-                                        </p>
-                                        </div>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                            {isAdmin && search.isRevised && (
-                                            <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center" title="Revisada">
-                                                <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                                                </div>
+                                {/* Header: Title + Badge */}
+                                <div className="flex justify-between items-start mb-3 gap-3">
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-[17px] font-bold text-gray-900 leading-snug group-hover:text-blue-600 transition-colors line-clamp-1 mb-1">
+                                            {search.title}
+                                        </h3>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                            <span className="flex items-center gap-1">
+                                                <Calendar className="w-3.5 h-3.5" />
+                                                {new Date(search.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                                            </span>
+                                            {search.locationName && (
+                                                <>
+                                                    <span>•</span>
+                                                    <span className="flex items-center gap-1 truncate max-w-[120px]">
+                                                        <MapPin className="w-3.5 h-3.5" />
+                                                        <span className="truncate">{search.locationName}</span>
+                                                    </span>
+                                                </>
                                             )}
-                                        <div className="relative" title={hasUnreadMessages ? `${search.unreadMessagesCount} mensajes sin leer` : 'Sin mensajes nuevos'}>
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                                    hasUnreadMessages 
-                                                        ? 'bg-red-100' 
-                                                        : 'bg-gray-100'
-                                                }`}>
-                                                <MessageSquare className={`w-3.5 h-3.5 ${
-                                                        hasUnreadMessages 
-                                                            ? 'text-red-600' 
-                                                            : 'text-gray-400'
-                                                    }`} />
-                                                </div>
-                                                {search.unreadMessagesCount > 0 && (
-                                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                                                        {search.unreadMessagesCount > 9 ? '9+' : search.unreadMessagesCount}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {search.hasPendingAppointment ? (
-                                            <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center" title={getLocalAppointmentStatusText(search.pendingAppointmentStatus)}>
-                                                <Calendar className="w-3.5 h-3.5 text-orange-600" />
-                                                </div>
-                                            ) : (
-                                            <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center" title="Sin cita contratada">
-                                                <CalendarX className="w-3.5 h-3.5 text-gray-500" />
-                                                </div>
-                                            )}
-                                        </div>
-                                </div>
-                                
-                                {/* Meta Info */}
-                                <div className="flex items-center justify-between mb-5 pb-5 border-b border-gray-100">
-                                    <div className="flex items-center gap-3">
-                                        <CategoryImage categoryId={search.category} categoryName={Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'} size="sm" />
-                                        <div>
-                                            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">Categoría</p>
-                                            <p className="text-sm font-semibold text-gray-900 tracking-tight">{Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'}</p>
                                         </div>
                                     </div>
                                     
-                                    {/* Location and Date */}
-                                    <div className="flex flex-col items-end gap-2 text-right">
-                                        {search.locationName && (
-                                            <div>
-                                                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">Ubicación</p>
-                                                <div className="flex items-center gap-1.5 text-sm text-gray-800 font-normal">
-                                                    <MapPin className="w-3.5 h-3.5 text-gray-500" />
-                                                <span className="truncate max-w-32">{search.locationName}</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div>
-                                            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">Fecha de creación</p>
-                                            <div className="flex items-center gap-1.5 text-sm text-gray-800 font-normal">
-                                                <Calendar className="w-3.5 h-3.5 text-gray-500" />
-                                            <span>{new Date(search.createdAt).toLocaleDateString('es-ES', { 
-                                                day: 'numeric', 
-                                                    month: 'short',
-                                                    year: 'numeric'
-                                            })}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                {/* Status and Expert */}
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3 flex-wrap">
-                                        <div>
-                                            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Estado</p>
-                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium ${getActivityStatus(search) === 'Activa' 
-                                                ? 'bg-green-50 text-green-700 border border-green-200' 
-                                                : 'bg-gray-50 text-gray-600 border border-gray-200'}`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${getActivityStatus(search) === 'Activa' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                                                {getActivityStatus(search)}
-                                        </span>
-                                        </div>
-                                            {search.searchHire && (
-                                            <div>
-                                                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Contratación</p>
-                                                <StatusBadge 
-                                                    statusInfo={getStatusInfoWithFallback(
+                                    {/* Status Badge */}
+                                    {search.searchHire && (
+                                        <div className="flex-shrink-0">
+                                            <StatusBadge 
+                                                statusInfo={(() => {
+                                                    const info = getStatusInfoWithFallback(
                                                         search.searchHire.statusInfo,
                                                         search.searchHire.status
-                                                    )}
-                                                    size="sm"
-                                                />
+                                                    );
+                                                    if (search.searchHire.status === 'pending' || info?.statusValue === 'pending') {
+                                                        return {
+                                                            ...info,
+                                                            statusTranslated: 'Servicio activo'
+                                                        };
+                                                    }
+                                                    return info;
+                                                })()}
+                                                size="sm"
+                                                className="shadow-sm"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Description */}
+                                <p className="text-sm text-gray-600 line-clamp-2 mb-4 min-h-[40px] leading-relaxed">
+                                    {search.description || 'Sin descripción adicional'}
+                                </p>
+
+                                {/* Category & Messages */}
+                                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-50">
+                                    <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50/80 rounded-lg group-hover:bg-blue-50/50 transition-colors">
+                                        <CategoryImage categoryId={search.category} categoryName={Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'} size="sm" />
+                                        <span className="text-xs font-semibold text-gray-700">
+                                            {Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'}
+                                        </span>
                                     </div>
-                                            )}
-                                        {search.searchHire?.expert && (
-                                            <div>
-                                                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Experto</p>
-                                                <div className="flex items-center gap-2">
+
+                                    {hasUnreadMessages && (
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-medium animate-pulse">
+                                            <MessageSquare className="w-3.5 h-3.5" />
+                                            <span>{search.unreadMessagesCount} nuevos</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Footer: Expert Info */}
+                                <div className="flex items-center justify-between pt-1">
+                                    {search.searchHire?.expert ? (
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="relative">
                                                 <img
                                                     src={search.searchHire.expert.profilePictureUrl || '/default-avatar.png'}
-                                                    alt={`${search.searchHire.expert.name}'s profile`}
-                                                        className="w-6 h-6 rounded-full object-cover border border-gray-200"
-                                        />
-                                                    <span className="text-sm font-medium text-gray-900 truncate max-w-24 tracking-tight">
-                                                {search.searchHire.expert.name}
-                                                    </span>
-                                        </div>
+                                                    alt="Expert"
+                                                    className="w-8 h-8 rounded-full object-cover ring-2 ring-white shadow-sm"
+                                                />
+                                                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full ring-2 ring-white"></div>
                                             </div>
-                                        )}
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Experto</span>
+                                                <span className="text-xs font-bold text-gray-900 truncate max-w-[100px]">{search.searchHire.expert.name}</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 text-gray-400">
+                                            <div className="w-8 h-8 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center">
+                                                <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
+                                            </div>
+                                            <span className="text-xs font-medium">Pendiente de experto</span>
+                                        </div>
+                                    )}
+                                    
+                                    <div className="w-8 h-8 rounded-full bg-gray-50 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center transition-all duration-300 shadow-sm">
+                                        <ChevronRight className="w-4 h-4" />
                                     </div>
-                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors flex-shrink-0" />
                                 </div>
                             </div>
                         );

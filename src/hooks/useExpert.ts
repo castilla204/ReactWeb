@@ -1,8 +1,8 @@
-﻿import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
-import { ExpertProfileResponse, OnboardingStatusResponse, CurrentExpertAvailabilityDto } from '../types/stripe';
+import { ExpertProfileResponse, OnboardingStatusResponse, CurrentExpertAvailabilityDto, StripeStatus } from '../types/stripe';
 
 interface ExpertProfile {
     id: number;
@@ -12,13 +12,15 @@ interface ExpertProfile {
     pendingStripeAccountId: string | null;
     onboardingCompleted: boolean;
     canAccessStripe?: boolean;
-    stripeStatus: "NotRequested" | "Pending" | "Approved" | "Rejected" | "Deauthorized";
+    stripeStatus: StripeStatus;
     stripeStatusDetails: string | null; // Mensaje detallado del estado
     createdAt: string;
     isOnVacation: boolean;
     latitude?: string;
     longitude?: string;
     currentAvailability?: CurrentExpertAvailabilityDto | null;
+    stripeFutureRequirements?: string | null;
+    stripeFutureDueAt?: string | null;
 }
 
 interface Search {
@@ -105,6 +107,8 @@ export function useExpert() {
                 canAccessStripe: true, // This might need to be determined from other fields
                 stripeStatus: data.stripeStatus,
                 stripeStatusDetails: data.stripeStatusDetails,
+                stripeFutureRequirements: data.stripeFutureRequirements ?? null,
+                stripeFutureDueAt: data.stripeFutureDueAt ?? null,
                 createdAt: data.createdAt,
                 isOnVacation: data.isOnVacation || false,
                 latitude: data.latitude,
@@ -143,7 +147,10 @@ export function useExpert() {
                 throw new Error('No authentication token found');
             }
 
-            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.hires.listAsExpert}`, {
+            // Agregar paginación (por ahora usamos valores por defecto, se puede hacer configurable después)
+            const page = 1;
+            const pageSize = 20;
+            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.hires.listAsExpert}?page=${page}&pageSize=${pageSize}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -159,7 +166,14 @@ export function useExpert() {
             }
 
             const data = await response.json();
-            setSearches(data);
+            // Manejar respuesta paginada o no paginada
+            if (data.hires && data.pagination) {
+                setSearches(data.hires);
+            } else if (Array.isArray(data)) {
+                setSearches(data);
+            } else {
+                setSearches([]);
+            }
             lastFetchRef.current[cacheKey] = now;
         } catch (error) {
             console.error('Error fetching searches:', error);

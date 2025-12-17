@@ -94,12 +94,21 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="w-4 h-4" />
                     <span className="font-medium text-foreground">
-                      {new Date(appointment.proposedDate).toLocaleDateString('es-ES', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })} {appointment.proposedTime.substring(0, 5)}
+                      {(() => {
+                        // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
+                        const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
+                        const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
+                        return (
+                          <>
+                            {new Date(dateToUse).toLocaleDateString('es-ES', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })} {timeToUse.substring(0, 5)}
+                          </>
+                        );
+                      })()}
                     </span>
                   </div>
                   <div className="flex items-start gap-2 text-sm text-muted-foreground">

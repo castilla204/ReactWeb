@@ -34,6 +34,15 @@
   }
 }
 
+@keyframes caret-blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
 @layer base {
     :root {
         --background: 0 0% 100%;
@@ -128,10 +137,37 @@
         background: #f1f5f9;
     }
 
-    /* Professional focus rings for scrollable areas */
+    /* Professional focus rings for scrollable areas - REMOVED */
     *:focus-visible {
-        outline: 2px solid #3b82f6;
-        outline-offset: 2px;
+        outline: none !important;
+        outline-offset: 0 !important;
+    }
+    
+    /* Remove any purple/violet outlines and borders */
+    * {
+        outline-color: transparent !important;
+    }
+    
+    *:focus,
+    *:focus-visible,
+    *:active,
+    *:focus-within {
+        outline: none !important;
+        outline-offset: 0 !important;
+        box-shadow: none !important;
+    }
+    
+    /* Remove selection outline */
+    *::selection {
+        background-color: transparent;
+    }
+    
+    /* Remove any purple borders from Radix UI or other libraries */
+    [data-radix-collection-item],
+    [data-radix-focus-guard],
+    [data-radix-portal] {
+        outline: none !important;
+        border: none !important;
     }
 
         /* Remove focus outline from range sliders */
@@ -209,10 +245,6 @@ input, textarea {
     @apply w-full px-6 py-4 text-lg bg-white/90 backdrop-blur-sm border-0 focus:ring-2 focus:ring-blue-500/20 transition-all;
 }
 
-/* Footer styles */
-.footer-link {
-    @apply text-gray-500 hover:text-gray-700 transition-colors;
-}
 
 /* Hide scrollbar but keep functionality */
 .hide-scrollbar {
@@ -384,3 +416,13 @@ input, textarea {
 }
 
 /* Calendar styles - Minimal CSS to avoid conflicts */
+
+/* Forzar que las banderas no tengan border-radius */
+img[alt*="España"],
+img[alt*="País"],
+img[alt*="country"],
+.country-flag-img {
+    border-radius: 0 !important;
+    -webkit-border-radius: 0 !important;
+    -moz-border-radius: 0 !important;
+}

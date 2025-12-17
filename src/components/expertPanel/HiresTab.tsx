@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
+import { Pagination } from '../Pagination';
+import { getPriceDisplay } from '../../utils/priceUtils';
 
 interface Hire { 
     id: number; 
@@ -37,9 +39,9 @@ interface Hire {
     };
 }
 
-interface HiresTabProps { activeTab: 'services' | 'hires'; hireTab: 'active' | 'inactive'; hires: Hire[]; isLoadingHires: boolean; hiresError: Error | null; filters: { clientName: string; status: string; dateFrom: string; dateTo: string }; setHireTab: (value: 'active' | 'inactive') => void; setFilters: (value: { clientName: string; status: string; dateFrom: string; dateTo: string }) => void; handleViewHire: (hireId: number | null) => void; categories: { id: number; name: string }[] | undefined; }
+interface HiresTabProps { activeTab: 'services' | 'hires'; hireTab: 'active' | 'inactive'; hires: Hire[]; isLoadingHires: boolean; hiresError: Error | null; filters: { clientName: string; status: string; dateFrom: string; dateTo: string }; setHireTab: (value: 'active' | 'inactive') => void; setFilters: (value: { clientName: string; status: string; dateFrom: string; dateTo: string }) => void; handleViewHire: (hireId: number | null) => void; categories: { id: number; name: string }[] | undefined; pagination?: { page: number; pageSize: number; totalCount: number; totalPages: number; hasNextPage: boolean; hasPreviousPage: boolean } | null; onPageChange?: (page: number) => void; onPageSizeChange?: (pageSize: number) => void; }
 
-export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError, filters, setHireTab, setFilters, handleViewHire, categories, }: HiresTabProps) {
+export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError, filters, setHireTab, setFilters, handleViewHire, categories, pagination, onPageChange, onPageSizeChange, }: HiresTabProps) {
     if (!activeTab || activeTab !== 'hires') return null;
 
     // ✅ NUEVA LÓGICA: Usar isFinalizationStatus del statusInfo del backend
@@ -282,14 +284,16 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                             
                                             <div className="flex items-center gap-1.5">
                                                 <Euro className="w-3 h-3 text-muted-foreground" />
-                                                <span className="font-bold text-foreground">
-                                                    {new Intl.NumberFormat('es-ES', {
-                                                        style: 'currency',
-                                                        currency: 'EUR',
-                                                        minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2,
-                                                    }).format(hire.amount)}
-                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-foreground">
+                                                        {getPriceDisplay(hire).formattedTotal}
+                                                    </span>
+                                                    {getPriceDisplay(hire).hasTaxInfo && (
+                                                        <span className="text-xs text-muted-foreground">
+                                                            IVA incluido
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -326,6 +330,22 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                             </CardContent>
                         </Card>
                     ))}
+                </div>
+            )}
+
+            {/* Paginación */}
+            {pagination && onPageChange && onPageSizeChange && (
+                <div className="mt-6">
+                    <Pagination
+                        page={pagination.page}
+                        pageSize={pagination.pageSize}
+                        totalCount={pagination.totalCount}
+                        totalPages={pagination.totalPages}
+                        hasNextPage={pagination.hasNextPage}
+                        hasPreviousPage={pagination.hasPreviousPage}
+                        onPageChange={onPageChange}
+                        onPageSizeChange={onPageSizeChange}
+                    />
                 </div>
             )}
         </div>
