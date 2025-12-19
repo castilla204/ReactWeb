@@ -19,6 +19,11 @@ permissions:
   contents: read
   security-events: write
 
+# Concurrency control - Best Practice 2025: Evita ejecuciones duplicadas
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: docker.io
   IMAGE_NAME: erizo9/reactweb
@@ -344,22 +349,3 @@ jobs:
           echo "📦 Image pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo "🚀 ArgoCD will automatically deploy when it detects the new image"
           echo "🔍 Check ArgoCD UI: https://argocd.inspecciono.com"
-
-
-
-
-
-
-
-
-
-
-
-    permissions:
-      contents: write
-
-
-
-
-
-

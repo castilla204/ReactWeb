@@ -380,8 +380,8 @@ const AppContent: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                     <img src={logoImg} alt="Logo" className="w-5 h-5 object-contain" style={{ imageRendering: '-webkit-optimize-contrast' }} />
                                     <h1 className="text-sm font-medium text-foreground/90 tracking-tight bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent antialiased" style={{ fontFeatureSettings: '"kern" 1', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
-                                        inspecciono.com
-                                    </h1>
+                                    inspecciono.com
+                                </h1>
                                 </div>
                             </div>
                             <nav className="flex-1 overflow-y-auto p-4">
