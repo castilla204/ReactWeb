@@ -47,11 +47,15 @@ import SearchDetails from './components/SearchDetails';
 import { GoogleAuth } from './components/GoogleAuth';
 import { setupRateLimitHandler } from './services/rateLimitHandler';
 import { authService } from './services/authService';
+import { setupErrorInterceptor } from './services/errorInterceptor';
 import { MFASetupPage } from './pages/MFASetupPage';
 import { ProtectedRouteWithMFA } from './components/layout/ProtectedRouteWithMFA';
 import { UserRole } from './utils/roleChecker';
 import CountryFlag from './components/CountryFlag';
 import CountrySelector from './components/CountrySelector';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { StatusPage } from './pages/StatusPage';
 import logoImg from './media/logoi.png';
 
 const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
@@ -80,6 +84,9 @@ const AppContent: React.FC = () => {
         
         // 2. Configurar rate limiting (debe ir después del authService)
         setupRateLimitHandler();
+        
+        // 3. Configurar interceptor de errores HTTP (debe ir después de rateLimitHandler)
+        setupErrorInterceptor();
     }, []);
     
     // Ocultar header en móvil cuando se está en las páginas del formulario (SearchParameterForm o SearchForm)
@@ -564,6 +571,7 @@ const AppContent: React.FC = () => {
                             {/* <Route path="/verify-phone" element={<PhoneVerificationPage />} /> */}
                             <Route path="/privacy-policy.html" element={<PrivacyPolicy />} />
                             <Route path="/terms.html" element={<TermsPage />} />
+                            <Route path="/status" element={<StatusPage />} />
                             <Route path="/success" element={<PaymentSuccessPage />} />
                             <Route path="/cancel" element={<PaymentCancelPage />} />
                             <Route path="/ad/:id" element={<AdDetails onBack={() => window.history.back()} />} />
@@ -589,6 +597,9 @@ const AppContent: React.FC = () => {
                             <Route path="/transacciones" element={<ProtectedRouteWithMFA><TransactionsPage /></ProtectedRouteWithMFA>} />
                             <Route path="/crear-busqueda" element={<SearchCreationPage />} />
                             <Route path="/" element={<SearchCreationPage />} />
+                            
+                            {/* Ruta 404 - debe ir al final */}
+                            <Route path="*" element={<NotFoundPage />} />
                         </Routes>
                     </section>
                 </main>
@@ -603,9 +614,11 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = React.memo(() => {
     return (
-        <Router>
-            <AppContent />
-        </Router>
+        <ErrorBoundary>
+            <Router>
+                <AppContent />
+            </Router>
+        </ErrorBoundary>
     );
 });
 
