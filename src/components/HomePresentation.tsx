@@ -873,7 +873,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                         <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
                             Contrata un experto verificado en 3 pasos simples y protege tu inversión
                         </p>
-                    </div>
+                                </div>
 
                     {/* Steps */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
@@ -883,12 +883,12 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 {/* Number Badge */}
                                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600 font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
                                     1
-                                </div>
+                                                </div>
                                 
                                 {/* Icon */}
                                 <div className="mb-6">
                                     <Search className="w-12 h-12 text-blue-600" />
-                                </div>
+                                                    </div>
                                 
                                 {/* Content */}
                                 <h3 className="text-xl font-bold text-gray-900 mb-3">
@@ -897,15 +897,15 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 <p className="text-gray-600 leading-relaxed">
                                     Introduce la URL del anuncio y selecciona tu categoría. Busca entre expertos verificados cerca de ti.
                                 </p>
-                            </div>
+                                                </div>
                             
                             {/* Connector Arrow */}
                             <div className="hidden md:block absolute top-1/2 -right-6 transform -translate-y-1/2 z-10">
                                 <svg className="w-12 h-12 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                 </svg>
-                            </div>
-                        </div>
+                                            </div>
+                                            </div>
 
                         {/* Step 2 */}
                         <div className="relative group">
@@ -913,14 +913,14 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 {/* Number Badge */}
                                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600 font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
                                     2
-                                </div>
+                                            </div>
                                 
                                 {/* Icon */}
                                 <div className="mb-6">
                                     <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                </div>
+                                        </div>
                                 
                                 {/* Content */}
                                 <h3 className="text-xl font-bold text-gray-900 mb-3">
@@ -929,7 +929,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 <p className="text-gray-600 leading-relaxed">
                                     Elige fecha y hora. Paga de forma segura con Stripe. Tu dinero queda protegido hasta que confirmes el servicio.
                                 </p>
-                            </div>
+                                </div>
                             
                             {/* Connector Arrow */}
                             <div className="hidden md:block absolute top-1/2 -right-6 transform -translate-y-1/2 z-10">
@@ -945,7 +945,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 {/* Number Badge */}
                                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600 font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
                                     3
-                                </div>
+                    </div>
                                 
                                 {/* Icon */}
                                 <div className="mb-6">
