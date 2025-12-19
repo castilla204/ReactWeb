@@ -138,3 +138,4 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
           wait-for-processing: false
+# Trigger rebuild
