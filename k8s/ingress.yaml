@@ -7,6 +7,7 @@ metadata:
     app: react-web
     managed-by: argocd
   annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
@@ -26,6 +27,7 @@ metadata:
     nginx.ingress.kubernetes.io/content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com https://js.stripe.com https://static.elfsight.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://api.atrapo.io https://accounts.google.com https://api.stripe.com https://checkout.stripe.com https://*.elfsight.com; frame-src 'self' https://accounts.google.com https://js.stripe.com https://hooks.stripe.com https://*.elfsight.com; frame-ancestors 'none';"
     nginx.ingress.kubernetes.io/configuration-snippet: |
       more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
+      try_files $uri $uri/ /index.html;
     nginx.ingress.kubernetes.io/server-snippet: |
       server_tokens off;
 spec:
