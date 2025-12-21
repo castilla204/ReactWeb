@@ -39,9 +39,7 @@ metadata:
     # Content Security Policy
     nginx.ingress.kubernetes.io/content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com https://js.stripe.com https://static.elfsight.com https://universe-static.elfsightcdn.com https://*.elfsightcdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://api.atrapo.io https://api.inspecciono.io https://accounts.google.com https://api.stripe.com https://checkout.stripe.com https://*.elfsight.com https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com; frame-src 'self' https://accounts.google.com https://js.stripe.com https://hooks.stripe.com https://*.elfsight.com; frame-ancestors 'none';"
     
-    # HSTS (Strict Transport Security)
     
-    # Ocultar versión de nginx
     
     # NOTA: NO usar rewrite-target para React SPA cuando path es /
     # El nginx dentro del pod ya tiene try_files configurado
