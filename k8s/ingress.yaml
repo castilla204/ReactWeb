@@ -46,8 +46,6 @@ metadata:
     # Rate limiting (100 req/s)
     nginx.ingress.kubernetes.io/rate-limit: "100"
     
-    # NOTA IMPORTANTE: NO usar rewrite-target cuando path es /
-    # El rewrite-target solo es necesario si necesitas reescribir rutas
     # Con path: / y pathType: Prefix, no es necesario
 spec:
   ingressClassName: nginx
