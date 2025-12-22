@@ -26,6 +26,10 @@ spec:
     - CreateNamespace=false
     - PrunePropagationPolicy=foreground
     - PruneLast=true
+    - ServerSideApply=true
+    - RespectIgnoreDifferences=true
+    - FailOnSharedResource=true
+    - SyncTimeoutSeconds=300
     retry:
       limit: 5
       backoff:
