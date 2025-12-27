@@ -45,6 +45,7 @@ import TransactionsPage from './pages/TransactionsPage';
 import { AccountSettingsModal } from './components/AccountSettingsModal';
 import SearchDetails from './components/SearchDetails';
 import { GoogleAuth } from './components/GoogleAuth';
+import { GoogleSignInButton } from './components/GoogleSignInButton';
 import { setupRateLimitHandler } from './services/rateLimitHandler';
 import { authService } from './services/authService';
 import { setupErrorInterceptor } from './services/errorInterceptor';
@@ -346,27 +347,9 @@ const AppContent: React.FC = () => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             ) : (
-                                /* Botón de login con GoogleAuth integrado - oculto en móvil */
-                                <div className="relative hidden lg:block">
-                                    {/* GoogleAuth oculto */}
-                                    <div className="absolute opacity-0 pointer-events-none">
-                                        <GoogleAuth />
-                                    </div>
-                                    {/* Botón visible que activa GoogleAuth */}
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                            // Buscar y hacer clic en el botón de Google Auth
-                                            const googleButton = document.querySelector('#googleButton div[role="button"]') as HTMLElement;
-                                            if (googleButton) {
-                                                googleButton.click();
-                                            }
-                                        }}
-                                        className="h-9 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-white hover:bg-blue-600 dark:hover:bg-blue-500 rounded-lg transition-all duration-200 border border-gray-300 dark:border-gray-700 hover:border-blue-600 dark:hover:border-blue-500"
-                                    >
-                                        Iniciar Sesión
-                                    </Button>
+                                /* Botón de login con Google - oculto en móvil */
+                                <div className="hidden lg:block">
+                                    <GoogleSignInButton variant="compact" />
                                 </div>
                             )}
                         </div>
@@ -527,29 +510,13 @@ const AppContent: React.FC = () => {
                                         </button>
                                     </>
                                 ) : (
-                                    /* Botón de login con GoogleAuth integrado */
+                                    /* Botón de login con Google */
                                     <div className="space-y-3">
                                         <p className="text-sm font-normal text-muted-foreground text-center">Inicia sesión para acceder a todas las funciones</p>
-                                        <div className="relative">
-                                            {/* GoogleAuth oculto */}
-                                            <div className="absolute opacity-0 pointer-events-none">
-                                                <GoogleAuth />
-                                            </div>
-                                            {/* Botón visible que activa GoogleAuth */}
-                                            <button
-                                                onClick={() => {
-                                                    // Buscar y hacer clic en el botón de Google Auth
-                                                    const googleButton = document.querySelector('#googleButton div[role="button"]') as HTMLElement;
-                                                    if (googleButton) {
-                                                        googleButton.click();
-                                                    }
-                                                    setSidebarOpen(false);
-                                                }}
-                                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-foreground hover:text-primary border border-border rounded-lg transition-colors"
-                                            >
-                                                Iniciar Sesión
-                                            </button>
-                                        </div>
+                                        <GoogleSignInButton 
+                                            variant="default"
+                                            onSuccess={() => setSidebarOpen(false)}
+                                        />
                                     </div>
                                 )}
                             </div>
