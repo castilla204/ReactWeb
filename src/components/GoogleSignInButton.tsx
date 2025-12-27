@@ -170,42 +170,84 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
         };
     }, [setUser, navigate, onSuccess, variant]);
 
-    // Para la variante compact, necesitamos ocultar el botón nativo y mostrar uno personalizado
+    // Función para hacer clic en el botón renderizado de Google (igual que en el paso 2)
     const handleCustomClick = () => {
         if (!isReady || !buttonRef.current) {
             console.warn('Google Sign-In not ready yet');
             return;
         }
 
-        // Hacer clic en el botón renderizado de Google
+        // Buscar el botón renderizado de Google (igual que en ServiceReviewPage)
         const googleButton = buttonRef.current.querySelector('div[role="button"]') as HTMLElement;
         if (googleButton) {
+            // Crear y dispatchar eventos para máxima compatibilidad (especialmente en móvil)
+            const events = ['mousedown', 'mouseup', 'click'];
+            events.forEach(eventType => {
+                const event = new MouseEvent(eventType, {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                googleButton.dispatchEvent(event);
+            });
+            
+            // También hacer clic directo
             googleButton.click();
+            
+            // Para móvil, intentar eventos táctiles también
+            if ('ontouchstart' in window) {
+                const touchEvents = ['touchstart', 'touchend'];
+                touchEvents.forEach(eventType => {
+                    try {
+                        const touchEvent = new TouchEvent(eventType, {
+                            bubbles: true,
+                            cancelable: true
+                        } as TouchEventInit);
+                        googleButton.dispatchEvent(touchEvent);
+                    } catch (e) {
+                        // TouchEvent puede no estar disponible en algunos navegadores
+                    }
+                });
+            }
+        } else {
+            // Fallback: usar prompt si el botón no está disponible
+            if (window.google?.accounts?.id?.prompt) {
+                window.google.accounts.id.prompt();
+            }
         }
     };
 
-    // Si es compact, mostrar botón personalizado que activa el botón nativo oculto
-    if (variant === 'compact') {
-        return (
-            <div className="relative" ref={wrapperRef}>
-                {/* Botón nativo de Google oculto */}
-                <div ref={buttonRef} className="absolute opacity-0 pointer-events-none" style={{ width: '1px', height: '1px', overflow: 'hidden' }}></div>
-                {/* Botón personalizado visible */}
-                <button
-                    onClick={handleCustomClick}
-                    disabled={!isReady}
-                    className={`h-9 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-white hover:bg-blue-600 dark:hover:bg-blue-500 rounded-lg transition-all duration-200 border border-gray-300 dark:border-gray-700 hover:border-blue-600 dark:hover:border-blue-500 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-                >
-                    <GoogleIcon />
-                    <span>Iniciar Sesión</span>
-                </button>
-            </div>
-        );
-    }
+    // Para ambas variantes, usar botón personalizado que activa el botón nativo oculto
+    // Esto asegura que funcione correctamente incluso cuando el componente está oculto inicialmente
+    const compactClasses = 'h-9 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-white hover:bg-blue-600 dark:hover:bg-blue-500 rounded-lg transition-all duration-200 border border-gray-300 dark:border-gray-700 hover:border-blue-600 dark:hover:border-blue-500 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    const defaultClasses = 'w-full bg-white text-gray-900 font-semibold py-4 px-6 rounded-xl text-base transition-colors border-2 border-gray-200 hover:border-gray-300 active:bg-gray-50 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
-    // Para la variante default, mostrar el botón nativo directamente
     return (
-        <div ref={buttonRef} className={`w-full ${className}`}></div>
+        <div className="relative" ref={wrapperRef}>
+            {/* Botón nativo de Google oculto - siempre renderizado para funcionalidad */}
+            <div 
+                ref={buttonRef} 
+                className="absolute opacity-0 pointer-events-none" 
+                style={{ 
+                    position: 'absolute', 
+                    opacity: 0, 
+                    pointerEvents: 'none', 
+                    zIndex: -1,
+                    width: variant === 'compact' ? '1px' : '100%',
+                    height: variant === 'compact' ? '1px' : 'auto',
+                    overflow: 'hidden'
+                }}
+            ></div>
+            {/* Botón personalizado visible */}
+            <button
+                onClick={handleCustomClick}
+                disabled={!isReady}
+                className={`${variant === 'compact' ? compactClasses : defaultClasses} ${className}`}
+            >
+                <GoogleIcon />
+                <span>Iniciar Sesión</span>
+            </button>
+        </div>
     );
 };
 

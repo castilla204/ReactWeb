@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useNavigate } from 'react-router-dom';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import {
     Drawer,
     DrawerContent,
@@ -19,138 +20,6 @@ import {
     DialogTitle,
 } from './ui/dialog';
 
-// Google SVG Icon Component
-const GoogleIcon = () => (
-    <svg className="w-5 h-5" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-    </svg>
-);
-
-// Declaración de tipos para Google Sign-In
-declare global {
-    interface Window {
-        google?: {
-            accounts: {
-                id: {
-                    initialize: (config: any) => void;
-                    prompt: () => void;
-                };
-            };
-        };
-    }
-}
-
-// Componente para botón de inicio de sesión con Google en Homepage
-const GoogleSignInButton = () => {
-    const [isReady, setIsReady] = useState(false);
-    const { setUser } = useAuth();
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        // Inicializar Google Auth cuando el componente se monta
-        const initGoogleAuth = () => {
-            if (window.google?.accounts?.id) {
-                const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
-                
-                window.google.accounts.id.initialize({
-                    client_id: clientId,
-                    callback: async (response: any) => {
-                        try {
-                            if (!response.credential) {
-                                throw new Error('No credential received from Google');
-                            }
-
-                            const { authService } = await import('../services/authService');
-                            const result = await authService.googleAuth(response.credential);
-                            
-                            if (!result.success) {
-                                throw new Error('Authentication failed');
-                            }
-
-                            setUser(result.user);
-                            localStorage.setItem('userData', JSON.stringify(result.user));
-                            
-                            // Redirigir según el rol
-                            const token = authService.getAccessToken();
-                            if (token) {
-                                const { RoleChecker } = await import('../utils/roleChecker');
-                                const userRole = RoleChecker.getUserRole(token);
-                                const requiresMfa = RoleChecker.requiresMfa(userRole);
-                                
-                                if (requiresMfa) {
-                                    const { mfaService } = await import('../services/mfaService');
-                                    try {
-                                        const mfaStatus = await mfaService.getMFAStatus();
-                                        if (mfaStatus.isEnabled) {
-                                            navigate('/mfa/verify', { state: { returnTo: '/busquedas' } });
-                                            return;
-                                        }
-                                    } catch (error) {
-                                        console.error('Error checking MFA status:', error);
-                                    }
-                                }
-                            }
-                            
-                            navigate('/busquedas');
-                        } catch (error) {
-                            console.error('Error during Google authentication:', error);
-                        }
-                    },
-                    auto_select: false,
-                    cancel_on_tap_outside: false,
-                });
-                
-                setIsReady(true);
-            } else {
-                // Reintentar después de un delay
-                setTimeout(initGoogleAuth, 500);
-            }
-        };
-
-        // Esperar a que el script de Google se cargue
-        if (document.readyState === 'complete') {
-            initGoogleAuth();
-        } else {
-            window.addEventListener('load', initGoogleAuth);
-        }
-
-        return () => {
-            window.removeEventListener('load', initGoogleAuth);
-        };
-    }, [setUser, navigate]);
-
-    const handleClick = () => {
-        if (!isReady) {
-            console.warn('Google Sign-In not ready yet');
-            return;
-        }
-
-        try {
-            // Usar el método prompt() directamente
-            if (window.google?.accounts?.id?.prompt) {
-                window.google.accounts.id.prompt();
-            } else {
-                console.error('Google prompt method not available');
-            }
-        } catch (error) {
-            console.error('Error triggering Google Sign-In:', error);
-        }
-    };
-
-    return (
-        <button
-            onClick={handleClick}
-            disabled={!isReady}
-            className="w-full bg-white text-gray-900 font-semibold py-4 px-6 rounded-xl text-base transition-colors border-2 border-gray-200 hover:border-gray-300 active:bg-gray-50 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-            <GoogleIcon />
-            <span>Iniciar Sesión</span>
-        </button>
-    );
-};
 
 // Importar imágenes directamente
 import motoAguaImg from '../media/motoagua.png';
@@ -349,109 +218,132 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-white/80 to-transparent z-0"></div>
                     </div>
 
-            {/* Hero móvil - Diseño Premium y Vibrante */}
-            <div className="lg:hidden relative min-h-[calc(100dvh-60px)] z-20 flex flex-col justify-center px-6 pt-4 pb-12">
-                {/* Contenido principal con Glassmorphism suave */}
-                <div className="relative z-10 w-full max-w-sm mx-auto text-center space-y-6">
+            {/* Hero móvil - Diseño profesional marketplace */}
+            <div className="lg:hidden relative min-h-[calc(100dvh-64px)] z-20 flex flex-col">
+                <div className="flex-1 flex flex-col justify-center px-5 pt-8 pb-6">
+                    <div className="w-full max-w-md mx-auto space-y-7">
                     
-                    {/* Badge destacado */}
-                    <div className="inline-flex items-center gap-2 bg-blue-50/80 backdrop-blur-sm text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold border border-blue-100 shadow-sm mx-auto mb-2">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                                </span>
-                        <span>Servicios desde 25€ en todo el mundo</span>
+                        {/* Badge simple y profesional */}
+                        <div className="inline-flex items-center gap-2 text-sm text-gray-600">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            <span>Disponible en 50+ países</span>
                             </div>
                             
-                    {/* Título principal - Grande y centrado */}
-                    <h1 className="text-4xl xs:text-5xl font-extrabold text-gray-900 leading-[1.1] tracking-tight">
+                        {/* Título - Tipografía más natural */}
+                        <div className="space-y-3">
+                            <h1 className="text-[2.5rem] leading-[1.15] font-semibold text-gray-900 tracking-[-0.01em]">
                         No compres <br/>
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">a ciegas</span>
+                                <span className="text-blue-600 font-medium">a ciegas</span>
                             </h1>
-                            
-                    {/* Subtítulo y palabra cambiante */}
-                    <div className="text-lg text-gray-600 leading-relaxed font-medium">
+                            <p className="text-[1.05rem] text-gray-600 leading-relaxed">
                         Revisamos tu{' '}
-                        <span className="relative inline-block font-bold text-gray-900 min-w-[70px] text-left">
-                            <span className={`${isGlitching ? 'glitch-effect' : ''} transition-all`}>
+                                <span className="font-semibold text-gray-900">
                                 {isGlitching ? glitchText : currentWord}
-                            </span>
-                            <span className="absolute bottom-0 left-0 w-full h-[3px] bg-blue-500/30 rounded-full"></span>
                         </span>
                         {' '}antes de que pagues.
+                            </p>
                     </div>
                             
-                    {/* Botón principal CTA - Full width con sombra */}
-                    <div className="pt-4 w-full">
+                        {/* Estadísticas integradas */}
+                        <div className="flex items-center gap-5 text-sm text-gray-500 pt-1">
+                            <div className="flex items-center gap-1.5">
+                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 002 2h2.945M15 15v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3m0-4V9a2 2 0 012-2h2.945M15 5v3a2 2 0 01-2 2H9a2 2 0 00-2 2v1m6-6V5a2 2 0 012-2h2a2 2 0 012 2v1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span><strong className="text-gray-900 font-medium">2.5k+</strong> inspecciones</span>
+                            </div>
+                            <div className="w-px h-4 bg-gray-300"></div>
+                            <div className="flex items-center gap-1.5">
+                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span><strong className="text-gray-900 font-medium">500+</strong> expertos</span>
+                            </div>
+                        </div>
+                                
+                        {/* Botón principal - Diseño marketplace */}
+                        <div className="pt-3">
                                 <button
                                     onClick={onScrollToForm}
-                            className="w-full bg-gray-900 text-white font-bold text-lg py-4 px-8 rounded-2xl shadow-xl shadow-blue-900/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
+                                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium text-base py-3.5 px-6 rounded-lg active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
                                 >
-                            <span>Calcular precio</span>
-                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                                <span>Empezar ahora</span>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
                                 </button>
                     </div>
                     
                     {/* Botón secundario Google */}
                                 {!isAuthenticated && (
-                        <div className="w-full scale-95 opacity-90">
+                            <div className="w-full">
                             <GoogleSignInButton />
                                     </div>
                                 )}
+                    </div>
+                </div>
                             
-                    {/* Social proof minimalista */}
-                    <div className="pt-8 flex items-center justify-center gap-4 opacity-80">
-                        <div className="flex -space-x-2">
-                            {[1,2,3].map(i => (
-                                <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500 overflow-hidden`}>
+                {/* Social proof - Parte inferior */}
+                <div className="px-5 pb-8">
+                    <div className="max-w-md mx-auto">
+                        <div className="flex items-center justify-center gap-4">
+                            <div className="flex -space-x-3">
+                                {[1,2,3,4].map(i => (
+                                    <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden shadow-sm">
                                     <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" className="w-full h-full object-cover" />
                                 </div>
                                         ))}
                                     </div>
                         <div className="text-left">
-                            <div className="flex text-yellow-400 text-xs">★★★★★</div>
-                            <div className="text-xs font-semibold text-gray-600">+2.5k clientes felices</div>
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                    <div className="flex text-yellow-400 text-sm">★★★★★</div>
+                                    <span className="text-xs text-gray-500 font-medium">4.9</span>
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                    <strong className="text-gray-900 font-medium">2,500+</strong> clientes satisfechos
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Sección de formulario móvil - Diseño limpio */}
-            <div id="form-section" className="lg:hidden relative z-10 w-full bg-gray-50 px-4 min-h-[calc(100dvh-60px)] flex flex-col justify-center py-8">
-                <div className="max-w-lg mx-auto w-full flex flex-col gap-8 sm:gap-12">
+            {/* Sección de formulario móvil - Diseño profesional */}
+            <div id="form-section" className="lg:hidden relative z-10 w-full bg-white px-5 py-12">
+                <div className="max-w-lg mx-auto w-full space-y-8">
                     {/* Header */}
-                    <div>
-                        <h2 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">
-                            Calcula el precio
+                    <div className="space-y-2">
+                        <h2 className="text-[1.9rem] font-semibold text-gray-900 tracking-tight">
+                            Encuentra tu experto
                         </h2>
-                        <p className="text-base text-gray-600 leading-relaxed">
-                            Completa el formulario y obtén una cotización personalizada en segundos.
+                        <p className="text-[0.95rem] text-gray-600 leading-relaxed">
+                            Selecciona el tipo de servicio y categoría para comenzar
                         </p>
                     </div>
 
-                    {/* Formulario - Contenedor limpio */}
-                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                        {/* Tipo de servicio - Estilo Airbnb */}
+                    {/* Formulario - Diseño limpio marketplace */}
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                        {/* Tipo de servicio */}
                         <div className="relative service-type-dropdown border-b border-gray-200">
                             <button
                                 onClick={() => {
                                     setIsCategoryOpen(false);
                                     setIsServiceTypeOpen(!isServiceTypeOpen);
                                 }}
-                                className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                                className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
                             >
                                 <div className="flex-1">
-                                    <div className="text-xs font-semibold text-gray-900 mb-0.5">Tipo de servicio</div>
-                                    <div className={searchForm.serviceTypeId ? 'text-sm text-gray-900 font-medium' : 'text-sm text-gray-500'}>
+                                    <div className="text-xs font-medium text-gray-700 mb-1">Tipo de servicio</div>
+                                    <div className={searchForm.serviceTypeId ? 'text-base text-gray-900 font-medium' : 'text-base text-gray-400'}>
                                         {searchForm.serviceTypeId 
                                             ? serviceTypes.find(st => st.id === searchForm.serviceTypeId)?.name || 'Seleccionar'
-                                            : 'Seleccionar'}
+                                            : 'Selecciona un tipo'}
                                     </div>
                                 </div>
                                 <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${isServiceTypeOpen ? 'rotate-180' : ''}`} />
                             </button>
                             {isServiceTypeOpen && (
-                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-80 overflow-y-auto">
+                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto">
                                     {serviceTypesLoading ? (
                                         <div className="px-6 py-4 text-sm text-gray-500">Cargando...</div>
                                     ) : serviceTypes.length > 0 ? (
@@ -477,12 +369,12 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             )}
                         </div>
                         
-                        {/* Categoría - Estilo Airbnb con chips arriba */}
+                        {/* Categoría */}
                         <div className="border-b border-gray-200 pb-4">
-                            <div className="text-xs font-semibold text-gray-900 mb-3 px-6 pt-4">Categoría</div>
+                            <div className="text-xs font-medium text-gray-700 mb-3 px-5 pt-4">Categoría</div>
                             
-                            {/* Categorías visibles (primeras 3-4) */}
-                            <div className="px-6">
+                            {/* Categorías visibles */}
+                            <div className="px-5">
                                 <div className="flex flex-wrap gap-2">
                                     {categories.slice(0, 4).map((cat) => (
                                         <button
@@ -490,7 +382,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                             onClick={() => {
                                                 setSearchForm({...searchForm, categoryId: cat.id});
                                             }}
-                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                                                 searchForm.categoryId === cat.id
                                                     ? 'bg-gray-900 text-white'
                                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -579,13 +471,14 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             </div>
                         </div>
                         
-                        {/* Botón buscar - Estilo Airbnb circular */}
-                        <div className="px-6 pb-6 pt-2">
+                        {/* Botón buscar */}
+                        <div className="px-5 pb-5 pt-2">
                             <button
                                 onClick={handleSearch}
-                                className="w-full bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-full p-3.5 transition-colors shadow-md hover:shadow-lg flex items-center justify-center"
+                                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium text-base py-3.5 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
                             >
                                 <Search className="w-5 h-5" />
+                                <span>Buscar expertos</span>
                             </button>
                         </div>
                     </div>
@@ -1367,6 +1260,82 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                     visibility: hidden !important;
                     opacity: 0 !important;
                     pointer-events: none !important;
+                }
+                
+                /* Animaciones modernas 2025 */
+                @keyframes slide-down {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                .animate-slide-down {
+                    animation: slide-down 0.3s ease-out;
+                }
+                
+                @keyframes gradient-shift {
+                    0%, 100% {
+                        background-position: 0% 50%;
+                    }
+                    50% {
+                        background-position: 100% 50%;
+                    }
+                }
+                .animate-gradient-shift {
+                    animation: gradient-shift 3s ease infinite;
+                }
+                
+                /* Efecto de brillo en botones */
+                @keyframes shine {
+                    0% {
+                        transform: translateX(-100%);
+                    }
+                    100% {
+                        transform: translateX(100%);
+                    }
+                }
+                
+                /* Mejoras en glassmorphism */
+                .backdrop-blur-xl {
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                }
+                
+                /* Animación de entrada mejorada */
+                @keyframes fade-in-up-smooth {
+                    from {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                .animate-fade-in-up {
+                    animation: fade-in-up-smooth 0.8s ease-out;
+                }
+                
+                .animate-fade-in-up-delayed {
+                    animation: fade-in-up-smooth 0.8s ease-out 0.2s both;
+                }
+                
+                .animate-fade-in-up-delayed-2 {
+                    animation: fade-in-up-smooth 0.8s ease-out 0.4s both;
+                }
+                
+                .animate-fade-in-up-delayed-3 {
+                    animation: fade-in-up-smooth 0.8s ease-out 0.6s both;
+                }
+                
+                /* Efecto de hover mejorado para cards */
+                .hover\:shadow-3xl:hover {
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
                 }
             `}</style>
         </div>
