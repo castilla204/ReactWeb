@@ -202,7 +202,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: castilla204/k8s-configs
-          token: ${{ secrets.GITHUB_TOKEN || secrets.PAT_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           path: k8s-configs
 
       - name: Setup SSH
