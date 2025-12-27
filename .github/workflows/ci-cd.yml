@@ -18,6 +18,7 @@ on:
 permissions:
   contents: read
   security-events: write
+  repositories: read
 
 # Concurrency control - Best Practice 2025: Evita ejecuciones duplicadas
 concurrency:
@@ -201,7 +202,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: castilla204/k8s-configs
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN || secrets.PAT_TOKEN }}
           path: k8s-configs
 
       - name: Setup SSH
