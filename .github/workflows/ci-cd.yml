@@ -18,7 +18,6 @@ on:
 permissions:
   contents: read
   security-events: write
-  repositories: read
 
 # Concurrency control - Best Practice 2025: Evita ejecuciones duplicadas
 concurrency:
