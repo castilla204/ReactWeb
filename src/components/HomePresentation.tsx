@@ -182,8 +182,69 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
         <div className="relative w-full bg-white">
 
             {/* Hero móvil - Diseño profesional marketplace */}
-            <div className="lg:hidden relative min-h-[calc(100dvh-64px)] z-20 flex flex-col bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700">
-                <div className="flex-1 flex flex-col justify-center px-5 pt-8 pb-6">
+            <div className="lg:hidden relative min-h-[calc(100dvh-64px)] z-20 flex flex-col bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 overflow-hidden">
+                {/* Olas multicolor estilo Stripe */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[3]">
+                    <svg className="absolute bottom-0 left-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1200 200" style={{ height: '60%' }}>
+                        <defs>
+                            <linearGradient id="waveGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+                                <stop offset="50%" stopColor="#6366f1" stopOpacity="0.5" />
+                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.4" />
+                            </linearGradient>
+                            <linearGradient id="waveGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+                                <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.5" />
+                                <stop offset="100%" stopColor="#a855f7" stopOpacity="0.3" />
+                            </linearGradient>
+                            <linearGradient id="waveGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
+                                <stop offset="50%" stopColor="#a855f7" stopOpacity="0.4" />
+                                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.3" />
+                            </linearGradient>
+                        </defs>
+                        <g className="stripe-wave-1">
+                            <path
+                                d="M0,100 Q300,50 600,100 T1200,100 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient1)"
+                            />
+                        </g>
+                        <g className="stripe-wave-2">
+                            <path
+                                d="M0,120 Q300,70 600,120 T1200,120 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient2)"
+                            />
+                        </g>
+                        <g className="stripe-wave-3">
+                            <path
+                                d="M0,140 Q300,90 600,140 T1200,140 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient3)"
+                            />
+                        </g>
+                    </svg>
+                </div>
+                
+                {/* Copos de nieve animados - Móvil */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[5]">
+                    {[...Array(40)].map((_, i) => (
+                        <div
+                            key={`snow-mobile-${i}`}
+                            className="absolute text-white animate-snowflake"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: `${-10 - Math.random() * 20}%`,
+                                animationDelay: `${Math.random() * 5}s`,
+                                animationDuration: `${8 + Math.random() * 12}s`,
+                                fontSize: `${12 + Math.random() * 16}px`,
+                                opacity: 0.8 + Math.random() * 0.2,
+                                filter: 'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8))',
+                            }}
+                        >
+                            ❄
+                        </div>
+                    ))}
+                </div>
+                <div className="flex-1 flex flex-col justify-center px-5 pt-8 pb-6 relative z-10">
                     <div className="w-full max-w-md mx-auto space-y-7">
                     
                         {/* Badge simple y profesional */}
@@ -458,6 +519,69 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
 
             {/* Hero Desktop - Con fondo degradado y texto blanco */}
             <div className="relative z-10 w-full hidden lg:flex min-h-[calc(100vh-64px)] items-start justify-center px-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 overflow-x-hidden">
+                {/* Olas multicolor estilo Stripe - Desktop */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[3]" style={{
+                    clipPath: 'polygon(0 0, 62% 0, 58% 100%, 0 100%)'
+                }}>
+                    <svg className="absolute bottom-0 left-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1200 200" style={{ height: '60%' }}>
+                        <defs>
+                            <linearGradient id="waveGradient1-desktop" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+                                <stop offset="50%" stopColor="#6366f1" stopOpacity="0.5" />
+                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.4" />
+                            </linearGradient>
+                            <linearGradient id="waveGradient2-desktop" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+                                <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.5" />
+                                <stop offset="100%" stopColor="#a855f7" stopOpacity="0.3" />
+                            </linearGradient>
+                            <linearGradient id="waveGradient3-desktop" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
+                                <stop offset="50%" stopColor="#a855f7" stopOpacity="0.4" />
+                                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.3" />
+                            </linearGradient>
+                        </defs>
+                        <g className="stripe-wave-1">
+                            <path
+                                d="M0,100 Q300,50 600,100 T1200,100 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient1-desktop)"
+                            />
+                        </g>
+                        <g className="stripe-wave-2">
+                            <path
+                                d="M0,120 Q300,70 600,120 T1200,120 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient2-desktop)"
+                            />
+                        </g>
+                        <g className="stripe-wave-3">
+                            <path
+                                d="M0,140 Q300,90 600,140 T1200,140 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient3-desktop)"
+                            />
+                        </g>
+                    </svg>
+                </div>
+                
+                {/* Copos de nieve animados */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[5]">
+                    {[...Array(60)].map((_, i) => (
+                        <div
+                            key={`snow-${i}`}
+                            className="absolute text-white animate-snowflake"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: `${-10 - Math.random() * 20}%`,
+                                animationDelay: `${Math.random() * 5}s`,
+                                animationDuration: `${8 + Math.random() * 12}s`,
+                                fontSize: `${12 + Math.random() * 16}px`,
+                                opacity: 0.8 + Math.random() * 0.2,
+                                filter: 'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8))',
+                            }}
+                        >
+                            ❄
+                        </div>
+                    ))}
+                </div>
                 {/* Fondo degradado para el lado izquierdo */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700" style={{
                     clipPath: 'polygon(0 0, 62% 0, 58% 100%, 0 100%)'
@@ -1275,6 +1399,95 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 .hover\:shadow-3xl:hover {
                     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
                 }
+                
+                /* Animación de copos de nieve */
+                @keyframes snowflake {
+                    0% {
+                        transform: translateY(-100vh) translateX(0) rotate(0deg);
+                        opacity: 0;
+                    }
+                    10% {
+                        opacity: 0.8;
+                    }
+                    50% {
+                        opacity: 1;
+                    }
+                    90% {
+                        opacity: 0.8;
+                    }
+                    100% {
+                        transform: translateY(100vh) translateX(30px) rotate(360deg);
+                        opacity: 0;
+                    }
+                }
+                
+                .animate-snowflake {
+                    animation: snowflake linear infinite;
+                    pointer-events: none;
+                    user-select: none;
+                    will-change: transform, opacity;
+                }
+                
+                /* Olas estilo Stripe - Animación multicolor */
+                @keyframes stripe-wave-1 {
+                    0%, 100% {
+                        transform: translateY(0) translateX(0);
+                    }
+                    25% {
+                        transform: translateY(-10px) translateX(20px);
+                    }
+                    50% {
+                        transform: translateY(-5px) translateX(10px);
+                    }
+                    75% {
+                        transform: translateY(-15px) translateX(-10px);
+                    }
+                }
+                
+                @keyframes stripe-wave-2 {
+                    0%, 100% {
+                        transform: translateY(0) translateX(0);
+                    }
+                    25% {
+                        transform: translateY(5px) translateX(-15px);
+                    }
+                    50% {
+                        transform: translateY(10px) translateX(15px);
+                    }
+                    75% {
+                        transform: translateY(5px) translateX(-5px);
+                    }
+                }
+                
+                @keyframes stripe-wave-3 {
+                    0%, 100% {
+                        transform: translateY(0) translateX(0);
+                    }
+                    25% {
+                        transform: translateY(-8px) translateX(10px);
+                    }
+                    50% {
+                        transform: translateY(8px) translateX(-20px);
+                    }
+                    75% {
+                        transform: translateY(-5px) translateX(5px);
+                    }
+                }
+                
+                .stripe-wave-1 {
+                    animation: stripe-wave-1 8s ease-in-out infinite;
+                }
+                
+                .stripe-wave-2 {
+                    animation: stripe-wave-2 10s ease-in-out infinite;
+                    animation-delay: 0.5s;
+                }
+                
+                .stripe-wave-3 {
+                    animation: stripe-wave-3 12s ease-in-out infinite;
+                    animation-delay: 1s;
+                }
+                
             `}</style>
         </div>
     );

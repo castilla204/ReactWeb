@@ -205,7 +205,7 @@ const AppContent: React.FC = () => {
                             <Button
                                 variant="ghost"
                                 className="text-sm font-medium text-gray-700 hover:text-gray-900 h-auto px-0 py-0"
-                                onClick={() => isAuthenticated ? window.location.href = '/busquedas' : handleRequireAuth('Ver tus inspecciones')}
+                                onClick={() => isAuthenticated ? navigate('/busquedas') : handleRequireAuth('Ver tus inspecciones')}
                             >
                                 Inspecciones
                             </Button>
@@ -290,13 +290,9 @@ const AppContent: React.FC = () => {
                                 </>
                             ) : (
                                 <>
-                                    <Button
-                                        variant="ghost"
-                                        className="hidden md:flex text-sm font-medium text-gray-700 hover:text-gray-900"
-                                        onClick={() => {/* Lógica de login */}}
-                                    >
-                                        Iniciar sesión
-                                    </Button>
+                                    <div className="hidden md:flex">
+                                        <GoogleSignInButton variant="compact" />
+                                    </div>
                                     <Button
                                         className="hidden md:flex bg-gray-900 text-white hover:bg-gray-800 text-sm font-medium px-4 py-2 rounded-lg"
                                         onClick={() => {
