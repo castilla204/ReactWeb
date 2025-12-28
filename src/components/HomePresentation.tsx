@@ -226,7 +226,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 
                 {/* Copos de nieve animados - Móvil */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none z-[5]">
-                    {[...Array(40)].map((_, i) => (
+                    {[...Array(10)].map((_, i) => (
                         <div
                             key={`snow-mobile-${i}`}
                             className="absolute text-white animate-snowflake"
@@ -455,8 +455,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                         {categoriesLoading ? (
                                             <div className="text-center py-8 text-sm text-gray-500">Cargando categorías...</div>
                                         ) : categories && categories.length > 0 ? (
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {categories.map((cat) => (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {categories.map((cat) => (
                                                 <button
                                                     key={cat.id}
                                                     onClick={() => {
@@ -477,7 +477,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                     </span>
                                                 </button>
                                             ))}
-                                            </div>
+                                        </div>
                                         ) : (
                                             <div className="text-center py-8 text-sm text-gray-500">No hay categorías disponibles</div>
                                         )}
@@ -564,7 +564,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 
                 {/* Copos de nieve animados */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none z-[5]">
-                    {[...Array(60)].map((_, i) => (
+                    {[...Array(15)].map((_, i) => (
                         <div
                             key={`snow-${i}`}
                             className="absolute text-white animate-snowflake"
@@ -738,7 +738,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                         >
                                             <div className="text-xs font-medium text-gray-700 mb-0.5">Categoría</div>
                                             <div className={searchForm.categoryId ? 'text-sm text-gray-900 font-medium' : 'text-sm text-gray-500'}>
-                                                    {searchForm.categoryId 
+                                                {searchForm.categoryId 
                                                     ? categories.find(c => c.id === searchForm.categoryId)?.name || 'Seleccionar'
                                                     : 'Seleccionar'}
                                             </div>
