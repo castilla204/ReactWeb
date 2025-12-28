@@ -36,7 +36,7 @@ interface GoogleSignInButtonProps {
 
 export const GoogleSignInButton = ({ className = '', variant = 'default', onSuccess }: GoogleSignInButtonProps) => {
     const [isReady, setIsReady] = useState(false);
-    const { setUser } = useAuth();
+    const { updateUser } = useAuth();
     const navigate = useNavigate();
     const buttonRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -61,26 +61,35 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                                 throw new Error('Authentication failed');
                             }
 
-                            setUser(result.user);
-                            localStorage.setItem('userData', JSON.stringify(result.user));
-                            
-                            // Redirigir según el rol
+                            // Obtener el token después de la autenticación
                             const token = authService.getAccessToken();
+                            
+                            // Actualizar usuario y token usando updateUser del contexto
+                            // Esto asegura que tanto el usuario como el token se guarden correctamente
+                            updateUser(result.user, token, () => {
+                                // Callback después de actualizar usuario y token
+                                console.log('User and token updated successfully');
+                            });
+                            
+                            // Verificar MFA solo si es necesario (optimización)
                             if (token) {
+                                // Verificar MFA de forma más eficiente
                                 const { RoleChecker } = await import('../utils/roleChecker');
                                 const userRole = RoleChecker.getUserRole(token);
                                 const requiresMfa = RoleChecker.requiresMfa(userRole);
                                 
                                 if (requiresMfa) {
+                                    // Solo verificar MFA si el rol lo requiere
                                     const { mfaService } = await import('../services/mfaService');
                                     try {
                                         const mfaStatus = await mfaService.getMFAStatus();
-                                        if (mfaStatus.isEnabled) {
+                                        if (mfaStatus.isEnabled && !mfaStatus.isVerified) {
                                             navigate('/mfa/verify', { state: { returnTo: '/busquedas' } });
                                             return;
                                         }
                                     } catch (error) {
                                         console.error('Error checking MFA status:', error);
+                                        // Continuar con el flujo normal si hay error en MFA
                                     }
                                 }
                             }
@@ -113,13 +122,21 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                         width: variant === 'compact' ? undefined : undefined,
                     });
 
-                    // Esperar a que el botón se renderice
+                    // Esperar a que el botón se renderice (reducido de 300ms a 100ms)
                     setTimeout(() => {
                         const renderedButton = buttonRef.current?.querySelector('div[role="button"]');
                         if (renderedButton) {
                             setIsReady(true);
+                        } else {
+                            // Reintentar una vez más si no está listo
+                            setTimeout(() => {
+                                const retryButton = buttonRef.current?.querySelector('div[role="button"]');
+                                if (retryButton) {
+                                    setIsReady(true);
+                                }
+                            }, 200);
                         }
-                    }, 300);
+                    }, 100);
                 }
             } else {
                 // Reintentar después de un delay
@@ -169,7 +186,7 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
             if (checkInterval) clearInterval(checkInterval);
             if (retryTimeout) clearTimeout(retryTimeout);
         };
-    }, [setUser, navigate, onSuccess, variant]);
+    }, [updateUser, navigate, onSuccess, variant]);
 
     // Función para hacer clic en el botón renderizado de Google (igual que en el paso 2)
     const handleCustomClick = () => {
