@@ -16,11 +16,10 @@ RUN npm install -g serve
 COPY --from=build /app/dist ./dist
 
 # Best Practice 2025: Run as non-root user
-RUN groupadd -g 1000 appuser && \
-    useradd -u 1000 -g appuser -s /bin/sh -m appuser && \
-    chown -R appuser:appuser /app
+# La imagen node:24 ya tiene un usuario 'node' con UID 1000, usarlo directamente
+RUN chown -R node:node /app
 
-USER appuser
+USER node
 
 EXPOSE 80
 
