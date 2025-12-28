@@ -27,4 +27,4 @@ EXPOSE 80
 # Usar serve para servir los archivos estáticos
 # -s: single-page application mode (para React Router)
 # -l: puerto a escuchar
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["serve", "-s", "dist", "-l", "80"]
