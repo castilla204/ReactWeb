@@ -855,86 +855,58 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
             </div>
 
             {/* Sección: REVISIONES DE COCHE EN ESPAÑA - Con mapa */}
-            <div className="relative z-20 w-full py-16 lg:py-20 bg-white">
+            <div className="relative z-20 w-full py-12 lg:py-20 bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-                        {/* Mapa a la izquierda */}
-                        <div className="flex-shrink-0">
-                            <div className="relative" style={{ width: '646.198px', height: '650px', maxWidth: '100%' }}>
-                                {/* Fondo circular blanco sutil */}
+                        {/* Mapa - Responsive */}
+                        <div className="w-full lg:w-auto lg:flex-shrink-0 flex justify-center lg:justify-start">
+                            <div className="relative w-full max-w-full lg:w-[646.198px] aspect-[646/650] lg:h-[650px]">
+                                {/* Fondo circular blanco sutil - Responsive */}
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="w-[500px] h-[500px] bg-white/60 rounded-full blur-2xl"></div>
-                    </div>
+                                    <div className="w-full max-w-[500px] aspect-square bg-white/60 rounded-full blur-2xl"></div>
+                                </div>
 
-                                {/* Contenedor del mapa - CSS idéntico */}
+                                {/* Contenedor del mapa - Responsive */}
                                 <div 
-                                    className="absolute inset-0"
+                                    className="absolute inset-0 w-full h-full"
                                     style={{
-                                        animation: 'none 0s ease 0s 1 normal none running',
-                                        background: 'rgba(0, 0, 0, 0) url("https://revisario.com/wp-content/uploads/2025/07/mapa-base-revisario.svg") no-repeat scroll 50% 50% / contain padding-box border-box',
-                                        backgroundColor: 'rgba(0, 0, 0, 0)',
                                         backgroundImage: 'url("https://revisario.com/wp-content/uploads/2025/07/mapa-base-revisario.svg")',
                                         backgroundPosition: '50% 50%',
                                         backgroundRepeat: 'no-repeat',
                                         backgroundSize: 'contain',
-                                        border: '0px none rgb(29, 29, 27)',
-                                        boxSizing: 'border-box',
-                                        color: 'rgb(29, 29, 27)',
-                                        cursor: 'crosshair',
-                                        display: 'flex',
-                                        flex: '0 1 auto',
-                                        flexDirection: 'column',
-                                        flexGrow: 0,
-                                        flexShrink: 1,
-                                        flexWrap: 'nowrap',
-                                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-                                        fontSize: '16px',
-                                        fontWeight: 400,
-                                        height: '650px',
-                                        justifyContent: 'center',
-                                        lineHeight: '24px',
-                                        minHeight: '650px',
-                                        opacity: 1,
-                                        overflow: 'visible',
-                                        overflowX: 'visible',
-                                        overflowY: 'visible',
-                                        position: 'relative',
-                                        textAlign: 'start',
-                                        textDecoration: 'none solid rgb(29, 29, 27)',
-                                        transition: 'background 0.3s, border 0.3s, box-shadow 0.3s, transform 0.4s',
-                                        visibility: 'visible',
-                                        width: '646.198px'
                                     }}
                                 >
                                 </div>
-                                </div>
                             </div>
-                            
-                        {/* Texto a la derecha */}
-                        <div className="flex-1 text-left space-y-6">
-                            <h2 className="text-lg font-normal text-gray-900 uppercase tracking-wide">
+                        </div>
+                        
+                        {/* Texto - Mejorado para móvil */}
+                        <div className="flex-1 w-full lg:w-auto text-center lg:text-left space-y-4 lg:space-y-6">
+                            <h2 className="text-sm lg:text-lg font-normal text-gray-900 uppercase tracking-wide">
                                 REVISIONES DE COCHE EN ESPAÑA
                             </h2>
-                            <h3 className="text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
+                            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
                                 Estés donde estés, tu revisión está muy cerca
-                                </h3>
-                            <div className="space-y-4 text-gray-700">
-                                <p className="text-base leading-relaxed">
+                            </h3>
+                            <div className="space-y-3 lg:space-y-4 text-gray-700">
+                                <p className="text-sm sm:text-base leading-relaxed">
                                     Contamos con revisores en toda España. Solo dinos dónde está el coche y enviaremos a nuestro experto más cercano.
                                 </p>
-                                <p className="text-base leading-relaxed font-medium">
+                                <p className="text-sm sm:text-base leading-relaxed font-medium">
                                     ¡Rápido, fiable y sin complicaciones!
                                 </p>
                             </div>
-                        <button
-                                onClick={onScrollToForm}
-                                className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold px-6 py-3 rounded-xl hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-200"
-                            >
-                                Quiero mi revisión
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
+                            <div className="flex justify-center lg:justify-start pt-2">
+                                <button
+                                    onClick={onScrollToForm}
+                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold px-6 py-3 rounded-xl hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-200 text-sm sm:text-base"
+                                >
+                                    Quiero mi revisión
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
