@@ -225,12 +225,21 @@ jobs:
           VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '65002' }}
         run: |
           echo "Checking VPS connectivity on port ${VPS_SSH_PORT}..."
-          if timeout 5 bash -c "echo > /dev/tcp/${VPS_HOST}/${VPS_SSH_PORT}" 2>/dev/null; then
-            echo "✅ VPS is reachable on port ${VPS_SSH_PORT}"
-          else
-            echo "⚠️ VPS is not reachable on port ${VPS_SSH_PORT}, deployment will be skipped"
-            exit 0
-          fi
+          echo "VPS_HOST: ${VPS_HOST}"
+          echo "VPS_SSH_PORT: ${VPS_SSH_PORT}"
+          # Intentar con timeout más largo y múltiples intentos
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            if timeout 10 bash -c "echo > /dev/tcp/${VPS_HOST}/${VPS_SSH_PORT}" 2>/dev/null; then
+              echo "✅ VPS is reachable on port ${VPS_SSH_PORT}"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "⚠️ VPS is not reachable on port ${VPS_SSH_PORT} after 3 attempts"
+          echo "⚠️ This may be due to firewall restrictions or network issues"
+          echo "⚠️ Deployment will be skipped"
+          exit 0
 
       - name: Deploy to VPS
         env:
