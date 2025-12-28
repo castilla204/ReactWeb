@@ -226,15 +226,17 @@ const AppContent: React.FC = () => {
 
                         {/* Botones de acción estilo Memorae */}
                         <div className="flex items-center gap-4">
-                            {/* Botón menú móvil */}
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="md:hidden h-9 w-9"
-                            >
-                                <Menu className="w-5 h-5" />
-                            </Button>
+                            {/* Botón menú móvil - Solo visible si está autenticado */}
+                            {isAuthenticated && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                                    className="md:hidden h-9 w-9"
+                                >
+                                    <Menu className="w-5 h-5" />
+                                </Button>
+                            )}
 
                             {isAuthenticated ? (
                                 <>
@@ -308,9 +310,6 @@ const AppContent: React.FC = () => {
                                     >
                                         Probar Gratis
                                     </Button>
-                                    <div className="md:hidden">
-                                        <GoogleSignInButton variant="compact" />
-                                    </div>
                                 </>
                             )}
                         </div>
