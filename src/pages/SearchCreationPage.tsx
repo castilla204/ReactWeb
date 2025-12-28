@@ -485,21 +485,9 @@ const SearchCreationPage: React.FC = () => {
                         </div>
                     )}
                     
-                    <div className="w-full py-6 md:py-8">
-                        <div
-                            id="form-section"
-                            className="w-full mx-auto max-w-7xl px-4 md:px-6 lg:px-8"
-                        >
-                            <div className="max-w-3xl mx-auto">
-                                {/* Form */}
-                                <div className="space-y-8 w-full">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     <div className="mt-16">
                         <Footer />
-                                    </div>
+                    </div>
                 </>
             )}
                     {currentStep === 1 && (
