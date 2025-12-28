@@ -35,7 +35,19 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
             }
 
             const data = await response.json();
-            setCategories(data);
+            // Transform data from API format (PascalCase) to component format (camelCase)
+            const transformedData = Array.isArray(data) ? data.map((item: any) => ({
+                id: item.Id || item.id,
+                name: item.Name || item.name,
+                parentId: item.ParentId !== undefined ? (item.ParentId || item.parentId) : null,
+                isActive: item.IsActive !== undefined ? (item.IsActive || item.isActive) : true,
+                createdAt: item.CreatedAt || item.createdAt,
+                updatedAt: item.UpdatedAt || item.updatedAt,
+                isParent: item.IsParent !== undefined ? (item.IsParent || item.isParent) : false,
+                hasSubcategories: item.HasSubcategories !== undefined ? (item.HasSubcategories || item.hasSubcategories) : false,
+                subcategoriesCount: item.SubcategoriesCount !== undefined ? (item.SubcategoriesCount || item.subcategoriesCount) : 0,
+            })) : [];
+            setCategories(transformedData);
             setError(null);
         } catch (err) {
             console.error('Error fetching categories:', err);
