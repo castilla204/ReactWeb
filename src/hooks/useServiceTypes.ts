@@ -43,8 +43,18 @@ export function useServiceTypes() {
                 const result: ServiceTypesResponse = await response.json();
                 
                 if (result.success) {
+                    // Transform data from API format (PascalCase) to component format (camelCase)
+                    const transformedData = result.data.map((item: any) => ({
+                        id: item.Id || item.id,
+                        name: item.Name || item.name,
+                        description: item.Description || item.description,
+                        serviceTypeCategoryId: item.ServiceTypeCategoryId || item.serviceTypeCategoryId,
+                        serviceTypeCategoryName: item.ServiceTypeCategoryName || item.serviceTypeCategoryName,
+                        position: item.Position || item.position,
+                    }));
+                    
                     // Sort by position first, then by id as fallback
-                    const sortedData = result.data.sort((a, b) => {
+                    const sortedData = transformedData.sort((a, b) => {
                         if (a.position !== b.position) {
                             return a.position - b.position;
                         }

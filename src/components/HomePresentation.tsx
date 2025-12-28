@@ -38,11 +38,21 @@ const CategoryImage: React.FC<{ categoryName: string; size?: 'sm' | 'md' }> = ({
         md: 'w-10 h-10'
     };
 
+    // Validar que categoryName existe
+    if (!categoryName) {
+        return (
+            <div className={`${sizeClasses[size]} rounded-md bg-gray-100 flex items-center justify-center`}>
+                <FolderTree className="w-4 h-4 text-gray-400" />
+            </div>
+        );
+    }
+
     // Determinar qué imagen usar según el nombre de la categoría
-    const isMotoAgua = categoryName.toLowerCase().includes('moto') && categoryName.toLowerCase().includes('agua');
-    const isMoto = categoryName.toLowerCase().includes('moto') && !isMotoAgua;
-    const isCoche = categoryName.toLowerCase().includes('coche') || categoryName.toLowerCase().includes('vehículo');
-    const isCasa = categoryName.toLowerCase().includes('inmobiliaria') || categoryName.toLowerCase().includes('casa') || categoryName.toLowerCase().includes('inmueble');
+    const categoryNameLower = categoryName.toLowerCase();
+    const isMotoAgua = categoryNameLower.includes('moto') && categoryNameLower.includes('agua');
+    const isMoto = categoryNameLower.includes('moto') && !isMotoAgua;
+    const isCoche = categoryNameLower.includes('coche') || categoryNameLower.includes('vehículo');
+    const isCasa = categoryNameLower.includes('inmobiliaria') || categoryNameLower.includes('casa') || categoryNameLower.includes('inmueble');
 
     if (isMotoAgua) {
         return (
@@ -95,8 +105,22 @@ const CategoryImage: React.FC<{ categoryName: string; size?: 'sm' | 'md' }> = ({
 const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
-    const { categories } = useCategories();
+    const { categories, loading: categoriesLoading } = useCategories();
     const { serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
+    
+    // Debug: verificar que los datos se están cargando
+    useEffect(() => {
+        console.log('HomePresentation - Categories:', categories, 'Loading:', categoriesLoading, 'Count:', categories?.length);
+        console.log('HomePresentation - ServiceTypes:', serviceTypes, 'Loading:', serviceTypesLoading, 'Count:', serviceTypes?.length);
+        if (serviceTypes && serviceTypes.length > 0) {
+            console.log('First ServiceType:', serviceTypes[0]);
+            console.log('ServiceType structure:', Object.keys(serviceTypes[0] || {}));
+        }
+        if (categories && categories.length > 0) {
+            console.log('First Category:', categories[0]);
+            console.log('Category structure:', Object.keys(categories[0] || {}));
+        }
+    }, [categories, categoriesLoading, serviceTypes, serviceTypesLoading]);
     
     // Estado del buscador estilo Airbnb
     const [searchForm, setSearchForm] = useState({
@@ -257,9 +281,9 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                     </div>
 
                     {/* Formulario - Diseño limpio marketplace */}
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm" style={{ overflow: 'visible' }}>
                         {/* Tipo de servicio */}
-                        <div className="relative service-type-dropdown border-b border-gray-200">
+                        <div className="relative service-type-dropdown border-b border-gray-200" style={{ overflow: 'visible' }}>
                             <button
                                 onClick={() => {
                                     setIsCategoryOpen(false);
@@ -278,7 +302,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${isServiceTypeOpen ? 'rotate-180' : ''}`} />
                             </button>
                             {isServiceTypeOpen && (
-                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                                <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto" style={{ position: 'absolute', top: '100%', left: 0, right: 0 }}>
                                     {serviceTypesLoading ? (
                                         <div className="px-6 py-4 text-sm text-gray-500">Cargando...</div>
                                     ) : serviceTypes.length > 0 ? (
@@ -291,8 +315,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                 }}
                                                 className="w-full px-6 py-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
                                             >
-                                                <div className="font-medium text-gray-900 text-sm">{st.name}</div>
-                                                {st.description && (
+                                                <div className="font-medium text-gray-900 text-sm">{st?.name || 'Sin nombre'}</div>
+                                                {st?.description && (
                                                     <div className="text-xs text-gray-500 mt-0.5">{st.description}</div>
                                                 )}
                                             </button>
@@ -305,13 +329,16 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                         </div>
                         
                         {/* Categoría */}
-                        <div className="border-b border-gray-200 pb-4">
+                        <div className="border-b border-gray-200 pb-4" style={{ overflow: 'visible' }}>
                             <div className="text-xs font-medium text-gray-700 mb-3 px-5 pt-4">Categoría</div>
                             
                             {/* Categorías visibles */}
                             <div className="px-5">
                                 <div className="flex flex-wrap gap-2">
-                                    {categories.slice(0, 4).map((cat) => (
+                                    {categoriesLoading ? (
+                                        <div className="text-sm text-gray-500">Cargando categorías...</div>
+                                    ) : categories && categories.length > 0 ? (
+                                        categories.slice(0, 4).map((cat) => (
                                         <button
                                             key={cat.id}
                                             onClick={() => {
@@ -326,10 +353,13 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                             <CategoryImage categoryName={cat.name} size="sm" />
                                             <span>{cat.name}</span>
                                         </button>
-                                    ))}
+                                        ))
+                                    ) : (
+                                        <div className="text-sm text-gray-500">No hay categorías disponibles</div>
+                                    )}
                                     
                                     {/* Botón "Ver más" si hay más categorías */}
-                                    {categories.length > 4 && (
+                                    {!categoriesLoading && categories && categories.length > 4 && (
                                         <button
                                             onClick={() => {
                                                 setIsServiceTypeOpen(false);
@@ -361,8 +391,11 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     </DrawerHeader>
                                     
                                     <div className="overflow-y-auto px-4 py-4">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {categories.map((cat) => (
+                                        {categoriesLoading ? (
+                                            <div className="text-center py-8 text-sm text-gray-500">Cargando categorías...</div>
+                                        ) : categories && categories.length > 0 ? (
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {categories.map((cat) => (
                                                 <button
                                                     key={cat.id}
                                                     onClick={() => {
@@ -383,7 +416,10 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                     </span>
                                                 </button>
                                             ))}
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-8 text-sm text-gray-500">No hay categorías disponibles</div>
+                                        )}
                                     </div>
                                 </DrawerContent>
                             </Drawer>
@@ -421,7 +457,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
             </div>
 
             {/* Hero Desktop - Con fondo degradado y texto blanco */}
-            <div className="relative z-10 w-full hidden lg:flex min-h-[calc(100vh-64px)] items-start justify-center px-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 overflow-hidden">
+            <div className="relative z-10 w-full hidden lg:flex min-h-[calc(100vh-64px)] items-start justify-center px-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 overflow-x-hidden">
                 {/* Fondo degradado para el lado izquierdo */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700" style={{
                     clipPath: 'polygon(0 0, 62% 0, 58% 100%, 0 100%)'
@@ -437,9 +473,10 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                         className="w-full h-full"
                         style={{ 
                             objectFit: 'cover',
-                            objectPosition: '30% center',
-                            width: '100%',
-                            height: '100%'
+                            objectPosition: '100% center',
+                            width: '140%',
+                            height: '100%',
+                            transform: 'translateX(10%)'
                         }}
                     />
                     {/* Overlay sutil para mejor contraste */}
@@ -463,35 +500,35 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             </linearGradient>
                         </defs>
                         {/* Red de líneas de conexión - más líneas para efecto más completo */}
-                        <line x1="5%" y1="15%" x2="25%" y2="35%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.6" />
-                        <line x1="25%" y1="35%" x2="45%" y2="20%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
-                        <line x1="45%" y1="20%" x2="65%" y2="30%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
-                        <line x1="65%" y1="30%" x2="85%" y2="15%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
-                        <line x1="10%" y1="50%" x2="30%" y2="65%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
-                        <line x1="30%" y1="65%" x2="55%" y2="75%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
-                        <line x1="55%" y1="75%" x2="75%" y2="85%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
-                        <line x1="75%" y1="85%" x2="90%" y2="70%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
-                        <line x1="20%" y1="25%" x2="50%" y2="45%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.4" />
-                        <line x1="50%" y1="45%" x2="80%" y2="60%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.4" />
-                        <line x1="15%" y1="70%" x2="40%" y2="50%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.5" />
-                        <line x1="60%" y1="55%" x2="85%" y2="40%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
+                        <line key="line1" x1="5%" y1="15%" x2="25%" y2="35%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.6" />
+                        <line key="line2" x1="25%" y1="35%" x2="45%" y2="20%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
+                        <line key="line3" x1="45%" y1="20%" x2="65%" y2="30%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
+                        <line key="line4" x1="65%" y1="30%" x2="85%" y2="15%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
+                        <line key="line5" x1="10%" y1="50%" x2="30%" y2="65%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
+                        <line key="line6" x1="30%" y1="65%" x2="55%" y2="75%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
+                        <line key="line7" x1="55%" y1="75%" x2="75%" y2="85%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
+                        <line key="line8" x1="75%" y1="85%" x2="90%" y2="70%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
+                        <line key="line9" x1="20%" y1="25%" x2="50%" y2="45%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.4" />
+                        <line key="line10" x1="50%" y1="45%" x2="80%" y2="60%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.4" />
+                        <line key="line11" x1="15%" y1="70%" x2="40%" y2="50%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.5" />
+                        <line key="line12" x1="60%" y1="55%" x2="85%" y2="40%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
                         {/* Nodos/puntos de conexión - más puntos */}
-                        <circle cx="5%" cy="15%" r="4" fill="rgba(255,255,255,0.7)" />
-                        <circle cx="25%" cy="35%" r="4" fill="rgba(147,197,253,0.7)" />
-                        <circle cx="45%" cy="20%" r="4" fill="rgba(255,255,255,0.7)" />
-                        <circle cx="65%" cy="30%" r="4" fill="rgba(196,181,253,0.7)" />
-                        <circle cx="85%" cy="15%" r="4" fill="rgba(255,255,255,0.7)" />
-                        <circle cx="10%" cy="50%" r="4" fill="rgba(147,197,253,0.7)" />
-                        <circle cx="30%" cy="65%" r="4" fill="rgba(255,255,255,0.7)" />
-                        <circle cx="55%" cy="75%" r="4" fill="rgba(196,181,253,0.7)" />
-                        <circle cx="75%" cy="85%" r="4" fill="rgba(255,255,255,0.7)" />
-                        <circle cx="90%" cy="70%" r="4" fill="rgba(147,197,253,0.7)" />
-                        <circle cx="20%" cy="25%" r="3" fill="rgba(255,255,255,0.6)" />
-                        <circle cx="50%" cy="45%" r="3" fill="rgba(196,181,253,0.6)" />
-                        <circle cx="80%" cy="60%" r="3" fill="rgba(255,255,255,0.6)" />
-                        <circle cx="15%" cy="70%" r="3" fill="rgba(147,197,253,0.6)" />
-                        <circle cx="40%" cy="50%" r="3" fill="rgba(255,255,255,0.6)" />
-                        <circle cx="60%" cy="55%" r="3" fill="rgba(196,181,253,0.6)" />
+                        <circle key="circle1" cx="5%" cy="15%" r="4" fill="rgba(255,255,255,0.7)" />
+                        <circle key="circle2" cx="25%" cy="35%" r="4" fill="rgba(147,197,253,0.7)" />
+                        <circle key="circle3" cx="45%" cy="20%" r="4" fill="rgba(255,255,255,0.7)" />
+                        <circle key="circle4" cx="65%" cy="30%" r="4" fill="rgba(196,181,253,0.7)" />
+                        <circle key="circle5" cx="85%" cy="15%" r="4" fill="rgba(255,255,255,0.7)" />
+                        <circle key="circle6" cx="10%" cy="50%" r="4" fill="rgba(147,197,253,0.7)" />
+                        <circle key="circle7" cx="30%" cy="65%" r="4" fill="rgba(255,255,255,0.7)" />
+                        <circle key="circle8" cx="55%" cy="75%" r="4" fill="rgba(196,181,253,0.7)" />
+                        <circle key="circle9" cx="75%" cy="85%" r="4" fill="rgba(255,255,255,0.7)" />
+                        <circle key="circle10" cx="90%" cy="70%" r="4" fill="rgba(147,197,253,0.7)" />
+                        <circle key="circle11" cx="20%" cy="25%" r="3" fill="rgba(255,255,255,0.6)" />
+                        <circle key="circle12" cx="50%" cy="45%" r="3" fill="rgba(196,181,253,0.6)" />
+                        <circle key="circle13" cx="80%" cy="60%" r="3" fill="rgba(255,255,255,0.6)" />
+                        <circle key="circle14" cx="15%" cy="70%" r="3" fill="rgba(147,197,253,0.6)" />
+                        <circle key="circle15" cx="40%" cy="50%" r="3" fill="rgba(255,255,255,0.6)" />
+                        <circle key="circle16" cx="60%" cy="55%" r="3" fill="rgba(196,181,253,0.6)" />
                     </svg>
                 </div>
                 
@@ -519,10 +556,10 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             </p>
                             
                             {/* Buscador estilo Airbnb - Desktop */}
-                            <div className="mt-6 relative z-50">
-                                <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-2xl border border-white/30 flex items-center hover:shadow-3xl hover:bg-white transition-all relative z-50">
+                            <div className="mt-6 relative z-50" style={{ overflow: 'visible' }}>
+                                <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-2xl border border-white/30 flex items-center hover:shadow-3xl hover:bg-white transition-all relative z-50" style={{ overflow: 'visible' }}>
                                     {/* Tipo de servicio */}
-                                    <div className="relative flex-shrink-0 service-type-dropdown z-50">
+                                    <div className="relative flex-shrink-0 service-type-dropdown z-50" style={{ overflow: 'visible' }}>
                                         <button
                                             onClick={() => {
                                                 setIsCategoryOpen(false);
@@ -551,8 +588,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                             }}
                                                             className="w-full px-5 py-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
                                                         >
-                                                            <div className="font-medium text-gray-900">{st.name}</div>
-                                                            {st.description && (
+                                                            <div className="font-medium text-gray-900">{st?.name || 'Sin nombre'}</div>
+                                                            {st?.description && (
                                                                 <div className="text-xs text-gray-500 mt-1">{st.description}</div>
                                                             )}
                                                         </button>
@@ -567,7 +604,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     <div className="w-px h-12 bg-gray-200" />
                                     
                                     {/* Categoría */}
-                                    <div className="relative flex-shrink-0 category-dropdown z-50">
+                                    <div className="relative flex-shrink-0 category-dropdown z-50" style={{ overflow: 'visible' }}>
                                         <button
                                             onClick={() => {
                                                 setIsServiceTypeOpen(false);
@@ -577,14 +614,16 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                         >
                                             <div className="text-xs font-medium text-gray-700 mb-0.5">Categoría</div>
                                             <div className={searchForm.categoryId ? 'text-sm text-gray-900 font-medium' : 'text-sm text-gray-500'}>
-                                                {searchForm.categoryId 
+                                                    {searchForm.categoryId 
                                                     ? categories.find(c => c.id === searchForm.categoryId)?.name || 'Seleccionar'
                                                     : 'Seleccionar'}
                                             </div>
                                         </button>
                                         {isCategoryOpen && (
                                             <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl z-[200] max-h-96 overflow-y-auto">
-                                                {categories.length > 0 ? (
+                                                {categoriesLoading ? (
+                                                    <div className="px-5 py-4 text-sm text-gray-500">Cargando...</div>
+                                                ) : categories && categories.length > 0 ? (
                                                     categories.map((cat) => (
                                                         <button
                                                             key={cat.id}

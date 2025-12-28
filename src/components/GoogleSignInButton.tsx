@@ -109,7 +109,8 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                         theme: 'outline',
                         size: variant === 'compact' ? 'medium' : 'large',
                         text: 'signin_with',
-                        width: variant === 'compact' ? undefined : '100%',
+                        // No pasar width si es 100%, Google Sign-In no lo acepta
+                        width: variant === 'compact' ? undefined : undefined,
                     });
 
                     // Esperar a que el botón se renderice
