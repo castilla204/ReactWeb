@@ -24,8 +24,9 @@ USER node
 EXPOSE 80
 
 # Usar serve para servir los archivos estáticos
-# IMPORTANTE: NO usar -s (single-page mode) porque redirige archivos estáticos a index.html
-# En su lugar, servir directamente desde dist y usar -s solo para rutas que no existen
+# serve con -s sirve archivos estáticos primero, solo redirige a index.html si no existe
+# El problema puede ser caché del navegador o configuración del HTTPRoute
+# -s: single-page application mode (para React Router)
 # -l: puerto a escuchar
 # -n: no compression
-CMD ["serve", "dist", "-l", "80", "-n"]
+CMD ["serve", "-s", "dist", "-l", "80", "-n"]
