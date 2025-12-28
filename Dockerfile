@@ -1,4 +1,4 @@
-FROM node:24@sha256:20988bcdc6dc76690023eb2505dd273bdeefddcd0bde4ebf8707f747 AS build
+FROM node:24 AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -6,7 +6,7 @@ COPY . .
 RUN npm run build
 
 # Usar serve en lugar de nginx para servir archivos estáticos
-FROM node:24@sha256:20988bcdc6dc76690023eb2505dd273bdeefddcd0bde4ebf8707f747
+FROM node:24
 WORKDIR /app
 
 # Instalar serve globalmente
