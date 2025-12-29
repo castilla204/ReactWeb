@@ -157,8 +157,8 @@ const AppContent: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
-            {/* Header estilo Memorae - Oculto en móvil cuando se está en creación de búsqueda */}
-            <header className={`h-16 relative z-50 ${shouldHideHeaderOnMobile ? 'hidden' : ''}`} style={{ backgroundColor: '#fbfbfb' }}>
+            {/* Header estilo Memorae - Oculto en móvil */}
+            <header className={`h-16 relative z-50 hidden md:block ${shouldHideHeaderOnMobile ? 'hidden' : ''}`} style={{ backgroundColor: '#fbfbfb' }}>
                     <div className="max-w-7xl mx-auto h-full px-4 lg:px-8 flex items-center justify-between">
                         {/* Logo estilo Memorae */}
                         <div className="flex items-center gap-3">
