@@ -4,6 +4,7 @@ import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto } from '../types/homepageWall';
 import { Heart, Star, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Footer } from './Footer';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -33,6 +34,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
   const isMobile = useIsMobile();
 
   const handleCardClick = () => {
+    // Navegar a la página de detalle del servicio primero
     navigate(`/service/${service.id}`);
   };
 
@@ -588,28 +590,39 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
   const cityName = countryCode === 'ES' ? 'Madrid' : 'tu ciudad';
 
   return (
-    <div className="w-full flex justify-center">
-      <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
-        {/* Sección: Servicios Cercanos / Popular homes */}
-        {data.nearbyServices.services.length > 0 && (
-          <HorizontalScrollSection
-            title={`Popular homes in ${cityName} >`}
-            services={data.nearbyServices.services}
-            showCount={true}
-          />
-        )}
+    <>
+      <div className="w-full flex justify-center">
+        <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
+          {/* Sección: Servicios Cercanos / Popular homes */}
+          {/* Mostrar siempre si hay servicios, o si nearbyServices está vacío pero popularServices tiene datos, usar popularServices */}
+          {((data.nearbyServices?.services && data.nearbyServices.services.length > 0) || 
+            (!data.nearbyServices?.services?.length && data.popularServices?.services && data.popularServices.services.length > 0)) && (
+            <HorizontalScrollSection
+              title={`Popular homes in ${cityName} >`}
+              services={data.nearbyServices?.services && data.nearbyServices.services.length > 0 
+                ? data.nearbyServices.services 
+                : (data.popularServices?.services || [])}
+              showCount={true}
+            />
+          )}
 
-        {/* Sección: Servicios Populares / Featured hotels */}
-        {data.popularServices.services.length > 0 && (
-          <HorizontalScrollSection
-            title={`Featured hotels in ${cityName} >`}
-            subtitle="A collection of independent and handpicked hotels"
-            services={data.popularServices.services}
-            showCount={true}
-            forceGuestFavorite={true}
-          />
-        )}
+          {/* Sección: Servicios Populares / Featured hotels */}
+          {data.popularServices?.services && data.popularServices.services.length > 0 && (
+            <HorizontalScrollSection
+              title={`Featured hotels in ${cityName} >`}
+              subtitle="A collection of independent and handpicked hotels"
+              services={data.popularServices.services}
+              showCount={true}
+              forceGuestFavorite={true}
+            />
+          )}
+        </div>
       </div>
-    </div>
+      
+      {/* Footer */}
+      <div className="mt-16 w-full">
+        <Footer />
+      </div>
+    </>
   );
 };
