@@ -43,7 +43,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
         adUrl,
       });
     }
-    // No navegar a ninguna página
+    // Si no hay onSearch, no hacer nada - el buscador solo filtra en la misma página
   };
 
   // Cerrar cuando se hace click fuera
@@ -105,7 +105,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                       Tipo de servicio
                     </label>
                     <div
-                      className="text-sm text-gray-500 truncate flex items-center gap-1"
+                      className={`text-sm truncate flex items-center gap-1 ${
+                        selectedServiceType ? 'text-gray-900 font-medium' : 'text-gray-500'
+                      }`}
                       style={{ fontSize: '14px', lineHeight: '18px' }}
                     >
                       {selectedServiceType ? selectedServiceType.name : 'Selecciona tipo'}
@@ -125,7 +127,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                       <button
                         key={serviceType.id}
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           setServiceTypeId(serviceType.id);
                           setIsServiceTypeOpen(false);
                           setActiveField(null);
@@ -166,7 +170,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                       Categoría
                     </label>
                     <div
-                      className="text-sm text-gray-500 truncate flex items-center gap-1"
+                      className={`text-sm truncate flex items-center gap-1 ${
+                        selectedCategory ? 'text-gray-900 font-medium' : 'text-gray-500'
+                      }`}
                       style={{ fontSize: '14px', lineHeight: '18px' }}
                     >
                       {selectedCategory ? selectedCategory.name : 'Selecciona categoría'}
@@ -188,7 +194,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                         <button
                           key={category.id}
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             setCategoryId(category.id);
                             setIsCategoryOpen(false);
                             setActiveField(null);

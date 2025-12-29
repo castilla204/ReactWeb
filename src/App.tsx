@@ -43,6 +43,7 @@ import { SearchResultsPage } from './pages/SearchResultsPage';
 import { DisputePanelPage } from './pages/DisputePanelPage';
 import TransactionsPage from './pages/TransactionsPage';
 import HomePage from './pages/HomePage';
+import ServiceDetailPage from './pages/ServiceDetailPage';
 import { AccountSettingsModal } from './components/AccountSettingsModal';
 import SearchDetails from './components/SearchDetails';
 import { GoogleAuth } from './components/GoogleAuth';
@@ -545,6 +546,7 @@ const AppContent: React.FC = () => {
                             <Route path="/become-expert" element={<ProtectedRoute><BecomeExpertPage /></ProtectedRoute>} />
                             <Route path="/expert-panel" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><ExpertPanelPage /></ProtectedRouteWithMFA>} />
                             <Route path="/transacciones" element={<ProtectedRouteWithMFA><TransactionsPage /></ProtectedRouteWithMFA>} />
+                            <Route path="/service/:serviceId" element={<ServiceDetailPage />} />
                             <Route path="/crear-busqueda" element={<SearchCreationPage />} />
                             <Route path="/explorar" element={<HomePage />} />
                             <Route path="/" element={<HomePage />} />
