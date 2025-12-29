@@ -5,6 +5,22 @@ import { SearchServiceDetailDto } from '../types/homepageWall';
 import { Heart, Star, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+};
+
 interface ServiceCardProps {
   service: SearchServiceDetailDto;
   forceGuestFavorite?: boolean;
@@ -14,6 +30,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
   const navigate = useNavigate();
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
+  const isMobile = useIsMobile();
 
   const handleCardClick = () => {
     navigate(`/service/${service.id}`);
@@ -62,12 +79,12 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
         handleCardClick();
       }}
       className="block flex-shrink-0"
-      style={{ width: '169px' }}
+      style={{ width: isMobile ? '160px' : '169px' }}
     >
       {/* Contenedor principal - Estructura exacta de Airbnb */}
       <div className="relative cursor-pointer group w-full">
         {/* Contenedor de imagen con todos los subdivs */}
-        <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '10px', width: '100%' }}>
+        <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '20px', width: '100%' }}>
           {service.imageUrls.length > 0 ? (
             <>
               {/* Imagen principal */}
@@ -85,26 +102,36 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
                 <div
                   className="absolute top-3 left-3 z-10"
                   style={{
-                    paddingTop: '4px',
-                    paddingBottom: '4px',
-                    paddingLeft: '10px',
-                    paddingRight: '10px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(4px)',
-                    borderRadius: '6px',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                    padding: '0',
                   }}
                 >
                   <div
-                    className="font-semibold text-gray-900"
                     style={{
-                      fontSize: '10px',
-                      lineHeight: '12px',
-                      fontWeight: 600,
-                      letterSpacing: '0.01em',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      paddingTop: '4px',
+                      paddingBottom: '4px',
+                      paddingLeft: '8px',
+                      paddingRight: '8px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(4px)',
+                      borderRadius: '8px',
+                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    Guest favorite
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        lineHeight: '12px',
+                        fontWeight: 600,
+                        color: '#222222',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                        letterSpacing: '0.01em',
+                      }}
+                    >
+                      Guest favorite
+                    </span>
                   </div>
                 </div>
               )}
@@ -115,9 +142,15 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
                 className="absolute top-3 right-3 z-10"
                 style={{
                   padding: '0',
+                  margin: '0',
                   backgroundColor: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '24px',
+                  height: '24px',
                 }}
               >
                 <svg
@@ -128,12 +161,14 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
                   focusable="false"
                   style={{
                     display: 'block',
-                    fill: isFavorite ? '#FF385C' : 'rgba(0, 0, 0, 0.5)',
+                    fill: isFavorite ? '#FF385C' : 'rgba(255, 255, 255, 0.7)',
                     height: '24px',
                     width: '24px',
-                    stroke: isFavorite ? '#FF385C' : '#222222',
+                    stroke: isFavorite ? '#FF385C' : '#FFFFFF',
                     strokeWidth: '2',
                     overflow: 'visible',
+                    margin: '0',
+                    padding: '0',
                   }}
                 >
                   <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
@@ -193,18 +228,20 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
 
         {/* Información del servicio - Estructura exacta con todos los subdivs */}
         <div style={{ marginTop: '8px' }}>
-          {/* Primera fila: Nombre del servicio */}
+          {/* Primera fila: Nombre del servicio (Título) */}
           <div
             className="overflow-hidden"
             style={{
               marginBottom: '4px',
-              fontSize: '15px',
-              lineHeight: '20px',
-              color: '#717171',
+              fontSize: '14px',
+              lineHeight: '18px',
+              fontWeight: 600,
+              color: '#222222',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+              textAlign: 'left',
             }}
           >
-            <div className="truncate">{service.serviceTypeName}</div>
+            <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName}</div>
           </div>
 
           {/* Segunda fila: Fechas y tipo de host */}
@@ -212,38 +249,47 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
             className="overflow-hidden"
             style={{
               marginBottom: '4px',
-              fontSize: '15px',
-              lineHeight: '20px',
+              fontSize: '14px',
+              lineHeight: '18px',
+              fontWeight: 400,
               color: '#717171',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+              textAlign: 'left',
             }}
           >
-            <div className="truncate">
-              {formatDate()} , · {hostType}
+            <div className="truncate" style={{ textAlign: 'left' }}>
+              {formatDate()} · {hostType}
             </div>
           </div>
 
-          {/* Tercera fila: Precio */}
+          {/* Tercera fila: Precio y calificación con estrella */}
           <div
-            className="overflow-hidden"
+            className="flex items-center overflow-hidden"
             style={{
-              fontSize: '15px',
-              lineHeight: '20px',
+              fontSize: '14px',
+              lineHeight: '18px',
+              fontWeight: 400,
               color: '#717171',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+              textAlign: 'left',
+              justifyContent: 'flex-start',
             }}
           >
-            <div className="truncate">
-              <span
-                style={{
-                  fontWeight: 600,
-                  color: '#222222',
-                }}
-              >
-                €{service.price}
-              </span>
-              {` for ${nights} ${nights === 1 ? 'night' : 'nights'}`}
-            </div>
+            <span>€ {service.price}</span>
+            <span>{` for ${nights} ${nights === 1 ? 'night' : 'nights'}`}</span>
+            <span> · </span>
+            <Star 
+              className="flex-shrink-0" 
+              style={{ 
+                width: '12px', 
+                height: '12px', 
+                fill: '#222222', 
+                color: '#222222',
+              }} 
+            />
+            <span style={{ marginLeft: '4px' }}>
+              {service.averageRating?.toFixed(2) || '4.95'}
+            </span>
           </div>
         </div>
       </div>
@@ -300,17 +346,17 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
   if (services.length === 0) return null;
 
   return (
-    <div className="mb-12" style={{ marginBottom: '48px' }}>
+    <div className="mb-12" style={{ marginBottom: '32px' }}>
       {/* Header */}
-      <div className="mb-4 px-4 sm:px-6 lg:px-16 xl:px-24">
+      <div className="mb-4" style={{ paddingLeft: '24px', paddingRight: '24px', paddingTop: '0', paddingBottom: '0' }}>
         <div className="flex items-center justify-between">
           <div>
             <a
               href="#"
               className="font-semibold text-gray-900 mb-1 block inline-flex items-center"
               style={{ 
-                fontSize: '22px', 
-                lineHeight: '26px', 
+                fontSize: '20px', 
+                lineHeight: '24px', 
                 fontWeight: 600,
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 textDecoration: 'none',
@@ -396,12 +442,14 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
         {/* Scroll area */}
         <div
           ref={scrollRef}
-          className="flex overflow-x-auto scrollbar-hide px-4 sm:px-6 lg:px-16 xl:px-24 pb-4"
+          className="flex overflow-x-auto scrollbar-hide pb-4"
           style={{
+            paddingLeft: '24px',
+            paddingRight: '24px',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
             WebkitOverflowScrolling: 'touch',
-            gap: '16px',
+            gap: '12px',
           }}
           onScroll={checkScroll}
         >

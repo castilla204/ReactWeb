@@ -3,6 +3,9 @@ import { Search, ChevronDown, Link as LinkIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
+import cocheImg from '../media/cochepng.png';
+import casaImg from '../media/casapng.png';
+import servicioImg from '../media/motopng.png';
 import {
   Popover,
   PopoverContent,
@@ -59,7 +62,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   }, []);
 
   return (
-    <header className="sticky top-0 z-50" style={{ backgroundColor: '#fbfbfb', borderBottom: '1px solid #EBEBEB' }}>
+    <header className="sticky top-0 z-50" style={{ backgroundColor: '#fbfbfb', borderBottom: '1px solid #EBEBEB', position: 'sticky' }}>
       {/* Desktop: Barra de búsqueda completa */}
       <div className="hidden md:block max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <form
@@ -259,125 +262,332 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
       </div>
 
       {/* Mobile: Botón grande estilo Airbnb - Estructura exacta del HTML */}
-      <div className="md:hidden" style={{ padding: '12px 16px' }}>
-        <button
-          type="button"
-          onClick={handleSearch}
-          className="w-full bg-white border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-all"
+      <div className="md:hidden">
+        <div style={{ padding: '12px 24px' }}>
+          <div className="c1tqtfcq" data-xray-jira-component="Guest: Search Bar">
+            <button
+              type="button"
+              onClick={handleSearch}
+              className="w-full bg-white border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-all"
+              style={{
+                height: '56px',
+                minHeight: '56px',
+                paddingLeft: '16px',
+                paddingRight: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              aria-label="Start your search"
+              data-xray-jira-component="Guest: Search Bar"
+            >
+              {/* span.b15xd7zr con data-button-content="true" */}
+              <span 
+                data-button-content="true"
+                className="b15xd7zr"
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                }}
+              >
+                {/* span.moz9gxt */}
+                <span className="moz9gxt" style={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                }}>
+                  {/* div.dyig47i - Contiene icono Y texto */}
+                  <div className="dyig47i" style={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: '12px',
+                  }}>
+                    {/* span.s1hvfp9h - Contenedor del SVG */}
+                    <span className="s1hvfp9h" style={{ 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 32 32"
+                        aria-hidden="true"
+                        role="presentation"
+                        focusable="false"
+                        style={{
+                          display: 'block',
+                          height: '12px',
+                          width: '12px',
+                          fill: 'currentcolor',
+                        }}
+                      >
+                        <path d="M13 0a13 13 0 0 1 10.5 20.67l7.91 7.92-2.82 2.82-7.92-7.91A12.94 12.94 0 0 1 13 26a13 13 0 1 1 0-26zm0 4a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"></path>
+                      </svg>
+                    </span>
+
+                    {/* span.p19nk050 - Texto principal */}
+                    <span
+                      className="p19nk050"
+                      elementtiming="time_to_search_rendered"
+                      style={{
+                        fontSize: '14px',
+                        lineHeight: '17px',
+                        fontWeight: 550,
+                        color: '#222222',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        display: 'block',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                        letterSpacing: 'normal',
+                      }}
+                    >
+                      Start your search
+                    </span>
+                  </div>
+                </span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile: Tab Navigation Bar */}
+        <div
+          role="tablist"
           style={{
-            height: '56px',
-            minHeight: '56px',
-            paddingLeft: '16px',
-            paddingRight: '16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-start',
+            paddingLeft: '24px',
+            paddingRight: '24px',
+            paddingTop: '0px',
+            paddingBottom: '0px',
+            gap: '0',
+            position: 'relative',
+            width: '100%',
+            overflowX: 'auto',
           }}
-          aria-label="Empieza a buscar"
-          aria-describedby="searchInputDescriptionId"
         >
-          {/* span.b15xd7zr con data-button-content="true" */}
-          <span 
-            data-button-content="true"
-            style={{ 
-              display: 'flex', 
+          {/* Homes Tab */}
+          <a
+            href="/homes"
+            role="tab"
+            aria-selected="true"
+            tabIndex={0}
+            data-tabid="tabBarItem-STAYS"
+            id="search-block-tab-STAYS"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              width: '100%',
+              justifyContent: 'center',
+              padding: '8px 0px',
+              textDecoration: 'none',
+              color: '#222222',
+              position: 'relative',
+              minWidth: '68px',
+              flex: '1 1 0',
             }}
           >
-            {/* span.moz9gxt */}
             <span style={{ 
               display: 'flex', 
-              alignItems: 'center',
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              marginBottom: '2px', 
+              position: 'relative',
               width: '100%',
             }}>
-              {/* div.dyig47i - Contiene icono Y textos en horizontal */}
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center',
-                flexDirection: 'row',
-                width: '100%',
-                height: '24px',
-                gap: '12px',
-              }}>
-                {/* span.s1hvfp9h - Contenedor del SVG */}
-                <span style={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  flexShrink: 0,
-                }}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 32 32"
-                    aria-hidden="true"
-                    role="presentation"
-                    focusable="false"
-                    style={{
-                      display: 'block',
-                      height: '12px',
-                      width: '12px',
-                      fill: 'currentcolor',
-                    }}
-                  >
-                    <path d="M13 0a13 13 0 0 1 10.5 20.67l7.91 7.92-2.82 2.82-7.92-7.91A12.94 12.94 0 0 1 13 26a13 13 0 1 1 0-26zm0 4a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"></path>
-                  </svg>
-                </span>
-
-                {/* Contenedor para textos apilados verticalmente */}
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  justifyContent: 'center',
-                  flex: '1 1 0%',
-                  minWidth: 0,
-                  height: '24px',
-                }}>
-                  {/* span.p19nk050 - Texto principal */}
-                  <span
-                    elementtiming="time_to_search_rendered"
-                    style={{
-                      fontSize: '14px',
-                      lineHeight: '17px',
-                      fontWeight: 600,
-                      color: '#222222',
-                      width: '100%',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      display: 'block',
-                    }}
-                  >
-                    {serviceTypeId && categoryId
-                      ? `${selectedServiceType?.name || 'Tipo'} · ${selectedCategory?.name || 'Categoría'}`
-                      : 'Empieza a buscar'}
-                  </span>
-
-                  {/* span.a8jt5op - Texto secundario */}
-                  <span
-                    id="searchInputDescriptionId"
-                    style={{
-                      fontSize: '12px',
-                      lineHeight: '16px',
-                      fontWeight: 400,
-                      color: '#717171',
-                      width: '100%',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      marginTop: '2px',
-                      display: 'block',
-                    }}
-                  >
-                    {serviceTypeId && categoryId
-                      ? (adUrl ? 'URL agregada' : 'Agregar URL (opcional)')
-                      : 'Filtro aplicado: Cualquier fecha. Cambia la búsqueda.'}
-                  </span>
-                </div>
-              </div>
+              <img
+                src={cocheImg}
+                alt="Coche"
+                style={{
+                  display: 'block',
+                  height: '48px',
+                  width: '48px',
+                  objectFit: 'contain',
+                }}
+              />
             </span>
-          </span>
-        </button>
+            <span
+              style={{
+                fontSize: '10px',
+                lineHeight: '12px',
+                fontWeight: 600,
+                color: '#222222',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                textAlign: 'center',
+                width: '100%',
+              }}
+            >
+              Homes
+            </span>
+          </a>
+
+          {/* Experiences Tab */}
+          <a
+            href="/experiences"
+            role="tab"
+            aria-selected="false"
+            tabIndex={-1}
+            data-tabid="tabBarItem-EXPERIENCES"
+            id="search-block-tab-EXPERIENCES"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '8px 0px',
+              textDecoration: 'none',
+              color: '#222222',
+              position: 'relative',
+              minWidth: '68px',
+              flex: '1 1 0',
+            }}
+          >
+            <span style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              marginBottom: '2px', 
+              position: 'relative',
+              width: '100%',
+            }}>
+              <img
+                src={casaImg}
+                alt="Casa"
+                style={{
+                  display: 'block',
+                  height: '48px',
+                  width: '48px',
+                  objectFit: 'contain',
+                }}
+              />
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '50%',
+                  transform: 'translateX(calc(50% + 20px))',
+                  backgroundColor: '#FF385C',
+                  color: 'white',
+                  fontSize: '8px',
+                  fontWeight: 600,
+                  padding: '2px 4px',
+                  borderRadius: '4px',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                NEW
+              </span>
+            </span>
+            <span
+              style={{
+                fontSize: '10px',
+                lineHeight: '12px',
+                fontWeight: 400,
+                color: '#222222',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                textAlign: 'center',
+                width: '100%',
+              }}
+            >
+              Experiences
+            </span>
+          </a>
+
+          {/* Services Tab */}
+          <a
+            href="/services"
+            role="tab"
+            aria-selected="false"
+            tabIndex={-1}
+            data-tabid="tabBarItem-SERVICES"
+            id="search-block-tab-SERVICES"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '8px 0px',
+              textDecoration: 'none',
+              color: '#222222',
+              position: 'relative',
+              minWidth: '68px',
+              flex: '1 1 0',
+            }}
+          >
+            <span style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              marginBottom: '2px', 
+              position: 'relative',
+              width: '100%',
+            }}>
+              <img
+                src={servicioImg}
+                alt="Servicios"
+                style={{
+                  display: 'block',
+                  height: '48px',
+                  width: '48px',
+                  objectFit: 'contain',
+                }}
+              />
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '50%',
+                  transform: 'translateX(calc(50% + 14px))',
+                  backgroundColor: '#FF385C',
+                  color: 'white',
+                  fontSize: '8px',
+                  fontWeight: 600,
+                  padding: '2px 4px',
+                  borderRadius: '4px',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                NEW
+              </span>
+            </span>
+            <span
+              style={{
+                fontSize: '10px',
+                lineHeight: '12px',
+                fontWeight: 400,
+                color: '#222222',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                textAlign: 'center',
+                width: '100%',
+              }}
+            >
+              Services
+            </span>
+          </a>
+
+          {/* Underline indicator */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 'calc(24px + ((100% - 48px) / 3) / 2 - 34px)',
+              height: '3px',
+              width: '68px',
+              backgroundColor: '#222222',
+              borderRadius: '2px',
+              transition: 'left 0.3s ease',
+            }}
+          />
+        </div>
       </div>
     </header>
   );
