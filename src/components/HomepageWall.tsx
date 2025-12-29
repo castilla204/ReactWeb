@@ -534,10 +534,14 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
 
 interface HomepageWallProps {
   countryCode?: string;
+  serviceTypeId?: number | null;
+  categoryId?: number | null;
 }
 
 export const HomepageWall: React.FC<HomepageWallProps> = ({ 
-  countryCode = 'ES' 
+  countryCode = 'ES',
+  serviceTypeId,
+  categoryId,
 }) => {
   const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
 
