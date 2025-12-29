@@ -462,8 +462,12 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
         {canScrollLeft && (
           <button
             onClick={() => scroll('left')}
-            className="hidden lg:flex absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-shadow z-10 items-center justify-center"
-            style={{ width: '28px', height: '28px' }}
+            className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all z-10 items-center justify-center"
+            style={{ 
+              width: '28px', 
+              height: '28px',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
+            }}
             aria-label="Scroll left"
           >
             <svg
@@ -481,6 +485,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
                 strokeWidth: '4',
                 overflow: 'visible',
                 transform: 'rotate(180deg)',
+                color: '#222222',
               }}
             >
               <path fill="none" d="m12 4 11.3 11.3a1 1 0 0 1 0 1.4L12 28"></path>
@@ -490,8 +495,12 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
         {canScrollRight && (
           <button
             onClick={() => scroll('right')}
-            className="hidden lg:flex absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-shadow z-10 items-center justify-center"
-            style={{ width: '28px', height: '28px' }}
+            className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all z-10 items-center justify-center"
+            style={{ 
+              width: '28px', 
+              height: '28px',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
+            }}
             aria-label="Scroll right"
           >
             <svg
@@ -508,6 +517,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
                 stroke: 'currentColor',
                 strokeWidth: '4',
                 overflow: 'visible',
+                color: '#222222',
               }}
             >
               <path fill="none" d="m12 4 11.3 11.3a1 1 0 0 1 0 1.4L12 28"></path>
