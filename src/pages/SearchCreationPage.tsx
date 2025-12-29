@@ -19,11 +19,12 @@ import { useLoadScript } from '@react-google-maps/api';
 import { LocationMap } from '../components/LocationMap';
 import { useMapExperts } from '../hooks/useMapExperts';
 import { useServices } from '../hooks/useServices';
+import { useApi } from '../hooks/useApi';
+import { API_CONFIG } from '../config/api';
 import CountrySelector from '../components/CountrySelector';
 import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
 import Autocomplete from 'react-google-autocomplete';
-import { Search } from 'lucide-react';
 import { FormProgressTimeline } from '../components/FormProgressTimeline';
 import logoImg from '../media/logoi.png';
 
@@ -54,6 +55,7 @@ const SearchCreationPage: React.FC = () => {
     // Removed subscription limits - no longer needed
     const { serviceTypes, isLoading: serviceTypesLoading, error: serviceTypesError } = useServiceTypes();
     const { showVerification, hasPendingVerification } = useMfaVerification();
+    const { fetchApi } = useApi();
     const [currentStep, setCurrentStep] = useState(0);
     const [showPendingMfaBanner, setShowPendingMfaBanner] = useState(false);
     const [showMfaRecommendationBanner, setShowMfaRecommendationBanner] = useState(false);
@@ -137,6 +139,116 @@ const SearchCreationPage: React.FC = () => {
     const [servicePrice, setServicePrice] = useState<number | undefined>(undefined);
     const [serviceDescription, setServiceDescription] = useState<string | undefined>(undefined);
     const [serviceImageUrls, setServiceImageUrls] = useState<string[]>([]);
+
+    // Detectar serviceId desde la URL y cargar el servicio directamente
+    useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const serviceIdParam = searchParams.get('serviceId');
+        const serviceTypeIdParam = searchParams.get('serviceTypeId');
+        const categoryIdParam = searchParams.get('categoryId');
+        
+        // Si hay serviceId en la URL, cargar el servicio y mostrar el formulario
+        if (serviceIdParam && !selectedServiceId) {
+            const serviceId = parseInt(serviceIdParam, 10);
+            if (!isNaN(serviceId)) {
+                // Primero intentar buscar en mapServices
+                let service = mapServices.find(s => s.id === serviceId);
+                
+                // Si no está en mapServices, buscarlo directamente desde la API
+                if (!service) {
+                    const loadService = async () => {
+                        try {
+                            const url = API_CONFIG.endpoints.expert.services.get(serviceId);
+                            const fetchedService = await fetchApi<typeof mapServices[0]>(url);
+                            if (fetchedService) {
+                                setSelectedServiceId(serviceId);
+                                setExpertProfilePicture(fetchedService.expert?.profilePictureUrl || fetchedService.expert?.profilePicture);
+                                setExpertName(fetchedService.expert?.user?.name || fetchedService.expert?.name);
+                                setServicePrice(fetchedService.price);
+                                setServiceDescription(fetchedService.conditions || fetchedService.description || '');
+                                setServiceImageUrls(fetchedService.imageUrls || []);
+                                // Establecer también los parámetros de búsqueda
+                                if (fetchedService.serviceTypeId) {
+                                    setSearchParameters(prev => ({ ...prev, serviceTypeId: fetchedService.serviceTypeId }));
+                                }
+                                if (fetchedService.categoryId) {
+                                    setSearchParameters(prev => ({ ...prev, category: fetchedService.categoryId }));
+                                }
+                                // Ir directamente al paso 3 (SearchForm)
+                                setCurrentStep(3);
+                            }
+                        } catch (error) {
+                            console.error('Error loading service:', error);
+                            // Si falla, establecer los parámetros de la URL y esperar
+                            if (serviceTypeIdParam) {
+                                const serviceTypeId = parseInt(serviceTypeIdParam, 10);
+                                if (!isNaN(serviceTypeId)) {
+                                    setSearchParameters(prev => ({ ...prev, serviceTypeId }));
+                                }
+                            }
+                            if (categoryIdParam) {
+                                const categoryId = parseInt(categoryIdParam, 10);
+                                if (!isNaN(categoryId)) {
+                                    setSearchParameters(prev => ({ ...prev, category: categoryId }));
+                                }
+                            }
+                        }
+                    };
+                    loadService();
+                } else {
+                    // Si encontramos el servicio en mapServices, configurarlo
+                    setSelectedServiceId(serviceId);
+                    setExpertProfilePicture(service.expert?.profilePictureUrl || service.expert?.profilePicture);
+                    setExpertName(service.expert?.user?.name || service.expert?.name);
+                    setServicePrice(service.price);
+                    setServiceDescription(service.conditions || service.description || '');
+                    setServiceImageUrls(service.imageUrls || []);
+                    // Establecer también los parámetros de búsqueda si el servicio los tiene
+                    if (service.serviceTypeId) {
+                        setSearchParameters(prev => ({ ...prev, serviceTypeId: service.serviceTypeId }));
+                    }
+                    if (service.categoryId) {
+                        setSearchParameters(prev => ({ ...prev, category: service.categoryId }));
+                    }
+                    // Ir directamente al paso 3 (SearchForm) como cuando seleccionas en el mapa
+                    setCurrentStep(3);
+                }
+            }
+        }
+        
+        // Si hay serviceTypeId o categoryId (sin serviceId), establecerlos en searchParameters y ir al paso 1 (mapa)
+        if ((serviceTypeIdParam || categoryIdParam) && !serviceIdParam) {
+            let hasChanges = false;
+            if (serviceTypeIdParam) {
+                const serviceTypeId = parseInt(serviceTypeIdParam, 10);
+                if (!isNaN(serviceTypeId)) {
+                    setSearchParameters(prev => {
+                        if (prev.serviceTypeId !== serviceTypeId) {
+                            hasChanges = true;
+                            return { ...prev, serviceTypeId };
+                        }
+                        return prev;
+                    });
+                }
+            }
+            if (categoryIdParam) {
+                const categoryId = parseInt(categoryIdParam, 10);
+                if (!isNaN(categoryId)) {
+                    setSearchParameters(prev => {
+                        if (prev.category !== categoryId) {
+                            hasChanges = true;
+                            return { ...prev, category: categoryId };
+                        }
+                        return prev;
+                    });
+                }
+            }
+            // Si hay serviceTypeId Y categoryId, ir directamente al paso 1 (mapa)
+            if (serviceTypeIdParam && categoryIdParam) {
+                setCurrentStep(1);
+            }
+        }
+    }, [location.search, mapServices, selectedServiceId, fetchApi]);
 
     const safeCategories = Array.isArray(categories) ? categories : [];
     const [showMoreCategories, setShowMoreCategories] = useState(false);
