@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase, Wallet } from 'lucide-react';
+import { Search, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase, Wallet, Globe } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { NotificationCenter } from './components/NotificationCenter';
@@ -42,6 +42,7 @@ import { ExpertPanelPage } from './pages/ExpertPanelPage';
 import { SearchResultsPage } from './pages/SearchResultsPage';
 import { DisputePanelPage } from './pages/DisputePanelPage';
 import TransactionsPage from './pages/TransactionsPage';
+import HomePage from './pages/HomePage';
 import { AccountSettingsModal } from './components/AccountSettingsModal';
 import SearchDetails from './components/SearchDetails';
 import { GoogleAuth } from './components/GoogleAuth';
@@ -157,7 +158,7 @@ const AppContent: React.FC = () => {
     return (
         <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
             {/* Header estilo Memorae - Oculto en móvil cuando se está en creación de búsqueda */}
-            <header className={`h-16 bg-white relative z-50 ${shouldHideHeaderOnMobile ? 'hidden' : ''}`}>
+            <header className={`h-16 relative z-50 ${shouldHideHeaderOnMobile ? 'hidden' : ''}`} style={{ backgroundColor: '#fbfbfb' }}>
                     <div className="max-w-7xl mx-auto h-full px-4 lg:px-8 flex items-center justify-between">
                         {/* Logo estilo Memorae */}
                         <div className="flex items-center gap-3">
@@ -238,6 +239,24 @@ const AppContent: React.FC = () => {
                                 </Button>
                             )}
 
+                            {/* Botón "Become a host" estilo Airbnb */}
+                            <Button
+                                variant="ghost"
+                                className="hidden md:flex text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full px-4 py-2"
+                                onClick={() => navigate('/become-expert')}
+                            >
+                                Become a host
+                            </Button>
+
+                            {/* Icono de globo para idioma */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="hidden md:flex h-10 w-10 rounded-full hover:bg-gray-100"
+                            >
+                                <Globe className="w-5 h-5 text-gray-700" />
+                            </Button>
+
                             {isAuthenticated ? (
                                 <>
                                     <Button
@@ -249,8 +268,12 @@ const AppContent: React.FC = () => {
                                     </Button>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
-                                                <Avatar className="h-9 w-9">
+                                            <Button 
+                                                variant="ghost" 
+                                                className="relative h-10 w-auto rounded-full p-1 border border-gray-300 hover:shadow-md transition-shadow flex items-center gap-2 px-3"
+                                            >
+                                                <Menu className="w-4 h-4 text-gray-700" />
+                                                <Avatar className="h-8 w-8">
                                                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white text-xs">
                                                         {user?.name?.[0]?.toUpperCase()}
                                                     </AvatarFallback>
@@ -523,7 +546,8 @@ const AppContent: React.FC = () => {
                             <Route path="/expert-panel" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><ExpertPanelPage /></ProtectedRouteWithMFA>} />
                             <Route path="/transacciones" element={<ProtectedRouteWithMFA><TransactionsPage /></ProtectedRouteWithMFA>} />
                             <Route path="/crear-busqueda" element={<SearchCreationPage />} />
-                            <Route path="/" element={<SearchCreationPage />} />
+                            <Route path="/explorar" element={<HomePage />} />
+                            <Route path="/" element={<HomePage />} />
                             
                             {/* Ruta 404 - debe ir al final */}
                             <Route path="*" element={<NotFoundPage />} />
