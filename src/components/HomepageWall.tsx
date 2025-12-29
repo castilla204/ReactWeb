@@ -578,26 +578,28 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
   const cityName = countryCode === 'ES' ? 'Madrid' : 'tu ciudad';
 
   return (
-    <div className="w-full">
-      {/* Sección: Servicios Cercanos / Popular homes */}
-      {data.nearbyServices.services.length > 0 && (
-        <HorizontalScrollSection
-          title={`Popular homes in ${cityName} >`}
-          services={data.nearbyServices.services}
-          showCount={true}
-        />
-      )}
+    <div className="w-full flex justify-center">
+      <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
+        {/* Sección: Servicios Cercanos / Popular homes */}
+        {data.nearbyServices.services.length > 0 && (
+          <HorizontalScrollSection
+            title={`Popular homes in ${cityName} >`}
+            services={data.nearbyServices.services}
+            showCount={true}
+          />
+        )}
 
-      {/* Sección: Servicios Populares / Featured hotels */}
-      {data.popularServices.services.length > 0 && (
-        <HorizontalScrollSection
-          title={`Featured hotels in ${cityName} >`}
-          subtitle="A collection of independent and handpicked hotels"
-          services={data.popularServices.services}
-          showCount={true}
-          forceGuestFavorite={true}
-        />
-      )}
+        {/* Sección: Servicios Populares / Featured hotels */}
+        {data.popularServices.services.length > 0 && (
+          <HorizontalScrollSection
+            title={`Featured hotels in ${cityName} >`}
+            subtitle="A collection of independent and handpicked hotels"
+            services={data.popularServices.services}
+            showCount={true}
+            forceGuestFavorite={true}
+          />
+        )}
+      </div>
     </div>
   );
 };

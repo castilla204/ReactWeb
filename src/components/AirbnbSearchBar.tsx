@@ -5,7 +5,6 @@ import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
 import cocheImg from '../media/cochepng.png';
 import casaImg from '../media/casapng.png';
-import servicioImg from '../media/motopng.png';
 import {
   Popover,
   PopoverContent,
@@ -359,19 +358,19 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
         {/* Mobile: Tab Navigation Bar */}
         <div
           role="tablist"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            paddingLeft: '24px',
-            paddingRight: '24px',
-            paddingTop: '0px',
-            paddingBottom: '0px',
-            gap: '0',
-            position: 'relative',
-            width: '100%',
-            overflowX: 'auto',
-          }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              paddingLeft: '40px',
+              paddingRight: '40px',
+              paddingTop: '0px',
+              paddingBottom: '0px',
+              gap: '0',
+              position: 'relative',
+              width: '100%',
+              overflowX: 'auto',
+            }}
         >
           {/* Homes Tab */}
           <a
@@ -390,7 +389,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               textDecoration: 'none',
               color: '#222222',
               position: 'relative',
-              minWidth: '68px',
+              minWidth: '40px',
               flex: '1 1 0',
             }}
           >
@@ -445,7 +444,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               textDecoration: 'none',
               color: '#222222',
               position: 'relative',
-              minWidth: '68px',
+              minWidth: '40px',
               flex: '1 1 0',
             }}
           >
@@ -518,7 +517,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               textDecoration: 'none',
               color: '#222222',
               position: 'relative',
-              minWidth: '68px',
+              minWidth: '40px',
               flex: '1 1 0',
             }}
           >
@@ -530,16 +529,41 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               position: 'relative',
               width: '100%',
             }}>
-              <img
-                src={servicioImg}
-                alt="Servicios"
+              <div
                 style={{
-                  display: 'block',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
                   height: '48px',
                   width: '48px',
-                  objectFit: 'contain',
                 }}
-              />
+              >
+                <div
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: '#222222',
+                  }}
+                />
+                <div
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: '#222222',
+                  }}
+                />
+                <div
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: '#222222',
+                  }}
+                />
+              </div>
               <span
                 style={{
                   position: 'absolute',
@@ -579,9 +603,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             style={{
               position: 'absolute',
               bottom: 0,
-              left: 'calc(24px + ((100% - 48px) / 3) / 2 - 34px)',
+              left: 'calc(40px + ((100% - 80px) / 3) / 2 - 20px)',
               height: '3px',
-              width: '68px',
+              width: '40px',
               backgroundColor: '#222222',
               borderRadius: '2px',
               transition: 'left 0.3s ease',
