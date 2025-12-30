@@ -23,10 +23,11 @@ const DrawerClose = DrawerPrimitive.Close
 const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <DrawerPrimitive.Overlay
     ref={ref}
     className={cn("fixed inset-0 z-50 bg-black/50", className)}
+    style={{ zIndex: 9997, ...style }}
     {...props}
   />
 ))
@@ -133,9 +134,12 @@ const DrawerContent = React.forwardRef<
     };
   }, []);
   
+  // Verificar si se debe mostrar el overlay (por defecto sí, a menos que se especifique noOverlay)
+  const showOverlay = !(props as any).noOverlay;
+  
   return (
     <DrawerPortal>
-      <DrawerOverlay />
+      {showOverlay && <DrawerOverlay />}
       <DrawerPrimitive.Content
         ref={(node) => {
           if (typeof ref === 'function') {
@@ -147,11 +151,33 @@ const DrawerContent = React.forwardRef<
         }}
         className={cn(
           "fixed inset-x-0 bottom-0 z-50 flex h-auto flex-col rounded-t-[10px] border bg-background sm:inset-x-0 sm:top-auto sm:bottom-0 sm:rounded-t-lg sm:shadow-xl",
-          className
+          className,
+          // Si se proporciona un estilo con 'top', sobrescribir bottom-0
+          props.style?.top && "!bottom-auto"
         )}
+        style={{
+          ...props.style,
+          // Forzar bordes superiores redondeados siempre si se especifican en style
+          ...(props.style?.borderTopLeftRadius && {
+            borderTopLeftRadius: props.style.borderTopLeftRadius + ' !important' as any
+          }),
+          ...(props.style?.borderTopRightRadius && {
+            borderTopRightRadius: props.style.borderTopRightRadius + ' !important' as any
+          }),
+          // Asegurar que los bordes inferiores no estén redondeados si se especifica
+          ...(props.style?.borderBottomLeftRadius !== undefined && {
+            borderBottomLeftRadius: props.style.borderBottomLeftRadius
+          }),
+          ...(props.style?.borderBottomRightRadius !== undefined && {
+            borderBottomRightRadius: props.style.borderBottomRightRadius
+          })
+        }}
         {...props}
       >
-        <div className="mx-auto mt-3 mb-2 h-1.5 w-12 rounded-full bg-muted md:hidden" />
+        {/* Handle - ocultar si se especifica noHandle */}
+        {!(props as any).noHandle && (
+          <div className="mx-auto mt-3 mb-2 h-1.5 w-12 rounded-full bg-muted md:hidden" />
+        )}
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>
