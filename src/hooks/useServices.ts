@@ -211,12 +211,29 @@ export function useServices({
                     services = [];
                 }
             } else {
-                // Para otros endpoints, esperar array directo
-                if (Array.isArray(data)) {
+                // ✅ NUEVA ESTRUCTURA: La API ahora devuelve { services: [...], pagination: {...} } para búsquedas por ubicación/bounds
+                console.log('🔍 useServices: Procesando respuesta para búsqueda por ubicación:', {
+                    dataType: typeof data,
+                    isArray: Array.isArray(data),
+                    hasServices: !!(data && typeof data === 'object' && !Array.isArray(data) && data.services),
+                    data: data
+                });
+                
+                if (data && typeof data === 'object' && !Array.isArray(data)) {
+                    if (data.services && Array.isArray(data.services)) {
+                        services = data.services;
+                        console.log('✅ useServices: Nueva estructura con paginación - services count:', services.length);
+                        console.log('🔍 useServices: Pagination info:', data.pagination);
+                    } else {
+                        console.warn('⚠️ useServices: Expected services array but got:', data);
+                        services = [];
+                    }
+                } else if (Array.isArray(data)) {
+                    // Fallback: Array directo (compatibilidad hacia atrás)
                     services = data;
-                    console.log('🔍 useServices: Array response - services count:', services.length);
+                    console.log('🔍 useServices: Array response (fallback) - services count:', services.length);
                 } else {
-                    console.warn('⚠️ useServices: Expected array but got:', typeof data);
+                    console.warn('⚠️ useServices: Unexpected response format:', typeof data, data);
                     services = [];
                 }
             }

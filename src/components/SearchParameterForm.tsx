@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
-import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 import { useLoadScript } from '@react-google-maps/api';
@@ -33,6 +33,7 @@ interface MapServiceCardProps {
 
 const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, onSelect }) => {
     const [imageIndex, setImageIndex] = useState(0);
+    const [imageError, setImageError] = useState(false);
     
     // Normalizar imageUrls - manejar tanto PascalCase como camelCase
     const imageUrls = Array.isArray(service.imageUrls) 
@@ -41,14 +42,16 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
             ? service.ImageUrls 
             : [];
     const hasMultipleImages = imageUrls.length > 1;
+    const hasValidImage = imageUrls.length > 0 && !imageError;
     
-    console.log('🖼️ MapServiceCard - Service images:', {
-        serviceId: service.id || service.Id,
-        imageUrls: imageUrls,
-        imageUrlsLength: imageUrls.length,
-        hasServiceImageUrls: !!service.imageUrls,
-        hasServiceImageUrlsPascal: !!service.ImageUrls
-    });
+    // Log comentado para evitar spam en consola
+    // console.log('🖼️ MapServiceCard - Service images:', {
+    //     serviceId: service.id || service.Id,
+    //     imageUrls: imageUrls,
+    //     imageUrlsLength: imageUrls.length,
+    //     hasServiceImageUrls: !!service.imageUrls,
+    //     hasServiceImageUrlsPascal: !!service.ImageUrls
+    // });
     
     // Formatear fecha (simulado - deberías obtener fechas reales del servicio)
     const formatDate = () => {
@@ -65,17 +68,40 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
     const hostType = service.expert?.user?.name ? 'Individual host' : 'Individual host';
     const nights = service.durationInHours ? Math.ceil(service.durationInHours / 24) : 2;
 
+    const serviceId = service.id || service.Id;
+    const navigate = useNavigate();
+    
+    const handleCardClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🖱️ Click en card, navegando a:', serviceId);
+        // ✅ Navegar directamente a la página del servicio
+        navigate(`/service/${serviceId}`);
+    };
+    
+    // Detectar si es móvil
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    
     return (
-        <div
-            className={`group cursor-pointer transition-all duration-300 ${isSelected ? 'ring-2 ring-blue-600 rounded-xl' : ''}`}
-            onClick={() => onSelect(service.id)}
-            style={{ width: '100%' }}
+        <a
+            href={`/service/${serviceId}`}
+            onClick={handleCardClick}
+            className={`group cursor-pointer transition-all duration-300 block ${isSelected ? 'ring-2 ring-blue-600 rounded-xl' : ''}`}
+            style={{ 
+                width: '100%', 
+                maxWidth: isMobile ? '100%' : '347px', 
+                textDecoration: 'none', 
+                color: 'inherit', 
+                display: 'block',
+                padding: isMobile ? '0' : '0',
+                marginBottom: isMobile ? '0' : '0'
+            }}
         >
             {/* Contenedor principal - Estructura exacta de Airbnb */}
-            <div className="relative cursor-pointer group w-full">
-                {/* Contenedor de imagen */}
-                <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '20px', width: '100%' }}>
-                    {imageUrls.length > 0 ? (
+            <div className="relative cursor-pointer group" style={{ width: '100%', padding: isMobile ? '0' : '0' }}>
+                {/* Contenedor de imagen - Más grande como en Airbnb */}
+                <div className="relative w-full overflow-hidden" style={{ aspectRatio: '16/9', borderRadius: isMobile ? '0' : '12px', width: '100%', marginBottom: isMobile ? '0' : '12px' }}>
+                    {hasValidImage ? (
                         <>
                             {/* Imagen principal */}
                             <div className="relative w-full h-full">
@@ -84,47 +110,105 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                     alt={service.serviceTypeName || service.categoryName}
                                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                     style={{ display: 'block' }}
+                                    onError={() => {
+                                        // Log comentado para evitar spam
+                                        // console.warn('⚠️ Error cargando imagen:', imageUrls[imageIndex]);
+                                        setImageError(true);
+                                    }}
+                                    onLoad={() => setImageError(false)}
                                 />
                             </div>
                             
-                            {/* Botón de favorito */}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                }}
-                                className="absolute top-3 right-3 z-10"
-                                style={{
-                                    padding: '0',
-                                    margin: '0',
-                                    backgroundColor: 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '24px',
-                                    height: '24px',
-                                }}
-                            >
-                                <svg
-                                    viewBox="0 0 32 32"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    aria-hidden="true"
-                                    role="presentation"
-                                    focusable="false"
+                            {/* Botones de acción - Solo visibles cuando está seleccionado o en hover */}
+                            <div className={`absolute top-3 right-3 z-10 flex gap-2 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                {/* Botón de favorito (corazón) */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                    }}
+                                    aria-label="Save to wishlist"
                                     style={{
-                                        display: 'block',
-                                        fill: 'rgba(255, 255, 255, 0.7)',
-                                        height: '24px',
-                                        width: '24px',
-                                        stroke: '#FFFFFF',
-                                        strokeWidth: '2',
-                                        overflow: 'visible',
+                                        padding: '8px',
+                                        margin: '0',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                        border: 'none',
+                                        borderRadius: '50%',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '32px',
+                                        height: '32px',
+                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
                                     }}
                                 >
-                                    <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
-                                </svg>
-                            </button>
+                                    <svg
+                                        viewBox="0 0 32 32"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        aria-hidden="true"
+                                        role="presentation"
+                                        focusable="false"
+                                        style={{
+                                            display: 'block',
+                                            fill: 'none',
+                                            height: '16px',
+                                            width: '16px',
+                                            stroke: 'var(--palette-icon-primary, #222222)',
+                                            strokeWidth: '3',
+                                            overflow: 'visible',
+                                        }}
+                                    >
+                                        <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
+                                    </svg>
+                                </button>
+                                
+                                {/* Botón de cerrar (X) - Solo visible cuando está seleccionado */}
+                                {isSelected && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            // Deseleccionar el servicio
+                                            onSelect(0);
+                                        }}
+                                        aria-label="Close"
+                                        style={{
+                                            padding: '8px',
+                                            margin: '0',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: '32px',
+                                            height: '32px',
+                                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
+                                        }}
+                                    >
+                                        <svg
+                                            viewBox="0 0 32 32"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            aria-hidden="true"
+                                            role="presentation"
+                                            focusable="false"
+                                            style={{
+                                                display: 'block',
+                                                fill: 'none',
+                                                height: '16px',
+                                                width: '16px',
+                                                stroke: 'var(--palette-icon-primary, #222222)',
+                                                strokeWidth: '3',
+                                                overflow: 'visible',
+                                            }}
+                                        >
+                                            <path d="m6 6 20 20M26 6 6 26" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
 
                             {/* Navegación de imágenes */}
                             {hasMultipleImages && (
@@ -177,21 +261,27 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             )}
                         </>
                     ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-gray-400 text-sm">Sin imagen</span>
+                        <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center" style={{ minHeight: '300px' }}>
+                            <div className="w-16 h-16 mb-3 rounded-full bg-gray-200 flex items-center justify-center">
+                                <Image className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <span className="text-gray-500 text-sm font-medium">Sin imagen disponible</span>
                         </div>
                     )}
                 </div>
 
-                {/* Información del servicio */}
-                <div style={{ marginTop: '8px' }}>
+                {/* Información del servicio - Estilo Airbnb móvil */}
+                <div style={{ 
+                    marginTop: isMobile ? '8px' : '12px',
+                    padding: isMobile ? '0 24px 24px 24px' : '0'
+                }}>
                     {/* Primera fila: Nombre del servicio */}
                     <div
                         className="overflow-hidden"
                         style={{
                             marginBottom: '4px',
-                            fontSize: '14px',
-                            lineHeight: '18px',
+                            fontSize: isMobile ? '15px' : '16px',
+                            lineHeight: isMobile ? '19px' : '20px',
                             fontWeight: 600,
                             color: '#222222',
                             fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
@@ -208,8 +298,8 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         className="overflow-hidden"
                         style={{
                             marginBottom: '4px',
-                            fontSize: '14px',
-                            lineHeight: '18px',
+                            fontSize: isMobile ? '14px' : '15px',
+                            lineHeight: isMobile ? '18px' : '19px',
                             fontWeight: 400,
                             color: '#717171',
                             fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
@@ -225,20 +315,20 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                     <div
                         className="flex items-center overflow-hidden"
                         style={{
-                            fontSize: '14px',
-                            lineHeight: '18px',
-                            fontWeight: 400,
-                            color: '#717171',
+                            fontSize: isMobile ? '15px' : '16px',
+                            lineHeight: isMobile ? '19px' : '20px',
+                            fontWeight: 600,
+                            color: '#222222',
                             fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                             textAlign: 'left',
                             justifyContent: 'flex-start',
                         }}
                     >
-                        <span>€ {service.price}</span>
-                        <span>{` for ${nights} ${nights === 1 ? 'night' : 'nights'}`}</span>
+                        <span>€{service.price?.toFixed(0) || '0'}</span>
+                        <span style={{ fontWeight: 400, marginLeft: '4px' }}>night</span>
                         {service.averageRating && service.averageRating > 0 && (
                             <>
-                                <span> · </span>
+                                <span style={{ marginLeft: '8px', marginRight: '4px' }}> · </span>
                                 <Star 
                                     className="flex-shrink-0" 
                                     style={{ 
@@ -249,14 +339,14 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                     }} 
                                 />
                                 <span style={{ marginLeft: '4px' }}>
-                                    {service.averageRating.toFixed(2)}
+                                    {service.averageRating.toFixed(1)}
                                 </span>
                             </>
                         )}
                     </div>
                 </div>
             </div>
-        </div>
+        </a>
     );
 };
 const getZoomLevel = (radius: number) => {
@@ -277,6 +367,7 @@ interface SearchParameterFormProps {
 }
 export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId }: SearchParameterFormProps) {
     const { width } = useWindowSize();
+    const navigate = useNavigate();
     
     // Calcular tamaños basados en el ancho real de la pantalla
     // iPhone SE: 375px, iPhone XR: 414px, iPhone 12 Pro Max: 428px
@@ -387,6 +478,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     // Cargar posiciones de expertos para el mapa
     // Caso 1: Carga inicial (sin bounds ni location)
     // Caso 2: Con bounds (cuando se mueve el mapa) - devuelve servicios completos
+    console.log('🔍 SearchParameterForm - Llamando useMapExperts:', {
+        selectedCategory,
+        serviceTypeId,
+        hasMapBounds: !!mapBounds,
+        mapBounds: mapBounds
+    });
+    
     const { experts: mapExperts, services: servicesFromBounds } = useMapExperts(
         selectedCategory,
         serviceTypeId,
@@ -396,6 +494,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             limit: 50
         } : undefined
     );
+    
+    // ✅ LOGS DETALLADOS
+    console.log('🔍 SearchParameterForm - useMapExperts retornó:', {
+        mapExpertsCount: mapExperts.length,
+        servicesFromBoundsCount: servicesFromBounds.length,
+        mapExperts: mapExperts,
+        servicesFromBounds: servicesFromBounds
+    });
     
     // Handler para cuando cambian los bounds del mapa
     const handleBoundsChange = useCallback((bounds: {
@@ -408,34 +514,73 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
    
     // ✅ Combinar servicios: de bounds (cuando se mueve el mapa) o de ubicación (cuando hay locationRange)
     // Priorizar servicios de bounds si existen, sino usar los de ubicación
-    const allServicesCombined = mapBounds && servicesFromBounds.length > 0 
+    console.log('🔍 SearchParameterForm - Servicios disponibles:', {
+        servicesFromBounds: servicesFromBounds.length,
+        allServices: allServices.length,
+        hasMapBounds: !!mapBounds,
+        servicesFromBoundsData: servicesFromBounds,
+        allServicesData: allServices
+    });
+    
+    // ✅ SIEMPRE usar servicesFromBounds si hay bounds, incluso si está vacío (para evitar usar allServices que puede estar vacío)
+    const allServicesCombined = mapBounds 
         ? servicesFromBounds 
         : allServices;
+    
+    console.log('🔍 SearchParameterForm - allServicesCombined:', {
+        count: allServicesCombined.length,
+        data: allServicesCombined
+    });
+    
+    console.log('🔍 SearchParameterForm - allServicesCombined:', allServicesCombined.length, allServicesCombined);
+    
+    // ✅ Reordenar servicios: el seleccionado aparece primero (como en Airbnb)
+    const reorderedServices = useMemo(() => {
+        if (!selectedService) {
+            return allServicesCombined;
+        }
+        
+        const selected = allServicesCombined.find(s => s.id === selectedService);
+        const others = allServicesCombined.filter(s => s.id !== selectedService);
+        
+        if (selected) {
+            return [selected, ...others];
+        } else {
+            return allServicesCombined;
+        }
+    }, [allServicesCombined, selectedService]);
    
-    // Aplicar filtros a servicios
-    const services = allServicesCombined.filter(service => {
+    // Aplicar filtros a servicios (después de reordenar)
+    console.log('🔍 SearchParameterForm - Antes de filtrar:', {
+        reorderedServicesCount: reorderedServices.length,
+        filters: filters,
+        reorderedServices: reorderedServices.map(s => ({ id: s.id, price: s.price, rating: s.averageRating }))
+    });
+    
+    const services = reorderedServices.filter(service => {
         // El precio viene directamente en euros
         const price = service.price || 0;
-        if (price < filters.priceRange[0] || price > filters.priceRange[1]) {
-            if (service.id === 154) {
-                console.log(`🔍 SearchParameterForm: Service 154 filtered by price - price: ${price}, range: [${filters.priceRange[0]}, ${filters.priceRange[1]}]`);
-            }
+        const priceInRange = price >= filters.priceRange[0] && price <= filters.priceRange[1];
+        
+        if (!priceInRange) {
+            console.log(`🔍 SearchParameterForm: Service ${service.id} filtrado por precio - price: ${price}, range: [${filters.priceRange[0]}, ${filters.priceRange[1]}]`);
             return false;
         }
         
         const rating = service.averageRating || 0;
-        if (rating < filters.rating) {
-            if (service.id === 154) {
-                console.log(`🔍 SearchParameterForm: Service 154 filtered by rating - rating: ${rating}, minRating: ${filters.rating}`);
-            }
+        const ratingPassed = rating >= filters.rating;
+        
+        if (!ratingPassed) {
+            console.log(`🔍 SearchParameterForm: Service ${service.id} filtrado por rating - rating: ${rating}, minRating: ${filters.rating}`);
             return false;
         }
         
-        if (service.id === 154) {
-            console.log('✅ SearchParameterForm: Service 154 PASSED all filters');
-        }
-        
         return true;
+    });
+    
+    console.log('🔍 SearchParameterForm - Después de filtrar:', {
+        servicesCount: services.length,
+        services: services.map(s => ({ id: s.id, price: s.price, rating: s.averageRating }))
     });
     
     // Ref para rastrear si ya se abrió el drawer para esta ubicación
@@ -476,24 +621,25 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         });
     }, [selectedLocation, formData.latitude, formData.longitude]);
     useEffect(() => {
-        const service154 = allServices.find(s => s.id === 154);
-        console.log('🔍 [DEBUG] Servicios cargados:', {
-            totalServices: allServices.length,
-            filteredServices: services.length,
-            isLoading: isLoadingServices,
-            service154InAll: !!service154,
-            service154InFiltered: !!services.find(s => s.id === 154),
-            service154Price: service154 ? service154.price : null,
-            filters: filters,
-            services: services.map(s => ({
-                id: s.id,
-                name: s.expert?.user?.name,
-                price: s.price,
-                rating: s.averageRating,
-                categoryName: s.categoryName,
-                serviceTypeName: s.serviceTypeName
-            }))
-        });
+        // Log comentado para evitar spam
+        // const service154 = allServices.find(s => s.id === 154);
+        // console.log('🔍 [DEBUG] Servicios cargados:', {
+        //     totalServices: allServices.length,
+        //     filteredServices: services.length,
+        //     isLoading: isLoadingServices,
+        //     service154InAll: !!service154,
+        //     service154InFiltered: !!services.find(s => s.id === 154),
+        //     service154Price: service154 ? service154.price : null,
+        //     filters: filters,
+        //     services: services.map(s => ({
+        //         id: s.id,
+        //         name: s.expert?.user?.name,
+        //         price: s.price,
+        //         rating: s.averageRating,
+        //         categoryName: s.categoryName,
+        //         serviceTypeName: s.serviceTypeName
+        //     }))
+        // });
     }, [allServices, services, isLoadingServices, filters]);
    
     
@@ -759,10 +905,31 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             }
         }
     };
-    const handleServiceSelect = (serviceId: number) => {
-        console.log('🎯 Seleccionando servicio:', serviceId);
+    // Ref para el contenedor del sidebar (lista de servicios)
+    const sidebarRef = useRef<HTMLDivElement>(null);
+    
+    const handleServiceSelect = (serviceId: number | undefined) => {
+        // Validar que serviceId sea un número válido
+        if (!serviceId || isNaN(serviceId)) {
+            console.warn('⚠️ handleServiceSelect recibió un serviceId inválido:', serviceId);
+            return;
+        }
+        
+        // ✅ PRIMERO actualizar el estado para que el marcador cambie de color
         setSelectedService(serviceId);
-        console.log('✅ Servicio seleccionado:', serviceId);
+        
+        // ✅ Hacer scroll al principio del sidebar para mostrar la card seleccionada
+        if (sidebarRef.current) {
+            setTimeout(() => {
+                sidebarRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
+        }
+        
+        // ✅ Esperar un momento para que el estado se actualice y el marcador cambie de color
+        // Luego navegar a la página del servicio
+        setTimeout(() => {
+            navigate(`/service/${serviceId}`);
+        }, 300); // 300ms para dar tiempo suficiente a que el marcador cambie de color
     };
     const handleContinue = () => {
         if (!selectedService) {
@@ -958,19 +1125,27 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     )}
                     
                     {/* Lista de servicios */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div ref={sidebarRef} className="flex-1 overflow-y-auto">
                         {formData.latitude && formData.longitude && (
                             <div className="p-4 pb-6">
-                            {/* Services List - Desktop estilo Airbnb en grid de 2 columnas */}
-                            {services.length > 0 ? (
-                                <div className="grid grid-cols-2 gap-4">
-                                    {services.map((service) => (
-                                        <MapServiceCard
-                                            key={service.id}
-                                            service={service}
-                                            isSelected={selectedService === service.id}
-                                            onSelect={handleServiceSelect}
-                                        />
+                            {/* Services List - Desktop estilo Airbnb en 1 columna, cards más grandes */}
+                            {(() => {
+                                console.log('🔍 SearchParameterForm - Renderizando sidebar:', {
+                                    reorderedServicesCount: reorderedServices.length,
+                                    reorderedServices: reorderedServices
+                                });
+                                return null;
+                            })()}
+                            {reorderedServices.length > 0 ? (
+                                <div className="flex flex-col gap-6" style={{ width: '100%' }}>
+                                    {reorderedServices.map((service) => (
+                                        <div key={service.id} style={{ width: '100%', maxWidth: '347px' }}>
+                                            <MapServiceCard
+                                                service={service}
+                                                isSelected={selectedService === service.id}
+                                                onSelect={handleServiceSelect}
+                                            />
+                                        </div>
                                     ))}
                                 </div>
                             ) : (
@@ -1001,24 +1176,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         )}
                 </div>
                 
-                    {/* Continue Button - Fijo en la parte inferior */}
-                    {formData.latitude && formData.longitude && services.length > 0 && (
-                        <div className="flex-shrink-0 border-t border-gray-200 bg-white">
-                            <div className="px-6 py-4">
-                                <button
-                                    onClick={handleContinue}
-                                    disabled={!selectedService}
-                                    className={`w-full h-12 rounded-lg text-base font-semibold transition-all shadow-sm ${
-                                        selectedService
-                                            ? 'bg-[#0066CC] hover:bg-[#0052A3] text-white shadow-md hover:shadow-lg'
-                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    }`}
-                                >
-                                    {selectedService ? 'Continuar' : 'Selecciona un experto'}
-                                </button>
-                        </div>
-                        </div>
-                    )}
+                    {/* Botón de continuar eliminado - ahora se avanza automáticamente al seleccionar un servicio */}
                     </div>
                     
                 {/* Mobile: Map View */}
@@ -1319,18 +1477,34 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 
                 {/* Mobile Drawer with Services */}
                 <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                    <DrawerContent className="max-h-[85vh] flex flex-col rounded-t-[24px] bg-gray-50 outline-none">
+                    <DrawerContent className="max-h-[85vh] flex flex-col rounded-t-[24px] bg-white outline-none">
                         {/* Handle minimalista */}
                         <div className="flex justify-center pt-3 pb-2 bg-white rounded-t-[24px]">
                             <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
                         </div>
                         
-                        {/* Sin Header ni Filtros molestos, directo al contenido limpio */}
-                        <div className="flex-1 overflow-y-auto bg-gray-50/50">
-                            {/* Services List - Balanced Professional Style */}
-                            <div className="px-3 py-3">
+                        {/* Header con contador estilo Airbnb */}
+                        <div className="px-6 py-4 bg-white border-b border-gray-200">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-semibold text-gray-900">
+                                    {services.length > 0 ? `${services.length} ${services.length === 1 ? 'servicio' : 'servicios'}` : 'Sin servicios'}
+                                </h2>
+                                <button
+                                    onClick={() => setIsDrawerOpen(false)}
+                                    className="p-2 -mr-2 text-gray-600 hover:text-gray-900 transition-colors"
+                                    aria-label="Cerrar"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {/* Contenido con scroll */}
+                        <div className="flex-1 overflow-y-auto bg-white">
+                            {/* Services List - Estilo Airbnb */}
+                            <div className="px-0">
                                 {services.length > 0 ? (
-                                    <div className="space-y-4">
+                                    <div className="space-y-0">
                                         {services.map((service) => {
                                             const isSelected = selectedService === service.id;
                                             
@@ -1376,31 +1550,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         </div>
                     </div>
                         
-                        {/* Continue Button */}
-                        {services.length > 0 && (
-                            <div className="border-t border-gray-200 bg-white px-4 py-3 flex-shrink-0">
-                                <button
-                                    onClick={() => {
-                                        console.log('🔘 Click en Continuar, selectedService:', selectedService);
-                                        handleContinue();
-                                        setIsDrawerOpen(false);
-                                    }}
-                                    disabled={!selectedService}
-                                    className={`w-full h-11 rounded-lg text-sm font-semibold transition-all ${
-                                        selectedService
-                                            ? 'bg-[#0066CC] hover:bg-[#0052A3] text-white'
-                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    }`}
-                                >
-                                    {selectedService ? 'Continuar' : 'Selecciona un experto'}
-                                </button>
-                                {process.env.NODE_ENV === 'development' && (
-                                    <p className="text-xs text-gray-400 mt-1">
-                                        Debug: selectedService = {selectedService ? selectedService.toString() : 'null'}
-                                    </p>
-                                )}
-                </div>
-                        )}
+                        {/* Continue Button eliminado - ahora se avanza automáticamente al seleccionar */}
                     </DrawerContent>
                 </Drawer>
         </div>
