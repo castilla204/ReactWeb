@@ -34,13 +34,13 @@ export function CheckoutPage({}: CheckoutPageProps) {
             return;
         }
 
-        const loadService = async () => {
-            if (!serviceId) {
-                showToast('error', 'ID de servicio no válido');
-                navigate(-1);
-                return;
-            }
+        if (!serviceId) {
+            showToast('error', 'ID de servicio no válido');
+            navigate(-1);
+            return;
+        }
 
+        const loadService = async () => {
             try {
                 setLoading(true);
                 const id = parseInt(serviceId, 10);
@@ -53,69 +53,69 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 const url = API_CONFIG.endpoints.expert.services.get(id);
                 const rawService = await fetchApi<any>(url);
                 
+                console.log('🔵 CheckoutPage - Servicio obtenido (raw):', rawService);
+                
                 if (rawService) {
-                    // Transformar PascalCase a camelCase
+                    // Transformar PascalCase a camelCase (igual que en ServiceDetailPage.tsx)
                     const transformService = (service: any): Service => {
-                        return {
-                            id: service.Id || service.id,
-                            expertProfileId: service.ExpertProfileId || service.expertProfileId,
-                            categoryId: service.CategoryId || service.categoryId,
-                            serviceTypeId: service.ServiceTypeId || service.serviceTypeId,
-                            serviceTypeName: service.ServiceTypeName || service.serviceTypeName,
-                            serviceTypeDescription: service.ServiceTypeDescription || service.serviceTypeDescription,
-                            serviceTypeCategoryId: service.ServiceTypeCategoryId || service.serviceTypeCategoryId,
-                            serviceTypeCategoryName: service.ServiceTypeCategoryName || service.serviceTypeCategoryName,
-                            requiresAppointment: service.RequiresAppointment ?? service.requiresAppointment,
-                            price: service.Price ?? service.price ?? 0,
-                            conditions: service.Conditions || service.conditions || '',
-                            durationInHours: service.DurationInHours ?? service.durationInHours,
-                            createdAt: service.CreatedAt || service.createdAt,
-                            imageUrls: service.ImageUrls || service.imageUrls || [],
-                            categoryName: service.CategoryName || service.categoryName,
-                            completedSearches: service.CompletedSearches ?? service.completedSearches,
-                            averageRating: service.AverageRating ?? service.averageRating ?? 0,
-                            reviewsCount: service.ReviewsCount ?? service.reviewsCount ?? 0,
-                            expert: service.Expert ? {
-                                id: service.Expert.Id || service.expert.id,
-                                userId: service.Expert.UserId || service.expert.userId,
-                                user: service.Expert.User ? {
-                                    id: service.Expert.User.Id || service.expert.user.id,
-                                    name: service.Expert.User.Name || service.expert.user.name,
-                                    email: service.Expert.User.Email || service.expert.user.email,
-                                    profilePictureUrl: service.Expert.User.ProfilePictureUrl || service.expert.user.profilePictureUrl,
-                                    createdAt: service.Expert.User.CreatedAt || service.expert.user.createdAt,
-                                } : service.expert.user,
-                                bio: service.Expert.Bio || service.expert.bio,
-                                country: service.Expert.Country || service.expert.country,
-                                city: service.Expert.City || service.expert.city,
-                                phone: service.Expert.Phone || service.expert.phone,
-                                address: service.Expert.Address || service.expert.address,
-                                zipCode: service.Expert.ZipCode || service.expert.zipCode,
-                                isVerified: service.Expert.IsVerified ?? service.expert.isVerified,
-                                isSuperExpert: service.Expert.IsSuperExpert ?? service.expert.isSuperExpert,
-                                reviews: service.Expert.Reviews || service.expert.reviews || [],
-                                averageRating: service.Expert.AverageRating ?? service.expert.averageRating ?? 0,
-                                reviewsCount: service.Expert.ReviewsCount ?? service.expert.reviewsCount ?? 0,
-                                completedSearches: service.Expert.CompletedSearches ?? service.expert.completedSearches ?? 0,
-                                currentAvailability: service.Expert.CurrentAvailability || service.expert.currentAvailability,
-                                responseTimeInHours: service.Expert.ResponseTimeInHours ?? service.expert.responseTimeInHours,
-                                responseRate: service.Expert.ResponseRate ?? service.expert.responseRate,
-                                languages: service.Expert.Languages || service.expert.languages || [],
-                                education: service.Expert.Education || service.expert.education || [],
-                                workExperience: service.Expert.WorkExperience || service.expert.workExperience || [],
-                                certifications: service.Expert.Certifications || service.expert.certifications || [],
-                                awards: service.Expert.Awards || service.expert.awards || [],
-                                linkedInUrl: service.Expert.LinkedInUrl || service.expert.linkedInUrl,
-                                websiteUrl: service.Expert.WebsiteUrl || service.expert.websiteUrl,
-                                facebookUrl: service.Expert.FacebookUrl || service.expert.facebookUrl,
-                                twitterUrl: service.Expert.TwitterUrl || service.expert.twitterUrl,
-                                instagramUrl: service.Expert.InstagramUrl || service.expert.instagramUrl,
-                                createdAt: service.Expert.CreatedAt || service.expert.createdAt,
-                            } : service.expert,
-                            selectedDeliverableTypes: service.SelectedDeliverableTypes || service.selectedDeliverableTypes || [],
-                        };
+                        try {
+                            const expert = service.Expert || service.expert;
+                            const expertUser = expert?.User || expert?.user;
+                            
+                            console.log('🔵 CheckoutPage - Expert raw:', expert);
+                            console.log('🔵 CheckoutPage - ExpertUser raw:', expertUser);
+                            
+                            return {
+                                id: service.Id || service.id,
+                                expertProfileId: service.ExpertProfileId || service.expertProfileId,
+                                categoryId: service.CategoryId || service.categoryId,
+                                serviceTypeId: service.ServiceTypeId || service.serviceTypeId,
+                                serviceTypeName: service.ServiceTypeName || service.serviceTypeName,
+                                serviceTypeDescription: service.ServiceTypeDescription || service.serviceTypeDescription,
+                                serviceTypeCategoryId: service.ServiceTypeCategoryId || service.serviceTypeCategoryId,
+                                serviceTypeCategoryName: service.ServiceTypeCategoryName || service.serviceTypeCategoryName,
+                                requiresAppointment: service.RequiresAppointment ?? service.requiresAppointment,
+                                price: service.Price ?? service.price ?? 0,
+                                conditions: service.Conditions || service.conditions || '',
+                                durationInHours: service.DurationInHours ?? service.durationInHours,
+                                createdAt: service.CreatedAt || service.createdAt,
+                                imageUrls: service.ImageUrls || service.imageUrls || [],
+                                categoryName: service.CategoryName || service.categoryName,
+                                completedSearches: service.CompletedSearches ?? service.completedSearches,
+                                averageRating: service.AverageRating ?? service.averageRating ?? 0,
+                                reviewsCount: service.ReviewsCount ?? service.reviewsCount ?? 0,
+                                expert: expert && (expert.Id || expert.id) ? {
+                                    id: expert.Id || expert.id,
+                                    profilePictureUrl: expert.ProfilePictureUrl || expert.profilePictureUrl || expertUser?.ProfilePictureUrl || expertUser?.profilePictureUrl,
+                                    description: expert.Description || expert.description || expert.Bio || expert.bio || '',
+                                    stripeAccountId: expert.StripeAccountId || expert.stripeAccountId,
+                                    createdAt: expert.CreatedAt || expert.createdAt,
+                                    user: expertUser ? {
+                                        name: expertUser.Name || expertUser.name || '',
+                                        email: expertUser.Email || expertUser.email || '',
+                                        profilePictureUrl: expertUser.ProfilePictureUrl || expertUser.profilePictureUrl,
+                                    } : {
+                                        name: '',
+                                        email: '',
+                                    },
+                                    currentAvailability: expert.CurrentAvailability || expert.currentAvailability,
+                                    reviews: expert.Reviews || expert.reviews || [],
+                                    timezone: expert.Timezone || expert.timezone,
+                                    country: expert.Country || expert.country,
+                                    latitude: expert.Latitude || expert.latitude,
+                                    longitude: expert.Longitude || expert.longitude,
+                                    locationRange: expert.LocationRange || expert.locationRange,
+                                } : null,
+                                selectedDeliverableTypes: service.SelectedDeliverableTypes || service.selectedDeliverableTypes || [],
+                            };
+                        } catch (error) {
+                            console.error('❌ Error en transformService:', error);
+                            throw error;
+                        }
                     };
-                    setService(transformService(rawService));
+                    const transformedService = transformService(rawService);
+                    console.log('✅ CheckoutPage - Servicio transformado:', transformedService);
+                    setService(transformedService);
                 } else {
                     showToast('error', 'Servicio no encontrado');
                     navigate(-1);
@@ -130,7 +130,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
         };
 
         loadService();
-    }, [serviceId, isAuthenticated, navigate, fetchApi]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [serviceId, isAuthenticated]);
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('es-ES', {
