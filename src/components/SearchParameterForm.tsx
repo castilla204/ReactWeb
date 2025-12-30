@@ -470,18 +470,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [selectedService, setSelectedService] = useState<number | null>(null);
     // Estado para prevenir clics accidentales en la card móvil justo después de abrirse
     const [cardJustOpened, setCardJustOpened] = useState(false);
+    const cardOpenTimeRef = useRef<number>(0);
     
     // Resetear el flag cuando cambia el servicio seleccionado
     useEffect(() => {
         if (selectedService) {
             setCardJustOpened(true);
-            // Permitir clics después de 300ms
+            cardOpenTimeRef.current = Date.now();
+            // Permitir clics después de 500ms (aumentado para móvil)
             const timer = setTimeout(() => {
                 setCardJustOpened(false);
-            }, 300);
+            }, 500);
             return () => clearTimeout(timer);
         } else {
             setCardJustOpened(false);
+            cardOpenTimeRef.current = 0;
         }
     }, [selectedService]);
     
@@ -1516,7 +1519,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </>
                         )}
                         
-                        {/* Floating Card - Estilo Airbnb - FUERA del contenedor del mapa para que aparezca correctamente */}
+                        {/* Floating Card - Estilo Airbnb - SOLO MÓVIL - FUERA del contenedor del mapa para que aparezca correctamente */}
                         {selectedService && (() => {
                             console.log('🎴 Renderizando Floating Card (nivel superior):', { selectedService, servicesCount: services.length });
                             const selectedServiceData = services.find(s => s.id === selectedService || (s as any).Id === selectedService);
@@ -1552,18 +1555,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             console.log('✅ Renderizando card HTML para servicio:', selectedServiceData.id || (selectedServiceData as any).Id);
                             const serviceId = selectedServiceData.id || (selectedServiceData as any).Id;
                             
-                            const handleCardClick = (e: React.MouseEvent) => {
+                            const handleCardClick = (e: React.MouseEvent | React.TouchEvent) => {
                                 // No navegar si se hace clic en los botones
                                 const target = e.target as HTMLElement;
                                 if (target.closest('button')) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
                                     return;
                                 }
                                 
                                 // Prevenir navegación si la card acaba de abrirse (para evitar clics accidentales)
-                                if (cardJustOpened) {
+                                const timeSinceOpen = Date.now() - cardOpenTimeRef.current;
+                                if (cardJustOpened || timeSinceOpen < 500) {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    console.log('🚫 Click bloqueado - card acaba de abrirse');
+                                    console.log('🚫 Click bloqueado - card acaba de abrirse', { timeSinceOpen, cardJustOpened });
                                     return;
                                 }
                                 
@@ -1573,11 +1579,56 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 navigate(`/service/${serviceId}`);
                             };
                             
+                            const handleCardTouchStart = (e: React.TouchEvent) => {
+                                // Prevenir navegación en touch si la card acaba de abrirse
+                                const timeSinceOpen = Date.now() - cardOpenTimeRef.current;
+                                if (cardJustOpened || timeSinceOpen < 500) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    return;
+                                }
+                            };
+                            
+                            const handleOverlayClick = (e: React.MouseEvent | React.TouchEvent) => {
+                                // Solo cerrar si el clic no es en la card misma
+                                const target = e.target as HTMLElement;
+                                if (target.closest('[data-testid="card-container"]')) {
+                                    return;
+                                }
+                                
+                                // Cerrar la card al hacer clic fuera
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('🖱️ Click fuera de la card, cerrando...');
+                                handleServiceSelect(null);
+                            };
+                            
                             return (
-                                <div 
-                                    className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[10001] w-[calc(100vw-32px)] max-w-[400px] pointer-events-auto"
+                                <>
+                                    {/* Overlay para cerrar al hacer clic fuera - Solo activo cuando hay card abierta - SOLO MÓVIL */}
+                                    {selectedService && (
+                                        <div
+                                            className="fixed inset-0 z-[10000] bg-transparent lg:hidden"
+                                            onClick={handleOverlayClick}
+                                            onTouchEnd={handleOverlayClick}
+                                            onTouchStart={(e) => {
+                                                // Prevenir que el mapa se mueva cuando se toca el overlay
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                            }}
+                                            style={{
+                                                pointerEvents: 'auto',
+                                                touchAction: 'none' // Prevenir que el mapa se mueva
+                                            }}
+                                        />
+                                    )}
+                                    
+                                    <div 
+                                        className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[10001] w-[calc(100vw-32px)] max-w-[400px] lg:hidden"
                                     role="dialog"
                                     data-testid="card-container"
+                                        onClick={(e) => e.stopPropagation()}
+                                        onTouchEnd={(e) => e.stopPropagation()}
                                     style={{ 
                                         fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                                         '--card-container_width': 'calc(100vw - 32px)',
@@ -1587,14 +1638,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         transform: 'translateX(-50%)',
                                         zIndex: 10001,
                                         display: 'block',
-                                        visibility: 'visible'
+                                            visibility: 'visible',
+                                            pointerEvents: cardJustOpened ? 'none' : 'auto'
                                     } as React.CSSProperties}
+                                        onTouchStart={handleCardTouchStart}
                                 >
                                     <a
                                         href={`/service/${serviceId}`}
                                         onClick={handleCardClick}
+                                        onTouchEnd={handleCardClick}
                                         className="block cursor-pointer"
-                                        style={{ textDecoration: 'none', color: 'inherit' }}
+                                        style={{ 
+                                            textDecoration: 'none', 
+                                            color: 'inherit',
+                                            pointerEvents: cardJustOpened ? 'none' : 'auto'
+                                        }}
                                     >
                                         <div className="bg-white rounded-xl shadow-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-3xl">
                                         {/* Header con imagen y botones - Estilo Airbnb */}
@@ -1627,7 +1685,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         )}
                                                         
                                                         {/* Botones superiores - Estilo Airbnb */}
-                                                        <div className="absolute top-3 right-3 flex gap-2 z-10">
+                                                        <div className="absolute top-3 right-3 flex gap-2 z-10" style={{ pointerEvents: 'auto' }}>
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -1637,6 +1695,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                                 className="w-10 h-10 rounded-full bg-white/90 hover:bg-white transition-all flex items-center justify-center shadow-sm"
                                                                 aria-label="Añadir a favoritos"
                                                                 type="button"
+                                                                style={{ pointerEvents: 'auto' }}
                                                             >
                                                                 <Heart className="w-5 h-5 text-gray-900" />
                                                             </button>
@@ -1647,9 +1706,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                                     console.log('❌ Botón cerrar clickeado');
                                                                     handleServiceSelect(null);
                                                                 }}
+                                                                onTouchEnd={(e) => {
+                                                                    e.stopPropagation();
+                                                                    e.preventDefault();
+                                                                    console.log('❌ Botón cerrar tocado');
+                                                                    handleServiceSelect(null);
+                                                                }}
                                                                 className="w-10 h-10 rounded-full bg-white/90 hover:bg-white transition-all flex items-center justify-center shadow-sm"
                                                                 aria-label="Cerrar"
                                                                 type="button"
+                                                                style={{ pointerEvents: 'auto' }}
                                                             >
                                                                 <X className="w-5 h-5 text-gray-900" />
                                                             </button>
@@ -1720,6 +1786,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     </div>
                                     </a>
                                 </div>
+                                </>
                             );
                         })()}
                 </div>
@@ -1838,168 +1905,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     />
                                 ) : null}
                                 
-                                {/* Floating Card Desktop - Estilo Airbnb */}
-                                {selectedService && (() => {
-                                    const selectedServiceData = services.find(s => s.id === selectedService);
-                                    if (!selectedServiceData) return null;
-                                    
-                                    const imageUrls = Array.isArray(selectedServiceData.imageUrls) 
-                                        ? selectedServiceData.imageUrls 
-                                        : Array.isArray(selectedServiceData.ImageUrls) 
-                                            ? selectedServiceData.ImageUrls 
-                                            : [];
-                                    const hasValidImage = imageUrls.length > 0;
-                                    const firstImage = imageUrls[0] || '';
-                                    
-                                    // Formatear fecha
-                                    const formatDate = () => {
-                                        const today = new Date();
-                                        const checkIn = new Date(today);
-                                        checkIn.setDate(today.getDate() + 2);
-                                        const checkOut = new Date(checkIn);
-                                        checkOut.setDate(checkIn.getDate() + 2);
-                                        const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-                                        return `${checkIn.getDate()}–${checkOut.getDate()} ${months[checkIn.getMonth()]}`;
-                                    };
-                                    
-                                    const nights = selectedServiceData.durationInHours ? Math.ceil(selectedServiceData.durationInHours / 24) : 2;
-                                    const price = selectedServiceData.price || 0;
-                                    const totalPrice = price * nights;
-                                    
-                                    return (
-                                        <div 
-                                            className="absolute bottom-6 left-6 z-[10000] w-[400px] pointer-events-auto"
-                                            role="dialog"
-                                            data-testid="card-container"
-                                            style={{ 
-                                                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                                                '--card-container_width': '400px'
-                                            } as React.CSSProperties}
-                                        >
-                                            <div className="bg-white rounded-xl shadow-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-3xl">
-                                                {/* Header con imagen y botones - Estilo Airbnb */}
-                                                <div className="relative">
-                                                    {hasValidImage && (
-                                                        <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3', maxHeight: '300px' }}>
-                                                            <div className="relative w-full h-full">
-                                                                <img
-                                                                    src={firstImage}
-                                                                    alt={selectedServiceData.serviceTypeName || selectedServiceData.categoryName}
-                                                                    className="w-full h-full object-cover"
-                                                                    loading="eager"
-                                                                />
-                                                                
-                                                                {/* Indicadores de imágenes si hay más de una */}
-                                                                {imageUrls.length > 1 && (
-                                                                    <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-1">
-                                                                        {imageUrls.map((_, idx) => (
-                                                                            <span
-                                                                                key={idx}
-                                                                                className={`w-1.5 h-1.5 rounded-full ${
-                                                                                    idx === 0 ? 'bg-white' : 'bg-white/50'
-                                                                                }`}
-                                                                                style={{ 
-                                                                                    transform: idx === 0 ? 'scale(1)' : `scale(${1 - idx * 0.15})`
-                                                                                }}
-                                                                            />
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                                
-                                                                {/* Botones superiores - Estilo Airbnb */}
-                                                                <div className="absolute top-3 right-3 flex gap-2 z-10">
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            e.preventDefault();
-                                                                            // TODO: Agregar a favoritos
-                                                                        }}
-                                                                        className="w-10 h-10 rounded-full bg-white/90 hover:bg-white transition-all flex items-center justify-center shadow-sm"
-                                                                        aria-label="Añadir a favoritos"
-                                                                        type="button"
-                                                                    >
-                                                                        <Heart className="w-5 h-5 text-gray-900" />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            e.preventDefault();
-                                                                            handleServiceSelect(null);
-                                                                        }}
-                                                                        className="w-10 h-10 rounded-full bg-white/90 hover:bg-white transition-all flex items-center justify-center shadow-sm"
-                                                                        aria-label="Cerrar"
-                                                                        type="button"
-                                                                    >
-                                                                        <X className="w-5 h-5 text-gray-900" />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                
-                                                {/* Contenido del card - Estilo Airbnb */}
-                                                <div className="p-4">
-                                                    {/* Título principal */}
-                                                    <div className="mb-2">
-                                                        <h3 
-                                                            className="text-base font-semibold text-gray-900 mb-1 line-clamp-1"
-                                                            id={`title_${selectedServiceData.id}`}
-                                                            data-testid="listing-card-title"
-                                                            style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 600 }}
-                                                        >
-                                                            {selectedServiceData.serviceTypeName || selectedServiceData.categoryName || 'Servicio'}
-                                                        </h3>
-                                                        <p 
-                                                            className="text-sm text-gray-600 line-clamp-1"
-                                                            data-testid="listing-card-subtitle"
-                                                            style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
-                                                        >
-                                                            {selectedServiceData.expert?.user?.name || 'Experto'}
-                                                        </p>
-                                                    </div>
-                                                    
-                                                    {/* Fechas - Estilo Airbnb */}
-                                                    <div className="text-sm text-gray-600 mb-3" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
-                                                        <span>{formatDate()}</span>
-                                                    </div>
-                                                    
-                                                    {/* Precio y rating - Estilo Airbnb */}
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-baseline gap-1">
-                                                            <span 
-                                                                className="text-base font-semibold text-gray-900"
-                                                                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 500 }}
-                                                            >
-                                                                €{totalPrice}
-                                                            </span>
-                                                            <span 
-                                                                className="text-sm text-gray-600"
-                                                                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
-                                                            >
-                                                                por {nights} {nights === 1 ? 'noche' : 'noches'}
-                                                            </span>
-                                                        </div>
-                                                        {selectedServiceData.averageRating && selectedServiceData.averageRating > 0 && (
-                                                            <div className="flex items-center gap-1">
-                                                                <Star className="w-3 h-3 fill-gray-900 text-gray-900" />
-                                                                <span 
-                                                                    className="text-sm text-gray-900"
-                                                                    style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
-                                                                >
-                                                                    {selectedServiceData.averageRating.toFixed(2)}
-                                                                    {selectedServiceData.completedSearches && selectedServiceData.completedSearches > 0 && (
-                                                                        <span className="text-gray-600"> ({selectedServiceData.completedSearches})</span>
-                                                                    )}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
+                                {/* Floating Card Desktop - OCULTA EN PC */}
                             </div>
                             </>
                         )}

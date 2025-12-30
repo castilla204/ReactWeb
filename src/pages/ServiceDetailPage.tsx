@@ -33,40 +33,93 @@ const ServiceDetailPage: React.FC = () => {
         }
 
         const url = API_CONFIG.endpoints.expert.services.get(id);
-        const fetchedService = await fetchApi<Service>(url);
+        const rawService = await fetchApi<any>(url);
         
-        console.log('🔍 ServiceDetailPage - Servicio obtenido:', {
-          id: fetchedService?.id,
-          imageUrls: fetchedService?.imageUrls,
-          imageUrlsLength: fetchedService?.imageUrls?.length || 0,
-          serviceTypeName: fetchedService?.serviceTypeName,
-          price: fetchedService?.price,
-          expert: fetchedService?.expert?.user?.name,
-        });
+        console.log('🔍 ServiceDetailPage - Servicio obtenido (raw):', rawService);
         
-        if (fetchedService) {
-          // Mapear imageUrls si viene en diferentes formatos
-          const mappedService = {
-            ...fetchedService,
-            imageUrls: (() => {
-              if (Array.isArray(fetchedService.imageUrls)) return fetchedService.imageUrls;
-              if ((fetchedService as any).ImageUrls && Array.isArray((fetchedService as any).ImageUrls)) {
-                return (fetchedService as any).ImageUrls;
-              }
-              if ((fetchedService as any).imageUrl) {
-                return [(fetchedService as any).imageUrl];
-              }
-              if ((fetchedService as any).ImageUrl) {
-                return [(fetchedService as any).ImageUrl];
-              }
-              return [];
-            })(),
+        if (rawService) {
+          // Función para transformar PascalCase a camelCase (igual que en useServices.ts)
+          const transformService = (service: any): Service => {
+            return {
+              id: service.Id || service.id,
+              expertProfileId: service.ExpertProfileId || service.expertProfileId,
+              categoryId: service.CategoryId || service.categoryId,
+              serviceTypeId: service.ServiceTypeId || service.serviceTypeId,
+              serviceTypeName: service.ServiceTypeName || service.serviceTypeName,
+              serviceTypeDescription: service.ServiceTypeDescription || service.serviceTypeDescription,
+              serviceTypeCategoryId: service.ServiceTypeCategoryId || service.serviceTypeCategoryId,
+              serviceTypeCategoryName: service.ServiceTypeCategoryName || service.serviceTypeCategoryName,
+              requiresAppointment: service.RequiresAppointment ?? service.requiresAppointment,
+              price: service.Price ?? service.price ?? 0,
+              conditions: service.Conditions || service.conditions || '',
+              durationInHours: service.DurationInHours ?? service.durationInHours,
+              createdAt: service.CreatedAt || service.createdAt,
+              imageUrls: service.ImageUrls || service.imageUrls || [],
+              categoryName: service.CategoryName || service.categoryName,
+              completedSearches: service.CompletedSearches ?? service.completedSearches,
+              averageRating: service.AverageRating ?? service.averageRating,
+              isActive: service.IsActive ?? service.isActive ?? true,
+              selectedDeliverableTypes: (service.SelectedDeliverableTypes || service.selectedDeliverableTypes || []).map((dt: any) => ({
+                id: dt.Id || dt.id,
+                name: dt.Name || dt.name,
+                displayName: dt.DisplayName || dt.displayName,
+                description: dt.Description || dt.description,
+                isRequired: dt.IsRequired ?? dt.isRequired,
+                isActive: dt.IsActive ?? dt.isActive,
+                sortOrder: dt.SortOrder ?? dt.sortOrder,
+              })),
+              expert: service.Expert || service.expert ? {
+                id: (service.Expert || service.expert).Id || (service.Expert || service.expert).id,
+                profilePictureUrl: (service.Expert || service.expert).ProfilePictureUrl || (service.Expert || service.expert).profilePictureUrl,
+                description: (service.Expert || service.expert).Description || (service.Expert || service.expert).description,
+                stripeAccountId: (service.Expert || service.expert).StripeAccountId || (service.Expert || service.expert).stripeAccountId,
+                createdAt: (service.Expert || service.expert).CreatedAt || (service.Expert || service.expert).createdAt,
+                user: {
+                  name: ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.Name || ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.name,
+                  email: ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.Email || ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.email,
+                  profilePictureUrl: ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.ProfilePictureUrl || ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.profilePictureUrl,
+                },
+                currentAvailability: (service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability ? {
+                  id: ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).Id || ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).id,
+                  daysOfWeek: ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).DaysOfWeek || ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).daysOfWeek || [],
+                  startTime: ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).StartTime || ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).startTime,
+                  endTime: ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).EndTime || ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).endTime,
+                  effectiveFrom: ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).EffectiveFrom || ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).effectiveFrom,
+                } : undefined,
+                reviews: ((service.Expert || service.expert).Reviews || (service.Expert || service.expert).reviews || []).map((review: any) => ({
+                  id: review.Id || review.id,
+                  score: review.Score ?? review.score,
+                  description: review.Description || review.description,
+                  createdAt: review.CreatedAt || review.createdAt,
+                  reviewer: review.Reviewer || review.reviewer ? {
+                    id: (review.Reviewer || review.reviewer).Id || (review.Reviewer || review.reviewer).id,
+                    name: (review.Reviewer || review.reviewer).Name || (review.Reviewer || review.reviewer).name,
+                    email: (review.Reviewer || review.reviewer).Email || (review.Reviewer || review.reviewer).email,
+                    profilePictureUrl: (review.Reviewer || review.reviewer).ProfilePictureUrl || (review.Reviewer || review.reviewer).profilePictureUrl,
+                  } : undefined,
+                  imageUrls: review.ImageUrls || review.imageUrls || [],
+                })),
+                timezone: (service.Expert || service.expert).Timezone || (service.Expert || service.expert).timezone,
+                country: (service.Expert || service.expert).Country || (service.Expert || service.expert).country,
+                latitude: (service.Expert || service.expert).Latitude || (service.Expert || service.expert).latitude,
+                longitude: (service.Expert || service.expert).Longitude || (service.Expert || service.expert).longitude,
+                locationRange: (service.Expert || service.expert).LocationRange || (service.Expert || service.expert).locationRange,
+              } : null,
+              expertLatitude: service.ExpertLatitude || service.expertLatitude,
+              expertLongitude: service.ExpertLongitude || service.expertLongitude,
+            };
           };
           
-          console.log('✅ ServiceDetailPage - Servicio mapeado:', {
+          const mappedService = transformService(rawService);
+          
+          console.log('✅ ServiceDetailPage - Servicio transformado:', {
             id: mappedService.id,
             imageUrls: mappedService.imageUrls,
             imageUrlsLength: mappedService.imageUrls.length,
+            serviceTypeName: mappedService.serviceTypeName,
+            serviceTypeDescription: mappedService.serviceTypeDescription,
+            expert: mappedService.expert?.user?.name,
+            reviews: mappedService.expert?.reviews?.length || 0,
           });
           
           setService(mappedService);
@@ -145,6 +198,7 @@ const ServiceDetailPage: React.FC = () => {
       totalSteps={2}
       onBack={handleBack}
       onContinue={handleContinue}
+      service={service} // ✅ Pasar el servicio completo transformado
     />
   );
 };
