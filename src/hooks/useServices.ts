@@ -193,18 +193,90 @@ export function useServices({
             console.log('🔍 useServices: Fetched services:', data);
             console.log('🔍 useServices: Data type:', typeof data, 'Array?', Array.isArray(data));
             
+            // Función para transformar PascalCase a camelCase
+            const transformService = (service: any): Service => {
+                return {
+                    id: service.Id || service.id,
+                    expertProfileId: service.ExpertProfileId || service.expertProfileId,
+                    categoryId: service.CategoryId || service.categoryId,
+                    serviceTypeId: service.ServiceTypeId || service.serviceTypeId,
+                    serviceTypeName: service.ServiceTypeName || service.serviceTypeName,
+                    serviceTypeDescription: service.ServiceTypeDescription || service.serviceTypeDescription,
+                    serviceTypeCategoryId: service.ServiceTypeCategoryId || service.serviceTypeCategoryId,
+                    serviceTypeCategoryName: service.ServiceTypeCategoryName || service.serviceTypeCategoryName,
+                    requiresAppointment: service.RequiresAppointment ?? service.requiresAppointment,
+                    price: service.Price ?? service.price ?? 0,
+                    conditions: service.Conditions || service.conditions || '',
+                    durationInHours: service.DurationInHours ?? service.durationInHours,
+                    createdAt: service.CreatedAt || service.createdAt,
+                    imageUrls: service.ImageUrls || service.imageUrls || [],
+                    categoryName: service.CategoryName || service.categoryName,
+                    completedSearches: service.CompletedSearches ?? service.completedSearches,
+                    averageRating: service.AverageRating ?? service.averageRating,
+                    isActive: service.IsActive ?? service.isActive ?? true,
+                    selectedDeliverableTypes: (service.SelectedDeliverableTypes || service.selectedDeliverableTypes || []).map((dt: any) => ({
+                        id: dt.Id || dt.id,
+                        name: dt.Name || dt.name,
+                        displayName: dt.DisplayName || dt.displayName,
+                        description: dt.Description || dt.description,
+                        isRequired: dt.IsRequired ?? dt.isRequired,
+                        isActive: dt.IsActive ?? dt.isActive,
+                        sortOrder: dt.SortOrder ?? dt.sortOrder,
+                    })),
+                    expert: service.Expert || service.expert ? {
+                        id: (service.Expert || service.expert).Id || (service.Expert || service.expert).id,
+                        profilePictureUrl: (service.Expert || service.expert).ProfilePictureUrl || (service.Expert || service.expert).profilePictureUrl,
+                        description: (service.Expert || service.expert).Description || (service.Expert || service.expert).description,
+                        stripeAccountId: (service.Expert || service.expert).StripeAccountId || (service.Expert || service.expert).stripeAccountId,
+                        createdAt: (service.Expert || service.expert).CreatedAt || (service.Expert || service.expert).createdAt,
+                        user: {
+                            name: ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.Name || ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.name,
+                            email: ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.Email || ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.email,
+                            profilePictureUrl: ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.ProfilePictureUrl || ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.profilePictureUrl,
+                        },
+                        currentAvailability: (service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability ? {
+                            id: ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).Id || ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).id,
+                            daysOfWeek: ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).DaysOfWeek || ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).daysOfWeek || [],
+                            startTime: ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).StartTime || ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).startTime,
+                            endTime: ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).EndTime || ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).endTime,
+                            effectiveFrom: ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).EffectiveFrom || ((service.Expert || service.expert).CurrentAvailability || (service.Expert || service.expert).currentAvailability).effectiveFrom,
+                        } : undefined,
+                        reviews: ((service.Expert || service.expert).Reviews || (service.Expert || service.expert).reviews || []).map((review: any) => ({
+                            id: review.Id || review.id,
+                            score: review.Score ?? review.score,
+                            description: review.Description || review.description,
+                            createdAt: review.CreatedAt || review.createdAt,
+                            reviewer: review.Reviewer || review.reviewer ? {
+                                id: (review.Reviewer || review.reviewer).Id || (review.Reviewer || review.reviewer).id,
+                                name: (review.Reviewer || review.reviewer).Name || (review.Reviewer || review.reviewer).name,
+                                email: (review.Reviewer || review.reviewer).Email || (review.Reviewer || review.reviewer).email,
+                                profilePictureUrl: (review.Reviewer || review.reviewer).ProfilePictureUrl || (review.Reviewer || review.reviewer).profilePictureUrl,
+                            } : undefined,
+                            imageUrls: review.ImageUrls || review.imageUrls || [],
+                        })),
+                        timezone: (service.Expert || service.expert).Timezone || (service.Expert || service.expert).timezone,
+                        country: (service.Expert || service.expert).Country || (service.Expert || service.expert).country,
+                        latitude: (service.Expert || service.expert).Latitude || (service.Expert || service.expert).latitude,
+                        longitude: (service.Expert || service.expert).Longitude || (service.Expert || service.expert).longitude,
+                        locationRange: (service.Expert || service.expert).LocationRange || (service.Expert || service.expert).locationRange,
+                    } : null,
+                    expertLatitude: service.ExpertLatitude || service.expertLatitude,
+                    expertLongitude: service.ExpertLongitude || service.expertLongitude,
+                };
+            };
+            
             // Manejar respuesta paginada (cuando se usa expertProfileId)
             let services: Service[] = [];
             if (expertProfileId) {
                 // El endpoint ahora devuelve { services: [...], pagination: {...} }
-                const paginatedResponse = data as PaginatedResponse<Service>;
+                const paginatedResponse = data as PaginatedResponse<any>;
                 if (paginatedResponse.services && Array.isArray(paginatedResponse.services)) {
-                    services = paginatedResponse.services;
+                    services = paginatedResponse.services.map(transformService);
                     console.log('🔍 useServices: Paginated response - services count:', services.length);
                     console.log('🔍 useServices: Pagination info:', paginatedResponse.pagination);
                 } else if (Array.isArray(data)) {
                     // Fallback: si viene como array directo (compatibilidad hacia atrás)
-                    services = data;
+                    services = data.map(transformService);
                     console.log('🔍 useServices: Array response (fallback) - services count:', services.length);
                 } else {
                     console.warn('⚠️ useServices: Unexpected response format for expert services:', data);
@@ -221,7 +293,7 @@ export function useServices({
                 
                 if (data && typeof data === 'object' && !Array.isArray(data)) {
                     if (data.services && Array.isArray(data.services)) {
-                        services = data.services;
+                        services = data.services.map(transformService);
                         console.log('✅ useServices: Nueva estructura con paginación - services count:', services.length);
                         console.log('🔍 useServices: Pagination info:', data.pagination);
                     } else {
@@ -230,7 +302,7 @@ export function useServices({
                     }
                 } else if (Array.isArray(data)) {
                     // Fallback: Array directo (compatibilidad hacia atrás)
-                    services = data;
+                    services = data.map(transformService);
                     console.log('🔍 useServices: Array response (fallback) - services count:', services.length);
                 } else {
                     console.warn('⚠️ useServices: Unexpected response format:', typeof data, data);
