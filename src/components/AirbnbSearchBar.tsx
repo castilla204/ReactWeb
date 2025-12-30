@@ -34,8 +34,21 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
 
   const selectedServiceType = serviceTypes.find(st => st.id === serviceTypeId);
   const selectedCategory = categories.find(c => c.id === categoryId);
+  
+  // Debug: verificar que el estado se actualiza
+  useEffect(() => {
+    console.log('🔍 Estado actualizado:', {
+      serviceTypeId,
+      serviceTypesCount: serviceTypes.length,
+      selectedServiceType: selectedServiceType?.name,
+      categoryId,
+      categoriesCount: categories.length,
+      selectedCategory: selectedCategory?.name,
+    });
+  }, [serviceTypeId, categoryId, selectedServiceType, selectedCategory, serviceTypes.length, categories.length]);
 
   const handleSearch = () => {
+    // Si hay onSearch (desde HomePage), llamarlo para filtrar en la misma página
     if (onSearch) {
       onSearch({
         serviceTypeId,
@@ -43,7 +56,17 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
         adUrl,
       });
     }
-    // Si no hay onSearch, no hacer nada - el buscador solo filtra en la misma página
+    
+    // Si hay serviceTypeId Y categoryId, navegar a /crear-busqueda al paso del mapa
+    if (serviceTypeId && categoryId) {
+      const params = new URLSearchParams();
+      params.append('serviceTypeId', serviceTypeId.toString());
+      params.append('categoryId', categoryId.toString());
+      if (adUrl) params.append('adUrl', adUrl);
+      
+      const queryString = params.toString();
+      navigate(`/crear-busqueda?${queryString}`);
+    }
   };
 
   // Cerrar cuando se hace click fuera
@@ -105,10 +128,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                       Tipo de servicio
                     </label>
                     <div
-                      className={`text-sm truncate flex items-center gap-1 ${
-                        selectedServiceType ? 'text-gray-900 font-medium' : 'text-gray-500'
-                      }`}
-                      style={{ fontSize: '14px', lineHeight: '18px' }}
+                      className="text-sm truncate flex items-center gap-1"
+                      style={{ 
+                        fontSize: '14px', 
+                        lineHeight: '18px',
+                        color: selectedServiceType ? '#222222' : '#717171',
+                        fontWeight: selectedServiceType ? 600 : 400,
+                      }}
                     >
                       {selectedServiceType ? selectedServiceType.name : 'Selecciona tipo'}
                       <ChevronDown className="w-4 h-4 flex-shrink-0" />
@@ -127,12 +153,27 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                       <button
                         key={serviceType.id}
                         type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setServiceTypeId(serviceType.id);
-                          setIsServiceTypeOpen(false);
-                          setActiveField(null);
+                          console.log('✅ Click en serviceType:', {
+                            id: serviceType.id,
+                            name: serviceType.name,
+                            serviceTypesArray: serviceTypes.map(st => ({ id: st.id, name: st.name })),
+                          });
+                          // Actualizar el estado directamente
+                          const newServiceTypeId = serviceType.id;
+                          setServiceTypeId(newServiceTypeId);
+                          console.log('🔄 setServiceTypeId a:', newServiceTypeId);
+                          // Cerrar el popover después de un pequeño delay
+                          requestAnimationFrame(() => {
+                            setIsServiceTypeOpen(false);
+                            setActiveField(null);
+                          });
                         }}
                         className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
                           serviceTypeId === serviceType.id ? 'bg-blue-50' : ''
@@ -170,10 +211,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                       Categoría
                     </label>
                     <div
-                      className={`text-sm truncate flex items-center gap-1 ${
-                        selectedCategory ? 'text-gray-900 font-medium' : 'text-gray-500'
-                      }`}
-                      style={{ fontSize: '14px', lineHeight: '18px' }}
+                      className="text-sm truncate flex items-center gap-1"
+                      style={{ 
+                        fontSize: '14px', 
+                        lineHeight: '18px',
+                        color: selectedCategory ? '#222222' : '#717171',
+                        fontWeight: selectedCategory ? 600 : 400,
+                      }}
                     >
                       {selectedCategory ? selectedCategory.name : 'Selecciona categoría'}
                       <ChevronDown className="w-4 h-4 flex-shrink-0" />
@@ -194,12 +238,27 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                         <button
                           key={category.id}
                           type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setCategoryId(category.id);
-                            setIsCategoryOpen(false);
-                            setActiveField(null);
+                            console.log('✅ Click en category:', {
+                              id: category.id,
+                              name: category.name,
+                              categoriesArray: categories.map(c => ({ id: c.id, name: c.name })),
+                            });
+                            // Actualizar el estado directamente
+                            const newCategoryId = category.id;
+                            setCategoryId(newCategoryId);
+                            console.log('🔄 setCategoryId a:', newCategoryId);
+                            // Cerrar el popover después de un pequeño delay
+                            requestAnimationFrame(() => {
+                              setIsCategoryOpen(false);
+                              setActiveField(null);
+                            });
                           }}
                           className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
                             categoryId === category.id ? 'bg-blue-50' : ''
@@ -231,8 +290,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 </label>
                 {activeField === 'adUrl' ? (
                   <input
-                    type="url"
-                    placeholder="https://..."
+                    type="text"
+                    placeholder="Pega cualquier texto aquí..."
                     value={adUrl}
                     onChange={(e) => setAdUrl(e.target.value)}
                     className="text-sm text-gray-600 placeholder-gray-400 bg-transparent border-none outline-none w-full"

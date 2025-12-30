@@ -90,7 +90,26 @@ export function ServiceReviewPage({
 
     const service = services.find(s => s.id === serviceId);
     const finalService: Service | null = service || null;
-    const finalImages = finalService?.imageUrls?.length ? finalService.imageUrls : (serviceImageUrls || []);
+    
+    // Normalizar imageUrls - puede venir de diferentes fuentes
+    const normalizeImageUrls = (urls: any): string[] => {
+      if (Array.isArray(urls)) return urls.filter(url => url && typeof url === 'string');
+      if (typeof urls === 'string') return [urls];
+      return [];
+    };
+    
+    const finalImages = finalService?.imageUrls?.length 
+      ? normalizeImageUrls(finalService.imageUrls)
+      : normalizeImageUrls(serviceImageUrls || []);
+    
+    console.log('🖼️ ServiceReviewPage - Imágenes finales:', {
+      serviceId,
+      finalServiceImageUrls: finalService?.imageUrls,
+      serviceImageUrls,
+      finalImages,
+      finalImagesLength: finalImages.length,
+    });
+    
     const finalExpertName = finalService?.expert?.user?.name || expertName || 'Experto';
     const finalExpertPicture = finalService?.expert?.profilePictureUrl || finalService?.expert?.user?.profilePictureUrl || expertProfilePicture;
     const finalPrice = finalService?.price || servicePrice || 0;
@@ -372,11 +391,24 @@ export function ServiceReviewPage({
                         {/* Foto Principal */}
                         <div className="relative z-20 w-full aspect-[4/3] bg-white rounded-xl shadow-[0_15px_35px_-10px_rgba(0,0,0,0.25)] transform transition-all duration-500 border-[5px] border-white overflow-hidden active:scale-95">
                              <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent z-10 pointer-events-none" />
-                            <img 
-                                src={finalImages[0]} 
-                                alt="Principal" 
-                                            className="w-full h-full object-cover"
-                                        />
+                            {finalImages[0] ? (
+                                <img 
+                                    src={finalImages[0]} 
+                                    alt="Principal" 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        console.error('❌ Error cargando imagen:', finalImages[0]);
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                    <div className="text-center">
+                                        <Image className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                                        <p className="text-xs text-gray-400">Sin imagen disponible</p>
+                                    </div>
+                                </div>
+                            )}
                             
                             {/* Badge */}
                             {finalImages.length > 1 && (
@@ -700,11 +732,24 @@ export function ServiceReviewPage({
                                 {/* Foto Principal (Frente) */}
                                 <div className="relative z-20 w-full aspect-[4/3] bg-white rounded-xl shadow-2xl transform transition-all duration-500 border-[6px] border-white overflow-hidden group-hover:-translate-y-2">
                                     <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent z-10 pointer-events-none" />
-                                    <img 
-                                        src={finalImages[0]} 
-                                    alt="Principal"
-                                        className="w-full h-full object-cover"
-                                    />
+                                    {finalImages[0] ? (
+                                        <img 
+                                            src={finalImages[0]} 
+                                            alt="Principal"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                console.error('❌ Error cargando imagen:', finalImages[0]);
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                            <div className="text-center">
+                                                <Image className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                                                <p className="text-sm text-gray-400">Sin imagen disponible</p>
+                                            </div>
+                                        </div>
+                                    )}
                                     
                                     {/* Badge de contador de fotos */}
                                     {finalImages.length > 1 && (

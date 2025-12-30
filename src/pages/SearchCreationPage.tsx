@@ -6,7 +6,7 @@ import { SearchParameterForm } from '../components/SearchParameterForm';
 import { ServiceReviewPage } from './ServiceReviewPage';
 import { useAuth } from '../contexts/AuthContext';
 import { showToast } from '../lib/toast';
-import HomePresentation from '../components/HomePresentation';
+// HomePresentation movido a /quienes-somos
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import { ErrorDisplay } from '../components/ErrorDisplay';
@@ -56,7 +56,14 @@ const SearchCreationPage: React.FC = () => {
     const { serviceTypes, isLoading: serviceTypesLoading, error: serviceTypesError } = useServiceTypes();
     const { showVerification, hasPendingVerification } = useMfaVerification();
     const { fetchApi } = useApi();
-    const [currentStep, setCurrentStep] = useState(0);
+    // Iniciar en paso 0, pero si hay parámetros en la URL, ir directamente al paso 1
+    const [currentStep, setCurrentStep] = useState(() => {
+        const searchParams = new URLSearchParams(window.location.search);
+        const serviceTypeIdParam = searchParams.get('serviceTypeId');
+        const categoryIdParam = searchParams.get('categoryId');
+        // Si hay ambos parámetros, empezar en paso 1
+        return (serviceTypeIdParam && categoryIdParam) ? 1 : 0;
+    });
     const [showPendingMfaBanner, setShowPendingMfaBanner] = useState(false);
     const [showMfaRecommendationBanner, setShowMfaRecommendationBanner] = useState(false);
     const [mfaEnabled, setMfaEnabled] = useState<boolean | null>(null);
@@ -566,7 +573,8 @@ const SearchCreationPage: React.FC = () => {
         <div className="relative w-full bg-background" style={{ transition: 'none', minHeight: '100vh' }}>
             {currentStep === 0 && (
                 <>
-                    <HomePresentation onScrollToForm={scrollToForm} />
+                    {/* Ya no mostramos HomePresentation aquí - se movió a /quienes-somos */}
+                    {/* Redirigir directamente al paso 1 si hay parámetros */}
                     
                     {/* ✅ Banner de verificación MFA pendiente */}
                     {showPendingMfaBanner && isAuthenticated && (

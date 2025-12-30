@@ -33,6 +33,20 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
   const [imageIndex, setImageIndex] = useState(0);
   const isMobile = useIsMobile();
 
+  // Debug: Log del servicio para verificar datos
+  useEffect(() => {
+    console.log('🎴 ServiceCard - Servicio renderizado:', {
+      id: service.id,
+      serviceTypeName: service.serviceTypeName,
+      categoryName: service.categoryName,
+      price: service.price,
+      imageUrls: service.imageUrls,
+      imageUrlsLength: service.imageUrls?.length || 0,
+      expert: service.expert?.user?.name,
+      averageRating: service.averageRating,
+    });
+  }, [service]);
+
   const handleCardClick = () => {
     // Navegar a la página de detalle del servicio primero
     navigate(`/service/${service.id}`);
@@ -45,16 +59,18 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
 
   const handleImageNavigation = (e: React.MouseEvent, direction: 'prev' | 'next') => {
     e.stopPropagation();
-    if (service.imageUrls.length <= 1) return;
+    const imageUrls = service.imageUrls || [];
+    if (imageUrls.length <= 1) return;
     
     if (direction === 'next') {
-      setImageIndex((prev) => (prev + 1) % service.imageUrls.length);
+      setImageIndex((prev) => (prev + 1) % imageUrls.length);
     } else {
-      setImageIndex((prev) => (prev - 1 + service.imageUrls.length) % service.imageUrls.length);
+      setImageIndex((prev) => (prev - 1 + imageUrls.length) % imageUrls.length);
     }
   };
 
-  const hasMultipleImages = service.imageUrls.length > 1;
+  const imageUrls = service.imageUrls || [];
+  const hasMultipleImages = imageUrls.length > 1;
   const isGuestFavorite = forceGuestFavorite || (service.completedSearches > 10 && service.averageRating >= 4.5);
 
   // Formatear fecha (simulado - deberías obtener fechas reales del servicio)
@@ -87,12 +103,12 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
       <div className="relative cursor-pointer group w-full">
         {/* Contenedor de imagen con todos los subdivs */}
         <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '20px', width: '100%' }}>
-          {service.imageUrls.length > 0 ? (
+          {imageUrls.length > 0 ? (
             <>
               {/* Imagen principal */}
               <div className="relative w-full h-full">
                 <img
-                  src={service.imageUrls[imageIndex]}
+                  src={imageUrls[imageIndex]}
                   alt={service.serviceTypeName}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   style={{ display: 'block' }}
@@ -206,7 +222,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
                     className="absolute bottom-3 left-1/2 -translate-x-1/2 flex"
                     style={{ gap: '6px' }}
                   >
-                    {service.imageUrls.map((_, idx) => (
+                    {imageUrls.map((_, idx) => (
                       <div
                         key={idx}
                         className="rounded-full transition-all bg-white"
@@ -593,29 +609,52 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
 
   const cityName = countryCode === 'ES' ? 'Madrid' : 'tu ciudad';
 
+  // Filtrar servicios según los filtros de búsqueda
+  const filterServices = (services: SearchServiceDetailDto[]) => {
+    if (!serviceTypeId && !categoryId) {
+      return services;
+    }
+    return services.filter(service => {
+      if (serviceTypeId && service.serviceTypeId !== serviceTypeId) {
+        return false;
+      }
+      if (categoryId && service.categoryId !== categoryId) {
+        return false;
+      }
+      return true;
+    });
+  };
+
+  const filteredNearbyServices = data.nearbyServices?.services 
+    ? filterServices(data.nearbyServices.services)
+    : [];
+  const filteredPopularServices = data.popularServices?.services
+    ? filterServices(data.popularServices.services)
+    : [];
+
   return (
     <>
       <div className="w-full flex justify-center">
         <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
           {/* Sección: Servicios Cercanos / Popular homes */}
           {/* Mostrar siempre si hay servicios, o si nearbyServices está vacío pero popularServices tiene datos, usar popularServices */}
-          {((data.nearbyServices?.services && data.nearbyServices.services.length > 0) || 
-            (!data.nearbyServices?.services?.length && data.popularServices?.services && data.popularServices.services.length > 0)) && (
+          {((filteredNearbyServices.length > 0) || 
+            (filteredNearbyServices.length === 0 && filteredPopularServices.length > 0)) && (
             <HorizontalScrollSection
               title={`Popular homes in ${cityName} >`}
-              services={data.nearbyServices?.services && data.nearbyServices.services.length > 0 
-                ? data.nearbyServices.services 
-                : (data.popularServices?.services || [])}
+              services={filteredNearbyServices.length > 0 
+                ? filteredNearbyServices
+                : filteredPopularServices}
               showCount={true}
             />
           )}
 
           {/* Sección: Servicios Populares / Featured hotels */}
-          {data.popularServices?.services && data.popularServices.services.length > 0 && (
+          {filteredPopularServices.length > 0 && (
             <HorizontalScrollSection
               title={`Featured hotels in ${cityName} >`}
               subtitle="A collection of independent and handpicked hotels"
-              services={data.popularServices.services}
+              services={filteredPopularServices}
               showCount={true}
               forceGuestFavorite={true}
             />

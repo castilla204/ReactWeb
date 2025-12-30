@@ -44,6 +44,7 @@ import { DisputePanelPage } from './pages/DisputePanelPage';
 import TransactionsPage from './pages/TransactionsPage';
 import HomePage from './pages/HomePage';
 import ServiceDetailPage from './pages/ServiceDetailPage';
+import QuienesSomosPage from './pages/QuienesSomosPage';
 import { AccountSettingsModal } from './components/AccountSettingsModal';
 import SearchDetails from './components/SearchDetails';
 import { GoogleAuth } from './components/GoogleAuth';
@@ -548,6 +549,7 @@ const AppContent: React.FC = () => {
                             <Route path="/transacciones" element={<ProtectedRouteWithMFA><TransactionsPage /></ProtectedRouteWithMFA>} />
                             <Route path="/service/:serviceId" element={<ServiceDetailPage />} />
                             <Route path="/crear-busqueda" element={<SearchCreationPage />} />
+                            <Route path="/quienes-somos" element={<QuienesSomosPage />} />
                             <Route path="/explorar" element={<HomePage />} />
                             <Route path="/" element={<HomePage />} />
                             
