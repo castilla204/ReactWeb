@@ -322,6 +322,9 @@ export function LocationMap({
     }, []);
 
     // Renderizar marcadores de precios estilo Airbnb
+    // Ref para almacenar referencias a los marcadores nativos de Google Maps
+    const markerRefs = useRef<Map<number, google.maps.Marker>>(new Map());
+
     const expertMarkers = useMemo(() => {
         // Logs comentados para evitar spam en consola
         // console.log('🗺️ LocationMap - Renderizando marcadores:', {
@@ -382,37 +385,87 @@ export function LocationMap({
             // 2. Por expert.id
             // 3. Por service.id (si expert.id es en realidad el service.id)
             // 4. Por coordenadas (como último recurso)
-            let matchingService = services.find(s => 
-                s.expertProfileId === expert.id || 
-                s.expert?.id === expert.id ||
-                s.id === expert.id // Si expert.id es en realidad el service.id
-            );
+            // NOTA: Los servicios pueden venir con Id (PascalCase) o id (camelCase)
+            let matchingService = services.find(s => {
+                const serviceId = s.id || (s as any).Id;
+                const expertProfileId = s.expertProfileId || (s as any).ExpertProfileId;
+                const expertId = s.expert?.id || (s as any).Expert?.Id;
+                return expertProfileId === expert.id || 
+                       expertId === expert.id ||
+                       serviceId === expert.id;
+            });
             
             // Si no se encuentra, buscar por coordenadas con margen más amplio
             if (!matchingService) {
                 const expertLat = parseFloat(expert.latitude);
                 const expertLng = parseFloat(expert.longitude);
-                matchingService = services.find(s => {
-                    const serviceLat = parseFloat(s.expert?.latitude?.toString() || s.expertLatitude?.toString() || '');
-                    const serviceLng = parseFloat(s.expert?.longitude?.toString() || s.expertLongitude?.toString() || '');
-                    if (isNaN(expertLat) || isNaN(expertLng) || isNaN(serviceLat) || isNaN(serviceLng)) return false;
-                    // Comparar con un margen más amplio (aproximadamente 1km)
-                    const latDiff = Math.abs(expertLat - serviceLat);
-                    const lngDiff = Math.abs(expertLng - serviceLng);
-                    return latDiff < 0.01 && lngDiff < 0.01;
-                });
+                
+                if (!isNaN(expertLat) && !isNaN(expertLng)) {
+                    // Buscar el servicio más cercano por coordenadas
+                    let closestService: typeof services[0] | null = null;
+                    let closestDistance = Infinity;
+                    
+                    services.forEach(s => {
+                        const serviceLat = parseFloat(
+                            s.expert?.latitude?.toString() || 
+                            (s as any).Expert?.Latitude?.toString() || 
+                            s.expertLatitude?.toString() || 
+                            ''
+                        );
+                        const serviceLng = parseFloat(
+                            s.expert?.longitude?.toString() || 
+                            (s as any).Expert?.Longitude?.toString() || 
+                            s.expertLongitude?.toString() || 
+                            ''
+                        );
+                        
+                        if (isNaN(serviceLat) || isNaN(serviceLng)) return;
+                        
+                        // Calcular distancia euclidiana
+                        const distance = Math.sqrt(
+                            Math.pow(expertLat - serviceLat, 2) + 
+                            Math.pow(expertLng - serviceLng, 2)
+                        );
+                        
+                        // Si está dentro de un margen razonable (aproximadamente 1km) y es el más cercano
+                        if (distance < 0.01 && distance < closestDistance) {
+                            closestDistance = distance;
+                            closestService = s;
+                        }
+                    });
+                    
+                    if (closestService) {
+                        matchingService = closestService;
+                    }
+                }
             }
             
-            // Si aún no se encuentra, usar el primer servicio disponible como fallback
-            // Esto asegura que siempre haya un servicio asociado al marcador
-            if (!matchingService && services.length > 0) {
-                matchingService = services[0];
-            }
+            // ❌ NO usar el primer servicio como fallback - cada marcador debe tener su propio servicio
+            // Si no hay matchingService, usar los datos del experto directamente
             
             // ✅ Si no hay matchingService, usar los datos del experto directamente
             // Esto permite renderizar marcadores incluso cuando services está vacío
-            const priceValue = matchingService ? (matchingService.price ?? expert.price ?? 0) : (expert.price ?? 0);
-            const serviceId = matchingService ? matchingService.id : expert.id;
+            // NOTA: Los servicios pueden venir con Id (PascalCase) o id (camelCase)
+            const priceValue = matchingService 
+                ? (matchingService.price ?? (matchingService as any).Price ?? 0)
+                : (expert.price ?? 0);
+            
+            // ✅ Usar el ID del servicio si existe, si no usar el ID del experto
+            // IMPORTANTE: Cada marcador debe tener un ID único para evitar que se seleccionen todos
+            const serviceId = matchingService 
+                ? (matchingService.id || (matchingService as any).Id)
+                : expert.id;
+            
+            // Log para debuggear el matching
+            console.log('🎯 Marcador creado:', {
+                expertId: expert.id,
+                expertName: expert.name,
+                expertPrice: expert.price,
+                matchingServiceId: matchingService ? (matchingService.id || (matchingService as any).Id) : null,
+                matchingServicePrice: matchingService ? (matchingService.price ?? (matchingService as any).Price) : null,
+                finalPrice: priceValue,
+                finalServiceId: serviceId
+            });
             const priceInEuros = Math.round(priceValue);
             const priceText = priceInEuros > 0 ? `${priceInEuros} €` : 'Consultar';
             const isSelected = selectedService === serviceId;
@@ -463,33 +516,114 @@ export function LocationMap({
             // });
 
             const handleMarkerClick = (e: google.maps.MapMouseEvent) => {
-                // Prevenir que el evento se propague al mapa
-                if (e && e.stop) {
-                    e.stop();
+                console.log('🖱️ Click en marcador:', { 
+                    expertId: expert.id, 
+                    serviceId: serviceId, 
+                    matchingService: !!matchingService,
+                    matchingServiceId: matchingService?.id,
+                    matchingServiceDetails: matchingService ? { id: matchingService.id, expertProfileId: matchingService.expertProfileId } : null
+                });
+                
+                // Prevenir que el evento se propague al mapa - CRÍTICO para móvil
+                if (e) {
+                    if (typeof e.stop === 'function') {
+                        e.stop();
+                    }
+                    // También prevenir propagación nativa del DOM si está disponible
+                    if ((e as any).domEvent) {
+                        const domEvent = (e as any).domEvent;
+                        if (domEvent && typeof domEvent.stopPropagation === 'function') {
+                            domEvent.stopPropagation();
+                        }
+                        if (domEvent && typeof domEvent.preventDefault === 'function') {
+                            domEvent.preventDefault();
+                        }
+                    }
                 }
                 
-                // Asegurarse de que matchingService tenga un valor válido
+                // Asegurarse de que matchingService tenga un valor válido CON ID
+                // NOTA: Los servicios pueden venir con Id (PascalCase) o id (camelCase)
                 let serviceToSelect = matchingService;
                 
-                // Si no hay matchingService, buscar por coordenadas o usar el primero
+                // Si matchingService existe, verificar que tenga ID válido (puede ser id o Id)
+                if (serviceToSelect) {
+                    const serviceId = serviceToSelect.id || (serviceToSelect as any).Id;
+                    if (!serviceId || serviceId === undefined || serviceId === null) {
+                        console.warn('⚠️ matchingService existe pero no tiene ID válido, buscando alternativa...');
+                        serviceToSelect = null;
+                    }
+                }
+                
+                // Si no hay matchingService o no tiene ID válido, buscar por coordenadas
                 if (!serviceToSelect && services.length > 0) {
                     const expertLat = parseFloat(expert.latitude);
                     const expertLng = parseFloat(expert.longitude);
                     
-                    serviceToSelect = services.find(s => {
-                        const serviceLat = parseFloat(s.expert?.latitude?.toString() || s.expertLatitude?.toString() || '');
-                        const serviceLng = parseFloat(s.expert?.longitude?.toString() || s.expertLongitude?.toString() || '');
-                        if (isNaN(expertLat) || isNaN(expertLng) || isNaN(serviceLat) || isNaN(serviceLng)) return false;
-                        const latDiff = Math.abs(expertLat - serviceLat);
-                        const lngDiff = Math.abs(expertLng - serviceLng);
-                        return latDiff < 0.01 && lngDiff < 0.01;
-                    }) || services[0]; // Fallback al primer servicio
+                    if (!isNaN(expertLat) && !isNaN(expertLng)) {
+                        // Buscar el servicio más cercano por coordenadas
+                        let closestService: typeof services[0] | null = null;
+                        let closestDistance = Infinity;
+                        
+                        services.forEach(s => {
+                            const serviceId = s.id || (s as any).Id;
+                            if (!serviceId || serviceId === undefined || serviceId === null) return;
+                            
+                            const serviceLat = parseFloat(
+                                s.expert?.latitude?.toString() || 
+                                (s as any).Expert?.Latitude?.toString() || 
+                                s.expertLatitude?.toString() || 
+                                ''
+                            );
+                            const serviceLng = parseFloat(
+                                s.expert?.longitude?.toString() || 
+                                (s as any).Expert?.Longitude?.toString() || 
+                                s.expertLongitude?.toString() || 
+                                ''
+                            );
+                            
+                            if (isNaN(serviceLat) || isNaN(serviceLng)) return;
+                            
+                            // Calcular distancia euclidiana
+                            const distance = Math.sqrt(
+                                Math.pow(expertLat - serviceLat, 2) + 
+                                Math.pow(expertLng - serviceLng, 2)
+                            );
+                            
+                            // Si está dentro de un margen razonable (aproximadamente 1km) y es el más cercano
+                            if (distance < 0.01 && distance < closestDistance) {
+                                closestDistance = distance;
+                                closestService = s;
+                            }
+                        });
+                        
+                        if (closestService) {
+                            serviceToSelect = closestService;
+                        }
+                    }
                 }
                 
-                // Solo llamar si tenemos un servicio válido con ID, o usar el ID del experto
-                const serviceIdToSelect = serviceToSelect ? serviceToSelect.id : expert.id;
-                if (serviceIdToSelect) {
-                    onServiceSelect?.(serviceIdToSelect);
+                // Determinar el ID a seleccionar (puede ser id o Id)
+                let serviceIdToSelect: number | undefined = undefined;
+                
+                if (serviceToSelect) {
+                    serviceIdToSelect = serviceToSelect.id || (serviceToSelect as any).Id;
+                } else if (expert.id) {
+                    // Intentar usar expert.id como fallback
+                    serviceIdToSelect = typeof expert.id === 'number' ? expert.id : undefined;
+                }
+                
+                console.log('🖱️ Seleccionando servicio:', { 
+                    serviceIdToSelect, 
+                    serviceToSelectId: serviceToSelect?.id,
+                    expertId: expert.id,
+                    hasOnServiceSelect: !!onServiceSelect
+                });
+                
+                if (serviceIdToSelect !== undefined && serviceIdToSelect !== null && onServiceSelect) {
+                    console.log('✅ Llamando a onServiceSelect con:', serviceIdToSelect);
+                    onServiceSelect(serviceIdToSelect);
+                } else {
+                    console.error('❌ No se pudo determinar un serviceId válido para seleccionar');
                 }
             };
 
@@ -497,11 +631,41 @@ export function LocationMap({
                 <Marker
                     key={`price-${expert.id}-${markerKey}-${isSelected ? 'selected' : 'unselected'}`}
                     position={{ lat: finalLat, lng: finalLng }}
-                    onClick={handleMarkerClick}
-                    onMouseDown={(e) => {
-                        if (e && e.stop) {
-                            e.stop();
+                    onLoad={(marker) => {
+                        console.log('🔧 Marker onLoad llamado:', { expertId: expert.id, marker: !!marker });
+                        // Guardar referencia al marcador nativo
+                        if (marker) {
+                            markerRefs.current.set(expert.id, marker);
+                            
+                            // Agregar listener nativo de Google Maps
+                            console.log('🔧 Agregando listener nativo al marcador:', expert.id);
+                            const listener = google.maps.event.addListener(marker, 'click', (e: google.maps.MapMouseEvent) => {
+                                console.log('🖱️ Marker click (Google Maps native):', { expertId: expert.id, serviceId: serviceId, hasOnServiceSelect: !!onServiceSelect });
+                                if (e) {
+                                    e.stop?.();
+                                }
+                                handleMarkerClick(e);
+                            });
+                            
+                            // Guardar el listener para poder limpiarlo después
+                            (marker as any)._clickListener = listener;
+                            console.log('✅ Listener agregado correctamente al marcador:', expert.id);
+                        } else {
+                            console.error('❌ Marker onLoad recibió null o undefined');
                         }
+                    }}
+                    onClick={(e) => {
+                        console.log('🖱️ Marker onClick event (React):', { expertId: expert.id, serviceId: serviceId, hasOnServiceSelect: !!onServiceSelect });
+                        // Detener propagación del evento
+                        if (e) {
+                            if (typeof e.stop === 'function') {
+                                e.stop();
+                            }
+                            if (typeof (e as any).stopPropagation === 'function') {
+                                (e as any).stopPropagation();
+                            }
+                        }
+                        // Llamar al handler
                         handleMarkerClick(e);
                     }}
                     zIndex={isSelected ? 1000 : 100}
@@ -528,6 +692,21 @@ export function LocationMap({
         return markers;
     }, [mapExperts, services, selectedService, onServiceSelect, isLoaded, map, isMobile, isLargeMobile, markerKey, calculateOffset]);
 
+    // Limpiar listeners cuando los marcadores cambien
+    useEffect(() => {
+        return () => {
+            // Limpiar todos los listeners cuando el componente se desmonte o los marcadores cambien
+            markerRefs.current.forEach((marker, expertId) => {
+                const listener = (marker as any)._clickListener;
+                if (listener) {
+                    google.maps.event.removeListener(listener);
+                    delete (marker as any)._clickListener;
+                }
+            });
+            markerRefs.current.clear();
+        };
+    }, [markerKey]);
+
     return (
         <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
@@ -550,67 +729,8 @@ export function LocationMap({
             onDragEnd={handleMapIdle}
             onZoomChanged={handleMapIdle}
             onClick={(e) => {
-                // Detectar clicks cerca de marcadores cuando los marcadores no responden
-                if (e.latLng && map) {
-                    const clickLat = e.latLng.lat();
-                    const clickLng = e.latLng.lng();
-                    
-                    // Buscar el marcador más cercano (dentro de un radio más grande para facilitar clicks)
-                    let closestExpert: MapExpert | null = null;
-                    let closestService: Service | null = null;
-                    // Aumentar el radio de detección basado en el zoom del mapa
-                    const currentZoom = map.getZoom() || 10;
-                    // Radio más grande cuando el zoom es menor (mapa más alejado)
-                    const minDistance = currentZoom < 10 ? 0.05 : currentZoom < 12 ? 0.02 : 0.01; // Entre 1-5km según zoom
-                    let closestDistance = Infinity;
-                    
-                    mapExperts.forEach((expert) => {
-                        const expertLat = parseFloat(expert.latitude);
-                        const expertLng = parseFloat(expert.longitude);
-                        
-                        if (isNaN(expertLat) || isNaN(expertLng)) return;
-                        
-                        const distance = Math.sqrt(
-                            Math.pow(clickLat - expertLat, 2) + 
-                            Math.pow(clickLng - expertLng, 2)
-                        );
-                        
-                        if (distance < minDistance && distance < closestDistance) {
-                            closestDistance = distance;
-                            closestExpert = expert;
-                            
-                            // Buscar servicio correspondiente
-                            let foundService = services.find(s => 
-                                s.expertProfileId === expert.id || 
-                                s.expert?.id === expert.id ||
-                                s.id === expert.id
-                            );
-                            
-                            // Si no se encuentra, buscar por coordenadas
-                            if (!foundService) {
-                                foundService = services.find(s => {
-                                    const serviceLat = parseFloat(s.expert?.latitude?.toString() || s.expertLatitude?.toString() || '');
-                                    const serviceLng = parseFloat(s.expert?.longitude?.toString() || s.expertLongitude?.toString() || '');
-                                    if (isNaN(serviceLat) || isNaN(serviceLng)) return false;
-                                    const latDiff = Math.abs(expertLat - serviceLat);
-                                    const lngDiff = Math.abs(expertLng - serviceLng);
-                                    return latDiff < 0.01 && lngDiff < 0.01;
-                                }) || null;
-                            }
-                            
-                            closestService = foundService;
-                        }
-                    });
-                    
-                    // Si encontramos un marcador cercano, seleccionarlo
-                    if (closestExpert && closestService && closestService.id) {
-                        onServiceSelect?.(closestService.id);
-                        e.stopPropagation?.();
-                        return; // No llamar a onMapClick si es un click en marcador
-                    }
-                }
-                
-                // Si no es un click en marcador, llamar al handler normal
+                // Solo llamar a onMapClick si no es un click en un marcador
+                // Los marcadores manejan sus propios clicks y llaman a stop() para prevenir propagación
                 if (onMapClick) {
                     onMapClick(e);
                 }

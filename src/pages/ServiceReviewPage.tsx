@@ -24,7 +24,6 @@ import {
     Image,
     File
 } from 'lucide-react';
-import { FormProgressTimeline } from '../components/FormProgressTimeline';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
@@ -346,17 +345,12 @@ export function ServiceReviewPage({
 
     return (
         <>
-            {/* Header Timeline - Componente reutilizable */}
-            <FormProgressTimeline currentStep={currentStep} onBack={onBack} />
-            
         <div className="min-h-screen bg-white">
-                {/* Spacer para compensar el header fijo */}
-                <div className="h-16"></div>
                 
             {/* ========== VERSIÓN MÓVIL ========== */}
             <div className="lg:hidden">
-                    {/* Botones de acción móvil - Debajo del timeline */}
-                    <div className="fixed top-14 left-0 right-0 z-50 flex items-center justify-end gap-2 px-4 py-2 bg-gradient-to-b from-black/40 to-transparent">
+                    {/* Botones de acción móvil */}
+                    <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-end gap-2 px-4 py-2 bg-gradient-to-b from-black/40 to-transparent">
                         <button className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg">
                             <Share2 className="w-4 h-4 text-gray-900" />
                             </button>

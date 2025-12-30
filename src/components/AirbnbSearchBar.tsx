@@ -35,6 +35,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isMobileServiceTypeOpen, setIsMobileServiceTypeOpen] = useState(false);
   const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const serviceTypeButtonRef = useRef<HTMLButtonElement>(null);
   const categoryButtonRef = useRef<HTMLButtonElement>(null);
@@ -364,6 +365,292 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             </button>
           </div>
         </form>
+
+        {/* Desktop: Tab Navigation Bar */}
+        <div
+          role="tablist"
+          className="flex items-center justify-center mt-4"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingTop: '0px',
+            paddingBottom: '0px',
+            gap: '32px',
+            position: 'relative',
+            width: '100%',
+            maxWidth: '850px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}
+        >
+          {/* Homes Tab */}
+          <a
+            href="/homes"
+            role="tab"
+            aria-selected="true"
+            tabIndex={0}
+            data-tabid="tabBarItem-STAYS"
+            id="search-block-tab-STAYS-desktop"
+            onMouseEnter={() => setHoveredTab('homes')}
+            onMouseLeave={() => setHoveredTab(null)}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              padding: '16px 0px',
+              textDecoration: 'none',
+              color: '#222222',
+              position: 'relative',
+              gap: '12px',
+            }}
+          >
+            <span style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              position: 'relative',
+              flexShrink: 0,
+            }}>
+              <img
+                src={cocheImg}
+                alt="Coche"
+                style={{
+                  display: 'block',
+                  height: '32px',
+                  width: '32px',
+                  objectFit: 'contain',
+                }}
+              />
+            </span>
+            <span
+              style={{
+                fontSize: '16px',
+                lineHeight: '20px',
+                fontWeight: 600,
+                color: '#222222',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                whiteSpace: 'nowrap',
+                position: 'relative',
+              }}
+            >
+              Homes
+            </span>
+            {/* Underline indicator - debajo de todo el tab */}
+            <span
+              style={{
+                position: 'absolute',
+                bottom: '0px',
+                left: '0px',
+                right: '0px',
+                height: '2px',
+                backgroundColor: '#222222',
+                transform: 'scaleX(1)',
+                transformOrigin: 'left',
+              }}
+            />
+          </a>
+
+          {/* Experiences Tab */}
+          <a
+            href="/experiences"
+            role="tab"
+            aria-selected="false"
+            tabIndex={-1}
+            data-tabid="tabBarItem-EXPERIENCES"
+            id="search-block-tab-EXPERIENCES-desktop"
+            onMouseEnter={() => setHoveredTab('experiences')}
+            onMouseLeave={() => setHoveredTab(null)}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              padding: '16px 0px',
+              textDecoration: 'none',
+              color: '#222222',
+              position: 'relative',
+              gap: '12px',
+            }}
+          >
+            <span style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              position: 'relative',
+              flexShrink: 0,
+            }}>
+              <img
+                src={casaImg}
+                alt="Casa"
+                style={{
+                  display: 'block',
+                  height: '32px',
+                  width: '32px',
+                  objectFit: 'contain',
+                }}
+              />
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-6px',
+                  right: '-8px',
+                  backgroundColor: '#FF385C',
+                  color: 'white',
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                  whiteSpace: 'nowrap',
+                  lineHeight: '12px',
+                }}
+              >
+                NEW
+              </span>
+            </span>
+            <span
+              style={{
+                fontSize: '16px',
+                lineHeight: '20px',
+                fontWeight: 400,
+                color: '#222222',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                whiteSpace: 'nowrap',
+                position: 'relative',
+              }}
+            >
+              Experiences
+            </span>
+            {/* Underline indicator - debajo de todo el tab */}
+            <span
+              style={{
+                position: 'absolute',
+                bottom: '0px',
+                left: '0px',
+                right: '0px',
+                height: '2px',
+                backgroundColor: '#222222',
+                transform: hoveredTab === 'experiences' ? 'scaleX(1)' : 'scaleX(0)',
+                transformOrigin: 'left',
+                transition: 'transform 0.2s ease',
+              }}
+            />
+          </a>
+
+          {/* Services Tab */}
+          <a
+            href="/services"
+            role="tab"
+            aria-selected="false"
+            tabIndex={-1}
+            data-tabid="tabBarItem-SERVICES"
+            id="search-block-tab-SERVICES-desktop"
+            onMouseEnter={() => setHoveredTab('services')}
+            onMouseLeave={() => setHoveredTab(null)}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              padding: '16px 0px',
+              textDecoration: 'none',
+              color: '#222222',
+              position: 'relative',
+              gap: '12px',
+            }}
+          >
+            <span style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              position: 'relative',
+              flexShrink: 0,
+            }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  height: '32px',
+                  width: '32px',
+                }}
+              >
+                <div
+                  style={{
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '50%',
+                    backgroundColor: '#222222',
+                  }}
+                />
+                <div
+                  style={{
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '50%',
+                    backgroundColor: '#222222',
+                  }}
+                />
+                <div
+                  style={{
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '50%',
+                    backgroundColor: '#222222',
+                  }}
+                />
+              </div>
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-6px',
+                  right: '-8px',
+                  backgroundColor: '#FF385C',
+                  color: 'white',
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                  whiteSpace: 'nowrap',
+                  lineHeight: '12px',
+                }}
+              >
+                NEW
+              </span>
+            </span>
+            <span
+              style={{
+                fontSize: '16px',
+                lineHeight: '20px',
+                fontWeight: 400,
+                color: '#222222',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                whiteSpace: 'nowrap',
+                position: 'relative',
+              }}
+            >
+              Services
+            </span>
+            {/* Underline indicator - debajo de todo el tab */}
+            <span
+              style={{
+                position: 'absolute',
+                bottom: '0px',
+                left: '0px',
+                right: '0px',
+                height: '2px',
+                backgroundColor: '#222222',
+                transform: hoveredTab === 'services' ? 'scaleX(1)' : 'scaleX(0)',
+                transformOrigin: 'left',
+                transition: 'transform 0.2s ease',
+              }}
+            />
+          </a>
+        </div>
       </div>
 
       {/* Mobile: Botón grande estilo Airbnb - Estructura exacta del HTML */}
