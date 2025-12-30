@@ -321,14 +321,20 @@ const SearchCreationPage: React.FC = () => {
 
     // ✅ Verificar si hay verificación MFA pendiente
     useEffect(() => {
+        let previousState = { hasPending: false, isAuth: false };
+        
         const checkPendingVerification = () => {
             // ✅ Leer directamente del localStorage en lugar de usar el hook
             const hasPending = localStorage.getItem('mfa-verification-pending') === 'true';
-            console.log('[SearchCreationPage] Checking pending verification:', hasPending, 'isAuthenticated:', isAuthenticated);
-            if (isAuthenticated && hasPending) {
-                setShowPendingMfaBanner(true);
-            } else {
-                setShowPendingMfaBanner(false);
+            
+            // Solo actualizar si el estado cambió
+            if (previousState.hasPending !== hasPending || previousState.isAuth !== isAuthenticated) {
+                previousState = { hasPending, isAuth: isAuthenticated };
+                if (isAuthenticated && hasPending) {
+                    setShowPendingMfaBanner(true);
+                } else {
+                    setShowPendingMfaBanner(false);
+                }
             }
         };
 
@@ -338,24 +344,21 @@ const SearchCreationPage: React.FC = () => {
         // ✅ Escuchar cambios en localStorage para actualizar el banner (funciona entre pestañas)
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'mfa-verification-pending') {
-                console.log('[SearchCreationPage] Storage change detected:', e.newValue);
                 checkPendingVerification();
             }
         };
 
         // ✅ Escuchar eventos personalizados cuando se limpia la verificación (misma pestaña)
         const handleVerificationCleared = () => {
-            console.log('[SearchCreationPage] MFA verification cleared event received');
-            // Forzar verificación inmediata
             setTimeout(() => {
                 checkPendingVerification();
             }, 50);
         };
 
-        // ✅ Verificación periódica como fallback (cada 200ms para respuesta más rápida)
+        // ✅ Verificación periódica como fallback (cada 30 segundos para evitar bucles)
         const intervalId = setInterval(() => {
             checkPendingVerification();
-        }, 200);
+        }, 30000); // Aumentado a 30 segundos para evitar bucles infinitos
 
         window.addEventListener('storage', handleStorageChange);
         window.addEventListener('mfaVerificationCleared', handleVerificationCleared);
