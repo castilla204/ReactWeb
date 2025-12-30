@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
-import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, Filter } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 import { useLoadScript } from '@react-google-maps/api';
@@ -12,7 +12,7 @@ import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { Input } from './ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from './ui/drawer';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, DrawerOverlay } from './ui/drawer';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
@@ -86,7 +86,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
         <a
             href={`/service/${serviceId}`}
             onClick={handleCardClick}
-            className={`group cursor-pointer transition-all duration-300 block ${isSelected ? 'ring-2 ring-blue-600 rounded-xl' : ''}`}
+            className={`group cursor-pointer transition-all duration-300 block ${isSelected ? 'ring-2 ring-blue-600' : ''}`}
             style={{ 
                 width: '100%', 
                 maxWidth: isMobile ? '100%' : '347px', 
@@ -99,17 +99,31 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
         >
             {/* Contenedor principal - Estructura exacta de Airbnb */}
             <div className="relative cursor-pointer group" style={{ width: '100%', padding: isMobile ? '0' : '0' }}>
-                {/* Contenedor de imagen - Más grande como en Airbnb */}
-                <div className="relative w-full overflow-hidden" style={{ aspectRatio: '16/9', borderRadius: isMobile ? '0' : '12px', width: '100%', marginBottom: isMobile ? '0' : '12px' }}>
+                {/* Contenedor de imagen - Estilo Airbnb rectangular con bordes redondeados */}
+                <div 
+                    className="relative w-full overflow-hidden" 
+                    style={{ 
+                        aspectRatio: '4/3', 
+                        borderRadius: '12px', 
+                        width: '100%', 
+                        marginBottom: isMobile ? '8px' : '12px',
+                        minHeight: '200px'
+                    }}
+                >
                     {hasValidImage ? (
                         <>
                             {/* Imagen principal */}
-                            <div className="relative w-full h-full">
+                            <div className="relative w-full h-full" style={{ width: '100%', height: '100%' }}>
                                 <img
                                     src={imageUrls[imageIndex]}
                                     alt={service.serviceTypeName || service.categoryName}
                                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                    style={{ display: 'block' }}
+                                    style={{ 
+                                        display: 'block',
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover'
+                                    }}
                                     onError={() => {
                                         // Log comentado para evitar spam
                                         // console.warn('⚠️ Error cargando imagen:', imageUrls[imageIndex]);
@@ -119,21 +133,19 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 />
                             </div>
                             
-                            {/* Botones de acción - Solo visibles cuando está seleccionado o en hover */}
-                            <div className={`absolute top-3 right-3 z-10 flex gap-2 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                {/* Botón de favorito (corazón) */}
+                            {/* Botones de acción - Siempre visible como en Airbnb */}
+                            <div className="absolute top-3 right-3 z-10 flex gap-2">
+                                {/* Botón de favorito (corazón) - Estilo Airbnb */}
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         e.preventDefault();
                                     }}
                                     aria-label="Save to wishlist"
+                                    className="p-2 rounded-full bg-white/90 hover:bg-white transition-all"
                                     style={{
-                                        padding: '8px',
                                         margin: '0',
-                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
                                         border: 'none',
-                                        borderRadius: '50%',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -151,11 +163,11 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                         focusable="false"
                                         style={{
                                             display: 'block',
-                                            fill: 'none',
-                                            height: '16px',
-                                            width: '16px',
-                                            stroke: 'var(--palette-icon-primary, #222222)',
-                                            strokeWidth: '3',
+                                            fill: 'rgba(0, 0, 0, 0.5)',
+                                            height: '24px',
+                                            width: '24px',
+                                            stroke: 'var(--palette-icon-primary-inverse, #ffffff)',
+                                            strokeWidth: '2',
                                             overflow: 'visible',
                                         }}
                                     >
@@ -295,7 +307,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
 
                     {/* Segunda fila: Fechas y tipo de host */}
                     <div
-                        className="overflow-hidden"
+                        className="truncate"
                         style={{
                             marginBottom: '4px',
                             fontSize: isMobile ? '14px' : '15px',
@@ -306,9 +318,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             textAlign: 'left',
                         }}
                     >
-                        <div className="truncate" style={{ textAlign: 'left' }}>
-                            {formatDate()} · {hostType}
-                        </div>
+                        {formatDate()} · {hostType}
                     </div>
 
                     {/* Tercera fila: Precio y calificación */}
@@ -325,7 +335,6 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         }}
                     >
                         <span>€{service.price?.toFixed(0) || '0'}</span>
-                        <span style={{ fontWeight: 400, marginLeft: '4px' }}>night</span>
                         {service.averageRating && service.averageRating > 0 && (
                             <>
                                 <span style={{ marginLeft: '8px', marginRight: '4px' }}> · </span>
@@ -339,7 +348,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                     }} 
                                 />
                                 <span style={{ marginLeft: '4px' }}>
-                                    {service.averageRating.toFixed(1)}
+                                    {service.averageRating.toFixed(2)}
                                 </span>
                             </>
                         )}
@@ -453,7 +462,36 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
    
     // Estados para servicios
     const [selectedService, setSelectedService] = useState<number | null>(null);
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    // Solo abrir drawer en móvil
+    const [isDrawerOpen, setIsDrawerOpen] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth < 1024;
+        }
+        return false;
+    });
+    const headerRef = useRef<HTMLDivElement>(null);
+    const [headerTop, setHeaderTop] = useState(143); // 64px (top) + 79px (height) por defecto
+    
+    // Calcular dinámicamente la posición del header
+    useEffect(() => {
+        const calculateHeaderPosition = () => {
+            if (headerRef.current) {
+                const rect = headerRef.current.getBoundingClientRect();
+                const top = rect.top;
+                const height = rect.height;
+                setHeaderTop(top + height);
+            }
+        };
+        
+        calculateHeaderPosition();
+        window.addEventListener('resize', calculateHeaderPosition);
+        window.addEventListener('scroll', calculateHeaderPosition);
+        
+        return () => {
+            window.removeEventListener('resize', calculateHeaderPosition);
+            window.removeEventListener('scroll', calculateHeaderPosition);
+        };
+    }, []);
     const [filters, setFilters] = useState({
         priceRange: [0, 100000] as [number, number], // [min, max] en euros - rango amplio para servicios premium
         rating: 0 as number, // Mínimo de estrellas (0-5)
@@ -1042,17 +1080,39 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         <div className="px-6 py-3 border-b border-gray-100 flex items-center gap-2">
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                    <button className={`h-9 px-4 rounded-full border text-sm font-medium transition-all ${
-                                        filters.priceRange[0] > 0 || filters.priceRange[1] < 100000
-                                            ? 'border-gray-900 bg-gray-900 text-white'
-                                            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-900'
-                                    }`}>
-                                        Precio
+                                    <button 
+                                        type="button"
+                                        className={`h-9 px-4 rounded-full border text-sm font-medium transition-all flex items-center gap-1.5 ${
+                                            filters.priceRange[0] > 0 || filters.priceRange[1] < 100000 || filters.rating > 0
+                                                ? 'border-gray-900 bg-gray-900 text-white'
+                                                : 'border-gray-300 bg-white text-gray-700 hover:border-gray-900'
+                                        }`}
+                                    >
+                                        <span className="flex items-center gap-1.5">
+                                            <svg 
+                                                xmlns="http://www.w3.org/2000/svg" 
+                                                viewBox="0 0 32 32" 
+                                                aria-hidden="true" 
+                                                role="presentation" 
+                                                focusable="false" 
+                                                className="block fill-none h-4 w-4 stroke-current stroke-[3] overflow-visible"
+                                            >
+                                                <path 
+                                                    fill="none" 
+                                                    d="M7 16H3m26 0H15M29 6h-4m-8 0H3m26 20h-4M7 16a4 4 0 1 0 8 0 4 4 0 0 0-8 0zM17 6a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 20a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 0H3"
+                                                />
+                                            </svg>
+                                            <span>Filtros</span>
+                                        </span>
                                     </button>
                                         </PopoverTrigger>
-                                <PopoverContent className="w-72 p-5" align="start">
-                                            <div className="space-y-4">
-                                        <h4 className="font-semibold text-gray-900">Rango de precio</h4>
+                                <PopoverContent className="w-80 p-5" align="start">
+                                            <div className="space-y-6">
+                                        <h4 className="font-semibold text-gray-900">Filtros</h4>
+                                        
+                                        {/* Filtro de Precio */}
+                                        <div className="space-y-4">
+                                            <h5 className="text-sm font-medium text-gray-700">Rango de precio</h5>
                                                     <Slider
                                                         value={filters.priceRange}
                                                         onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
@@ -1076,24 +1136,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                                    
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                    <button className={`h-9 px-4 rounded-full border text-sm font-medium transition-all flex items-center gap-1.5 ${
-                                        filters.rating > 0
-                                            ? 'border-gray-900 bg-gray-900 text-white'
-                                            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-900'
-                                    }`}>
-                                        <Star className="w-3.5 h-3.5" />
-                                        {filters.rating > 0 ? `${filters.rating}+` : 'Valoración'}
-                                    </button>
-                                        </PopoverTrigger>
-                                <PopoverContent className="w-64 p-5" align="start">
-                                            <div className="space-y-4">
-                                        <h4 className="font-semibold text-gray-900">Valoración mínima</h4>
+                                        </div>
+
+                                        {/* Filtro de Valoración */}
+                                        <div className="space-y-4">
+                                            <h5 className="text-sm font-medium text-gray-700">Valoración mínima</h5>
                                         <div className="flex gap-2">
                                             {[0, 3, 3.5, 4, 4.5].map((rating) => (
                                                 <button
@@ -1109,18 +1156,20 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 </button>
                                             ))}
                                                 </div>
+                                        </div>
+
+                                        {/* Botón Borrar */}
+                                        {(filters.priceRange[0] > 0 || filters.priceRange[1] < 100000 || filters.rating > 0) && (
+                                            <button 
+                                                onClick={() => setFilters({ priceRange: [0, 100000], rating: 0 })}
+                                                className="text-sm font-medium text-gray-900 underline w-full text-left"
+                                            >
+                                                Borrar filtros
+                                            </button>
+                                        )}
                                             </div>
                                         </PopoverContent>
                                     </Popover>
-                            
-                            {(filters.priceRange[0] > 0 || filters.priceRange[1] < 100000 || filters.rating > 0) && (
-                                <button 
-                                    onClick={() => setFilters({ priceRange: [0, 100000], rating: 0 })}
-                                    className="text-sm font-medium text-gray-900 underline ml-auto"
-                                >
-                                    Borrar
-                                </button>
-                            )}
                             </div>
                     )}
                     
@@ -1180,156 +1229,164 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     </div>
                     
                 {/* Mobile: Map View */}
-                <div className="lg:hidden flex-1 relative w-full">
+                <div className="lg:hidden flex-1 relative w-full flex flex-col">
+                        {/* Header estilo Airbnb - Sticky */}
+                        <div 
+                            id="mobile-search-header"
+                            ref={headerRef}
+                            className="sticky top-0 z-[9999] bg-white border-b border-gray-200"
+                        >
+                            <div className="px-4 py-3 flex items-center gap-2">
+                                {/* Botón de búsqueda grande estilo Airbnb */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        // Scroll to search bar or open search modal
+                                    }}
+                                    className="flex-1 h-[55px] px-4 rounded-full border border-gray-300 bg-white hover:shadow-md transition-all flex items-center justify-between text-left"
+                                >
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                        <span className="text-sm font-semibold text-gray-900 truncate">
+                                            {formData.locationName || searchAddress || 'Homes nearby'}
+                                        </span>
+                                        <span className="text-xs text-gray-500 truncate">
+                                            {(() => {
+                                                const today = new Date();
+                                                const checkIn = new Date(today);
+                                                checkIn.setDate(today.getDate() + 2);
+                                                const checkOut = new Date(checkIn);
+                                                checkOut.setDate(checkIn.getDate() + 2);
+                                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                                return `${months[checkIn.getMonth()]} ${checkIn.getDate()}, ${checkIn.getFullYear()} – ${months[checkOut.getMonth()]} ${checkOut.getDate()}, ${checkOut.getFullYear()} • Add guests`;
+                                            })()}
+                                        </span>
+                                    </div>
+                                </button>
+                                
+                                {/* Botón de filtros */}
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className={`h-[55px] w-[55px] rounded-full border text-sm font-medium transition-all flex items-center justify-center ${
+                                                filters.priceRange[0] > 0 || filters.priceRange[1] < 100000 || filters.rating > 0
+                                                    ? 'border-gray-900 bg-gray-900 text-white'
+                                                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-900'
+                                            }`}
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 32 32"
+                                                aria-hidden="true"
+                                                role="presentation"
+                                                focusable="false"
+                                                className="block fill-none h-4 w-4 stroke-current stroke-[3] overflow-visible"
+                                            >
+                                                <path
+                                                    fill="none"
+                                                    d="M7 16H3m26 0H15M29 6h-4m-8 0H3m26 20h-4M7 16a4 4 0 1 0 8 0 4 4 0 0 0-8 0zM17 6a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 20a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 0H3"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80 p-5" align="end">
+                                        <div className="space-y-6">
+                                            <h4 className="font-semibold text-gray-900">Filtros</h4>
+                                            
+                                            {/* Filtro de Precio */}
+                                            <div className="space-y-4">
+                                                <h5 className="text-sm font-medium text-gray-700">Rango de precio</h5>
+                                                <Slider
+                                                    value={filters.priceRange}
+                                                    onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
+                                                    min={0}
+                                                    max={1000}
+                                                    step={10}
+                                                    className="w-full"
+                                                />
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <div className="flex-1">
+                                                        <label className="text-xs text-gray-500 mb-1 block">Mínimo</label>
+                                                        <div className="h-10 px-3 border border-gray-300 rounded-lg flex items-center text-sm">
+                                                            €{filters.priceRange[0]}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-gray-400 mt-5">—</div>
+                                                    <div className="flex-1">
+                                                        <label className="text-xs text-gray-500 mb-1 block">Máximo</label>
+                                                        <div className="h-10 px-3 border border-gray-300 rounded-lg flex items-center text-sm">
+                                                            €{filters.priceRange[1]}+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Filtro de Valoración */}
+                                            <div className="space-y-4">
+                                                <h5 className="text-sm font-medium text-gray-700">Valoración mínima</h5>
+                                                <div className="flex gap-2">
+                                                    {[0, 3, 3.5, 4, 4.5].map((rating) => (
+                                                        <button
+                                                            key={rating}
+                                                            onClick={() => setFilters({...filters, rating})}
+                                                            className={`flex-1 h-10 rounded-lg border text-sm font-medium transition-all ${
+                                                                filters.rating === rating
+                                                                    ? 'border-gray-900 bg-gray-900 text-white'
+                                                                    : 'border-gray-300 hover:border-gray-900'
+                                                            }`}
+                                                        >
+                                                            {rating === 0 ? 'Todas' : `${rating}+`}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Botón Borrar */}
+                                            {(filters.priceRange[0] > 0 || filters.priceRange[1] < 100000 || filters.rating > 0) && (
+                                                <button
+                                                    onClick={() => setFilters({ priceRange: [0, 100000], rating: 0 })}
+                                                    className="text-sm font-medium text-gray-900 underline w-full text-left"
+                                                >
+                                                    Borrar filtros
+                                                </button>
+                                            )}
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+                        
                         {loadError ? (
                         <div className="h-full flex items-center justify-center bg-gray-100">
                             <div className="text-red-500">Error al cargar el mapa</div>
                             </div>
                         ) : (
                             <>
-                            {/* Barra de búsqueda móvil - Tamaños dinámicos basados en ancho real */}
-                            <div className="absolute top-4 left-4 right-4 z-[9998] pointer-events-none" style={{ top: isLargeMobile ? '24px' : '16px', left: isLargeMobile ? '24px' : '16px', right: isLargeMobile ? '24px' : '16px' }}>
-                                <div className="pointer-events-auto w-full mx-auto" style={{ maxWidth: isLargeMobile ? '800px' : isMediumMobile ? '700px' : '600px' }}>
-                                    <div 
-                                        className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center overflow-hidden"
-                                        style={{ 
-                                            height: `${searchBarHeight}px`,
-                                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                                        }}
-                                    >
-                                        {/* Selector de país y separador juntos - Sin espacio entre ellos */}
-                                        <div className="flex items-center flex-shrink-0" style={{ marginRight: '0' }}>
-                                        <CountrySelector
-                                            onCountrySelect={(countryCode, coordinates) => {
-                                                setSelectedCountry(countryCode);
-                                                if (map) {
-                                                    map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
-                                                    map.setZoom(coordinates.zoom);
+                            {/* Map - ocupa todo el espacio restante */}
+                                <div className="flex-1 relative w-full">
+                                    {isLoaded ? (
+                                        <LocationMap
+                                            selectedLocation={selectedLocation}
+                                            mapExperts={mapExperts}
+                                            services={services}
+                                            selectedService={selectedService}
+                                            onMapClick={handleMapClick}
+                                            onMapLoad={(mapInstance) => {
+                                                setMap(mapInstance);
+                                                // Centrar en el país por defecto al cargar
+                                                const countryCoords = getCountryCoordinates(selectedCountry);
+                                                if (countryCoords) {
+                                                    mapInstance.setCenter({ lat: countryCoords.lat, lng: countryCoords.lng });
+                                                    mapInstance.setZoom(countryCoords.zoom);
                                                 }
-                                                setFormData(prev => ({
-                                                    ...prev,
-                                                    latitude: coordinates.lat.toString(),
-                                                    longitude: coordinates.lng.toString(),
-                                                    locationName: getCountryName(countryCode) || '',
-                                                }));
-                                                setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
-                                                setSearchAddress('');
-                                                setSelectedAddress('');
                                             }}
-                                            currentCountry={selectedCountry}
-                                                style={{
-                                                    height: `${searchBarHeight}px`,
-                                                    paddingLeft: `${searchBarPadding}px`,
-                                                    paddingRight: '0px',
-                                                    marginRight: '0px',
-                                                    gap: isLargeMobile ? '8px' : '6px',
-                                                    width: 'auto',
-                                                    minWidth: 'auto'
-                                                }}
-                                                className="flex items-center"
+                                            onServiceSelect={handleServiceSelect}
+                                            locationRange={parseInt(formData.locationRange)}
+                                            isMobile={true}
+                                            isLoaded={isLoaded}
                                         />
-                                            {/* Separador - Inmediatamente después del botón, sin espacio */}
-                                            <div 
-                                                className="w-px bg-gray-200 flex-shrink-0" 
-                                                style={{ 
-                                                    height: `${searchBarHeight * 0.6}px`,
-                                                    marginLeft: '0px',
-                                                    marginRight: '0px'
-                                                }}
-                                            />
-                                        </div>
-                                        
-                                        {/* Campo de búsqueda - Tamaños dinámicos */}
-                                        <div className="flex-1 relative min-w-0">
-                                            {isLoaded ? (
-                                                <Autocomplete
-                                                    onPlaceSelected={handlePlaceSelected}
-                                                    options={{
-                                                        componentRestrictions: { country: selectedCountry.toLowerCase() },
-                                                        fields: ['formatted_address', 'geometry', 'name', 'place_id', 'address_components']
-                                                    }}
-                                                    style={{
-                                                        height: `${searchBarHeight}px`,
-                                                        paddingLeft: `${searchBarPadding}px`,
-                                                        paddingRight: `${iconSize + searchBarPadding}px`,
-                                                        fontSize: `${searchBarTextSize}px`
-                                                    }}
-                                                    className="w-full text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none truncate"
-                                                    placeholder="Buscar ciudad o dirección..."
-                                                    disabled={isGeocoding}
-                                                />
-                                            ) : (
-                                                <input
-                                                type="text"
-                                                    placeholder="Cargando mapa..."
-                                                    disabled
-                                                    style={{
-                                                        height: `${searchBarHeight}px`,
-                                                        paddingLeft: `${searchBarPadding}px`,
-                                                        paddingRight: `${iconSize + searchBarPadding}px`,
-                                                        fontSize: `${searchBarTextSize}px`
-                                                    }}
-                                                    className="w-full text-gray-400 placeholder-gray-400 bg-transparent border-0 truncate"
-                                                />
-                                            )}
-                                            {isGeocoding ? (
-                                                <div 
-                                                    className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
-                                                    style={{ right: `${searchBarPadding}px` }}
-                                                >
-                                                    <div 
-                                                        className="border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"
-                                                        style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
-                                                    />
-                                                </div>
-                                            ) : searchAddress ? (
-                                                <button
-                                                    onClick={() => {
-                                                        setSearchAddress('');
-                                                        if (searchInputRef.current) {
-                                                            searchInputRef.current.value = '';
-                                                            searchInputRef.current.focus();
-                                                        }
-                                                    }}
-                                                    className="absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
-                                                    style={{ right: `${searchBarPadding}px` }}
-                                                >
-                                                    <X style={{ width: `${iconSize}px`, height: `${iconSize}px` }} />
-                                                </button>
-                                            ) : (
-                                                <Search 
-                                                    className="absolute top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                                                    style={{ right: `${searchBarPadding}px`, width: `${iconSize}px`, height: `${iconSize}px` }}
-                                                />
-                                            )}
-                                        </div>
-                                        </div>
-                                    </div>
+                                    ) : null}
                                 </div>
-                                
-                            {/* Map - ocupa todo el espacio */}
-                                {isLoaded ? (
-                                    <LocationMap
-                                        selectedLocation={selectedLocation}
-                                        mapExperts={mapExperts}
-                                        services={services}
-                                        selectedService={selectedService}
-                                    onMapClick={handleMapClick}
-                                        onMapLoad={(mapInstance) => {
-                                            setMap(mapInstance);
-                                            // Centrar en el país por defecto al cargar
-                                            const countryCoords = getCountryCoordinates(selectedCountry);
-                                            if (countryCoords) {
-                                                mapInstance.setCenter({ lat: countryCoords.lat, lng: countryCoords.lng });
-                                                mapInstance.setZoom(countryCoords.zoom);
-                                            }
-                                        }}
-                                        onServiceSelect={handleServiceSelect}
-                                        locationRange={parseInt(formData.locationRange)}
-                                        isMobile={true}
-                                        isLoaded={isLoaded}
-                                    />
-                                ) : null}
                                 
                             {/* Floating Button - Siempre visible en la parte inferior */}
                                 {formData.latitude && formData.longitude && (
@@ -1475,23 +1532,42 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     </div>
                 </div>
                 
-                {/* Mobile Drawer with Services */}
-                <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                    <DrawerContent className="max-h-[85vh] flex flex-col rounded-t-[24px] bg-white outline-none">
-                        {/* Handle minimalista */}
-                        <div className="flex justify-center pt-3 pb-2 bg-white rounded-t-[24px]">
-                            <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
-                        </div>
+                {/* Mobile Drawer with Services - Solo en móvil */}
+                <Drawer open={isDrawerOpen} onOpenChange={(open) => {
+                    // Solo permitir abrir en móvil
+                    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+                        return;
+                    }
+                    setIsDrawerOpen(open);
+                }}>
+                    <DrawerContent 
+                        noOverlay={true}
+                        className="lg:hidden flex flex-col bg-white outline-none border-0 shadow-none rounded-none" 
+                        style={{ 
+                            top: `${headerTop}px`,
+                            bottom: '0',
+                            zIndex: 9998,
+                            height: `calc(100vh - ${headerTop}px)`,
+                            maxHeight: `calc(100vh - ${headerTop}px)`,
+                            position: 'fixed',
+                            backgroundColor: 'white',
+                            borderTopLeftRadius: '0',
+                            borderTopRightRadius: '0',
+                            borderBottomLeftRadius: '0',
+                            borderBottomRightRadius: '0'
+                        }}
+                    >
+                        {/* Handle eliminado - ya viene del DrawerContent */}
                         
                         {/* Header con contador estilo Airbnb */}
-                        <div className="px-6 py-4 bg-white border-b border-gray-200">
+                        <div className="px-6 py-4 bg-white border-b border-gray-100">
                             <div className="flex items-center justify-between">
                                 <h2 className="text-lg font-semibold text-gray-900">
                                     {services.length > 0 ? `${services.length} ${services.length === 1 ? 'servicio' : 'servicios'}` : 'Sin servicios'}
                                 </h2>
                                 <button
                                     onClick={() => setIsDrawerOpen(false)}
-                                    className="p-2 -mr-2 text-gray-600 hover:text-gray-900 transition-colors"
+                                    className="p-2 -mr-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100"
                                     aria-label="Cerrar"
                                 >
                                     <X className="w-5 h-5" />
@@ -1504,7 +1580,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             {/* Services List - Estilo Airbnb */}
                             <div className="px-0">
                                 {services.length > 0 ? (
-                                    <div className="space-y-0">
+                                    <div className="space-y-0" style={{ paddingBottom: '24px' }}>
                                         {services.map((service) => {
                                             const isSelected = selectedService === service.id;
                                             
