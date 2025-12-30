@@ -51,6 +51,8 @@ interface ServiceReviewPageProps {
     totalSteps?: number;
     onBack: () => void;
     onContinue: () => void;
+    // ✅ NUEVO: Permitir pasar el servicio completo directamente
+    service?: Service | null;
 }
 
 export function ServiceReviewPage({
@@ -69,6 +71,7 @@ export function ServiceReviewPage({
     totalSteps = 3,
     onBack,
     onContinue,
+    service: serviceProp, // ✅ Servicio pasado como prop
 }: ServiceReviewPageProps) {
     const { isAuthenticated, updateUser } = useAuth();
     const navigate = useNavigate();
@@ -79,6 +82,7 @@ export function ServiceReviewPage({
     const carouselRef = useRef<HTMLDivElement>(null);
     const { serviceTypes } = useServiceTypes();
 
+    // ✅ Si el servicio viene como prop, usarlo directamente; si no, buscarlo con useServices
     const { services, isLoading } = useServices({
         categoryId,
         serviceTypeId,
@@ -87,8 +91,20 @@ export function ServiceReviewPage({
         locationRange,
     });
 
-    const service = services.find(s => s.id === serviceId);
+    const service = serviceProp || services.find(s => s.id === serviceId);
     const finalService: Service | null = service || null;
+    
+    console.log('🔍 ServiceReviewPage - Servicio final:', {
+        serviceId,
+        hasServiceProp: !!serviceProp,
+        hasServiceFromHook: !!services.find(s => s.id === serviceId),
+        finalService: finalService ? {
+            id: finalService.id,
+            hasExpert: !!finalService.expert,
+            reviewsCount: finalService.expert?.reviews?.length || 0,
+            reviews: finalService.expert?.reviews,
+        } : null,
+    });
     
     // Normalizar imageUrls - puede venir de diferentes fuentes
     const normalizeImageUrls = (urls: any): string[] => {
@@ -117,11 +133,12 @@ export function ServiceReviewPage({
     // 1. serviceTypeDescription (Descripción oficial del tipo de servicio)
     // 2. conditions (Descripción del usuario, si la oficial falla)
     // 3. serviceDescription (Prop de fallback)
-    const finalServiceTypeDescription = finalService?.serviceTypeDescription;
-    const finalUserConditions = finalService?.conditions || serviceDescription;
+    // Manejar tanto PascalCase como camelCase por si la transformación falla
+    const finalServiceTypeDescription = finalService?.serviceTypeDescription || (finalService as any)?.ServiceTypeDescription;
+    const finalUserConditions = finalService?.conditions || (finalService as any)?.Conditions || serviceDescription;
     
-    // Si no hay descripción oficial, usamos la del usuario como principal para que no quede vacío
-    const displayMainDescription = finalServiceTypeDescription || finalUserConditions || 'Descripción no disponible.';
+    // Si no hay descripción oficial, usamos la del usuario como principal
+    const displayMainDescription = finalServiceTypeDescription || finalUserConditions || '';
     
     // Si usamos la del usuario como principal, no la repetimos abajo
     const showSecondaryDescription = !!finalServiceTypeDescription && !!finalUserConditions;
@@ -131,14 +148,53 @@ export function ServiceReviewPage({
     
     // Estado para "Leer más" en descripción
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-    const shouldTruncateDescription = displayMainDescription.length > 150;
+    const shouldTruncateDescription = (displayMainDescription || '').length > 150;
 
     // Estado para "Leer más" en detalles del experto
     const [isUserConditionsExpanded, setIsUserConditionsExpanded] = useState(false);
     const shouldTruncateUserConditions = (finalUserConditions || '').length > 250; // Aprox 6 líneas
 
-    const finalRating = finalService?.averageRating || 0;
-    const finalReviews = finalService?.expert?.reviews || [];
+    // Estado para "Mostrar más" en reviews
+    const [expandedReviews, setExpandedReviews] = useState<Record<number, boolean>>({});
+    // Estado para mostrar/ocultar imágenes de las reseñas
+    const [showReviewImages, setShowReviewImages] = useState<Record<number, boolean>>({});
+
+    const finalRating = finalService?.averageRating || (finalService as any)?.AverageRating || 0;
+    // Manejar tanto PascalCase como camelCase para reviews
+    const rawReviews = finalService?.expert?.reviews || (finalService as any)?.Expert?.Reviews || (finalService as any)?.expert?.Reviews || [];
+    console.log('🔍 ServiceReviewPage - Reviews raw:', {
+        rawReviewsCount: rawReviews.length,
+        rawReviews: rawReviews,
+        firstReview: rawReviews[0],
+    });
+    const finalReviews = rawReviews.map((review: any) => {
+        // Mapear reviewer a client, manejando casos donde reviewer puede ser undefined
+        const reviewer = review.reviewer || review.Reviewer || review.client || review.Client;
+        const client = reviewer ? {
+            id: reviewer.id || reviewer.Id,
+            name: reviewer.name || reviewer.Name || 'Usuario',
+            email: reviewer.email || reviewer.Email,
+            profilePictureUrl: reviewer.profilePictureUrl || reviewer.ProfilePictureUrl,
+            createdAt: reviewer.createdAt || reviewer.CreatedAt, // Para calcular "Lleva X años"
+            location: reviewer.location || reviewer.Location, // Para mostrar ubicación si no hay tiempo en plataforma
+        } : review.client || { name: 'Usuario', email: '', profilePictureUrl: undefined };
+        
+        return {
+            ...review,
+            id: review.id || review.Id,
+            score: review.score ?? review.Score ?? 5,
+            description: review.description || review.Description || '',
+            createdAt: review.createdAt || review.CreatedAt,
+            client: client,
+            rating: review.score ?? review.Score ?? review.rating ?? review.Rating ?? 5, // Mapear score a rating
+            comment: review.description || review.Description || review.comment || review.Comment || '',
+            imageUrls: review.imageUrls || review.ImageUrls || [],
+        };
+    });
+    console.log('🔍 ServiceReviewPage - Reviews finales:', {
+        finalReviewsCount: finalReviews.length,
+        finalReviews: finalReviews,
+    });
     const finalCompletedSearches = finalService?.completedSearches || 0;
     
     // ✅ FALLBACK VISUAL PARA ENTREGABLES (Si no hay, mostramos los estándar para que se vea el diseño)
@@ -365,189 +421,181 @@ export function ServiceReviewPage({
                     {/* Spacer adicional para los botones de acción en móvil */}
                     <div className="h-12"></div>
 
-                {/* Galería móvil ESTILO ÁLBUM APILADO MEJORADO */}
-                <div className="px-5 mb-8 -mt-6">
-                    <div className="relative group cursor-pointer perspective-1000 mx-auto w-full max-w-[340px]" onClick={() => handleImageClick(0)}>
-                        {/* Capa Decorativa 3 */}
-                        {finalImages.length > 2 && (
-                            <div className="absolute top-0 left-0 w-full h-full bg-white rounded-xl shadow-md transform rotate-[-6deg] translate-x-[-10px] scale-90 border-4 border-white z-0">
-                                <div className="w-full h-full bg-gray-200 rounded-lg overflow-hidden opacity-50"></div>
-                </div>
-                        )}
-                        
-                        {/* Capa Decorativa 2 */}
-                        {finalImages.length > 1 && (
-                            <div className="absolute top-0 left-0 w-full h-full bg-white rounded-xl shadow-lg transform rotate-[4deg] translate-x-[10px] scale-[0.96] border-4 border-white z-10 overflow-hidden">
-                                <img src={finalImages[1]} className="w-full h-full object-cover opacity-90 filter contrast-75" alt="Background" />
+                {/* Galería móvil - Imagen a pantalla completa con card blanco superpuesto */}
+                <div className="relative w-full">
+                    {/* Imagen principal - Aspecto cuadrado, 100% ancho */}
+                    <div className="relative w-full aspect-[1/1] bg-gray-100" onClick={() => handleImageClick(0)}>
+                        {finalImages[0] ? (
+                            <img 
+                                src={finalImages[0]} 
+                                alt="Principal" 
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    console.error('❌ Error cargando imagen:', finalImages[0]);
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <div className="text-center">
+                                    <Image className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                                    <p className="text-xs text-gray-400">Sin imagen disponible</p>
+                                </div>
                             </div>
                         )}
+                        
+                        {/* Badge de contador de fotos */}
+                        {finalImages.length > 1 && (
+                            <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1.5 z-20">
+                                <Grid3X3 className="w-3.5 h-3.5" />
+                                <span>{finalImages.length} fotos</span>
+                            </div>
+                        )}
+                    </div>
 
-                        {/* Foto Principal */}
-                        <div className="relative z-20 w-full aspect-[4/3] bg-white rounded-xl shadow-[0_15px_35px_-10px_rgba(0,0,0,0.25)] transform transition-all duration-500 border-[5px] border-white overflow-hidden active:scale-95">
-                             <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent z-10 pointer-events-none" />
-                            {finalImages[0] ? (
-                                <img 
-                                    src={finalImages[0]} 
-                                    alt="Principal" 
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        console.error('❌ Error cargando imagen:', finalImages[0]);
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                    }}
-                                />
-                            ) : (
-                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                    <div className="text-center">
-                                        <Image className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                                        <p className="text-xs text-gray-400">Sin imagen disponible</p>
-                                    </div>
+                    {/* Card blanco con bordes redondeados superiores - Se superpone sobre la imagen */}
+                    <div className="relative -mt-16 bg-white rounded-t-3xl pt-6 pb-32 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+                        {/* Título y ubicación - Estilo Airbnb mejorado */}
+                        <div className="mb-5 px-6">
+                            <h1 className="text-[26px] font-semibold text-gray-900 leading-tight mb-3">
+                                {serviceTypeName} por {finalExpertName}
+                            </h1>
+                            
+                            {/* Ubicación y tipo - Estilo Airbnb */}
+                            <div className="mb-3">
+                                <p className="text-sm text-gray-600 font-normal">
+                                    {finalService?.serviceTypeName || 'Servicio'} en {finalService?.expert?.country === 'ES' ? 'España' : finalService?.expert?.country || 'España'}
+                                </p>
+                            </div>
+                            
+                            {/* Características principales - Estilo Airbnb */}
+                            {finalService?.durationInHours && (
+                                <div className="mb-4">
+                                    <p className="text-sm text-gray-600">
+                                        {Math.ceil(finalService.durationInHours / 24)} {Math.ceil(finalService.durationInHours / 24) === 1 ? 'día' : 'días'} · {finalService.selectedDeliverableTypes?.[0]?.displayName || 'Informe detallado'}
+                                    </p>
                                 </div>
                             )}
                             
-                            {/* Badge */}
-                            {finalImages.length > 1 && (
-                                <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-lg flex items-center gap-1 z-20">
-                                    <Grid3X3 className="w-3 h-3" />
-                                    <span>+{finalImages.length - 1}</span>
-                                    </div>
-                            )}
-                                </div>
-                                    </div>
-                                    </div>
-
-                {/* Contenido móvil - Estilo Airbnb moderno (COMPACTO) */}
-                <div className="px-5 pt-0 pb-32">
-                    {/* Título y ubicación */}
-                    <div className="mb-4 text-center">
-                        <h1 className="text-xl font-bold text-gray-900 leading-tight mb-1.5 tracking-tight">
-                        {serviceTypeName} por {finalExpertName}
-                    </h1>
-                        {/* Meta info - Estilo Airbnb */}
-                        <div className="flex flex-wrap items-center justify-center gap-x-2 text-xs text-gray-600">
-                        {finalRating > 0 ? (
-                            <>
+                            {/* Rating y reseñas - Estilo Airbnb compacto */}
+                            {finalRating > 0 && (
+                                <div className="flex flex-wrap items-center gap-x-2 text-sm mb-4">
                                     <div className="flex items-center gap-1">
-                                        <Star className="w-3 h-3 fill-gray-900 text-gray-900" />
+                                        <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
                                         <span className="font-semibold text-gray-900">{finalRating.toFixed(1)}</span>
                                     </div>
-                                                <span>·</span>
-                                    <button className="underline hover:no-underline text-gray-900 font-medium">
+                                    <span className="text-gray-400">·</span>
+                                    <button className="underline hover:no-underline text-gray-900 font-semibold">
                                         {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
                                     </button>
-                                            </>
-                        ) : (
-                                <span className="flex items-center gap-1 text-gray-600">
-                                    <Star className="w-3 h-3" />
-                                    <span>Nuevo</span>
-                            </span>
-                                        )}
-                        </div>
-                    </div>
-
-                    {/* Descripción Principal Móvil */}
-                    <div className="mb-6 text-center px-2">
-                        <div className="relative">
-                            <p className={`text-sm text-gray-600 leading-relaxed whitespace-pre-line ${!isDescriptionExpanded && shouldTruncateDescription ? 'max-h-[4.5em] overflow-hidden' : ''}`}>
-                                {displayMainDescription}
-                            </p>
-                            {!isDescriptionExpanded && shouldTruncateDescription && (
-                                <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
+                                </div>
                             )}
                         </div>
-                        {shouldTruncateDescription && (
-                            <button 
-                                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                                className="text-xs font-semibold text-gray-900 mt-2 underline decoration-gray-300 underline-offset-2"
-                            >
-                                {isDescriptionExpanded ? 'Leer menos' : 'Leer más'}
-                            </button>
-                                    )}
-                                </div>
 
-                    {/* Información del Experto Móvil (Secundaria) */}
-                    {showSecondaryDescription && (
-                        <div className="mb-6 px-2">
-                            <h3 className="text-sm font-bold text-gray-900 mb-2 text-center">Detalles del experto</h3>
-                            <p className="text-xs text-gray-500 leading-relaxed text-center bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                {finalUserConditions}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Horario Móvil (NUEVO) */}
-
-                    <div className="h-px bg-gray-100 mb-6" />
-
-                    {/* Info del anfitrión - Estilo Airbnb (COMPACTO) */}
-                    <div className="mb-5">
-                        <div className="flex items-center gap-3 mb-2">
-                        <Avatar className="w-10 h-10 border border-gray-100">
-                            <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                                <AvatarFallback className="bg-gray-900 text-white font-bold text-sm">
-                                {finalExpertName.charAt(0)}
-                            </AvatarFallback>
-                        </Avatar>
-                            <div className="flex-1">
-                                <h3 className="text-sm font-semibold text-gray-900 mb-0 leading-tight">
-                                    Anfitrión: {finalExpertName}
-                                </h3>
-                                <p className="text-xs text-gray-500 leading-relaxed">
-                                {finalService?.expert?.createdAt 
-                                    ? (() => {
-                                        const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
-                                            return months < 1 ? 'Menos de 1 mes' : `${months} ${months === 1 ? 'mes' : 'meses'} de experiencia`;
-                                    })()
-                                    : 'Profesional verificado'
-                                }
-                            </p>
-                        </div>
-                        </div>
-                    </div>
-
-                    <div className="h-px bg-gray-100 mb-5" />
-
-                    {/* GARANTÍA INSPECCIONO (MÓVIL - DISEÑO BRANDED AZUL REFINADO) - REEMPLAZANDO FEATURES */}
-                    <div className="mb-6 bg-white border border-gray-200 rounded-xl p-5 shadow-sm mx-2">
-                        {/* Cabecera de marca */}
-                        <div className="flex items-center gap-1 mb-4">
-                            <span className="text-lg font-bold text-[#0066CC] tracking-tight">inspecciono</span>
-                            <span className="text-lg font-light text-gray-900">protección</span>
+                        {/* Descripción Principal Móvil - Estilo Airbnb */}
+                        {displayMainDescription && (
+                            <div className="mb-6 px-6">
+                                <p className={`text-[15px] text-gray-700 leading-relaxed whitespace-pre-line ${!isDescriptionExpanded && shouldTruncateDescription ? 'max-h-[4.5em] overflow-hidden' : ''}`}>
+                                    {displayMainDescription}
+                                </p>
+                                {shouldTruncateDescription && (
+                                    <button 
+                                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                                        className="text-sm font-semibold text-gray-900 mt-2 underline decoration-gray-300 underline-offset-2"
+                                    >
+                                        {isDescriptionExpanded ? 'Leer menos' : 'Leer más'}
+                                    </button>
+                                )}
                             </div>
-                        
-                        <div className="space-y-4">
-                            <div className="flex gap-3 items-start">
-                                <div className="mt-0.5 flex-shrink-0">
-                                    <BadgeCheck className="w-5 h-5 text-[#0066CC] stroke-[2]" />
-                        </div>
-                            <div>
-                                    <h4 className="font-bold text-gray-900 text-xs mb-0.5">Calidad verificada</h4>
-                                    <p className="text-[11px] text-gray-600 leading-relaxed">
-                                        Auditamos manualmente la revisión para asegurar estándares profesionales.
-                                    </p>
-                                </div>
+                        )}
+
+                        {/* Información del Experto Móvil (Secundaria) - Estilo Airbnb */}
+                        {showSecondaryDescription && (
+                            <div className="mb-6 px-6">
+                                <h3 className="text-base font-semibold text-gray-900 mb-3">Detalles del experto</h3>
+                                <p className="text-[15px] text-gray-700 leading-relaxed">
+                                    {finalUserConditions}
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="h-px bg-gray-200 mb-6 mx-6" />
+
+                        {/* Info del anfitrión - Estilo Airbnb exacto */}
+                        <div className="mb-6 px-6">
+                            <div className="flex items-start gap-3">
+                                <Avatar className="w-12 h-12 flex-shrink-0">
+                                    <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
+                                    <AvatarFallback className="bg-gray-900 text-white font-bold text-sm">
+                                        {finalExpertName.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-[15px] text-gray-700">
+                                        <span className="font-semibold">Anfitrión: {finalExpertName}</span>
+                                        {finalService?.expert?.createdAt && (
+                                            <>
+                                                <span className="mx-1">·</span>
+                                                <span>
+                                                    {(() => {
+                                                        const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
+                                                        const years = Math.floor(months / 12);
+                                                        return years > 0 ? `${years} ${years === 1 ? 'año' : 'años'} de experiencia` : `${months} ${months === 1 ? 'mes' : 'meses'} de experiencia`;
+                                                    })()}
+                                                </span>
+                                            </>
+                                        )}
                                     </div>
-
-                            <div className="flex gap-3 items-start">
-                                <div className="mt-0.5 flex-shrink-0">
-                                    <Lock className="w-5 h-5 text-[#0066CC] stroke-[2]" />
                                 </div>
-                            <div>
-                                    <h4 className="font-bold text-gray-900 text-xs mb-0.5">Pago en custodia</h4>
-                                    <p className="text-[11px] text-gray-600 leading-relaxed">
-                                        Tu dinero se retiene seguro hasta que recibes el informe.
-                                    </p>
+                            </div>
+                        </div>
+
+                        <div className="h-px bg-gray-200 mb-6 mx-6" />
+
+                        {/* GARANTÍA INSPECCIONO (MÓVIL - ESTILO AIRBNB) */}
+                        <div className="mb-6 px-6">
+                            <div className="border-b border-gray-200 pb-6">
+                            {/* Cabecera de marca */}
+                            <div className="flex items-center gap-1 mb-4">
+                                <span className="text-base font-semibold text-[#0066CC] tracking-tight">inspecciono</span>
+                                <span className="text-base font-normal text-gray-900">protección</span>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <div className="flex gap-3 items-start">
+                                    <div className="mt-0.5 flex-shrink-0">
+                                        <BadgeCheck className="w-5 h-5 text-[#0066CC] stroke-[2]" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold text-gray-900 text-sm mb-0.5">Calidad verificada</h4>
+                                        <p className="text-sm text-gray-600 leading-relaxed">
+                                            Auditamos manualmente la revisión para asegurar estándares profesionales.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 items-start">
+                                    <div className="mt-0.5 flex-shrink-0">
+                                        <Lock className="w-5 h-5 text-[#0066CC] stroke-[2]" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold text-gray-900 text-sm mb-0.5">Pago en custodia</h4>
+                                        <p className="text-sm text-gray-600 leading-relaxed">
+                                            Tu dinero se retiene seguro hasta que recibes el informe.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="h-px bg-gray-100 mb-6" />
+                        <div className="h-px bg-gray-200 mb-6 mx-6" />
 
-                    {/* Qué incluye (MÓVIL - ESTILO DESKTOP MEJORADO) */}
-                                {finalDeliverableTypes.length > 0 && (
-                        <>
-                            <div className="mb-6">
-                                <h3 className="text-base font-bold text-gray-900 mb-3">Qué incluye</h3>
+                        {/* Qué incluye (MÓVIL - ESTILO AIRBNB) */}
+                        {finalDeliverableTypes.length > 0 && (
+                            <>
+                                <div className="mb-6 px-6">
+                                <h3 className="text-base font-semibold text-gray-900 mb-4">Qué incluye</h3>
                                 <div className="flex flex-wrap gap-2">
                                     {finalDeliverableTypes.map((dt) => {
                                         const n = (dt.displayName || dt.name).toLowerCase();
@@ -558,95 +606,179 @@ export function ServiceReviewPage({
                                         else if (n.includes('archivo')) Icon = File;
 
                                         return (
-                                            <div key={dt.id} className="inline-flex items-center gap-1.5 bg-blue-50/50 text-blue-700 px-3 py-2 rounded-lg border border-blue-100/50">
-                                                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                                                <span className="text-xs font-medium leading-none">{dt.displayName || dt.name}</span>
-                                                    </div>
+                                            <div key={dt.id} className="inline-flex items-center gap-1.5 bg-gray-50 text-gray-700 px-3 py-2 rounded-lg border border-gray-200">
+                                                <Icon className="w-4 h-4 flex-shrink-0" />
+                                                <span className="text-sm font-normal leading-none">{dt.displayName || dt.name}</span>
+                                            </div>
                                         );
                                     })}
-                                                </div>
-                                        </div>
-                            <div className="h-px bg-gray-100 mb-6" />
-                        </>
-                    )}
-
-                    {/* Descripción - Estilo Airbnb (ELIMINADO AQUÍ PORQUE SE MOVIÓ ARRIBA) */}
-
-                    {/* Reseñas (MÓVIL - ESTILO DESKTOP PREMIUM) */}
-                    {finalReviews.length > 0 ? (
-                        <>
-                            <div className="h-px bg-gray-100 mb-6" />
-                            <div className="mb-24">
-                                <div className="flex items-center gap-2 mb-6">
-                                    <Star className="w-5 h-5 fill-gray-900 text-gray-900" />
-                                    <span className="text-[18px] font-bold text-gray-900">{finalRating.toFixed(1)}</span>
-                                    <span className="text-[18px] text-gray-900">·</span>
-                                    <span className="text-[18px] font-bold text-gray-900">{finalReviews.length} reseñas</span>
                                 </div>
-                                
-                                <div className="space-y-4">
-                                    {finalReviews.slice(0, 3).map((review, idx) => (
-                                        <div key={idx} className="bg-white rounded-xl p-5 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
-                                            {/* Header Reseña */}
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="w-10 h-10 border border-gray-100 shadow-sm">
-                                                        <AvatarImage src={review.client?.profilePictureUrl} />
-                                                        <AvatarFallback className="bg-gray-900 text-white font-bold text-xs">
-                                                            {review.client?.name?.charAt(0) || 'U'}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-gray-900 leading-none mb-0.5">{review.client?.name || 'Usuario'}</p>
-                                                        <p className="text-[11px] text-gray-400 font-medium">{new Date(review.createdAt).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</p>
+                                </div>
+                                <div className="h-px bg-gray-200 mb-6 mx-6" />
+                            </>
+                        )}
+
+                        {/* Reseñas (MÓVIL - ESTILO AIRBNB EXACTO) */}
+                        {finalReviews.length > 0 ? (
+                            <>
+                                <div className="h-px bg-gray-200 mb-6 mx-6" />
+                                <div className="mb-24 px-6 w-full">
+                                    {/* Header de reseñas - Estilo Airbnb */}
+                                    <div className="mb-6">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Star className="w-5 h-5 fill-gray-900 text-gray-900" />
+                                            <span className="text-[18px] font-bold text-gray-900">{finalRating.toFixed(1)}</span>
+                                            <span className="text-[18px] text-gray-900">·</span>
+                                            <span className="text-[18px] font-bold text-gray-900">{finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}</span>
+                                        </div>
                                     </div>
-                                                </div>
-                                                <div className="flex gap-0.5 bg-yellow-50 px-1.5 py-0.5 rounded-full">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star 
-                                                            key={i} 
-                                                            className={`w-3 h-3 ${i < (review.rating || 5) ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`} 
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
+                                    
+                                    <div className="space-y-8 w-full">
+                                        {finalReviews.slice(0, 3).map((review: any, idx: number) => {
+                                            // Formatear fecha en formato "mes de año" como Airbnb
+                                            const reviewDate = new Date(review.createdAt);
+                                            const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+                                            const formattedDate = `${monthNames[reviewDate.getMonth()]} de ${reviewDate.getFullYear()}`;
                                             
-                                            {/* Cuerpo Reseña */}
-                                            <div className="relative pl-3">
-                                                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-100 rounded-full"></div>
-                                                <p className="text-gray-700 text-[14px] leading-relaxed mb-3">
-                                                    {review.description || review.comment}
-                                                </p>
-                                                
-                                                {/* Imágenes de la reseña */}
-                                                {review.imageUrls && review.imageUrls.length > 0 && (
-                                                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -ml-1">
-                                                        {review.imageUrls.map((img, imgIdx) => (
-                                                            <div key={imgIdx} className="relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-gray-100 bg-gray-50">
-                                                                <img 
-                                                                    src={img} 
-                                                                    alt={`Foto reseña ${imgIdx + 1}`} 
-                                                                    className="w-full h-full object-cover"
-                                                                />
+                                            // Calcular tiempo desde que el reviewer está en la plataforma
+                                            const reviewerCreatedAt = review.client?.createdAt ? new Date(review.client.createdAt) : null;
+                                            const now = new Date();
+                                            const reviewerMonths = reviewerCreatedAt ? Math.floor((now.getTime() - reviewerCreatedAt.getTime()) / (1000 * 60 * 60 * 24 * 30)) : null;
+                                            const reviewerYears = reviewerMonths ? Math.floor(reviewerMonths / 12) : null;
+                                            
+                                            const reviewText = review.description || review.comment || '';
+                                            // Calcular si el texto necesita truncarse (aproximadamente 4 líneas con line-height 1.25rem)
+                                            const shouldTruncate = reviewText.length > 200;
+                                            const isExpanded = expandedReviews[review.id] || false;
+                                            
+                                            return (
+                                                <div key={review.id || idx} className="w-full">
+                                                    <div className="flex justify-between w-full">
+                                                        {/* Contenido principal de la review */}
+                                                        <div className="flex-1 min-w-0">
+                                                            {/* Estrellas y fecha - Estilo Airbnb exacto */}
+                                                            <div className="flex items-center gap-0.5 mb-1">
+                                                                <div className="flex gap-[0.0625rem]">
+                                                                    {[...Array(5)].map((_, i) => (
+                                                                        <Star 
+                                                                            key={i} 
+                                                                            className={`w-[0.5625rem] h-[0.5625rem] flex-shrink-0 ${i < (review.rating || review.score || 5) ? 'fill-gray-900 text-gray-900' : 'fill-gray-200 text-gray-200'}`} 
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                                <span className="text-xs text-gray-500 ml-1">, </span>
+                                                                <span className="text-xs text-gray-500" aria-hidden="true"> · </span>
+                                                                <span className="text-xs text-gray-500">{formattedDate}</span>
                                                             </div>
-                                                        ))}
+                                                            
+                                                            {/* Texto de la review - Estilo Airbnb exacto */}
+                                                            <div className="mb-3">
+                                                                <div 
+                                                                    style={{
+                                                                        lineHeight: '1.25rem',
+                                                                        overflow: isExpanded ? 'visible' : 'hidden',
+                                                                        textOverflow: isExpanded ? 'clip' : 'ellipsis',
+                                                                        display: isExpanded ? 'block' : '-webkit-box',
+                                                                        WebkitLineClamp: isExpanded ? 'unset' : 4,
+                                                                        WebkitBoxOrient: 'vertical' as 'vertical',
+                                                                    }}
+                                                                >
+                                                                    <p className="text-[15px] text-gray-700 leading-[1.25rem]">
+                                                                        {reviewText}
+                                                                    </p>
+                                                                </div>
+                                                                {shouldTruncate && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setExpandedReviews(prev => ({ ...prev, [review.id || idx]: !prev[review.id || idx] }))}
+                                                                        className="mt-2 text-sm font-semibold text-gray-900 underline hover:no-underline"
+                                                                    >
+                                                                        {isExpanded ? 'Mostrar menos' : 'Mostrar más'}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            
+                                                            {/* Imágenes de la reseña - Estilo Airbnb */}
+                                                            {review.imageUrls && review.imageUrls.length > 0 && (
+                                                                <div className="mt-3">
+                                                                    <button
+                                                                        type="button"
+                                                                        className="text-sm font-semibold text-gray-900 underline hover:no-underline"
+                                                                        onClick={() => {
+                                                                            setShowReviewImages(prev => ({
+                                                                                ...prev,
+                                                                                [review.id || idx]: !prev[review.id || idx]
+                                                                            }));
+                                                                        }}
+                                                                    >
+                                                                        Ver fotos
+                                                                    </button>
+                                                                    {showReviewImages[review.id || idx] && (
+                                                                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full mt-2 lg:grid lg:grid-cols-4 lg:overflow-visible">
+                                                                            {review.imageUrls.map((img: string, imgIdx: number) => (
+                                                                                <div key={imgIdx} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 lg:w-full lg:aspect-square">
+                                                                                    <img 
+                                                                                        src={img} 
+                                                                                        alt={`Foto reseña ${imgIdx + 1}`} 
+                                                                                        className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                                                                        onClick={() => {
+                                                                                            // TODO: Abrir lightbox con la imagen
+                                                                                            console.log('Abrir imagen:', img);
+                                                                                        }}
+                                                                                    />
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        {/* Avatar y info del reviewer - Estilo Airbnb */}
+                                                        <div className="flex-shrink-0 ml-4">
+                                                            <div className="flex flex-col items-center gap-2">
+                                                                <Avatar className="w-10 h-10 flex-shrink-0">
+                                                                    <AvatarImage src={review.client?.profilePictureUrl} />
+                                                                    <AvatarFallback className="bg-gray-900 text-white font-bold text-xs">
+                                                                        {review.client?.name?.charAt(0) || 'U'}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="text-center">
+                                                                    <div className="text-sm font-semibold text-gray-900 leading-tight">
+                                                                        {review.client?.name || 'Usuario'}
+                                                                    </div>
+                                                                    {reviewerYears && reviewerYears > 0 ? (
+                                                                        <div className="text-sm text-gray-500 leading-tight mt-0.5">
+                                                                            Lleva {reviewerYears} {reviewerYears === 1 ? 'año' : 'años'} en Inspecciono
+                                                                        </div>
+                                                                    ) : reviewerMonths && reviewerMonths > 0 ? (
+                                                                        <div className="text-sm text-gray-500 leading-tight mt-0.5">
+                                                                            Lleva {reviewerMonths} {reviewerMonths === 1 ? 'mes' : 'meses'} en Inspecciono
+                                                                        </div>
+                                                                    ) : review.client?.location ? (
+                                                                        <div className="text-sm text-gray-500 leading-tight mt-0.5">
+                                                                            {review.client.location}
+                                                                        </div>
+                                                                    ) : null}
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
 
-                                {finalReviews.length > 3 && (
-                                    <button className="w-full mt-5 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-                                        Leer las {finalReviews.length} reseñas
-                                    </button>
-                                )}
-                            </div>
-                        </>
-                    ) : (
-                        /* ESTADO SIN RESEÑAS MÓVIL */
-                        <div className="mb-24 px-4 py-8 bg-gray-50/50 rounded-xl border border-dashed border-gray-200 text-center mx-auto mt-6">
+                                    {finalReviews.length > 3 && (
+                                        <button className="w-full mt-6 py-3.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-900 hover:border-gray-900 transition-colors">
+                                            Mostrar las {finalReviews.length} reseñas
+                                        </button>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            /* ESTADO SIN RESEÑAS MÓVIL */
+                            <div className="mb-24 px-6 py-8 bg-gray-50/50 rounded-xl border border-dashed border-gray-200 text-center w-full mt-6">
                             <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-gray-100">
                                 <Star className="w-6 h-6 text-gray-300 fill-gray-50" />
                             </div>
@@ -654,9 +786,10 @@ export function ServiceReviewPage({
                             <p className="text-xs text-gray-500 max-w-[200px] mx-auto leading-relaxed">
                                 Sé el primero en probar este servicio y compartir tu experiencia.
                             </p>
-                                </div>
-                            )}
-                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 {/* Footer fijo móvil - Estilo Airbnb moderno */}
                 <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50 pb-safe">
@@ -755,90 +888,175 @@ export function ServiceReviewPage({
                                 </div>
                         </div>
 
-                            {/* RESEÑAS O ESTADO VACÍO */}
+                            {/* RESEÑAS O ESTADO VACÍO - ESTILO AIRBNB */}
                             <div className="animate-fade-in-up">
                                 {finalReviews.length > 0 ? (
                                     <>
-                                        <div className="flex items-center justify-between mb-6">
-                                            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                                <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-                                                <span>{finalRating.toFixed(1)}</span>
-                                                <span className="text-gray-400 font-normal text-lg">({finalReviews.length} reseñas)</span>
-                                            </h3>
+                                        {/* Header de reseñas - Estilo Airbnb */}
+                                        <div className="mb-6">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Star className="w-5 h-5 fill-gray-900 text-gray-900" />
+                                                <span className="text-[18px] font-bold text-gray-900">{finalRating.toFixed(1)}</span>
+                                                <span className="text-[18px] text-gray-900">·</span>
+                                                <span className="text-[18px] font-bold text-gray-900">{finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}</span>
+                                            </div>
                                         </div>
 
-                                        <div className="space-y-6">
-                                            {finalReviews.slice(0, 3).map((review, idx) => (
-                                                <div key={idx} className="bg-white rounded-xl p-6 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-all duration-300">
-                                                    {/* Header Reseña */}
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <Avatar className="w-11 h-11 border-2 border-white shadow-sm">
-                                                                <AvatarImage src={review.client?.profilePictureUrl} />
-                                                                <AvatarFallback className="bg-gray-900 text-white font-bold text-sm">
-                                                                    {review.client?.name?.charAt(0) || 'U'}
-                                                                </AvatarFallback>
-                                                            </Avatar>
-                                                            <div>
-                                                                <p className="text-sm font-bold text-gray-900 leading-none mb-1">{review.client?.name || 'Usuario'}</p>
-                                                                <p className="text-xs text-gray-400 font-medium">{new Date(review.createdAt).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</p>
+                                        <div className="space-y-8">
+                                            {finalReviews.slice(0, 3).map((review: any, idx: number) => {
+                                                // Formatear fecha en formato "mes de año" como Airbnb
+                                                const reviewDate = new Date(review.createdAt);
+                                                const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+                                                const formattedDate = `${monthNames[reviewDate.getMonth()]} de ${reviewDate.getFullYear()}`;
+                                                
+                                                // Calcular tiempo desde que el reviewer está en la plataforma
+                                                const reviewerCreatedAt = review.client?.createdAt ? new Date(review.client.createdAt) : null;
+                                                const now = new Date();
+                                                const reviewerMonths = reviewerCreatedAt ? Math.floor((now.getTime() - reviewerCreatedAt.getTime()) / (1000 * 60 * 60 * 24 * 30)) : null;
+                                                const reviewerYears = reviewerMonths ? Math.floor(reviewerMonths / 12) : null;
+                                                
+                                                const reviewText = review.description || review.comment || '';
+                                                // Calcular si el texto necesita truncarse (aproximadamente 4 líneas con line-height 1.25rem)
+                                                const shouldTruncate = reviewText.length > 200;
+                                                const isExpanded = expandedReviews[review.id] || false;
+                                                
+                                                return (
+                                                    <div key={review.id || idx} className="w-full">
+                                                        <div className="flex justify-between w-full">
+                                                            {/* Contenido principal de la review */}
+                                                            <div className="flex-1 min-w-0">
+                                                                {/* Estrellas y fecha - Estilo Airbnb exacto */}
+                                                                <div className="flex items-center gap-0.5 mb-1">
+                                                                    <div className="flex gap-[0.0625rem]">
+                                                                        {[...Array(5)].map((_, i) => (
+                                                                            <Star 
+                                                                                key={i} 
+                                                                                className={`w-[0.5625rem] h-[0.5625rem] flex-shrink-0 ${i < (review.rating || review.score || 5) ? 'fill-gray-900 text-gray-900' : 'fill-gray-200 text-gray-200'}`} 
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                    <span className="text-xs text-gray-500 ml-1">, </span>
+                                                                    <span className="text-xs text-gray-500" aria-hidden="true"> · </span>
+                                                                    <span className="text-xs text-gray-500">{formattedDate}</span>
+                                                                </div>
+                                                                
+                                                                {/* Texto de la review - Estilo Airbnb exacto */}
+                                                                <div className="mb-3">
+                                                                    <div 
+                                                                        style={{
+                                                                            lineHeight: '1.25rem',
+                                                                            overflow: isExpanded ? 'visible' : 'hidden',
+                                                                            textOverflow: isExpanded ? 'clip' : 'ellipsis',
+                                                                            display: isExpanded ? 'block' : '-webkit-box',
+                                                                            WebkitLineClamp: isExpanded ? 'unset' : 4,
+                                                                            WebkitBoxOrient: 'vertical' as 'vertical',
+                                                                        }}
+                                                                    >
+                                                                        <p className="text-[15px] text-gray-700 leading-[1.25rem]">
+                                                                            {reviewText}
+                                                                        </p>
+                                                                    </div>
+                                                                    {shouldTruncate && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setExpandedReviews(prev => ({ ...prev, [review.id || idx]: !prev[review.id || idx] }))}
+                                                                            className="mt-2 text-sm font-semibold text-gray-900 underline hover:no-underline"
+                                                                        >
+                                                                            {isExpanded ? 'Mostrar menos' : 'Mostrar más'}
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                
+                                                                {/* Imágenes de la reseña - Estilo Airbnb */}
+                                                                {review.imageUrls && review.imageUrls.length > 0 && (
+                                                                    <div className="mt-3">
+                                                                        <button
+                                                                            type="button"
+                                                                            className="text-sm font-semibold text-gray-900 underline hover:no-underline"
+                                                                            onClick={() => {
+                                                                                setShowReviewImages(prev => ({
+                                                                                    ...prev,
+                                                                                    [review.id || idx]: !prev[review.id || idx]
+                                                                                }));
+                                                                            }}
+                                                                        >
+                                                                            Ver fotos
+                                                                        </button>
+                                                                        {showReviewImages[review.id || idx] && (
+                                                                            <div className="grid grid-cols-4 gap-2 w-full mt-2">
+                                                                                {review.imageUrls.map((img: string, imgIdx: number) => (
+                                                                                    <div key={imgIdx} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                                                                                        <img 
+                                                                                            src={img} 
+                                                                                            alt={`Foto reseña ${imgIdx + 1}`} 
+                                                                                            className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                                                                            onClick={() => {
+                                                                                                // TODO: Abrir lightbox con la imagen
+                                                                                                console.log('Abrir imagen:', img);
+                                                                                            }}
+                                                                                        />
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            
+                                                            {/* Avatar y info del reviewer - Estilo Airbnb */}
+                                                            <div className="flex-shrink-0 ml-4">
+                                                                <div className="flex flex-col items-center gap-2">
+                                                                    <Avatar className="w-10 h-10 flex-shrink-0">
+                                                                        <AvatarImage src={review.client?.profilePictureUrl} />
+                                                                        <AvatarFallback className="bg-gray-900 text-white font-bold text-xs">
+                                                                            {review.client?.name?.charAt(0) || 'U'}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div className="text-center">
+                                                                        <div className="text-sm font-semibold text-gray-900 leading-tight">
+                                                                            {review.client?.name || 'Usuario'}
+                                                                        </div>
+                                                                        {reviewerYears && reviewerYears > 0 ? (
+                                                                            <div className="text-sm text-gray-500 leading-tight mt-0.5">
+                                                                                Lleva {reviewerYears} {reviewerYears === 1 ? 'año' : 'años'} en Inspecciono
+                                                                            </div>
+                                                                        ) : reviewerMonths && reviewerMonths > 0 ? (
+                                                                            <div className="text-sm text-gray-500 leading-tight mt-0.5">
+                                                                                Lleva {reviewerMonths} {reviewerMonths === 1 ? 'mes' : 'meses'} en Inspecciono
+                                                                            </div>
+                                                                        ) : review.client?.location ? (
+                                                                            <div className="text-sm text-gray-500 leading-tight mt-0.5">
+                                                                                {review.client.location}
+                                                                            </div>
+                                                                        ) : null}
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div className="flex gap-0.5 bg-yellow-50 px-2 py-1 rounded-full">
-                                                            {[...Array(5)].map((_, i) => (
-                                                                <Star 
-                                                                    key={i} 
-                                                                    className={`w-3.5 h-3.5 ${i < (review.rating || 5) ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`} 
-                                                                />
-                                                            ))}
-                                                        </div>
                                                     </div>
-                                                    
-                                                    {/* Cuerpo Reseña */}
-                                                    <div className="relative pl-4">
-                                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gray-100 rounded-full"></div>
-                                                        <p className="text-gray-700 text-[15px] leading-relaxed mb-4">
-                                                            {review.description || review.comment}
-                                                        </p>
-                                                        
-                                                        {/* Imágenes de la reseña (Desktop) */}
-                                                        {review.imageUrls && review.imageUrls.length > 0 && (
-                                                            <div className="flex gap-2">
-                                                                {review.imageUrls.map((img, imgIdx) => (
-                                                                    <div key={imgIdx} className="relative w-14 h-14 rounded-lg overflow-hidden border border-gray-100 bg-gray-50 hover:opacity-90 transition-opacity cursor-pointer">
-                                                                        <img 
-                                                                            src={img} 
-                                                                            alt={`Foto reseña ${imgIdx + 1}`} 
-                                                                            className="w-full h-full object-cover"
-                                                                        />
-                                                                    </div>
-                                                                ))}
-                                        </div>
-                                    )}
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                         
                                         {finalReviews.length > 3 && (
-                                            <button className="w-full mt-6 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-                                                Leer las {finalReviews.length} reseñas
-                                        </button>
-                                    )}
+                                            <button className="w-full mt-6 py-3.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-900 hover:border-gray-900 transition-colors">
+                                                Mostrar las {finalReviews.length} reseñas
+                                            </button>
+                                        )}
                                     </>
                                 ) : (
                                     /* ESTADO SIN RESEÑAS */
                                     <div className="bg-gray-50/80 rounded-2xl p-8 text-center border border-gray-100">
                                         <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-gray-100">
                                             <Star className="w-7 h-7 text-gray-300 fill-gray-100" />
-                                </div>
+                                        </div>
                                         <h3 className="text-gray-900 font-bold text-lg mb-2">Sin reseñas todavía</h3>
                                         <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
                                             Este es un servicio nuevo en Inspecciono. <br/>
                                             <span className="font-semibold text-gray-700">¡Sé el primero en probarlo y compartir tu experiencia!</span>
                                         </p>
-                        </div>
-                    )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -873,14 +1091,9 @@ export function ServiceReviewPage({
                             {/* Descripción Oficial (ServiceTypeDescription) */}
                             <div className="mb-8">
                                 <h3 className="text-base font-semibold text-gray-900 mb-2">Acerca del servicio</h3>
-                                <div className="relative">
-                                    <p className={`text-[15px] leading-relaxed text-gray-600 whitespace-pre-line ${!isDescriptionExpanded && shouldTruncateDescription ? 'max-h-[4.5em] overflow-hidden' : ''}`}>
-                                        {finalServiceTypeDescription}
-                                    </p>
-                                    {!isDescriptionExpanded && shouldTruncateDescription && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
-                                    )}
-                                </div>
+                                <p className={`text-[15px] leading-relaxed text-gray-600 whitespace-pre-line ${!isDescriptionExpanded && shouldTruncateDescription ? 'max-h-[4.5em] overflow-hidden' : ''}`}>
+                                    {finalServiceTypeDescription}
+                                </p>
                                 {shouldTruncateDescription && (
                                     <button 
                                         onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
@@ -896,14 +1109,9 @@ export function ServiceReviewPage({
                                 <div className="mb-4">
                                     <h3 className="text-sm font-semibold text-gray-900 mb-1">Detalles del experto</h3>
                                     <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                                        <div className="relative">
-                                            <p className={`text-[13px] leading-relaxed text-gray-600 whitespace-pre-line ${!isUserConditionsExpanded && shouldTruncateUserConditions ? 'max-h-[5em] overflow-hidden' : ''}`}>
-                                                {finalUserConditions}
-                                            </p>
-                                            {!isUserConditionsExpanded && shouldTruncateUserConditions && (
-                                                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-50 via-gray-50/80 to-transparent pointer-events-none" />
-                                            )}
-                                    </div>
+                                        <p className={`text-[13px] leading-relaxed text-gray-600 whitespace-pre-line ${!isUserConditionsExpanded && shouldTruncateUserConditions ? 'max-h-[5em] overflow-hidden' : ''}`}>
+                                            {finalUserConditions}
+                                        </p>
                                         {shouldTruncateUserConditions && (
                                             <button 
                                                 onClick={() => setIsUserConditionsExpanded(!isUserConditionsExpanded)}
@@ -912,8 +1120,8 @@ export function ServiceReviewPage({
                                                 {isUserConditionsExpanded ? 'Leer menos' : 'Leer más'}
                                             </button>
                                         )}
-                                </div>
                                     </div>
+                                </div>
                             )}
 
                             {/* Entregables (Iconos) - VERSIÓN DESKTOP */}
@@ -929,7 +1137,7 @@ export function ServiceReviewPage({
                                             else if (n.includes('informe') || n.includes('report') || n.includes('pdf')) Icon = FileText;
 
                                             return (
-                                                <div key={dt.id} className="flex items-center gap-1.5 bg-blue-50/50 px-2.5 py-1.5 rounded-md border border-blue-100/50 text-blue-700" title={dt.description}>
+                                                <div key={dt.id} className="flex items-center gap-1.5 bg-blue-50/50 px-2.5 py-1.5 rounded-md border border-blue-100/50 text-blue-700" title={(dt as any).description}>
                                                     <Icon className="w-3.5 h-3.5" />
                                                     <span className="text-[11px] font-medium">{dt.displayName || dt.name}</span>
                                 </div>

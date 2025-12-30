@@ -641,10 +641,33 @@ export function LocationMap({
                             console.log('🔧 Agregando listener nativo al marcador:', expert.id);
                             const listener = google.maps.event.addListener(marker, 'click', (e: google.maps.MapMouseEvent) => {
                                 console.log('🖱️ Marker click (Google Maps native):', { expertId: expert.id, serviceId: serviceId, hasOnServiceSelect: !!onServiceSelect });
+                                
+                                // CRÍTICO: Detener propagación inmediatamente
                                 if (e) {
-                                    e.stop?.();
+                                    if (typeof e.stop === 'function') {
+                                        e.stop();
+                                    }
+                                    // Prevenir propagación del evento DOM si está disponible
+                                    if ((e as any).domEvent) {
+                                        const domEvent = (e as any).domEvent;
+                                        if (domEvent) {
+                                            if (typeof domEvent.stopPropagation === 'function') {
+                                                domEvent.stopPropagation();
+                                            }
+                                            if (typeof domEvent.preventDefault === 'function') {
+                                                domEvent.preventDefault();
+                                            }
+                                            if (typeof domEvent.stopImmediatePropagation === 'function') {
+                                                domEvent.stopImmediatePropagation();
+                                            }
+                                        }
+                                    }
                                 }
-                                handleMarkerClick(e);
+                                
+                                // Usar setTimeout para asegurar que el evento se procese después de que se detenga la propagación
+                                setTimeout(() => {
+                                    handleMarkerClick(e);
+                                }, 0);
                             });
                             
                             // Guardar el listener para poder limpiarlo después
