@@ -151,6 +151,7 @@ export function useServices({
                     throw new Error('Invalid parameters: categoryId, serviceTypeId, latitude, longitude, and locationRange are required when not using expertProfileId');
                 }
 
+                // ✅ NUEVO: Usar el endpoint unificado map-experts para búsqueda por ubicación
                 const params = new URLSearchParams({
                     categoryId: categoryId.toString(),
                     serviceTypeId: serviceTypeId.toString(),
@@ -158,7 +159,7 @@ export function useServices({
                     longitude,
                     locationRange: locationRange.toString(),
                 });
-                url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.list}?${params.toString()}`;
+                url = `${API_CONFIG.baseUrl}/api/SearchService/map-experts?${params.toString()}`;
             }
 
             console.log('Fetching services with URL:', url, 'Requires auth:', requiresAuth);

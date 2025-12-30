@@ -35,8 +35,41 @@ const ServiceDetailPage: React.FC = () => {
         const url = API_CONFIG.endpoints.expert.services.get(id);
         const fetchedService = await fetchApi<Service>(url);
         
+        console.log('🔍 ServiceDetailPage - Servicio obtenido:', {
+          id: fetchedService?.id,
+          imageUrls: fetchedService?.imageUrls,
+          imageUrlsLength: fetchedService?.imageUrls?.length || 0,
+          serviceTypeName: fetchedService?.serviceTypeName,
+          price: fetchedService?.price,
+          expert: fetchedService?.expert?.user?.name,
+        });
+        
         if (fetchedService) {
-          setService(fetchedService);
+          // Mapear imageUrls si viene en diferentes formatos
+          const mappedService = {
+            ...fetchedService,
+            imageUrls: (() => {
+              if (Array.isArray(fetchedService.imageUrls)) return fetchedService.imageUrls;
+              if ((fetchedService as any).ImageUrls && Array.isArray((fetchedService as any).ImageUrls)) {
+                return (fetchedService as any).ImageUrls;
+              }
+              if ((fetchedService as any).imageUrl) {
+                return [(fetchedService as any).imageUrl];
+              }
+              if ((fetchedService as any).ImageUrl) {
+                return [(fetchedService as any).ImageUrl];
+              }
+              return [];
+            })(),
+          };
+          
+          console.log('✅ ServiceDetailPage - Servicio mapeado:', {
+            id: mappedService.id,
+            imageUrls: mappedService.imageUrls,
+            imageUrlsLength: mappedService.imageUrls.length,
+          });
+          
+          setService(mappedService);
         } else {
           setError('Servicio no encontrado');
         }

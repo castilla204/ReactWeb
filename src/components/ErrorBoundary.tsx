@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Home, Copy, Check } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface Props {
@@ -11,6 +11,7 @@ interface State {
     hasError: boolean;
     error: Error | null;
     errorInfo: ErrorInfo | null;
+    copied: boolean;
 }
 
 /**
@@ -24,14 +25,16 @@ export class ErrorBoundary extends Component<Props, State> {
             hasError: false,
             error: null,
             errorInfo: null,
+            copied: false,
         };
     }
 
-    static getDerivedStateFromError(error: Error): State {
+    static getDerivedStateFromError(error: Error): Partial<State> {
         return {
             hasError: true,
             error,
             errorInfo: null,
+            copied: false,
         };
     }
 
@@ -42,6 +45,7 @@ export class ErrorBoundary extends Component<Props, State> {
         this.setState({
             error,
             errorInfo,
+            copied: false,
         });
 
         // ✅ MEJOR PRÁCTICA: Registrar error para monitoreo
@@ -85,6 +89,37 @@ export class ErrorBoundary extends Component<Props, State> {
         window.location.href = '/';
     };
 
+    handleCopyError = async () => {
+        const errorText = `${this.state.error?.toString() || ''}\n\n${this.state.errorInfo?.componentStack || ''}`;
+        
+        try {
+            await navigator.clipboard.writeText(errorText);
+            this.setState({ copied: true });
+            setTimeout(() => {
+                this.setState({ copied: false });
+            }, 2000);
+        } catch (err) {
+            console.error('Error al copiar:', err);
+            // Fallback para navegadores que no soportan clipboard API
+            const textArea = document.createElement('textarea');
+            textArea.value = errorText;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                this.setState({ copied: true });
+                setTimeout(() => {
+                    this.setState({ copied: false });
+                }, 2000);
+            } catch (e) {
+                console.error('Error al copiar (fallback):', e);
+            }
+            document.body.removeChild(textArea);
+        }
+    };
+
     render() {
         if (this.state.hasError) {
             // Si hay un fallback personalizado, usarlo
@@ -115,10 +150,30 @@ export class ErrorBoundary extends Component<Props, State> {
                                 <summary className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer mb-2">
                                     Detalles del error (solo en desarrollo)
                                 </summary>
-                                <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-3 rounded overflow-auto max-h-40 text-red-600 dark:text-red-400">
-                                    {this.state.error.toString()}
-                                    {this.state.errorInfo?.componentStack}
-                                </pre>
+                                <div className="relative">
+                                    <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-3 rounded overflow-auto max-h-40 text-red-600 dark:text-red-400">
+                                        {this.state.error.toString()}
+                                        {this.state.errorInfo?.componentStack}
+                                    </pre>
+                                    <Button
+                                        onClick={this.handleCopyError}
+                                        variant="outline"
+                                        size="sm"
+                                        className="absolute top-2 right-2"
+                                    >
+                                        {this.state.copied ? (
+                                            <>
+                                                <Check className="w-4 h-4 mr-2" />
+                                                Copiado
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Copy className="w-4 h-4 mr-2" />
+                                                Copiar error
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
                             </details>
                         )}
 

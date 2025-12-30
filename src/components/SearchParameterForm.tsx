@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
-import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 import { useLoadScript } from '@react-google-maps/api';
 import { useServices } from '../hooks/useServices';
@@ -22,6 +23,242 @@ import { getCountryName } from '../utils/countries';
 import Autocomplete from 'react-google-autocomplete';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
+
+// Componente para la card del servicio en el mapa
+interface MapServiceCardProps {
+    service: any;
+    isSelected: boolean;
+    onSelect: (serviceId: number) => void;
+}
+
+const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, onSelect }) => {
+    const [imageIndex, setImageIndex] = useState(0);
+    
+    // Normalizar imageUrls - manejar tanto PascalCase como camelCase
+    const imageUrls = Array.isArray(service.imageUrls) 
+        ? service.imageUrls 
+        : Array.isArray(service.ImageUrls) 
+            ? service.ImageUrls 
+            : [];
+    const hasMultipleImages = imageUrls.length > 1;
+    
+    console.log('🖼️ MapServiceCard - Service images:', {
+        serviceId: service.id || service.Id,
+        imageUrls: imageUrls,
+        imageUrlsLength: imageUrls.length,
+        hasServiceImageUrls: !!service.imageUrls,
+        hasServiceImageUrlsPascal: !!service.ImageUrls
+    });
+    
+    // Formatear fecha (simulado - deberías obtener fechas reales del servicio)
+    const formatDate = () => {
+        const today = new Date();
+        const checkIn = new Date(today);
+        checkIn.setDate(today.getDate() + 2);
+        const checkOut = new Date(checkIn);
+        checkOut.setDate(checkIn.getDate() + 2);
+        
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${months[checkIn.getMonth()]} ${checkIn.getDate()} – ${checkOut.getDate()}`;
+    };
+    
+    const hostType = service.expert?.user?.name ? 'Individual host' : 'Individual host';
+    const nights = service.durationInHours ? Math.ceil(service.durationInHours / 24) : 2;
+
+    return (
+        <div
+            className={`group cursor-pointer transition-all duration-300 ${isSelected ? 'ring-2 ring-blue-600 rounded-xl' : ''}`}
+            onClick={() => onSelect(service.id)}
+            style={{ width: '100%' }}
+        >
+            {/* Contenedor principal - Estructura exacta de Airbnb */}
+            <div className="relative cursor-pointer group w-full">
+                {/* Contenedor de imagen */}
+                <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '20px', width: '100%' }}>
+                    {imageUrls.length > 0 ? (
+                        <>
+                            {/* Imagen principal */}
+                            <div className="relative w-full h-full">
+                                <img
+                                    src={imageUrls[imageIndex]}
+                                    alt={service.serviceTypeName || service.categoryName}
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    style={{ display: 'block' }}
+                                />
+                            </div>
+                            
+                            {/* Botón de favorito */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                }}
+                                className="absolute top-3 right-3 z-10"
+                                style={{
+                                    padding: '0',
+                                    margin: '0',
+                                    backgroundColor: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '24px',
+                                    height: '24px',
+                                }}
+                            >
+                                <svg
+                                    viewBox="0 0 32 32"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    role="presentation"
+                                    focusable="false"
+                                    style={{
+                                        display: 'block',
+                                        fill: 'rgba(255, 255, 255, 0.7)',
+                                        height: '24px',
+                                        width: '24px',
+                                        stroke: '#FFFFFF',
+                                        strokeWidth: '2',
+                                        overflow: 'visible',
+                                    }}
+                                >
+                                    <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
+                                </svg>
+                            </button>
+
+                            {/* Navegación de imágenes */}
+                            {hasMultipleImages && (
+                                <>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setImageIndex((prev) => (prev - 1 + imageUrls.length) % imageUrls.length);
+                                        }}
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        style={{
+                                            padding: '6px',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                        }}
+                                    >
+                                        <ChevronRight className="w-4 h-4 text-gray-700 rotate-180" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setImageIndex((prev) => (prev + 1) % imageUrls.length);
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        style={{
+                                            padding: '6px',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                        }}
+                                    >
+                                        <ChevronRight className="w-4 h-4 text-gray-700" />
+                                    </button>
+                                    
+                                    {/* Indicadores de imágenes */}
+                                    <div
+                                        className="absolute bottom-3 left-1/2 -translate-x-1/2 flex"
+                                        style={{ gap: '6px' }}
+                                    >
+                                        {imageUrls.map((_, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="rounded-full transition-all bg-white"
+                                                style={{
+                                                    height: '4px',
+                                                    width: idx === imageIndex ? '24px' : '4px',
+                                                    opacity: idx === imageIndex ? 1 : 0.6,
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </>
+                    ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-gray-400 text-sm">Sin imagen</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Información del servicio */}
+                <div style={{ marginTop: '8px' }}>
+                    {/* Primera fila: Nombre del servicio */}
+                    <div
+                        className="overflow-hidden"
+                        style={{
+                            marginBottom: '4px',
+                            fontSize: '14px',
+                            lineHeight: '18px',
+                            fontWeight: 600,
+                            color: '#222222',
+                            fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                            textAlign: 'left',
+                        }}
+                    >
+                        <div className="truncate" style={{ textAlign: 'left' }}>
+                            {service.serviceTypeName || service.categoryName || 'Servicio'}
+                        </div>
+                    </div>
+
+                    {/* Segunda fila: Fechas y tipo de host */}
+                    <div
+                        className="overflow-hidden"
+                        style={{
+                            marginBottom: '4px',
+                            fontSize: '14px',
+                            lineHeight: '18px',
+                            fontWeight: 400,
+                            color: '#717171',
+                            fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                            textAlign: 'left',
+                        }}
+                    >
+                        <div className="truncate" style={{ textAlign: 'left' }}>
+                            {formatDate()} · {hostType}
+                        </div>
+                    </div>
+
+                    {/* Tercera fila: Precio y calificación */}
+                    <div
+                        className="flex items-center overflow-hidden"
+                        style={{
+                            fontSize: '14px',
+                            lineHeight: '18px',
+                            fontWeight: 400,
+                            color: '#717171',
+                            fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                            textAlign: 'left',
+                            justifyContent: 'flex-start',
+                        }}
+                    >
+                        <span>€ {service.price}</span>
+                        <span>{` for ${nights} ${nights === 1 ? 'night' : 'nights'}`}</span>
+                        {service.averageRating && service.averageRating > 0 && (
+                            <>
+                                <span> · </span>
+                                <Star 
+                                    className="flex-shrink-0" 
+                                    style={{ 
+                                        width: '12px', 
+                                        height: '12px', 
+                                        fill: '#222222', 
+                                        color: '#222222',
+                                    }} 
+                                />
+                                <span style={{ marginLeft: '4px' }}>
+                                    {service.averageRating.toFixed(2)}
+                                </span>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 const getZoomLevel = (radius: number) => {
     const radiusInMeters = radius * 1000;
     return Math.min(14, Math.max(4, Math.floor(14 - Math.log2(radiusInMeters / 500))));
@@ -131,7 +368,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         rating: 0 as number, // Mínimo de estrellas (0-5)
     });
    
-    // Cargar servicios cuando hay ubicación seleccionada
+    // Estado para bounds del mapa (para carga dinámica)
+    const [mapBounds, setMapBounds] = useState<{
+        northeast: { lat: number; lng: number };
+        southwest: { lat: number; lng: number };
+    } | null>(null);
+    const [mapZoom, setMapZoom] = useState<number>(10);
+   
+    // Cargar servicios cuando hay ubicación seleccionada (Caso 3: búsqueda por ubicación)
     const { services: allServices, isLoading: isLoadingServices } = useServices({
         categoryId: selectedCategory || undefined,
         serviceTypeId: serviceTypeId || undefined,
@@ -141,13 +385,35 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     });
    
     // Cargar posiciones de expertos para el mapa
-    const { experts: mapExperts } = useMapExperts(
+    // Caso 1: Carga inicial (sin bounds ni location)
+    // Caso 2: Con bounds (cuando se mueve el mapa) - devuelve servicios completos
+    const { experts: mapExperts, services: servicesFromBounds } = useMapExperts(
         selectedCategory,
-        serviceTypeId
+        serviceTypeId,
+        mapBounds ? {
+            bounds: mapBounds,
+            zoom: mapZoom,
+            limit: 50
+        } : undefined
     );
+    
+    // Handler para cuando cambian los bounds del mapa
+    const handleBoundsChange = useCallback((bounds: {
+        northeast: { lat: number; lng: number };
+        southwest: { lat: number; lng: number };
+    }, zoom: number) => {
+        setMapBounds(bounds);
+        setMapZoom(zoom);
+    }, []);
+   
+    // ✅ Combinar servicios: de bounds (cuando se mueve el mapa) o de ubicación (cuando hay locationRange)
+    // Priorizar servicios de bounds si existen, sino usar los de ubicación
+    const allServicesCombined = mapBounds && servicesFromBounds.length > 0 
+        ? servicesFromBounds 
+        : allServices;
    
     // Aplicar filtros a servicios
-    const services = allServices.filter(service => {
+    const services = allServicesCombined.filter(service => {
         // El precio viene directamente en euros
         const price = service.price || 0;
         if (price < filters.priceRange[0] || price > filters.priceRange[1]) {
@@ -494,7 +760,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }
     };
     const handleServiceSelect = (serviceId: number) => {
+        console.log('🎯 Seleccionando servicio:', serviceId);
         setSelectedService(serviceId);
+        console.log('✅ Servicio seleccionado:', serviceId);
     };
     const handleContinue = () => {
         if (!selectedService) {
@@ -693,115 +961,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     <div className="flex-1 overflow-y-auto">
                         {formData.latitude && formData.longitude && (
                             <div className="p-4 pb-6">
-                            {/* Services List - Desktop Balanced Professional Style */}
+                            {/* Services List - Desktop estilo Airbnb en grid de 2 columnas */}
                             {services.length > 0 ? (
-                                <div className="space-y-4">
-                                    {services.map((service) => {
-                                        const isSelected = selectedService === service.id;
-                                        
-                                        // Datos detallados
-                                        const availability = service.expert?.currentAvailability;
-                                        const days = availability?.daysOfWeek?.map(d => d.slice(0, 3)).join(', ') || 'Consultar';
-                                        const hours = availability ? `${availability.startTime?.slice(0,5)} - ${availability.endTime?.slice(0,5)}` : '';
-                                        
-                                        const deliverables = [
-                                            { type: 'pdf', label: 'Informe' },
-                                            { type: 'image', label: 'Fotos' },
-                                            { type: 'video', label: 'Video' }
-                                        ];
-
-                                        return (
-                                            <div
-                                                key={service.id}
-                                                className={`group cursor-pointer transition-all duration-300 bg-white rounded-xl overflow-hidden border ${
-                                                    isSelected 
-                                                        ? 'border-blue-600 ring-1 ring-blue-600 shadow-md' 
-                                                        : 'border-gray-200 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:border-blue-300 hover:shadow-md'
-                                                }`}
-                                                onClick={() => handleServiceSelect(service.id)}
-                                            >
-                                                <div className="p-4 flex gap-4">
-                                                    {/* 1. AVATAR EXPERTO (Balanced) */}
-                                                    <div className="flex-shrink-0 flex flex-col items-center gap-2">
-                                                        <div className="w-[68px] h-[68px] rounded-full border-[3px] border-white shadow-sm overflow-hidden bg-gray-50 ring-1 ring-gray-100 group-hover:ring-blue-200 transition-all">
-                                                            {service.expert?.profilePictureUrl ? (
-                                                                <img
-                                                                    src={service.expert.profilePictureUrl}
-                                                                    alt={service.expert?.user?.name}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center">
-                                                                    <User className="w-8 h-8 text-gray-300" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-1 bg-white border border-gray-100 px-2 py-0.5 rounded-full shadow-sm">
-                                                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                                            <span className="text-xs font-bold text-gray-700">{service.averageRating?.toFixed(1) || '5.0'}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* 2. INFO TÉCNICA (Balanced) */}
-                                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                        {/* Header */}
-                                                        <div className="flex justify-between items-start mb-3">
-                                                            <div>
-                                                                <h3 className="text-[15px] font-bold text-gray-900 leading-tight mb-0.5 group-hover:text-blue-700 transition-colors">
-                                                                    {service.expert?.user?.name || 'Experto Profesional'}
-                                                                </h3>
-                                                                <p className="text-xs text-slate-500 font-medium">
-                                                                    {service.categoryName}
-                                                                </p>
-                                                            </div>
-                                                            <div className="text-right pl-2">
-                                                                <span className="text-lg font-bold text-gray-900 block leading-none">{service.price}€</span>
-                                                                <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Total</span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Detalles Grid con Toques de Color Suave */}
-                                                        <div className="bg-slate-50/80 rounded-lg p-2.5 border border-slate-100">
-                                                            <div className="grid grid-cols-1 gap-2.5">
-                                                                {/* Disponibilidad */}
-                                                                <div className="flex items-start gap-2.5">
-                                                                    <div className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                                        <Clock className="w-3 h-3 text-blue-600" />
-                                                                    </div>
-                                                                    <div className="min-w-0 flex-1">
-                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Disponibilidad</p>
-                                                                        <p className="text-xs text-slate-700 font-medium truncate">
-                                                                            {days} <span className="text-slate-300 mx-1">|</span> {hours || 'Flexible'}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Entrega */}
-                                                                <div className="flex items-start gap-2.5">
-                                                                    <div className="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                                        <CheckCircle className="w-3 h-3 text-emerald-600" />
-                                                                    </div>
-                                                                    <div className="min-w-0 flex-1">
-                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Incluye</p>
-                                                                        <div className="flex flex-wrap gap-1.5">
-                                                                            {deliverables.map((d, i) => (
-                                                                                <div key={i} className="flex items-center gap-1 text-[11px] text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-100 shadow-sm">
-                                                                                    {d.type === 'pdf' && <FileText className="w-3 h-3 text-slate-400" />}
-                                                                                    {d.type === 'image' && <Image className="w-3 h-3 text-slate-400" />}
-                                                                                    {d.type === 'video' && <Video className="w-3 h-3 text-slate-400" />}
-                                                                                    <span>{d.label}</span>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                <div className="grid grid-cols-2 gap-4">
+                                    {services.map((service) => (
+                                        <MapServiceCard
+                                            key={service.id}
+                                            service={service}
+                                            isSelected={selectedService === service.id}
+                                            onSelect={handleServiceSelect}
+                                        />
+                                    ))}
                                 </div>
                             ) : (
                                     <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
@@ -1164,110 +1334,37 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         {services.map((service) => {
                                             const isSelected = selectedService === service.id;
                                             
-                                            // Datos detallados
-                                            const availability = service.expert?.currentAvailability;
-                                            const days = availability?.daysOfWeek?.map(d => d.slice(0, 3)).join(', ') || 'Consultar';
-                                            const hours = availability ? `${availability.startTime?.slice(0,5)} - ${availability.endTime?.slice(0,5)}` : '';
+                                            // Normalizar imageUrls
+                                            // Normalizar imageUrls - manejar tanto PascalCase como camelCase
+                                            const imageUrls = Array.isArray(service.imageUrls) 
+                                                ? service.imageUrls 
+                                                : Array.isArray(service.ImageUrls) 
+                                                    ? service.ImageUrls 
+                                                    : [];
+                                            const hasMultipleImages = imageUrls.length > 1;
                                             
-                                            const deliverables = [
-                                                { type: 'pdf', label: 'Informe' },
-                                                { type: 'image', label: 'Fotos' },
-                                                { type: 'video', label: 'Video' }
-                                            ];
+                                            // Formatear fecha (simulado - deberías obtener fechas reales del servicio)
+                                            const formatDate = () => {
+                                                const today = new Date();
+                                                const checkIn = new Date(today);
+                                                checkIn.setDate(today.getDate() + 2);
+                                                const checkOut = new Date(checkIn);
+                                                checkOut.setDate(checkIn.getDate() + 2);
+                                                
+                                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                                return `${months[checkIn.getMonth()]} ${checkIn.getDate()} – ${checkOut.getDate()}`;
+                                            };
+                                            
+                                            const hostType = service.expert?.user?.name ? 'Individual host' : 'Individual host';
+                                            const nights = service.durationInHours ? Math.ceil(service.durationInHours / 24) : 2;
 
                                             return (
-                                                <div
+                                                <MapServiceCard
                                                     key={service.id}
-                                                    className={`group cursor-pointer transition-all duration-300 bg-white rounded-xl overflow-hidden border ${
-                                                        isSelected 
-                                                            ? 'border-blue-600 ring-1 ring-blue-600 shadow-md' 
-                                                            : 'border-gray-200 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:border-blue-300 hover:shadow-md'
-                                                    }`}
-                                                    onClick={() => handleServiceSelect(service.id)}
-                                                >
-                                                    <div className="p-4 flex gap-4">
-                                                        {/* 1. AVATAR EXPERTO (Balanced) */}
-                                                        <div className="flex-shrink-0 flex flex-col items-center gap-2">
-                                                            <div className="w-[68px] h-[68px] rounded-full border-[3px] border-white shadow-sm overflow-hidden bg-gray-50 ring-1 ring-gray-100 group-hover:ring-blue-200 transition-all">
-                                                                {service.expert?.profilePictureUrl ? (
-                                                                    <img
-                                                                        src={service.expert.profilePictureUrl}
-                                                                        alt={service.expert?.user?.name}
-                                                                        className="w-full h-full object-cover"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="w-full h-full flex items-center justify-center">
-                                                                        <User className="w-8 h-8 text-gray-300" />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            {/* Rating (Solo si tiene) */}
-                                                            {service.averageRating && service.averageRating > 0 && (
-                                                                <div className="flex items-center gap-1 bg-white border border-gray-100 px-2 py-0.5 rounded-full shadow-sm">
-                                                                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                                                    <span className="text-xs font-bold text-gray-700">{service.averageRating.toFixed(1)}</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* 2. INFO TÉCNICA (Balanced) */}
-                                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                            {/* Header */}
-                                                            <div className="flex justify-between items-start mb-3">
-                                                                <div>
-                                                                    <h3 className="text-[15px] font-bold text-gray-900 leading-tight mb-0.5 group-hover:text-blue-700 transition-colors">
-                                                                        {service.expert?.user?.name || 'Experto Profesional'}
-                                                                    </h3>
-                                                                    <p className="text-xs text-slate-500 font-medium">
-                                                                        {service.categoryName}
-                                                                    </p>
-                                                                </div>
-                                                                <div className="text-right pl-2">
-                                                                    <span className="text-lg font-bold text-gray-900 block leading-none">{service.price}€</span>
-                                                                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Total</span>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Detalles Grid con Toques de Color Suave */}
-                                                            <div className="bg-slate-50/80 rounded-lg p-2.5 border border-slate-100">
-                                                                <div className="grid grid-cols-1 gap-2.5">
-                                                                    {/* Disponibilidad */}
-                                                                    <div className="flex items-start gap-2.5">
-                                                                        <div className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                                            <Clock className="w-3 h-3 text-blue-600" />
-                                                                        </div>
-                                                                        <div className="min-w-0 flex-1">
-                                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Disponibilidad</p>
-                                                                            <p className="text-xs text-slate-700 font-medium truncate">
-                                                                                {days} <span className="text-slate-300 mx-1">|</span> {hours || 'Flexible'}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* Entrega */}
-                                                                    <div className="flex items-start gap-2.5">
-                                                                        <div className="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                                            <CheckCircle className="w-3 h-3 text-emerald-600" />
-                                                                        </div>
-                                                                        <div className="min-w-0 flex-1">
-                                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Incluye</p>
-                                                                            <div className="flex flex-wrap gap-1.5">
-                                                                                {deliverables.map((d, i) => (
-                                                                                    <div key={i} className="flex items-center gap-1 text-[11px] text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-100 shadow-sm">
-                                                                                        {d.type === 'pdf' && <FileText className="w-3 h-3 text-slate-400" />}
-                                                                                        {d.type === 'image' && <Image className="w-3 h-3 text-slate-400" />}
-                                                                                        {d.type === 'video' && <Video className="w-3 h-3 text-slate-400" />}
-                                                                                        <span>{d.label}</span>
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                    service={service}
+                                                    isSelected={isSelected}
+                                                    onSelect={handleServiceSelect}
+                                                />
                                             );
                                         })}
                                     </div>
@@ -1284,6 +1381,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             <div className="border-t border-gray-200 bg-white px-4 py-3 flex-shrink-0">
                                 <button
                                     onClick={() => {
+                                        console.log('🔘 Click en Continuar, selectedService:', selectedService);
                                         handleContinue();
                                         setIsDrawerOpen(false);
                                     }}
@@ -1296,6 +1394,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 >
                                     {selectedService ? 'Continuar' : 'Selecciona un experto'}
                                 </button>
+                                {process.env.NODE_ENV === 'development' && (
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Debug: selectedService = {selectedService ? selectedService.toString() : 'null'}
+                                    </p>
+                                )}
                 </div>
                         )}
                     </DrawerContent>
