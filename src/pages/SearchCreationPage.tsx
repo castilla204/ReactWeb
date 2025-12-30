@@ -25,7 +25,6 @@ import CountrySelector from '../components/CountrySelector';
 import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
 import Autocomplete from 'react-google-autocomplete';
-import { FormProgressTimeline } from '../components/FormProgressTimeline';
 import logoImg from '../media/logoi.png';
 
 import { Footer } from '../components/Footer';
@@ -615,11 +614,8 @@ const SearchCreationPage: React.FC = () => {
             )}
                     {currentStep === 1 && (
                 <div className="w-full h-screen flex flex-col lg:flex-row bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative">
-                    {/* Timeline Header */}
-                    <FormProgressTimeline currentStep={1} onBack={() => setCurrentStep(0)} />
-                    
                     {/* Left Side - Content */}
-                    <div className="flex-1 flex flex-col overflow-hidden lg:overflow-y-auto" style={{ paddingTop: '64px' }}>
+                    <div className="flex-1 flex flex-col overflow-hidden lg:overflow-y-auto">
                             {searchParameters.category && searchParameters.serviceTypeId ? (
                                 <div className="flex-1 min-h-0 overflow-hidden">
                                     <SearchParameterForm
