@@ -72,8 +72,68 @@ export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
       console.log('✅ HomepageWall - Data recibida:', data);
       console.log('✅ HomepageWall - Nearby services:', data.nearbyServices?.services?.length || 0);
       console.log('✅ HomepageWall - Popular services:', data.popularServices?.services?.length || 0);
+      
+      // Mapear los datos de PascalCase a camelCase si es necesario
+      const mapService = (service: any): any => {
+        if (!service) return service;
+        
+        return {
+          id: service.id || service.Id,
+          categoryId: service.categoryId || service.CategoryId,
+          serviceTypeId: service.serviceTypeId || service.ServiceTypeId,
+          serviceTypeName: service.serviceTypeName || service.ServiceTypeName || service.CategoryName || '',
+          serviceTypeDescription: service.serviceTypeDescription || service.ServiceTypeDescription,
+          serviceTypeCategoryId: service.serviceTypeCategoryId || service.ServiceTypeCategoryId,
+          requiresAppointment: service.requiresAppointment ?? service.RequiresAppointment ?? false,
+          price: service.price ?? service.Price ?? 0,
+          conditions: service.conditions || service.Conditions || '',
+          durationInHours: service.durationInHours ?? service.DurationInHours ?? 0,
+          createdAt: service.createdAt || service.CreatedAt || '',
+          isActive: service.isActive ?? service.IsActive ?? true,
+          imageUrls: (() => {
+            if (Array.isArray(service.imageUrls)) return service.imageUrls;
+            if (Array.isArray(service.ImageUrls)) return service.ImageUrls;
+            if (service.imageUrl) return [service.imageUrl];
+            if (service.ImageUrl) return [service.ImageUrl];
+            return [];
+          })(),
+          categoryName: service.categoryName || service.CategoryName || '',
+          completedSearches: service.completedSearches ?? service.CompletedSearches ?? 0,
+          averageRating: service.averageRating ?? service.AverageRating ?? 0,
+          expert: service.expert || service.Expert ? {
+            id: service.expert?.id || service.Expert?.Id,
+            profilePictureUrl: service.expert?.profilePictureUrl || service.Expert?.ProfilePictureUrl || '',
+            description: service.expert?.description || service.Expert?.Description || '',
+            latitude: service.expert?.latitude || service.Expert?.Latitude || '',
+            longitude: service.expert?.longitude || service.Expert?.Longitude || '',
+            user: {
+              id: service.expert?.user?.id || service.Expert?.User?.Id,
+              name: service.expert?.user?.name || service.Expert?.User?.Name || '',
+              email: service.expert?.user?.email || service.Expert?.User?.Email || '',
+            },
+            reviews: service.expert?.reviews || service.Expert?.Reviews || [],
+            currentAvailability: service.expert?.currentAvailability || service.Expert?.CurrentAvailability,
+            timezone: service.expert?.timezone || service.Expert?.Timezone,
+            country: service.expert?.country || service.Expert?.Country,
+          } : undefined,
+          selectedDeliverableTypes: service.selectedDeliverableTypes || service.SelectedDeliverableTypes || [],
+        };
+      };
 
-      return data;
+      // Mapear los servicios
+      const mappedData = {
+        nearbyServices: {
+          ...data.nearbyServices,
+          services: (data.nearbyServices?.services || []).map(mapService),
+        },
+        popularServices: {
+          ...data.popularServices,
+          services: (data.popularServices?.services || []).map(mapService),
+        },
+      };
+
+      console.log('✅ HomepageWall - Datos mapeados:', mappedData);
+      return mappedData;
     },
     staleTime: 5 * 60 * 1000, // Cache por 5 minutos
     refetchOnWindowFocus: false,

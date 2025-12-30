@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { GoogleMap, Marker } from '@react-google-maps/api';
 import { MapExpert } from '../hooks/useMapExperts';
 import { Service } from '../hooks/useServices';
@@ -92,6 +92,10 @@ interface LocationMapProps {
     onMapClick?: (e: google.maps.MapMouseEvent) => void;
     onMapLoad?: (map: google.maps.Map) => void;
     onServiceSelect?: (serviceId: number) => void;
+    onBoundsChange?: (bounds: {
+        northeast: { lat: number; lng: number };
+        southwest: { lat: number; lng: number };
+    }, zoom: number) => void;
     locationRange?: number;
     isMobile?: boolean;
     isLoaded?: boolean;
@@ -106,6 +110,7 @@ export function LocationMap({
     onMapClick,
     onMapLoad,
     onServiceSelect,
+    onBoundsChange,
     locationRange = 25,
     isMobile = false,
     isLoaded = false,
@@ -114,6 +119,7 @@ export function LocationMap({
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [selectedCountry, setSelectedCountry] = useState<string | null>(expertCountry || null);
     const [isLargeMobile, setIsLargeMobile] = useState(false);
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Detectar si es una pantalla móvil grande (414px+)
     useEffect(() => {
@@ -135,55 +141,8 @@ export function LocationMap({
         }
     }, [expertCountry]);
 
-    // Estado para el círculo nativo de Google Maps (no bloquea clicks)
-    const [locationCircle, setLocationCircle] = useState<google.maps.Circle | null>(null);
-
-    // Efecto para manejar el círculo de ubicación - Usando Google Maps Circle nativo (no bloquea clicks)
-    useEffect(() => {
-        if (!isLoaded || !map || !selectedLocation) {
-            if (locationCircle) {
-                locationCircle.setMap(null);
-                setLocationCircle(null);
-            }
-            return;
-        }
-
-        const radiusInMeters = locationRange * 1000;
-
-        if (locationCircle) {
-            // Actualizar círculo existente
-            locationCircle.setCenter(selectedLocation);
-            locationCircle.setRadius(radiusInMeters);
-            } else {
-            // Crear nuevo círculo
-            const circle = new google.maps.Circle({
-                strokeColor: '#3B82F6',
-                strokeOpacity: 0.6,
-                strokeWeight: 2,
-                fillColor: '#3B82F6',
-                fillOpacity: 0.08,
-                map: map,
-                center: selectedLocation,
-                radius: radiusInMeters,
-                clickable: false, // IMPORTANTE: No bloquea clicks
-                zIndex: 0
-            });
-            setLocationCircle(circle);
-        }
-
-        return () => {
-            // Cleanup se maneja en el próximo render
-        };
-    }, [isLoaded, map, selectedLocation, locationRange]);
-
-    // Cleanup del círculo cuando el componente se desmonte
-    useEffect(() => {
-        return () => {
-            if (locationCircle) {
-                locationCircle.setMap(null);
-            }
-        };
-    }, []);
+    // Círculo deshabilitado - ya no se muestra
+    // El círculo azul ha sido eliminado según solicitud del usuario
 
     const handleMapLoad = (mapInstance: google.maps.Map) => {
         setMap(mapInstance);
@@ -197,51 +156,213 @@ export function LocationMap({
     };
 
     const handleMapIdle = () => {
-        // El Circle nativo se actualiza automáticamente, no necesita manejo manual
         if (map) {
             google.maps.event.trigger(map, 'resize');
+            // Forzar actualización de marcadores cuando el mapa está idle (para recalcular offsets)
+            setMarkerKey(prev => prev + 1);
+            
+            // ✅ Debouncing para bounds change (300ms mínimo)
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
             }
+            
+            debounceTimerRef.current = setTimeout(() => {
+                if (map && onBoundsChange) {
+                    const bounds = map.getBounds();
+                    if (bounds) {
+                        const northeast = bounds.getNorthEast();
+                        const southwest = bounds.getSouthWest();
+                        const zoom = map.getZoom() || 12;
+                        
+                        onBoundsChange({
+                            northeast: { lat: northeast.lat(), lng: northeast.lng() },
+                            southwest: { lat: southwest.lat(), lng: southwest.lng() }
+                        }, zoom);
+                    }
+                }
+            }, 300);
+        }
     };
+    
+    // Cleanup del debounce timer
+    useEffect(() => {
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
+    }, []);
+    
+    // Listener para cambios de zoom (para recalcular offsets cuando cambia el zoom)
+    useEffect(() => {
+        if (!map || !isLoaded) return;
+        
+        const zoomChangedListener = map.addListener('zoom_changed', () => {
+            setMarkerKey(prev => prev + 1);
+        });
+        
+        return () => {
+            google.maps.event.removeListener(zoomChangedListener);
+        };
+    }, [map, isLoaded]);
+
+    // Estado para forzar re-render de marcadores
+    const [markerKey, setMarkerKey] = useState(0);
+    
+    // Forzar actualización cuando cambien los servicios o expertos
+    useEffect(() => {
+        setMarkerKey(prev => prev + 1);
+    }, [mapExperts.length, services.length, selectedService]);
+
+    // Función para calcular offset cuando hay marcadores cercanos (memoizada)
+    const calculateOffset = useCallback((expert: MapExpert, allExperts: MapExpert[], currentZoom: number) => {
+        const expertLat = parseFloat(expert.latitude);
+        const expertLng = parseFloat(expert.longitude);
+        
+        if (isNaN(expertLat) || isNaN(expertLng)) return { lat: 0, lng: 0 };
+        
+        // Distancia mínima en grados (ajustar según zoom)
+        const minDistance = currentZoom > 12 ? 0.0005 : currentZoom > 10 ? 0.001 : 0.002;
+        const offsetDistance = minDistance * 0.3; // Offset más pequeño
+        
+        let offsetLat = 0;
+        let offsetLng = 0;
+        let hasNearby = false;
+        
+        // Buscar marcadores cercanos
+        for (const otherExpert of allExperts) {
+            if (otherExpert.id === expert.id) continue;
+            
+            const otherLat = parseFloat(otherExpert.latitude);
+            const otherLng = parseFloat(otherExpert.longitude);
+            
+            if (isNaN(otherLat) || isNaN(otherLng)) continue;
+            
+            const latDiff = Math.abs(expertLat - otherLat);
+            const lngDiff = Math.abs(expertLng - otherLng);
+            const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+            
+            if (distance < minDistance) {
+                hasNearby = true;
+                // Calcular offset en dirección opuesta
+                const angle = Math.atan2(expertLat - otherLat, expertLng - otherLng);
+                offsetLat += Math.sin(angle) * offsetDistance;
+                offsetLng += Math.cos(angle) * offsetDistance;
+            }
+        }
+        
+        // Si hay marcadores cercanos, aplicar offset
+        if (hasNearby) {
+            // Limitar el offset máximo para no alejarse demasiado
+            const maxOffset = minDistance * 0.5;
+            offsetLat = Math.max(-maxOffset, Math.min(maxOffset, offsetLat));
+            offsetLng = Math.max(-maxOffset, Math.min(maxOffset, offsetLng));
+        }
+        
+        return { lat: offsetLat, lng: offsetLng };
+    }, []);
 
     // Renderizar marcadores de precios estilo Airbnb
     const expertMarkers = useMemo(() => {
-        if (mapExperts.length === 0) return null;
+        console.log('🗺️ LocationMap - Renderizando marcadores:', {
+            isLoaded,
+            mapExpertsLength: mapExperts.length,
+            servicesLength: services.length,
+            mapExists: !!map,
+            mapExperts: mapExperts.map(e => ({ id: e.id, name: e.name, price: e.price, lat: e.latitude, lng: e.longitude }))
+        });
+        
+        if (!isLoaded) {
+            console.log('⏳ LocationMap - Mapa no está cargado aún');
+            return [];
+        }
+        
+        if (mapExperts.length === 0) {
+            console.log('⚠️ LocationMap - No hay expertos para mostrar');
+            return [];
+        }
+        
+        // Obtener zoom actual del mapa
+        const currentZoom = map?.getZoom() || 10;
+        
+        console.log('✅ LocationMap - Creando marcadores para', mapExperts.length, 'expertos');
 
-        return mapExperts.map((expert) => {
-                const expertLat = parseFloat(expert.latitude);
-                const expertLng = parseFloat(expert.longitude);
+        const markers = mapExperts.map((expert) => {
+            const expertLat = parseFloat(expert.latitude);
+            const expertLng = parseFloat(expert.longitude);
 
-            if (isNaN(expertLat) || isNaN(expertLng)) return null;
+            if (isNaN(expertLat) || isNaN(expertLng)) {
+                console.warn('⚠️ Marcador inválido - coordenadas NaN:', expert);
+                return null;
+            }
 
             // Buscar servicio correspondiente
             const matchingService = services.find(s => 
                 s.expertProfileId === expert.id || 
                 s.expert?.id === expert.id
-                );
+            );
 
-            const priceInEuros = expert.price ? Math.round(expert.price) : 0;
-            const priceText = `${priceInEuros} €`;
+            // Priorizar precio del servicio sobre el del experto
+            const priceValue = matchingService?.price ?? expert.price ?? 0;
+            const priceInEuros = Math.round(priceValue);
+            const priceText = priceInEuros > 0 ? `${priceInEuros} €` : 'Consultar';
             const isSelected = matchingService && selectedService === matchingService.id;
+            
+            // Debug: Log para verificar precios
+            console.log('📍 Marcador:', {
+                expertId: expert.id,
+                expertName: expert.name,
+                expertPrice: expert.price,
+                servicePrice: matchingService?.price,
+                finalPrice: priceValue,
+                priceText,
+                hasMatchingService: !!matchingService,
+                coordinates: { lat: expertLat, lng: expertLng }
+            });
+            
+            // Calcular offset si hay marcadores cercanos
+            const offset = calculateOffset(expert, mapExperts, currentZoom);
+            const finalLat = expertLat + offset.lat;
+            const finalLng = expertLng + offset.lng;
 
-            // Tamaño responsive: más grande en móvil, especialmente en pantallas grandes
+            // Tamaño mejorado para mejor visibilidad - estilo Airbnb
             const textLen = priceText.length;
-            // En móvil, hacer más grande. Para pantallas grandes de móvil (414px+), usar tamaño aún mayor
-            const baseWidth = isMobile ? (isLargeMobile ? 60 : 50) : 44; // iPhone XR y similares tienen 414px+
-            const baseHeight = isMobile ? (isLargeMobile ? 32 : 28) : 26;
-            const fontSize = isMobile ? (isLargeMobile ? 13 : 12) : 11;
-            const w = Math.max(baseWidth, textLen * (isMobile ? 8 : 7) + (isMobile ? 20 : 16));
+            // Hacer los labels más grandes y visibles
+            const baseWidth = isMobile ? (isLargeMobile ? 70 : 60) : 56;
+            const baseHeight = isMobile ? (isLargeMobile ? 36 : 32) : 30;
+            const fontSize = isMobile ? (isLargeMobile ? 14 : 13) : 12;
+            const padding = isMobile ? 24 : 20;
+            const w = Math.max(baseWidth, textLen * (isMobile ? 9 : 8) + padding);
             const h = baseHeight;
 
-            // SVG minimalista estilo Airbnb - Responsive
+            // SVG mejorado estilo Airbnb - Más visible y con mejor contraste
+            // Simplificado para mejor compatibilidad con Google Maps
             const svg = isSelected 
-                ? `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${h/2}" fill="#222"/><text x="${w/2}" y="${h/2+1}" font-family="system-ui,sans-serif" font-size="${fontSize}" font-weight="600" fill="#fff" text-anchor="middle" dominant-baseline="middle">${priceText}</text></svg>`
-                : `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${h/2}" fill="#fff" stroke="#ddd" stroke-width="1"/><text x="${w/2}" y="${h/2+1}" font-family="system-ui,sans-serif" font-size="${fontSize}" font-weight="600" fill="#222" text-anchor="middle" dominant-baseline="middle">${priceText}</text></svg>`;
+                ? `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+                    <rect width="${w}" height="${h}" rx="${h/2}" fill="#000000"/>
+                    <text x="${w/2}" y="${h/2}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${priceText}</text>
+                </svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+                    <rect width="${w}" height="${h}" rx="${h/2}" fill="#ffffff"/>
+                    <text x="${w/2}" y="${h/2}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="700" fill="#000000" text-anchor="middle" dominant-baseline="central">${priceText}</text>
+                </svg>`;
 
-                return (
-                    <Marker
-                    key={`price-${expert.id}`}
-                        position={{ lat: expertLat, lng: expertLng }}
+            const iconUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+            
+            console.log('🎨 Creando marcador con icono:', {
+                expertId: expert.id,
+                priceText,
+                iconUrl: iconUrl.substring(0, 100) + '...',
+                size: { w, h },
+                position: { lat: finalLat, lng: finalLng }
+            });
+
+            return (
+                <Marker
+                    key={`price-${expert.id}-${markerKey}`}
+                    position={{ lat: finalLat, lng: finalLng }}
                     onClick={() => {
+                        console.log('🖱️ Click en marcador:', expert.id, priceText);
                         // 1. Seleccionar el servicio
                         if (matchingService) {
                             onServiceSelect?.(matchingService.id);
@@ -257,20 +378,26 @@ export function LocationMap({
                             onMapClick(fakeEvent);
                         }
                     }}
-                    zIndex={isSelected ? 1000 : 5}
-                        clickable={true}
-                    optimized={true}
+                    zIndex={isSelected ? 1000 : 100}
+                    clickable={true}
+                    optimized={false}
+                    visible={true}
+                    cursor="pointer"
                     title={`${expert.name} - ${priceText}`}
-                        icon={{
-                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+                    icon={{
+                        url: iconUrl,
                         scaledSize: new window.google.maps.Size(w, h),
                         anchor: new window.google.maps.Point(w / 2, h),
-                        origin: new window.google.maps.Point(0, 0)
-                        }}
-                    />
-                );
+                        origin: new window.google.maps.Point(0, 0),
+                        size: new window.google.maps.Size(w, h)
+                    }}
+                />
+            );
         }).filter(Boolean);
-    }, [mapExperts, services, selectedService, onServiceSelect]);
+        
+        console.log('✅ Marcadores creados:', markers.length, 'de', mapExperts.length, 'expertos');
+        return markers;
+    }, [mapExperts, services, selectedService, onServiceSelect, isLoaded, map, isMobile, isLargeMobile, markerKey, calculateOffset]);
 
     return (
         <GoogleMap
@@ -292,8 +419,10 @@ export function LocationMap({
             onIdle={handleMapIdle}
             onLoad={handleMapLoad}
             onClick={onMapClick}
+            onDragEnd={handleMapIdle}
+            onZoomChanged={handleMapIdle}
         >
-            {expertMarkers}
+            {Array.isArray(expertMarkers) && expertMarkers.length > 0 ? expertMarkers : null}
         </GoogleMap>
     );
 }
