@@ -15,7 +15,16 @@ interface HomepageWallParams {
 
 export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
   return useQuery<HomepageWallResponse>({
-    queryKey: ['homepage-wall', params],
+    queryKey: ['homepage-wall', 
+      params.latitude, 
+      params.longitude, 
+      params.countryCode, 
+      params.locationRange, 
+      params.nearbyPage, 
+      params.nearbyPageSize, 
+      params.popularPage, 
+      params.popularPageSize
+    ],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
       

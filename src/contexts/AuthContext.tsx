@@ -24,27 +24,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsLoading(true);
             try {
                 const token = getAuthToken();
-                console.log('Restoring session, token:', token ? 'present' : 'missing');
                 if (!token) {
                     setUser(null);
                     setIsAuthenticated(false);
+                    setIsLoading(false);
                     return;
                 }
 
                 const storedUserData = await getUserData();
-                console.log('Restored user data:', storedUserData);
                 if (!storedUserData) {
-                    console.error('No user data found for token');
+                    // Token presente pero sin datos de usuario - limpiar silenciosamente
+                    // Esto es normal cuando el token expiró o es inválido
                     setUser(null);
                     setIsAuthenticated(false);
                     removeAuthToken();
+                    setIsLoading(false);
                     return;
                 }
 
                 setUser(storedUserData);
                 setIsAuthenticated(true);
             } catch (error: any) {
-                console.error('Error restoring session:', error);
+                // Error al restaurar sesión - limpiar y continuar
                 setUser(null);
                 setIsAuthenticated(false);
                 removeAuthToken();
