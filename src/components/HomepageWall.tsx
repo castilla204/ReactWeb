@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto } from '../types/homepageWall';
@@ -561,7 +561,8 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
 }) => {
   const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
 
-  const { data, isLoading, error } = useHomepageWallQuery({
+  // Memoizar los parámetros de la query para evitar re-renderizados innecesarios
+  const queryParams = useMemo(() => ({
     latitude,
     longitude,
     countryCode,
@@ -570,7 +571,9 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
     nearbyPageSize: 20,
     popularPage: 1,
     popularPageSize: 20,
-  });
+  }), [latitude, longitude, countryCode]);
+
+  const { data, isLoading, error } = useHomepageWallQuery(queryParams);
 
   if (isLoading || geoLoading) {
     return (

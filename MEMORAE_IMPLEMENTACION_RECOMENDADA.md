@@ -142,3 +142,6 @@ Tu asistente de memoria con IA que nunca olvida.
 
 
 
+
+
+
