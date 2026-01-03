@@ -75,6 +75,21 @@ export function ServiceReviewPage({
 }: ServiceReviewPageProps) {
     const { isAuthenticated, updateUser } = useAuth();
     const navigate = useNavigate();
+    
+    // Redirigir a checkout después del login si hay una ruta guardada
+    useEffect(() => {
+        if (isAuthenticated) {
+            const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+            if (redirectPath) {
+                console.log('🔵 Usuario autenticado, redirigiendo a:', redirectPath);
+                sessionStorage.removeItem('redirectAfterLogin');
+                // Usar setTimeout para asegurar que la navegación se complete
+                setTimeout(() => {
+                    navigate(redirectPath, { replace: true });
+                }, 100);
+            }
+        }
+    }, [isAuthenticated, navigate]);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [mobileImageIndex, setMobileImageIndex] = useState(0);
@@ -285,9 +300,20 @@ export function ServiceReviewPage({
                                 const token = authService.getAccessToken();
                                 if (result.user && token) {
                                     updateUser(result.user, token, () => {
-                                        // Después de actualizar el usuario, continuar con el flujo
+                                        // Después de actualizar el usuario, redirigir a checkout
                                         setTimeout(() => {
-                                            onContinue();
+                                            // Verificar si hay una ruta guardada para redirigir
+                                            const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+                                            if (redirectPath) {
+                                                sessionStorage.removeItem('redirectAfterLogin');
+                                                navigate(redirectPath, { replace: true });
+                                            } else if (serviceId) {
+                                                // Si no hay ruta guardada pero hay serviceId, navegar directamente a checkout
+                                                const serviceIdNumber = typeof serviceId === 'number' ? serviceId : parseInt(String(serviceId), 10);
+                                                if (!isNaN(serviceIdNumber) && serviceIdNumber > 0) {
+                                                    navigate(`/checkout/${serviceIdNumber}`, { replace: true });
+                                                }
+                                            }
                                         }, 500);
                                     });
                                 } else {
@@ -371,20 +397,42 @@ export function ServiceReviewPage({
     };
 
     const handleReserveClick = () => {
-        console.log('🔵 handleReserveClick llamado', { isAuthenticated, serviceId });
-        if (!isAuthenticated) {
-            console.log('🔵 Usuario no autenticado, llamando handleGoogleSignIn');
-            handleGoogleSignIn();
-            return;
-        }
+        console.log('🔵 handleReserveClick llamado', { isAuthenticated, serviceId, serviceIdType: typeof serviceId });
+        
+        // Validar serviceId primero
         if (!serviceId) {
             console.error('❌ No hay serviceId');
             showToast('error', 'Error: ID de servicio no válido');
             return;
         }
-        console.log('🔵 Navegando a checkout:', `/checkout/${serviceId}`);
-        // Navegar a la página de checkout
-        navigate(`/checkout/${serviceId}`);
+        
+        // Asegurar que serviceId sea un número válido y convertirlo a string
+        const serviceIdNumber = typeof serviceId === 'number' ? serviceId : parseInt(String(serviceId), 10);
+        if (isNaN(serviceIdNumber) || serviceIdNumber <= 0) {
+            console.error('❌ serviceId no es un número válido:', serviceId);
+            showToast('error', 'Error: ID de servicio no válido');
+            return;
+        }
+        
+        const checkoutPath = `/checkout/${serviceIdNumber}`;
+        
+        if (!isAuthenticated) {
+            console.log('🔵 Usuario no autenticado, guardando ruta de destino y llamando handleGoogleSignIn');
+            // Guardar la ruta de destino para redirigir después del login
+            sessionStorage.setItem('redirectAfterLogin', checkoutPath);
+            handleGoogleSignIn();
+            return;
+        }
+        
+        console.log('🔵 Navegando a checkout:', checkoutPath);
+        
+        try {
+            // Navegar a la página de checkout
+            navigate(checkoutPath, { replace: false });
+        } catch (error) {
+            console.error('❌ Error al navegar a checkout:', error);
+            showToast('error', 'Error al redirigir a la página de checkout. Por favor, intenta de nuevo.');
+        }
     };
 
     const handleImageClick = (index: number) => {

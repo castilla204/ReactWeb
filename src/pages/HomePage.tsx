@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { HomepageWall } from '../components/HomepageWall';
 import { AirbnbSearchBar } from '../components/AirbnbSearchBar';
 import { MobileBottomBar } from '../components/MobileBottomBar';
 
 const HomePage: React.FC = () => {
-  // Detectar país del navegador (fallback a ES)
-  const getCountryCode = (): string => {
+  // Detectar país del navegador (fallback a ES) - Memoizado para evitar recálculos
+  const countryCode = useMemo(() => {
     if (typeof navigator !== 'undefined' && navigator.language) {
       const lang = navigator.language.split('-')[1];
       if (lang) return lang.toUpperCase();
     }
     return 'ES';
-  };
-
-  const countryCode = getCountryCode();
+  }, []);
   
   // Estado para los filtros de búsqueda
   const [searchFilters, setSearchFilters] = useState<{

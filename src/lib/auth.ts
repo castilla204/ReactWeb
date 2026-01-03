@@ -11,43 +11,42 @@ export async function authenticateWithGoogle(accessToken: string, email: string,
 }
 
 export function setAuthToken(token: string, user?: any) {
-    console.log('Setting auth token:', token ? 'present' : 'missing');
     localStorage.setItem('authToken', token);
     if (user) {
-        console.log('Setting user data:', user);
         localStorage.setItem('userData', JSON.stringify(user));
     }
 }
 
 export function getAuthToken(): string | null {
     const token = localStorage.getItem('authToken');
-    console.log('Getting auth token:', token ? 'present' : 'missing');
     if (!token) return null;
 
     try {
         // Verificar si el token tiene el formato JWT b�sico
         const parts = token.split('.');
         if (parts.length !== 3) {
-            console.error('Invalid JWT format');
+            // Token con formato inválido - limpiar
+            removeAuthToken();
             return null;
         }
 
         // Decodificar el payload para verificar expiraci�n
         const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
         if (payload.exp && payload.exp * 1000 < Date.now()) {
-            console.log('Token has expired');
-            return null; // No eliminamos el token, solo retornamos null
+            // Token expirado - limpiar
+            removeAuthToken();
+            return null;
         }
 
         return token;
     } catch (error) {
-        console.error('Error parsing token:', error);
+        // Error al parsear token - limpiar
+        removeAuthToken();
         return null; // No eliminamos el token autom�ticamente
     }
 }
 
 export function removeAuthToken() {
-    console.log('Removing auth token and user data');
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
 }
@@ -55,12 +54,12 @@ export function removeAuthToken() {
 export function getUserData(): any | null {
     try {
         const userData = localStorage.getItem('userData');
-        console.log('Getting user data:', userData ? JSON.parse(userData) : 'no user data');
         if (!userData) return null;
 
         const parsedData = JSON.parse(userData);
         if (!parsedData || isNaN(parsedData.id) || !parsedData.name || !parsedData.email) {
-            console.error('Invalid stored user data');
+            // Datos de usuario inválidos - limpiar
+            localStorage.removeItem('userData');
             return null;
         }
 
@@ -68,7 +67,8 @@ export function getUserData(): any | null {
         parsedData.phoneVerified = Boolean(parsedData.phoneVerified);
         return parsedData;
     } catch (error) {
-        console.error('Error getting user data:', error);
+        // Error al parsear datos de usuario - limpiar
+        localStorage.removeItem('userData');
         return null;
     }
 }
