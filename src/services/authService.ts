@@ -252,8 +252,8 @@ class AuthService {
 
             let response = await originalFetch(url, fetchOptions);
 
-            // ✅ Si recibimos 403 por MFA → Manejar según el tipo
-            if (response.status === 403 && !(fetchOptions as any)._mfaChecked) {
+            // ✅ Si recibimos 403 → Manejar según el tipo
+            if (response.status === 403 && !(fetchOptions as any)._mfaChecked && !(fetchOptions as any)._403Retry) {
                 try {
                     const data = await response.clone().json();
                     
@@ -293,7 +293,34 @@ class AuthService {
                     //     return response;
                     // }
                 } catch {
-                    // Si no se puede parsear JSON, continuar normalmente
+                    // Si no se puede parsear JSON, puede ser un 403 por token expirado
+                    // Intentar refrescar el token una vez antes de devolver el error
+                    const refreshToken = self.getRefreshToken();
+                    if (refreshToken && !(fetchOptions as any)._403Retry) {
+                        (fetchOptions as any)._403Retry = true;
+                        console.warn('[AuthService] 403 Forbidden, attempting token refresh...');
+                        
+                        try {
+                            const success = await self.refreshAccessToken();
+                            if (success) {
+                                // Reintentar request original con nuevo token
+                                const newToken = self.getAccessToken();
+                                if (newToken) {
+                                    const headers = new Headers(fetchOptions.headers);
+                                    headers.set('Authorization', `Bearer ${newToken}`);
+                                    fetchOptions.headers = headers;
+                                }
+                                response = await originalFetch(url, fetchOptions);
+                                
+                                // Si después del refresh sigue siendo 403, es un problema de permisos real
+                                if (response.status === 403) {
+                                    console.error('[AuthService] 403 persists after token refresh - permission denied');
+                                }
+                            }
+                        } catch (error) {
+                            console.error('[AuthService] Token refresh failed on 403:', error);
+                        }
+                    }
                 }
             }
 

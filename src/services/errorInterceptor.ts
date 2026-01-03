@@ -70,9 +70,21 @@ export function handleHttpError(response: Response, url: string): void {
             break;
 
         case 403:
-            toast.error('🚫 Acceso denegado', {
-                description: 'No tienes permisos para acceder a este recurso.',
-                duration: 5000,
+            // Solo mostrar notificación si no es un error de MFA (ya se maneja en authService)
+            // Verificar si el error es de MFA antes de mostrar
+            response.clone().json().then(data => {
+                if (data?.error !== 'MFA_VERIFICATION_REQUIRED') {
+                    toast.error('🚫 Acceso denegado', {
+                        description: 'No tienes permisos para acceder a este recurso. Si el problema persiste, intenta cerrar sesión y volver a iniciar sesión.',
+                        duration: 6000,
+                    });
+                }
+            }).catch(() => {
+                // Si no se puede parsear JSON, mostrar notificación genérica
+                toast.error('🚫 Acceso denegado', {
+                    description: 'No tienes permisos para acceder a este recurso. Si el problema persiste, intenta cerrar sesión y volver a iniciar sesión.',
+                    duration: 6000,
+                });
             });
             break;
 
@@ -169,11 +181,22 @@ export function setupErrorInterceptor(): void {
             // Los errores 4xx y otros se manejan en React Query o en los componentes
             if (!response.ok) {
                 // Solo notificar errores críticos del servidor
-                // No manejar errores de autenticación (401/403) - ya se manejan en authService
+                // No manejar errores de autenticación (401) - ya se manejan en authService
+                // Manejar 403 solo si no es MFA (authService maneja MFA)
                 // No manejar errores 404 - se manejan individualmente
                 // No manejar errores 429 - ya se manejan en rateLimitHandler
                 if (response.status >= 500) {
                     handleHttpError(response, urlString);
+                } else if (response.status === 403) {
+                    // Manejar 403 solo si no es MFA
+                    response.clone().json().then(data => {
+                        if (data?.error !== 'MFA_VERIFICATION_REQUIRED') {
+                            handleHttpError(response, urlString);
+                        }
+                    }).catch(() => {
+                        // Si no se puede parsear, manejar como 403 normal
+                        handleHttpError(response, urlString);
+                    });
                 }
             }
 
