@@ -22,7 +22,7 @@ async function checkApiHealth(): Promise<boolean> {
     try {
         const apiUrl = import.meta.env.DEV 
             ? 'http://localhost:7124' 
-            : 'https://api.atrapo.io';
+            : 'https://inspeccionoapi-cgh5amebepbje7dz.spaincentral-01.azurewebsites.net';
         
         const response = await fetch(`${apiUrl}/health`, {
             method: 'GET',
@@ -70,21 +70,11 @@ export function handleHttpError(response: Response, url: string): void {
             break;
 
         case 403:
-            // Solo mostrar notificación si no es un error de MFA (ya se maneja en authService)
-            // Verificar si el error es de MFA antes de mostrar
-            response.clone().json().then(data => {
-                if (data?.error !== 'MFA_VERIFICATION_REQUIRED') {
-                    toast.error('🚫 Acceso denegado', {
-                        description: 'No tienes permisos para acceder a este recurso. Si el problema persiste, intenta cerrar sesión y volver a iniciar sesión.',
-                        duration: 6000,
-                    });
-                }
-            }).catch(() => {
-                // Si no se puede parsear JSON, mostrar notificación genérica
-                toast.error('🚫 Acceso denegado', {
-                    description: 'No tienes permisos para acceder a este recurso. Si el problema persiste, intenta cerrar sesión y volver a iniciar sesión.',
-                    duration: 6000,
-                });
+            // Los errores 403 se manejan principalmente en authService
+            // Solo mostrar notificación genérica si authService no lo maneja
+            toast.error('🚫 Acceso denegado', {
+                description: 'No tienes permisos para acceder a este recurso. Si el problema persiste, intenta cerrar sesión y volver a iniciar sesión.',
+                duration: 6000,
             });
             break;
 
@@ -181,22 +171,11 @@ export function setupErrorInterceptor(): void {
             // Los errores 4xx y otros se manejan en React Query o en los componentes
             if (!response.ok) {
                 // Solo notificar errores críticos del servidor
-                // No manejar errores de autenticación (401) - ya se manejan en authService
-                // Manejar 403 solo si no es MFA (authService maneja MFA)
+                // No manejar errores de autenticación (401/403) - ya se manejan en authService
                 // No manejar errores 404 - se manejan individualmente
                 // No manejar errores 429 - ya se manejan en rateLimitHandler
                 if (response.status >= 500) {
                     handleHttpError(response, urlString);
-                } else if (response.status === 403) {
-                    // Manejar 403 solo si no es MFA
-                    response.clone().json().then(data => {
-                        if (data?.error !== 'MFA_VERIFICATION_REQUIRED') {
-                            handleHttpError(response, urlString);
-                        }
-                    }).catch(() => {
-                        // Si no se puede parsear, manejar como 403 normal
-                        handleHttpError(response, urlString);
-                    });
                 }
             }
 
