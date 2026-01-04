@@ -64,8 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const hasToken = !!token;
         const authenticated = hasUser && hasToken;
         
-        setIsAuthenticated(authenticated);
-        console.log('Auth state updated:', { user, isAuthenticated: authenticated, hasToken });
+        // ✅ Solo actualizar si el estado realmente cambió para evitar re-renderizados innecesarios
+        setIsAuthenticated(prev => {
+            if (prev !== authenticated) {
+                console.log('Auth state updated:', { user: user?.email, isAuthenticated: authenticated, hasToken });
+                return authenticated;
+            }
+            return prev;
+        });
     }, [user]);
 
     const signOut = async () => {
