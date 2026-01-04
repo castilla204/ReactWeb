@@ -1966,44 +1966,55 @@ const AdminPanel: React.FC = () => {
                     </div>
                   ) : (
                     <ul className="divide-y divide-gray-200">
-                      {statusMappings.mappings.map((mapping) => (
-                        <li key={mapping.id} className="px-4 py-4 sm:px-6">
+                      {(statusMappings.mappings || []).map((mapping) => {
+                        // ✅ NORMALIZAR estados para acceso seguro
+                        const sourceStatus = mapping.sourceStatus || mapping.SourceStatus;
+                        const targetStatus = mapping.targetStatus || mapping.TargetStatus;
+                        const sourceDisplayName = sourceStatus?.displayName || sourceStatus?.DisplayName || 'Estado desconocido';
+                        const sourceStatusValue = sourceStatus?.statusValue || sourceStatus?.StatusValue || 'N/A';
+                        const targetDisplayName = targetStatus?.displayName || targetStatus?.DisplayName || 'Estado desconocido';
+                        const targetStatusValue = targetStatus?.statusValue || targetStatus?.StatusValue || 'N/A';
+                        const sourceStatusType = sourceStatus?.statusType || sourceStatus?.StatusType || 'Unknown';
+                        const isActive = mapping.isActive ?? mapping.IsActive ?? false;
+                        
+                        return (
+                        <li key={mapping.id || mapping.Id} className="px-4 py-4 sm:px-6">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center">
                               <div className="flex-shrink-0">
                                 <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
                                   <span className="text-blue-600 font-medium text-sm">
-                                    {mapping.sourceStatus?.statusType === 'AppointmentStatus' ? 'A' : 'S'}
+                                    {sourceStatusType === 'AppointmentStatus' ? 'A' : 'S'}
                                   </span>
                                 </div>
                               </div>
                               <div className="ml-4">
                                 <div className="flex items-center">
                                   <p className="text-sm font-medium text-gray-900">
-                                    {mapping.sourceStatus?.displayName || 'Estado desconocido'}
+                                    {sourceDisplayName}
                                   </p>
                                   <span className="ml-2 text-xs text-gray-500">
-                                    ({mapping.sourceStatus?.statusValue || 'N/A'})
+                                    ({sourceStatusValue})
                                   </span>
                                 </div>
                                 <div className="flex items-center mt-1">
                                   <span className="text-sm text-gray-500">→</span>
                                   <p className="ml-2 text-sm text-gray-900">
-                                    {mapping.targetStatus?.displayName || 'Estado desconocido'}
+                                    {targetDisplayName}
                                   </p>
                                   <span className="ml-2 text-xs text-gray-500">
-                                    ({mapping.targetStatus?.statusValue || 'N/A'})
+                                    ({targetStatusValue})
                                   </span>
                                 </div>
                               </div>
                             </div>
                             <div className="flex items-center space-x-2">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                mapping.isActive 
+                                isActive 
                                   ? 'bg-green-100 text-green-800' 
                                   : 'bg-red-100 text-red-800'
                               }`}>
-                                {mapping.isActive ? 'Activo' : 'Inactivo'}
+                                {isActive ? 'Activo' : 'Inactivo'}
                               </span>
                               <button
                                 onClick={() => {
@@ -2035,20 +2046,24 @@ const AdminPanel: React.FC = () => {
                                       
                                       <div class="mb-4">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                                          Estado Origen: <strong>${mapping.sourceStatus?.displayName || 'Estado desconocido'}</strong>
+                                          Estado Origen: <strong>${sourceDisplayName}</strong>
                                         </label>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
                                           Nuevo Estado Destino:
                                         </label>
                                         <select id="newTargetStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                          ${statusMappings.searchHireStatuses.map(status => 
-                                            `<option value="${status.id}" ${status.id === mapping.targetStatus?.id ? 'selected' : ''}>
-                                              ${status.displayName} (${status.statusValue})
-                                            </option>`
-                                          ).join('')}
+                                          ${statusMappings.searchHireStatuses.map(status => {
+                                            const statusDisplayName = status.displayName || status.DisplayName || 'Estado desconocido';
+                                            const statusValue = status.statusValue || status.StatusValue || 'N/A';
+                                            const statusId = status.id || status.Id;
+                                            const targetStatusId = targetStatus?.id || targetStatus?.Id;
+                                            return `<option value="${statusId}" ${statusId === targetStatusId ? 'selected' : ''}>
+                                              ${statusDisplayName} (${statusValue})
+                                            </option>`;
+                                          }).join('')}
                                         </select>
                                         <p class="text-xs text-gray-500 mt-1">
-                                          Estados disponibles: ${statusMappings.searchHireStatuses.map(s => s.id).join(', ')}
+                                          Estados disponibles: ${statusMappings.searchHireStatuses.map(s => s.id || s.Id).join(', ')}
                                         </p>
                                       </div>
                                       
@@ -2089,8 +2104,10 @@ const AdminPanel: React.FC = () => {
                                       return;
                                     }
                                     
-                                    if (newTargetStatusId !== mapping.targetStatus?.id) {
-                                      handleUpdateMapping(mapping.id, { targetStatusId: newTargetStatusId });
+                                    const currentTargetId = targetStatus?.id || targetStatus?.Id;
+                                    const mappingId = mapping.id || mapping.Id;
+                                    if (newTargetStatusId !== currentTargetId) {
+                                      handleUpdateMapping(mappingId, { targetStatusId: newTargetStatusId });
                                     }
                                     
                                     document.body.removeChild(modal);
@@ -2109,7 +2126,7 @@ const AdminPanel: React.FC = () => {
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => handleDeleteMapping(mapping.id)}
+                                onClick={() => handleDeleteMapping(mapping.id || mapping.Id)}
                                 className="text-red-600 hover:text-red-900"
                                 title="Eliminar mapeo"
                               >
@@ -2118,7 +2135,8 @@ const AdminPanel: React.FC = () => {
                             </div>
                           </div>
                         </li>
-                      ))}
+                        );
+                      })}
                     </ul>
                   )}
                   {statusMappings.mappingsPagination && (
@@ -2151,10 +2169,10 @@ const AdminPanel: React.FC = () => {
                     Estados de Cita Disponibles
                   </h3>
                   <div className="space-y-2">
-                    {statusMappings.appointmentStatuses.map((status) => (
-                      <div key={status.id} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-900">{status.displayName}</span>
-                        <span className="text-gray-500">({status.statusValue})</span>
+                    {(statusMappings.appointmentStatuses || []).map((status) => (
+                      <div key={status.id || status.Id} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-900">{status.displayName || status.DisplayName || 'Estado desconocido'}</span>
+                        <span className="text-gray-500">({status.statusValue || status.StatusValue || 'N/A'})</span>
                       </div>
                     ))}
                   </div>
@@ -2165,10 +2183,10 @@ const AdminPanel: React.FC = () => {
                     Estados Generales Disponibles
                   </h3>
                   <div className="space-y-2">
-                    {statusMappings.searchHireStatuses.map((status) => (
-                      <div key={status.id} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-900">{status.displayName}</span>
-                        <span className="text-gray-500">({status.statusValue})</span>
+                    {(statusMappings.searchHireStatuses || []).map((status) => (
+                      <div key={status.id || status.Id} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-900">{status.displayName || status.DisplayName || 'Estado desconocido'}</span>
+                        <span className="text-gray-500">({status.statusValue || status.StatusValue || 'N/A'})</span>
                       </div>
                     ))}
                   </div>

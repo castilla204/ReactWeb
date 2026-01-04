@@ -29,17 +29,61 @@ export const useStatusMappings = (page: number = 1, pageSize: number = 20) => {
       const response = await fetchApi<any>(endpoint);
       console.log('✅ Mapeos de estado cargados:', response);
       
-      // Manejar respuesta paginada o no paginada
+      // ✅ NORMALIZAR mapeos según la guía
+      let mappingsArray: any[] = [];
+      
       if (response.mappings && response.pagination) {
-        setMappings(response.mappings);
+        mappingsArray = response.mappings;
         setMappingsPagination(response.pagination);
       } else if (Array.isArray(response)) {
-        setMappings(response);
+        mappingsArray = response;
         setMappingsPagination(null);
       } else {
         setMappings([]);
         setMappingsPagination(null);
+        return;
       }
+      
+      // ✅ NORMALIZAR cada mapeo: el backend devuelve PascalCase (SourceStatus, TargetStatus, DisplayName, etc.)
+      const normalizedMappings = mappingsArray.map((mapping: any) => {
+        // ⭐ El backend devuelve SourceStatus y TargetStatus en PascalCase
+        const sourceStatusRaw = mapping.SourceStatus || mapping.sourceStatus;
+        const targetStatusRaw = mapping.TargetStatus || mapping.targetStatus;
+        
+        return {
+          id: mapping.Id || mapping.id,
+          isActive: mapping.IsActive ?? mapping.isActive ?? true,
+          createdAt: mapping.CreatedAt || mapping.createdAt,
+          updatedAt: mapping.UpdatedAt || mapping.updatedAt,
+          sourceStatus: sourceStatusRaw ? {
+            id: sourceStatusRaw.Id || sourceStatusRaw.id,
+            statusType: sourceStatusRaw.StatusType || sourceStatusRaw.statusType,
+            statusName: sourceStatusRaw.StatusName || sourceStatusRaw.statusName,
+            statusValue: sourceStatusRaw.StatusValue || sourceStatusRaw.statusValue,
+            displayName: sourceStatusRaw.DisplayName || sourceStatusRaw.displayName, // ⭐ CRÍTICO: Backend devuelve DisplayName
+            description: sourceStatusRaw.Description || sourceStatusRaw.description,
+            sortOrder: sourceStatusRaw.SortOrder || sourceStatusRaw.sortOrder,
+            isActive: sourceStatusRaw.IsActive ?? sourceStatusRaw.isActive ?? true,
+            createdAt: sourceStatusRaw.CreatedAt || sourceStatusRaw.createdAt,
+            updatedAt: sourceStatusRaw.UpdatedAt || sourceStatusRaw.updatedAt,
+          } : null,
+          targetStatus: targetStatusRaw ? {
+            id: targetStatusRaw.Id || targetStatusRaw.id,
+            statusType: targetStatusRaw.StatusType || targetStatusRaw.statusType,
+            statusName: targetStatusRaw.StatusName || targetStatusRaw.statusName,
+            statusValue: targetStatusRaw.StatusValue || targetStatusRaw.statusValue,
+            displayName: targetStatusRaw.DisplayName || targetStatusRaw.displayName, // ⭐ CRÍTICO: Backend devuelve DisplayName
+            description: targetStatusRaw.Description || targetStatusRaw.description,
+            sortOrder: targetStatusRaw.SortOrder || targetStatusRaw.sortOrder,
+            isActive: targetStatusRaw.IsActive ?? targetStatusRaw.isActive ?? true,
+            createdAt: targetStatusRaw.CreatedAt || targetStatusRaw.createdAt,
+            updatedAt: targetStatusRaw.UpdatedAt || targetStatusRaw.updatedAt,
+          } : null,
+        };
+      });
+      
+      console.log('✅ Mapeos normalizados:', normalizedMappings);
+      setMappings(normalizedMappings);
     } catch (err: any) {
       console.error('❌ Error loading status mappings:', err);
       if (err.message?.includes('404')) {
@@ -55,10 +99,26 @@ export const useStatusMappings = (page: number = 1, pageSize: number = 20) => {
   const loadAppointmentStatuses = async () => {
     try {
       console.log('🔄 Cargando estados de cita desde:', API_CONFIG.endpoints.systemStatus.statusesByType('AppointmentStatus'));
-      const response = await fetchApi<SystemStatus[]>(API_CONFIG.endpoints.systemStatus.statusesByType('AppointmentStatus'));
-      console.log('✅ Estados de cita cargados:', response);
-      console.log('🔍 DEBUG - Estados de cita IDs disponibles:', response.map(s => s.id));
-      setAppointmentStatuses(response);
+      const response = await fetchApi<any>(API_CONFIG.endpoints.systemStatus.statusesByType('AppointmentStatus'));
+      console.log('✅ Estados de cita cargados (raw):', response);
+      
+      // ✅ NORMALIZAR estados según la guía: el backend devuelve PascalCase
+      const normalizedStatuses = (Array.isArray(response) ? response : []).map((status: any) => ({
+        id: status.Id || status.id,
+        statusType: status.StatusType || status.statusType,
+        statusName: status.StatusName || status.statusName,
+        statusValue: status.StatusValue || status.statusValue,
+        displayName: status.DisplayName || status.displayName, // ⭐ CRÍTICO: Backend devuelve DisplayName
+        description: status.Description || status.description,
+        sortOrder: status.SortOrder || status.sortOrder,
+        isActive: status.IsActive ?? status.isActive ?? true,
+        createdAt: status.CreatedAt || status.createdAt,
+        updatedAt: status.UpdatedAt || status.updatedAt,
+      }));
+      
+      console.log('✅ Estados de cita normalizados:', normalizedStatuses);
+      console.log('🔍 DEBUG - Estados de cita IDs disponibles:', normalizedStatuses.map(s => s.id));
+      setAppointmentStatuses(normalizedStatuses);
     } catch (err: any) {
       console.error('❌ Error loading appointment statuses:', err);
       if (err.message?.includes('404')) {
@@ -70,10 +130,26 @@ export const useStatusMappings = (page: number = 1, pageSize: number = 20) => {
   const loadSearchHireStatuses = async () => {
     try {
       console.log('🔄 Cargando estados generales desde:', API_CONFIG.endpoints.systemStatus.statusesByType('SearchHireStatus'));
-      const response = await fetchApi<SystemStatus[]>(API_CONFIG.endpoints.systemStatus.statusesByType('SearchHireStatus'));
-      console.log('✅ Estados generales cargados:', response);
-      console.log('🔍 DEBUG - Estados generales IDs disponibles:', response.map(s => s.id));
-      setSearchHireStatuses(response);
+      const response = await fetchApi<any>(API_CONFIG.endpoints.systemStatus.statusesByType('SearchHireStatus'));
+      console.log('✅ Estados generales cargados (raw):', response);
+      
+      // ✅ NORMALIZAR estados según la guía: el backend devuelve PascalCase
+      const normalizedStatuses = (Array.isArray(response) ? response : []).map((status: any) => ({
+        id: status.Id || status.id,
+        statusType: status.StatusType || status.statusType,
+        statusName: status.StatusName || status.statusName,
+        statusValue: status.StatusValue || status.statusValue,
+        displayName: status.DisplayName || status.displayName, // ⭐ CRÍTICO: Backend devuelve DisplayName
+        description: status.Description || status.description,
+        sortOrder: status.SortOrder || status.sortOrder,
+        isActive: status.IsActive ?? status.isActive ?? true,
+        createdAt: status.CreatedAt || status.createdAt,
+        updatedAt: status.UpdatedAt || status.updatedAt,
+      }));
+      
+      console.log('✅ Estados generales normalizados:', normalizedStatuses);
+      console.log('🔍 DEBUG - Estados generales IDs disponibles:', normalizedStatuses.map(s => s.id));
+      setSearchHireStatuses(normalizedStatuses);
     } catch (err: any) {
       console.error('❌ Error loading search hire statuses:', err);
       if (err.message?.includes('404')) {

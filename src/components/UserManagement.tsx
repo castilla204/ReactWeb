@@ -42,7 +42,31 @@ export function UserManagement({ onBack }: UserManagementProps) {
 
     const usersQuery = useQuery({
         queryKey: ['users', page, pageSize],
-        queryFn: () => fetchApi<PaginatedUsersResponse>(`/api/User/all?page=${page}&pageSize=${pageSize}`),
+        queryFn: async () => {
+            const response = await fetchApi<any>(`/api/User/all?page=${page}&pageSize=${pageSize}`);
+            
+            // ✅ NORMALIZAR respuesta según la guía
+            return {
+                users: response.users || [],
+                pagination: response.pagination ? {
+                    page: response.pagination.page || 1,
+                    pageSize: response.pagination.pageSize || pageSize,
+                    totalCount: response.pagination.totalCount || 0,
+                    totalPages: response.pagination.totalPages || 0,
+                    hasNextPage: response.pagination.hasNextPage ?? false,
+                    hasPreviousPage: response.pagination.hasPreviousPage ?? false,
+                } : {
+                    page: 1,
+                    pageSize: pageSize,
+                    totalCount: 0,
+                    totalPages: 0,
+                    hasNextPage: false,
+                    hasPreviousPage: false,
+                }
+            } as PaginatedUsersResponse;
+        },
+        retry: 1,
+        retryDelay: 1000,
     });
 
 
