@@ -80,6 +80,13 @@ export interface HomepageWallResponse {
     services: SearchServiceDetailDto[];
     pagination: PaginationInfo;
   };
+  // ✅ NUEVO: Sección específica por categoría (solo aparece si se envía categoryId)
+  categorySpecificServices?: {
+    title: string;        // Ej: "Revisiones de Coches en Alemania"
+    country: string;      // Código de país (ej: "DE", "FR", "GB")
+    services: SearchServiceDetailDto[];
+    totalCount: number;
+  };
 }
 
 

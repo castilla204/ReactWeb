@@ -11,6 +11,7 @@ interface HomepageWallParams {
   nearbyPageSize?: number;
   popularPage?: number;
   popularPageSize?: number;
+  categoryId?: number; // ✅ NUEVO: ID de categoría (opcional)
 }
 
 export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
@@ -23,7 +24,8 @@ export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
       params.nearbyPage, 
       params.nearbyPageSize, 
       params.popularPage, 
-      params.popularPageSize
+      params.popularPageSize,
+      params.categoryId // ✅ NUEVO: Agregar categoryId a la queryKey
     ],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
@@ -57,6 +59,11 @@ export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
         queryParams.append('popularPageSize', params.popularPageSize.toString());
       }
 
+      // ✅ NUEVO: Agregar categoryId si está presente
+      if (params.categoryId !== undefined && params.categoryId !== null) {
+        queryParams.append('categoryId', params.categoryId.toString());
+      }
+
       const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.homepageWall}?${queryParams.toString()}`;
       
       console.log('🔍 HomepageWall - Llamando a:', url);
@@ -81,6 +88,7 @@ export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
       console.log('✅ HomepageWall - Data recibida:', data);
       console.log('✅ HomepageWall - Nearby services:', data.nearbyServices?.services?.length || 0);
       console.log('✅ HomepageWall - Popular services:', data.popularServices?.services?.length || 0);
+      console.log('✅ HomepageWall - Category specific services:', data.categorySpecificServices?.services?.length || 0);
       
       // Mapear los datos de PascalCase a camelCase si es necesario
       const mapService = (service: any): any => {
@@ -130,7 +138,7 @@ export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
       };
 
       // Mapear los servicios
-      const mappedData = {
+      const mappedData: HomepageWallResponse = {
         nearbyServices: {
           ...data.nearbyServices,
           services: (data.nearbyServices?.services || []).map(mapService),
@@ -139,6 +147,15 @@ export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
           ...data.popularServices,
           services: (data.popularServices?.services || []).map(mapService),
         },
+        // ✅ NUEVO: Mapear categorySpecificServices si existe
+        ...(data.categorySpecificServices && {
+          categorySpecificServices: {
+            title: data.categorySpecificServices.title,
+            country: data.categorySpecificServices.country,
+            services: (data.categorySpecificServices.services || []).map(mapService),
+            totalCount: data.categorySpecificServices.totalCount,
+          },
+        }),
       };
 
       console.log('✅ HomepageWall - Datos mapeados:', mappedData);

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 // Google SVG Icon Component
 const GoogleIcon = () => (
@@ -36,6 +38,8 @@ interface GoogleSignInButtonProps {
 
 export const GoogleSignInButton = ({ className = '', variant = 'default', onSuccess }: GoogleSignInButtonProps) => {
     const [isReady, setIsReady] = useState(false);
+    const [isAuthenticating, setIsAuthenticating] = useState(false);
+    const [authStep, setAuthStep] = useState<string>('');
     const { updateUser } = useAuth();
     const navigate = useNavigate();
     const buttonRef = useRef<HTMLDivElement>(null);
@@ -51,28 +55,40 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                     client_id: clientId,
                     callback: async (response: any) => {
                         try {
+                            setIsAuthenticating(true);
+                            setAuthStep('Verificando credenciales de Google...');
+                            console.log('🔐 [GoogleSignIn] Paso 1: Credencial recibida de Google');
+                            
                             if (!response.credential) {
                                 throw new Error('No credential received from Google');
                             }
 
+                            setAuthStep('Autenticando con el servidor...');
+                            console.log('🔐 [GoogleSignIn] Paso 2: Enviando credencial al backend');
                             const result = await authService.googleAuth(response.credential);
                             
                             if (!result.success) {
                                 throw new Error('Authentication failed');
                             }
+                            console.log('✅ [GoogleSignIn] Paso 3: Autenticación exitosa');
 
+                            setAuthStep('Obteniendo información del usuario...');
                             // Obtener el token después de la autenticación
                             const token = authService.getAccessToken();
                             
+                            setAuthStep('Configurando sesión...');
+                            console.log('🔐 [GoogleSignIn] Paso 4: Actualizando contexto de usuario');
                             // Actualizar usuario y token usando updateUser del contexto
                             // Esto asegura que tanto el usuario como el token se guarden correctamente
                             updateUser(result.user, token, () => {
                                 // Callback después de actualizar usuario y token
-                                console.log('User and token updated successfully');
+                                console.log('✅ [GoogleSignIn] Paso 5: Usuario y token actualizados');
                             });
                             
                             // Verificar MFA solo si es necesario (optimización)
                             if (token) {
+                                setAuthStep('Verificando seguridad...');
+                                console.log('🔐 [GoogleSignIn] Paso 6: Verificando MFA si es necesario');
                                 // Verificar MFA de forma más eficiente
                                 const { RoleChecker } = await import('../utils/roleChecker');
                                 const userRole = RoleChecker.getUserRole(token);
@@ -84,6 +100,7 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                                     try {
                                         const mfaStatus = await mfaService.getMFAStatus();
                                         if (mfaStatus.isEnabled && !mfaStatus.isVerified) {
+                                            setAuthStep('Redirigiendo a verificación MFA...');
                                             navigate('/mfa/verify', { state: { returnTo: '/busquedas' } });
                                             return;
                                         }
@@ -94,14 +111,23 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                                 }
                             }
                             
+                            setAuthStep('¡Inicio de sesión exitoso!');
+                            console.log('✅ [GoogleSignIn] Paso 7: Proceso completado');
+                            toast.success('¡Bienvenido!', { duration: 2000 });
+                            
                             // Llamar callback si existe
                             if (onSuccess) {
                                 onSuccess();
                             } else {
                                 navigate('/busquedas');
                             }
-                        } catch (error) {
-                            console.error('Error during Google authentication:', error);
+                        } catch (error: any) {
+                            console.error('❌ [GoogleSignIn] Error durante autenticación:', error);
+                            const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
+                            toast.error(errorMessage, { duration: 5000 });
+                            setAuthStep('');
+                        } finally {
+                            setIsAuthenticating(false);
                         }
                     },
                     auto_select: false,
@@ -259,12 +285,27 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
             {/* Botón personalizado visible */}
             <button
                 onClick={handleCustomClick}
-                disabled={!isReady}
-                className={`${variant === 'compact' ? compactClasses : defaultClasses} ${className}`}
+                disabled={!isReady || isAuthenticating}
+                className={`${variant === 'compact' ? compactClasses : defaultClasses} ${className} ${isAuthenticating ? 'opacity-75 cursor-wait' : ''}`}
             >
-                <GoogleIcon />
-                <span>Iniciar Sesión</span>
+                {isAuthenticating ? (
+                    <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>{authStep || 'Iniciando sesión...'}</span>
+                    </>
+                ) : (
+                    <>
+                        <GoogleIcon />
+                        <span>Iniciar Sesión</span>
+                    </>
+                )}
             </button>
+            {/* Mensaje de progreso debajo del botón */}
+            {isAuthenticating && authStep && (
+                <p className="text-xs text-gray-500 mt-2 text-center animate-pulse">
+                    {authStep}
+                </p>
+            )}
         </div>
     );
 };

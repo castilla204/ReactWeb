@@ -438,14 +438,26 @@ const DisputeCard: React.FC<{
           )}
           
           <div className="flex items-center gap-6 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              <span>{dispute.client.name}</span>
-            </div>
-            {dispute.expert && (
+            {dispute.client ? (
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span>{dispute.client.name}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-gray-400">
+                <User className="w-4 h-4" />
+                <span>Cliente no disponible</span>
+              </div>
+            )}
+            {dispute.expert ? (
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 <span>{dispute.expert.name}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-gray-400">
+                <User className="w-4 h-4" />
+                <span>Experto no disponible</span>
               </div>
             )}
             <div className="flex items-center gap-2">
@@ -638,7 +650,7 @@ const DisputeDetails: React.FC<{
                               )}
                             </div>
                             <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">
-                              Cliente
+                              {file.fileCategoryLabel || 'Archivo del Cliente'}
                             </span>
                           </div>
                         ))}
@@ -692,7 +704,7 @@ const DisputeDetails: React.FC<{
                                 )}
                               </div>
                               <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                                Experto
+                                {file.fileCategoryLabel || 'Archivo del Experto'}
                               </span>
                             </div>
                           ))}
@@ -720,7 +732,7 @@ const DisputeDetails: React.FC<{
                                 )}
                               </div>
                               <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                                Experto
+                                {file.fileCategoryLabel || 'Archivo del Experto'}
                               </span>
                             </div>
                           ))}
