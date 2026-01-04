@@ -1,11 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { FavoritesModal } from './FavoritesModal';
+import { authService } from '../services/authService';
+import { toast } from 'sonner';
 
 export const MobileBottomBar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, updateUser } = useAuth();
+  const [showFavoritesModal, setShowFavoritesModal] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -15,8 +21,172 @@ export const MobileBottomBar: React.FC = () => {
   };
 
   const exploreActive = isActive('/');
-  const wishlistsActive = isActive('/wishlists');
-  const loginActive = isActive('/login') || isActive('/profile');
+  const wishlistsActive = showFavoritesModal;
+  // loginActive solo cuando está autenticado Y está en busquedas
+  const loginActive = isAuthenticated && (location.pathname === '/busquedas' || location.pathname.startsWith('/busquedas'));
+
+  const handleExploreClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate('/');
+  };
+
+  const handleFavoritesClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isAuthenticated) {
+      setShowFavoritesModal(true);
+    } else {
+      // Si no está autenticado, redirigir a la página principal donde puede iniciar sesión
+      navigate('/');
+    }
+  };
+
+  // Inicializar Google Sign-In
+  useEffect(() => {
+    if (isAuthenticated) return; // No inicializar si ya está autenticado
+    
+    const initGoogleAuth = () => {
+      if (window.google?.accounts?.id && googleButtonRef.current) {
+        const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
+        
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response: any) => {
+            try {
+              console.log('🔐 [MobileBottomBar] Iniciando autenticación con Google...');
+              
+              if (!response.credential) {
+                throw new Error('No credential received from Google');
+              }
+
+              const result = await authService.googleAuth(response.credential);
+              
+              if (!result.success) {
+                throw new Error('Authentication failed');
+              }
+
+              const token = authService.getAccessToken();
+              if (result.user && token) {
+                // Verificar MFA si es necesario antes de actualizar usuario
+                const { RoleChecker } = await import('../utils/roleChecker');
+                const userRole = RoleChecker.getUserRole(token);
+                const requiresMfa = RoleChecker.requiresMfa(userRole);
+                
+                let shouldNavigate = true;
+                
+                if (requiresMfa) {
+                  const { mfaService } = await import('../services/mfaService');
+                  try {
+                    const mfaStatus = await mfaService.getMFAStatus();
+                    if (mfaStatus.isEnabled && !mfaStatus.isVerified) {
+                      shouldNavigate = false;
+                      updateUser(result.user, token, () => {
+                        navigate('/mfa/verify', { state: { returnTo: '/busquedas' } });
+                      });
+                      return;
+                    }
+                  } catch (error) {
+                    console.error('Error checking MFA status:', error);
+                  }
+                }
+                
+                if (shouldNavigate) {
+                  updateUser(result.user, token, () => {
+                    console.log('✅ [MobileBottomBar] Autenticación exitosa');
+                    toast.success('¡Bienvenido!', { duration: 2000 });
+                    navigate('/busquedas');
+                  });
+                }
+              }
+            } catch (error: any) {
+              console.error('❌ [MobileBottomBar] Error durante autenticación:', error);
+              const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
+              toast.error(errorMessage, { duration: 5000 });
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: false,
+        });
+
+        // Renderizar botón oculto de Google
+        if (googleButtonRef.current) {
+          googleButtonRef.current.innerHTML = '';
+          window.google.accounts.id.renderButton(googleButtonRef.current, {
+            type: 'standard',
+            theme: 'outline',
+            size: 'large',
+            text: 'signin_with',
+          });
+
+          setTimeout(() => {
+            const renderedButton = googleButtonRef.current?.querySelector('div[role="button"]');
+            if (renderedButton) {
+              setIsGoogleReady(true);
+            }
+          }, 200);
+        }
+      }
+    };
+
+    // Esperar a que Google esté cargado
+    if (window.google?.accounts?.id) {
+      initGoogleAuth();
+    } else {
+      const checkGoogle = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(checkGoogle);
+          initGoogleAuth();
+        }
+      }, 100);
+      
+      return () => clearInterval(checkGoogle);
+    }
+  }, [isAuthenticated, navigate, updateUser]);
+
+  const handleLoginClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isAuthenticated) {
+      // Si está autenticado, abrir AccountSettingsModal (configuración con MFA, etc.)
+      if (typeof (window as any).openAccountSettings === 'function') {
+        (window as any).openAccountSettings();
+      } else {
+        // Fallback: usar evento personalizado
+        try {
+          const event = new CustomEvent('openAccountSettings', { 
+            bubbles: true, 
+            cancelable: true,
+            detail: { source: 'MobileBottomBar' }
+          });
+          window.dispatchEvent(event);
+        } catch (error) {
+          console.error('❌ MobileBottomBar - Error al disparar evento:', error);
+        }
+      }
+    } else {
+      // Si no está autenticado, iniciar sesión con Google automáticamente
+      console.log('🔘 [MobileBottomBar] Iniciando sesión con Google...');
+      if (isGoogleReady && googleButtonRef.current) {
+        const googleButton = googleButtonRef.current.querySelector('div[role="button"]') as HTMLElement;
+        if (googleButton) {
+          googleButton.click();
+        } else {
+          toast.error('Google Sign-In no está listo. Inténtalo de nuevo en un momento.');
+        }
+      } else {
+        toast.error('Google Sign-In se está cargando. Inténtalo de nuevo en un momento.');
+      }
+    }
+  };
+  
+  // Handler separado para touch para evitar conflictos
+  const handleLoginTouch = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleLoginClick(e);
+  };
 
   return (
     <nav
@@ -42,16 +212,13 @@ export const MobileBottomBar: React.FC = () => {
         width: '100%',
         gap: '0px',
       }}>
-        {/* Explore - a._c1l7p5r */}
-        <a
-          href="/"
-          onClick={(e) => {
-            e.preventDefault();
-            navigate('/');
-          }}
+        {/* Explore - button */}
+        <button
           type="button"
+          onClick={handleExploreClick}
+          onTouchEnd={handleExploreClick}
           aria-current={exploreActive ? 'page' : undefined}
-          aria-disabled={exploreActive}
+          disabled={exploreActive}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -60,9 +227,14 @@ export const MobileBottomBar: React.FC = () => {
             width: '99px',
             height: '44px',
             flexShrink: 0,
-            textDecoration: 'none',
+            border: 'none',
+            background: 'transparent',
+            padding: 0,
+            margin: 0,
             color: exploreActive ? '#222222' : '#717171',
             cursor: exploreActive ? 'default' : 'pointer',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent',
           }}
         >
           {/* div._rz58lf5 - Contenedor del icono */}
@@ -110,18 +282,15 @@ export const MobileBottomBar: React.FC = () => {
           }}>
             Explorar
           </div>
-        </a>
+        </button>
 
-        {/* Wishlists - a._5iid4lr */}
-        <a
-          href="/wishlists"
-          onClick={(e) => {
-            e.preventDefault();
-            navigate('/wishlists');
-          }}
+        {/* Wishlists - button */}
+        <button
           type="button"
+          onClick={handleFavoritesClick}
+          onTouchEnd={handleFavoritesClick}
           aria-current={wishlistsActive ? 'page' : undefined}
-          aria-disabled={wishlistsActive}
+          disabled={wishlistsActive}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -131,9 +300,13 @@ export const MobileBottomBar: React.FC = () => {
             height: '44px',
             flexShrink: 0,
             marginLeft: '-20px',
-            textDecoration: 'none',
+            border: 'none',
+            background: 'transparent',
+            padding: 0,
             color: wishlistsActive ? '#222222' : '#717171',
             cursor: wishlistsActive ? 'default' : 'pointer',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent',
           }}
         >
           {/* div._rz58lf5 - Contenedor del icono */}
@@ -180,18 +353,15 @@ export const MobileBottomBar: React.FC = () => {
           }}>
             Favoritos
           </div>
-        </a>
+        </button>
 
-        {/* Log in - a._hbhnx1i */}
-        <a
-          href={isAuthenticated ? "/profile" : "/login"}
-          onClick={(e) => {
-            e.preventDefault();
-            navigate(isAuthenticated ? '/profile' : '/login');
-          }}
+        {/* Log in - button */}
+        <button
           type="button"
+          onClick={handleLoginClick}
+          onTouchEnd={handleLoginTouch}
           aria-current={loginActive ? 'page' : undefined}
-          aria-disabled={loginActive}
+          disabled={false}
           data-veloute="pwa-tab-bar-item-login"
           style={{
             display: 'flex',
@@ -202,9 +372,13 @@ export const MobileBottomBar: React.FC = () => {
             height: '44px',
             flexShrink: 0,
             marginLeft: '-20px',
-            textDecoration: 'none',
+            border: 'none',
+            background: 'transparent',
+            padding: 0,
             color: loginActive ? '#222222' : '#717171',
             cursor: loginActive ? 'default' : 'pointer',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent',
           }}
         >
           {/* div._jro6t0 - Contenedor del icono */}
@@ -287,10 +461,31 @@ export const MobileBottomBar: React.FC = () => {
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
             letterSpacing: '0',
           }}>
-            Iniciar sesión
+            {isAuthenticated ? 'Perfil' : 'Iniciar sesión'}
           </div>
-        </a>
+        </button>
       </div>
+      
+      {/* Modal de Favoritos */}
+      {showFavoritesModal && (
+        <FavoritesModal onClose={() => setShowFavoritesModal(false)} />
+      )}
+      
+      {/* Botón oculto de Google para autenticación */}
+      {!isAuthenticated && (
+        <div 
+          ref={googleButtonRef} 
+          style={{ 
+            position: 'absolute', 
+            opacity: 0, 
+            pointerEvents: 'none', 
+            zIndex: -1,
+            width: '1px',
+            height: '1px',
+            overflow: 'hidden'
+          }} 
+        />
+      )}
     </nav>
   );
 };

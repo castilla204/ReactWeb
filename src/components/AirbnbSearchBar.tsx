@@ -1,17 +1,41 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, ChevronDown, Link as LinkIcon } from 'lucide-react';
+import { Search, ChevronDown, Link as LinkIcon, FolderTree } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
+import { useAuth } from '../contexts/AuthContext';
+import { isAdmin } from '../utils/admin';
 import cocheImg from '../media/cochepng.png';
 import casaImg from '../media/casapng.png';
+import motoImg from '../media/motopng.png';
+import camaraImg from '../media/internet-61.png'; // Usar imagen existente para cámaras
+// TODO: Reemplazar con imagen de caldera cuando esté disponible
+import calderaImg from '../media/house.png'; // Placeholder - usar imagen de caldera cuando esté disponible
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from './ui/popover';
-import { Drawer, DrawerContent } from './ui/drawer';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from './ui/drawer';
+import { ResponsiveModal } from './ui/responsive-modal';
+import { Separator } from './ui/separator';
+
+// ✅ IDs de categorías según la documentación
+const CATEGORIES = {
+  COCHES: 1,
+  MOTOS: 2,
+  INMOBILIARIA: 3,
+  CAMARAS: 4,
+  FONTANERIA: 5, // Asumiendo ID 5, ajustar si es diferente
+} as const;
+
+// ✅ Categorías restantes para el drawer
+const DRAWER_CATEGORIES = [
+  { id: CATEGORIES.MOTOS, name: 'Motos' },
+  { id: CATEGORIES.CAMARAS, name: 'Cámaras' },
+  { id: CATEGORIES.FONTANERIA, name: 'Fontanería' },
+] as const;
 
 interface AirbnbSearchBarProps {
   onSearch?: (searchData: {
@@ -23,8 +47,35 @@ interface AirbnbSearchBarProps {
 
 export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) => {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const { serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
   const { categories, loading: categoriesLoading } = useCategories();
+  
+  // El objeto user viene del backend con mayúsculas: Email, Role (no email, role)
+  const userEmail = user?.Email || user?.email; // Compatibilidad con ambos formatos
+  const userRole = user?.Role || user?.role; // Compatibilidad con ambos formatos
+  
+  const isAdminByEmail = userEmail ? isAdmin(userEmail) : false;
+  const isAdminByRole = userRole === 'Admin' || userRole === 'admin';
+  const userIsAdmin = isAuthenticated && (isAdminByEmail || isAdminByRole);
+  
+  // Debug: Log completo del objeto user
+  useEffect(() => {
+    console.log('🔍 ========== AIRBNB SEARCH BAR - USER OBJECT ==========');
+    console.log('👤 User completo:', user);
+    console.log('👤 User keys:', user ? Object.keys(user) : 'NO USER');
+    console.log('📧 user?.Email:', user?.Email);
+    console.log('📧 user?.email:', user?.email);
+    console.log('📧 userEmail (final):', userEmail);
+    console.log('👤 user?.Role:', user?.Role);
+    console.log('👤 user?.role:', user?.role);
+    console.log('👤 userRole (final):', userRole);
+    console.log('✅ isAdminByEmail:', isAdminByEmail);
+    console.log('✅ isAdminByRole:', isAdminByRole);
+    console.log('🔐 isAuthenticated:', isAuthenticated);
+    console.log('🎯 userIsAdmin (FINAL):', userIsAdmin);
+    console.log('===================================================');
+  }, [user, isAuthenticated, userEmail, userRole, isAdminByEmail, isAdminByRole, userIsAdmin]);
   
   const [serviceTypeId, setServiceTypeId] = useState<number | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(null);
@@ -36,12 +87,33 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const [isMobileServiceTypeOpen, setIsMobileServiceTypeOpen] = useState(false);
   const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  // ✅ Estado para el tab activo y drawer de categorías
+  const [activeTab, setActiveTab] = useState<'coches' | 'inmobiliaria' | 'drawer' | null>('coches');
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // ✅ Estado para la categoría del drawer que reemplaza a Inmobiliaria
+  const [drawerCategoryReplacement, setDrawerCategoryReplacement] = useState<{ id: number; name: string; image: string } | null>(null);
+  // ✅ Estado para el buscador de categorías
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const serviceTypeButtonRef = useRef<HTMLButtonElement>(null);
   const categoryButtonRef = useRef<HTMLButtonElement>(null);
 
   const selectedServiceType = serviceTypes.find(st => st.id === serviceTypeId);
   const selectedCategory = categories.find(c => c.id === categoryId);
+  
+  // ✅ Inicializar con Coches por defecto al cargar
+  useEffect(() => {
+    if (activeTab === 'coches' && !categoryId) {
+      setCategoryId(CATEGORIES.COCHES);
+      if (onSearch) {
+        onSearch({
+          serviceTypeId,
+          categoryId: CATEGORIES.COCHES,
+          adUrl,
+        });
+      }
+    }
+  }, []); // Solo al montar el componente
   
   // Debug: verificar que el estado se actualiza
   useEffect(() => {
@@ -52,8 +124,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
       categoryId,
       categoriesCount: categories.length,
       selectedCategory: selectedCategory?.name,
+      activeTab,
     });
-  }, [serviceTypeId, categoryId, selectedServiceType, selectedCategory, serviceTypes.length, categories.length]);
+  }, [serviceTypeId, categoryId, selectedServiceType, selectedCategory, serviceTypes.length, categories.length, activeTab]);
 
   const handleSearch = () => {
     // Si hay onSearch (desde HomePage), llamarlo para filtrar en la misma página
@@ -75,6 +148,71 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
       const queryString = params.toString();
       navigate(`/crear-busqueda?${queryString}`);
     }
+  };
+
+  // ✅ Handler para seleccionar categoría desde los tabs
+  const handleTabClick = (tab: 'coches' | 'inmobiliaria', categoryIdValue: number) => {
+    setActiveTab(tab);
+    setCategoryId(categoryIdValue);
+    setIsDrawerOpen(false);
+    
+    // Si se hace clic en "inmobiliaria" y hay una categoría del drawer seleccionada, limpiarla
+    if (tab === 'inmobiliaria' && categoryIdValue === CATEGORIES.INMOBILIARIA) {
+      setDrawerCategoryReplacement(null);
+    }
+    
+    // Llamar a onSearch para actualizar el wall
+    if (onSearch) {
+      onSearch({
+        serviceTypeId,
+        categoryId: categoryIdValue,
+        adUrl,
+      });
+    }
+    
+    // NO hacer scroll automático - eliminado según solicitud del usuario
+  };
+
+  // ✅ Función helper para obtener la imagen de una categoría por nombre
+  const getCategoryImage = (categoryName: string): string | null => {
+    const nameLower = categoryName.toLowerCase();
+    if (nameLower.includes('moto') && !nameLower.includes('agua')) return motoImg;
+    if (nameLower.includes('coche') || nameLower.includes('vehículo')) return cocheImg;
+    if (nameLower.includes('inmobiliaria') || nameLower.includes('casa') || nameLower.includes('inmueble')) return casaImg;
+    if (nameLower.includes('cámara') || nameLower.includes('camara')) return camaraImg;
+    if (nameLower.includes('fontanería') || nameLower.includes('fontaneria') || nameLower.includes('caldera')) return calderaImg;
+    return null;
+  };
+
+  // ✅ Handler para seleccionar categoría desde el drawer
+  const handleDrawerCategoryClick = (categoryIdValue: number, categoryName: string) => {
+    // Obtener la imagen de la categoría
+    const categoryImage = getCategoryImage(categoryName) || casaImg;
+    
+    // Guardar la categoría del drawer para reemplazar a Inmobiliaria
+    setDrawerCategoryReplacement({
+      id: categoryIdValue,
+      name: categoryName,
+      image: categoryImage
+    });
+    
+    // Cambiar al tab de "inmobiliaria" (que ahora mostrará la categoría del drawer)
+    setActiveTab('inmobiliaria');
+    
+    setCategoryId(categoryIdValue);
+    setIsDrawerOpen(false);
+    setCategorySearchQuery(''); // Limpiar búsqueda
+    
+    // Llamar a onSearch para actualizar el wall
+    if (onSearch) {
+      onSearch({
+        serviceTypeId,
+        categoryId: categoryIdValue,
+        adUrl,
+      });
+    }
+    
+    // NO hacer scroll automático - eliminado según solicitud del usuario
   };
 
   // Cerrar cuando se hace click fuera (desktop)
@@ -126,7 +264,23 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   return (
     <header className="sticky top-0 z-50" style={{ backgroundColor: '#fbfbfb', borderBottom: '1px solid #EBEBEB', position: 'sticky' }}>
       {/* Desktop: Barra de búsqueda completa */}
-      <div className="hidden md:block max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="hidden md:block max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4 relative">
+        {/* Botón Admin - Solo visible para admins - CON DEBUG VISIBLE */}
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1" style={{ zIndex: 1000 }}>
+          {userIsAdmin ? (
+            <button
+              onClick={() => {
+                console.log('🔧 Botón Admin clickeado - Navegando a /admin');
+                console.log('🔧 User actual:', user);
+                console.log('🔧 isAuthenticated:', isAuthenticated);
+                navigate('/admin');
+              }}
+              className="text-sm font-semibold text-red-600 hover:text-red-700 px-4 py-2 rounded-md hover:bg-red-50 transition-colors bg-white border-2 border-red-400 shadow-lg"
+            >
+              🔧 Admin
+            </button>
+          ) : null}
+        </div>
         <form
           ref={containerRef}
           onSubmit={(e) => {
@@ -384,15 +538,16 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             marginRight: 'auto',
           }}
         >
-          {/* Homes Tab */}
-          <a
-            href="/homes"
+          {/* Coches Tab */}
+          <button
+            type="button"
             role="tab"
-            aria-selected="true"
+            aria-selected={activeTab === 'coches'}
             tabIndex={0}
-            data-tabid="tabBarItem-STAYS"
-            id="search-block-tab-STAYS-desktop"
-            onMouseEnter={() => setHoveredTab('homes')}
+            data-tabid="tabBarItem-COCHES"
+            id="search-block-tab-COCHES-desktop"
+            onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
+            onMouseEnter={() => setHoveredTab('coches')}
             onMouseLeave={() => setHoveredTab(null)}
             style={{
               display: 'flex',
@@ -404,6 +559,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               color: '#222222',
               position: 'relative',
               gap: '12px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
             }}
           >
             <span style={{ 
@@ -428,14 +586,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               style={{
                 fontSize: '16px',
                 lineHeight: '20px',
-                fontWeight: 600,
+                fontWeight: activeTab === 'coches' ? 600 : 400,
                 color: '#222222',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 whiteSpace: 'nowrap',
                 position: 'relative',
               }}
             >
-              Homes
+              Coches
             </span>
             {/* Underline indicator - debajo de todo el tab */}
             <span
@@ -446,21 +604,23 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 right: '0px',
                 height: '2px',
                 backgroundColor: '#222222',
-                transform: 'scaleX(1)',
+                transform: activeTab === 'coches' ? 'scaleX(1)' : 'scaleX(0)',
                 transformOrigin: 'left',
+                transition: 'transform 0.2s ease',
               }}
             />
-          </a>
+          </button>
 
-          {/* Experiences Tab */}
-          <a
-            href="/experiences"
+          {/* Inmobiliaria Tab - Puede mostrar categoría del drawer si está seleccionada */}
+          <button
+            type="button"
             role="tab"
-            aria-selected="false"
+            aria-selected={activeTab === 'inmobiliaria'}
             tabIndex={-1}
-            data-tabid="tabBarItem-EXPERIENCES"
-            id="search-block-tab-EXPERIENCES-desktop"
-            onMouseEnter={() => setHoveredTab('experiences')}
+            data-tabid="tabBarItem-INMOBILIARIA"
+            id="search-block-tab-INMOBILIARIA-desktop"
+            onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
+            onMouseEnter={() => setHoveredTab('inmobiliaria')}
             onMouseLeave={() => setHoveredTab(null)}
             style={{
               display: 'flex',
@@ -472,6 +632,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               color: '#222222',
               position: 'relative',
               gap: '12px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
             }}
           >
             <span style={{ 
@@ -482,8 +645,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               flexShrink: 0,
             }}>
               <img
-                src={casaImg}
-                alt="Casa"
+                src={drawerCategoryReplacement?.image || casaImg}
+                alt={drawerCategoryReplacement?.name || "Casa"}
                 style={{
                   display: 'block',
                   height: '32px',
@@ -491,37 +654,19 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   objectFit: 'contain',
                 }}
               />
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '-6px',
-                  right: '-8px',
-                  backgroundColor: '#FF385C',
-                  color: 'white',
-                  fontSize: '10px',
-                  fontWeight: 600,
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                  whiteSpace: 'nowrap',
-                  lineHeight: '12px',
-                }}
-              >
-                NEW
-              </span>
             </span>
             <span
               style={{
                 fontSize: '16px',
                 lineHeight: '20px',
-                fontWeight: 400,
+                fontWeight: activeTab === 'inmobiliaria' ? 600 : 400,
                 color: '#222222',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 whiteSpace: 'nowrap',
                 position: 'relative',
               }}
             >
-              Experiences
+              {drawerCategoryReplacement?.name || 'Inmobiliaria'}
             </span>
             {/* Underline indicator - debajo de todo el tab */}
             <span
@@ -532,21 +677,22 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 right: '0px',
                 height: '2px',
                 backgroundColor: '#222222',
-                transform: hoveredTab === 'experiences' ? 'scaleX(1)' : 'scaleX(0)',
+                transform: activeTab === 'inmobiliaria' || hoveredTab === 'inmobiliaria' ? 'scaleX(1)' : 'scaleX(0)',
                 transformOrigin: 'left',
                 transition: 'transform 0.2s ease',
               }}
             />
-          </a>
+          </button>
 
-          {/* Services Tab */}
-          <a
-            href="/services"
+          {/* Services Tab - ResponsiveModal con más categorías (Drawer en móvil, Dialog en PC) */}
+          <button
+            type="button"
             role="tab"
-            aria-selected="false"
+            aria-selected={activeTab === 'drawer'}
             tabIndex={-1}
             data-tabid="tabBarItem-SERVICES"
             id="search-block-tab-SERVICES-desktop"
+            onClick={() => setIsDrawerOpen(true)}
             onMouseEnter={() => setHoveredTab('services')}
             onMouseLeave={() => setHoveredTab(null)}
             style={{
@@ -559,6 +705,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               color: '#222222',
               position: 'relative',
               gap: '12px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
             }}
           >
             <span style={{ 
@@ -603,37 +752,19 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   }}
                 />
               </div>
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '-6px',
-                  right: '-8px',
-                  backgroundColor: '#FF385C',
-                  color: 'white',
-                  fontSize: '10px',
-                  fontWeight: 600,
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                  whiteSpace: 'nowrap',
-                  lineHeight: '12px',
-                }}
-              >
-                NEW
-              </span>
             </span>
             <span
               style={{
                 fontSize: '16px',
                 lineHeight: '20px',
-                fontWeight: 400,
+                fontWeight: activeTab === 'drawer' ? 600 : 400,
                 color: '#222222',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 whiteSpace: 'nowrap',
                 position: 'relative',
               }}
             >
-              Services
+              Más
             </span>
             {/* Underline indicator - debajo de todo el tab */}
             <span
@@ -644,12 +775,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 right: '0px',
                 height: '2px',
                 backgroundColor: '#222222',
-                transform: hoveredTab === 'services' ? 'scaleX(1)' : 'scaleX(0)',
+                transform: activeTab === 'drawer' || hoveredTab === 'services' ? 'scaleX(1)' : 'scaleX(0)',
                 transformOrigin: 'left',
                 transition: 'transform 0.2s ease',
               }}
             />
-          </a>
+          </button>
         </div>
       </div>
 
@@ -676,7 +807,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             alignItems: 'center',
                 justifyContent: 'center',
           }}
-              aria-label="Start your search"
+              aria-label="Buscar revisor"
               data-xray-jira-component="Guest: Search Bar"
         >
           {/* span.b15xd7zr con data-button-content="true" */}
@@ -745,7 +876,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                         letterSpacing: 'normal',
                     }}
                   >
-                      Start your search
+                      Buscar revisor
                     </span>
                   </div>
                 </span>
@@ -771,14 +902,15 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               overflowX: 'auto',
             }}
         >
-          {/* Homes Tab */}
-          <a
-            href="/homes"
+          {/* Coches Tab */}
+          <button
+            type="button"
             role="tab"
-            aria-selected="true"
+            aria-selected={activeTab === 'coches'}
             tabIndex={0}
-            data-tabid="tabBarItem-STAYS"
-            id="search-block-tab-STAYS"
+            data-tabid="tabBarItem-COCHES"
+            id="search-block-tab-COCHES"
+            onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -790,6 +922,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               position: 'relative',
               minWidth: '40px',
               flex: '1 1 0',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
             }}
           >
             <span style={{ 
@@ -815,25 +950,26 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               style={{
                 fontSize: '10px',
                 lineHeight: '12px',
-                fontWeight: 600,
+                fontWeight: activeTab === 'coches' ? 600 : 400,
                 color: '#222222',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 textAlign: 'center',
                 width: '100%',
               }}
             >
-              Homes
+              Coches
                   </span>
-          </a>
+          </button>
 
-          {/* Experiences Tab */}
-          <a
-            href="/experiences"
+          {/* Inmobiliaria Tab - Puede mostrar categoría del drawer si está seleccionada */}
+          <button
+            type="button"
             role="tab"
-            aria-selected="false"
+            aria-selected={activeTab === 'inmobiliaria'}
             tabIndex={-1}
-            data-tabid="tabBarItem-EXPERIENCES"
-            id="search-block-tab-EXPERIENCES"
+            data-tabid="tabBarItem-INMOBILIARIA"
+            id="search-block-tab-INMOBILIARIA"
+            onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -845,6 +981,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               position: 'relative',
               minWidth: '40px',
               flex: '1 1 0',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
             }}
           >
             <span style={{ 
@@ -856,8 +995,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               width: '100%',
             }}>
               <img
-                src={casaImg}
-                alt="Casa"
+                src={drawerCategoryReplacement?.image || casaImg}
+                alt={drawerCategoryReplacement?.name || "Casa"}
                 style={{
                   display: 'block',
                   height: '48px',
@@ -865,48 +1004,31 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   objectFit: 'contain',
                 }}
               />
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '-4px',
-                  right: '50%',
-                  transform: 'translateX(calc(50% + 20px))',
-                  backgroundColor: '#FF385C',
-                  color: 'white',
-                  fontSize: '8px',
-                  fontWeight: 600,
-                  padding: '2px 4px',
-                  borderRadius: '4px',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                NEW
-              </span>
             </span>
                   <span
                     style={{
                 fontSize: '10px',
                 lineHeight: '12px',
-                      fontWeight: 400,
+                      fontWeight: activeTab === 'inmobiliaria' ? 600 : 400,
                 color: '#222222',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 textAlign: 'center',
                       width: '100%',
                     }}
                   >
-              Experiences
+              {drawerCategoryReplacement?.name || 'Inmobiliaria'}
                   </span>
-          </a>
+          </button>
 
-          {/* Services Tab */}
-          <a
-            href="/services"
+          {/* Services Tab - ResponsiveModal con más categorías (Mobile) */}
+          <button
+            type="button"
             role="tab"
-            aria-selected="false"
+            aria-selected={activeTab === 'drawer'}
             tabIndex={-1}
             data-tabid="tabBarItem-SERVICES"
             id="search-block-tab-SERVICES"
+            onClick={() => setIsDrawerOpen(true)}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -918,6 +1040,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               position: 'relative',
               minWidth: '40px',
               flex: '1 1 0',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
             }}
           >
             <span style={{ 
@@ -963,46 +1088,32 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   }}
                 />
               </div>
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '-4px',
-                  right: '50%',
-                  transform: 'translateX(calc(50% + 14px))',
-                  backgroundColor: '#FF385C',
-                  color: 'white',
-                  fontSize: '8px',
-                  fontWeight: 600,
-                  padding: '2px 4px',
-                  borderRadius: '4px',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                NEW
-              </span>
             </span>
             <span
               style={{
                 fontSize: '10px',
                 lineHeight: '12px',
-                fontWeight: 400,
+                fontWeight: activeTab === 'drawer' ? 600 : 400,
                 color: '#222222',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 textAlign: 'center',
                 width: '100%',
               }}
             >
-              Services
-          </span>
-          </a>
+              Más
+            </span>
+          </button>
 
-          {/* Underline indicator */}
+          {/* Underline indicator - Se mueve según el tab activo */}
           <div
             style={{
               position: 'absolute',
               bottom: 0,
-              left: 'calc(40px + ((100% - 80px) / 3) / 2 - 20px)',
+              left: activeTab === 'coches' 
+                ? 'calc(40px + ((100% - 80px) / 3) / 2 - 20px)'
+                : activeTab === 'inmobiliaria'
+                ? 'calc(40px + ((100% - 80px) / 3) + ((100% - 80px) / 3) / 2 - 20px)'
+                : 'calc(40px + ((100% - 80px) / 3) * 2 + ((100% - 80px) / 3) / 2 - 20px)',
               height: '3px',
               width: '40px',
               backgroundColor: '#222222',
@@ -1229,6 +1340,136 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
           </div>
         </DrawerContent>
       </Drawer>
+      
+      {/* ResponsiveModal compartido para "Más Categorías" - Drawer en móvil, Dialog en PC - Mejorado */}
+      <ResponsiveModal
+        open={isDrawerOpen}
+        onOpenChange={(open) => {
+          setIsDrawerOpen(open);
+          if (!open) {
+            setCategorySearchQuery(''); // Limpiar búsqueda al cerrar
+          }
+        }}
+        title="Más Categorías"
+        drawerClassName="w-full"
+        dialogClassName="max-w-lg"
+      >
+        <div className="flex flex-col" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {/* Buscador moderno sin recuadro */}
+          <div className="px-4 pt-2 pb-3" style={{ flex: '0 0 auto' }}>
+            <div className="relative">
+              <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Buscar categorías..."
+                value={categorySearchQuery}
+                onChange={(e) => setCategorySearchQuery(e.target.value)}
+                className="w-full pl-8 pr-4 py-2.5 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none border-0 border-b border-gray-200 focus:border-gray-400 transition-colors"
+              />
+            </div>
+          </div>
+          
+          {/* Lista de categorías con scroll */}
+          <div 
+            style={{ flex: '1 1 auto', overflowY: 'auto', overflowX: 'hidden', minHeight: 0, paddingRight: 0 }}
+            className="custom-scrollbar"
+          >
+            {categoriesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-sm text-muted-foreground">Cargando categorías...</div>
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {categories
+                  .filter(cat => {
+                    // Filtrar las categorías que ya están en los tabs principales
+                    if (cat.id === CATEGORIES.COCHES || cat.id === CATEGORIES.INMOBILIARIA) {
+                      return false;
+                    }
+                    // Filtrar por búsqueda
+                    if (categorySearchQuery.trim()) {
+                      return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
+                    }
+                    return true;
+                  })
+                  .filter(cat => cat.isActive) // Solo categorías activas
+                  .map((category, index, array) => {
+                    const categoryImage = getCategoryImage(category.name);
+                    const isSelected = categoryId === category.id;
+                    const isLast = index === array.length - 1;
+                    
+                    return (
+                      <React.Fragment key={category.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleDrawerCategoryClick(category.id, category.name)}
+                          className={`
+                            flex items-center gap-3 px-4 py-3 transition-colors w-full
+                            ${isSelected
+                              ? 'bg-muted'
+                              : 'hover:bg-muted/50'
+                            }
+                          `}
+                        >
+                          {/* Imagen pequeña a la izquierda */}
+                          {categoryImage ? (
+                            <img
+                              src={categoryImage}
+                              alt={category.name}
+                              className="flex-shrink-0 w-9 h-9 object-contain"
+                            />
+                          ) : (
+                            <div className="flex-shrink-0 w-9 h-9 bg-muted rounded-md flex items-center justify-center">
+                              <FolderTree className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          
+                          {/* Texto normal a la derecha */}
+                          <div className="flex-1 text-left min-w-0">
+                            <h3 className="text-base font-medium leading-tight">
+                              {category.name}
+                            </h3>
+                            <p className="text-sm text-muted-foreground mt-0.5">
+                              Explorar servicios
+                            </p>
+                          </div>
+                          
+                          {/* Indicador de selección */}
+                          {isSelected && (
+                            <div className="flex-shrink-0">
+                              <div className="w-2 h-2 bg-foreground rounded-full" />
+                            </div>
+                          )}
+                        </button>
+                        {/* Separador elegante entre categorías */}
+                        {!isLast && <Separator className="mx-4" />}
+                      </React.Fragment>
+                    );
+                  })}
+                
+                {/* Mensaje si no hay resultados */}
+                {categories
+                  .filter(cat => {
+                    if (cat.id === CATEGORIES.COCHES || cat.id === CATEGORIES.INMOBILIARIA) return false;
+                    if (categorySearchQuery.trim()) {
+                      return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
+                    }
+                    return true;
+                  })
+                  .filter(cat => cat.isActive).length === 0 && (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-sm text-muted-foreground">
+                      {categorySearchQuery.trim() 
+                        ? 'No se encontraron categorías' 
+                        : 'No hay categorías disponibles'}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </ResponsiveModal>
     </header>
   );
 };

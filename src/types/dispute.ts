@@ -48,37 +48,40 @@ export interface DisputeDto {
   reporterId: number;
   reason: string;
   status: string;
-  statusTranslated: string;
-  resolutionComments?: string;
+  statusTranslated: string;  // ⭐ USAR ESTE en lugar de status
+  resolutionComments: string | null;  // ⚠️ PUEDE SER NULL
   createdAt: string;
   searchHire: SearchHireInfoDto;
   reporter: UserDto;
-  client: UserDto;
-  expert?: UserDto;
+  client: UserDto | null;  // ⚠️ PUEDE SER NULL (usuario eliminado)
+  expert: UserDto | null;  // ⚠️ PUEDE SER NULL
   search: SearchInfoDto;
   
   // Nuevos campos del sistema bidireccional
-  expertResponse?: string;
-  expertResponseDeadline?: string;
-  expertResponseAt?: string;
-  canExpertRespond?: boolean;
-  files?: DisputeFileDto[];
+  expertResponse: string | null;  // ⚠️ PUEDE SER NULL
+  expertResponseDeadline: string | null;  // ⚠️ PUEDE SER NULL
+  expertResponseAt: string | null;  // ⚠️ PUEDE SER NULL
+  canExpertRespond: boolean;
+  files: DisputeFileDto[];  // ⚠️ PUEDE ESTAR VACÍO []
   expertResponseFiles?: DisputeFileDto[];
 }
 
 export interface DisputeFileDto {
   id: number;
   fileName: string;
-  fileUrl: string;
+  fileType: string;  // Extensión (ej: "pdf", "jpg")
   fileSize: number;
-  uploadedAt: string;
-  uploadedBy: 'client' | 'expert';
-  // Nuevos campos para diferenciación
-  uploadedByUserId?: number;
-  uploadedByUserName?: string;
-  uploadedByUserEmail?: string;
-  fileCategory?: 'client' | 'expert';
-  fileCategoryLabel?: string;
+  createdAt: string;  // ISO 8601 DateTime
+  filePath: string;  // URL del archivo (signed URL)
+  fileUrl: string;  // ⭐ Igual que filePath
+  uploadedByUserId: number;
+  uploadedByUserName: string;
+  uploadedByUserEmail: string;
+  fileCategory: string;  // "client" | "expert"
+  fileCategoryLabel: string;  // ⭐ USAR ESTE: "Archivo del Cliente" | "Archivo del Experto"
+  // Campos legacy para compatibilidad
+  uploadedAt?: string;
+  uploadedBy?: 'client' | 'expert';
 }
 
 export interface DisputeStats {
@@ -99,10 +102,14 @@ export interface DisputeListResponseDto {
 export interface PaginationMetadata {
   currentPage: number;
   pageSize: number;
-  totalItems: number;
+  totalCount: number;  // ⭐ Según la guía: totalCount (no totalItems)
   totalPages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
+  hasNext: boolean;  // ⭐ Según la guía: hasNext (no hasNextPage)
+  hasPrevious: boolean;  // ⭐ Según la guía: hasPrevious (no hasPreviousPage)
+  // Campos legacy para compatibilidad
+  totalItems?: number;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
 }
 
 export interface ResolveDisputeDto {

@@ -32,6 +32,7 @@ import {
 } from './components/ui/dropdown-menu';
 import { Separator } from './components/ui/separator';
 import { Badge } from './components/ui/badge';
+import { isAdmin } from './utils/admin';
 
 import SearchesPage from './pages/SearchesPage';
 import SearchCreationPage from './pages/SearchCreationPage';
@@ -147,6 +148,42 @@ const AppContent: React.FC = () => {
         };
     }, []);
 
+    // Exponer función global para abrir el sidebar desde MobileBottomBar
+    useEffect(() => {
+        // Función global que MobileBottomBar puede llamar
+        (window as any).openSidebar = () => {
+            console.log('👂 App.tsx - openSidebar() llamado directamente');
+            setSidebarOpen(true);
+            console.log('✅ App.tsx - Sidebar abierto');
+        };
+
+        // Función global para abrir AccountSettingsModal
+        (window as any).openAccountSettings = () => {
+            console.log('👂 App.tsx - openAccountSettings() llamado directamente');
+            setShowAccountSettings(true);
+            console.log('✅ App.tsx - AccountSettingsModal abierto');
+        };
+
+        // También mantener el listener de eventos por si acaso
+        const handleOpenSidebar = (event: Event) => {
+            setSidebarOpen(true);
+        };
+
+        const handleOpenAccountSettings = (event: Event) => {
+            setShowAccountSettings(true);
+        };
+
+        window.addEventListener('openSidebar', handleOpenSidebar);
+        window.addEventListener('openAccountSettings', handleOpenAccountSettings);
+        
+        return () => {
+            window.removeEventListener('openSidebar', handleOpenSidebar);
+            window.removeEventListener('openAccountSettings', handleOpenAccountSettings);
+            delete (window as any).openSidebar;
+            delete (window as any).openAccountSettings;
+        };
+    }, []);
+
     const handleSignOut = () => {
         signOut();
         toast.info('👋 ¡Hasta pronto!');
@@ -156,7 +193,11 @@ const AppContent: React.FC = () => {
         toast.info(`Para ${action.toLowerCase()} necesitas iniciar sesión primero`);
     };
 
-    const isExpert = user?.role === 'Expert';
+    // El objeto user viene del backend con mayúsculas: Email, Role (no email, role)
+    const userEmail = user?.Email || user?.email; // Compatibilidad con ambos formatos
+    const userRole = user?.Role || user?.role; // Compatibilidad con ambos formatos
+    const isExpert = userRole === 'Expert';
+    const userIsAdmin = isAdmin(userEmail) || userRole === 'Admin' || userRole === 'admin';
 
     return (
         <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
@@ -226,6 +267,15 @@ const AppContent: React.FC = () => {
                             >
                                 Precio
                             </a>
+                            {userIsAdmin && (
+                                <Button
+                                    variant="ghost"
+                                    className="text-sm font-medium text-red-600 hover:text-red-700 h-auto px-2 py-1 border border-red-300 rounded-md hover:bg-red-50"
+                                    onClick={() => navigate('/admin')}
+                                >
+                                    🔧 Admin
+                                </Button>
+                            )}
                         </nav>
 
                         {/* Botones de acción estilo Memorae */}

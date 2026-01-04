@@ -20,7 +20,7 @@ const HomePage: React.FC = () => {
     adUrl: string;
   }>({
     serviceTypeId: null,
-    categoryId: null,
+    categoryId: 1, // ✅ Por defecto Coches (categoryId: 1)
     adUrl: '',
   });
 
@@ -30,18 +30,12 @@ const HomePage: React.FC = () => {
     adUrl: string;
   }) => {
     setSearchFilters(searchData);
-    // Hacer scroll a las secciones de servicios
-    setTimeout(() => {
-      const servicesSection = document.querySelector('[data-services-section]');
-      if (servicesSection) {
-        servicesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
+    // NO hacer scroll automático - eliminado según solicitud del usuario
   };
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Search Bar Header */}
+      {/* Search Bar Header con Tabs */}
       <AirbnbSearchBar onSearch={handleSearch} />
       
       {/* Main Content with proper spacing - Same as Airbnb */}

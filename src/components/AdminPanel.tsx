@@ -423,27 +423,31 @@ const AdminPanel: React.FC = () => {
 
   // ✅ MAPEO DE NOMBRES DE ESTADOS (usando la nueva estructura del backend)
   const getStatusDisplayName = (status: any) => {
-    // ✅ PRIORIDAD 1: Usar displayName del backend (más confiable)
-    if (status.displayName && status.displayName.trim() !== '') {
-      console.log(`🔍 DEBUG - getStatusDisplayName - DisplayName del backend: "${status.displayName}"`);
-      return status.displayName.trim();
+    // ✅ PRIORIDAD 1: Usar displayName del backend (más confiable) - manejar camelCase y PascalCase
+    const displayName = status.displayName || status.DisplayName;
+    if (displayName && displayName.trim() !== '') {
+      return displayName.trim();
     }
     
-    // ✅ PRIORIDAD 2: Usar statusName como fallback
-    if (status.statusName && status.statusName.trim() !== '') {
-      console.log(`🔍 DEBUG - getStatusDisplayName - StatusName del backend: "${status.statusName}"`);
-      return status.statusName.trim();
+    // ✅ PRIORIDAD 2: Usar statusName como fallback - manejar camelCase y PascalCase
+    const statusName = status.statusName || status.StatusName;
+    if (statusName && statusName.trim() !== '') {
+      return statusName.trim();
     }
     
     // ✅ PRIORIDAD 3: Usar name (compatibilidad con estructura anterior)
-    if (status.name && status.name.trim() !== '') {
-      console.log(`🔍 DEBUG - getStatusDisplayName - Name del backend: "${status.name}"`);
-      return status.name.trim();
+    const name = status.name || status.Name;
+    if (name && name.trim() !== '') {
+      return name.trim();
     }
     
     // ✅ FALLBACK: Estado genérico
-    console.log(`🔍 DEBUG - getStatusDisplayName - Sin nombre, usando fallback: "Estado ${status.id}"`);
-    return `Estado ${status.id}`;
+    console.warn(`⚠️ getStatusDisplayName - Sin nombre para estado:`, { 
+      id: status.id || status.Id, 
+      status: status,
+      keys: Object.keys(status)
+    });
+    return `Estado ${status.id || status.Id || 'desconocido'}`;
   };
 
   // ✅ FUNCIÓN PARA VERIFICAR SI UN ESTADO TIENE CONFIGURACIÓN
@@ -491,10 +495,10 @@ const AdminPanel: React.FC = () => {
       statusId: config.statusId,
       categoryId: config.categoryId,
       serviceTypeCategoryId: config.serviceTypeCategoryId,
-      cliente: config.cliente,
-      experto: config.experto,
-      plataforma: config.plataforma,
-      activo: config.activo,
+      cliente: config.Cliente ?? config.cliente,
+      experto: config.Experto ?? config.experto,
+      plataforma: config.Plataforma ?? config.plataforma,
+      activo: config.Activo ?? config.activo,
       clientPercentage: config.clientPercentage,
       expertPercentage: config.expertPercentage,
       platformPercentage: config.platformPercentage,
@@ -563,8 +567,8 @@ const AdminPanel: React.FC = () => {
     }
     
     // Si aún no se encontró, buscar por displayName o estado (nombre legible)
-    if ((!resolvedStatusId || resolvedStatusId === 0) && (config.estado || config.displayName) && allStatuses.length > 0) {
-      const searchName = config.estado || config.displayName;
+    if ((!resolvedStatusId || resolvedStatusId === 0) && (config.Estado || config.estado || config.displayName) && allStatuses.length > 0) {
+      const searchName = config.Estado || config.estado || config.displayName;
       const foundStatus = allStatuses.find(
         (status: any) => status.displayName === searchName || status.statusName === searchName
       );
@@ -591,10 +595,10 @@ const AdminPanel: React.FC = () => {
       statusId: resolvedStatusId,
       categoryId: config.categoryId || null, // ✅ AGREGADO: Incluir categoryId
       serviceTypeCategoryId: config.serviceTypeCategoryId,
-      clientPercentage: Number(config.cliente || config.clientPercentage || 0), // ✅ Asegurar que sea número
-      expertPercentage: Number(config.experto || config.expertPercentage || 0), // ✅ Asegurar que sea número
-      platformPercentage: Number(config.plataforma || config.platformPercentage || 0), // ✅ Asegurar que sea número
-      isActive: config.activo === 'Activo' || config.isActive || true
+      clientPercentage: Number(config.Cliente ?? config.cliente ?? config.clientPercentage ?? 0), // ✅ Asegurar que sea número
+      expertPercentage: Number(config.Experto ?? config.experto ?? config.expertPercentage ?? 0), // ✅ Asegurar que sea número
+      platformPercentage: Number(config.Plataforma ?? config.plataforma ?? config.platformPercentage ?? 0), // ✅ Asegurar que sea número
+      isActive: (config.Activo ?? config.activo) === 'Activo' || config.isActive || true
     });
     
     console.log('🔍 DEBUG - handleEditConfig - FormData establecida:', {
@@ -718,7 +722,8 @@ const AdminPanel: React.FC = () => {
 
   const getStatusLabel = (config: any) => {
     // Usar el campo 'estado' que viene del backend
-    return config.estado || config.status || 'Estado no disponible';
+    // ✅ Usar PascalCase primero (backend), luego minúsculas (compatibilidad)
+    return config.Estado || config.estado || config.status || 'Estado no disponible';
   };
 
 
@@ -1212,22 +1217,22 @@ const AdminPanel: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {config.cliente}%
+                            {(config.Cliente ?? config.cliente ?? 0).toFixed(1)}%
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {config.experto}%
+                            {(config.Experto ?? config.experto ?? 0).toFixed(1)}%
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {config.plataforma}%
+                            {(config.Plataforma ?? config.plataforma ?? 0).toFixed(1)}%
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <PriorityBadge type="status" />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              config.activo === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              (config.Activo || config.activo) === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                             }`}>
-                              {config.activo}
+                              {config.Activo || config.activo || 'Inactivo'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1332,22 +1337,22 @@ const AdminPanel: React.FC = () => {
                                       </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                      {config.cliente}%
+                                      {(config.Cliente ?? config.cliente ?? 0).toFixed(1)}%
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                      {config.experto}%
+                                      {(config.Experto ?? config.experto ?? 0).toFixed(1)}%
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                      {config.plataforma}%
+                                      {(config.Plataforma ?? config.plataforma ?? 0).toFixed(1)}%
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <PriorityBadge type="service-type" />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                        config.activo === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                        (config.Activo ?? config.activo) === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                       }`}>
-                                        {config.activo}
+                                        {config.Activo ?? config.activo ?? 'Inactivo'}
                                       </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1448,11 +1453,11 @@ const AdminPanel: React.FC = () => {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{config.serviceTypeCategoryName || 'N/A'}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                   <div>
-                                    <div>{config.estado}</div>
+                                    <div>{config.Estado || config.estado || 'Estado no disponible'}</div>
                                     {(() => {
                                       // Buscar el tipo de estado en la lista de todos los estados
                                       const statusInfo = (statusManagement.statuses || []).find(
-                                        (s: any) => s.statusValue === config.statusValue || s.id === config.statusId || s.displayName === config.estado
+                                        (s: any) => s.statusValue === config.statusValue || s.id === config.statusId || s.displayName === (config.Estado || config.estado)
                                       );
                                       return statusInfo?.statusType ? (
                                         <div className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mt-1 inline-block">
@@ -1462,17 +1467,17 @@ const AdminPanel: React.FC = () => {
                                     })()}
                                   </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{config.cliente}%</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{config.experto}%</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{config.plataforma}%</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(config.Cliente ?? config.cliente ?? 0).toFixed(1)}%</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(config.Experto ?? config.experto ?? 0).toFixed(1)}%</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(config.Plataforma ?? config.plataforma ?? 0).toFixed(1)}%</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <PriorityBadge type="granular" />
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    config.activo === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    (config.Activo ?? config.activo) === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                   }`}>
-                                    {config.activo}
+                                    {config.Activo ?? config.activo ?? 'Inactivo'}
                                   </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -1968,26 +1973,26 @@ const AdminPanel: React.FC = () => {
                               <div className="flex-shrink-0">
                                 <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
                                   <span className="text-blue-600 font-medium text-sm">
-                                    {mapping.sourceStatus.statusType === 'AppointmentStatus' ? 'A' : 'S'}
+                                    {mapping.sourceStatus?.statusType === 'AppointmentStatus' ? 'A' : 'S'}
                                   </span>
                                 </div>
                               </div>
                               <div className="ml-4">
                                 <div className="flex items-center">
                                   <p className="text-sm font-medium text-gray-900">
-                                    {mapping.sourceStatus.displayName}
+                                    {mapping.sourceStatus?.displayName || 'Estado desconocido'}
                                   </p>
                                   <span className="ml-2 text-xs text-gray-500">
-                                    ({mapping.sourceStatus.statusValue})
+                                    ({mapping.sourceStatus?.statusValue || 'N/A'})
                                   </span>
                                 </div>
                                 <div className="flex items-center mt-1">
                                   <span className="text-sm text-gray-500">→</span>
                                   <p className="ml-2 text-sm text-gray-900">
-                                    {mapping.targetStatus.displayName}
+                                    {mapping.targetStatus?.displayName || 'Estado desconocido'}
                                   </p>
                                   <span className="ml-2 text-xs text-gray-500">
-                                    ({mapping.targetStatus.statusValue})
+                                    ({mapping.targetStatus?.statusValue || 'N/A'})
                                   </span>
                                 </div>
                               </div>
@@ -2030,14 +2035,14 @@ const AdminPanel: React.FC = () => {
                                       
                                       <div class="mb-4">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                                          Estado Origen: <strong>${mapping.sourceStatus.displayName}</strong>
+                                          Estado Origen: <strong>${mapping.sourceStatus?.displayName || 'Estado desconocido'}</strong>
                                         </label>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
                                           Nuevo Estado Destino:
                                         </label>
                                         <select id="newTargetStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                           ${statusMappings.searchHireStatuses.map(status => 
-                                            `<option value="${status.id}" ${status.id === mapping.targetStatus.id ? 'selected' : ''}>
+                                            `<option value="${status.id}" ${status.id === mapping.targetStatus?.id ? 'selected' : ''}>
                                               ${status.displayName} (${status.statusValue})
                                             </option>`
                                           ).join('')}
@@ -2084,7 +2089,7 @@ const AdminPanel: React.FC = () => {
                                       return;
                                     }
                                     
-                                    if (newTargetStatusId !== mapping.targetStatus.id) {
+                                    if (newTargetStatusId !== mapping.targetStatus?.id) {
                                       handleUpdateMapping(mapping.id, { targetStatusId: newTargetStatusId });
                                     }
                                     

@@ -571,7 +571,8 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
     nearbyPageSize: 20,
     popularPage: 1,
     popularPageSize: 20,
-  }), [latitude, longitude, countryCode]);
+    categoryId: categoryId !== undefined && categoryId !== null ? categoryId : undefined, // ✅ NUEVO: Incluir categoryId
+  }), [latitude, longitude, countryCode, categoryId]);
 
   const { data, isLoading, error } = useHomepageWallQuery(queryParams);
 
@@ -608,6 +609,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
   console.log('📊 HomepageWall - Renderizando con datos:', {
     nearbyCount: data.nearbyServices?.services?.length || 0,
     popularCount: data.popularServices?.services?.length || 0,
+    categorySpecificCount: data.categorySpecificServices?.services?.length || 0,
   });
 
   const cityName = countryCode === 'ES' ? 'Madrid' : 'tu ciudad';
@@ -660,6 +662,16 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
               services={filteredPopularServices}
               showCount={true}
               forceGuestFavorite={true}
+            />
+          )}
+
+          {/* ✅ NUEVO: Sección Específica por Categoría */}
+          {data.categorySpecificServices && data.categorySpecificServices.services.length > 0 && (
+            <HorizontalScrollSection
+              title={data.categorySpecificServices.title}
+              subtitle={`${data.categorySpecificServices.totalCount} servicios en ${data.categorySpecificServices.country}`}
+              services={data.categorySpecificServices.services}
+              showCount={true}
             />
           )}
         </div>

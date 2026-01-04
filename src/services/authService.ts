@@ -32,10 +32,16 @@ class AuthService {
     // 1. GOOGLE AUTH (Login)
     // ============================================
     async googleAuth(googleCredential: string): Promise<{ success: boolean; user: any; requiresMFA: boolean }> {
+        const startTime = Date.now();
         try {
+            console.log('🔐 [AuthService] Iniciando autenticación con Google...');
             const decoded: any = jwtDecode(googleCredential);
+            console.log('🔐 [AuthService] Token decodificado, email:', decoded.email);
 
-            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.googleAuth}`, {
+            const apiUrl = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.googleAuth}`;
+            console.log('🔐 [AuthService] Enviando request a:', apiUrl);
+            
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -48,6 +54,9 @@ class AuthService {
                     googleId: decoded.sub,
                 }),
             });
+            
+            const requestTime = Date.now() - startTime;
+            console.log(`🔐 [AuthService] Respuesta recibida en ${requestTime}ms, status:`, response.status);
 
             // ✅ BEST PRACTICE: Manejar diferentes tipos de errores
             if (!response.ok) {
@@ -81,8 +90,10 @@ class AuthService {
             }
 
             const data: GoogleAuthResponse = await response.json();
+            console.log('🔐 [AuthService] Datos recibidos del servidor');
 
             if (!data.token || !data.user) {
+                console.error('❌ [AuthService] Respuesta inválida: falta token o usuario');
                 throw new Error('Invalid response from server');
             }
 
@@ -90,13 +101,27 @@ class AuthService {
             const [accessToken, refreshToken] = data.token.split('|');
 
             if (!accessToken || !refreshToken) {
+                console.error('❌ [AuthService] Formato de token inválido');
                 throw new Error('Invalid token format from server');
             }
 
+            console.log('🔐 [AuthService] Tokens recibidos, guardando...');
             this.setTokens(accessToken, refreshToken);
+
+            // ✅ CRÍTICO: Guardar también el usuario en localStorage (clave 'user' según guía)
+            // Esto permite saber quién está logueado sin hacer peticiones al backend
+            if (data.user) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('userData', JSON.stringify(data.user)); // Compatibilidad
+                console.log('✅ [AuthService] Usuario guardado en localStorage');
+            }
 
             // Iniciar auto-renovación
             this.scheduleTokenRefresh();
+
+            const totalTime = Date.now() - startTime;
+            console.log(`✅ [AuthService] Autenticación completada exitosamente en ${totalTime}ms`);
+            console.log('✅ [AuthService] Usuario:', data.user?.email || data.user?.name);
 
             return {
                 success: true,
@@ -104,7 +129,12 @@ class AuthService {
                 requiresMFA: data.requiresMFA || false,
             };
         } catch (error: any) {
-            console.error('Google Auth error:', error);
+            const totalTime = Date.now() - startTime;
+            console.error(`❌ [AuthService] Error después de ${totalTime}ms:`, error);
+            console.error('❌ [AuthService] Detalles del error:', {
+                message: error?.message,
+                stack: error?.stack,
+            });
             throw error;
         }
     }
@@ -119,8 +149,23 @@ class AuthService {
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
 
-        // Guardar también en el formato antiguo para compatibilidad
+        // ✅ Guardar también en el formato antiguo para compatibilidad
         localStorage.setItem('authToken', accessToken);
+
+        // ✅ CRÍTICO: Guardar fecha de expiración del access token (1 hora desde ahora)
+        try {
+            const decoded: any = jwtDecode(accessToken);
+            if (decoded.exp) {
+                const expiresAt = new Date(decoded.exp * 1000).toISOString();
+                localStorage.setItem('accessTokenExpiresAt', expiresAt);
+                console.log('✅ [AuthService] accessTokenExpiresAt guardado:', expiresAt);
+            }
+        } catch (error) {
+            console.warn('[AuthService] No se pudo decodificar el token para obtener expiración:', error);
+            // Si no se puede decodificar, asumir 1 hora desde ahora
+            const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+            localStorage.setItem('accessTokenExpiresAt', expiresAt);
+        }
     }
 
     getAccessToken(): string | null {
@@ -148,9 +193,9 @@ class AuthService {
             const decoded: any = jwtDecode(token);
             const expiresIn = decoded.exp * 1000 - Date.now();
 
-            // ✅ BEST PRACTICE: Renovar 2 minutos antes de expirar (Access Token dura 30 min)
+            // ✅ BEST PRACTICE: Renovar 5 minutos antes de expirar (Access Token dura 1 hora)
             // Esto asegura que el token nunca expire durante una sesión activa
-            const refreshIn = Math.max(0, expiresIn - (2 * 60 * 1000));
+            const refreshIn = Math.max(0, expiresIn - (5 * 60 * 1000));
 
             if (refreshIn > 0) {
                 // Solo loguear en desarrollo
@@ -217,6 +262,12 @@ class AuthService {
                 if (data.accessToken && data.refreshToken) {
                     // ✅ Backend devuelve NUEVOS access y refresh tokens (rotación)
                     this.setTokens(data.accessToken, data.refreshToken);
+
+                    // ✅ Si el backend también devuelve accessTokenExpiresAt, guardarlo
+                    if (data.accessTokenExpiresAt) {
+                        localStorage.setItem('accessTokenExpiresAt', data.accessTokenExpiresAt);
+                        console.log('✅ [AuthService] accessTokenExpiresAt actualizado desde backend:', data.accessTokenExpiresAt);
+                    }
 
                     // Programar próxima renovación
                     this.scheduleTokenRefresh();
@@ -451,7 +502,9 @@ class AuthService {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
         localStorage.removeItem('userData');
+        localStorage.removeItem('accessTokenExpiresAt');
 
         if (this.refreshTimeout) {
             clearTimeout(this.refreshTimeout);
@@ -481,26 +534,43 @@ class AuthService {
                 const isExpired = expirationTime < now;
                 const timeUntilExpiry = expirationTime - now;
 
+                // ✅ Verificar también accessTokenExpiresAt en localStorage
+                const storedExpiresAt = localStorage.getItem('accessTokenExpiresAt');
+                if (storedExpiresAt) {
+                    const storedExpirationTime = new Date(storedExpiresAt).getTime();
+                    if (storedExpirationTime < now) {
+                        // El token expiró según localStorage, renovar inmediatamente
+                        if (import.meta.env.DEV) {
+                            console.log('[AuthService] Token expired (from localStorage), refreshing immediately');
+                        }
+                        this.refreshAccessToken();
+                        return;
+                    }
+                }
+
                 if (isExpired) {
                     // Token expirado, renovar inmediatamente
                     if (import.meta.env.DEV) {
                         console.log('[AuthService] Token expired, refreshing immediately');
                     }
                     this.refreshAccessToken();
-                } else if (timeUntilExpiry < 2 * 60 * 1000) {
-                    // Token expira en menos de 2 minutos, renovar ahora
+                } else if (timeUntilExpiry < 5 * 60 * 1000) {
+                    // ✅ Renovar 5 minutos antes de que expire (mejor práctica)
                     if (import.meta.env.DEV) {
-                        console.log('[AuthService] Token expires soon, refreshing immediately');
+                        console.log('[AuthService] Token expires soon (less than 5 min), refreshing immediately');
                     }
                     this.refreshAccessToken();
                 } else {
-                    // Programar renovación
+                    // Programar renovación proactiva
                     this.scheduleTokenRefresh();
                 }
             } catch (error) {
                 console.error('[AuthService] Invalid token:', error);
                 this.clearTokens();
             }
+        } else {
+            // No hay tokens, limpiar todo
+            this.clearTokens();
         }
     }
 
