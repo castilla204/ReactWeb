@@ -20,6 +20,8 @@ class AuthService {
     private refreshPromise: Promise<boolean> | null = null;
     // ✅ Cola de requests pendientes esperando verificación MFA
     private pendingMfaRequests: Array<{ url: string; options: RequestInit; resolve: (response: Response) => void; reject: (error: any) => void }> = [];
+    // ✅ Prevenir múltiples redirecciones
+    private isRedirecting: boolean = false;
 
     constructor() {
         this.initFromStorage();
@@ -193,7 +195,18 @@ class AuthService {
                     if (response.status === 401) {
                         // Refresh token inválido o expirado → Logout
                         this.logout();
-                        window.location.href = '/';
+                        // ✅ Prevenir múltiples redirecciones
+                        if (!this.isRedirecting) {
+                            this.isRedirecting = true;
+                            // Usar setTimeout para evitar recargas inmediatas
+                            setTimeout(() => {
+                                if (window.location.pathname !== '/') {
+                                    window.location.href = '/';
+                                } else {
+                                    this.isRedirecting = false;
+                                }
+                            }, 100);
+                        }
                         return false;
                     }
                     throw new Error('Failed to refresh token');
@@ -216,6 +229,8 @@ class AuthService {
             } catch (error) {
                 console.error('Error refreshing token:', error);
                 this.logout();
+                // ✅ No redirigir en catch - solo limpiar tokens
+                // La redirección solo debe ocurrir cuando el refresh token es 401
                 return false;
             } finally {
                 // Limpiar promise después de un delay para permitir que otros requests la reutilicen
@@ -296,7 +311,7 @@ class AuthService {
                     // Si no se puede parsear JSON, puede ser un 403 por token expirado
                     // Intentar refrescar el token una vez antes de devolver el error
                     const refreshToken = self.getRefreshToken();
-                    if (refreshToken && !(fetchOptions as any)._403Retry) {
+                    if (refreshToken && !(fetchOptions as any)._403Retry && !self.isRedirecting) {
                         (fetchOptions as any)._403Retry = true;
                         console.warn('[AuthService] 403 Forbidden, attempting token refresh...');
                         
@@ -316,9 +331,13 @@ class AuthService {
                                 if (response.status === 403) {
                                     console.error('[AuthService] 403 persists after token refresh - permission denied');
                                 }
+                            } else {
+                                // Si el refresh falló, no reintentar más
+                                console.warn('[AuthService] Token refresh failed, returning 403');
                             }
                         } catch (error) {
                             console.error('[AuthService] Token refresh failed on 403:', error);
+                            // No hacer nada más - devolver el 403 original
                         }
                     }
                 }
@@ -438,6 +457,9 @@ class AuthService {
             clearTimeout(this.refreshTimeout);
             this.refreshTimeout = null;
         }
+        
+        // ✅ Resetear flag de redirección al limpiar tokens
+        this.isRedirecting = false;
     }
 
     // ============================================
