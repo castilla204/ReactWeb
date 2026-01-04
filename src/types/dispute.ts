@@ -132,13 +132,7 @@ export interface DisputeFilters {
   sortDirection?: 'asc' | 'desc';
 }
 
-export interface DisputeListResponseDto {
-  disputes: DisputeDto[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
+// ⚠️ DUPLICADO ELIMINADO - Usar la definición anterior con pagination y stats
 
 export interface CreateDisputeResponse {
   message: string;
