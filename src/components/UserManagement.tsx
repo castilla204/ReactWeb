@@ -139,12 +139,12 @@ export function UserManagement({ onBack }: UserManagementProps) {
                                             <div className="flex items-center">
                                                 <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                                                     <span className="text-blue-600 font-medium text-sm">
-                                                        {user.name[0].toUpperCase()}
+                                                        {user.name && user.name.length > 0 ? user.name[0].toUpperCase() : '?'}
                                                     </span>
                                                 </div>
                                                 <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                                                    <div className="text-sm text-gray-500">{user.email}</div>
+                                                    <div className="text-sm font-medium text-gray-900">{user.name || 'Sin nombre'}</div>
+                                                    <div className="text-sm text-gray-500">{user.email || 'Sin email'}</div>
                                                 </div>
                                             </div>
                                         </td>

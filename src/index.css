@@ -276,6 +276,53 @@ input, textarea {
     }
 }
 
+/* Custom scrollbar - Más ancha y superpuesta a las cards */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.6) transparent;
+    -webkit-overflow-scrolling: touch;
+    /* Intentar usar overlay si está disponible */
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Para navegadores que soportan overlay (Chrome, Edge) */
+@supports (overflow: overlay) {
+    .custom-scrollbar {
+        overflow-y: overlay;
+    }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 14px;
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.7);
+    border-radius: 10px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.2s ease;
+    min-height: 50px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(107, 114, 128, 0.9);
+    background-clip: padding-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
 /* Chat scrollbar custom styles - Modern and elegant */
 .chat-scroll-area {
     scrollbar-width: thin;

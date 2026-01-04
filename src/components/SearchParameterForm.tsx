@@ -13,6 +13,7 @@ import { Separator } from './ui/separator';
 import { Input } from './ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, DrawerOverlay } from './ui/drawer';
+import { ResponsiveModal } from './ui/responsive-modal';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
@@ -105,38 +106,49 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
         >
             {/* Contenedor principal - Estructura exacta de Airbnb */}
             <div className="relative cursor-pointer group" style={{ width: '100%', padding: isMobile ? '0' : '0' }}>
-                {/* Contenedor de imagen - Estilo Airbnb rectangular con bordes redondeados */}
+                {/* Contenedor de imagen - Estilo Airbnb rectangular con bordes redondeados - Mejorado */}
                 <div 
-                    className="relative w-full overflow-hidden" 
+                    className="relative w-full overflow-hidden bg-gray-100" 
                     style={{ 
                         aspectRatio: '4/3', 
                         borderRadius: '12px', 
                         width: '100%', 
                         marginBottom: isMobile ? '8px' : '12px',
-                        minHeight: '200px'
+                        minHeight: '200px',
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
                     }}
                 >
                     {hasValidImage ? (
                         <>
-                            {/* Imagen principal */}
-                            <div className="relative w-full h-full" style={{ width: '100%', height: '100%' }}>
+                            {/* Imagen principal - Mejorada para mostrar mejor las fotos */}
+                            <div className="relative w-full h-full bg-gray-100" style={{ width: '100%', height: '100%' }}>
                                 <img
                                     src={imageUrls[imageIndex]}
-                                    alt={service.serviceTypeName || service.categoryName}
+                                    alt={service.serviceTypeName || service.categoryName || 'Servicio'}
                                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                     style={{ 
                                         display: 'block',
                                         width: '100%',
                                         height: '100%',
-                                        objectFit: 'cover'
+                                        objectFit: 'cover',
+                                        backgroundColor: '#f3f4f6',
+                                        minHeight: '200px'
                                     }}
-                                    onError={() => {
-                                        // Log comentado para evitar spam
-                                        // console.warn('⚠️ Error cargando imagen:', imageUrls[imageIndex]);
-                                        setImageError(true);
+                                    loading="lazy"
+                                    onError={(e) => {
+                                        // Si falla la imagen, intentar con la siguiente o mostrar placeholder
+                                        if (imageIndex < imageUrls.length - 1) {
+                                            setImageIndex(imageIndex + 1);
+                                        } else {
+                                            setImageError(true);
+                                        }
                                     }}
-                                    onLoad={() => setImageError(false)}
+                                    onLoad={() => {
+                                        setImageError(false);
+                                    }}
                                 />
+                                {/* Overlay sutil para mejor contraste */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
                             </div>
                             
                             {/* Botones de acción - Siempre visible como en Airbnb */}
@@ -279,11 +291,12 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             )}
                         </>
                     ) : (
-                        <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center" style={{ minHeight: '300px' }}>
-                            <div className="w-16 h-16 mb-3 rounded-full bg-gray-200 flex items-center justify-center">
-                                <Image className="w-8 h-8 text-gray-400" />
+                        <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center" style={{ minHeight: '200px' }}>
+                            <div className="w-20 h-20 mb-4 rounded-full bg-white/80 flex items-center justify-center shadow-sm">
+                                <Image className="w-10 h-10 text-gray-400" />
                             </div>
                             <span className="text-gray-500 text-sm font-medium">Sin imagen disponible</span>
+                            <span className="text-gray-400 text-xs mt-1">{service.serviceTypeName || service.categoryName || 'Servicio'}</span>
                         </div>
                     )}
                 </div>
@@ -488,13 +501,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }
     }, [selectedService]);
     
-    // Solo abrir drawer en móvil
-    const [isDrawerOpen, setIsDrawerOpen] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return window.innerWidth < 1024;
-        }
-        return false;
-    });
+    // ✅ Estado para controlar el modal (Drawer en móvil, Dialog en PC)
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const headerRef = useRef<HTMLDivElement>(null);
     const [headerTop, setHeaderTop] = useState(143); // 64px (top) + 79px (height) por defecto
     
@@ -603,6 +611,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     console.log('🔍 SearchParameterForm - allServicesCombined:', allServicesCombined.length, allServicesCombined);
     
     // ✅ Reordenar servicios: el seleccionado aparece primero (como en Airbnb)
+    // ✅ IMPORTANTE: El servicio seleccionado NO aparece en el drawer, solo en la Floating Card
     const reorderedServices = useMemo(() => {
         if (!selectedService) {
             return allServicesCombined;
@@ -614,13 +623,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             return serviceId === selectedService;
         });
         
-        // Filtrar los demás servicios
+        // Filtrar los demás servicios (estos aparecerán en el drawer)
+        // Cuando se selecciona un nuevo servicio, el anterior automáticamente vuelve aquí
         const others = allServicesCombined.filter(s => {
             const serviceId = s.id || (s as any).Id;
             return serviceId !== selectedService;
         });
         
         if (selected) {
+            // El servicio seleccionado va primero (para la Floating Card)
+            // Los demás servicios van después (para el drawer)
             return [selected, ...others];
         } else {
             return allServicesCombined;
@@ -774,11 +786,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     
     // Detectar cuando el usuario interactúa con el drawer (arrastra o abre manualmente)
     const handleDrawerOpenChange = (open: boolean) => {
-        // Solo permitir abrir en móvil
-        if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-            return;
-        }
-        
+        // ✅ Permitir abrir tanto en móvil como en PC
+        // El ResponsiveModal se encargará de mostrar Drawer o Dialog según el tamaño
         setIsDrawerOpen(open);
     };
     // Logs para debugging
@@ -1088,7 +1097,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const sidebarRef = useRef<HTMLDivElement>(null);
     
     const handleServiceSelect = (serviceId: number | undefined | null) => {
-        console.log('🎯 handleServiceSelect llamado con:', { serviceId, servicesCount: services.length });
+        console.log('🎯 handleServiceSelect llamado con:', { serviceId, servicesCount: services.length, currentSelected: selectedService });
         
         // Si serviceId es 0, null o undefined, cerrar la card (deseleccionar)
         if (serviceId === 0 || serviceId === null || serviceId === undefined) {
@@ -1103,7 +1112,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             return;
         }
         
-        // ✅ Solo actualizar el estado para que el marcador cambie de color y se muestre la card flotante
+        // ✅ INTERCAMBIO: Si hay un servicio seleccionado (inmobiliaria), intercambiarlo con el nuevo
+        if (selectedService && selectedService !== serviceId) {
+            console.log('🔄 Intercambiando servicios:', { 
+                servicioAnterior: selectedService, 
+                servicioNuevo: serviceId 
+            });
+            // El servicio anterior (inmobiliaria) se moverá automáticamente al drawer
+            // porque la lista de servicios excluye el selectedService
+        }
+        
+        // ✅ Actualizar el estado para que el marcador cambie de color y se muestre la card flotante
         console.log('✅ Actualizando selectedService a:', serviceId);
         setSelectedService(serviceId);
         
@@ -1912,102 +1931,156 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     </div>
                 </div>
                 
-                {/* Mobile Drawer with Services - Solo en móvil */}
-                <Drawer open={isDrawerOpen} onOpenChange={handleDrawerOpenChange}>
-                    <DrawerContent 
-                        noOverlay={true}
-                        className="lg:hidden flex flex-col bg-white outline-none border-0 shadow-none rounded-none" 
-                        style={{ 
-                            top: drawerTopPosition !== null ? `${drawerTopPosition}px` : `${headerTop}px`,
-                            bottom: '0',
-                            zIndex: 9998,
-                            height: drawerTopPosition !== null 
-                                ? `calc(100vh - ${drawerTopPosition}px)`
-                                : `calc(100vh - ${headerTop}px)`,
-                            maxHeight: drawerTopPosition !== null 
-                                ? `calc(100vh - ${drawerTopPosition}px)`
-                                : `calc(100vh - ${headerTop}px)`,
-                            position: 'fixed',
-                            backgroundColor: 'white',
-                            borderTopLeftRadius: '0',
-                            borderTopRightRadius: '0',
-                            borderBottomLeftRadius: '0',
-                            borderBottomRightRadius: '0',
-                            transition: isFirstLoad ? 'none' : 'top 0.3s ease-out'
-                        }}
-                    >
-                        {/* Handle eliminado - ya viene del DrawerContent */}
-                        
-                        {/* Header con contador estilo Airbnb */}
-                        <div className="px-6 py-4 bg-white border-b border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-lg font-semibold text-gray-900">
-                                    {services.length > 0 ? `${services.length} ${services.length === 1 ? 'servicio' : 'servicios'}` : 'Sin servicios'}
-                                </h2>
-                                <button
-                                    onClick={() => setIsDrawerOpen(false)}
-                                    className="p-2 -mr-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100"
-                                    aria-label="Cerrar"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
-                        
-                        {/* Contenido con scroll */}
-                        <div className="flex-1 overflow-y-auto bg-white">
-                            {/* Services List - Estilo Airbnb */}
-                            <div className="px-0">
-                                {services.length > 0 ? (
-                                    <div className="space-y-0" style={{ paddingBottom: '24px' }}>
-                                        {services.map((service) => {
-                                            const isSelected = selectedService === service.id;
-                                            
-                                            // Normalizar imageUrls
-                                            // Normalizar imageUrls - manejar tanto PascalCase como camelCase
-                                            const imageUrls = Array.isArray(service.imageUrls) 
-                                                ? service.imageUrls 
-                                                : Array.isArray(service.ImageUrls) 
-                                                    ? service.ImageUrls 
-                                                    : [];
-                                            const hasMultipleImages = imageUrls.length > 1;
-                                            
-                                            // Formatear fecha (simulado - deberías obtener fechas reales del servicio)
-                                            const formatDate = () => {
-                                                const today = new Date();
-                                                const checkIn = new Date(today);
-                                                checkIn.setDate(today.getDate() + 2);
-                                                const checkOut = new Date(checkIn);
-                                                checkOut.setDate(checkIn.getDate() + 2);
-                                                
-                                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                                                return `${months[checkIn.getMonth()]} ${checkIn.getDate()} – ${checkOut.getDate()}`;
-                                            };
-                                            
-                                            const hostType = service.expert?.user?.name ? 'Individual host' : 'Individual host';
-                                            const nights = service.durationInHours ? Math.ceil(service.durationInHours / 24) : 2;
-
-                                            return (
-                                                <MapServiceCard
-                                                    key={service.id}
-                                                    service={service}
-                                                    isSelected={isSelected}
-                                                    onSelect={handleServiceSelect}
-                                                />
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="py-12 text-center">
-                                        <p className="text-sm text-gray-500">No hay servicios disponibles</p>
-                                    </div>
-                        )}
+                {/* ResponsiveModal: Drawer en móvil, Dialog en PC */}
+                <ResponsiveModal
+                    open={isDrawerOpen}
+                    onOpenChange={handleDrawerOpenChange}
+                    title={(() => {
+                        // Contar solo los servicios que están en el drawer (excluyendo el seleccionado)
+                        const drawerServicesCount = selectedService 
+                            ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
+                            : services.length;
+                        return drawerServicesCount > 0 
+                            ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio' : 'servicios'}` 
+                            : 'Sin servicios';
+                    })()}
+                    drawerClassName="lg:hidden flex flex-col bg-white outline-none border-0 shadow-none rounded-none"
+                    dialogClassName="max-w-4xl max-h-[90vh] flex flex-col"
+                    drawerStyle={{ 
+                        top: drawerTopPosition !== null ? `${drawerTopPosition}px` : `${headerTop}px`,
+                        bottom: '0',
+                        zIndex: 10000,
+                        height: drawerTopPosition !== null 
+                            ? `calc(100vh - ${drawerTopPosition}px)`
+                            : `calc(100vh - ${headerTop}px)`,
+                        maxHeight: drawerTopPosition !== null 
+                            ? `calc(100vh - ${drawerTopPosition}px)`
+                            : `calc(100vh - ${headerTop}px)`,
+                        position: 'fixed',
+                        backgroundColor: 'white',
+                        borderTopLeftRadius: '0',
+                        borderTopRightRadius: '0',
+                        borderBottomLeftRadius: '0',
+                        borderBottomRightRadius: '0',
+                        transition: isFirstLoad ? 'none' : 'top 0.3s ease-out'
+                    }}
+                    dialogStyle={{
+                        maxHeight: '90vh',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '90vw',
+                        maxWidth: '1200px'
+                    }}
+                    noOverlay={true}
+                    noHandle={true}
+                >
+                    {/* Header con contador estilo Airbnb - Solo en móvil */}
+                    <div className="lg:hidden px-6 py-4 bg-white border-b border-gray-100 flex-shrink-0" style={{ zIndex: 10001 }}>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold text-gray-900">
+                                {(() => {
+                                    // Contar solo los servicios que están en el drawer (excluyendo el seleccionado)
+                                    const drawerServicesCount = selectedService 
+                                        ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
+                                        : services.length;
+                                    return drawerServicesCount > 0 
+                                        ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio' : 'servicios'}` 
+                                        : 'Sin servicios';
+                                })()}
+                            </h2>
+                            <button
+                                onClick={() => setIsDrawerOpen(false)}
+                                className="p-2 -mr-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100"
+                                aria-label="Cerrar"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
                     </div>
-                        
-                        {/* Continue Button eliminado - ahora se avanza automáticamente al seleccionar */}
-                    </DrawerContent>
-                </Drawer>
+                    
+                    {/* Header para PC - Dentro del Dialog */}
+                    <div className="hidden lg:block px-6 py-4 bg-white border-b border-gray-100 flex-shrink-0">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-semibold text-gray-900">
+                                {(() => {
+                                    const drawerServicesCount = selectedService 
+                                        ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
+                                        : services.length;
+                                    return drawerServicesCount > 0 
+                                        ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio' : 'servicios'}` 
+                                        : 'Sin servicios';
+                                })()}
+                            </h2>
+                        </div>
+                    </div>
+                    
+                    {/* Contenido con scroll */}
+                    <div className="flex-1 overflow-y-auto bg-white px-0 lg:px-4">
+                        {/* Services List - Estilo Airbnb */}
+                        {/* ✅ Excluir el servicio seleccionado del drawer - solo mostrar los demás */}
+                        {(() => {
+                            // Filtrar servicios para excluir el seleccionado (que está en la Floating Card)
+                            const drawerServices = services.filter(service => {
+                                const serviceId = service.id || (service as any).Id;
+                                return serviceId !== selectedService;
+                            });
+                            
+                            return (
+                                <div className="px-0">
+                                    {drawerServices.length > 0 ? (
+                                        <div className="space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:py-4 lg:px-4" style={{ paddingBottom: '24px' }}>
+                                            {drawerServices.map((service) => {
+                                                const isSelected = false; // Nunca está seleccionado porque está excluido
+                                        
+                                        // Normalizar imageUrls
+                                        // Normalizar imageUrls - manejar tanto PascalCase como camelCase
+                                        const imageUrls = Array.isArray(service.imageUrls) 
+                                            ? service.imageUrls 
+                                            : Array.isArray(service.ImageUrls) 
+                                                ? service.ImageUrls 
+                                                : [];
+                                        const hasMultipleImages = imageUrls.length > 1;
+                                        
+                                        // Formatear fecha (simulado - deberías obtener fechas reales del servicio)
+                                        const formatDate = () => {
+                                            const today = new Date();
+                                            const checkIn = new Date(today);
+                                            checkIn.setDate(today.getDate() + 2);
+                                            const checkOut = new Date(checkIn);
+                                            checkOut.setDate(checkIn.getDate() + 2);
+                                            
+                                            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                            return `${months[checkIn.getMonth()]} ${checkIn.getDate()} – ${checkOut.getDate()}`;
+                                        };
+                                        
+                                        const hostType = service.expert?.user?.name ? 'Individual host' : 'Individual host';
+                                        const nights = service.durationInHours ? Math.ceil(service.durationInHours / 24) : 2;
+
+                                        return (
+                                            <MapServiceCard
+                                                key={service.id}
+                                                service={service}
+                                                isSelected={isSelected}
+                                                onSelect={handleServiceSelect}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="py-12 text-center">
+                                    <p className="text-sm text-gray-500">
+                                        {selectedService 
+                                            ? 'El servicio seleccionado está en la tarjeta flotante' 
+                                            : 'No hay servicios disponibles'}
+                                    </p>
+                                </div>
+                            )}
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </ResponsiveModal>
         </div>
     );
 }

@@ -258,6 +258,8 @@ export function ServiceReviewPage({
     );
 
     const [isGoogleReady, setIsGoogleReady] = useState(false);
+    const [isAuthenticating, setIsAuthenticating] = useState(false);
+    const [authStep, setAuthStep] = useState<string>('');
     const googleButtonRefMobile = useRef<HTMLDivElement>(null);
     const googleButtonRefDesktop = useRef<HTMLDivElement>(null);
 
@@ -270,12 +272,16 @@ export function ServiceReviewPage({
                     window.google.accounts.id.initialize({
                         client_id: clientId,
                         callback: async (response: any) => {
-                        // ... (lógica de callback igual que antes) ...
                             try {
+                                setIsAuthenticating(true);
+                                setAuthStep('Verificando credenciales...');
+                                console.log('🔐 [ServiceReviewPage] Iniciando autenticación...');
+                                
                                 if (!response.credential) {
                                     throw new Error('No credential received from Google');
                                 }
 
+                                setAuthStep('Guardando información...');
                                 // Guardar estado antes de iniciar sesión
                                 sessionStorage.setItem('pendingServiceSelection', JSON.stringify({
                                     serviceId,
@@ -290,16 +296,20 @@ export function ServiceReviewPage({
                                     longitude,
                                 }));
 
+                                setAuthStep('Autenticando con el servidor...');
                                 const result = await authService.googleAuth(response.credential);
                                 
                                 if (!result.success) {
                                     throw new Error('Authentication failed');
                                 }
 
+                                setAuthStep('Configurando sesión...');
                                 // ✅ ACTUALIZAR CONTEXTO DE AUTENTICACIÓN CON TOKEN
                                 const token = authService.getAccessToken();
                                 if (result.user && token) {
                                     updateUser(result.user, token, () => {
+                                        setAuthStep('Redirigiendo...');
+                                        console.log('✅ [ServiceReviewPage] Autenticación exitosa, redirigiendo...');
                                         // Después de actualizar el usuario, redirigir a checkout
                                         setTimeout(() => {
                                             // Verificar si hay una ruta guardada para redirigir
@@ -319,9 +329,13 @@ export function ServiceReviewPage({
                                 } else {
                                     throw new Error('No token received after authentication');
                                 }
-                            } catch (error) {
-                                console.error('Error en Google Auth:', error);
-                                showToast('error', 'Error al iniciar sesión. Inténtalo de nuevo.');
+                            } catch (error: any) {
+                                console.error('❌ [ServiceReviewPage] Error en Google Auth:', error);
+                                const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
+                                showToast('error', errorMessage);
+                                setAuthStep('');
+                            } finally {
+                                setIsAuthenticating(false);
                             }
                         },
                     });
@@ -1060,9 +1074,9 @@ export function ServiceReviewPage({
                                     {/* Custom button - Sin icono de Google, solo texto blanco */}
                                     <button
                                         onClick={handleGoogleSignIn}
-                                        disabled={!isGoogleReady}
+                                        disabled={!isGoogleReady || isAuthenticating}
                                         type="button"
-                                        className="relative h-12 px-6 bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] hover:from-[#D70466] hover:via-[#E61E4D] hover:to-[#E31C5F] text-white text-[16px] font-semibold transition-all duration-200 min-w-[120px] overflow-hidden"
+                                        className={`relative h-12 px-6 bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] hover:from-[#D70466] hover:via-[#E61E4D] hover:to-[#E31C5F] text-white text-[16px] font-semibold transition-all duration-200 min-w-[120px] overflow-hidden ${isAuthenticating ? 'opacity-75 cursor-wait' : ''}`}
                                         style={{
                                             borderRadius: '24px',
                                             backgroundPosition: 'calc((100 - var(--mouse-x, 0)) * 1%) calc((100 - var(--mouse-y, 0)) * 1%)',
@@ -1083,7 +1097,14 @@ export function ServiceReviewPage({
                                             e.currentTarget.style.setProperty('--mouse-y', y.toString());
                                         }}
                                     >
-                                        <span className="relative z-10" data-button-content="true">Inicia sesión</span>
+                                        {isAuthenticating ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
+                                                <span className="relative z-10" data-button-content="true">{authStep || 'Iniciando sesión...'}</span>
+                                            </>
+                                        ) : (
+                                            <span className="relative z-10" data-button-content="true">Inicia sesión</span>
+                                        )}
                                     </button>
                                 </div>
                             )}
@@ -1555,10 +1576,26 @@ export function ServiceReviewPage({
                                                     e.currentTarget.style.setProperty('--mouse-y', y.toString());
                                                 }}
                                             >
-                                                <GoogleIcon />
-                                            <span className="relative z-10">Iniciar sesión</span>
+                                                {isAuthenticating ? (
+                                                    <>
+                                                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                                        <span className="relative z-10">{authStep || 'Iniciando sesión...'}</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <GoogleIcon />
+                                                        <span className="relative z-10">Iniciar sesión</span>
+                                                    </>
+                                                )}
                                             </button>
                                         </div>
+                                    )}
+                                    
+                                    {/* Mensaje de progreso durante autenticación */}
+                                    {isAuthenticating && authStep && (
+                                        <p className="mt-2 text-xs text-gray-500 text-center animate-pulse">
+                                            {authStep}
+                                        </p>
                                     )}
 
                                 <p className="mt-3 text-center text-xs text-gray-400">
