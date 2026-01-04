@@ -153,12 +153,12 @@ export const API_CONFIG = {
         },
         dispute: {
             create: `${API_PATH}/Dispute/dispute-service`,
-            list: `${API_PATH}/dispute/all`,
+            list: `${API_PATH}/Dispute/all`,  // ⭐ Según la guía: /api/Dispute/all (PascalCase)
             myDisputes: `${API_PATH}/dispute/my-disputes`,
-            get: (id: number) => `${API_PATH}/dispute/${id}`,
+            get: (id: number) => `${API_PATH}/Dispute/${id}`,  // ⭐ Según la guía: /api/Dispute/{id}
             getDetails: (id: number) => `${API_PATH}/dispute/${id}/details`,
             getSearch: (id: number) => `${API_PATH}/dispute/${id}/search`,
-            resolve: (id: number) => `${API_PATH}/dispute/${id}/resolve`,
+            resolve: (id: number) => `${API_PATH}/Dispute/${id}/resolve`,  // ⭐ Según la guía: /api/Dispute/{id}/resolve
             expertResponse: (id: number) => `${API_PATH}/dispute/${id}/expert-response`,
             details: (searchHireId: number) => `${API_PATH}/Dispute/details/${searchHireId}`,
             debug: (id: number) => `${API_PATH}/dispute/${id}/debug`,
