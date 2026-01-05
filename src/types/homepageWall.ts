@@ -1,3 +1,42 @@
+// ✅ ACTUALIZADO: La respuesta es un array de secciones, no un objeto
+export interface HomepageSection {
+  title: string;                    // Título ya formateado (ej: "Revisiones Coches cerca de mí")
+  services: SearchServiceHomepageDto[];
+  categoryName?: string;            // Solo presente en secciones específicas por país
+  country?: string;                 // Solo presente en secciones específicas por país
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+// ✅ La respuesta es un array de secciones
+export type HomepageWallResponse = HomepageSection[];
+
+// ✅ Servicio en formato PascalCase (como viene del backend)
+export interface SearchServiceHomepageDto {
+  Id: number;
+  CategoryId: number;
+  CategoryName: string;
+  ServiceTypeId: number;
+  ServiceTypeName: string;
+  Price: number;
+  ImageUrls: string[];  // URLs firmadas, listas para usar
+  Expert: {
+    Id: number;
+    Name: string;
+    ProfilePictureUrl: string;
+    Country: string;
+  };
+  CompletedSearches: number;
+  AverageRating: number;
+}
+
+// ✅ Mantener interfaces antiguas para compatibilidad (si se necesitan)
 export interface SearchServiceDetailDto {
   id: number;
   categoryId: number;
@@ -70,30 +109,3 @@ export interface PaginationInfo {
   hasNextPage: boolean;
   hasPreviousPage: boolean;
 }
-
-export interface HomepageWallResponse {
-  nearbyServices: {
-    services: SearchServiceDetailDto[];
-    pagination: PaginationInfo;
-  };
-  popularServices: {
-    services: SearchServiceDetailDto[];
-    pagination: PaginationInfo;
-  };
-  // ✅ NUEVO: Sección específica por categoría (solo aparece si se envía categoryId)
-  categorySpecificServices?: {
-    title: string;        // Ej: "Revisiones de Coches en Alemania"
-    country: string;      // Código de país (ej: "DE", "FR", "GB")
-    services: SearchServiceDetailDto[];
-    totalCount: number;
-  };
-}
-
-
-
-
-
-
-
-
-

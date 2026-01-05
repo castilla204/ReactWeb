@@ -92,7 +92,9 @@ export const API_CONFIG = {
                 get: (id: number) => `${API_PATH}/SearchService/${id}`,
                 getByExpert: (expertId: number) => `${API_PATH}/SearchService/expert/${expertId}`,
                 getByHireId: (hireId: number) => `${API_PATH}/SearchService/GetServiceByHireId/${hireId}`,
-                mapExperts: `${API_PATH}/SearchService/map-experts`,
+                mapExperts: `${API_PATH}/SearchService/map-experts`, // ✅ Mantener para compatibilidad
+                mapMarkers: `${API_PATH}/SearchService/map-markers`, // ✅ NUEVO: Marcadores ultra ligeros
+                mapSidebar: `${API_PATH}/SearchService/map-sidebar`, // ✅ NUEVO: Información completa del sidebar
                 homepageWall: `${API_PATH}/SearchService/homepage-wall`,
             },
             hires: {

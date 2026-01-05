@@ -3,6 +3,7 @@ import { HomepageWallResponse } from '../types/homepageWall';
 import { API_CONFIG } from '../config/api';
 
 interface HomepageWallParams {
+  categoryId: number; // ✅ OBLIGATORIO: ID de la categoría
   latitude?: string | null;
   longitude?: string | null;
   countryCode?: string;
@@ -11,12 +12,17 @@ interface HomepageWallParams {
   nearbyPageSize?: number;
   popularPage?: number;
   popularPageSize?: number;
-  categoryId?: number; // ✅ NUEVO: ID de categoría (opcional)
 }
 
-export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
+export const useHomepageWallQuery = (params: HomepageWallParams) => {
+  // ✅ Validar que categoryId esté presente
+  if (!params.categoryId) {
+    throw new Error('categoryId es requerido para homepage-wall');
+  }
+
   return useQuery<HomepageWallResponse>({
     queryKey: ['homepage-wall', 
+      params.categoryId, // ✅ categoryId es el primer parámetro (más importante)
       params.latitude, 
       params.longitude, 
       params.countryCode, 
@@ -25,10 +31,12 @@ export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
       params.nearbyPageSize, 
       params.popularPage, 
       params.popularPageSize,
-      params.categoryId // ✅ NUEVO: Agregar categoryId a la queryKey
     ],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
+      
+      // ✅ categoryId es OBLIGATORIO y debe ser el primer parámetro
+      queryParams.append('categoryId', params.categoryId.toString());
       
       if (params.latitude && params.longitude) {
         queryParams.append('latitude', params.latitude);
@@ -59,11 +67,6 @@ export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
         queryParams.append('popularPageSize', params.popularPageSize.toString());
       }
 
-      // ✅ NUEVO: Agregar categoryId si está presente
-      if (params.categoryId !== undefined && params.categoryId !== null) {
-        queryParams.append('categoryId', params.categoryId.toString());
-      }
-
       const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.homepageWall}?${queryParams.toString()}`;
       
       console.log('🔍 HomepageWall - Llamando a:', url);
@@ -79,90 +82,31 @@ export const useHomepageWallQuery = (params: HomepageWallParams = {}) => {
       console.log('🔍 HomepageWall - Response ok:', response.ok);
 
       if (!response.ok) {
+        if (response.status === 400) {
+          const errorText = await response.text();
+          console.error('❌ HomepageWall - Error 400 (Bad Request):', errorText);
+          throw new Error('categoryId es requerido');
+        }
+        if (response.status === 404) {
+          throw new Error('Categoría no encontrada');
+        }
         const errorText = await response.text();
         console.error('❌ HomepageWall - Error response:', errorText);
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json();
-      console.log('✅ HomepageWall - Data recibida:', data);
-      console.log('✅ HomepageWall - Nearby services:', data.nearbyServices?.services?.length || 0);
-      console.log('✅ HomepageWall - Popular services:', data.popularServices?.services?.length || 0);
-      console.log('✅ HomepageWall - Category specific services:', data.categorySpecificServices?.services?.length || 0);
+      // ✅ La respuesta es un array directamente
+      const sections: HomepageWallResponse = await response.json();
       
-      // Mapear los datos de PascalCase a camelCase si es necesario
-      const mapService = (service: any): any => {
-        if (!service) return service;
-        
-        return {
-          id: service.id || service.Id,
-          categoryId: service.categoryId || service.CategoryId,
-          serviceTypeId: service.serviceTypeId || service.ServiceTypeId,
-          serviceTypeName: service.serviceTypeName || service.ServiceTypeName || service.CategoryName || '',
-          serviceTypeDescription: service.serviceTypeDescription || service.ServiceTypeDescription,
-          serviceTypeCategoryId: service.serviceTypeCategoryId || service.ServiceTypeCategoryId,
-          requiresAppointment: service.requiresAppointment ?? service.RequiresAppointment ?? false,
-          price: service.price ?? service.Price ?? 0,
-          conditions: service.conditions || service.Conditions || '',
-          durationInHours: service.durationInHours ?? service.DurationInHours ?? 0,
-          createdAt: service.createdAt || service.CreatedAt || '',
-          isActive: service.isActive ?? service.IsActive ?? true,
-          imageUrls: (() => {
-            if (Array.isArray(service.imageUrls)) return service.imageUrls;
-            if (Array.isArray(service.ImageUrls)) return service.ImageUrls;
-            if (service.imageUrl) return [service.imageUrl];
-            if (service.ImageUrl) return [service.ImageUrl];
-            return [];
-          })(),
-          categoryName: service.categoryName || service.CategoryName || '',
-          completedSearches: service.completedSearches ?? service.CompletedSearches ?? 0,
-          averageRating: service.averageRating ?? service.AverageRating ?? 0,
-          expert: service.expert || service.Expert ? {
-            id: service.expert?.id || service.Expert?.Id,
-            profilePictureUrl: service.expert?.profilePictureUrl || service.Expert?.ProfilePictureUrl || '',
-            description: service.expert?.description || service.Expert?.Description || '',
-            latitude: service.expert?.latitude || service.Expert?.Latitude || '',
-            longitude: service.expert?.longitude || service.Expert?.Longitude || '',
-            user: {
-              id: service.expert?.user?.id || service.Expert?.User?.Id,
-              name: service.expert?.user?.name || service.Expert?.User?.Name || '',
-              email: service.expert?.user?.email || service.Expert?.User?.Email || '',
-            },
-            reviews: service.expert?.reviews || service.Expert?.Reviews || [],
-            currentAvailability: service.expert?.currentAvailability || service.Expert?.CurrentAvailability,
-            timezone: service.expert?.timezone || service.Expert?.Timezone,
-            country: service.expert?.country || service.Expert?.Country,
-          } : undefined,
-          selectedDeliverableTypes: service.selectedDeliverableTypes || service.SelectedDeliverableTypes || [],
-        };
-      };
-
-      // Mapear los servicios
-      const mappedData: HomepageWallResponse = {
-        nearbyServices: {
-          ...data.nearbyServices,
-          services: (data.nearbyServices?.services || []).map(mapService),
-        },
-        popularServices: {
-          ...data.popularServices,
-          services: (data.popularServices?.services || []).map(mapService),
-        },
-        // ✅ NUEVO: Mapear categorySpecificServices si existe
-        ...(data.categorySpecificServices && {
-          categorySpecificServices: {
-            title: data.categorySpecificServices.title,
-            country: data.categorySpecificServices.country,
-            services: (data.categorySpecificServices.services || []).map(mapService),
-            totalCount: data.categorySpecificServices.totalCount,
-          },
-        }),
-      };
-
-      console.log('✅ HomepageWall - Datos mapeados:', mappedData);
-      return mappedData;
+      console.log('✅ HomepageWall - Secciones recibidas:', sections.length);
+      sections.forEach((section, index) => {
+        console.log(`  Sección ${index + 1}: "${section.title}" - ${section.services.length} servicios`);
+      });
+      
+      return sections;
     },
     staleTime: 5 * 60 * 1000, // Cache por 5 minutos
     refetchOnWindowFocus: false,
+    enabled: !!params.categoryId, // ✅ Solo ejecutar si categoryId está presente
   });
 };
-

@@ -42,8 +42,12 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
   const [selectedDispute, setSelectedDispute] = useState<DisputeDto | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Verificar si el usuario es admin
-  const userIsAdmin = isAdmin(user?.email);
+  // Verificar si el usuario es admin (compatibilidad con PascalCase y camelCase)
+  const userEmail = user?.Email || user?.email;
+  const userRole = user?.Role || user?.role;
+  const isAdminByEmail = userEmail ? isAdmin(userEmail) : false;
+  const isAdminByRole = userRole === 'Admin' || userRole === 'admin';
+  const userIsAdmin = isAdminByEmail || isAdminByRole;
   
   const { useDisputesList, resolveDispute } = useDisputes();
   const disputesQuery = useDisputesList(filters);
