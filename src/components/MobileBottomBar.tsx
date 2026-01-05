@@ -82,7 +82,7 @@ export const MobileBottomBar: React.FC = () => {
                     if (mfaStatus.isEnabled && !mfaStatus.isVerified) {
                       shouldNavigate = false;
                       updateUser(result.user, token, () => {
-                        navigate('/mfa/verify', { state: { returnTo: '/busquedas' } });
+                        navigate('/mfa/verify', { state: { returnTo: null } });
                       });
                       return;
                     }
@@ -95,7 +95,8 @@ export const MobileBottomBar: React.FC = () => {
                   updateUser(result.user, token, () => {
                     console.log('✅ [MobileBottomBar] Autenticación exitosa');
                     toast.success('¡Bienvenido!', { duration: 2000 });
-                    navigate('/busquedas');
+                    // No redirigir automáticamente después del login
+                    // El usuario puede hacer clic en "Mis revisiones" si quiere ir a /busquedas
                   });
                 }
               }

@@ -78,3 +78,8 @@ Después de configurar, deberías ver:
 - ✅ El botón de Google se carga correctamente
 - ✅ La autenticación funciona sin errores 500
 
+
+
+
+
+

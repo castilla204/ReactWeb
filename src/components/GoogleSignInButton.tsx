@@ -101,7 +101,7 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                                         const mfaStatus = await mfaService.getMFAStatus();
                                         if (mfaStatus.isEnabled && !mfaStatus.isVerified) {
                                             setAuthStep('Redirigiendo a verificación MFA...');
-                                            navigate('/mfa/verify', { state: { returnTo: '/busquedas' } });
+                                            navigate('/mfa/verify', { state: { returnTo: null } });
                                             return;
                                         }
                                     } catch (error) {
@@ -118,9 +118,9 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                             // Llamar callback si existe
                             if (onSuccess) {
                                 onSuccess();
-                            } else {
-                                navigate('/busquedas');
                             }
+                            // No redirigir automáticamente después del login
+                            // El usuario puede hacer clic en "Mis revisiones" si quiere ir a /busquedas
                         } catch (error: any) {
                             console.error('❌ [GoogleSignIn] Error durante autenticación:', error);
                             const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
@@ -291,7 +291,11 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                 {isAuthenticating ? (
                     <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>{authStep || 'Iniciando sesión...'}</span>
+                        <span className="flex items-center gap-1">
+                            <span className="loading-dot" style={{ animationDelay: '0ms' }}>.</span>
+                            <span className="loading-dot" style={{ animationDelay: '150ms' }}>.</span>
+                            <span className="loading-dot" style={{ animationDelay: '300ms' }}>.</span>
+                        </span>
                     </>
                 ) : (
                     <>
@@ -300,12 +304,24 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                     </>
                 )}
             </button>
-            {/* Mensaje de progreso debajo del botón */}
-            {isAuthenticating && authStep && (
-                <p className="text-xs text-gray-500 mt-2 text-center animate-pulse">
-                    {authStep}
-                </p>
-            )}
+            <style>{`
+                .loading-dot {
+                    display: inline-block;
+                    animation: wave 1.4s ease-in-out infinite;
+                    font-size: 1.2em;
+                    line-height: 1;
+                }
+                @keyframes wave {
+                    0%, 60%, 100% {
+                        transform: translateY(0);
+                        opacity: 0.7;
+                    }
+                    30% {
+                        transform: translateY(-10px);
+                        opacity: 1;
+                    }
+                }
+            `}</style>
         </div>
     );
 };
