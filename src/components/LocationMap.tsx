@@ -129,6 +129,8 @@ export function LocationMap({
     const [selectedCountry, setSelectedCountry] = useState<string | null>(expertCountry || null);
     const [isLargeMobile, setIsLargeMobile] = useState(false);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const isDraggingRef = useRef<boolean>(false);
+    const lastBoundsRef = useRef<string>('');
 
     // Detectar si es una pantalla móvil grande (414px+)
     useEffect(() => {
@@ -163,6 +165,7 @@ export function LocationMap({
             google.maps.event.trigger(mapInstance, 'resize');
             
             // ✅ Disparar onBoundsChange automáticamente cuando el mapa se carga
+            // Esto asegura que los precios se carguen al mismo tiempo que el mapa
             if (onBoundsChange) {
                 const bounds = mapInstance.getBounds();
                 const zoom = mapInstance.getZoom() || 10;
@@ -171,20 +174,62 @@ export function LocationMap({
                     const northeast = bounds.getNorthEast();
                     const southwest = bounds.getSouthWest();
                     
+                    // Crear una clave única para estos bounds
+                    const boundsKey = `${northeast.lat().toFixed(4)},${northeast.lng().toFixed(4)},${southwest.lat().toFixed(4)},${southwest.lng().toFixed(4)},${zoom}`;
+                    lastBoundsRef.current = boundsKey;
+                    
                     console.log('🗺️ Mapa cargado - llamando onBoundsChange inicial:', {
                         northeast: { lat: northeast.lat(), lng: northeast.lng() },
                         southwest: { lat: southwest.lat(), lng: southwest.lng() },
                         zoom
                     });
                     
+                    // Llamar inmediatamente sin debounce para la carga inicial
                     onBoundsChange({
                         northeast: { lat: northeast.lat(), lng: northeast.lng() },
                         southwest: { lat: southwest.lat(), lng: southwest.lng() }
                     }, zoom);
                 }
             }
-        }, 500); // Esperar un poco más para que el mapa se renderice completamente
+        }, 300); // Reducido a 300ms para cargar más rápido
     };
+
+    // Función para actualizar bounds con debouncing mejorado
+    const updateBounds = useCallback(() => {
+        if (!map || !onBoundsChange || isDraggingRef.current) {
+            return;
+        }
+        
+        const bounds = map.getBounds();
+        if (!bounds) {
+            return;
+        }
+        
+        const northeast = bounds.getNorthEast();
+        const southwest = bounds.getSouthWest();
+        const zoom = map.getZoom() || 12;
+        
+        // Crear una clave única para estos bounds
+        const boundsKey = `${northeast.lat().toFixed(4)},${northeast.lng().toFixed(4)},${southwest.lat().toFixed(4)},${southwest.lng().toFixed(4)},${zoom}`;
+        
+        // Solo actualizar si los bounds realmente cambiaron
+        if (boundsKey === lastBoundsRef.current) {
+            return;
+        }
+        
+        lastBoundsRef.current = boundsKey;
+        
+        console.log('🗺️ Mapa movido - llamando onBoundsChange:', {
+            northeast: { lat: northeast.lat(), lng: northeast.lng() },
+            southwest: { lat: southwest.lat(), lng: southwest.lng() },
+            zoom
+        });
+        
+        onBoundsChange({
+            northeast: { lat: northeast.lat(), lng: northeast.lng() },
+            southwest: { lat: southwest.lat(), lng: southwest.lng() }
+        }, zoom);
+    }, [map, onBoundsChange]);
 
     const handleMapIdle = () => {
         if (map) {
@@ -192,31 +237,54 @@ export function LocationMap({
             // Forzar actualización de marcadores cuando el mapa está idle (para recalcular offsets)
             setMarkerKey(prev => prev + 1);
             
-            // ✅ Debouncing para bounds change (300ms mínimo)
+            // ✅ Debouncing mejorado para bounds change (500ms para evitar llamadas excesivas)
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
             }
             
             debounceTimerRef.current = setTimeout(() => {
-                if (map && onBoundsChange) {
-                    const bounds = map.getBounds();
-                    if (bounds) {
-                        const northeast = bounds.getNorthEast();
-                        const southwest = bounds.getSouthWest();
-                        const zoom = map.getZoom() || 12;
-                        
-                        console.log('🗺️ Mapa movido - llamando onBoundsChange:', {
-                            northeast: { lat: northeast.lat(), lng: northeast.lng() },
-                            southwest: { lat: southwest.lat(), lng: southwest.lng() },
-                            zoom
-                        });
-                        
-                        onBoundsChange({
-                            northeast: { lat: northeast.lat(), lng: northeast.lng() },
-                            southwest: { lat: southwest.lat(), lng: southwest.lng() }
-                        }, zoom);
-                    }
-                }
+                updateBounds();
+            }, 500);
+        }
+    };
+    
+    // Handler para cuando comienza el arrastre
+    const handleDragStart = () => {
+        isDraggingRef.current = true;
+        // Cancelar cualquier llamada pendiente durante el arrastre
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+            debounceTimerRef.current = null;
+        }
+    };
+    
+    // Handler para cuando termina el arrastre
+    const handleDragEnd = () => {
+        isDraggingRef.current = false;
+        // Actualizar bounds después de que termine el arrastre
+        if (map) {
+            // Usar un timeout más corto después del arrastre para respuesta más rápida
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+            debounceTimerRef.current = setTimeout(() => {
+                updateBounds();
+            }, 200);
+        }
+    };
+    
+    // Handler para cambios de zoom
+    const handleZoomChanged = () => {
+        if (map && !isDraggingRef.current) {
+            // Forzar actualización de marcadores cuando cambia el zoom
+            setMarkerKey(prev => prev + 1);
+            
+            // Actualizar bounds después del cambio de zoom
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+            debounceTimerRef.current = setTimeout(() => {
+                updateBounds();
             }, 300);
         }
     };
@@ -749,8 +817,9 @@ export function LocationMap({
             }}
             onIdle={handleMapIdle}
             onLoad={handleMapLoad}
-            onDragEnd={handleMapIdle}
-            onZoomChanged={handleMapIdle}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onZoomChanged={handleZoomChanged}
             onClick={(e) => {
                 // Solo llamar a onMapClick si no es un click en un marcador
                 // Los marcadores manejan sus propios clicks y llaman a stop() para prevenir propagación
@@ -758,8 +827,6 @@ export function LocationMap({
                     onMapClick(e);
                 }
             }}
-            onDragEnd={handleMapIdle}
-            onZoomChanged={handleMapIdle}
         >
             {Array.isArray(expertMarkers) && expertMarkers.length > 0 ? expertMarkers : null}
         </GoogleMap>

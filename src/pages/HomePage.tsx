@@ -16,7 +16,7 @@ const HomePage: React.FC = () => {
   // Estado para los filtros de búsqueda
   const [searchFilters, setSearchFilters] = useState<{
     serviceTypeId: number | null;
-    categoryId: number | null;
+    categoryId: number; // ✅ OBLIGATORIO: Siempre debe tener un valor
     adUrl: string;
   }>({
     serviceTypeId: null,
@@ -29,7 +29,10 @@ const HomePage: React.FC = () => {
     categoryId: number | null;
     adUrl: string;
   }) => {
-    setSearchFilters(searchData);
+    setSearchFilters({
+      ...searchData,
+      categoryId: searchData.categoryId || 1, // ✅ Asegurar que siempre tenga un valor (default: Coches)
+    });
     // NO hacer scroll automático - eliminado según solicitud del usuario
   };
 

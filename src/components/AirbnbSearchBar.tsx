@@ -265,22 +265,22 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
     <header className="sticky top-0 z-50" style={{ backgroundColor: '#fbfbfb', borderBottom: '1px solid #EBEBEB', position: 'sticky' }}>
       {/* Desktop: Barra de búsqueda completa */}
       <div className="hidden md:block max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4 relative">
-        {/* Botón Admin - Solo visible para admins - CON DEBUG VISIBLE */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1" style={{ zIndex: 1000 }}>
-          {userIsAdmin ? (
+        {/* Botón Admin - Solo visible para admins */}
+        {userIsAdmin && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2" style={{ zIndex: 1000 }}>
             <button
-              onClick={() => {
-                console.log('🔧 Botón Admin clickeado - Navegando a /admin');
-                console.log('🔧 User actual:', user);
-                console.log('🔧 isAuthenticated:', isAuthenticated);
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Botón Admin clickeado - Navegando a /admin');
                 navigate('/admin');
               }}
               className="text-sm font-semibold text-red-600 hover:text-red-700 px-4 py-2 rounded-md hover:bg-red-50 transition-colors bg-white border-2 border-red-400 shadow-lg"
             >
-              🔧 Admin
+              Admin
             </button>
-          ) : null}
-        </div>
+          </div>
+        )}
         <form
           ref={containerRef}
           onSubmit={(e) => {

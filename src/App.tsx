@@ -36,18 +36,25 @@ import { isAdmin } from './utils/admin';
 
 import SearchesPage from './pages/SearchesPage';
 import SearchCreationPage from './pages/SearchCreationPage';
-import AdminPanelPage from './pages/AdminPanelPage';
 import Background from './components/Background';
 import { BecomeExpertPage } from './pages/BecomeExpertPage';
 import { ExpertPanelPage } from './pages/ExpertPanelPage';
 import { SearchResultsPage } from './pages/SearchResultsPage';
-import { DisputePanelPage } from './pages/DisputePanelPage';
 import TransactionsPage from './pages/TransactionsPage';
 import HomePage from './pages/HomePage';
 import ServiceDetailPage from './pages/ServiceDetailPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import QuienesSomosPage from './pages/QuienesSomosPage';
 import { AccountSettingsModal } from './components/AccountSettingsModal';
+import { AdminLayout } from './components/layout/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminConfigPage from './pages/admin/AdminConfigPage';
+import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
+import AdminMappingsPage from './pages/admin/AdminMappingsPage';
+import { UserManagement } from './components/UserManagement';
+import NotificationManagement from './components/NotificationManagement';
+import { DisputePanel } from './components/DisputePanel';
+import HangfirePanel from './components/HangfirePanel';
 import SearchDetails from './components/SearchDetails';
 import { GoogleAuth } from './components/GoogleAuth';
 import { GoogleSignInButton } from './components/GoogleSignInButton';
@@ -267,15 +274,6 @@ const AppContent: React.FC = () => {
                             >
                                 Precio
                             </a>
-                            {userIsAdmin && (
-                                <Button
-                                    variant="ghost"
-                                    className="text-sm font-medium text-red-600 hover:text-red-700 h-auto px-2 py-1 border border-red-300 rounded-md hover:bg-red-50"
-                                    onClick={() => navigate('/admin')}
-                                >
-                                    🔧 Admin
-                                </Button>
-                            )}
                         </nav>
 
                         {/* Botones de acción estilo Memorae */}
@@ -593,8 +591,17 @@ const AppContent: React.FC = () => {
                             <Route path="/busquedas" element={<ProtectedRouteWithMFA><SearchesPage /></ProtectedRouteWithMFA>} />
                             <Route path="/busquedas/:id" element={<ProtectedRouteWithMFA><SearchDetailsWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRouteWithMFA>} />
                             <Route path="/detalles/:id" element={<ProtectedRouteWithMFA><SearchResultsPage /></ProtectedRouteWithMFA>} />
-                            <Route path="/admin" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Admin]}><AdminPanelPage /></ProtectedRouteWithMFA>} />
-                            <Route path="/admin/disputes" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Admin]}><DisputePanelPage /></ProtectedRouteWithMFA>} />
+                            {/* Admin Routes */}
+                            <Route path="/admin" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Admin]}><AdminLayout /></ProtectedRouteWithMFA>}>
+                                <Route index element={<AdminDashboard />} />
+                                <Route path="users" element={<UserManagement onBack={() => window.location.href = '/'} />} />
+                                <Route path="config/*" element={<AdminConfigPage />} />
+                                <Route path="categories" element={<AdminCategoriesPage />} />
+                                <Route path="mappings" element={<AdminMappingsPage />} />
+                                <Route path="notifications" element={<NotificationManagement />} />
+                                <Route path="disputes" element={<DisputePanel />} />
+                                <Route path="hangfire" element={<HangfirePanel />} />
+                            </Route>
                             <Route path="/become-expert" element={<ProtectedRoute><BecomeExpertPage /></ProtectedRoute>} />
                             <Route path="/expert-panel" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><ExpertPanelPage /></ProtectedRouteWithMFA>} />
                             <Route path="/transacciones" element={<ProtectedRouteWithMFA><TransactionsPage /></ProtectedRouteWithMFA>} />
