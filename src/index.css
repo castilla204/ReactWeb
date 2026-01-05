@@ -483,3 +483,210 @@ img[alt*="country"],
     -webkit-border-radius: 0 !important;
     -moz-border-radius: 0 !important;
 }
+
+/* Estilos Airbnb - Clases exactas */
+.p1lfxwzr {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.p1n01a3k {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.cb0vz36 {
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+.pzulm0a {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.b1ip45x2 {
+    display: flex;
+    flex-direction: column;
+}
+
+.h1bu1298 {
+    display: flex;
+    flex-direction: column;
+}
+
+.hpipapi {
+    font-size: 18px;
+    line-height: 22px;
+    font-weight: 600;
+    color: #222222;
+    margin-bottom: 16px;
+    margin-top: 0;
+    padding: 0;
+}
+
+.e12rqg6l {
+    font-size: 18px;
+    line-height: 22px;
+    font-weight: 600;
+    color: #222222;
+}
+
+.c1upgqkb {
+    display: flex;
+    flex-direction: column;
+}
+
+.czshzqb {
+    margin-bottom: 16px;
+}
+
+.b93jqo2 {
+    width: 100%;
+}
+
+.fjukpsq {
+    width: 100%;
+}
+
+.cciu3x1 {
+    position: relative;
+    width: 100%;
+}
+
+.ijh1el1 {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 100%;
+}
+
+.p13hk362 {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.i1cqzlk7 {
+    width: 100%;
+    padding-left: 28px;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 10px;
+    border: none;
+    border-bottom: 1px solid #e5e7eb;
+    background-color: transparent;
+    font-size: 16px;
+    line-height: 20px;
+    color: #222222;
+    outline: none;
+}
+
+.schcl7x {
+    margin-top: 16px;
+}
+
+.c965t3n {
+    display: flex;
+    flex-direction: column;
+}
+
+.c1hysso5 {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.theqhl0 {
+    margin-bottom: 12px;
+}
+
+.s15ewrxi {
+    display: block;
+    background-color: #e5e7eb;
+}
+
+.pmfttci {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.igdfogk {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.t9fx5nq {
+    flex: 1;
+}
+
+.cfutgp0 {
+    display: flex;
+    flex-direction: column;
+}
+
+.t8con44 {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    color: #222222;
+    margin-bottom: 12px;
+}
+
+.c13nkf84 {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    width: 100%;
+    transition: background-color 0.2s;
+}
+
+.c13nkf84:hover {
+    background-color: #f7f7f7;
+}
+
+.l1p3292q {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: contain;
+    display: block;
+    flex-shrink: 0;
+}
+
+.t1xh489u {
+    flex: 1;
+    min-width: 0;
+}
+
+.t14kkvyr {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 600;
+    color: #222222;
+    margin-bottom: 0;
+}
+
+.a8jt5op {
+    font-size: 12px;
+    line-height: 16px;
+    color: #717171;
+    display: block;
+}
+
+.s7juzsk {
+    font-size: 12px;
+    line-height: 16px;
+    color: #717171;
+}

@@ -86,8 +86,8 @@ export function GoogleAuth() {
                         //     }
                         // });
                         // return;
-                        // Continuar sin MFA
-                        navigate('/busquedas');
+                        // Continuar sin MFA - No redirigir automáticamente
+                        // El usuario puede hacer clic en "Mis revisiones" si quiere ir a /busquedas
                         return;
                     }
                     
@@ -137,8 +137,8 @@ export function GoogleAuth() {
                     //     }
                     // });
                     // return;
-                    // Continuar sin MFA
-                    navigate('/busquedas');
+                    // Continuar sin MFA - No redirigir automáticamente
+                    // El usuario puede hacer clic en "Mis revisiones" si quiere ir a /busquedas
                     return;
                 }
             }
@@ -148,10 +148,9 @@ export function GoogleAuth() {
                 console.log('[GoogleAuth] Backend indicates MFA required, showing verification');
                 setRequiresMFA(true);
             } else {
-                // Cliente o login sin MFA → Continuar normalmente
-                console.log('[GoogleAuth] No MFA required, continuing to dashboard');
-                // El usuario ya está guardado arriba
-                navigate('/busquedas');
+                // Cliente o login sin MFA → No redirigir automáticamente
+                console.log('[GoogleAuth] No MFA required, staying on current page');
+                // El usuario puede hacer clic en "Mis revisiones" si quiere ir a /busquedas
             }
         } catch (error: any) {
             let message = error instanceof Error ? error.message : 'Authentication failed';
@@ -183,8 +182,8 @@ export function GoogleAuth() {
             setUser(JSON.parse(userData));
         }
         setRequiresMFA(false);
-        // Redirigir al dashboard o página principal
-        navigate('/busquedas');
+        // No redirigir automáticamente después de verificar MFA
+        // El usuario puede hacer clic en "Mis revisiones" si quiere ir a /busquedas
     };
 
     const handleMFACancel = () => {

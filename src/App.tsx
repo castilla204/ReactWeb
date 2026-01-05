@@ -45,6 +45,8 @@ import HomePage from './pages/HomePage';
 import ServiceDetailPage from './pages/ServiceDetailPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import QuienesSomosPage from './pages/QuienesSomosPage';
+import ComoFuncionaPage from './pages/ComoFuncionaPage';
+import FAQPage from './pages/FAQPage';
 import { AccountSettingsModal } from './components/AccountSettingsModal';
 import { AdminLayout } from './components/layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -257,23 +259,31 @@ const AppContent: React.FC = () => {
                             <Button
                                 variant="ghost"
                                 className="text-sm font-medium text-gray-700 hover:text-gray-900 h-auto px-0 py-0"
-                                onClick={() => isAuthenticated ? navigate('/busquedas') : handleRequireAuth('Ver tus inspecciones')}
+                                onClick={() => isAuthenticated ? navigate('/busquedas') : handleRequireAuth('Ver tus revisiones')}
                             >
-                                Inspecciones
+                                Mis revisiones
                             </Button>
                             <Button
                                 variant="ghost"
                                 className="text-sm font-medium text-gray-700 hover:text-gray-900 h-auto px-0 py-0"
-                                onClick={() => isAuthenticated ? setShowNotifications(true) : handleRequireAuth('Ver tus notificaciones')}
+                                onClick={() => {
+                                    // TODO: Implementar funcionalidad de favoritos
+                                    if (isAuthenticated) {
+                                        // Por ahora mantener notificaciones, pero cambiar a favoritos cuando esté implementado
+                                        setShowNotifications(true);
+                                    } else {
+                                        handleRequireAuth('Ver tus favoritos');
+                                    }
+                                }}
                             >
-                                Soporte
+                                Favoritos
                             </Button>
-                            <a 
-                                href="#precios" 
-                                className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                            <button
+                                onClick={() => navigate('/como-funciona')}
+                                className="text-sm font-medium text-gray-700 hover:text-gray-900 h-auto px-0 py-0"
                             >
-                                Precio
-                            </a>
+                                Cómo funciona
+                            </button>
                         </nav>
 
                         {/* Botones de acción estilo Memorae */}
@@ -290,13 +300,13 @@ const AppContent: React.FC = () => {
                                 </Button>
                             )}
 
-                            {/* Botón "Become a host" estilo Airbnb */}
+                            {/* Botón "Hazte revisor" estilo Airbnb */}
                             <Button
                                 variant="ghost"
                                 className="hidden md:flex text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full px-4 py-2"
                                 onClick={() => navigate('/become-expert')}
                             >
-                                Become a host
+                                Hazte revisor
                             </Button>
 
                             {/* Icono de globo para idioma */}
@@ -609,6 +619,8 @@ const AppContent: React.FC = () => {
                             <Route path="/checkout/:serviceId" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
                             <Route path="/crear-busqueda" element={<SearchCreationPage />} />
                             <Route path="/quienes-somos" element={<QuienesSomosPage />} />
+                            <Route path="/como-funciona" element={<ComoFuncionaPage />} />
+                            <Route path="/faq" element={<FAQPage />} />
                             <Route path="/explorar" element={<HomePage />} />
                             <Route path="/" element={<HomePage />} />
                             

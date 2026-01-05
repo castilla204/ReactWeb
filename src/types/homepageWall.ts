@@ -18,6 +18,12 @@ export interface HomepageSection {
 export type HomepageWallResponse = HomepageSection[];
 
 // ✅ Servicio en formato PascalCase (como viene del backend)
+export interface HomepageExpertAvailabilityDto {
+  DaysOfWeek: string[];  // ["Monday", "Tuesday", ...]
+  StartTime: string;     // "09:00:00"
+  EndTime: string;       // "18:00:00"
+}
+
 export interface SearchServiceHomepageDto {
   Id: number;
   CategoryId: number;
@@ -31,6 +37,7 @@ export interface SearchServiceHomepageDto {
     Name: string;
     ProfilePictureUrl: string;
     Country: string;
+    Availability?: HomepageExpertAvailabilityDto | null; // ✅ NUEVO: Horario del experto
   };
   CompletedSearches: number;
   AverageRating: number;

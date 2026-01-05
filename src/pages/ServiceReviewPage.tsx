@@ -506,6 +506,24 @@ export function ServiceReviewPage({
 
     return (
         <>
+        <style>{`
+            .loading-dot {
+                display: inline-block;
+                animation: wave 1.4s ease-in-out infinite;
+                font-size: 1.2em;
+                line-height: 1;
+            }
+            @keyframes wave {
+                0%, 60%, 100% {
+                    transform: translateY(0);
+                    opacity: 0.7;
+                }
+                30% {
+                    transform: translateY(-10px);
+                    opacity: 1;
+                }
+            }
+        `}</style>
         <div className="min-h-screen bg-white">
                 
             {/* ========== VERSIÓN MÓVIL MEJORADA ========== */}
@@ -1579,7 +1597,11 @@ export function ServiceReviewPage({
                                                 {isAuthenticating ? (
                                                     <>
                                                         <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                                        <span className="relative z-10">{authStep || 'Iniciando sesión...'}</span>
+                                                        <span className="relative z-10 flex items-center gap-1">
+                                                            <span className="loading-dot" style={{ animationDelay: '0ms' }}>.</span>
+                                                            <span className="loading-dot" style={{ animationDelay: '150ms' }}>.</span>
+                                                            <span className="loading-dot" style={{ animationDelay: '300ms' }}>.</span>
+                                                        </span>
                                                     </>
                                                 ) : (
                                                     <>
@@ -1589,13 +1611,6 @@ export function ServiceReviewPage({
                                                 )}
                                             </button>
                                         </div>
-                                    )}
-                                    
-                                    {/* Mensaje de progreso durante autenticación */}
-                                    {isAuthenticating && authStep && (
-                                        <p className="mt-2 text-xs text-gray-500 text-center animate-pulse">
-                                            {authStep}
-                                        </p>
                                     )}
 
                                 <p className="mt-3 text-center text-xs text-gray-400">

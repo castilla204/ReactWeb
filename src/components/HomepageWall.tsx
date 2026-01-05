@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
-import { Heart, Star, ChevronRight } from 'lucide-react';
+import { Heart, Star, ChevronRight, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from './Footer';
+import { getCountryName } from '../utils/countries';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -73,21 +74,55 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
   const hasMultipleImages = imageUrls.length > 1;
   const isGuestFavorite = forceGuestFavorite || (service.completedSearches > 10 && service.averageRating >= 4.5);
 
-  // Formatear fecha (simulado - deberías obtener fechas reales del servicio)
-  const formatDate = () => {
-    const today = new Date();
-    const checkIn = new Date(today);
-    checkIn.setDate(today.getDate() + 2);
-    const checkOut = new Date(checkIn);
-    checkOut.setDate(checkIn.getDate() + 2);
+  // ✅ Información real del servicio para la segunda línea: Precio · Horario
+  // Precio del servicio
+  const price = service.price ? `€${Math.round(service.price)}` : 'Consultar';
+  
+  // Horario de disponibilidad (formato compacto para que quepa)
+  const formatAvailability = () => {
+    const availability = service.expert?.currentAvailability;
+    if (!availability) return 'Flexible';
     
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${months[checkIn.getMonth()]} ${checkIn.getDate()} – ${checkOut.getDate()}`;
+    // Formatear días de la semana (solo inicial: L, M, X, J, V, S, D)
+    const days = availability.daysOfWeek || [];
+    if (days.length === 0) return 'Flexible';
+    
+    const dayMap: Record<string, string> = {
+      'Monday': 'L',
+      'Tuesday': 'M',
+      'Wednesday': 'X',
+      'Thursday': 'J',
+      'Friday': 'V',
+      'Saturday': 'S',
+      'Sunday': 'D'
+    };
+    
+    // Limitar a máximo 5 días para que quepa
+    const dayAbbr = days
+      .slice(0, 5)
+      .map((day: string) => dayMap[day] || day.charAt(0))
+      .join('');
+    
+    // Formatear horas (formato compacto: "9-18" en lugar de "09:00-18:00")
+    const startTime = availability.startTime ? availability.startTime.substring(0, 5) : '';
+    const endTime = availability.endTime ? availability.endTime.substring(0, 5) : '';
+    
+    if (startTime && endTime) {
+      // Convertir "09:00" a "9" y "18:00" a "18"
+      const startHour = parseInt(startTime.split(':')[0], 10).toString();
+      const endHour = parseInt(endTime.split(':')[0], 10).toString();
+      return `${dayAbbr} ${startHour}-${endHour}h`;
+    }
+    return dayAbbr || 'Flexible';
   };
-
-  const hostType = service.expert?.user?.name ? 'Individual host' : 'Individual host';
-  const nights = service.durationInHours ? Math.ceil(service.durationInHours / 24) : 2;
-  const location = service.expert?.country || 'Madrid';
+  
+  const availabilityInfo = formatAvailability();
+  
+  // Formatear la segunda línea: "Precio · Horario"
+  const secondLineInfo = `${price} · ${availabilityInfo}`;
+  
+  // Calcular duración en días si está disponible
+  const nights = service.durationInHours ? Math.ceil(service.durationInHours / 24) : null;
 
   return (
     <a
@@ -262,9 +297,9 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
             <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName}</div>
           </div>
 
-          {/* Segunda fila: Fechas y tipo de host */}
+          {/* Segunda fila: Precio · 📅 Horario */}
           <div
-            className="overflow-hidden"
+            className="flex items-center overflow-hidden"
             style={{
               marginBottom: '4px',
               fontSize: '14px',
@@ -275,12 +310,23 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
               textAlign: 'left',
             }}
           >
-            <div className="truncate" style={{ textAlign: 'left' }}>
-              {formatDate()} · {hostType}
+            <div className="truncate flex items-center gap-1" style={{ textAlign: 'left' }}>
+              <span>{price}</span>
+              <span>·</span>
+              <Calendar 
+                className="flex-shrink-0" 
+                style={{ 
+                  width: '11px', 
+                  height: '11px',
+                  color: '#717171',
+                  marginRight: '2px',
+                }} 
+              />
+              <span className="truncate">{availabilityInfo}</span>
             </div>
           </div>
 
-          {/* Tercera fila: Precio y calificación con estrella */}
+          {/* Tercera fila: Puntuación · Contrataciones · Experto · Ubicación */}
           <div
             className="flex items-center overflow-hidden"
             style={{
@@ -293,21 +339,37 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
               justifyContent: 'flex-start',
             }}
           >
-            <span>€ {service.price}</span>
-            <span>{` for ${nights} ${nights === 1 ? 'night' : 'nights'}`}</span>
-            <span> · </span>
             <Star 
               className="flex-shrink-0" 
               style={{ 
-                width: '12px', 
-                height: '12px', 
+                width: '10px', 
+                height: '10px', 
                 fill: '#222222', 
                 color: '#222222',
+                opacity: 0.7,
               }} 
             />
             <span style={{ marginLeft: '4px' }}>
-              {service.averageRating?.toFixed(2) || '4.95'}
+              {service.averageRating ? service.averageRating.toFixed(1) : 'N/A'}
             </span>
+            {service.completedSearches > 0 && (
+              <>
+                <span style={{ marginLeft: '4px', marginRight: '4px' }}>·</span>
+                <span>{service.completedSearches} {service.completedSearches === 1 ? 'contratación' : 'contrataciones'}</span>
+              </>
+            )}
+            {service.expert?.user?.name && (
+              <>
+                <span style={{ marginLeft: '4px', marginRight: '4px' }}>·</span>
+                <span className="truncate">{service.expert.user.name}</span>
+              </>
+            )}
+            {service.expert?.country && (
+              <>
+                <span style={{ marginLeft: '4px', marginRight: '4px' }}>·</span>
+                <span className="truncate">{getCountryName(service.expert.country)}</span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -636,6 +698,14 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
         },
         reviews: [],
         country: service.Expert.Country,
+        // ✅ NUEVO: Mapear Availability del backend a currentAvailability
+        currentAvailability: service.Expert.Availability ? {
+          id: 0, // No disponible en homepage DTO
+          daysOfWeek: service.Expert.Availability.DaysOfWeek || [],
+          startTime: service.Expert.Availability.StartTime || '',
+          endTime: service.Expert.Availability.EndTime || '',
+          effectiveFrom: undefined, // No disponible en homepage DTO
+        } : undefined,
       } : undefined,
       conditions: '',
       durationInHours: 0,
