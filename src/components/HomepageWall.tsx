@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useHomepageWallQuery } from '../hooks/useHomepageWall';
-import { SearchServiceDetailDto } from '../types/homepageWall';
+import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
 import { Heart, Star, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from './Footer';
@@ -551,7 +551,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
 interface HomepageWallProps {
   countryCode?: string;
   serviceTypeId?: number | null;
-  categoryId?: number | null;
+  categoryId: number; // ✅ OBLIGATORIO: ID de la categoría
 }
 
 export const HomepageWall: React.FC<HomepageWallProps> = ({ 
@@ -563,6 +563,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
 
   // Memoizar los parámetros de la query para evitar re-renderizados innecesarios
   const queryParams = useMemo(() => ({
+    categoryId, // ✅ OBLIGATORIO
     latitude,
     longitude,
     countryCode,
@@ -571,10 +572,9 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
     nearbyPageSize: 20,
     popularPage: 1,
     popularPageSize: 20,
-    categoryId: categoryId !== undefined && categoryId !== null ? categoryId : undefined, // ✅ NUEVO: Incluir categoryId
-  }), [latitude, longitude, countryCode, categoryId]);
+  }), [categoryId, latitude, longitude, countryCode]);
 
-  const { data, isLoading, error } = useHomepageWallQuery(queryParams);
+  const { data: sections, isLoading, error } = useHomepageWallQuery(queryParams);
 
   if (isLoading || geoLoading) {
     return (
@@ -597,8 +597,8 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
     );
   }
 
-  if (!data) {
-    console.warn('⚠️ HomepageWall - No hay datos');
+  if (!sections || sections.length === 0) {
+    console.warn('⚠️ HomepageWall - No hay secciones');
     return (
       <div className="text-center py-12">
         <p className="text-gray-600">No hay datos disponibles</p>
@@ -606,74 +606,82 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
     );
   }
 
-  console.log('📊 HomepageWall - Renderizando con datos:', {
-    nearbyCount: data.nearbyServices?.services?.length || 0,
-    popularCount: data.popularServices?.services?.length || 0,
-    categorySpecificCount: data.categorySpecificServices?.services?.length || 0,
+  console.log('📊 HomepageWall - Renderizando con secciones:', {
+    sectionsCount: sections.length,
+    sections: sections.map(s => ({ title: s.title, servicesCount: s.services.length }))
   });
 
-  const cityName = countryCode === 'ES' ? 'Madrid' : 'tu ciudad';
-
-  // Filtrar servicios según los filtros de búsqueda
-  const filterServices = (services: SearchServiceDetailDto[]) => {
-    if (!serviceTypeId && !categoryId) {
-      return services;
-    }
-    return services.filter(service => {
-      if (serviceTypeId && service.serviceTypeId !== serviceTypeId) {
-        return false;
-      }
-      if (categoryId && service.categoryId !== categoryId) {
-        return false;
-      }
-      return true;
-    });
+  // ✅ Función para convertir SearchServiceHomepageDto (PascalCase) a SearchServiceDetailDto (camelCase)
+  const mapServiceToDetail = (service: SearchServiceHomepageDto): SearchServiceDetailDto => {
+    return {
+      id: service.Id,
+      categoryId: service.CategoryId,
+      serviceTypeId: service.ServiceTypeId,
+      serviceTypeName: service.ServiceTypeName,
+      price: service.Price,
+      imageUrls: service.ImageUrls || [],
+      categoryName: service.CategoryName,
+      completedSearches: service.CompletedSearches,
+      averageRating: service.AverageRating,
+      expert: service.Expert ? {
+        id: service.Expert.Id,
+        profilePictureUrl: service.Expert.ProfilePictureUrl,
+        description: '',
+        latitude: '',
+        longitude: '',
+        user: {
+          id: service.Expert.Id,
+          name: service.Expert.Name,
+          email: '',
+        },
+        reviews: [],
+        country: service.Expert.Country,
+      } : undefined,
+      conditions: '',
+      durationInHours: 0,
+      createdAt: '',
+      isActive: true,
+      selectedDeliverableTypes: [],
+    };
   };
 
-  const filteredNearbyServices = data.nearbyServices?.services 
-    ? filterServices(data.nearbyServices.services)
-    : [];
-  const filteredPopularServices = data.popularServices?.services
-    ? filterServices(data.popularServices.services)
-    : [];
+  // ✅ Filtrar servicios según serviceTypeId si está presente
+  const filterServices = (services: SearchServiceHomepageDto[]): SearchServiceDetailDto[] => {
+    let filtered = services;
+    
+    if (serviceTypeId) {
+      filtered = services.filter(service => service.ServiceTypeId === serviceTypeId);
+    }
+    
+    return filtered.map(mapServiceToDetail);
+  };
 
   return (
     <>
       <div className="w-full flex justify-center">
         <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
-          {/* Sección: Servicios Cercanos / Popular homes */}
-          {/* Mostrar siempre si hay servicios, o si nearbyServices está vacío pero popularServices tiene datos, usar popularServices */}
-          {((filteredNearbyServices.length > 0) || 
-            (filteredNearbyServices.length === 0 && filteredPopularServices.length > 0)) && (
-            <HorizontalScrollSection
-              title={`Popular homes in ${cityName} >`}
-              services={filteredNearbyServices.length > 0 
-                ? filteredNearbyServices
-                : filteredPopularServices}
-              showCount={true}
-            />
-          )}
-
-          {/* Sección: Servicios Populares / Featured hotels */}
-          {filteredPopularServices.length > 0 && (
-            <HorizontalScrollSection
-              title={`Featured hotels in ${cityName} >`}
-              subtitle="A collection of independent and handpicked hotels"
-              services={filteredPopularServices}
-              showCount={true}
-              forceGuestFavorite={true}
-            />
-          )}
-
-          {/* ✅ NUEVO: Sección Específica por Categoría */}
-          {data.categorySpecificServices && data.categorySpecificServices.services.length > 0 && (
-            <HorizontalScrollSection
-              title={data.categorySpecificServices.title}
-              subtitle={`${data.categorySpecificServices.totalCount} servicios en ${data.categorySpecificServices.country}`}
-              services={data.categorySpecificServices.services}
-              showCount={true}
-            />
-          )}
+          {/* ✅ Iterar el array de secciones - no necesitas conocer las claves */}
+          {sections.map((section: HomepageSection, index: number) => {
+            const filteredServices = filterServices(section.services);
+            
+            // Solo renderizar si hay servicios después del filtrado
+            if (filteredServices.length === 0) {
+              return null;
+            }
+            
+            return (
+              <HorizontalScrollSection
+                key={index}
+                title={section.title} // ✅ Título ya viene formateado del backend
+                subtitle={section.categoryName && section.country 
+                  ? `${section.pagination.totalCount} servicios en ${section.country}` 
+                  : undefined}
+                services={filteredServices}
+                showCount={true}
+                forceGuestFavorite={index === 1} // Marcar la segunda sección como "Featured"
+              />
+            );
+          })}
         </div>
       </div>
       

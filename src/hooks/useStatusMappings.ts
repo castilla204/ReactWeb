@@ -4,9 +4,9 @@ import { API_CONFIG } from '../config/api';
 import { StatusMapping, SystemStatus, CreateStatusMappingDto } from '../types/admin';
 
 export const useStatusMappings = (page: number = 1, pageSize: number = 20) => {
-  const [mappings, setMappings] = useState<StatusMapping[]>([]);
-  const [appointmentStatuses, setAppointmentStatuses] = useState<SystemStatus[]>([]);
-  const [searchHireStatuses, setSearchHireStatuses] = useState<SystemStatus[]>([]);
+  const [mappings, setMappings] = useState<StatusMapping[]>([]); // ✅ Inicializado como array vacío
+  const [appointmentStatuses, setAppointmentStatuses] = useState<SystemStatus[]>([]); // ✅ Inicializado como array vacío
+  const [searchHireStatuses, setSearchHireStatuses] = useState<SystemStatus[]>([]); // ✅ Inicializado como array vacío
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mappingsPagination, setMappingsPagination] = useState<{

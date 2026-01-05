@@ -140,6 +140,7 @@ export const useMapExperts = (
       console.log('⚠️ useMapExperts: categoryId o serviceTypeId faltantes');
       setExperts([]);
       setTotalCount(0);
+      setServices([]);
       return;
     }
 

@@ -1115,7 +1115,7 @@ export function ServiceReviewPage({
 
             {/* ========== VERSIÓN DESKTOP COMPACTA Y REFINADA ========== */}
             <div className="hidden lg:block min-h-screen bg-white">
-                <div className="max-w-6xl mx-auto px-6 py-8">
+                <div className="max-w-6xl mx-auto px-6 pt-16 pb-8">
                     <div className="grid grid-cols-[45%_1fr] gap-12 items-start">
                         
                         {/* COLUMNA IZQUIERDA: ÁLBUM DE FOTOS + RESEÑAS PREMIUM */}

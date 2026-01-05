@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 import { useLoadScript } from '@react-google-maps/api';
 import { useServices } from '../hooks/useServices';
-import { useMapExperts } from '../hooks/useMapExperts';
+import { useMapExperts } from '../hooks/useMapExperts'; // ✅ Mantener para compatibilidad
+import { useMapMarkers } from '../hooks/useMapMarkers'; // ✅ NUEVO: Marcadores ultra ligeros
 import { LocationMap } from './LocationMap';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
@@ -551,41 +552,68 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         locationRange: formData.locationRange ? parseInt(formData.locationRange) : undefined,
     });
    
-    // Cargar posiciones de expertos para el mapa
-    // Caso 1: Carga inicial (sin bounds ni location)
-    // Caso 2: Con bounds (cuando se mueve el mapa) - devuelve servicios completos
-    console.log('🔍 SearchParameterForm - Llamando useMapExperts:', {
+    // ✅ OPTIMIZADO: Cargar marcadores ultra ligeros para el mapa
+    // Usar el nuevo endpoint map-markers que es mucho más rápido
+    console.log('🔍 SearchParameterForm - Llamando useMapMarkers:', {
         selectedCategory,
         serviceTypeId,
         hasMapBounds: !!mapBounds,
         mapBounds: mapBounds
     });
     
-    const { experts: mapExperts, services: servicesFromBounds } = useMapExperts(
+    const { markers: mapMarkers, loading: markersLoading } = useMapMarkers(
         selectedCategory,
         serviceTypeId,
         mapBounds ? {
             bounds: mapBounds,
             zoom: mapZoom,
-            limit: 50
-        } : undefined
+            limit: 200 // Límite recomendado para bounds
+        } : {
+            limit: 500 // Límite para carga inicial
+        }
     );
     
+    // ✅ Convertir marcadores a formato MapExpert para compatibilidad con LocationMap
+    const mapExperts = mapMarkers.map(marker => ({
+        id: marker.serviceId,
+        name: '', // No disponible en marcadores ligeros
+        profilePictureUrl: undefined,
+        averageRating: 0,
+        totalReviews: 0,
+        completedSearches: 0,
+        registeredSince: '',
+        latitude: marker.latitude,
+        longitude: marker.longitude,
+        price: marker.price,
+    }));
+    
+    // ✅ Para servicios completos, usar useMapSidebar cuando sea necesario
+    // Por ahora, mantener servicesFromBounds vacío ya que los marcadores son ligeros
+    const servicesFromBounds: any[] = [];
+    
     // ✅ LOGS DETALLADOS
-    console.log('🔍 SearchParameterForm - useMapExperts retornó:', {
+    console.log('🔍 SearchParameterForm - useMapMarkers retornó:', {
+        mapMarkersCount: mapMarkers.length,
         mapExpertsCount: mapExperts.length,
         servicesFromBoundsCount: servicesFromBounds.length,
-        mapExperts: mapExperts,
-        servicesFromBounds: servicesFromBounds
+        markersLoading
     });
     
     // Handler para cuando cambian los bounds del mapa
+    // ✅ Mejorado: Se ejecuta inmediatamente para cargar datos al mismo tiempo que el mapa
     const handleBoundsChange = useCallback((bounds: {
         northeast: { lat: number; lng: number };
         southwest: { lat: number; lng: number };
     }, zoom: number) => {
+        // Actualizar bounds inmediatamente para que useMapExperts pueda cargar datos
         setMapBounds(bounds);
         setMapZoom(zoom);
+        
+        console.log('🔍 SearchParameterForm - handleBoundsChange llamado:', {
+            bounds,
+            zoom,
+            timestamp: new Date().toISOString()
+        });
     }, []);
    
     // ✅ Combinar servicios: de bounds (cuando se mueve el mapa) o de ubicación (cuando hay locationRange)
