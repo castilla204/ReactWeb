@@ -51,7 +51,7 @@ El origen de **Cloudflare Pages** no está autorizado en Google Cloud Console.
 Si también ves un error 500 en `google-auth`, verifica:
 
 1. **Backend está funcionando:**
-   - Verifica que `https://inspeccionoapi-cgh5amebepbje7dz.spaincentral-01.azurewebsites.net/health` responda
+   - Verifica que `https://lainspecciono-c8gpcpgtfyc9cna8.canadacentral-01.azurewebsites.net/health` responda
 
 2. **Client ID coincide:**
    - El backend debe tener el mismo Client ID: `61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com`

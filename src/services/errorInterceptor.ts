@@ -22,7 +22,7 @@ async function checkApiHealth(): Promise<boolean> {
     try {
         const apiUrl = import.meta.env.DEV 
             ? 'http://localhost:7124' 
-            : 'https://inspeccionoapi-cgh5amebepbje7dz.spaincentral-01.azurewebsites.net';
+            : 'https://lainspecciono-c8gpcpgtfyc9cna8.canadacentral-01.azurewebsites.net';
         
         const response = await fetch(`${apiUrl}/health`, {
             method: 'GET',
