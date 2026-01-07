@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, Star, CheckCircle, User, StarHalf, X, Eye, FileText, Video, XCircle, MapPin } from 'lucide-react';
 import { GoogleMap, useLoadScript, Circle, Marker } from '@react-google-maps/api';
+import { useNavigate } from 'react-router-dom';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServices } from '../hooks/useServices';
 import { useServiceTypes } from '../hooks/useServiceTypes';
@@ -39,6 +40,7 @@ export function ServiceSelection({
     longitude,
     locationRange,
 }: ServiceSelectionProps) {
+    const navigate = useNavigate();
     const { categories } = useCategories();
     const { serviceTypes } = useServiceTypes();
     const [selectedService, setSelectedService] = useState<number | null>(null);
@@ -153,7 +155,26 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
             <div className="max-w-4xl mx-auto px-4 py-12">
                 <div className="bg-destructive/10 border border-destructive p-6 rounded-lg text-center">
                     <p className="text-destructive mb-4">{errorMessage}</p>
-                    <Button onClick={onBack} variant="outline">Volver</Button>
+                    <Button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try {
+                                if (onBack) {
+                                    onBack();
+                                } else {
+                                    navigate(-1);
+                                }
+                            } catch (error) {
+                                console.error('Error in onBack:', error);
+                                navigate(-1);
+                            }
+                        }} 
+                        variant="outline"
+                        type="button"
+                    >
+                        Volver
+                    </Button>
                 </div>
             </div>
         );
@@ -173,7 +194,26 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
             <div className="max-w-4xl mx-auto px-4 py-12">
                 <div className="bg-muted/50 p-6 rounded-lg text-center">
                     <p className="text-muted-foreground mb-4">No hay servicios disponibles para {serviceTypeName} en la ubicación seleccionada.</p>
-                    <Button onClick={onBack} variant="outline">Volver</Button>
+                    <Button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try {
+                                if (onBack) {
+                                    onBack();
+                                } else {
+                                    navigate(-1);
+                                }
+                            } catch (error) {
+                                console.error('Error in onBack:', error);
+                                navigate(-1);
+                            }
+                        }} 
+                        variant="outline"
+                        type="button"
+                    >
+                        Volver
+                    </Button>
                 </div>
             </div>
         );
@@ -317,8 +357,22 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                             <Button 
                                 variant="ghost" 
                                 size="icon"
-                                onClick={onBack}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    try {
+                                        if (onBack) {
+                                            onBack();
+                                        } else {
+                                            navigate(-1);
+                                        }
+                                    } catch (error) {
+                                        console.error('Error in onBack:', error);
+                                        navigate(-1);
+                                    }
+                                }}
                                 className="h-9 w-9"
+                                type="button"
                             >
                                 <ArrowRight className="h-4 w-4 rotate-180" />
                             </Button>

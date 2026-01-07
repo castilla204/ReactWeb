@@ -39,14 +39,17 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
     console.log('🎴 ServiceCard - Servicio renderizado:', {
       id: service.id,
       serviceTypeName: service.serviceTypeName,
+      serviceTypeDescription: service.serviceTypeDescription,
+      hasDescription: !!service.serviceTypeDescription,
       categoryName: service.categoryName,
       price: service.price,
       imageUrls: service.imageUrls,
       imageUrlsLength: service.imageUrls?.length || 0,
       expert: service.expert?.user?.name,
       averageRating: service.averageRating,
+      isMobile,
     });
-  }, [service]);
+  }, [service, isMobile]);
 
   const handleCardClick = () => {
     // Navegar a la página de detalle del servicio primero
@@ -296,6 +299,29 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
           >
             <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName}</div>
           </div>
+
+          {/* Descripción del servicio - Solo si existe */}
+          {service.serviceTypeDescription && (
+            <div
+              className="overflow-hidden"
+              style={{
+                marginBottom: '4px',
+                fontSize: '14px',
+                lineHeight: '18px',
+                fontWeight: 400,
+                color: '#717171',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                textAlign: 'left',
+                display: 'block',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {service.serviceTypeDescription}
+            </div>
+          )}
 
           {/* Segunda fila: Precio · 📅 Horario */}
           <div
@@ -675,11 +701,21 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
 
   // ✅ Función para convertir SearchServiceHomepageDto (PascalCase) a SearchServiceDetailDto (camelCase)
   const mapServiceToDetail = (service: SearchServiceHomepageDto): SearchServiceDetailDto => {
+    // Debug: Verificar si la descripción viene del backend
+    if (service.ServiceTypeDescription) {
+      console.log('📝 HomepageWall - Descripción encontrada:', {
+        serviceId: service.Id,
+        serviceTypeName: service.ServiceTypeName,
+        description: service.ServiceTypeDescription
+      });
+    }
+    
     return {
       id: service.Id,
       categoryId: service.CategoryId,
       serviceTypeId: service.ServiceTypeId,
       serviceTypeName: service.ServiceTypeName,
+      serviceTypeDescription: service.ServiceTypeDescription, // ✅ NUEVO: Descripción del tipo de servicio
       price: service.Price,
       imageUrls: service.ImageUrls || [],
       categoryName: service.CategoryName,
@@ -707,6 +743,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
           effectiveFrom: undefined, // No disponible en homepage DTO
         } : undefined,
       } : undefined,
+      requiresAppointment: false, // No disponible en homepage DTO
       conditions: '',
       durationInHours: 0,
       createdAt: '',
