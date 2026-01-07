@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, ChevronDown, Link as LinkIcon, FolderTree } from 'lucide-react';
+import { Search, ChevronDown, FolderTree, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
@@ -9,33 +9,23 @@ import { isAdmin } from '../utils/admin';
 import cocheImg from '../media/cochepng.png';
 import casaImg from '../media/casapng.png';
 import motoImg from '../media/motopng.png';
-import camaraImg from '../media/internet-61.png'; // Usar imagen existente para cámaras
-// TODO: Reemplazar con imagen de caldera cuando esté disponible
-import calderaImg from '../media/house.png'; // Placeholder - usar imagen de caldera cuando esté disponible
+import camaraImg from '../media/internet-61.png';
+import calderaImg from '../media/house.png';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from './ui/popover';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from './ui/drawer';
 import { ResponsiveModal } from './ui/responsive-modal';
 import { Separator } from './ui/separator';
 
-// ✅ IDs de categorías según la documentación
 const CATEGORIES = {
   COCHES: 1,
   MOTOS: 2,
   INMOBILIARIA: 3,
   CAMARAS: 4,
-  FONTANERIA: 5, // Asumiendo ID 5, ajustar si es diferente
+  FONTANERIA: 5,
 } as const;
-
-// ✅ Categorías restantes para el drawer
-const DRAWER_CATEGORIES = [
-  { id: CATEGORIES.MOTOS, name: 'Motos' },
-  { id: CATEGORIES.CAMARAS, name: 'Cámaras' },
-  { id: CATEGORIES.FONTANERIA, name: 'Fontanería' },
-] as const;
 
 interface AirbnbSearchBarProps {
   onSearch?: (searchData: {
@@ -51,31 +41,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const { serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
   const { categories, loading: categoriesLoading } = useCategories();
   
-  // El objeto user viene del backend con mayúsculas: Email, Role (no email, role)
-  const userEmail = user?.Email || user?.email; // Compatibilidad con ambos formatos
-  const userRole = user?.Role || user?.role; // Compatibilidad con ambos formatos
-  
+  const userEmail = (user as any)?.Email || user?.email;
+  const userRole = (user as any)?.Role || user?.role;
   const isAdminByEmail = userEmail ? isAdmin(userEmail) : false;
   const isAdminByRole = userRole === 'Admin' || userRole === 'admin';
   const userIsAdmin = isAuthenticated && (isAdminByEmail || isAdminByRole);
-  
-  // Debug: Log completo del objeto user
-  useEffect(() => {
-    console.log('🔍 ========== AIRBNB SEARCH BAR - USER OBJECT ==========');
-    console.log('👤 User completo:', user);
-    console.log('👤 User keys:', user ? Object.keys(user) : 'NO USER');
-    console.log('📧 user?.Email:', user?.Email);
-    console.log('📧 user?.email:', user?.email);
-    console.log('📧 userEmail (final):', userEmail);
-    console.log('👤 user?.Role:', user?.Role);
-    console.log('👤 user?.role:', user?.role);
-    console.log('👤 userRole (final):', userRole);
-    console.log('✅ isAdminByEmail:', isAdminByEmail);
-    console.log('✅ isAdminByRole:', isAdminByRole);
-    console.log('🔐 isAuthenticated:', isAuthenticated);
-    console.log('🎯 userIsAdmin (FINAL):', userIsAdmin);
-    console.log('===================================================');
-  }, [user, isAuthenticated, userEmail, userRole, isAdminByEmail, isAdminByRole, userIsAdmin]);
   
   const [serviceTypeId, setServiceTypeId] = useState<number | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(null);
@@ -84,54 +54,32 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const [isServiceTypeOpen, setIsServiceTypeOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
-  const [isMobileServiceTypeOpen, setIsMobileServiceTypeOpen] = useState(false);
-  const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(true); // Por defecto mostrar categorías
-  const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null); // 'type', 'url', null - Por defecto cerrado
-  const [locationSearchQuery, setLocationSearchQuery] = useState('');
+  const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-  // ✅ Estado para el tab activo y drawer de categorías
   const [activeTab, setActiveTab] = useState<'coches' | 'inmobiliaria' | 'drawer' | null>('coches');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  // ✅ Estado para la categoría del drawer que reemplaza a Inmobiliaria
   const [drawerCategoryReplacement, setDrawerCategoryReplacement] = useState<{ id: number; name: string; image: string } | null>(null);
-  // ✅ Estado para el buscador de categorías
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
-  const serviceTypeButtonRef = useRef<HTMLButtonElement>(null);
-  const categoryButtonRef = useRef<HTMLButtonElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const selectedServiceType = serviceTypes.find(st => st.id === serviceTypeId);
   const selectedCategory = categories.find(c => c.id === categoryId);
   
-  // ✅ Inicializar con Coches por defecto al cargar
-  useEffect(() => {
-    if (activeTab === 'coches' && !categoryId) {
-      setCategoryId(CATEGORIES.COCHES);
-      if (onSearch) {
-        onSearch({
-          serviceTypeId,
-          categoryId: CATEGORIES.COCHES,
-          adUrl,
-        });
-      }
-    }
-  }, []); // Solo al montar el componente
-  
-  // Debug: verificar que el estado se actualiza
-  useEffect(() => {
-    console.log('🔍 Estado actualizado:', {
-      serviceTypeId,
-      serviceTypesCount: serviceTypes.length,
-      selectedServiceType: selectedServiceType?.name,
-      categoryId,
-      categoriesCount: categories.length,
-      selectedCategory: selectedCategory?.name,
-      activeTab,
-    });
-  }, [serviceTypeId, categoryId, selectedServiceType, selectedCategory, serviceTypes.length, categories.length, activeTab]);
+  // Eliminado: No establecer categoría por defecto
+  // useEffect(() => {
+  //   if (activeTab === 'coches' && !categoryId) {
+  //     setCategoryId(CATEGORIES.COCHES);
+  //     if (onSearch) {
+  //       onSearch({
+  //         serviceTypeId,
+  //         categoryId: CATEGORIES.COCHES,
+  //         adUrl,
+  //       });
+  //     }
+  //   }
+  // }, []);
 
   const handleSearch = () => {
-    // Si hay onSearch (desde HomePage), llamarlo para filtrar en la misma página
     if (onSearch) {
       onSearch({
         serviceTypeId,
@@ -140,30 +88,24 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
       });
     }
     
-    // Si hay serviceTypeId Y categoryId, navegar a /crear-busqueda al paso del mapa
     if (serviceTypeId && categoryId) {
       const params = new URLSearchParams();
       params.append('serviceTypeId', serviceTypeId.toString());
       params.append('categoryId', categoryId.toString());
       if (adUrl) params.append('adUrl', adUrl);
-      
-      const queryString = params.toString();
-      navigate(`/crear-busqueda?${queryString}`);
+      navigate(`/crear-busqueda?${params.toString()}`);
     }
   };
 
-  // ✅ Handler para seleccionar categoría desde los tabs
   const handleTabClick = (tab: 'coches' | 'inmobiliaria', categoryIdValue: number) => {
     setActiveTab(tab);
     setCategoryId(categoryIdValue);
     setIsDrawerOpen(false);
     
-    // Si se hace clic en "inmobiliaria" y hay una categoría del drawer seleccionada, limpiarla
     if (tab === 'inmobiliaria' && categoryIdValue === CATEGORIES.INMOBILIARIA) {
       setDrawerCategoryReplacement(null);
     }
     
-    // Llamar a onSearch para actualizar el wall
     if (onSearch) {
       onSearch({
         serviceTypeId,
@@ -171,11 +113,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
         adUrl,
       });
     }
-    
-    // NO hacer scroll automático - eliminado según solicitud del usuario
   };
 
-  // ✅ Función helper para obtener la imagen de una categoría por nombre
   const getCategoryImage = (categoryName: string): string | null => {
     const nameLower = categoryName.toLowerCase();
     if (nameLower.includes('moto') && !nameLower.includes('agua')) return motoImg;
@@ -186,26 +125,20 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
     return null;
   };
 
-  // ✅ Handler para seleccionar categoría desde el drawer
   const handleDrawerCategoryClick = (categoryIdValue: number, categoryName: string) => {
-    // Obtener la imagen de la categoría
     const categoryImage = getCategoryImage(categoryName) || casaImg;
     
-    // Guardar la categoría del drawer para reemplazar a Inmobiliaria
     setDrawerCategoryReplacement({
       id: categoryIdValue,
       name: categoryName,
       image: categoryImage
     });
     
-    // Cambiar al tab de "inmobiliaria" (que ahora mostrará la categoría del drawer)
     setActiveTab('inmobiliaria');
-    
     setCategoryId(categoryIdValue);
     setIsDrawerOpen(false);
-    setCategorySearchQuery(''); // Limpiar búsqueda
+    setCategorySearchQuery('');
     
-    // Llamar a onSearch para actualizar el wall
     if (onSearch) {
       onSearch({
         serviceTypeId,
@@ -213,14 +146,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
         adUrl,
       });
     }
-    
-    // NO hacer scroll automático - eliminado según solicitud del usuario
   };
 
-  // Cerrar cuando se hace click fuera (desktop)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (formRef.current && !formRef.current.contains(event.target as Node)) {
+        // Cerrar todos los popovers cuando se hace clic fuera
         setActiveField(null);
         setIsServiceTypeOpen(false);
         setIsCategoryOpen(false);
@@ -231,60 +162,21 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Cerrar dropdowns móviles cuando se hace clic fuera
-  useEffect(() => {
-    if (!isMobileSearchOpen) return;
-    
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as HTMLElement;
-      // Si el clic es en un botón del dropdown o en el contenido del dropdown, no cerrar
-      if (target.closest('[data-dropdown-service]') || target.closest('[data-dropdown-category]')) {
-        return;
-      }
-      // Si el clic es en el contenido del portal del dropdown, no cerrar
-      if (target.closest('.mobile-dropdown-content')) {
-        return;
-      }
-      // Cerrar los dropdowns móviles
-      setIsMobileServiceTypeOpen(false);
-      setIsMobileCategoryOpen(false);
-    };
-
-    // Usar un pequeño delay para evitar que se cierre inmediatamente al abrir
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [isMobileSearchOpen]);
-
   return (
-    <header className="sticky top-0 z-50" style={{ backgroundColor: '#fbfbfb', borderBottom: '1px solid #EBEBEB', position: 'sticky' }}>
-      {/* Desktop: Barra de búsqueda completa */}
+    <header className="sticky top-0 z-50 bg-[#fbfbfb] border-b border-gray-200">
+      {/* Desktop */}
       <div className="hidden md:block max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4 relative">
-        {/* Botón Admin - Solo visible para admins */}
         {userIsAdmin && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2" style={{ zIndex: 1000 }}>
             <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Botón Admin clickeado - Navegando a /admin');
-                navigate('/admin');
-              }}
-              className="text-sm font-semibold text-red-600 hover:text-red-700 px-4 py-2 rounded-md hover:bg-red-50 transition-colors bg-white border-2 border-red-400 shadow-lg"
+            onClick={() => navigate('/admin')}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-[1000] text-sm font-semibold text-red-600 hover:text-red-700 px-4 py-2 rounded-md hover:bg-red-50 transition-colors bg-white border-2 border-red-400 shadow-lg"
             >
               Admin
             </button>
-          </div>
         )}
+        
         <form
-          ref={containerRef}
+          ref={formRef}
           onSubmit={(e) => {
             e.preventDefault();
             handleSearch();
@@ -304,7 +196,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             }}
           >
             {/* Service Type - Tipo de Servicio */}
-            <Popover open={isServiceTypeOpen} onOpenChange={setIsServiceTypeOpen}>
+            <Popover 
+              open={isServiceTypeOpen} 
+              onOpenChange={(open) => {
+                setIsServiceTypeOpen(open);
+              }}
+              modal={false}
+            >
               <PopoverTrigger asChild>
                 <div
                   className={`flex-1 px-4 sm:px-6 py-3 border-r border-gray-300 cursor-pointer transition-colors ${
@@ -353,23 +251,19 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                           e.preventDefault();
                           e.stopPropagation();
                         }}
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          console.log('✅ Click en serviceType:', {
-                            id: serviceType.id,
-                            name: serviceType.name,
-                            serviceTypesArray: serviceTypes.map(st => ({ id: st.id, name: st.name })),
-                          });
-                          // Actualizar el estado directamente
-                          const newServiceTypeId = serviceType.id;
-                          setServiceTypeId(newServiceTypeId);
-                          console.log('🔄 setServiceTypeId a:', newServiceTypeId);
-                          // Cerrar el popover después de un pequeño delay
-                          requestAnimationFrame(() => {
-                          setIsServiceTypeOpen(false);
-                          setActiveField(null);
-                          });
+                          setServiceTypeId(serviceType.id);
+                          setActiveField('serviceType');
+                          // Forzar que el popover se mantenga abierto
+                          setTimeout(() => {
+                            setIsServiceTypeOpen(true);
+                          }, 0);
                         }}
                         className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
                           serviceTypeId === serviceType.id ? 'bg-blue-50' : ''
@@ -387,7 +281,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             </Popover>
 
             {/* Category - Categoría */}
-            <Popover open={isCategoryOpen} onOpenChange={setIsCategoryOpen}>
+            <Popover open={isCategoryOpen} onOpenChange={setIsCategoryOpen} modal={false}>
               <PopoverTrigger asChild>
                 <div
                   className={`flex-1 px-4 sm:px-6 py-3 border-r border-gray-300 cursor-pointer transition-colors ${
@@ -434,27 +328,28 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                         <button
                           key={category.id}
                           type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setCategoryId(category.id);
+                            if (onSearch) {
+                              onSearch({
+                                serviceTypeId,
+                                categoryId: category.id,
+                                adUrl,
+                              });
+                            }
+                            // Mantener el popover abierto después de la selección
+                            // setIsCategoryOpen(false);
+                            // setActiveField(null);
+                          }}
                           onMouseDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                           }}
-                          onClick={(e) => {
+                          onPointerDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('✅ Click en category:', {
-                              id: category.id,
-                              name: category.name,
-                              categoriesArray: categories.map(c => ({ id: c.id, name: c.name })),
-                            });
-                            // Actualizar el estado directamente
-                            const newCategoryId = category.id;
-                            setCategoryId(newCategoryId);
-                            console.log('🔄 setCategoryId a:', newCategoryId);
-                            // Cerrar el popover después de un pequeño delay
-                            requestAnimationFrame(() => {
-                            setIsCategoryOpen(false);
-                            setActiveField(null);
-                            });
                           }}
                           className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
                             categoryId === category.id ? 'bg-blue-50' : ''
@@ -496,15 +391,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   />
                 ) : (
                   <div
-                    className="text-sm text-gray-500 truncate flex items-center gap-1"
+                    className="text-sm text-gray-500 truncate"
                     style={{ fontSize: '14px', lineHeight: '18px' }}
                   >
-                    {adUrl || (
-                      <>
-                        <LinkIcon className="w-4 h-4 flex-shrink-0" />
-                        <span>Pega la URL aquí</span>
-                      </>
-                    )}
+                    {adUrl || 'Pega la URL aquí'}
                   </div>
                 )}
               </div>
@@ -522,759 +412,504 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
           </div>
         </form>
 
-        {/* Desktop: Tab Navigation Bar */}
-        <div
-          role="tablist"
-          className="flex items-center justify-center mt-4"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingTop: '0px',
-            paddingBottom: '0px',
-            gap: '32px',
-            position: 'relative',
-            width: '100%',
-            maxWidth: '850px',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-          }}
-        >
-          {/* Coches Tab */}
+        {/* Tabs Desktop */}
+        <div className="flex items-center justify-center mt-4 gap-8 max-w-[850px] mx-auto relative">
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'coches'}
-            tabIndex={0}
-            data-tabid="tabBarItem-COCHES"
-            id="search-block-tab-COCHES-desktop"
             onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
             onMouseEnter={() => setHoveredTab('coches')}
             onMouseLeave={() => setHoveredTab(null)}
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              padding: '16px 0px',
-              textDecoration: 'none',
-              color: '#222222',
-              position: 'relative',
-              gap: '12px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
           >
-            <span style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              position: 'relative',
-              flexShrink: 0,
-            }}>
-              <img
-                src={cocheImg}
-                alt="Coche"
-                style={{
-                  display: 'block',
-                  height: '32px',
-                  width: '32px',
-                  objectFit: 'contain',
-                }}
-              />
-            </span>
-            <span
-              style={{
-                fontSize: '16px',
-                lineHeight: '20px',
-                fontWeight: activeTab === 'coches' ? 600 : 400,
-                color: '#222222',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                whiteSpace: 'nowrap',
-                position: 'relative',
-              }}
-            >
+            <img src={cocheImg} alt="Coche" className="w-8 h-8 object-contain" />
+            <span className={`text-base whitespace-nowrap ${activeTab === 'coches' ? 'font-semibold' : 'font-normal'}`}>
               Coches
             </span>
-            {/* Underline indicator - debajo de todo el tab */}
-            <span
-              style={{
-                position: 'absolute',
-                bottom: '0px',
-                left: '0px',
-                right: '0px',
-                height: '2px',
-                backgroundColor: '#222222',
-                transform: activeTab === 'coches' ? 'scaleX(1)' : 'scaleX(0)',
-                transformOrigin: 'left',
-                transition: 'transform 0.2s ease',
-              }}
-            />
+            <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
+              activeTab === 'coches' ? 'scale-x-100' : 'scale-x-0'
+            }`} />
           </button>
 
-          {/* Inmobiliaria Tab - Puede mostrar categoría del drawer si está seleccionada */}
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'inmobiliaria'}
-            tabIndex={-1}
-            data-tabid="tabBarItem-INMOBILIARIA"
-            id="search-block-tab-INMOBILIARIA-desktop"
             onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
             onMouseEnter={() => setHoveredTab('inmobiliaria')}
             onMouseLeave={() => setHoveredTab(null)}
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              padding: '16px 0px',
-              textDecoration: 'none',
-              color: '#222222',
-              position: 'relative',
-              gap: '12px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
           >
-            <span style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              position: 'relative',
-              flexShrink: 0,
-            }}>
               <img
                 src={drawerCategoryReplacement?.image || casaImg}
                 alt={drawerCategoryReplacement?.name || "Casa"}
-                style={{
-                  display: 'block',
-                  height: '32px',
-                  width: '32px',
-                  objectFit: 'contain',
-                }}
-              />
-            </span>
-            <span
-              style={{
-                fontSize: '16px',
-                lineHeight: '20px',
-                fontWeight: activeTab === 'inmobiliaria' ? 600 : 400,
-                color: '#222222',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                whiteSpace: 'nowrap',
-                position: 'relative',
-              }}
-            >
+              className="w-8 h-8 object-contain"
+            />
+            <span className={`text-base whitespace-nowrap ${activeTab === 'inmobiliaria' ? 'font-semibold' : 'font-normal'}`}>
               {drawerCategoryReplacement?.name || 'Inmobiliaria'}
             </span>
-            {/* Underline indicator - debajo de todo el tab */}
-            <span
-              style={{
-                position: 'absolute',
-                bottom: '0px',
-                left: '0px',
-                right: '0px',
-                height: '2px',
-                backgroundColor: '#222222',
-                transform: activeTab === 'inmobiliaria' || hoveredTab === 'inmobiliaria' ? 'scaleX(1)' : 'scaleX(0)',
-                transformOrigin: 'left',
-                transition: 'transform 0.2s ease',
-              }}
-            />
+            <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
+              activeTab === 'inmobiliaria' || hoveredTab === 'inmobiliaria' ? 'scale-x-100' : 'scale-x-0'
+            }`} />
           </button>
 
-          {/* Services Tab - ResponsiveModal con más categorías (Drawer en móvil, Dialog en PC) */}
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'drawer'}
-            tabIndex={-1}
-            data-tabid="tabBarItem-SERVICES"
-            id="search-block-tab-SERVICES-desktop"
             onClick={() => setIsDrawerOpen(true)}
             onMouseEnter={() => setHoveredTab('services')}
             onMouseLeave={() => setHoveredTab(null)}
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              padding: '16px 0px',
-              textDecoration: 'none',
-              color: '#222222',
-              position: 'relative',
-              gap: '12px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
           >
-            <span style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              position: 'relative',
-              flexShrink: 0,
-            }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px',
-                  height: '32px',
-                  width: '32px',
-                }}
-              >
-                <div
-                  style={{
-                    width: '5px',
-                    height: '5px',
-                    borderRadius: '50%',
-                    backgroundColor: '#222222',
-                  }}
-                />
-                <div
-                  style={{
-                    width: '5px',
-                    height: '5px',
-                    borderRadius: '50%',
-                    backgroundColor: '#222222',
-                  }}
-                />
-                <div
-                  style={{
-                    width: '5px',
-                    height: '5px',
-                    borderRadius: '50%',
-                    backgroundColor: '#222222',
-                  }}
-                />
+            <div className="flex items-center justify-center gap-1 w-8 h-8">
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
               </div>
-            </span>
-            <span
-              style={{
-                fontSize: '16px',
-                lineHeight: '20px',
-                fontWeight: activeTab === 'drawer' ? 600 : 400,
-                color: '#222222',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                whiteSpace: 'nowrap',
-                position: 'relative',
-              }}
-            >
+            <span className={`text-base whitespace-nowrap ${activeTab === 'drawer' ? 'font-semibold' : 'font-normal'}`}>
               Más
             </span>
-            {/* Underline indicator - debajo de todo el tab */}
-            <span
-              style={{
-                position: 'absolute',
-                bottom: '0px',
-                left: '0px',
-                right: '0px',
-                height: '2px',
-                backgroundColor: '#222222',
-                transform: activeTab === 'drawer' || hoveredTab === 'services' ? 'scaleX(1)' : 'scaleX(0)',
-                transformOrigin: 'left',
-                transition: 'transform 0.2s ease',
-              }}
-            />
+            <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
+              activeTab === 'drawer' || hoveredTab === 'services' ? 'scale-x-100' : 'scale-x-0'
+            }`} />
           </button>
         </div>
       </div>
 
-      {/* Mobile: Botón grande estilo Airbnb - Estructura exacta del HTML */}
-      <div className="md:hidden">
-        <div style={{ padding: '12px 24px' }}>
-          <div className="c1tqtfcq" data-xray-jira-component="Guest: Search Bar">
+      {/* Mobile */}
+      <div className="md:hidden px-6 py-3">
         <button
           type="button"
-          onClick={() => {
-            // Cerrar Popovers del desktop antes de abrir el drawer móvil
-            setIsServiceTypeOpen(false);
-            setIsCategoryOpen(false);
-            setActiveField(null);
-            setIsMobileSearchOpen(true);
-          }}
-          className="w-full bg-white border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-all"
-          style={{
-            height: '56px',
-            minHeight: '56px',
-            paddingLeft: '16px',
-            paddingRight: '16px',
-            display: 'flex',
-            alignItems: 'center',
-                justifyContent: 'center',
-          }}
+          onClick={() => setIsMobileSearchOpen(true)}
+          className="w-full bg-white border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-3 px-4 h-14"
               aria-label="Buscar revisor"
-              data-xray-jira-component="Guest: Search Bar"
         >
-          {/* span.b15xd7zr con data-button-content="true" */}
-          <span 
-            data-button-content="true"
-                className="b15xd7zr"
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center',
-                  justifyContent: 'center',
-              width: '100%',
-            }}
-          >
-            {/* span.moz9gxt */}
-                <span className="moz9gxt" style={{ 
-              display: 'flex', 
-              alignItems: 'center',
-                  justifyContent: 'center',
-              width: '100%',
-            }}>
-                  {/* div.dyig47i - Contiene icono Y texto */}
-                  <div className="dyig47i" style={{ 
-                display: 'flex', 
-                alignItems: 'center',
-                flexDirection: 'row',
-                    justifyContent: 'center',
-                gap: '12px',
-              }}>
-                {/* span.s1hvfp9h - Contenedor del SVG */}
-                    <span className="s1hvfp9h" style={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  flexShrink: 0,
-                }}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 32 32"
-                    aria-hidden="true"
-                    role="presentation"
-                    focusable="false"
-                    style={{
-                      display: 'block',
-                      height: '12px',
-                      width: '12px',
-                      fill: 'currentcolor',
-                    }}
-                  >
-                    <path d="M13 0a13 13 0 0 1 10.5 20.67l7.91 7.92-2.82 2.82-7.92-7.91A12.94 12.94 0 0 1 13 26a13 13 0 1 1 0-26zm0 4a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"></path>
-                  </svg>
-                </span>
-
-                  {/* span.p19nk050 - Texto principal */}
-                  <span
-                      className="p19nk050"
-                    elementtiming="time_to_search_rendered"
-                    style={{
-                      fontSize: '14px',
-                      lineHeight: '17px',
-                        fontWeight: 550,
-                      color: '#222222',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      display: 'block',
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                        letterSpacing: 'normal',
-                    }}
-                  >
-                      Buscar revisor
-                    </span>
-                  </div>
-                </span>
-              </span>
+          <Search className="w-3 h-3 text-gray-600" />
+          <span className="text-sm font-medium text-gray-900">Buscar revisor</span>
             </button>
-          </div>
-        </div>
 
-        {/* Mobile: Tab Navigation Bar */}
-        <div
-          role="tablist"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              paddingLeft: '40px',
-              paddingRight: '40px',
-              paddingTop: '0px',
-              paddingBottom: '0px',
-              gap: '0',
-              position: 'relative',
-              width: '100%',
-              overflowX: 'auto',
-            }}
-        >
-          {/* Coches Tab */}
+        {/* Tabs Mobile */}
+        <div className="flex items-center justify-start px-10 relative w-full overflow-x-auto mt-0">
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'coches'}
-            tabIndex={0}
-            data-tabid="tabBarItem-COCHES"
-            id="search-block-tab-COCHES"
             onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '8px 0px',
-              textDecoration: 'none',
-              color: '#222222',
-              position: 'relative',
-              minWidth: '40px',
-              flex: '1 1 0',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            className="flex flex-col items-center justify-center py-2 min-w-[40px] flex-1 bg-transparent border-none cursor-pointer"
           >
-            <span style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              marginBottom: '2px', 
-              position: 'relative',
-              width: '100%',
-            }}>
-              <img
-                src={cocheImg}
-                alt="Coche"
-                style={{
-                  display: 'block',
-                  height: '48px',
-                  width: '48px',
-                  objectFit: 'contain',
-                }}
-              />
-            </span>
-            <span
-              style={{
-                fontSize: '10px',
-                lineHeight: '12px',
-                fontWeight: activeTab === 'coches' ? 600 : 400,
-                color: '#222222',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                textAlign: 'center',
-                width: '100%',
-              }}
-            >
+            <img src={cocheImg} alt="Coche" className="w-12 h-12 object-contain mb-0.5" />
+            <span className={`text-[10px] leading-3 text-center w-full ${activeTab === 'coches' ? 'font-semibold' : 'font-normal'}`}>
               Coches
                   </span>
           </button>
 
-          {/* Inmobiliaria Tab - Puede mostrar categoría del drawer si está seleccionada */}
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'inmobiliaria'}
-            tabIndex={-1}
-            data-tabid="tabBarItem-INMOBILIARIA"
-            id="search-block-tab-INMOBILIARIA"
             onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '8px 0px',
-              textDecoration: 'none',
-              color: '#222222',
-              position: 'relative',
-              minWidth: '40px',
-              flex: '1 1 0',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            className="flex flex-col items-center justify-center py-2 min-w-[40px] flex-1 bg-transparent border-none cursor-pointer"
           >
-            <span style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              marginBottom: '2px', 
-              position: 'relative',
-              width: '100%',
-            }}>
               <img
                 src={drawerCategoryReplacement?.image || casaImg}
                 alt={drawerCategoryReplacement?.name || "Casa"}
-                style={{
-                  display: 'block',
-                  height: '48px',
-                  width: '48px',
-                  objectFit: 'contain',
-                }}
-              />
-            </span>
-                  <span
-                    style={{
-                fontSize: '10px',
-                lineHeight: '12px',
-                      fontWeight: activeTab === 'inmobiliaria' ? 600 : 400,
-                color: '#222222',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                textAlign: 'center',
-                      width: '100%',
-                    }}
-                  >
+              className="w-12 h-12 object-contain mb-0.5"
+            />
+            <span className={`text-[10px] leading-3 text-center w-full ${activeTab === 'inmobiliaria' ? 'font-semibold' : 'font-normal'}`}>
               {drawerCategoryReplacement?.name || 'Inmobiliaria'}
                   </span>
           </button>
 
-          {/* Services Tab - ResponsiveModal con más categorías (Mobile) */}
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'drawer'}
-            tabIndex={-1}
-            data-tabid="tabBarItem-SERVICES"
-            id="search-block-tab-SERVICES"
             onClick={() => setIsDrawerOpen(true)}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '8px 0px',
-              textDecoration: 'none',
-              color: '#222222',
-              position: 'relative',
-              minWidth: '40px',
-              flex: '1 1 0',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            className="flex flex-col items-center justify-center py-2 min-w-[40px] flex-1 bg-transparent border-none cursor-pointer"
           >
-            <span style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              marginBottom: '2px', 
-              position: 'relative',
-              width: '100%',
-            }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px',
-                  height: '48px',
-                  width: '48px',
-                }}
-              >
-                <div
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: '#222222',
-                  }}
-                />
-                <div
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: '#222222',
-                  }}
-                />
-                <div
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: '#222222',
-                  }}
-                />
+            <div className="flex items-center justify-center gap-1 w-12 h-12 mb-0.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
               </div>
-            </span>
-            <span
-              style={{
-                fontSize: '10px',
-                lineHeight: '12px',
-                fontWeight: activeTab === 'drawer' ? 600 : 400,
-                color: '#222222',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                textAlign: 'center',
-                width: '100%',
-              }}
-            >
+            <span className={`text-[10px] leading-3 text-center w-full ${activeTab === 'drawer' ? 'font-semibold' : 'font-normal'}`}>
               Más
             </span>
           </button>
 
-          {/* Underline indicator - Se mueve según el tab activo */}
           <div
+            className="absolute bottom-0 h-0.5 w-10 bg-gray-900 rounded transition-all duration-300"
             style={{
-              position: 'absolute',
-              bottom: 0,
               left: activeTab === 'coches' 
                 ? 'calc(40px + ((100% - 80px) / 3) / 2 - 20px)'
                 : activeTab === 'inmobiliaria'
                 ? 'calc(40px + ((100% - 80px) / 3) + ((100% - 80px) / 3) / 2 - 20px)'
                 : 'calc(40px + ((100% - 80px) / 3) * 2 + ((100% - 80px) / 3) / 2 - 20px)',
-              height: '3px',
-              width: '40px',
-              backgroundColor: '#222222',
-              borderRadius: '2px',
-              transition: 'left 0.3s ease',
             }}
           />
         </div>
       </div>
 
-      {/* Mobile Search Full Screen - Diseño simplificado */}
+      {/* Modal Mobile */}
       {isMobileSearchOpen && typeof document !== 'undefined' && createPortal(
-        <div 
-          className="md:hidden fixed inset-0 z-50 bg-white flex flex-col"
-          style={{ zIndex: 10000 }}
-        >
-          <div className="flex-1 overflow-y-auto">
-            {/* Sección principal: Categorías */}
-            <div style={{ padding: '16px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#222', marginBottom: '16px' }}>
-                ¿Dónde?
-              </h2>
-              
-              {/* Buscador */}
-              <div style={{ marginBottom: '16px', position: 'relative' }}>
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <>
+          {/* Botón cerrar arriba derecha - Fuera del div principal */}
+          <div className="md:hidden fixed top-4 right-4 z-[60]">
+            <button
+              type="button"
+              onClick={() => setIsMobileSearchOpen(false)}
+              className="p-2 bg-white hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center shadow-sm"
+              aria-label="Cerrar"
+            >
+              <span>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  viewBox="0 0 32 32" 
+                  aria-hidden="true" 
+                  role="presentation" 
+                  focusable="false"
+                  style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 3, overflow: 'visible' }}
+                >
+                  <path d="m6 6 20 20M26 6 6 26"></path>
+                </svg>
+              </span>
+            </button>
+          </div>
+          
+          <div className="md:hidden fixed inset-0 z-50 bg-gray-100 flex flex-col">
+            <div className="flex-1 overflow-y-auto">
+              <div className="pt-16 px-4 pb-4 space-y-3">
+              {/* Categorías - Div más alto con categorías visibles */}
+              <div 
+                className={`bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col ${
+                  expandedAccordion === 'where' ? 'fixed inset-0 z-[60] rounded-none' : ''
+                }`}
+                style={expandedAccordion === 'where' 
+                  ? { height: '100vh', minHeight: '100vh', maxHeight: '100vh' }
+                  : { height: '45vh', minHeight: '300px', maxHeight: '500px' }
+                }
+              >
+                {expandedAccordion === 'where' ? (
+                  <>
+                    {/* Header con botón atrás y buscador cuando está expandido */}
+                    <div className="flex items-center gap-3 p-4 border-b border-gray-200">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedAccordion(null)}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center"
+                        aria-label="Atrás"
+                      >
+                        <ArrowLeft className="w-4 h-4" strokeWidth={4} />
+                      </button>
+                      <div className="flex-1">
+                        <form role="search" className="w-full">
+                          <div>
+                            <label 
+                              htmlFor="categories-search-input"
+                              className="flex items-center w-full px-4 py-3 border border-gray-300 rounded-lg bg-white"
+                              style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+                            >
+                              <div className="flex items-center justify-center mr-3">
+                                <svg 
+                                  viewBox="0 0 32 32" 
+                                  xmlns="http://www.w3.org/2000/svg" 
+                                  aria-hidden="true" 
+                                  role="presentation" 
+                                  focusable="false"
+                                  style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 4, overflow: 'visible' }}
+                                >
+                                  <path d="m20.666 20.666 10 10"></path>
+                                  <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
+                                </svg>
+                              </div>
                 <input 
-                  type="text"
+                                id="categories-search-input"
+                                type="search"
                   placeholder="Buscar categorías"
                   value={categorySearchQuery}
                   onChange={(e) => setCategorySearchQuery(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 10px 10px 36px',
-                    border: 'none',
-                    borderBottom: '1px solid #e5e7eb',
-                    fontSize: '16px',
-                    outline: 'none',
-                  }}
-                />
+                                className="flex-1 border-0 text-sm outline-none bg-transparent text-gray-900 placeholder:text-gray-400"
+                                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+                                autoComplete="off"
+                                autoCorrect="off"
+                                spellCheck="false"
+                                aria-label="Buscar categorías"
+                              />
+                            </label>
+                          </div>
+                        </form>
+                      </div>
               </div>
 
-              {/* Lista de categorías */}
-              {categoriesLoading ? (
-                <div style={{ textAlign: 'center', padding: '32px 0', color: '#717171' }}>Cargando...</div>
-              ) : (
-                <div>
-                  {categories
-                    .filter(cat => cat.isActive)
-                    .filter(cat => {
-                      if (categorySearchQuery.trim()) {
-                        return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
-                      }
-                      return true;
-                    })
-                    .map((category) => {
-                      const categoryImage = getCategoryImage(category.name);
-                      return (
-                        <button
-                          key={category.id}
-                          type="button"
-                          onClick={() => setCategoryId(category.id)}
-                          style={{ 
-                            width: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '12px',
-                            marginBottom: '8px',
-                            backgroundColor: categoryId === category.id ? '#f7f7f7' : 'transparent',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                          }}
-                        >
-                          {categoryImage ? (
-                            <img 
-                              src={categoryImage}
-                              alt=""
-                              style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'contain' }}
-                            />
-                          ) : (
-                            <div style={{ width: '48px', height: '48px', borderRadius: '8px', backgroundColor: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <FolderTree className="w-6 h-6 text-gray-400" />
-                            </div>
-                          )}
-                          <div>
-                            <div style={{ fontSize: '15px', fontWeight: 600, color: '#222' }}>
-                              {category.name}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#717171' }}>
-                              Explorar servicios
-                            </div>
+                    {/* Contenido expandido al 100% */}
+                    <div className="flex-1 overflow-y-auto px-4 py-4">
+                      <div>
+                  {categoriesLoading ? (
+                          <div className="text-center py-4 text-sm text-gray-500" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+                            Cargando...
                           </div>
-                        </button>
-                      );
-                    })}
-                </div>
-              )}
+                  ) : (
+                    <div>
+                      {categories
+                        .filter(cat => cat.isActive)
+                              .filter(cat => {
+                                if (categorySearchQuery.trim()) {
+                                  return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
+                                }
+                                return true;
+                              })
+                        .map((category) => {
+                          const categoryImage = getCategoryImage(category.name);
+                          return (
+                            <button
+                              key={category.id}
+                              type="button"
+                              onClick={() => {
+                                setCategoryId(category.id);
+                                setCategorySearchQuery('');
+                                      setExpandedAccordion(null);
+                                    }}
+                                    className={`w-full flex items-center gap-3 p-3 mb-2 rounded-lg text-left transition-colors border-2 ${
+                                      categoryId === category.id 
+                                        ? 'bg-gray-900 text-white border-gray-900' 
+                                        : 'hover:bg-gray-50 border-transparent'
+                                    }`}
+                            >
+                              {categoryImage ? (
+                                <img 
+                                  src={categoryImage}
+                                  alt=""
+                                  className="w-12 h-12 rounded-lg object-contain"
+                                />
+                              ) : (
+                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                                  categoryId === category.id ? 'bg-white/20' : 'bg-gray-100'
+                                }`}>
+                                  <FolderTree className={`w-6 h-6 ${categoryId === category.id ? 'text-white' : 'text-gray-400'}`} />
+                                </div>
+                              )}
+                              <div>
+                                    <div className={`text-sm font-medium ${categoryId === category.id ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+                                  {category.name}
+                                </div>
+                                      <div className={`text-xs ${categoryId === category.id ? 'text-white/80' : 'text-gray-500'}`} style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+                                  Explorar servicios
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      {categories
+                        .filter(cat => cat.isActive)
+                              .filter(cat => {
+                                if (categorySearchQuery.trim()) {
+                                  return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
+                                }
+                                return true;
+                              }).length === 0 && (
+                              <div className="text-center py-4 text-sm text-gray-500" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+                          No se encontraron categorías
+                        </div>
+                      )}
+                    </div>
+                  )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-4">
+                      <h2 
+                        tabIndex={-1}
+                        className="text-2xl font-semibold text-gray-900"
+                        style={{ 
+                          fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                          lineHeight: '1.2',
+                          letterSpacing: '-0.01em'
+                        }}
+                      >
+                        <div className="font-semibold">
+                          Categorías
+                        </div>
+                      </h2>
             </div>
 
-            {/* Sección inferior: Tipo y URL */}
-            <div style={{ borderTop: '1px solid #e5e7eb', display: 'flex' }}>
-              {/* Tipo de servicio */}
-              <div style={{ flex: 1, borderRight: '1px solid #e5e7eb', padding: '16px' }}>
+                    <div className="flex-1 overflow-y-auto px-4 pb-4">
+                      <div className="mb-4">
+                        <form role="search" className="w-full">
+                          <div>
+                            <label 
+                              htmlFor="categories-search-input-collapsed"
+                              className="flex items-center w-full px-4 py-3 border border-gray-300 rounded-lg bg-white"
+                              style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+                            >
+                              <div className="flex items-center justify-center mr-3">
+                                <svg 
+                                  viewBox="0 0 32 32" 
+                                  xmlns="http://www.w3.org/2000/svg" 
+                                  aria-hidden="true" 
+                                  role="presentation" 
+                                  focusable="false"
+                                  style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 4, overflow: 'visible' }}
+                                >
+                                  <path d="m20.666 20.666 10 10"></path>
+                                  <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
+                                </svg>
+                              </div>
+                              <input
+                                id="categories-search-input-collapsed"
+                                type="search"
+                                placeholder="Buscar categorías"
+                                value={categorySearchQuery}
+                                onChange={(e) => setCategorySearchQuery(e.target.value)}
+                                className="flex-1 border-0 text-sm outline-none bg-transparent text-gray-900 placeholder:text-gray-400"
+                                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+                                autoComplete="off"
+                                autoCorrect="off"
+                                spellCheck="false"
+                                aria-label="Buscar categorías"
+                              />
+                            </label>
+                          </div>
+                        </form>
+                      </div>
+
+                      <div>
+                        {categoriesLoading ? (
+                          <div className="text-center py-4 text-sm text-gray-500" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+                            Cargando...
+                          </div>
+                        ) : (
+                          <div>
+                            {categories
+                              .filter(cat => cat.isActive)
+                              .filter(cat => {
+                                if (categorySearchQuery.trim()) {
+                                  return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
+                                }
+                                return true;
+                              })
+                              .map((category) => {
+                                const categoryImage = getCategoryImage(category.name);
+                                return (
+                <button
+                                    key={category.id}
+                  type="button"
+                                    onClick={() => {
+                                      setCategoryId(category.id);
+                                      setCategorySearchQuery('');
+                                    }}
+                                    className={`w-full flex items-center gap-3 p-3 mb-2 rounded-lg text-left transition-colors border-2 ${
+                                      categoryId === category.id 
+                                        ? 'bg-gray-900 text-white border-gray-900' 
+                                        : 'hover:bg-gray-50 border-transparent'
+                                    }`}
+                                  >
+                                    {categoryImage ? (
+                                      <img 
+                                        src={categoryImage}
+                                        alt=""
+                                        className="w-12 h-12 rounded-lg object-contain"
+                                      />
+                                    ) : (
+                                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                                        categoryId === category.id ? 'bg-white/20' : 'bg-gray-100'
+                                      }`}>
+                                        <FolderTree className={`w-6 h-6 ${categoryId === category.id ? 'text-white' : 'text-gray-400'}`} />
+                                      </div>
+                                    )}
+                  <div>
+                                      <div className={`text-sm font-medium ${categoryId === category.id ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+                                        {category.name}
+                    </div>
+                                      <div className={`text-xs ${categoryId === category.id ? 'text-white/80' : 'text-gray-500'}`} style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+                                        Explorar servicios
+                    </div>
+                  </div>
+                                  </button>
+                                );
+                              })}
+                            {categories
+                              .filter(cat => cat.isActive)
+                              .filter(cat => {
+                                if (categorySearchQuery.trim()) {
+                                  return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
+                                }
+                                return true;
+                              }).length === 0 && (
+                              <div className="text-center py-4 text-sm text-gray-500" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+                                No se encontraron categorías
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Separador y flecha al final - Solo cuando NO está expandido */}
+                {expandedAccordion !== 'where' && (
+                  <div className="border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedAccordion('where')}
+                      className="w-full flex items-center justify-center p-4 bg-transparent border-none cursor-pointer"
+                    >
+                      <ChevronDown className="w-3 h-3 text-gray-400" style={{ strokeWidth: 4 }} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Tipo de servicio - Rectángulo con sombra */}
+              <div className="bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-md transition-all">
                 <button
                   type="button"
                   onClick={() => setExpandedAccordion(expandedAccordion === 'type' ? null : 'type')}
-                  style={{ 
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
+                  className="w-full flex items-center justify-between p-4 bg-transparent border-none cursor-pointer"
                 >
-                  <div>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#222', marginBottom: '4px' }}>
-                      Tipo de servicio
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#717171' }}>
-                      {serviceTypeId ? serviceTypes.find(st => st.id === serviceTypeId)?.name || 'Añade' : 'Añade'}
-                    </div>
-                  </div>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 ${expandedAccordion === 'type' ? 'rotate-180' : ''}`} />
+                  <label className="text-xs font-semibold text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+                    Tipo de servicio
+                  </label>
+                  <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${expandedAccordion === 'type' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
                 </button>
                 
                 {expandedAccordion === 'type' && (
-                  <div style={{ marginTop: '16px' }}>
+                  <div className="px-4 pb-4">
                     {serviceTypesLoading ? (
-                      <div style={{ textAlign: 'center', padding: '16px 0', color: '#717171' }}>Cargando...</div>
+                      <div className="text-center py-4 text-sm text-gray-500">Cargando...</div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div className="flex flex-col gap-2">
                         {serviceTypes.map((st) => (
                           <button
                             key={st.id}
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
                               setServiceTypeId(st.id);
-                              setExpandedAccordion(null);
+                              // Mantener el desplegable abierto
+                              setExpandedAccordion('type');
                             }}
-                            style={{
-                              width: '100%',
-                              padding: '12px',
-                              borderRadius: '8px',
-                              backgroundColor: serviceTypeId === st.id ? '#222' : '#f7f7f7',
-                              color: serviceTypeId === st.id ? '#fff' : '#222',
-                              border: 'none',
-                              cursor: 'pointer',
-                              textAlign: 'left',
-                              fontSize: '14px',
-                              fontWeight: 600,
-                            }}
+                            className={`w-full px-3 py-3 rounded-lg text-left transition-colors flex flex-col gap-1 ${
+                              serviceTypeId === st.id 
+                                ? 'bg-gray-900 text-white' 
+                                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                            }`}
                           >
-                            {st.name}
+                            <span className="text-sm font-semibold">{st.name}</span>
+                            {st.description && (
+                              <span className={`text-xs ${
+                                serviceTypeId === st.id 
+                                  ? 'text-gray-300' 
+                                  : 'text-gray-600'
+                              }`}>
+                                {st.description}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -1283,48 +918,29 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 )}
               </div>
 
-              {/* URL */}
-              <div style={{ flex: 1, padding: '16px' }}>
+              {/* URL del anuncio - Rectángulo con sombra */}
+              <div className="bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-md transition-all">
                 <button
                   type="button"
                   onClick={() => setExpandedAccordion(expandedAccordion === 'url' ? null : 'url')}
-                  style={{ 
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
+                  className="w-full flex items-center justify-between p-4 bg-transparent border-none cursor-pointer"
                 >
-                  <div>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#222', marginBottom: '4px' }}>
+                  <label className="text-xs font-semibold text-gray-900 flex items-center gap-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
                       URL del anuncio
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#717171' }}>
-                      {adUrl || 'Añade (opcional)'}
-                    </div>
-                  </div>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 ${expandedAccordion === 'url' ? 'rotate-180' : ''}`} />
+                    <span className="text-gray-400 font-normal">(opcional)</span>
+                  </label>
+                  <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${expandedAccordion === 'url' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
                 </button>
                 
                 {expandedAccordion === 'url' && (
-                  <div style={{ marginTop: '16px' }}>
+                  <div className="px-4 pb-4">
                     <input
                       type="text"
                       placeholder="Pega la URL aquí..."
                       value={adUrl}
                       onChange={(e) => setAdUrl(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none',
-                      }}
+                      className="w-full px-3 py-3 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
+                      autoFocus
                     />
                   </div>
                 )}
@@ -1332,14 +948,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             </div>
           </div>
 
-          {/* Footer */}
-          <div style={{ 
-            padding: '16px', 
-            borderTop: '1px solid #e5e7eb',
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: '16px',
-          }}>
+          <div className="p-4 border-t border-gray-200 bg-white flex justify-between gap-4">
             <button
               type="button"
               onClick={() => {
@@ -1349,16 +958,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 setCategorySearchQuery('');
                 setExpandedAccordion(null);
               }}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: 600,
-                color: '#222',
-                textDecoration: 'underline',
-                backgroundColor: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-              }}
+              className="px-4 py-2 text-sm font-semibold text-gray-900 underline bg-transparent border-none cursor-pointer"
             >
               Restablecer
             </button>
@@ -1369,45 +969,32 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 setIsMobileSearchOpen(false);
                 setExpandedAccordion(null);
               }}
-              style={{
-                padding: '14px 24px',
-                backgroundColor: '#FF385C',
-                color: '#fff',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 600,
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
+              className="px-6 py-3.5 bg-[#FF385C] text-white rounded-lg text-sm font-semibold border-none cursor-pointer flex items-center gap-2"
             >
               <Search className="w-4 h-4" />
               Buscar
             </button>
           </div>
-        </div>,
+        </div>
+        </>,
         document.body
       )}
 
-      
-      {/* ResponsiveModal compartido para "Más Categorías" - Drawer en móvil, Dialog en PC - Mejorado */}
+      {/* Modal Más Categorías */}
       <ResponsiveModal
         open={isDrawerOpen}
         onOpenChange={(open) => {
           setIsDrawerOpen(open);
           if (!open) {
-            setCategorySearchQuery(''); // Limpiar búsqueda al cerrar
+            setCategorySearchQuery('');
           }
         }}
         title="Más Categorías"
         drawerClassName="w-full"
         dialogClassName="max-w-lg"
       >
-        <div className="flex flex-col" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          {/* Buscador moderno sin recuadro */}
-          <div className="px-4 pt-2 pb-3" style={{ flex: '0 0 auto' }}>
+        <div className="flex flex-col h-full">
+          <div className="px-4 pt-2 pb-3">
             <div className="relative">
               <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <input
@@ -1420,30 +1007,24 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             </div>
           </div>
           
-          {/* Lista de categorías con scroll */}
-          <div 
-            style={{ flex: '1 1 auto', overflowY: 'auto', overflowX: 'hidden', minHeight: 0, paddingRight: 0 }}
-            className="custom-scrollbar"
-          >
+          <div className="flex-1 overflow-y-auto min-h-0">
             {categoriesLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="text-sm text-muted-foreground">Cargando categorías...</div>
+                <div className="text-sm text-gray-500">Cargando categorías...</div>
               </div>
             ) : (
               <div className="flex flex-col">
                 {categories
                   .filter(cat => {
-                    // Filtrar las categorías que ya están en los tabs principales
                     if (cat.id === CATEGORIES.COCHES || cat.id === CATEGORIES.INMOBILIARIA) {
                       return false;
                     }
-                    // Filtrar por búsqueda
                     if (categorySearchQuery.trim()) {
                       return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
                     }
                     return true;
                   })
-                  .filter(cat => cat.isActive) // Solo categorías activas
+                  .filter(cat => cat.isActive)
                   .map((category, index, array) => {
                     const categoryImage = getCategoryImage(category.name);
                     const isSelected = categoryId === category.id;
@@ -1454,15 +1035,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                         <button
                           type="button"
                           onClick={() => handleDrawerCategoryClick(category.id, category.name)}
-                          className={`
-                            flex items-center gap-3 px-4 py-3 transition-colors w-full
-                            ${isSelected
-                              ? 'bg-muted'
-                              : 'hover:bg-muted/50'
-                            }
-                          `}
+                          className={`flex items-center gap-3 px-4 py-3 transition-colors w-full ${
+                            isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'
+                          }`}
                         >
-                          {/* Imagen pequeña a la izquierda */}
                           {categoryImage ? (
                             <img
                               src={categoryImage}
@@ -1470,35 +1046,31 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                               className="flex-shrink-0 w-9 h-9 object-contain"
                             />
                           ) : (
-                            <div className="flex-shrink-0 w-9 h-9 bg-muted rounded-md flex items-center justify-center">
-                              <FolderTree className="w-5 h-5 text-muted-foreground" />
+                            <div className="flex-shrink-0 w-9 h-9 bg-gray-100 rounded-md flex items-center justify-center">
+                              <FolderTree className="w-5 h-5 text-gray-400" />
                             </div>
                           )}
                           
-                          {/* Texto normal a la derecha */}
                           <div className="flex-1 text-left min-w-0">
                             <h3 className="text-base font-medium leading-tight">
                               {category.name}
                             </h3>
-                            <p className="text-sm text-muted-foreground mt-0.5">
+                            <p className="text-sm text-gray-500 mt-0.5">
                               Explorar servicios
                             </p>
                           </div>
                           
-                          {/* Indicador de selección */}
                           {isSelected && (
                             <div className="flex-shrink-0">
-                              <div className="w-2 h-2 bg-foreground rounded-full" />
+                              <div className="w-2 h-2 bg-gray-900 rounded-full" />
                             </div>
                           )}
                         </button>
-                        {/* Separador elegante entre categorías */}
                         {!isLast && <Separator className="mx-4" />}
                       </React.Fragment>
                     );
                   })}
                 
-                {/* Mensaje si no hay resultados */}
                 {categories
                   .filter(cat => {
                     if (cat.id === CATEGORIES.COCHES || cat.id === CATEGORIES.INMOBILIARIA) return false;
@@ -1509,7 +1081,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   })
                   .filter(cat => cat.isActive).length === 0 && (
                   <div className="flex items-center justify-center py-8">
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-gray-500">
                       {categorySearchQuery.trim() 
                         ? 'No se encontraron categorías' 
                         : 'No hay categorías disponibles'}

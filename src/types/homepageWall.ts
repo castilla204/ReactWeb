@@ -30,6 +30,7 @@ export interface SearchServiceHomepageDto {
   CategoryName: string;
   ServiceTypeId: number;
   ServiceTypeName: string;
+  ServiceTypeDescription?: string; // ✅ NUEVO: Descripción del tipo de servicio
   Price: number;
   ImageUrls: string[];  // URLs firmadas, listas para usar
   Expert: {
