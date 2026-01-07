@@ -1,14 +1,32 @@
-FROM node:24@sha256:20988bcdc6dc76690023eb2505dd273bdeefddcd0bde4bfd1efe4ebf8707f747 AS build
+FROM node:24 AS build
 WORKDIR /app
 COPY package*.json ./
-    COPY package*.json ./
-    RUN npm ci
-    COPY . .
-    RUN npm run build
+RUN npm ci
+COPY . .
+RUN npm run build
 
-FROM nginx:alpine@sha256:052b75ab72f690f33debaa51c7e08d9b969a0447a133eb2b99cc905d9188cb2b
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Usar serve en lugar de nginx para servir archivos estáticos
+FROM node:24
+WORKDIR /app
+
+# Instalar serve globalmente
+RUN npm install -g serve
+
+# Copiar archivos build desde la etapa anterior
+COPY --from=build /app/dist ./dist
+
+# Best Practice 2025: Run as non-root user
+# La imagen node:24 ya tiene un usuario 'node' con UID 1000, usarlo directamente
+RUN chown -R node:node /app
+
+USER node
+
 EXPOSE 80
-EXPOSE 443 
-CMD ["nginx", "-g", "daemon off;"]
+
+# Usar serve para servir los archivos estáticos
+# serve con -s sirve archivos estáticos primero, solo redirige a index.html si no existe
+# El problema puede ser caché del navegador o configuración del HTTPRoute
+# -s: single-page application mode (para React Router)
+# -l: puerto a escuchar
+# -n: no compression
+CMD ["serve", "-s", "dist", "-l", "80", "-n"]

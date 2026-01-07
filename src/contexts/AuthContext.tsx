@@ -23,28 +23,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const restoreSession = async () => {
             setIsLoading(true);
             try {
-                const token = getAuthToken();
-                console.log('Restoring session, token:', token ? 'present' : 'missing');
-                if (!token) {
+                // ✅ CRÍTICO: Inicializar authService desde localStorage primero
+                // Esto asegura que los tokens se carguen y se renueven si es necesario
+                authService.initFromStorage();
+
+                // Verificar tokens usando authService (más confiable)
+                const accessToken = authService.getAccessToken();
+                const refreshToken = authService.getRefreshToken();
+
+                if (!accessToken || !refreshToken) {
+                    console.log('⚠️ [AuthContext] No hay tokens en localStorage');
                     setUser(null);
                     setIsAuthenticated(false);
+                    setIsLoading(false);
                     return;
                 }
 
-                const storedUserData = await getUserData();
-                console.log('Restored user data:', storedUserData);
+                // ✅ Verificar si el access token expiró usando accessTokenExpiresAt
+                const expiresAt = localStorage.getItem('accessTokenExpiresAt');
+                if (expiresAt) {
+                    const expirationTime = new Date(expiresAt).getTime();
+                    const now = Date.now();
+                    if (expirationTime < now) {
+                        console.log('⚠️ [AuthContext] Access token expirado, renovando...');
+                        // Token expirado, intentar renovar
+                        try {
+                            const renewed = await authService.refreshAccessToken();
+                            if (!renewed) {
+                                console.log('❌ [AuthContext] No se pudo renovar el token - Refresh token expirado o inválido');
+                                setUser(null);
+                                setIsAuthenticated(false);
+                                setIsLoading(false);
+                                return;
+                            }
+                            console.log('✅ [AuthContext] Token renovado exitosamente');
+                        } catch (error) {
+                            console.error('❌ [AuthContext] Error al renovar token:', error);
+                            setUser(null);
+                            setIsAuthenticated(false);
+                            setIsLoading(false);
+                            return;
+                        }
+                    } else {
+                        // Token válido, pero verificar si expira pronto (5 minutos)
+                        const timeUntilExpiry = expirationTime - now;
+                        if (timeUntilExpiry < 5 * 60 * 1000 && timeUntilExpiry > 0) {
+                            console.log('🔄 [AuthContext] Token expira pronto, renovando proactivamente...');
+                            // Renovar proactivamente (no bloqueante)
+                            authService.refreshAccessToken().catch(err => {
+                                console.warn('⚠️ [AuthContext] Error en renovación proactiva:', err);
+                            });
+                        }
+                    }
+                }
+
+                // Obtener datos del usuario desde localStorage
+                const storedUserData = getUserData();
                 if (!storedUserData) {
-                    console.error('No user data found for token');
+                    console.log('⚠️ [AuthContext] No hay userData en localStorage');
+                    // Token presente pero sin datos de usuario - limpiar silenciosamente
                     setUser(null);
                     setIsAuthenticated(false);
                     removeAuthToken();
+                    setIsLoading(false);
                     return;
                 }
+
+                console.log('✅ [AuthContext] Sesión restaurada correctamente:', {
+                    hasToken: !!accessToken,
+                    hasRefreshToken: !!refreshToken,
+                    userEmail: storedUserData.Email || storedUserData.email,
+                    expiresAt: expiresAt
+                });
 
                 setUser(storedUserData);
                 setIsAuthenticated(true);
             } catch (error: any) {
-                console.error('Error restoring session:', error);
+                console.error('❌ [AuthContext] Error al restaurar sesión:', error);
+                // Error al restaurar sesión - limpiar y continuar
                 setUser(null);
                 setIsAuthenticated(false);
                 removeAuthToken();
@@ -63,8 +119,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const hasToken = !!token;
         const authenticated = hasUser && hasToken;
         
-        setIsAuthenticated(authenticated);
-        console.log('Auth state updated:', { user, isAuthenticated: authenticated, hasToken });
+        // ✅ Solo actualizar si el estado realmente cambió para evitar re-renderizados innecesarios
+        setIsAuthenticated(prev => {
+            if (prev !== authenticated) {
+                console.log('Auth state updated:', { user: user?.email, isAuthenticated: authenticated, hasToken });
+                return authenticated;
+            }
+            return prev;
+        });
     }, [user]);
 
     const signOut = async () => {
@@ -78,9 +140,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const updateUser = (newUser: User | null, newToken: string | null, callback?: () => void) => {
         console.log('Updating user:', newUser, 'Token:', newToken ? 'present' : 'missing');
         setUser(newUser);
-        if (newToken) {
-            setAuthToken(newToken);
+        if (newToken && newUser) {
+            // ✅ CRÍTICO: Pasar tanto el token como el usuario para que se guarden ambos
+            setAuthToken(newToken, newUser);
             setIsAuthenticated(true);
+            console.log('✅ [AuthContext] Usuario y token guardados en localStorage');
         } else {
             removeAuthToken();
             setIsAuthenticated(false);

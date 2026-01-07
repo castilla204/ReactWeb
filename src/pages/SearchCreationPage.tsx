@@ -6,7 +6,7 @@ import { SearchParameterForm } from '../components/SearchParameterForm';
 import { ServiceReviewPage } from './ServiceReviewPage';
 import { useAuth } from '../contexts/AuthContext';
 import { showToast } from '../lib/toast';
-import HomePresentation from '../components/HomePresentation';
+// HomePresentation movido a /quienes-somos
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import { ErrorDisplay } from '../components/ErrorDisplay';
@@ -19,12 +19,12 @@ import { useLoadScript } from '@react-google-maps/api';
 import { LocationMap } from '../components/LocationMap';
 import { useMapExperts } from '../hooks/useMapExperts';
 import { useServices } from '../hooks/useServices';
+import { useApi } from '../hooks/useApi';
+import { API_CONFIG } from '../config/api';
 import CountrySelector from '../components/CountrySelector';
 import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
 import Autocomplete from 'react-google-autocomplete';
-import { Search } from 'lucide-react';
-import { FormProgressTimeline } from '../components/FormProgressTimeline';
 import logoImg from '../media/logoi.png';
 
 import { Footer } from '../components/Footer';
@@ -54,7 +54,15 @@ const SearchCreationPage: React.FC = () => {
     // Removed subscription limits - no longer needed
     const { serviceTypes, isLoading: serviceTypesLoading, error: serviceTypesError } = useServiceTypes();
     const { showVerification, hasPendingVerification } = useMfaVerification();
-    const [currentStep, setCurrentStep] = useState(0);
+    const { fetchApi } = useApi();
+    // Iniciar en paso 0, pero si hay parámetros en la URL, ir directamente al paso 1
+    const [currentStep, setCurrentStep] = useState(() => {
+        const searchParams = new URLSearchParams(window.location.search);
+        const serviceTypeIdParam = searchParams.get('serviceTypeId');
+        const categoryIdParam = searchParams.get('categoryId');
+        // Si hay ambos parámetros, empezar en paso 1
+        return (serviceTypeIdParam && categoryIdParam) ? 1 : 0;
+    });
     const [showPendingMfaBanner, setShowPendingMfaBanner] = useState(false);
     const [showMfaRecommendationBanner, setShowMfaRecommendationBanner] = useState(false);
     const [mfaEnabled, setMfaEnabled] = useState<boolean | null>(null);
@@ -138,6 +146,116 @@ const SearchCreationPage: React.FC = () => {
     const [serviceDescription, setServiceDescription] = useState<string | undefined>(undefined);
     const [serviceImageUrls, setServiceImageUrls] = useState<string[]>([]);
 
+    // Detectar serviceId desde la URL y cargar el servicio directamente
+    useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const serviceIdParam = searchParams.get('serviceId');
+        const serviceTypeIdParam = searchParams.get('serviceTypeId');
+        const categoryIdParam = searchParams.get('categoryId');
+        
+        // Si hay serviceId en la URL, cargar el servicio y mostrar el formulario
+        if (serviceIdParam && !selectedServiceId) {
+            const serviceId = parseInt(serviceIdParam, 10);
+            if (!isNaN(serviceId)) {
+                // Primero intentar buscar en mapServices
+                let service = mapServices.find(s => s.id === serviceId);
+                
+                // Si no está en mapServices, buscarlo directamente desde la API
+                if (!service) {
+                    const loadService = async () => {
+                        try {
+                            const url = API_CONFIG.endpoints.expert.services.get(serviceId);
+                            const fetchedService = await fetchApi<typeof mapServices[0]>(url);
+                            if (fetchedService) {
+                                setSelectedServiceId(serviceId);
+                                setExpertProfilePicture(fetchedService.expert?.profilePictureUrl || fetchedService.expert?.profilePicture);
+                                setExpertName(fetchedService.expert?.user?.name || fetchedService.expert?.name);
+                                setServicePrice(fetchedService.price);
+                                setServiceDescription(fetchedService.conditions || fetchedService.description || '');
+                                setServiceImageUrls(fetchedService.imageUrls || []);
+                                // Establecer también los parámetros de búsqueda
+                                if (fetchedService.serviceTypeId) {
+                                    setSearchParameters(prev => ({ ...prev, serviceTypeId: fetchedService.serviceTypeId }));
+                                }
+                                if (fetchedService.categoryId) {
+                                    setSearchParameters(prev => ({ ...prev, category: fetchedService.categoryId }));
+                                }
+                                // Ir directamente al paso 3 (SearchForm)
+                                setCurrentStep(3);
+                            }
+                        } catch (error) {
+                            console.error('Error loading service:', error);
+                            // Si falla, establecer los parámetros de la URL y esperar
+                            if (serviceTypeIdParam) {
+                                const serviceTypeId = parseInt(serviceTypeIdParam, 10);
+                                if (!isNaN(serviceTypeId)) {
+                                    setSearchParameters(prev => ({ ...prev, serviceTypeId }));
+                                }
+                            }
+                            if (categoryIdParam) {
+                                const categoryId = parseInt(categoryIdParam, 10);
+                                if (!isNaN(categoryId)) {
+                                    setSearchParameters(prev => ({ ...prev, category: categoryId }));
+                                }
+                            }
+                        }
+                    };
+                    loadService();
+                } else {
+                    // Si encontramos el servicio en mapServices, configurarlo
+                    setSelectedServiceId(serviceId);
+                    setExpertProfilePicture(service.expert?.profilePictureUrl || service.expert?.profilePicture);
+                    setExpertName(service.expert?.user?.name || service.expert?.name);
+                    setServicePrice(service.price);
+                    setServiceDescription(service.conditions || service.description || '');
+                    setServiceImageUrls(service.imageUrls || []);
+                    // Establecer también los parámetros de búsqueda si el servicio los tiene
+                    if (service.serviceTypeId) {
+                        setSearchParameters(prev => ({ ...prev, serviceTypeId: service.serviceTypeId }));
+                    }
+                    if (service.categoryId) {
+                        setSearchParameters(prev => ({ ...prev, category: service.categoryId }));
+                    }
+                    // Ir directamente al paso 3 (SearchForm) como cuando seleccionas en el mapa
+                    setCurrentStep(3);
+                }
+            }
+        }
+        
+        // Si hay serviceTypeId o categoryId (sin serviceId), establecerlos en searchParameters y ir al paso 1 (mapa)
+        if ((serviceTypeIdParam || categoryIdParam) && !serviceIdParam) {
+            let hasChanges = false;
+            if (serviceTypeIdParam) {
+                const serviceTypeId = parseInt(serviceTypeIdParam, 10);
+                if (!isNaN(serviceTypeId)) {
+                    setSearchParameters(prev => {
+                        if (prev.serviceTypeId !== serviceTypeId) {
+                            hasChanges = true;
+                            return { ...prev, serviceTypeId };
+                        }
+                        return prev;
+                    });
+                }
+            }
+            if (categoryIdParam) {
+                const categoryId = parseInt(categoryIdParam, 10);
+                if (!isNaN(categoryId)) {
+                    setSearchParameters(prev => {
+                        if (prev.category !== categoryId) {
+                            hasChanges = true;
+                            return { ...prev, category: categoryId };
+                        }
+                        return prev;
+                    });
+                }
+            }
+            // Si hay serviceTypeId Y categoryId, ir directamente al paso 1 (mapa)
+            if (serviceTypeIdParam && categoryIdParam) {
+                setCurrentStep(1);
+            }
+        }
+    }, [location.search, mapServices, selectedServiceId, fetchApi]);
+
     const safeCategories = Array.isArray(categories) ? categories : [];
     const [showMoreCategories, setShowMoreCategories] = useState(false);
     const [selectedThirdCategory, setSelectedThirdCategory] = useState<number | null>(null);
@@ -202,14 +320,20 @@ const SearchCreationPage: React.FC = () => {
 
     // ✅ Verificar si hay verificación MFA pendiente
     useEffect(() => {
+        let previousState = { hasPending: false, isAuth: false };
+        
         const checkPendingVerification = () => {
             // ✅ Leer directamente del localStorage en lugar de usar el hook
             const hasPending = localStorage.getItem('mfa-verification-pending') === 'true';
-            console.log('[SearchCreationPage] Checking pending verification:', hasPending, 'isAuthenticated:', isAuthenticated);
-            if (isAuthenticated && hasPending) {
-                setShowPendingMfaBanner(true);
-            } else {
-                setShowPendingMfaBanner(false);
+            
+            // Solo actualizar si el estado cambió
+            if (previousState.hasPending !== hasPending || previousState.isAuth !== isAuthenticated) {
+                previousState = { hasPending, isAuth: isAuthenticated };
+                if (isAuthenticated && hasPending) {
+                    setShowPendingMfaBanner(true);
+                } else {
+                    setShowPendingMfaBanner(false);
+                }
             }
         };
 
@@ -219,24 +343,21 @@ const SearchCreationPage: React.FC = () => {
         // ✅ Escuchar cambios en localStorage para actualizar el banner (funciona entre pestañas)
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'mfa-verification-pending') {
-                console.log('[SearchCreationPage] Storage change detected:', e.newValue);
                 checkPendingVerification();
             }
         };
 
         // ✅ Escuchar eventos personalizados cuando se limpia la verificación (misma pestaña)
         const handleVerificationCleared = () => {
-            console.log('[SearchCreationPage] MFA verification cleared event received');
-            // Forzar verificación inmediata
             setTimeout(() => {
                 checkPendingVerification();
             }, 50);
         };
 
-        // ✅ Verificación periódica como fallback (cada 200ms para respuesta más rápida)
+        // ✅ Verificación periódica como fallback (cada 30 segundos para evitar bucles)
         const intervalId = setInterval(() => {
             checkPendingVerification();
-        }, 200);
+        }, 30000); // Aumentado a 30 segundos para evitar bucles infinitos
 
         window.addEventListener('storage', handleStorageChange);
         window.addEventListener('mfaVerificationCleared', handleVerificationCleared);
@@ -454,7 +575,8 @@ const SearchCreationPage: React.FC = () => {
         <div className="relative w-full bg-background" style={{ transition: 'none', minHeight: '100vh' }}>
             {currentStep === 0 && (
                 <>
-                    <HomePresentation onScrollToForm={scrollToForm} />
+                    {/* Ya no mostramos HomePresentation aquí - se movió a /quienes-somos */}
+                    {/* Redirigir directamente al paso 1 si hay parámetros */}
                     
                     {/* ✅ Banner de verificación MFA pendiente */}
                     {showPendingMfaBanner && isAuthenticated && (
@@ -485,30 +607,15 @@ const SearchCreationPage: React.FC = () => {
                         </div>
                     )}
                     
-                    <div className="w-full py-6 md:py-8">
-                        <div
-                            id="form-section"
-                            className="w-full mx-auto max-w-7xl px-4 md:px-6 lg:px-8"
-                        >
-                            <div className="max-w-3xl mx-auto">
-                                {/* Form */}
-                                    <div className="space-y-8 w-full">
-                                        </div>
-                                    </div>
-                                </div>
-                                        </div>
                     <div className="mt-16">
                         <Footer />
-                                                </div>
+                    </div>
                 </>
             )}
                     {currentStep === 1 && (
                 <div className="w-full h-screen flex flex-col lg:flex-row bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative">
-                    {/* Timeline Header */}
-                    <FormProgressTimeline currentStep={1} onBack={() => setCurrentStep(0)} />
-                    
                     {/* Left Side - Content */}
-                    <div className="flex-1 flex flex-col overflow-hidden lg:overflow-y-auto" style={{ paddingTop: '64px' }}>
+                    <div className="flex-1 flex flex-col overflow-hidden lg:overflow-y-auto">
                             {searchParameters.category && searchParameters.serviceTypeId ? (
                                 <div className="flex-1 min-h-0 overflow-hidden">
                                     <SearchParameterForm
