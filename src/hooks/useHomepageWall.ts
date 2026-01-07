@@ -72,10 +72,24 @@ export const useHomepageWallQuery = (params: HomepageWallParams) => {
       console.log('🔍 HomepageWall - Llamando a:', url);
       console.log('🔍 HomepageWall - Parámetros:', params);
 
+      // ✅ El interceptor de authService agregará automáticamente el token
+      // Pero también lo agregamos manualmente aquí para asegurar que se envíe
+      const { authService } = await import('../services/authService');
+      const token = authService.getAccessToken();
+      
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('✅ HomepageWall - Token agregado al header');
+      } else {
+        console.warn('⚠️ HomepageWall - No hay token disponible');
+      }
+
       const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       console.log('🔍 HomepageWall - Response status:', response.status);

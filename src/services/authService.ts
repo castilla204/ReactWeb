@@ -305,15 +305,30 @@ class AuthService {
         window.fetch = async function(...args) {
             const [url, options = {}] = args;
             const fetchOptions: RequestInit = { ...options };
+            const urlString = typeof url === 'string' ? url : url.toString();
 
-            // Agregar token si existe y no está ya presente
+            // ✅ Agregar token si existe y no está ya presente
             const token = self.getAccessToken();
             if (token) {
                 const headers = new Headers(fetchOptions.headers);
                 if (!headers.has('Authorization')) {
                     headers.set('Authorization', `Bearer ${token}`);
+                    // ✅ Log solo para endpoints de API (no para recursos estáticos)
+                    if (urlString.includes('/api/')) {
+                        console.log(`✅ [AuthInterceptor] Token agregado a: ${urlString.substring(0, 100)}`);
+                    }
+                } else {
+                    // Token ya presente
+                    if (urlString.includes('/api/')) {
+                        console.log(`ℹ️ [AuthInterceptor] Token ya presente en: ${urlString.substring(0, 100)}`);
+                    }
                 }
                 fetchOptions.headers = headers;
+            } else {
+                // ✅ Log solo para endpoints de API que requieren autenticación
+                if (urlString.includes('/api/') && !urlString.includes('/public') && !urlString.includes('/google-auth')) {
+                    console.warn(`⚠️ [AuthInterceptor] No hay token disponible para: ${urlString.substring(0, 100)}`);
+                }
             }
 
             let response = await originalFetch(url, fetchOptions);

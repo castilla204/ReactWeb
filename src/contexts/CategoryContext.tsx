@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getAuthToken } from '../lib/auth';
+import { authService } from '../services/authService';
 import { API_CONFIG } from '../config/api';
 import { CategoryWithDetailsDto } from '../types/category';
 
@@ -24,10 +24,22 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
         try {
             setLoading(true);
             const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.categories.list}`;
+            
+            // ✅ Usar authService para obtener el token (más confiable)
+            const token = authService.getAccessToken();
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                console.log('✅ CategoryContext - Token agregado al header');
+            } else {
+                console.warn('⚠️ CategoryContext - No hay token disponible');
+            }
+            
             const response = await fetch(url, {
-                headers: getAuthToken() ? {
-                    'Authorization': `Bearer ${getAuthToken()}`
-                } : {}
+                headers,
             });
 
             if (!response.ok) {
