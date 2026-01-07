@@ -1,6 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Wallet, ArrowRight, Shield, Check, Lock, BadgeCheck, FileText, Image, Video, ShieldCheck, Info } from 'lucide-react';
-import { FormProgressTimeline } from './FormProgressTimeline';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { useAuth } from '../contexts/AuthContext';
@@ -193,11 +192,6 @@ export default function SearchForm({
 
     return (
         <div className="bg-background min-h-screen">
-            {/* Header Timeline - Componente reutilizable con shadcn Stepper */}
-            <FormProgressTimeline currentStep={3} onBack={handleBack} />
-            
-            {/* Spacer para compensar el header fijo */}
-            <div className="h-16"></div>
 
             {/* Main Content - Estilo moderno minimalista */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
