@@ -526,7 +526,7 @@ const StripeModePanel: React.FC = () => {
                                     type="url"
                                     value={webhookFormData.url}
                                     onChange={(e) => setWebhookFormData({ ...webhookFormData, url: e.target.value })}
-                                    placeholder="https://inspeccionoapi-cgh5amebepbje7dz.spaincentral-01.azurewebsites.net/api/Subscription/webhook"
+                                    placeholder="https://lainspecciono-c8gpcpgtfyc9cna8.canadacentral-01.azurewebsites.net/api/Subscription/webhook"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
