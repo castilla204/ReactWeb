@@ -42,7 +42,31 @@ export function UserManagement({ onBack }: UserManagementProps) {
 
     const usersQuery = useQuery({
         queryKey: ['users', page, pageSize],
-        queryFn: () => fetchApi<PaginatedUsersResponse>(`/api/User/all?page=${page}&pageSize=${pageSize}`),
+        queryFn: async () => {
+            const response = await fetchApi<any>(`/api/User/all?page=${page}&pageSize=${pageSize}`);
+            
+            // ✅ NORMALIZAR respuesta según la guía
+            return {
+                users: response.users || [],
+                pagination: response.pagination ? {
+                    page: response.pagination.page || 1,
+                    pageSize: response.pagination.pageSize || pageSize,
+                    totalCount: response.pagination.totalCount || 0,
+                    totalPages: response.pagination.totalPages || 0,
+                    hasNextPage: response.pagination.hasNextPage ?? false,
+                    hasPreviousPage: response.pagination.hasPreviousPage ?? false,
+                } : {
+                    page: 1,
+                    pageSize: pageSize,
+                    totalCount: 0,
+                    totalPages: 0,
+                    hasNextPage: false,
+                    hasPreviousPage: false,
+                }
+            } as PaginatedUsersResponse;
+        },
+        retry: 1,
+        retryDelay: 1000,
     });
 
 
@@ -139,12 +163,12 @@ export function UserManagement({ onBack }: UserManagementProps) {
                                             <div className="flex items-center">
                                                 <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                                                     <span className="text-blue-600 font-medium text-sm">
-                                                        {user.name[0].toUpperCase()}
+                                                        {user.name && user.name.length > 0 ? user.name[0].toUpperCase() : '?'}
                                                     </span>
                                                 </div>
                                                 <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                                                    <div className="text-sm text-gray-500">{user.email}</div>
+                                                    <div className="text-sm font-medium text-gray-900">{user.name || 'Sin nombre'}</div>
+                                                    <div className="text-sm text-gray-500">{user.email || 'Sin email'}</div>
                                                 </div>
                                             </div>
                                         </td>

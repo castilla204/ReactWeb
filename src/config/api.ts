@@ -1,6 +1,6 @@
 // En desarrollo, siempre usar localhost:7124 directamente
 // En producción, usar la URL completa de la API
-const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : 'https://api.atrapo.io'; 
+const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : 'https://inspeccionoapi-cgh5amebepbje7dz.spaincentral-01.azurewebsites.net'; 
 const API_PATH = '/api'; 
 
 export const API_CONFIG = {
@@ -92,7 +92,10 @@ export const API_CONFIG = {
                 get: (id: number) => `${API_PATH}/SearchService/${id}`,
                 getByExpert: (expertId: number) => `${API_PATH}/SearchService/expert/${expertId}`,
                 getByHireId: (hireId: number) => `${API_PATH}/SearchService/GetServiceByHireId/${hireId}`,
-                mapExperts: `${API_PATH}/SearchService/map-experts`,
+                mapExperts: `${API_PATH}/SearchService/map-experts`, // ✅ Mantener para compatibilidad
+                mapMarkers: `${API_PATH}/SearchService/map-markers`, // ✅ NUEVO: Marcadores ultra ligeros
+                mapSidebar: `${API_PATH}/SearchService/map-sidebar`, // ✅ NUEVO: Información completa del sidebar
+                homepageWall: `${API_PATH}/SearchService/homepage-wall`,
             },
             hires: {
                 createCheckout: (serviceId: number) => `${API_PATH}/SearchHire/create-checkout-session/${serviceId}`,
@@ -152,12 +155,12 @@ export const API_CONFIG = {
         },
         dispute: {
             create: `${API_PATH}/Dispute/dispute-service`,
-            list: `${API_PATH}/dispute/all`,
+            list: `${API_PATH}/Dispute/all`,  // ⭐ Según la guía: /api/Dispute/all (PascalCase)
             myDisputes: `${API_PATH}/dispute/my-disputes`,
-            get: (id: number) => `${API_PATH}/dispute/${id}`,
+            get: (id: number) => `${API_PATH}/Dispute/${id}`,  // ⭐ Según la guía: /api/Dispute/{id}
             getDetails: (id: number) => `${API_PATH}/dispute/${id}/details`,
             getSearch: (id: number) => `${API_PATH}/dispute/${id}/search`,
-            resolve: (id: number) => `${API_PATH}/dispute/${id}/resolve`,
+            resolve: (id: number) => `${API_PATH}/Dispute/${id}/resolve`,  // ⭐ Según la guía: /api/Dispute/{id}/resolve
             expertResponse: (id: number) => `${API_PATH}/dispute/${id}/expert-response`,
             details: (searchHireId: number) => `${API_PATH}/Dispute/details/${searchHireId}`,
             debug: (id: number) => `${API_PATH}/dispute/${id}/debug`,

@@ -25,13 +25,17 @@ El error **403** y el mensaje **"The given origin is not allowed for the given c
 2. Haz clic en el nombre del cliente OAuth para editarlo
 3. En la sección **"Authorized JavaScript origins"**, agrega:
    - `http://localhost:5173` (para desarrollo local)
-   - `https://inspecciono.com` (para producción)
+   - `https://reactweb-bq9.pages.dev` (URL de Cloudflare Pages - **IMPORTANTE**)
+   - `https://inspecciono.com` (si tienes dominio personalizado)
    - `https://www.inspecciono.com` (si usas www)
+   - **Nota:** Si tu URL de Cloudflare Pages es diferente, agrega la que corresponda (formato: `https://[nombre-proyecto].pages.dev`)
 
 4. En la sección **"Authorized redirect URIs"**, agrega:
    - `http://localhost:5173` (para desarrollo local)
-   - `https://inspecciono.com` (para producción)
+   - `https://reactweb-bq9.pages.dev` (URL de Cloudflare Pages - **IMPORTANTE**)
+   - `https://inspecciono.com` (si tienes dominio personalizado)
    - `https://www.inspecciono.com` (si usas www)
+   - **Nota:** Si tu URL de Cloudflare Pages es diferente, agrega la que corresponda
 
 ### Paso 3: Guardar Cambios
 

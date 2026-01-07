@@ -42,8 +42,12 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
   const [selectedDispute, setSelectedDispute] = useState<DisputeDto | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Verificar si el usuario es admin
-  const userIsAdmin = isAdmin(user?.email);
+  // Verificar si el usuario es admin (compatibilidad con PascalCase y camelCase)
+  const userEmail = user?.Email || user?.email;
+  const userRole = user?.Role || user?.role;
+  const isAdminByEmail = userEmail ? isAdmin(userEmail) : false;
+  const isAdminByRole = userRole === 'Admin' || userRole === 'admin';
+  const userIsAdmin = isAdminByEmail || isAdminByRole;
   
   const { useDisputesList, resolveDispute } = useDisputes();
   const disputesQuery = useDisputesList(filters);
@@ -55,7 +59,26 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
     hasToken: !!localStorage.getItem('authToken')
   });
 
-  const disputesData = disputesQuery.data;
+  // ✅ NORMALIZAR datos según la guía
+  const disputesData = disputesQuery.data ? {
+    ...disputesQuery.data,
+    disputes: disputesQuery.data.disputes || [],
+    pagination: disputesQuery.data.pagination ? {
+      ...disputesQuery.data.pagination,
+      currentPage: disputesQuery.data.pagination.currentPage || disputesQuery.data.pagination.page || 1,
+      totalCount: disputesQuery.data.pagination.totalCount || disputesQuery.data.pagination.totalItems || 0,
+      hasNext: disputesQuery.data.pagination.hasNext ?? disputesQuery.data.pagination.hasNextPage ?? false,
+      hasPrevious: disputesQuery.data.pagination.hasPrevious ?? disputesQuery.data.pagination.hasPreviousPage ?? false,
+    } : undefined,
+    stats: disputesQuery.data.stats || {
+      pendingDisputes: 0,
+      resolvedDisputes: 0,
+      clientDisputes: 0,
+      expertDisputes: 0,
+      thisWeekDisputes: 0,
+      thisMonthDisputes: 0,
+    }
+  } : undefined;
   const loading = disputesQuery.isLoading;
   const error = disputesQuery.error;
 
@@ -298,33 +321,42 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
           {error && (
             <div className="p-8 text-center">
               <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <p className="text-red-600">Error al cargar las disputas</p>
+              <p className="text-red-600 font-medium">Error al cargar las disputas</p>
+              <p className="text-red-500 text-sm mt-2">
+                {error instanceof Error ? error.message : String(error)}
+              </p>
             </div>
           )}
 
           {disputesData && !loading && (
             <>
               <div className="divide-y divide-gray-200">
-                {disputesData.disputes.map((dispute) => (
-                  <DisputeCard
-                    key={dispute.id}
-                    dispute={dispute}
-                    onClick={() => setSelectedDispute(dispute)}
-                    formatDate={formatDate}
-                  />
-                ))}
+                {disputesData.disputes && disputesData.disputes.length > 0 ? (
+                  disputesData.disputes.map((dispute) => (
+                    <DisputeCard
+                      key={dispute.id}
+                      dispute={dispute}
+                      onClick={() => setSelectedDispute(dispute)}
+                      formatDate={formatDate}
+                    />
+                  ))
+                ) : (
+                  <div className="p-8 text-center">
+                    <p className="text-gray-500">No se encontraron disputas</p>
+                  </div>
+                )}
               </div>
 
               {/* Pagination */}
               {disputesData.pagination && (
                 <div className="p-6 border-t border-gray-200">
                   <Pagination
-                    page={disputesData.pagination.currentPage || disputesData.pagination.page || 1}
+                    page={disputesData.pagination.currentPage || 1}
                     pageSize={disputesData.pagination.pageSize || filters.pageSize}
                     totalCount={disputesData.pagination.totalCount || disputesData.pagination.totalItems || 0}
                     totalPages={disputesData.pagination.totalPages}
-                    hasNextPage={disputesData.pagination.hasNextPage || false}
-                    hasPreviousPage={disputesData.pagination.hasPreviousPage || (disputesData.pagination.currentPage || 1) > 1}
+                    hasNextPage={disputesData.pagination.hasNext ?? disputesData.pagination.hasNextPage ?? false}
+                    hasPreviousPage={disputesData.pagination.hasPrevious ?? disputesData.pagination.hasPreviousPage ?? false}
                     onPageChange={handlePageChange}
                     onPageSizeChange={(newPageSize) => {
                       setFilters(prev => ({ ...prev, pageSize: newPageSize, page: 1 }));
@@ -438,14 +470,26 @@ const DisputeCard: React.FC<{
           )}
           
           <div className="flex items-center gap-6 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              <span>{dispute.client.name}</span>
-            </div>
-            {dispute.expert && (
+            {dispute.client ? (
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span>{dispute.client.name}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-gray-400">
+                <User className="w-4 h-4" />
+                <span>Cliente no disponible</span>
+              </div>
+            )}
+            {dispute.expert ? (
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 <span>{dispute.expert.name}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-gray-400">
+                <User className="w-4 h-4" />
+                <span>Experto no disponible</span>
               </div>
             )}
             <div className="flex items-center gap-2">
@@ -622,7 +666,7 @@ const DisputeDetails: React.FC<{
                             {getFileIcon(file.fileName)}
                             <div className="flex-1 min-w-0">
                               <a
-                                href={file.fileUrl}
+                                href={file.fileUrl || file.filePath}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 download=""
@@ -638,7 +682,7 @@ const DisputeDetails: React.FC<{
                               )}
                             </div>
                             <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">
-                              Cliente
+                              {file.fileCategoryLabel || 'Archivo del Cliente'}
                             </span>
                           </div>
                         ))}
@@ -692,7 +736,7 @@ const DisputeDetails: React.FC<{
                                 )}
                               </div>
                               <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                                Experto
+                                {file.fileCategoryLabel || 'Archivo del Experto'}
                               </span>
                             </div>
                           ))}
@@ -704,7 +748,7 @@ const DisputeDetails: React.FC<{
                               {getFileIcon(file.fileName)}
                               <div className="flex-1 min-w-0">
                                 <a
-                                  href={file.fileUrl}
+                                  href={file.fileUrl || file.filePath}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   download=""
@@ -720,7 +764,7 @@ const DisputeDetails: React.FC<{
                                 )}
                               </div>
                               <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                                Experto
+                                {file.fileCategoryLabel || 'Archivo del Experto'}
                               </span>
                             </div>
                           ))}
@@ -860,7 +904,7 @@ const DisputeDetails: React.FC<{
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                  <p className="text-gray-900">{dispute.search.description}</p>
+                  <p className="text-gray-900">{dispute.search.description || 'Sin descripción'}</p>
                 </div>
                 
                 <div>
@@ -878,22 +922,34 @@ const DisputeDetails: React.FC<{
               <h2 className="text-base font-semibold text-gray-900 mb-3">Usuarios Involucrados</h2>
               
               <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Cliente</label>
-                  <div className="flex items-center gap-2">
-                    {dispute.client.profilePictureUrl && (
-                      <img
-                        src={dispute.client.profilePictureUrl}
-                        alt={dispute.client.name}
-                        className="w-8 h-8 rounded-full"
-                      />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{dispute.client.name}</p>
-                      <p className="text-xs text-gray-500">{dispute.client.email}</p>
+                {dispute.client ? (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Cliente</label>
+                    <div className="flex items-center gap-2">
+                      {dispute.client.profilePictureUrl && (
+                        <img
+                          src={dispute.client.profilePictureUrl}
+                          alt={dispute.client.name}
+                          className="w-8 h-8 rounded-full"
+                        />
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{dispute.client.name}</p>
+                        <p className="text-xs text-gray-500">{dispute.client.email}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Cliente</label>
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Cliente no disponible</p>
+                        <p className="text-xs text-gray-400">Usuario eliminado o no asignado</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {dispute.expert && (
                   <div>
