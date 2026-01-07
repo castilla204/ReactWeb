@@ -1,6 +1,6 @@
 // En desarrollo, siempre usar localhost:7124 directamente
 // En producción, usar la URL completa de la API
-const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : 'https://lainspecciono-c8gpcpgtfyc9cna8.canadacentral-01.azurewebsites.net'; 
+const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : 'https://newapi-yn9v.onrender.com'; 
 const API_PATH = '/api'; 
 
 export const API_CONFIG = {
