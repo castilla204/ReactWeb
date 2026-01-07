@@ -31,7 +31,7 @@ const HangfirePanel: React.FC = () => {
         }
 
         // Construir la URL del Hangfire dashboard usando la misma configuración que el resto de la app
-        // API_CONFIG.baseUrl ya incluye la URL base (ej: https://lainspecciono-c8gpcpgtfyc9cna8.canadacentral-01.azurewebsites.net o http://localhost:7124)
+        // API_CONFIG.baseUrl ya incluye la URL base (ej: https://newapi-yn9v.onrender.com o http://localhost:7124)
         // Hangfire está en /hangfire, no en /api/hangfire, así que usamos la baseUrl directamente
         const apiUrl = API_CONFIG.baseUrl;
         const token = getAuthToken();

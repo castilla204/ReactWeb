@@ -86,7 +86,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isMobileServiceTypeOpen, setIsMobileServiceTypeOpen] = useState(false);
   const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(true); // Por defecto mostrar categorías
-  const [expandedAccordion, setExpandedAccordion] = useState<string | null>('where'); // 'where', 'type', 'url', null - Por defecto expandir 'where'
+  const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null); // 'type', 'url', null - Por defecto cerrado
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   // ✅ Estado para el tab activo y drawer de categorías
@@ -1126,388 +1126,220 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
         </div>
       </div>
 
-      {/* Mobile Search Full Screen - Estilo Airbnb con acordeón */}
+      {/* Mobile Search Full Screen - Diseño simplificado */}
       {isMobileSearchOpen && typeof document !== 'undefined' && createPortal(
         <div 
           className="md:hidden fixed inset-0 z-50 bg-white flex flex-col"
-          style={{ 
-            zIndex: 10000,
-            width: '100vw',
-            height: '100vh',
-          }}
+          style={{ zIndex: 10000 }}
         >
-          {/* Header con botón cerrar */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200" style={{ flexShrink: 0 }}>
-            <h2 className="text-lg font-semibold text-gray-900 m-0">Buscar revisor</h2>
-            <button
-              onClick={() => {
-                setIsMobileSearchOpen(false);
-                setExpandedAccordion('where'); // Resetear a 'where' para la próxima vez
-                setCategorySearchQuery('');
-              }}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="Cerrar"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 3, overflow: 'visible' }}>
-                <path d="m6 6 20 20M26 6 6 26"></path>
-              </svg>
-            </button>
-          </div>
-
-          {/* Contenedor principal con acordeón estilo Airbnb - EXACTO */}
-          <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
-            <div className="p1lfxwzr" style={{ padding: '0', display: 'flex', flexDirection: 'column', width: '100%' }}>
-              <div className="p1n01a3k" style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                <div className="cb0vz36" style={{ paddingLeft: '12px', paddingRight: '12px', paddingTop: '0', paddingBottom: '0' }}>
-                  <div className="pzulm0a" style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                    {/* Sección: ¿Dónde? - Estructura EXACTA de Airbnb */}
-                    <div className="b1ip45x2" aria-hidden="false" id="accordion-body-stays-where" style={{ display: 'flex', flexDirection: 'column' }}>
-                <section className="h1bu1298" style={{ display: 'flex', flexDirection: 'column' }}>
-                  <h2 tabIndex={-1} className="hpipapi" elementtiming="LCP-target" style={{ fontSize: '18px', lineHeight: '22px', fontWeight: 600, color: '#222222', marginBottom: '16px', marginTop: '0', padding: '0' }}>
-                    <div className="e12rqg6l" style={{ fontSize: '18px', lineHeight: '22px', fontWeight: 600, color: '#222222' }}>¿Dónde?</div>
-                  </h2>
-                  <div className="c1upgqkb" style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div className="czshzqb" style={{ marginBottom: '16px' }}>
-                      <div className="b93jqo2" style={{ width: '100%' }}>
-                        <form role="search" action="/s/homes" className="fjukpsq" method="get" style={{ width: '100%' }}>
-                          <div dir="ltr">
-                            <div className="cciu3x1" style={{ position: 'relative', width: '100%' }}>
-                              <label className="ijh1el1" htmlFor="stays-where-input" style={{ display: 'flex', alignItems: 'center', position: 'relative', width: '100%' }}>
-                                <div className="p13hk362" style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-                                  <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="presentation" focusable="false" style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 4, overflow: 'visible' }}>
-                                    <path d="m20.666 20.666 10 10"></path>
-                                    <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
-                                  </svg>
-                                </div>
-                                <input 
-                                  className="i1cqzlk7"
-                                  aria-label="Buscar destinos"
-                                  data-testid="search_query_input"
-                                  autoComplete="off"
-                                  id="stays-where-input"
-                                  placeholder="Buscar destinos"
-                                  aria-autocomplete="none"
-                                  autoCorrect="off"
-                                  spellCheck="false"
-                                  name="query"
-                                  type="search"
-                                  value={categorySearchQuery}
-                                  onChange={(e) => setCategorySearchQuery(e.target.value)}
-                                  style={{
-                                    width: '100%',
-                                    paddingLeft: '28px',
-                                    paddingRight: '0',
-                                    paddingTop: '0',
-                                    paddingBottom: '10px',
-                                    border: 'none',
-                                    borderBottom: '1px solid #e5e7eb',
-                                    backgroundColor: 'transparent',
-                                    fontSize: '16px',
-                                    lineHeight: '20px',
-                                    color: '#222222',
-                                    outline: 'none',
-                                  }}
-                                />
-                              </label>
-                            </div>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                    <div className="schcl7x" style={{ marginTop: '16px' }}>
-                      <div className="c965t3n" style={{ display: 'flex', flexDirection: 'column' }}>
-                        {categoriesLoading ? (
-                          <div className="c1hysso5" style={{ '--shimmer-staggered-reveal_transition-delay': '0ms', '--shimmer-staggered-reveal_transition-duration': '200ms', display: 'flex', flexDirection: 'column', gap: '0' } as React.CSSProperties}>
-                            <div className="theqhl0" style={{ marginBottom: '12px' }}>
-                              <span aria-busy="true" className="s15ewrxi pmfttci" style={{ display: 'block', height: '16px', width: '25%', borderRadius: '4px', backgroundColor: '#e5e7eb' }}></span>
-                            </div>
-                            {[1, 2, 3, 4].map((i) => (
-                              <div key={i} className="igdfogk" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '0' }}>
-                                <span aria-busy="true" className="s15ewrxi pmfttci" style={{ display: 'block', height: '56px', width: '56px', borderRadius: '8px', backgroundColor: '#e5e7eb' }}></span>
-                                <div className="t9fx5nq" style={{ flex: 1 }}>
-                                  <span aria-busy="true" className="s15ewrxi pmfttci" style={{ display: 'block', height: '18px', width: '60%', borderRadius: '4px', backgroundColor: '#e5e7eb', marginBottom: '4px' }}></span>
-                                  <span aria-busy="true" className="s15ewrxi pmfttci" style={{ display: 'block', height: '18px', width: '40%', borderRadius: '4px', backgroundColor: '#e5e7eb' }}></span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="cfutgp0" style={{ '--shimmer-staggered-reveal_transition-delay': '0ms', '--shimmer-staggered-reveal_transition-duration': '200ms', display: 'flex', flexDirection: 'column' } as React.CSSProperties}>
-                            <div role="group" aria-labelledby=":r1f:">
-                              <div className="t8con44" id=":r1f:" style={{ fontSize: '12px', lineHeight: '16px', fontWeight: 600, color: '#222222', marginBottom: '12px' }}>Sugerencias de destinos</div>
-                              {categories
-                                .filter(cat => cat.isActive)
-                                .filter(cat => {
-                                  if (categorySearchQuery.trim()) {
-                                    return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
-                                  }
-                                  return true;
-                                })
-                                .map((category, index) => {
-                                  const categoryImage = getCategoryImage(category.name);
-                                  const isSelected = categoryId === category.id;
-                                  
-                                  return (
-                                    <button
-                                      key={category.id}
-                                      type="button"
-                                      role="link"
-                                      id={`stays-where-suggestion-${index}`}
-                                      data-index={index}
-                                      data-testid={`option-${index}`}
-                                      onClick={() => setCategoryId(category.id)}
-                                      className="c13nkf84"
-                                      tabIndex={index < 2 ? 0 : -1}
-                                      style={{ 
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '12px',
-                                        padding: '0',
-                                        backgroundColor: 'transparent',
-                                        border: 'none',
-                                        textAlign: 'left',
-                                        width: '100%',
-                                        transition: 'background-color 0.2s',
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor = '#f7f7f7';
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor = 'transparent';
-                                      }}
-                                    >
-                                      {categoryImage ? (
-                                        <img 
-                                          alt="" 
-                                          className="l1p3292q"
-                                          src={categoryImage}
-                                          style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'contain', display: 'block', flexShrink: 0 }}
-                                        />
-                                      ) : (
-                                        <div className="l1p3292q" style={{ width: '56px', height: '56px', borderRadius: '8px', backgroundColor: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                          <FolderTree className="w-7 h-7 text-gray-400" />
-                                        </div>
-                                      )}
-                                      <div className="t1xh489u" style={{ flex: 1, minWidth: 0 }}>
-                                        <div className="t14kkvyr" style={{ fontSize: '15px', lineHeight: '20px', fontWeight: 600, color: '#222222', marginBottom: '0' }}>{category.name}</div>
-                                        <span className="a8jt5op" style={{ fontSize: '12px', lineHeight: '16px', color: '#717171', display: 'block' }}>Explorar servicios en {category.name}</span>
-                                        <div aria-hidden="true" className="s7juzsk" style={{ fontSize: '12px', lineHeight: '16px', color: '#717171' }}>Explorar servicios en {category.name}</div>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </section>
-                    </div>
-                  </div>
-                </div>
+          <div className="flex-1 overflow-y-auto">
+            {/* Sección principal: Categorías */}
+            <div style={{ padding: '16px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#222', marginBottom: '16px' }}>
+                ¿Dónde?
+              </h2>
+              
+              {/* Buscador */}
+              <div style={{ marginBottom: '16px', position: 'relative' }}>
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="text"
+                  placeholder="Buscar categorías"
+                  value={categorySearchQuery}
+                  onChange={(e) => setCategorySearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 10px 10px 36px',
+                    border: 'none',
+                    borderBottom: '1px solid #e5e7eb',
+                    fontSize: '16px',
+                    outline: 'none',
+                  }}
+                />
               </div>
 
-              {/* Acordeón: Tipo de Servicio - Estilo Airbnb EXACTO */}
-              <div style={{ borderBottom: '1px solid #e5e7eb' }}>
+              {/* Lista de categorías */}
+              {categoriesLoading ? (
+                <div style={{ textAlign: 'center', padding: '32px 0', color: '#717171' }}>Cargando...</div>
+              ) : (
+                <div>
+                  {categories
+                    .filter(cat => cat.isActive)
+                    .filter(cat => {
+                      if (categorySearchQuery.trim()) {
+                        return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
+                      }
+                      return true;
+                    })
+                    .map((category) => {
+                      const categoryImage = getCategoryImage(category.name);
+                      return (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => setCategoryId(category.id)}
+                          style={{ 
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px',
+                            marginBottom: '8px',
+                            backgroundColor: categoryId === category.id ? '#f7f7f7' : 'transparent',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                          }}
+                        >
+                          {categoryImage ? (
+                            <img 
+                              src={categoryImage}
+                              alt=""
+                              style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'contain' }}
+                            />
+                          ) : (
+                            <div style={{ width: '48px', height: '48px', borderRadius: '8px', backgroundColor: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <FolderTree className="w-6 h-6 text-gray-400" />
+                            </div>
+                          )}
+                          <div>
+                            <div style={{ fontSize: '15px', fontWeight: 600, color: '#222' }}>
+                              {category.name}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#717171' }}>
+                              Explorar servicios
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+
+            {/* Sección inferior: Tipo y URL */}
+            <div style={{ borderTop: '1px solid #e5e7eb', display: 'flex' }}>
+              {/* Tipo de servicio */}
+              <div style={{ flex: 1, borderRight: '1px solid #e5e7eb', padding: '16px' }}>
                 <button
                   type="button"
                   onClick={() => setExpandedAccordion(expandedAccordion === 'type' ? null : 'type')}
-                  className="w-full flex items-center justify-between text-left"
                   style={{ 
-                    paddingTop: '16px',
-                    paddingBottom: '16px',
-                    paddingLeft: '0',
-                    paddingRight: '0',
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
                   }}
-                  aria-expanded={expandedAccordion === 'type'}
-                  aria-controls="accordion-body-type"
                 >
-                  <div className="flex-1">
-                    <div style={{ fontSize: '12px', lineHeight: '16px', fontWeight: 600, color: '#222222', marginBottom: '4px' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#222', marginBottom: '4px' }}>
                       Tipo de servicio
                     </div>
-                    <div style={{ fontSize: '14px', lineHeight: '20px', color: '#717171' }}>
-                      {serviceTypeId ? serviceTypes.find(st => st.id === serviceTypeId)?.name || 'Añade tipo' : 'Añade tipo'}
+                    <div style={{ fontSize: '14px', color: '#717171' }}>
+                      {serviceTypeId ? serviceTypes.find(st => st.id === serviceTypeId)?.name || 'Añade' : 'Añade'}
                     </div>
                   </div>
-                  <ChevronDown 
-                    className={`w-4 h-4 text-gray-400 transition-transform ${expandedAccordion === 'type' ? 'rotate-180' : ''}`}
-                  />
+                  <ChevronDown className={`w-4 h-4 text-gray-400 ${expandedAccordion === 'type' ? 'rotate-180' : ''}`} />
                 </button>
                 
-                <div 
-                  id="accordion-body-type"
-                  className={`overflow-hidden transition-all duration-200 ${expandedAccordion === 'type' ? 'block' : 'hidden'}`}
-                  aria-hidden={expandedAccordion !== 'type'}
-                  style={{ paddingBottom: '16px' }}
-                >
-                  <section>
-                    <h2 
-                      tabIndex={-1}
-                      style={{ 
-                        fontSize: '18px', 
-                        lineHeight: '22px', 
-                        fontWeight: 600,
-                        color: '#222222',
-                        marginBottom: '16px',
-                        marginTop: '0',
-                        padding: '0',
-                      }}
-                    >
-                      Tipo de servicio
-                    </h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {serviceTypesLoading ? (
-                        <div style={{ textAlign: 'center', padding: '32px 0', fontSize: '14px', color: '#717171' }}>Cargando...</div>
-                      ) : serviceTypes.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '32px 0', fontSize: '14px', color: '#717171' }}>No hay tipos disponibles</div>
-                      ) : (
-                        serviceTypes.map((serviceType) => (
+                {expandedAccordion === 'type' && (
+                  <div style={{ marginTop: '16px' }}>
+                    {serviceTypesLoading ? (
+                      <div style={{ textAlign: 'center', padding: '16px 0', color: '#717171' }}>Cargando...</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {serviceTypes.map((st) => (
                           <button
-                            key={serviceType.id}
+                            key={st.id}
                             type="button"
                             onClick={() => {
-                              setServiceTypeId(serviceType.id);
+                              setServiceTypeId(st.id);
                               setExpandedAccordion(null);
                             }}
                             style={{
                               width: '100%',
-                              textAlign: 'left',
-                              padding: '12px 16px',
+                              padding: '12px',
                               borderRadius: '8px',
-                              backgroundColor: serviceTypeId === serviceType.id ? '#222222' : '#f7f7f7',
-                              color: serviceTypeId === serviceType.id ? '#ffffff' : '#222222',
+                              backgroundColor: serviceTypeId === st.id ? '#222' : '#f7f7f7',
+                              color: serviceTypeId === st.id ? '#fff' : '#222',
                               border: 'none',
                               cursor: 'pointer',
-                              transition: 'background-color 0.2s',
-                            }}
-                            onMouseEnter={(e) => {
-                              if (serviceTypeId !== serviceType.id) {
-                                e.currentTarget.style.backgroundColor = '#ebebeb';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (serviceTypeId !== serviceType.id) {
-                                e.currentTarget.style.backgroundColor = '#f7f7f7';
-                              }
+                              textAlign: 'left',
+                              fontSize: '14px',
+                              fontWeight: 600,
                             }}
                           >
-                            <div style={{ fontSize: '15px', lineHeight: '20px', fontWeight: 600 }}>
-                              {serviceType.name}
-                            </div>
-                            {serviceType.description && (
-                              <div style={{ 
-                                fontSize: '12px', 
-                                marginTop: '4px',
-                                color: serviceTypeId === serviceType.id ? 'rgba(255,255,255,0.7)' : '#717171',
-                              }}>
-                                {serviceType.description}
-                              </div>
-                            )}
+                            {st.name}
                           </button>
-                        ))
-                      )}
-                    </div>
-                  </section>
-                </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Acordeón: URL del anuncio - Estilo Airbnb EXACTO */}
-              <div style={{ borderBottom: '1px solid #e5e7eb' }}>
+              {/* URL */}
+              <div style={{ flex: 1, padding: '16px' }}>
                 <button
                   type="button"
                   onClick={() => setExpandedAccordion(expandedAccordion === 'url' ? null : 'url')}
-                  className="w-full flex items-center justify-between text-left"
                   style={{ 
-                    paddingTop: '16px',
-                    paddingBottom: '16px',
-                    paddingLeft: '0',
-                    paddingRight: '0',
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
                   }}
-                  aria-expanded={expandedAccordion === 'url'}
-                  aria-controls="accordion-body-url"
                 >
-                  <div className="flex-1">
-                    <div style={{ fontSize: '12px', lineHeight: '16px', fontWeight: 600, color: '#222222', marginBottom: '4px' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#222', marginBottom: '4px' }}>
                       URL del anuncio
                     </div>
-                    <div style={{ fontSize: '14px', lineHeight: '20px', color: '#717171' }}>
-                      {adUrl || 'Añade URL (opcional)'}
+                    <div style={{ fontSize: '14px', color: '#717171' }}>
+                      {adUrl || 'Añade (opcional)'}
                     </div>
                   </div>
-                  <ChevronDown 
-                    className={`w-4 h-4 text-gray-400 transition-transform ${expandedAccordion === 'url' ? 'rotate-180' : ''}`}
-                  />
+                  <ChevronDown className={`w-4 h-4 text-gray-400 ${expandedAccordion === 'url' ? 'rotate-180' : ''}`} />
                 </button>
                 
-                <div 
-                  id="accordion-body-url"
-                  className={`overflow-hidden transition-all duration-200 ${expandedAccordion === 'url' ? 'block' : 'hidden'}`}
-                  aria-hidden={expandedAccordion !== 'url'}
-                  style={{ paddingBottom: '16px' }}
-                >
-                  <section>
-                    <h2 
-                      tabIndex={-1}
-                      style={{ 
-                        fontSize: '18px', 
-                        lineHeight: '22px', 
-                        fontWeight: 600,
-                        color: '#222222',
-                        marginBottom: '16px',
-                        marginTop: '0',
-                        padding: '0',
+                {expandedAccordion === 'url' && (
+                  <div style={{ marginTop: '16px' }}>
+                    <input
+                      type="text"
+                      placeholder="Pega la URL aquí..."
+                      value={adUrl}
+                      onChange={(e) => setAdUrl(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none',
                       }}
-                    >
-                      URL del anuncio
-                    </h2>
-                    <div>
-                      <input
-                        type="text"
-                        placeholder="Pega cualquier URL o texto aquí..."
-                        value={adUrl}
-                        onChange={(e) => setAdUrl(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '8px',
-                          fontSize: '16px',
-                          lineHeight: '20px',
-                          color: '#222222',
-                          outline: 'none',
-                        }}
-                        className="focus:border-gray-900 focus:ring-2 focus:ring-gray-900 transition-colors"
-                      />
-                      <p style={{ 
-                        fontSize: '12px', 
-                        color: '#717171', 
-                        marginTop: '8px',
-                        lineHeight: '16px',
-                      }}>
-                        Puedes pegar cualquier URL o texto relacionado con el anuncio que quieres revisar.
-                      </p>
-                    </div>
-                  </section>
-                </div>
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Footer con botones - Estilo Airbnb EXACTO */}
-          <div 
-            className="border-t border-gray-200 bg-white" 
-            style={{ 
-              flexShrink: 0,
-              padding: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '16px',
-            }}
-          >
+          {/* Footer */}
+          <div style={{ 
+            padding: '16px', 
+            borderTop: '1px solid #e5e7eb',
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: '16px',
+          }}>
             <button
               type="button"
               onClick={() => {
@@ -1515,21 +1347,18 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 setCategoryId(null);
                 setAdUrl('');
                 setCategorySearchQuery('');
-                setExpandedAccordion('where');
+                setExpandedAccordion(null);
               }}
               style={{
                 padding: '8px 16px',
                 fontSize: '14px',
                 fontWeight: 600,
-                color: '#222222',
+                color: '#222',
                 textDecoration: 'underline',
                 backgroundColor: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                transition: 'text-decoration 0.2s',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'none'}
-              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'underline'}
             >
               Restablecer
             </button>
@@ -1538,12 +1367,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               onClick={() => {
                 handleSearch();
                 setIsMobileSearchOpen(false);
-                setExpandedAccordion('where');
+                setExpandedAccordion(null);
               }}
               style={{
                 padding: '14px 24px',
                 backgroundColor: '#FF385C',
-                color: '#ffffff',
+                color: '#fff',
                 borderRadius: '8px',
                 fontSize: '14px',
                 fontWeight: 600,
@@ -1552,10 +1381,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                transition: 'background-color 0.2s',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E61E4D'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FF385C'}
             >
               <Search className="w-4 h-4" />
               Buscar
