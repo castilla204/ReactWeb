@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService } from '../services/authService';
+import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
 import { CategoryWithDetailsDto } from '../types/category';
 
@@ -24,29 +24,36 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
         try {
             setLoading(true);
             const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.categories.list}`;
-            
-            // ✅ Usar authService para obtener el token (más confiable)
-            const token = authService.getAccessToken();
-            const headers: HeadersInit = {
-                'Content-Type': 'application/json',
-            };
-            
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-                console.log('✅ CategoryContext - Token agregado al header');
-            } else {
-                console.warn('⚠️ CategoryContext - No hay token disponible');
-            }
-            
+            // ✅ Intentar sin autenticación primero (endpoint puede ser público)
             const response = await fetch(url, {
-                headers,
-            });
+                // Marcar como petición pública para que el interceptor no agregue token
+                _skipAuth: true,
+            } as any);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch categories');
             }
 
-            const data = await response.json();
+            // ✅ Leer el texto primero para verificar si es JSON
+            const text = await response.text();
+            const contentType = response.headers.get('content-type');
+            
+            // Verificar si la respuesta parece ser HTML (empieza con <!doctype o <html)
+            if (text.trim().toLowerCase().startsWith('<!doctype') || text.trim().toLowerCase().startsWith('<html')) {
+                console.error('❌ CategoryContext - Respuesta no es JSON. Content-Type:', contentType);
+                console.error('❌ CategoryContext - Respuesta recibida (primeros 500 chars):', text.substring(0, 500));
+                throw new Error('El servidor devolvió HTML en lugar de JSON. Verifica la URL del endpoint.');
+            }
+            
+            // Intentar parsear como JSON
+            let data: any;
+            try {
+                data = JSON.parse(text);
+            } catch (parseError) {
+                console.error('❌ CategoryContext - Error al parsear JSON. Content-Type:', contentType);
+                console.error('❌ CategoryContext - Respuesta recibida (primeros 500 chars):', text.substring(0, 500));
+                throw new Error(`Error al parsear la respuesta como JSON: ${parseError instanceof Error ? parseError.message : 'Error desconocido'}`);
+            }
             // Transform data from API format (PascalCase) to component format (camelCase)
             const transformedData = Array.isArray(data) ? data.map((item: any) => ({
                 id: item.Id || item.id,

@@ -75,9 +75,8 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             ...drawerStyle,
             width: '100%',
             maxWidth: '100%',
-            // Solo aplicar altura por defecto si no se proporciona en drawerStyle
-            height: drawerStyle?.height || '350px',
-            maxHeight: drawerStyle?.maxHeight || '350px',
+            height: '350px',
+            maxHeight: '350px',
             // Asegurar que el drawer tenga un z-index alto cuando no hay overlay
             zIndex: noOverlay ? (drawerStyle?.zIndex || style?.zIndex || 10000) : (drawerStyle?.zIndex || style?.zIndex || 9998)
           }}
@@ -86,11 +85,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           title={title}
           description={description}
         >
-          <div className="flex flex-col bg-white" style={{ 
-            height: drawerStyle?.height || '350px', 
-            display: 'flex', 
-            flexDirection: 'column' 
-          }}>
+          <div className="flex flex-col bg-white" style={{ height: '350px', display: 'flex', flexDirection: 'column' }}>
             {children}
           </div>
         </DrawerContent>

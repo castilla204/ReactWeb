@@ -20,12 +20,11 @@ const ERROR_NOTIFICATION_COOLDOWN = 10000; // 10 segundos entre notificaciones d
  */
 async function checkApiHealth(): Promise<boolean> {
     try {
-        // En desarrollo usar localhost, en producción usar ruta relativa para pasar por el proxy
-        const healthUrl = import.meta.env.DEV 
-            ? 'http://localhost:7124/health' 
-            : '/api/health';
+        const apiUrl = import.meta.env.DEV 
+            ? 'http://localhost:7124' 
+            : 'https://newapi-yn9v.onrender.com';
         
-        const response = await fetch(healthUrl, {
+        const response = await fetch(`${apiUrl}/health`, {
             method: 'GET',
             signal: AbortSignal.timeout(5000), // Timeout de 5 segundos
         });

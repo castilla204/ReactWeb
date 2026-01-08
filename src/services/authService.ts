@@ -305,29 +305,18 @@ class AuthService {
         window.fetch = async function(...args) {
             const [url, options = {}] = args;
             const fetchOptions: RequestInit = { ...options };
-            const urlString = typeof url === 'string' ? url : url.toString();
 
-            // ✅ Agregar token si existe y no está ya presente
-            const token = self.getAccessToken();
-            if (token) {
-                const headers = new Headers(fetchOptions.headers);
-                if (!headers.has('Authorization')) {
-                    headers.set('Authorization', `Bearer ${token}`);
-                    // ✅ Log solo para endpoints de API (no para recursos estáticos)
-                    if (urlString.includes('/api/')) {
-                        console.log(`✅ [AuthInterceptor] Token agregado a: ${urlString.substring(0, 100)}`);
+            // ✅ Solo agregar token si no se marca como petición pública
+            const skipAuth = (options as any)?._skipAuth === true;
+            if (!skipAuth) {
+                // Agregar token si existe y no está ya presente
+                const token = self.getAccessToken();
+                if (token) {
+                    const headers = new Headers(fetchOptions.headers);
+                    if (!headers.has('Authorization')) {
+                        headers.set('Authorization', `Bearer ${token}`);
                     }
-                } else {
-                    // Token ya presente
-                    if (urlString.includes('/api/')) {
-                        console.log(`ℹ️ [AuthInterceptor] Token ya presente en: ${urlString.substring(0, 100)}`);
-                    }
-                }
-                fetchOptions.headers = headers;
-            } else {
-                // ✅ Log solo para endpoints de API que requieren autenticación
-                if (urlString.includes('/api/') && !urlString.includes('/public') && !urlString.includes('/google-auth')) {
-                    console.warn(`⚠️ [AuthInterceptor] No hay token disponible para: ${urlString.substring(0, 100)}`);
+                    fetchOptions.headers = headers;
                 }
             }
 
@@ -336,7 +325,23 @@ class AuthService {
             // ✅ Si recibimos 403 → Manejar según el tipo
             if (response.status === 403 && !(fetchOptions as any)._mfaChecked && !(fetchOptions as any)._403Retry) {
                 try {
-                    const data = await response.clone().json();
+                    // ✅ Verificar que la respuesta sea JSON antes de parsear
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        // Si no es JSON, devolver la respuesta sin procesar
+                        return response;
+                    }
+                    
+                    const clonedResponse = response.clone();
+                    const text = await clonedResponse.text();
+                    
+                    // Verificar si es HTML
+                    if (text.trim().toLowerCase().startsWith('<!doctype') || text.trim().toLowerCase().startsWith('<html')) {
+                        // Es HTML, no JSON - devolver respuesta sin procesar
+                        return response;
+                    }
+                    
+                    const data = JSON.parse(text);
                     
                     // ✅ MFA_VERIFICATION_REQUIRED: MFA habilitado pero no verificado → Mostrar verificación
                     if (data.error === 'MFA_VERIFICATION_REQUIRED') {
@@ -373,42 +378,13 @@ class AuthService {
                     //     window.location.href = '/mfa/setup-required';
                     //     return response;
                     // }
-                } catch {
-                    // Si no se puede parsear JSON, puede ser un 403 por token expirado
-                    // Intentar refrescar el token una vez antes de devolver el error
-                    const refreshToken = self.getRefreshToken();
-                    if (refreshToken && !(fetchOptions as any)._403Retry && !self.isRedirecting) {
-                        (fetchOptions as any)._403Retry = true;
-                        console.warn('[AuthService] 403 Forbidden, attempting token refresh...');
-                        
-                        try {
-                            const success = await self.refreshAccessToken();
-                            if (success) {
-                                // Reintentar request original con nuevo token
-                                const newToken = self.getAccessToken();
-                                if (newToken) {
-                                    const headers = new Headers(fetchOptions.headers);
-                                    headers.set('Authorization', `Bearer ${newToken}`);
-                                    fetchOptions.headers = headers;
-                                }
-                                response = await originalFetch(url, fetchOptions);
-                                
-                                // Si después del refresh sigue siendo 403, es un problema de permisos real
-                                if (response.status === 403) {
-                                    console.error('[AuthService] 403 persists after token refresh - permission denied');
-                                }
-                            } else {
-                                // Si el refresh falló, no reintentar más
-                                console.warn('[AuthService] Token refresh failed, returning 403');
-                            }
-                        } catch (error) {
-                            console.error('[AuthService] Token refresh failed on 403:', error);
-                            // No hacer nada más - devolver el 403 original
-                        }
-                    }
+                } catch (error) {
+                    // Si no se puede parsear JSON (puede ser HTML), devolver la respuesta sin procesar
+                    console.warn('[AuthService] Error al parsear respuesta 403:', error);
+                    return response;
                 }
             }
-
+            
             // Si recibimos 401, intentar renovar token (solo si tenemos refresh token)
             // ✅ EXCEPCIÓN: No intentar renovar token para verifyMFA porque un 401 puede ser código inválido, no token expirado
             const isMfaVerifyEndpoint = typeof url === 'string' && url.includes('/api/auth/mfa/verify');

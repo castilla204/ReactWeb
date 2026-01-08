@@ -69,28 +69,35 @@ export const useHomepageWallQuery = (params: HomepageWallParams) => {
 
       const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.homepageWall}?${queryParams.toString()}`;
       
-      console.log('🔍 HomepageWall - Llamando a:', url);
+      console.log('🔍 HomepageWall - baseUrl:', API_CONFIG.baseUrl);
+      console.log('🔍 HomepageWall - endpoint:', API_CONFIG.endpoints.expert.services.homepageWall);
+      console.log('🔍 HomepageWall - URL completa:', url);
       console.log('🔍 HomepageWall - Parámetros:', params);
+      console.log('🔍 HomepageWall - isDev:', import.meta.env.DEV);
 
-      // ✅ El interceptor de authService agregará automáticamente el token
-      // Pero también lo agregamos manualmente aquí para asegurar que se envíe
-      const { authService } = await import('../services/authService');
-      const token = authService.getAccessToken();
+      // ✅ Agregar timeout para evitar que las peticiones se queden colgadas
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-        console.log('✅ HomepageWall - Token agregado al header');
-      } else {
-        console.warn('⚠️ HomepageWall - No hay token disponible');
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+          // Marcar como petición pública para que el interceptor no agregue token
+          _skipAuth: true,
+        } as any);
+        
+        clearTimeout(timeoutId);
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error('La petición tardó demasiado tiempo (timeout)');
+        }
+        throw error;
       }
-
-      const response = await fetch(url, {
-        headers,
-      });
 
       console.log('🔍 HomepageWall - Response status:', response.status);
       console.log('🔍 HomepageWall - Response ok:', response.ok);
@@ -109,8 +116,26 @@ export const useHomepageWallQuery = (params: HomepageWallParams) => {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
-      // ✅ La respuesta es un array directamente
-      const sections: HomepageWallResponse = await response.json();
+      // ✅ Leer el texto primero para verificar si es JSON
+      const text = await response.text();
+      const contentType = response.headers.get('content-type');
+      
+      // Verificar si la respuesta parece ser HTML (empieza con <!doctype o <html)
+      if (text.trim().toLowerCase().startsWith('<!doctype') || text.trim().toLowerCase().startsWith('<html')) {
+        console.error('❌ HomepageWall - Respuesta no es JSON. Content-Type:', contentType);
+        console.error('❌ HomepageWall - Respuesta recibida (primeros 500 chars):', text.substring(0, 500));
+        throw new Error('El servidor devolvió HTML en lugar de JSON. Verifica la URL del endpoint.');
+      }
+      
+      // Intentar parsear como JSON
+      let sections: HomepageWallResponse;
+      try {
+        sections = JSON.parse(text);
+      } catch (parseError) {
+        console.error('❌ HomepageWall - Error al parsear JSON. Content-Type:', contentType);
+        console.error('❌ HomepageWall - Respuesta recibida (primeros 500 chars):', text.substring(0, 500));
+        throw new Error(`Error al parsear la respuesta como JSON: ${parseError instanceof Error ? parseError.message : 'Error desconocido'}`);
+      }
       
       console.log('✅ HomepageWall - Secciones recibidas:', sections.length);
       sections.forEach((section, index) => {
