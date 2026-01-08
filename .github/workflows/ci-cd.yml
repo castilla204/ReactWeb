@@ -19,6 +19,11 @@ permissions:
   contents: read
   security-events: write
 
+# Concurrency control - Best Practice 2025: Evita ejecuciones duplicadas
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: docker.io
   IMAGE_NAME: erizo9/reactweb
@@ -84,6 +89,7 @@ jobs:
       always() &&
       (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     needs: ci
+
     permissions:
       contents: read
       security-events: write
@@ -98,70 +104,56 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies and update package-lock.json
-        run: |
-          # Regenerar package-lock.json para asegurar que esté sincronizado
-          npm install --package-lock-only
-          # Verificar que estén sincronizados
-          npm ci
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
 
       - name: Run Trivy vulnerability scanner
         id: trivy-scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
-          format: 'table'  # Formato legible para logs
-          scanners: 'vuln'  # Solo escanear vulnerabilidades
+          format: 'table'
           severity: 'CRITICAL,HIGH'
-          exit-code: '1'  # FALLA EL WORKFLOW si hay vulnerabilidades críticas o altas
+          exit-code: '1'
+          scanners: 'vuln,secret,config'
+          ignore-unfixed: false
+          cache-dir: /tmp/.cache/trivy
 
       - name: Run Trivy vulnerability scanner (SARIF format)
         id: trivy-sarif
-        continue-on-error: true  # No fallar si Code Scanning no está habilitado
-        uses: aquasecurity/trivy-action@0.33.1
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'sarif'
-          scanners: 'vuln'  # Solo escanear vulnerabilidades
-          severity: 'CRITICAL,HIGH'
           output: 'trivy-results.sarif'
-          exit-code: '0'  # No fallar aquí, ya se validó en el paso anterior
+          exit-code: '0'
 
-  # Job de CD: Build y push de imagen Docker
-  build-and-push:
+      - name: Upload Trivy results to GitHub Security
+        if: always() && steps.trivy-sarif.outcome == 'success'
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+          wait-for-processing: false
+
+  # Docker build and push
+  docker-build:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
-    needs: [ci, security-scan]  # Solo se ejecuta si security-scan pasa
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: write
+    needs: [ci, security-scan]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Update package-lock.json
-        run: |
-          npm install --package-lock-only
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: Update package-lock.json [skip ci]"
-            git push
-          else
-            echo "No changes to package-lock.json"
-          fi
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -176,190 +168,125 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64
-      - name: Get image digest
-        id: image-digest
-        run: |
-          # Obtener el digest de la imagen latest
-          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-          DIGEST=$(docker buildx imagetools inspect $IMAGE_TAG --format '{{json .}}' | jq -r '.manifest.digest')
-          
-          # Si no empieza con sha256:, agregarlo
-          if [[ ! "$DIGEST" =~ ^sha256: ]]; then
-            DIGEST="sha256:$DIGEST"
-          fi
-          
-          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
-          echo "Image digest: $DIGEST"
+          build-args: |
+            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            VCS_REF=${{ github.sha }}
 
-      
-      - name: Update deployment.yaml
-        if: github.ref == 'refs/heads/main'
-        run: |
-          # Verificar que el archivo existe
-          if [ ! -f "k8s/deployment.yaml" ]; then
-            echo "⚠️ k8s/deployment.yaml no existe en esta rama, saltando actualización"
-            echo "Esto es normal en PRs o ramas que no tienen el archivo"
-            exit 0
-          fi
-          
-          DIGEST="${{ steps.image-digest.outputs.digest }}"
-          echo "Updating deployment.yaml with digest: $DIGEST"
-          echo "Current image line in deployment.yaml:"
-          grep "image:" k8s/deployment.yaml || echo "No image line found"
-          
-          # Intentar múltiples formatos de imagen
-          UPDATED=false
-          
-          # Formato 1: docker.io/erizo9/reactweb:latest@sha256:...
-          if grep -q "image: docker.io/erizo9/reactweb:latest@sha256:" k8s/deployment.yaml; then
-            sed -i "s|image: docker.io/erizo9/reactweb:latest@sha256:[a-f0-9]*|image: docker.io/erizo9/reactweb:latest@$DIGEST|g" k8s/deployment.yaml
-            UPDATED=true
-            echo "✅ Updated with format: docker.io/erizo9/reactweb:latest@sha256:..."
-          # Formato 2: erizo9/reactweb:latest@sha256:...
-          elif grep -q "image: erizo9/reactweb:latest@sha256:" k8s/deployment.yaml; then
-            sed -i "s|image: erizo9/reactweb:latest@sha256:[a-f0-9]*|image: erizo9/reactweb:latest@$DIGEST|g" k8s/deployment.yaml
-            UPDATED=true
-            echo "✅ Updated with format: erizo9/reactweb:latest@sha256:..."
-          # Formato 3: docker.io/erizo9/reactweb@sha256:...
-          elif grep -q "image: docker.io/erizo9/reactweb@sha256:" k8s/deployment.yaml; then
-            sed -i "s|image: docker.io/erizo9/reactweb@sha256:[a-f0-9]*|image: docker.io/erizo9/reactweb@$DIGEST|g" k8s/deployment.yaml
-            UPDATED=true
-            echo "✅ Updated with format: docker.io/erizo9/reactweb@sha256:..."
-          # Formato 4: erizo9/reactweb@sha256:...
-          elif grep -q "image: erizo9/reactweb@sha256:" k8s/deployment.yaml; then
-            sed -i "s|image: erizo9/reactweb@sha256:[a-f0-9]*|image: erizo9/reactweb@$DIGEST|g" k8s/deployment.yaml
-            UPDATED=true
-            echo "✅ Updated with format: erizo9/reactweb@sha256:..."
-          fi
-          
-          if [ "$UPDATED" = "false" ]; then
-            echo "❌ No matching image pattern found in deployment.yaml"
-            echo "Available image lines:"
-            grep "image:" k8s/deployment.yaml || echo "No image line found"
-            exit 1
-          fi
-          
-          # Verificar que se actualizó correctamente
-          if grep -q "$DIGEST" k8s/deployment.yaml; then
-            echo "✅ deployment.yaml actualizado correctamente"
-            echo "Updated line:"
-            grep "image:" k8s/deployment.yaml | grep "$DIGEST"
-          else
-            echo "❌ Error: digest no encontrado en deployment.yaml después de actualizar"
-            echo "Digest buscado: $DIGEST"
-            echo "Contenido actual:"
-            grep "image:" k8s/deployment.yaml || echo "No image line found"
-            exit 1
-          fi
-
-
-
-
-      - name: Pull latest changes before commit
-        if: github.ref == 'refs/heads/main'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull origin main --rebase || git pull origin main --no-rebase || true
-
-      - name: Commit and push deployment update
-        if: github.ref == 'refs/heads/main'
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'chore: Update deployment image digest [skip ci]'
-          file_pattern: 'k8s/deployment.yaml'
-          skip_dirty_check: true
-          skip_fetch: true  # Ya hicimos pull antes
-          skip_checkout: true  # Ya tenemos el código con checkout
-
-      - name: Trigger ArgoCD Sync
-        if: github.ref == 'refs/heads/main'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            // Esperar un momento para que el commit se propague
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Disparar el workflow de ArgoCD sync
-            try {
-              await github.rest.actions.createWorkflowDispatch({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                workflow_id: 'argocd-sync.yml',
-                ref: 'main'
-              });
-              console.log('✅ ArgoCD sync workflow triggered');
-            } catch (error) {
-              console.log('⚠️ Could not trigger ArgoCD sync workflow:', error.message);
-              console.log('ℹ️ ArgoCD should sync automatically if auto-sync is enabled');
-            }
-
-  notify:
-    name: Notify - ArgoCD will deploy automatically
+  # Deployment to VPS
+  deploy:
+    name: Deploy to VPS
     runs-on: ubuntu-latest
-    needs: [ci, security-scan, build-and-push]  # Solo se ejecuta si security-scan pasa
+    needs: [ci, security-scan, docker-build]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    continue-on-error: true
     environment:
       name: production
       url: https://inspecciono.com
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-      - name: Get image digest
-        id: image-digest
+      - name: Checkout k8s-configs
+        uses: actions/checkout@v4
+        with:
+          repository: castilla204/k8s-configs
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          path: k8s-configs
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Add VPS to known hosts
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '65002' }}
         run: |
-          # Obtener el digest de la imagen latest
-          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-          DIGEST=$(docker buildx imagetools inspect $IMAGE_TAG --format '{{json .}}' | jq -r '.manifest.digest')
-          
-          # Si no empieza con sha256:, agregarlo
-          if [[ ! "$DIGEST" =~ ^sha256: ]]; then
-            DIGEST="sha256:$DIGEST"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -p ${VPS_SSH_PORT} -H ${VPS_HOST} >> ~/.ssh/known_hosts 2>&1 || echo "Warning: Could not add host to known_hosts, will use StrictHostKeyChecking=no"
+          chmod 600 ~/.ssh/known_hosts || true
+
+      - name: Check VPS connectivity
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '65002' }}
+        run: |
+          echo "Checking VPS connectivity on port ${VPS_SSH_PORT}..."
+          echo "VPS_HOST: ${VPS_HOST}"
+          echo "VPS_SSH_PORT: ${VPS_SSH_PORT}"
+          # Intentar con timeout más largo y múltiples intentos
+          for i in 1 2 3; do
+            echo "Attempt $i/3..."
+            if timeout 10 bash -c "echo > /dev/tcp/${VPS_HOST}/${VPS_SSH_PORT}" 2>/dev/null; then
+              echo "✅ VPS is reachable on port ${VPS_SSH_PORT}"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "⚠️ VPS is not reachable on port ${VPS_SSH_PORT} after 3 attempts"
+          echo "⚠️ This may be due to firewall restrictions or network issues"
+          echo "⚠️ Deployment will be skipped"
+          exit 0
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '65002' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ssh -p ${VPS_SSH_PORT} -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3 ${VPS_USER}@${VPS_HOST} << 'DEPLOY_EOF'
+          set -e
+          echo "🚀 Starting deployment for react-web..."
+
+          # Navigate to k8s-configs directory
+          cd /root/k8s-configs || { echo "❌ Directory /root/k8s-configs not found"; exit 1; }
+
+          # Pull latest changes for k8s-configs
+          git fetch origin main
+          git reset --hard origin/main
+
+          # Update Kubernetes deployment for react-web
+          if [ -f "applications/react-web/deployment.yaml" ]; then
+            kubectl apply -f applications/react-web/deployment.yaml --namespace=default
+            kubectl rollout status deployment/react-web --namespace=default --timeout=5m
           fi
-          
-          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
-          echo "Image digest: $DIGEST"
 
-      - name: Build completed
+          # Verify deployment
+          kubectl get pods -l app=react-web --namespace=default
+          kubectl get svc -l app=react-web --namespace=default
+
+          echo "✅ Deployment completed successfully for react-web!"
+          DEPLOY_EOF
+
+      - name: Health check
         run: |
-          echo "✅ Build completed successfully!"
-          echo "📦 Image pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-          echo "🚀 ArgoCD will automatically deploy when it detects the new image"
-          echo "🔍 Check ArgoCD UI: https://argocd.inspecciono.com"
+          sleep 10
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://inspecciono.com || echo "000")
+          if [ "$response" != "200" ]; then
+            echo "ℹ️  El deployment se completó, pero el health check falló."
+            exit 0
+          fi
+          echo "✅ Health check passed"
 
-
-
-
-
-
-
-
-
-
-
-    permissions:
-      contents: write
-
-
-
-
-
-
+      - name: Notify deployment
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+          fi

@@ -13,6 +13,7 @@ spec:
     path: k8s
     directory:
       recurse: true
+      exclude: ingress.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: default
@@ -25,9 +26,22 @@ spec:
     - CreateNamespace=false
     - PrunePropagationPolicy=foreground
     - PruneLast=true
+    - ServerSideApply=true
+    - RespectIgnoreDifferences=true
+    - FailOnSharedResource=true
+    - SyncTimeoutSeconds=300
     retry:
       limit: 5
       backoff:
         duration: 5s
         factor: 2
         maxDuration: 3m
+  ignoreDifferences:
+  - jsonPointers:
+    - /spec/securityContext
+    - /spec/containers/*/securityContext
+    - /spec/containers/*/resources
+    kind: Pod
+  - group: networking.k8s.io
+    kind: Ingress
+    name: react-web-ingress

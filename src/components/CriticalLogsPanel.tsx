@@ -7,24 +7,26 @@ import { Pagination } from './Pagination';
 interface CriticalLog {
     id: number;
     message: string;
-    details?: string;
-    source: string;
-    logTypeId: number;
-    logType?: {
+    details: string;  // ⭐ Según la guía: siempre presente (puede ser string vacío)
+    createdAt: string;
+    logType: {
         id: number;
         name: string;
+        description: string | null;  // ⚠️ PUEDE SER NULL
         severityId: number;
-    };
-    userId?: number;
-    user?: {
+    } | null;  // ⚠️ PUEDE SER NULL
+    user: {
         id: number;
         name: string;
         email: string;
-    };
+    } | null;  // ⚠️ PUEDE SER NULL
+    additionalData: object | null;  // ⚠️ PUEDE SER NULL (JSON object, no string)
+    // Campos legacy para compatibilidad
+    source?: string;
+    logTypeId?: number;
+    userId?: number;
     relatedEntityType?: string;
     relatedEntityId?: number;
-    additionalData?: string;
-    createdAt: string;
 }
 
 interface PaginatedLogsResponse {
@@ -34,8 +36,11 @@ interface PaginatedLogsResponse {
         pageSize: number;
         totalCount: number;
         totalPages: number;
-        hasNextPage: boolean;
-        hasPreviousPage: boolean;
+        hasNext: boolean;  // ⭐ Según la guía: hasNext (no hasNextPage)
+        hasPrevious: boolean;  // ⭐ Según la guía: hasPrevious (no hasPreviousPage)
+        // Campos legacy para compatibilidad
+        hasNextPage?: boolean;
+        hasPreviousPage?: boolean;
     };
 }
 
@@ -48,8 +53,11 @@ const CriticalLogsPanel: React.FC = () => {
         pageSize: number;
         totalCount: number;
         totalPages: number;
-        hasNextPage: boolean;
-        hasPreviousPage: boolean;
+        hasNext: boolean;  // ⭐ Según la guía
+        hasPrevious: boolean;  // ⭐ Según la guía
+        // Campos legacy para compatibilidad
+        hasNextPage?: boolean;
+        hasPreviousPage?: boolean;
     } | null>(null);
     const [page, setPage] = useState<number>(1);
     const [pageSize, setPageSize] = useState<number>(20);
@@ -77,12 +85,26 @@ const CriticalLogsPanel: React.FC = () => {
                 throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
             }
 
-            const data: PaginatedLogsResponse = await response.json();
+            const data: any = await response.json();
+            
+            // ✅ NORMALIZAR respuesta según la guía
+            const normalizedLogs = data.logs || [];
+            const normalizedPagination = data.pagination ? {
+                page: data.pagination.page || 1,
+                pageSize: data.pagination.pageSize || pageSize,
+                totalCount: data.pagination.totalCount || 0,
+                totalPages: data.pagination.totalPages || 0,
+                hasNext: data.pagination.hasNext ?? data.pagination.hasNextPage ?? false,
+                hasPrevious: data.pagination.hasPrevious ?? data.pagination.hasPreviousPage ?? false,
+                // Campos legacy para compatibilidad
+                hasNextPage: data.pagination.hasNextPage,
+                hasPreviousPage: data.pagination.hasPreviousPage,
+            } : null;
             
             // Manejar respuesta paginada o no paginada
-            if (data.logs && data.pagination) {
-                setLogs(data.logs);
-                setPagination(data.pagination);
+            if (normalizedLogs.length > 0 && normalizedPagination) {
+                setLogs(normalizedLogs);
+                setPagination(normalizedPagination);
             } else if (Array.isArray(data)) {
                 setLogs(data);
                 setPagination(null);
@@ -216,7 +238,7 @@ const CriticalLogsPanel: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <code className="bg-gray-100 px-2 py-1 rounded text-xs">{log.source}</code>
+                                                <code className="bg-gray-100 px-2 py-1 rounded text-xs">{log.source || 'Sistema'}</code>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {log.user ? (
@@ -245,9 +267,9 @@ const CriticalLogsPanel: React.FC = () => {
                                                             Ver datos adicionales
                                                         </summary>
                                                         <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-auto max-h-32">
-                                                            {typeof log.additionalData === 'string' 
-                                                                ? log.additionalData 
-                                                                : JSON.stringify(log.additionalData, null, 2)}
+                                                            {typeof log.additionalData === 'object' && log.additionalData !== null
+                                                                ? JSON.stringify(log.additionalData, null, 2)
+                                                                : String(log.additionalData || 'Sin datos adicionales')}
                                                         </pre>
                                                     </details>
                                                 )}
@@ -263,8 +285,8 @@ const CriticalLogsPanel: React.FC = () => {
                                 pageSize={pagination.pageSize}
                                 totalCount={pagination.totalCount}
                                 totalPages={pagination.totalPages}
-                                hasNextPage={pagination.hasNextPage}
-                                hasPreviousPage={pagination.hasPreviousPage}
+                                hasNextPage={pagination.hasNext ?? pagination.hasNextPage ?? false}
+                                hasPreviousPage={pagination.hasPrevious ?? pagination.hasPreviousPage ?? false}
                                 onPageChange={(newPage) => {
                                     setPage(newPage);
                                     window.scrollTo({ top: 0, behavior: 'smooth' });
