@@ -1,8 +1,6 @@
-// ✅ TEMPORAL: En desarrollo apuntar directamente a producción
-// Las peticiones irán directamente a https://newapi-yn9v.onrender.com
-// En producción, usar la URL completa de la API
-const DEV_SERVER = 'https://newapi-yn9v.onrender.com';
-// Para volver a desarrollo local, cambiar a: import.meta.env.DEV ? 'http://localhost:7124' : 'https://newapi-yn9v.onrender.com' 
+ // ✅ API única: https://newapi-yn9v.onrender.com
+ // Tanto en desarrollo como en producción se usa la misma API
+ const DEV_SERVER = 'https://newapi-yn9v.onrender.com';
 const API_PATH = '/api'; 
 
 export const API_CONFIG = {
@@ -94,10 +92,8 @@ export const API_CONFIG = {
                 get: (id: number) => `${API_PATH}/SearchService/${id}`,
                 getByExpert: (expertId: number) => `${API_PATH}/SearchService/expert/${expertId}`,
                 getByHireId: (hireId: number) => `${API_PATH}/SearchService/GetServiceByHireId/${hireId}`,
-                mapExperts: `${API_PATH}/SearchService/map-experts`, // ✅ Mantener para compatibilidad
-                mapMarkers: `${API_PATH}/SearchService/map-markers`, // ✅ NUEVO: Marcadores ultra ligeros
-                mapSidebar: `${API_PATH}/SearchService/map-sidebar`, // ✅ NUEVO: Información completa del sidebar
-                homepageWall: `${API_PATH}/SearchService/homepage-wall`,
+                mapExperts: `${API_PATH}/SearchService/map-experts`,
+                homepageWall: `${API_PATH}/SearchService/homepage-wall`, // ✅ Endpoint público para homepage
             },
             hires: {
                 createCheckout: (serviceId: number) => `${API_PATH}/SearchHire/create-checkout-session/${serviceId}`,
@@ -157,12 +153,12 @@ export const API_CONFIG = {
         },
         dispute: {
             create: `${API_PATH}/Dispute/dispute-service`,
-            list: `${API_PATH}/Dispute/all`,  // ⭐ Según la guía: /api/Dispute/all (PascalCase)
+            list: `${API_PATH}/dispute/all`,
             myDisputes: `${API_PATH}/dispute/my-disputes`,
-            get: (id: number) => `${API_PATH}/Dispute/${id}`,  // ⭐ Según la guía: /api/Dispute/{id}
+            get: (id: number) => `${API_PATH}/dispute/${id}`,
             getDetails: (id: number) => `${API_PATH}/dispute/${id}/details`,
             getSearch: (id: number) => `${API_PATH}/dispute/${id}/search`,
-            resolve: (id: number) => `${API_PATH}/Dispute/${id}/resolve`,  // ⭐ Según la guía: /api/Dispute/{id}/resolve
+            resolve: (id: number) => `${API_PATH}/dispute/${id}/resolve`,
             expertResponse: (id: number) => `${API_PATH}/dispute/${id}/expert-response`,
             details: (searchHireId: number) => `${API_PATH}/Dispute/details/${searchHireId}`,
             debug: (id: number) => `${API_PATH}/dispute/${id}/debug`,

@@ -20,8 +20,6 @@ class AuthService {
     private refreshPromise: Promise<boolean> | null = null;
     // ✅ Cola de requests pendientes esperando verificación MFA
     private pendingMfaRequests: Array<{ url: string; options: RequestInit; resolve: (response: Response) => void; reject: (error: any) => void }> = [];
-    // ✅ Prevenir múltiples redirecciones
-    private isRedirecting: boolean = false;
 
     constructor() {
         this.initFromStorage();
@@ -32,16 +30,10 @@ class AuthService {
     // 1. GOOGLE AUTH (Login)
     // ============================================
     async googleAuth(googleCredential: string): Promise<{ success: boolean; user: any; requiresMFA: boolean }> {
-        const startTime = Date.now();
         try {
-            console.log('🔐 [AuthService] Iniciando autenticación con Google...');
             const decoded: any = jwtDecode(googleCredential);
-            console.log('🔐 [AuthService] Token decodificado, email:', decoded.email);
 
-            const apiUrl = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.googleAuth}`;
-            console.log('🔐 [AuthService] Enviando request a:', apiUrl);
-            
-            const response = await fetch(apiUrl, {
+            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.googleAuth}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -54,9 +46,6 @@ class AuthService {
                     googleId: decoded.sub,
                 }),
             });
-            
-            const requestTime = Date.now() - startTime;
-            console.log(`🔐 [AuthService] Respuesta recibida en ${requestTime}ms, status:`, response.status);
 
             // ✅ BEST PRACTICE: Manejar diferentes tipos de errores
             if (!response.ok) {
@@ -90,10 +79,8 @@ class AuthService {
             }
 
             const data: GoogleAuthResponse = await response.json();
-            console.log('🔐 [AuthService] Datos recibidos del servidor');
 
             if (!data.token || !data.user) {
-                console.error('❌ [AuthService] Respuesta inválida: falta token o usuario');
                 throw new Error('Invalid response from server');
             }
 
@@ -101,27 +88,13 @@ class AuthService {
             const [accessToken, refreshToken] = data.token.split('|');
 
             if (!accessToken || !refreshToken) {
-                console.error('❌ [AuthService] Formato de token inválido');
                 throw new Error('Invalid token format from server');
             }
 
-            console.log('🔐 [AuthService] Tokens recibidos, guardando...');
             this.setTokens(accessToken, refreshToken);
-
-            // ✅ CRÍTICO: Guardar también el usuario en localStorage (clave 'user' según guía)
-            // Esto permite saber quién está logueado sin hacer peticiones al backend
-            if (data.user) {
-                localStorage.setItem('user', JSON.stringify(data.user));
-                localStorage.setItem('userData', JSON.stringify(data.user)); // Compatibilidad
-                console.log('✅ [AuthService] Usuario guardado en localStorage');
-            }
 
             // Iniciar auto-renovación
             this.scheduleTokenRefresh();
-
-            const totalTime = Date.now() - startTime;
-            console.log(`✅ [AuthService] Autenticación completada exitosamente en ${totalTime}ms`);
-            console.log('✅ [AuthService] Usuario:', data.user?.email || data.user?.name);
 
             return {
                 success: true,
@@ -129,12 +102,7 @@ class AuthService {
                 requiresMFA: data.requiresMFA || false,
             };
         } catch (error: any) {
-            const totalTime = Date.now() - startTime;
-            console.error(`❌ [AuthService] Error después de ${totalTime}ms:`, error);
-            console.error('❌ [AuthService] Detalles del error:', {
-                message: error?.message,
-                stack: error?.stack,
-            });
+            console.error('Google Auth error:', error);
             throw error;
         }
     }
@@ -149,23 +117,8 @@ class AuthService {
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
 
-        // ✅ Guardar también en el formato antiguo para compatibilidad
+        // Guardar también en el formato antiguo para compatibilidad
         localStorage.setItem('authToken', accessToken);
-
-        // ✅ CRÍTICO: Guardar fecha de expiración del access token (1 hora desde ahora)
-        try {
-            const decoded: any = jwtDecode(accessToken);
-            if (decoded.exp) {
-                const expiresAt = new Date(decoded.exp * 1000).toISOString();
-                localStorage.setItem('accessTokenExpiresAt', expiresAt);
-                console.log('✅ [AuthService] accessTokenExpiresAt guardado:', expiresAt);
-            }
-        } catch (error) {
-            console.warn('[AuthService] No se pudo decodificar el token para obtener expiración:', error);
-            // Si no se puede decodificar, asumir 1 hora desde ahora
-            const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-            localStorage.setItem('accessTokenExpiresAt', expiresAt);
-        }
     }
 
     getAccessToken(): string | null {
@@ -193,9 +146,9 @@ class AuthService {
             const decoded: any = jwtDecode(token);
             const expiresIn = decoded.exp * 1000 - Date.now();
 
-            // ✅ BEST PRACTICE: Renovar 5 minutos antes de expirar (Access Token dura 1 hora)
+            // ✅ BEST PRACTICE: Renovar 2 minutos antes de expirar (Access Token dura 30 min)
             // Esto asegura que el token nunca expire durante una sesión activa
-            const refreshIn = Math.max(0, expiresIn - (5 * 60 * 1000));
+            const refreshIn = Math.max(0, expiresIn - (2 * 60 * 1000));
 
             if (refreshIn > 0) {
                 // Solo loguear en desarrollo
@@ -240,18 +193,7 @@ class AuthService {
                     if (response.status === 401) {
                         // Refresh token inválido o expirado → Logout
                         this.logout();
-                        // ✅ Prevenir múltiples redirecciones
-                        if (!this.isRedirecting) {
-                            this.isRedirecting = true;
-                            // Usar setTimeout para evitar recargas inmediatas
-                            setTimeout(() => {
-                                if (window.location.pathname !== '/') {
-                                    window.location.href = '/';
-                                } else {
-                                    this.isRedirecting = false;
-                                }
-                            }, 100);
-                        }
+                        window.location.href = '/';
                         return false;
                     }
                     throw new Error('Failed to refresh token');
@@ -262,12 +204,6 @@ class AuthService {
                 if (data.accessToken && data.refreshToken) {
                     // ✅ Backend devuelve NUEVOS access y refresh tokens (rotación)
                     this.setTokens(data.accessToken, data.refreshToken);
-
-                    // ✅ Si el backend también devuelve accessTokenExpiresAt, guardarlo
-                    if (data.accessTokenExpiresAt) {
-                        localStorage.setItem('accessTokenExpiresAt', data.accessTokenExpiresAt);
-                        console.log('✅ [AuthService] accessTokenExpiresAt actualizado desde backend:', data.accessTokenExpiresAt);
-                    }
 
                     // Programar próxima renovación
                     this.scheduleTokenRefresh();
@@ -280,8 +216,6 @@ class AuthService {
             } catch (error) {
                 console.error('Error refreshing token:', error);
                 this.logout();
-                // ✅ No redirigir en catch - solo limpiar tokens
-                // La redirección solo debe ocurrir cuando el refresh token es 401
                 return false;
             } finally {
                 // Limpiar promise después de un delay para permitir que otros requests la reutilicen
@@ -306,24 +240,32 @@ class AuthService {
             const [url, options = {}] = args;
             const fetchOptions: RequestInit = { ...options };
 
-            // ✅ Solo agregar token si no se marca como petición pública
-            const skipAuth = (options as any)?._skipAuth === true;
-            if (!skipAuth) {
-                // Agregar token si existe y no está ya presente
-                const token = self.getAccessToken();
-                if (token) {
-                    const headers = new Headers(fetchOptions.headers);
-                    if (!headers.has('Authorization')) {
-                        headers.set('Authorization', `Bearer ${token}`);
-                    }
-                    fetchOptions.headers = headers;
+            // ✅ CRÍTICO: Solo agregar token si NO es un endpoint público
+            // Los endpoints públicos no necesitan autenticación y agregar token puede causar delays
+            const publicEndpoints = [
+                '/api/Categories',
+                '/api/ServiceType/public',
+                '/api/SearchService/homepage-wall',
+                '/health',
+                '/warmup'
+            ];
+            const urlString = typeof url === 'string' ? url : url.toString();
+            const isPublic = publicEndpoints.some(endpoint => urlString.includes(endpoint));
+
+            // Agregar token solo si NO es un endpoint público
+            const token = self.getAccessToken();
+            if (token && !isPublic) {
+                const headers = new Headers(fetchOptions.headers);
+                if (!headers.has('Authorization')) {
+                    headers.set('Authorization', `Bearer ${token}`);
                 }
+                fetchOptions.headers = headers;
             }
 
             let response = await originalFetch(url, fetchOptions);
 
-            // ✅ Si recibimos 403 → Manejar según el tipo
-            if (response.status === 403 && !(fetchOptions as any)._mfaChecked && !(fetchOptions as any)._403Retry) {
+            // ✅ Si recibimos 403 por MFA → Manejar según el tipo
+            if (response.status === 403 && !(fetchOptions as any)._mfaChecked) {
                 try {
                     // ✅ Verificar que la respuesta sea JSON antes de parsear
                     const contentType = response.headers.get('content-type');
@@ -378,10 +320,8 @@ class AuthService {
                     //     window.location.href = '/mfa/setup-required';
                     //     return response;
                     // }
-                } catch (error) {
-                    // Si no se puede parsear JSON (puede ser HTML), devolver la respuesta sin procesar
-                    console.warn('[AuthService] Error al parsear respuesta 403:', error);
-                    return response;
+                } catch {
+                    // Si no se puede parsear JSON, continuar normalmente
                 }
             }
             
@@ -493,17 +433,12 @@ class AuthService {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
         localStorage.removeItem('userData');
-        localStorage.removeItem('accessTokenExpiresAt');
 
         if (this.refreshTimeout) {
             clearTimeout(this.refreshTimeout);
             this.refreshTimeout = null;
         }
-        
-        // ✅ Resetear flag de redirección al limpiar tokens
-        this.isRedirecting = false;
     }
 
     // ============================================
@@ -525,43 +460,26 @@ class AuthService {
                 const isExpired = expirationTime < now;
                 const timeUntilExpiry = expirationTime - now;
 
-                // ✅ Verificar también accessTokenExpiresAt en localStorage
-                const storedExpiresAt = localStorage.getItem('accessTokenExpiresAt');
-                if (storedExpiresAt) {
-                    const storedExpirationTime = new Date(storedExpiresAt).getTime();
-                    if (storedExpirationTime < now) {
-                        // El token expiró según localStorage, renovar inmediatamente
-                        if (import.meta.env.DEV) {
-                            console.log('[AuthService] Token expired (from localStorage), refreshing immediately');
-                        }
-                        this.refreshAccessToken();
-                        return;
-                    }
-                }
-
                 if (isExpired) {
                     // Token expirado, renovar inmediatamente
                     if (import.meta.env.DEV) {
                         console.log('[AuthService] Token expired, refreshing immediately');
                     }
                     this.refreshAccessToken();
-                } else if (timeUntilExpiry < 5 * 60 * 1000) {
-                    // ✅ Renovar 5 minutos antes de que expire (mejor práctica)
+                } else if (timeUntilExpiry < 2 * 60 * 1000) {
+                    // Token expira en menos de 2 minutos, renovar ahora
                     if (import.meta.env.DEV) {
-                        console.log('[AuthService] Token expires soon (less than 5 min), refreshing immediately');
+                        console.log('[AuthService] Token expires soon, refreshing immediately');
                     }
                     this.refreshAccessToken();
                 } else {
-                    // Programar renovación proactiva
+                    // Programar renovación
                     this.scheduleTokenRefresh();
                 }
             } catch (error) {
                 console.error('[AuthService] Invalid token:', error);
                 this.clearTokens();
             }
-        } else {
-            // No hay tokens, limpiar todo
-            this.clearTokens();
         }
     }
 
