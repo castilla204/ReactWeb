@@ -240,9 +240,21 @@ class AuthService {
             const [url, options = {}] = args;
             const fetchOptions: RequestInit = { ...options };
 
-            // Agregar token si existe y no está ya presente
+            // ✅ CRÍTICO: Solo agregar token si NO es un endpoint público
+            // Los endpoints públicos no necesitan autenticación y agregar token puede causar delays
+            const publicEndpoints = [
+                '/api/Categories',
+                '/api/ServiceType/public',
+                '/api/SearchService/homepage-wall',
+                '/health',
+                '/warmup'
+            ];
+            const urlString = typeof url === 'string' ? url : url.toString();
+            const isPublic = publicEndpoints.some(endpoint => urlString.includes(endpoint));
+
+            // Agregar token solo si NO es un endpoint público
             const token = self.getAccessToken();
-            if (token) {
+            if (token && !isPublic) {
                 const headers = new Headers(fetchOptions.headers);
                 if (!headers.has('Authorization')) {
                     headers.set('Authorization', `Bearer ${token}`);

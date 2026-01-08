@@ -24,19 +24,44 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
         try {
             setLoading(true);
             const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.categories.list}`;
-            const response = await fetch(url, {
-                headers: getAuthToken() ? {
-                    'Authorization': `Bearer ${getAuthToken()}`
-                } : {}
-            });
+            
+            // ✅ CRÍTICO: Endpoint público - NO enviar token de autenticación
+            // ✅ CRÍTICO: Agregar timeout de 15 segundos para evitar que se quede colgado
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        // ✅ NO incluir Authorization header para endpoints públicos
+                    },
+                    signal: controller.signal,
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    // Verificar si la respuesta es HTML en lugar de JSON
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && !contentType.includes('application/json')) {
+                        throw new Error('Server returned HTML instead of JSON. Check backend configuration.');
+                    }
+                    throw new Error(`Failed to fetch categories: ${response.status} ${response.statusText}`);
+                }
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch categories');
+                const data = await response.json();
+                setCategories(data);
+                setError(null);
+            } catch (fetchError: any) {
+                clearTimeout(timeoutId);
+                if (fetchError.name === 'AbortError') {
+                    throw new Error('Request timeout: The server took too long to respond. Please try again.');
+                }
+                throw fetchError;
             }
-
-            const data = await response.json();
-            setCategories(data);
-            setError(null);
         } catch (err) {
             console.error('Error fetching categories:', err);
             setError(err instanceof Error ? err.message : 'Failed to load categories');
