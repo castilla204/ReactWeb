@@ -1,7 +1,8 @@
-// En desarrollo, siempre usar localhost:7124 directamente
-// En producción, usar ruta relativa para pasar por el proxy de nginx
-// El proxy de nginx redirige /api/ a https://newapi-yn9v.onrender.com/api/
-const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : ''; 
+// ✅ TEMPORAL: En desarrollo apuntar directamente a producción
+// Las peticiones irán directamente a https://newapi-yn9v.onrender.com
+// En producción, usar la URL completa de la API
+const DEV_SERVER = 'https://newapi-yn9v.onrender.com';
+// Para volver a desarrollo local, cambiar a: import.meta.env.DEV ? 'http://localhost:7124' : 'https://newapi-yn9v.onrender.com' 
 const API_PATH = '/api'; 
 
 export const API_CONFIG = {
