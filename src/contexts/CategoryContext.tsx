@@ -24,50 +24,44 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
         try {
             setLoading(true);
             const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.categories.list}`;
-            // ✅ Intentar sin autenticación primero (endpoint puede ser público)
-            const response = await fetch(url, {
-                // Marcar como petición pública para que el interceptor no agregue token
-                _skipAuth: true,
-            } as any);
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch categories');
-            }
-
-            // ✅ Leer el texto primero para verificar si es JSON
-            const text = await response.text();
-            const contentType = response.headers.get('content-type');
             
-            // Verificar si la respuesta parece ser HTML (empieza con <!doctype o <html)
-            if (text.trim().toLowerCase().startsWith('<!doctype') || text.trim().toLowerCase().startsWith('<html')) {
-                console.error('❌ CategoryContext - Respuesta no es JSON. Content-Type:', contentType);
-                console.error('❌ CategoryContext - Respuesta recibida (primeros 500 chars):', text.substring(0, 500));
-                throw new Error('El servidor devolvió HTML en lugar de JSON. Verifica la URL del endpoint.');
-            }
+            // ✅ CRÍTICO: Endpoint público - NO enviar token de autenticación
+            // ✅ CRÍTICO: Agregar timeout de 15 segundos para evitar que se quede colgado
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos
             
-            // Intentar parsear como JSON
-            let data: any;
             try {
-                data = JSON.parse(text);
-            } catch (parseError) {
-                console.error('❌ CategoryContext - Error al parsear JSON. Content-Type:', contentType);
-                console.error('❌ CategoryContext - Respuesta recibida (primeros 500 chars):', text.substring(0, 500));
-                throw new Error(`Error al parsear la respuesta como JSON: ${parseError instanceof Error ? parseError.message : 'Error desconocido'}`);
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        // ✅ NO incluir Authorization header para endpoints públicos
+                    },
+                    signal: controller.signal,
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    // Verificar si la respuesta es HTML en lugar de JSON
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && !contentType.includes('application/json')) {
+                        throw new Error('Server returned HTML instead of JSON. Check backend configuration.');
+                    }
+                    throw new Error(`Failed to fetch categories: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                setCategories(data);
+                setError(null);
+            } catch (fetchError: any) {
+                clearTimeout(timeoutId);
+                if (fetchError.name === 'AbortError') {
+                    throw new Error('Request timeout: The server took too long to respond. Please try again.');
+                }
+                throw fetchError;
             }
-            // Transform data from API format (PascalCase) to component format (camelCase)
-            const transformedData = Array.isArray(data) ? data.map((item: any) => ({
-                id: item.Id || item.id,
-                name: item.Name || item.name,
-                parentId: item.ParentId !== undefined ? (item.ParentId || item.parentId) : null,
-                isActive: item.IsActive !== undefined ? (item.IsActive || item.isActive) : true,
-                createdAt: item.CreatedAt || item.createdAt,
-                updatedAt: item.UpdatedAt || item.updatedAt,
-                isParent: item.IsParent !== undefined ? (item.IsParent || item.isParent) : false,
-                hasSubcategories: item.HasSubcategories !== undefined ? (item.HasSubcategories || item.hasSubcategories) : false,
-                subcategoriesCount: item.SubcategoriesCount !== undefined ? (item.SubcategoriesCount || item.subcategoriesCount) : 0,
-            })) : [];
-            setCategories(transformedData);
-            setError(null);
         } catch (err) {
             console.error('Error fetching categories:', err);
             setError(err instanceof Error ? err.message : 'Failed to load categories');

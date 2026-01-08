@@ -34,58 +34,55 @@ export function useServiceTypes() {
                 setIsLoading(true);
                 setError(null);
                 
-                // ✅ Endpoint público, no requiere autenticación
-                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.serviceTypes.list}`, {
-                  // Marcar como petición pública para que el interceptor no agregue token
-                  _skipAuth: true,
-                } as any);
+                const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.serviceTypes.list}`;
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                // ✅ CRÍTICO: Endpoint público - NO enviar token de autenticación
+                // ✅ CRÍTICO: Agregar timeout de 15 segundos para evitar que se quede colgado
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos
                 
-                // ✅ Leer el texto primero para verificar si es JSON
-                const text = await response.text();
-                const contentType = response.headers.get('content-type');
-                
-                // Verificar si la respuesta parece ser HTML (empieza con <!doctype o <html)
-                if (text.trim().toLowerCase().startsWith('<!doctype') || text.trim().toLowerCase().startsWith('<html')) {
-                    console.error('❌ useServiceTypes - Respuesta no es JSON. Content-Type:', contentType);
-                    console.error('❌ useServiceTypes - Respuesta recibida (primeros 500 chars):', text.substring(0, 500));
-                    throw new Error('El servidor devolvió HTML en lugar de JSON. Verifica la URL del endpoint.');
-                }
-                
-                // Intentar parsear como JSON
-                let result: ServiceTypesResponse;
                 try {
-                    result = JSON.parse(text);
-                } catch (parseError) {
-                    console.error('❌ useServiceTypes - Error al parsear JSON. Content-Type:', contentType);
-                    console.error('❌ useServiceTypes - Respuesta recibida (primeros 500 chars):', text.substring(0, 500));
-                    throw new Error(`Error al parsear la respuesta como JSON: ${parseError instanceof Error ? parseError.message : 'Error desconocido'}`);
-                }
-                
-                if (result.success) {
-                    // Transform data from API format (PascalCase) to component format (camelCase)
-                    const transformedData = result.data.map((item: any) => ({
-                        id: item.Id || item.id,
-                        name: item.Name || item.name,
-                        description: item.Description || item.description,
-                        serviceTypeCategoryId: item.ServiceTypeCategoryId || item.serviceTypeCategoryId,
-                        serviceTypeCategoryName: item.ServiceTypeCategoryName || item.serviceTypeCategoryName,
-                        position: item.Position || item.position,
-                    }));
-                    
-                    // Sort by position first, then by id as fallback
-                    const sortedData = transformedData.sort((a, b) => {
-                        if (a.position !== b.position) {
-                            return a.position - b.position;
-                        }
-                        return a.id - b.id;
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            // ✅ NO incluir Authorization header para endpoints públicos
+                        },
+                        signal: controller.signal,
                     });
-                    setServiceTypes(sortedData);
-                } else {
-                    throw new Error(result.message || 'Failed to fetch service types');
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        // Verificar si la respuesta es HTML en lugar de JSON
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && !contentType.includes('application/json')) {
+                            throw new Error('Server returned HTML instead of JSON. Check backend configuration.');
+                        }
+                        throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const result: ServiceTypesResponse = await response.json();
+                    
+                    if (result.success) {
+                        // Sort by position first, then by id as fallback
+                        const sortedData = result.data.sort((a, b) => {
+                            if (a.position !== b.position) {
+                                return a.position - b.position;
+                            }
+                            return a.id - b.id;
+                        });
+                        setServiceTypes(sortedData);
+                    } else {
+                        throw new Error(result.message || 'Failed to fetch service types');
+                    }
+                } catch (fetchError: any) {
+                    clearTimeout(timeoutId);
+                    if (fetchError.name === 'AbortError') {
+                        throw new Error('Request timeout: The server took too long to respond. Please try again.');
+                    }
+                    throw fetchError;
                 }
             } catch (err) {
                 console.error('Error fetching service types:', err);
