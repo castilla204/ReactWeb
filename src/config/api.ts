@@ -93,6 +93,7 @@ export const API_CONFIG = {
                 getByExpert: (expertId: number) => `${API_PATH}/SearchService/expert/${expertId}`,
                 getByHireId: (hireId: number) => `${API_PATH}/SearchService/GetServiceByHireId/${hireId}`,
                 mapExperts: `${API_PATH}/SearchService/map-experts`,
+                homepageWall: `${API_PATH}/SearchService/homepage-wall`, // ✅ Endpoint público para homepage
             },
             hires: {
                 createCheckout: (serviceId: number) => `${API_PATH}/SearchHire/create-checkout-session/${serviceId}`,
