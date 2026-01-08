@@ -34,25 +34,55 @@ export function useServiceTypes() {
                 setIsLoading(true);
                 setError(null);
                 
-                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.serviceTypes.list}`);
+                const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.serviceTypes.list}`;
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                // ✅ CRÍTICO: Endpoint público - NO enviar token de autenticación
+                // ✅ CRÍTICO: Agregar timeout de 15 segundos para evitar que se quede colgado
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos
                 
-                const result: ServiceTypesResponse = await response.json();
-                
-                if (result.success) {
-                    // Sort by position first, then by id as fallback
-                    const sortedData = result.data.sort((a, b) => {
-                        if (a.position !== b.position) {
-                            return a.position - b.position;
-                        }
-                        return a.id - b.id;
+                try {
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            // ✅ NO incluir Authorization header para endpoints públicos
+                        },
+                        signal: controller.signal,
                     });
-                    setServiceTypes(sortedData);
-                } else {
-                    throw new Error(result.message || 'Failed to fetch service types');
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        // Verificar si la respuesta es HTML en lugar de JSON
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && !contentType.includes('application/json')) {
+                            throw new Error('Server returned HTML instead of JSON. Check backend configuration.');
+                        }
+                        throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const result: ServiceTypesResponse = await response.json();
+                    
+                    if (result.success) {
+                        // Sort by position first, then by id as fallback
+                        const sortedData = result.data.sort((a, b) => {
+                            if (a.position !== b.position) {
+                                return a.position - b.position;
+                            }
+                            return a.id - b.id;
+                        });
+                        setServiceTypes(sortedData);
+                    } else {
+                        throw new Error(result.message || 'Failed to fetch service types');
+                    }
+                } catch (fetchError: any) {
+                    clearTimeout(timeoutId);
+                    if (fetchError.name === 'AbortError') {
+                        throw new Error('Request timeout: The server took too long to respond. Please try again.');
+                    }
+                    throw fetchError;
                 }
             } catch (err) {
                 console.error('Error fetching service types:', err);
