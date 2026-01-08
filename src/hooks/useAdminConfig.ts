@@ -851,32 +851,52 @@ export const useAppointmentStatusManagement = (page: number = 1, pageSize: numbe
       console.log('🔍 DEBUG - useAppointmentStatusManagement - Response:', response);
       
       // Manejar respuesta paginada o no paginada
+      let statusesArray: any[] = [];
+      
       if (response.statuses && response.pagination) {
-        setStatuses(response.statuses);
+        statusesArray = response.statuses;
         setPagination(response.pagination);
-        
-        // Log detallado de cada estado
-        if (response.statuses && response.statuses.length > 0) {
-          response.statuses.forEach((status: AppointmentStatusDto, index: number) => {
-            console.log(`🔍 DEBUG - Estado ${index + 1}:`, {
-              id: status.id,
-              statusType: status.statusType,
-              statusName: status.statusName,
-              statusValue: status.statusValue,
-              displayName: status.displayName,
-              description: status.description,
-              sortOrder: status.sortOrder,
-              isActive: status.isActive,
-              isFinalizationStatus: status.isFinalizationStatus
-            });
-          });
-        }
       } else if (Array.isArray(response)) {
-        setStatuses(response);
+        statusesArray = response;
         setPagination(null);
       } else {
         setStatuses([]);
         setPagination(null);
+        return;
+      }
+      
+      // ✅ NORMALIZAR: Asegurar que todos los estados tengan displayName, statusName, etc. en camelCase
+      const normalizedStatuses = statusesArray.map((status: any) => ({
+        id: status.id || status.Id,
+        statusType: status.statusType || status.StatusType,
+        statusName: status.statusName || status.StatusName,
+        statusValue: status.statusValue || status.StatusValue,
+        displayName: status.displayName || status.DisplayName, // ⭐ CRÍTICO: Normalizar displayName
+        description: status.description || status.Description,
+        sortOrder: status.sortOrder || status.SortOrder,
+        isActive: status.isActive ?? status.IsActive ?? true,
+        isFinalizationStatus: status.isFinalizationStatus ?? status.IsFinalizationStatus ?? false,
+        // Mantener propiedades originales para compatibilidad
+        ...status
+      }));
+      
+      setStatuses(normalizedStatuses);
+      
+      // Log detallado de cada estado
+      if (normalizedStatuses.length > 0) {
+        normalizedStatuses.forEach((status: any, index: number) => {
+          console.log(`🔍 DEBUG - Estado ${index + 1}:`, {
+            id: status.id,
+            statusType: status.statusType,
+            statusName: status.statusName,
+            statusValue: status.statusValue,
+            displayName: status.displayName,
+            description: status.description,
+            sortOrder: status.sortOrder,
+            isActive: status.isActive,
+            isFinalizationStatus: status.isFinalizationStatus
+          });
+        });
       }
     } catch (err) {
       console.error('Error fetching all statuses:', err);
@@ -906,16 +926,36 @@ export const useAppointmentStatusManagement = (page: number = 1, pageSize: numbe
         console.log('🔍 DEBUG - useAppointmentStatusManagement - Response:', response);
         
         // Manejar respuesta paginada o no paginada
+        let statusesArray: any[] = [];
+        
         if (response.statuses && response.pagination) {
-          setStatuses(response.statuses);
+          statusesArray = response.statuses;
           setPagination(response.pagination);
         } else if (Array.isArray(response)) {
-          setStatuses(response);
+          statusesArray = response;
           setPagination(null);
         } else {
           setStatuses([]);
           setPagination(null);
+          return;
         }
+        
+        // ✅ NORMALIZAR: Asegurar que todos los estados tengan displayName, statusName, etc. en camelCase
+        const normalizedStatuses = statusesArray.map((status: any) => ({
+          id: status.id || status.Id,
+          statusType: status.statusType || status.StatusType,
+          statusName: status.statusName || status.StatusName,
+          statusValue: status.statusValue || status.StatusValue,
+          displayName: status.displayName || status.DisplayName, // ⭐ CRÍTICO: Normalizar displayName
+          description: status.description || status.Description,
+          sortOrder: status.sortOrder || status.SortOrder,
+          isActive: status.isActive ?? status.IsActive ?? true,
+          isFinalizationStatus: status.isFinalizationStatus ?? status.IsFinalizationStatus ?? false,
+          // Mantener propiedades originales para compatibilidad
+          ...status
+        }));
+        
+        setStatuses(normalizedStatuses);
       } catch (err) {
         if (!isMounted) return;
         console.error('Error fetching all statuses:', err);

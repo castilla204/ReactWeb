@@ -3,6 +3,7 @@ import { Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
+import { isAdmin } from '../utils/admin';
 
 const HangfirePanel: React.FC = () => {
     const [hangfireUrl, setHangfireUrl] = useState<string>('');
@@ -17,15 +18,20 @@ const HangfirePanel: React.FC = () => {
             return;
         }
 
-        // Verificar que el usuario sea admin
-        const isAdmin = user.role === 'Admin' || user.role === 'admin' || user.isAdmin === true;
-        if (!isAdmin) {
+        // Verificar que el usuario sea admin (compatibilidad con PascalCase y camelCase)
+        const userEmail = user?.Email || user?.email;
+        const userRole = user?.Role || user?.role;
+        const isAdminByEmail = userEmail ? isAdmin(userEmail) : false;
+        const isAdminByRole = userRole === 'Admin' || userRole === 'admin';
+        const userIsAdmin = isAdminByEmail || isAdminByRole;
+        
+        if (!userIsAdmin) {
             setError('Solo los administradores pueden acceder al dashboard de Hangfire');
             return;
         }
 
         // Construir la URL del Hangfire dashboard usando la misma configuración que el resto de la app
-        // API_CONFIG.baseUrl ya incluye la URL base (ej: https://api.atrapo.io o http://localhost:7124)
+        // API_CONFIG.baseUrl ya incluye la URL base (ej: https://newapi-yn9v.onrender.com o http://localhost:7124)
         // Hangfire está en /hangfire, no en /api/hangfire, así que usamos la baseUrl directamente
         const apiUrl = API_CONFIG.baseUrl;
         const token = getAuthToken();
@@ -74,9 +80,14 @@ const HangfirePanel: React.FC = () => {
         );
     }
 
-    // Verificar permisos de admin
-    const isAdmin = user.role === 'Admin' || user.role === 'admin' || user.isAdmin === true;
-    if (!isAdmin) {
+    // Verificar permisos de admin (compatibilidad con PascalCase y camelCase)
+    const userEmail = user?.Email || user?.email;
+    const userRole = user?.Role || user?.role;
+    const isAdminByEmail = userEmail ? isAdmin(userEmail) : false;
+    const isAdminByRole = userRole === 'Admin' || userRole === 'admin';
+    const userIsAdmin = isAdminByEmail || isAdminByRole;
+    
+    if (!userIsAdmin) {
         return (
             <div className="p-6">
                 <div className="mb-4">

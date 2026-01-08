@@ -88,9 +88,47 @@ export const useDisputes = () => {
           hasToken: !!localStorage.getItem('authToken')
         });
         
-        return fetchApi<DisputeListResponseDto>(url);
+        const response = await fetchApi<any>(url);
+        
+        // ✅ NORMALIZAR respuesta según la guía
+        const normalized: DisputeListResponseDto = {
+          disputes: response.disputes || [],
+          pagination: response.pagination ? {
+            currentPage: response.pagination.currentPage || response.pagination.page || 1,
+            pageSize: response.pagination.pageSize || filters.pageSize || 20,
+            totalCount: response.pagination.totalCount || response.pagination.totalItems || 0,
+            totalPages: response.pagination.totalPages || 0,
+            hasNext: response.pagination.hasNext ?? response.pagination.hasNextPage ?? false,
+            hasPrevious: response.pagination.hasPrevious ?? response.pagination.hasPreviousPage ?? false,
+            // Campos legacy para compatibilidad
+            totalItems: response.pagination.totalItems,
+            hasNextPage: response.pagination.hasNextPage,
+            hasPreviousPage: response.pagination.hasPreviousPage,
+          } : {
+            currentPage: 1,
+            pageSize: filters.pageSize || 20,
+            totalCount: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrevious: false,
+          },
+          stats: response.stats || {
+            pendingDisputes: 0,
+            resolvedDisputes: 0,
+            clientDisputes: 0,
+            expertDisputes: 0,
+            thisWeekDisputes: 0,
+            thisMonthDisputes: 0,
+          }
+        };
+        
+        console.log('[useDisputes] Normalized response:', normalized);
+        
+        return normalized;
       },
       enabled: true,
+      retry: 1,
+      retryDelay: 1000,
     });
   };
 
