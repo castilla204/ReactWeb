@@ -276,7 +276,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                         className="absolute bottom-3 left-1/2 -translate-x-1/2 flex"
                                         style={{ gap: '6px' }}
                                     >
-                                        {imageUrls.map((_: string, idx: number) => (
+                                        {imageUrls.map((_, idx) => (
                                             <div
                                                 key={idx}
                                                 className="rounded-full transition-all bg-white"
@@ -504,7 +504,33 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     
     // ✅ Estado para controlar el modal (Drawer en móvil, Dialog en PC)
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const drawerContentRef = useRef<HTMLDivElement>(null);
+    const headerRef = useRef<HTMLDivElement>(null);
+    const [headerTop, setHeaderTop] = useState(143); // 64px (top) + 79px (height) por defecto
+    
+    // Estado para controlar si es la primera carga y la posición inicial del drawer
+    const [isFirstLoad, setIsFirstLoad] = useState(true);
+    const [drawerTopPosition, setDrawerTopPosition] = useState<number | null>(null);
+    
+    // Calcular dinámicamente la posición del header
+    useEffect(() => {
+        const calculateHeaderPosition = () => {
+            if (headerRef.current) {
+                const rect = headerRef.current.getBoundingClientRect();
+                const top = rect.top;
+                const height = rect.height;
+                setHeaderTop(top + height);
+            }
+        };
+        
+        calculateHeaderPosition();
+        window.addEventListener('resize', calculateHeaderPosition);
+        window.addEventListener('scroll', calculateHeaderPosition);
+        
+        return () => {
+            window.removeEventListener('resize', calculateHeaderPosition);
+            window.removeEventListener('scroll', calculateHeaderPosition);
+        };
+    }, []);
     const [filters, setFilters] = useState({
         priceRange: [0, 100000] as [number, number], // [min, max] en euros - rango amplio para servicios premium
         rating: 0 as number, // Mínimo de estrellas (0-5)
@@ -674,26 +700,122 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         services: services.map(s => ({ id: s.id, price: s.price, rating: s.averageRating }))
     });
     
-    // Abrir drawer automáticamente cuando hay servicios disponibles en móvil
+    // Ref para rastrear si ya se abrió el drawer para esta ubicación
+    const lastLocationRef = useRef<string>('');
+    const hasOpenedDrawerRef = useRef<boolean>(false);
+    
+    // Abrir drawer automáticamente cuando hay servicios disponibles en móvil (solo una vez por ubicación)
     useEffect(() => {
+        const locationKey = `${formData.latitude}-${formData.longitude}`;
         const isMobile = window.innerWidth < 1024;
+        
         if (
             formData.latitude && 
             formData.longitude && 
-            services.length > 0 && 
+            allServices.length > 0 && 
             isMobile &&
-            !isDrawerOpen
+            locationKey !== lastLocationRef.current &&
+            !hasOpenedDrawerRef.current
         ) {
-            setIsDrawerOpen(true);
+            lastLocationRef.current = locationKey;
+            hasOpenedDrawerRef.current = true;
+            // No abrir automáticamente, solo marcar que se puede abrir
         }
-    }, [formData.latitude, formData.longitude, services.length, isDrawerOpen]);
+        
+        // Reset cuando cambia la ubicación
+        if (locationKey !== lastLocationRef.current) {
+            hasOpenedDrawerRef.current = false;
+        }
+    }, [formData.latitude, formData.longitude, allServices.length]);
     
-    // Handler simplificado
-    const handleDrawerOpenChange = (open: boolean) => {
-        const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-        if (!isMobile && open) {
-            return;
+    // Establecer posición inicial del drawer a mitad de página en la primera carga
+    useEffect(() => {
+        if (isFirstLoad && isDrawerOpen && typeof window !== 'undefined') {
+            const isMobile = window.innerWidth < 1024;
+            if (isMobile) {
+                // Calcular posición a mitad de página (50% del viewport height)
+                const midPagePosition = window.innerHeight * 0.5;
+                setDrawerTopPosition(midPagePosition);
+            }
         }
+    }, [isFirstLoad, isDrawerOpen]);
+    
+    // Detectar cuando el usuario interactúa con el drawer para permitir que vaya hasta arriba
+    useEffect(() => {
+        if (!isDrawerOpen || !isFirstLoad || typeof window === 'undefined') return;
+        
+        const isMobile = window.innerWidth < 1024;
+        if (!isMobile) return;
+        
+        const midPagePosition = window.innerHeight * 0.5;
+        
+        // Función para permitir que el drawer vaya hasta arriba
+        const allowFullHeight = () => {
+            if (isFirstLoad) {
+                setIsFirstLoad(false);
+                setDrawerTopPosition(null);
+            }
+        };
+        
+        // Detectar cuando el usuario interactúa con el drawer
+        // Buscar el elemento del drawer después de que se renderice
+        const findAndSetupDrawer = () => {
+            // Buscar el drawer usando varios selectores posibles
+            const drawerSelectors = [
+                '[data-vaul-drawer]',
+                '[data-vaul-drawer-wrapper]',
+                '.p1mcn102', // Clase específica mencionada por el usuario
+                '[role="dialog"]'
+            ];
+            
+            let drawerElement: HTMLElement | null = null;
+            for (const selector of drawerSelectors) {
+                const element = document.querySelector(selector) as HTMLElement;
+                if (element) {
+                    drawerElement = element;
+                    break;
+                }
+            }
+            
+            if (drawerElement) {
+                // Escuchar eventos de interacción en el drawer
+                const handleInteraction = () => {
+                    allowFullHeight();
+                };
+                
+                // Escuchar eventos de touch y mouse
+                drawerElement.addEventListener('touchstart', handleInteraction, { once: true });
+                drawerElement.addEventListener('mousedown', handleInteraction, { once: true });
+                
+                // También verificar periódicamente si el drawer se ha movido
+                const checkInterval = setInterval(() => {
+                    const rect = drawerElement!.getBoundingClientRect();
+                    // Si el drawer se ha movido hacia arriba desde su posición inicial
+                    if (rect.top < midPagePosition - 30) {
+                        allowFullHeight();
+                        clearInterval(checkInterval);
+                    }
+                }, 100);
+                
+                // Limpiar después de 10 segundos si no hay interacción
+                setTimeout(() => {
+                    clearInterval(checkInterval);
+                }, 10000);
+            }
+        };
+        
+        // Esperar a que el drawer se renderice
+        const timeoutId = setTimeout(findAndSetupDrawer, 300);
+        
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [isDrawerOpen, isFirstLoad]);
+    
+    // Detectar cuando el usuario interactúa con el drawer (arrastra o abre manualmente)
+    const handleDrawerOpenChange = (open: boolean) => {
+        // ✅ Permitir abrir tanto en móvil como en PC
+        // El ResponsiveModal se encargará de mostrar Drawer o Dialog según el tamaño
         setIsDrawerOpen(open);
     };
     // Logs para debugging
@@ -1260,6 +1382,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         {/* Header estilo Airbnb - Sticky - Igual que Airbnb móvil */}
                         <div 
                             id="mobile-search-header"
+                            ref={headerRef}
                             className="sticky top-0 z-[9999] bg-white"
                         >
                             <div className="px-4 py-3 flex items-center gap-2">
@@ -1598,7 +1721,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         {/* Indicadores de imágenes si hay más de una */}
                                                         {imageUrls.length > 1 && (
                                                             <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-1">
-                                                                {imageUrls.map((_: string, idx: number) => (
+                                                                {imageUrls.map((_, idx) => (
                                                                     <span
                                                                         key={idx}
                                                                         className={`w-1.5 h-1.5 rounded-full ${
@@ -1748,6 +1871,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 }));
                                                 setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
                                                 setSearchAddress('');
+                                                setSelectedAddress('');
                                             }}
                                             currentCountry={selectedCountry}
                                                 className="[&>button]:h-14 [&>button]:px-4 [&>button]:min-w-[110px] [&>button]:gap-2"
@@ -1839,20 +1963,92 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     </div>
                 </div>
                 
-                {/* ResponsiveModal: Drawer en móvil, Dialog en PC - Solo mostrar en móvil */}
-                {width > 0 && width < 1024 && (
+                {/* ResponsiveModal: Drawer en móvil, Dialog en PC */}
                 <ResponsiveModal
                     open={isDrawerOpen}
                     onOpenChange={handleDrawerOpenChange}
-                    title={services.length > 0 
-                        ? `Más de ${services.length} ${services.length === 1 ? 'alojamiento' : 'alojamientos'}`
-                        : 'Sin alojamientos'}
-                    drawerClassName="lg:hidden"
-                    dialogClassName="max-w-4xl max-h-[90vh]"
+                    title={(() => {
+                        // Contar solo los servicios que están en el drawer (excluyendo el seleccionado)
+                        const drawerServicesCount = selectedService 
+                            ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
+                            : services.length;
+                        return drawerServicesCount > 0 
+                            ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio' : 'servicios'}` 
+                            : 'Sin servicios';
+                    })()}
+                    drawerClassName="lg:hidden flex flex-col bg-white outline-none border-0 shadow-none rounded-none"
+                    dialogClassName="max-w-4xl max-h-[90vh] flex flex-col"
+                    drawerStyle={{ 
+                        top: drawerTopPosition !== null ? `${drawerTopPosition}px` : `${headerTop}px`,
+                        bottom: '0',
+                        zIndex: 10000,
+                        height: drawerTopPosition !== null 
+                            ? `calc(100vh - ${drawerTopPosition}px)`
+                            : `calc(100vh - ${headerTop}px)`,
+                        maxHeight: drawerTopPosition !== null 
+                            ? `calc(100vh - ${drawerTopPosition}px)`
+                            : `calc(100vh - ${headerTop}px)`,
+                        position: 'fixed',
+                        backgroundColor: 'white',
+                        borderTopLeftRadius: '0',
+                        borderTopRightRadius: '0',
+                        borderBottomLeftRadius: '0',
+                        borderBottomRightRadius: '0',
+                        transition: isFirstLoad ? 'none' : 'top 0.3s ease-out'
+                    }}
+                    dialogStyle={{
+                        maxHeight: '90vh',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '90vw',
+                        maxWidth: '1200px'
+                    }}
                     noOverlay={true}
+                    noHandle={true}
                 >
+                    {/* Header con contador estilo Airbnb - Solo en móvil */}
+                    <div className="lg:hidden px-6 py-4 bg-white border-b border-gray-100 flex-shrink-0" style={{ zIndex: 10001 }}>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold text-gray-900">
+                                {(() => {
+                                    // Contar solo los servicios que están en el drawer (excluyendo el seleccionado)
+                                    const drawerServicesCount = selectedService 
+                                        ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
+                                        : services.length;
+                                    return drawerServicesCount > 0 
+                                        ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio' : 'servicios'}` 
+                                        : 'Sin servicios';
+                                })()}
+                            </h2>
+                            <button
+                                onClick={() => setIsDrawerOpen(false)}
+                                className="p-2 -mr-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100"
+                                aria-label="Cerrar"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {/* Header para PC - Dentro del Dialog */}
+                    <div className="hidden lg:block px-6 py-4 bg-white border-b border-gray-100 flex-shrink-0">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-semibold text-gray-900">
+                                {(() => {
+                                    const drawerServicesCount = selectedService 
+                                        ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
+                                        : services.length;
+                                    return drawerServicesCount > 0 
+                                        ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio' : 'servicios'}` 
+                                        : 'Sin servicios';
+                                })()}
+                            </h2>
+                        </div>
+                    </div>
+                    
                     {/* Contenido con scroll */}
-                    <div ref={drawerContentRef} className="flex-1 overflow-y-auto bg-white px-0 lg:px-4">
+                    <div className="flex-1 overflow-y-auto bg-white px-0 lg:px-4">
                         {/* Services List - Estilo Airbnb */}
                         {/* ✅ Excluir el servicio seleccionado del drawer - solo mostrar los demás */}
                         {(() => {
@@ -1917,7 +2113,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         })()}
                     </div>
                 </ResponsiveModal>
-                )}
         </div>
     );
 }

@@ -34,13 +34,36 @@ export function useServiceTypes() {
                 setIsLoading(true);
                 setError(null);
                 
-                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.serviceTypes.list}`);
+                // ✅ Endpoint público, no requiere autenticación
+                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.serviceTypes.list}`, {
+                  // Marcar como petición pública para que el interceptor no agregue token
+                  _skipAuth: true,
+                } as any);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
-                const result: ServiceTypesResponse = await response.json();
+                // ✅ Leer el texto primero para verificar si es JSON
+                const text = await response.text();
+                const contentType = response.headers.get('content-type');
+                
+                // Verificar si la respuesta parece ser HTML (empieza con <!doctype o <html)
+                if (text.trim().toLowerCase().startsWith('<!doctype') || text.trim().toLowerCase().startsWith('<html')) {
+                    console.error('❌ useServiceTypes - Respuesta no es JSON. Content-Type:', contentType);
+                    console.error('❌ useServiceTypes - Respuesta recibida (primeros 500 chars):', text.substring(0, 500));
+                    throw new Error('El servidor devolvió HTML en lugar de JSON. Verifica la URL del endpoint.');
+                }
+                
+                // Intentar parsear como JSON
+                let result: ServiceTypesResponse;
+                try {
+                    result = JSON.parse(text);
+                } catch (parseError) {
+                    console.error('❌ useServiceTypes - Error al parsear JSON. Content-Type:', contentType);
+                    console.error('❌ useServiceTypes - Respuesta recibida (primeros 500 chars):', text.substring(0, 500));
+                    throw new Error(`Error al parsear la respuesta como JSON: ${parseError instanceof Error ? parseError.message : 'Error desconocido'}`);
+                }
                 
                 if (result.success) {
                     // Transform data from API format (PascalCase) to component format (camelCase)
