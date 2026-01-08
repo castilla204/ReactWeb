@@ -1,6 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Wallet, ArrowRight, Shield, Check, Lock, BadgeCheck, FileText, Image, Video, ShieldCheck, Info } from 'lucide-react';
-import { FormProgressTimeline } from './FormProgressTimeline';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { useAuth } from '../contexts/AuthContext';
@@ -193,11 +192,6 @@ export default function SearchForm({
 
     return (
         <div className="bg-background min-h-screen">
-            {/* Header Timeline - Componente reutilizable con shadcn Stepper */}
-            <FormProgressTimeline currentStep={3} onBack={handleBack} />
-            
-            {/* Spacer para compensar el header fijo */}
-            <div className="h-16"></div>
 
             {/* Main Content - Estilo moderno minimalista */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -239,7 +233,7 @@ export default function SearchForm({
                                             <div className="flex items-center justify-between mb-1">
                                                 <h3 className="text-[16px] font-bold text-[#111827] leading-tight truncate pr-2">
                                                     {expertName || 'Servicio Profesional'}
-                                                </h3>
+                                            </h3>
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
@@ -276,9 +270,9 @@ export default function SearchForm({
                                         </div>
                                     </div>
 
-                                    {serviceDescription && (
+                                            {serviceDescription && (
                                         <div className="text-[13px] text-[#4B5563] leading-relaxed line-clamp-2">
-                                            {serviceDescription}
+                                                    {serviceDescription}
                                         </div>
                                     )}
 
@@ -355,7 +349,7 @@ export default function SearchForm({
                                         return (
                                             <div className="flex justify-center p-4">
                                                 <div className="w-5 h-5 border-2 border-[#222222]/20 border-t-[#222222] rounded-full animate-spin" />
-                                            </div>
+                                    </div>
                                         );
                                     }
                                     
@@ -367,15 +361,15 @@ export default function SearchForm({
                                     
                                     return (
                                         <div className="space-y-4">
-                                            {/* Subtotal */}
+                                    {/* Subtotal */}
                                             <div className="flex justify-between items-center">
                                                 <span className="text-[15px] text-[#222222]">Subtotal</span>
                                                 <span className="text-[15px] font-normal text-[#222222]">
                                                     €{total.toFixed(2)}
-                                                </span>
-                                            </div>
-                                            
-                                            {/* Total */}
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Total */}
                                             <div className="pt-4 border-t border-[#DDDDDD]">
                                                 <div className="bg-gray-50/50 rounded-lg border border-gray-100 p-3">
                                                     <div className="flex items-center justify-between">

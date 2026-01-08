@@ -9,7 +9,7 @@ export default defineConfig({
         port: 5173,
         proxy: {
             '/api': {
-                target: 'https://api.inspecciono.io'/*'http://localhost:7124'*/, // URL del backend
+                target: 'http://localhost:7124', // URL del backend en desarrollo
                 changeOrigin: true,
                 secure: false,
             },

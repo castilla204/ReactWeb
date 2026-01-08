@@ -34,10 +34,17 @@ const AdminPanelPage: React.FC = () => {
         return <Navigate to="/" replace />;
     }
 
-    const userEmail = user?.email?.trim().toLowerCase();
+    // El objeto user viene del backend con mayúsculas: Email, Role (no email, role)
+    const userEmail = (user?.Email || user?.email || '').trim().toLowerCase();
     const adminEmail = 'dcastillaa@gmail.com'.toLowerCase();
-    if (userEmail !== adminEmail) {
-        console.log(`Access denied: user email (${userEmail}) does not match admin email (${adminEmail})`);
+    const userRole = user?.Role || user?.role;
+    
+    // Verificar por email o por rol
+    const isAdminByEmail = userEmail === adminEmail;
+    const isAdminByRole = userRole === 'Admin' || userRole === 'admin';
+    
+    if (!isAdminByEmail && !isAdminByRole) {
+        console.log(`Access denied: user email (${userEmail}) does not match admin email (${adminEmail}) and role (${userRole}) is not Admin`);
         return <Navigate to="/" replace />;
     }
 

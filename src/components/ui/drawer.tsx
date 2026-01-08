@@ -3,6 +3,16 @@ import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "../../lib/utils"
 
+// Componente simple para ocultar visualmente pero mantener accesibilidad
+const VisuallyHidden: React.FC<{ asChild?: boolean; children: React.ReactNode }> = ({ asChild, children }) => {
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children, {
+      className: cn("sr-only", (children.props as any)?.className),
+    } as any);
+  }
+  return <span className="sr-only">{children}</span>;
+};
+
 const Drawer = ({
   shouldScaleBackground = false,
   ...props
@@ -23,10 +33,11 @@ const DrawerClose = DrawerPrimitive.Close
 const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <DrawerPrimitive.Overlay
     ref={ref}
     className={cn("fixed inset-0 z-50 bg-black/50", className)}
+    style={{ zIndex: 9997, ...style }}
     {...props}
   />
 ))
@@ -34,12 +45,27 @@ DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
 
 const DrawerContent = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
->(({ className, children, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> & {
+    title?: string;
+    description?: string;
+    noOverlay?: boolean;
+    noHandle?: boolean;
+  }
+>(({ className, children, title, description, noOverlay, noHandle, ...props }, ref) => {
   // ✅ BEST PRACTICE: Prevenir warnings de accesibilidad
   // Vaul maneja aria-hidden automáticamente, pero podemos asegurarnos de que
   // cuando el drawer está abierto, los elementos puedan recibir focus correctamente
   const contentRef = React.useRef<HTMLDivElement>(null);
+  
+  // Verificar si los children ya incluyen DrawerTitle o DrawerDescription
+  const hasTitle = React.Children.toArray(children).some((child: any) => 
+    child?.type?.displayName === DrawerPrimitive.Title.displayName || 
+    child?.props?.children?.type?.displayName === DrawerPrimitive.Title.displayName
+  );
+  const hasDescription = React.Children.toArray(children).some((child: any) => 
+    child?.type?.displayName === DrawerPrimitive.Description.displayName ||
+    child?.props?.children?.type?.displayName === DrawerPrimitive.Description.displayName
+  );
   
   React.useEffect(() => {
     const content = contentRef.current;
@@ -133,9 +159,12 @@ const DrawerContent = React.forwardRef<
     };
   }, []);
   
+  // Verificar si se debe mostrar el overlay (por defecto sí, a menos que se especifique noOverlay)
+  const showOverlay = !noOverlay;
+  
   return (
     <DrawerPortal>
-      <DrawerOverlay />
+      {showOverlay && <DrawerOverlay />}
       <DrawerPrimitive.Content
         ref={(node) => {
           if (typeof ref === 'function') {
@@ -147,11 +176,50 @@ const DrawerContent = React.forwardRef<
         }}
         className={cn(
           "fixed inset-x-0 bottom-0 z-50 flex h-auto flex-col rounded-t-[10px] border bg-background sm:inset-x-0 sm:top-auto sm:bottom-0 sm:rounded-t-lg sm:shadow-xl",
-          className
+          className,
+          // Si se proporciona un estilo con 'top', sobrescribir bottom-0
+          props.style?.top && "!bottom-auto"
         )}
+        style={{
+          ...props.style,
+          // Asegurar que el z-index del drawer sea mayor que el overlay cuando no hay overlay
+          zIndex: showOverlay ? (props.style?.zIndex || 9998) : (props.style?.zIndex || 10000),
+          // Forzar bordes superiores redondeados siempre si se especifican en style
+          ...(props.style?.borderTopLeftRadius && {
+            borderTopLeftRadius: props.style.borderTopLeftRadius + ' !important' as any
+          }),
+          ...(props.style?.borderTopRightRadius && {
+            borderTopRightRadius: props.style.borderTopRightRadius + ' !important' as any
+          }),
+          // Asegurar que los bordes inferiores no estén redondeados si se especifica
+          ...(props.style?.borderBottomLeftRadius !== undefined && {
+            borderBottomLeftRadius: props.style.borderBottomLeftRadius
+          }),
+          ...(props.style?.borderBottomRightRadius !== undefined && {
+            borderBottomRightRadius: props.style.borderBottomRightRadius
+          })
+        }}
         {...props}
       >
-        <div className="mx-auto mt-3 mb-2 h-1.5 w-12 rounded-full bg-muted md:hidden" />
+        {/* ✅ Accesibilidad: Agregar DrawerTitle y DrawerDescription si no están presentes */}
+        {!hasTitle && (
+          <VisuallyHidden asChild>
+            <DrawerPrimitive.Title>
+              {title || "Drawer"}
+            </DrawerPrimitive.Title>
+          </VisuallyHidden>
+        )}
+        {!hasDescription && (
+          <VisuallyHidden asChild>
+            <DrawerPrimitive.Description>
+              {description || "Drawer content"}
+            </DrawerPrimitive.Description>
+          </VisuallyHidden>
+        )}
+        {/* Handle - ocultar si se especifica noHandle */}
+        {!noHandle && (
+          <div className="mx-auto mt-3 mb-2 h-1.5 w-12 rounded-full bg-muted md:hidden" />
+        )}
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>

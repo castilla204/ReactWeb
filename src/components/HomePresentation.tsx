@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Car, Home, Bike, Search, ChevronDown, Link as LinkIcon, FolderTree, X, MoreHorizontal } from 'lucide-react';
+import { Search, ChevronDown, Link as LinkIcon, FolderTree, X, MoreHorizontal } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useNavigate } from 'react-router-dom';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import {
     Drawer,
     DrawerContent,
@@ -19,138 +20,6 @@ import {
     DialogTitle,
 } from './ui/dialog';
 
-// Google SVG Icon Component
-const GoogleIcon = () => (
-    <svg className="w-5 h-5" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-    </svg>
-);
-
-// Declaración de tipos para Google Sign-In
-declare global {
-    interface Window {
-        google?: {
-            accounts: {
-                id: {
-                    initialize: (config: any) => void;
-                    prompt: () => void;
-                };
-            };
-        };
-    }
-}
-
-// Componente para botón de inicio de sesión con Google en Homepage
-const GoogleSignInButton = () => {
-    const [isReady, setIsReady] = useState(false);
-    const { setUser } = useAuth();
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        // Inicializar Google Auth cuando el componente se monta
-        const initGoogleAuth = () => {
-            if (window.google?.accounts?.id) {
-                const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
-                
-                window.google.accounts.id.initialize({
-                    client_id: clientId,
-                    callback: async (response: any) => {
-                        try {
-                            if (!response.credential) {
-                                throw new Error('No credential received from Google');
-                            }
-
-                            const { authService } = await import('../services/authService');
-                            const result = await authService.googleAuth(response.credential);
-                            
-                            if (!result.success) {
-                                throw new Error('Authentication failed');
-                            }
-
-                            setUser(result.user);
-                            localStorage.setItem('userData', JSON.stringify(result.user));
-                            
-                            // Redirigir según el rol
-                            const token = authService.getAccessToken();
-                            if (token) {
-                                const { RoleChecker } = await import('../utils/roleChecker');
-                                const userRole = RoleChecker.getUserRole(token);
-                                const requiresMfa = RoleChecker.requiresMfa(userRole);
-                                
-                                if (requiresMfa) {
-                                    const { mfaService } = await import('../services/mfaService');
-                                    try {
-                                        const mfaStatus = await mfaService.getMFAStatus();
-                                        if (mfaStatus.isEnabled) {
-                                            navigate('/mfa/verify', { state: { returnTo: '/busquedas' } });
-                                            return;
-                                        }
-                                    } catch (error) {
-                                        console.error('Error checking MFA status:', error);
-                                    }
-                                }
-                            }
-                            
-                            navigate('/busquedas');
-                        } catch (error) {
-                            console.error('Error during Google authentication:', error);
-                        }
-                    },
-                    auto_select: false,
-                    cancel_on_tap_outside: false,
-                });
-                
-                setIsReady(true);
-            } else {
-                // Reintentar después de un delay
-                setTimeout(initGoogleAuth, 500);
-            }
-        };
-
-        // Esperar a que el script de Google se cargue
-        if (document.readyState === 'complete') {
-            initGoogleAuth();
-        } else {
-            window.addEventListener('load', initGoogleAuth);
-        }
-
-        return () => {
-            window.removeEventListener('load', initGoogleAuth);
-        };
-    }, [setUser, navigate]);
-
-    const handleClick = () => {
-        if (!isReady) {
-            console.warn('Google Sign-In not ready yet');
-            return;
-        }
-
-        try {
-            // Usar el método prompt() directamente
-            if (window.google?.accounts?.id?.prompt) {
-                window.google.accounts.id.prompt();
-            } else {
-                console.error('Google prompt method not available');
-            }
-        } catch (error) {
-            console.error('Error triggering Google Sign-In:', error);
-        }
-    };
-
-    return (
-        <button
-            onClick={handleClick}
-            disabled={!isReady}
-            className="w-full bg-white text-gray-900 font-semibold py-4 px-6 rounded-xl text-base transition-colors border-2 border-gray-200 hover:border-gray-300 active:bg-gray-50 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-            <GoogleIcon />
-            <span>Iniciar Sesión</span>
-        </button>
-    );
-};
 
 // Importar imágenes directamente
 import motoAguaImg from '../media/motoagua.png';
@@ -169,11 +38,21 @@ const CategoryImage: React.FC<{ categoryName: string; size?: 'sm' | 'md' }> = ({
         md: 'w-10 h-10'
     };
 
+    // Validar que categoryName existe
+    if (!categoryName) {
+        return (
+            <div className={`${sizeClasses[size]} rounded-md bg-gray-100 flex items-center justify-center`}>
+                <FolderTree className="w-4 h-4 text-gray-400" />
+            </div>
+        );
+    }
+
     // Determinar qué imagen usar según el nombre de la categoría
-    const isMotoAgua = categoryName.toLowerCase().includes('moto') && categoryName.toLowerCase().includes('agua');
-    const isMoto = categoryName.toLowerCase().includes('moto') && !isMotoAgua;
-    const isCoche = categoryName.toLowerCase().includes('coche') || categoryName.toLowerCase().includes('vehículo');
-    const isCasa = categoryName.toLowerCase().includes('inmobiliaria') || categoryName.toLowerCase().includes('casa') || categoryName.toLowerCase().includes('inmueble');
+    const categoryNameLower = categoryName.toLowerCase();
+    const isMotoAgua = categoryNameLower.includes('moto') && categoryNameLower.includes('agua');
+    const isMoto = categoryNameLower.includes('moto') && !isMotoAgua;
+    const isCoche = categoryNameLower.includes('coche') || categoryNameLower.includes('vehículo');
+    const isCasa = categoryNameLower.includes('inmobiliaria') || categoryNameLower.includes('casa') || categoryNameLower.includes('inmueble');
 
     if (isMotoAgua) {
         return (
@@ -226,11 +105,22 @@ const CategoryImage: React.FC<{ categoryName: string; size?: 'sm' | 'md' }> = ({
 const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
-    const { categories } = useCategories();
+    const { categories, loading: categoriesLoading } = useCategories();
     const { serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
-    const [currentWord, setCurrentWord] = useState('coche');
-    const [isGlitching, setIsGlitching] = useState(false);
-    const [glitchText, setGlitchText] = useState('coche');
+    
+    // Debug: verificar que los datos se están cargando
+    useEffect(() => {
+        console.log('HomePresentation - Categories:', categories, 'Loading:', categoriesLoading, 'Count:', categories?.length);
+        console.log('HomePresentation - ServiceTypes:', serviceTypes, 'Loading:', serviceTypesLoading, 'Count:', serviceTypes?.length);
+        if (serviceTypes && serviceTypes.length > 0) {
+            console.log('First ServiceType:', serviceTypes[0]);
+            console.log('ServiceType structure:', Object.keys(serviceTypes[0] || {}));
+        }
+        if (categories && categories.length > 0) {
+            console.log('First Category:', categories[0]);
+            console.log('Category structure:', Object.keys(categories[0] || {}));
+        }
+    }, [categories, categoriesLoading, serviceTypes, serviceTypesLoading]);
     
     // Estado del buscador estilo Airbnb
     const [searchForm, setSearchForm] = useState({
@@ -288,170 +178,192 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
         }
     };
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            // Iniciar efecto glitch más suave
-            setIsGlitching(true);
-            
-            // Generar texto glitch más moderno con caracteres más elegantes
-            const glitchChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*';
-            const glitchInterval = setInterval(() => {
-                const randomText = Array.from({ length: currentWord.length }, () => 
-                    glitchChars[Math.floor(Math.random() * glitchChars.length)]
-                ).join('');
-                setGlitchText(randomText);
-            }, 100); // Más lento para efecto más elegante
-
-            // Después de 200ms, cambiar a la palabra real
-            setTimeout(() => {
-                clearInterval(glitchInterval);
-                setCurrentWord((prev) => {
-                    if (prev === 'coche') return 'casa';
-                    if (prev === 'casa') return 'moto';
-                    return 'coche';
-                });
-                setGlitchText(currentWord);
-                setIsGlitching(false);
-            }, 200);
-        }, 5000); // Cambia cada 5 segundos para ser más sutil
-
-        // Limpieza al desmontar el componente
-        return () => {
-            clearInterval(interval);
-        };
-    }, [currentWord]);
-
     return (
-        <div className="relative w-full min-h-[100dvh] lg:min-h-screen bg-white overflow-hidden">
-            {/* Fondo Premium "Electric Wave" */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {/* 1. Fondo base limpio */}
-                <div className="absolute inset-0 bg-white"></div>
-                
-                {/* 2. Onda principal vibrante (Azul Eléctrico a Violeta) */}
-                <div className="absolute -top-[30%] -right-[10%] w-[90%] h-[120%] bg-gradient-to-b from-blue-600 via-indigo-600 to-violet-600 opacity-[0.15] rounded-[100%] blur-[80px] animate-float-delayed z-0 transform rotate-12"></div>
-                
-                {/* 3. Onda secundaria de contraste (Cian Brillante) */}
-                <div className="absolute top-[-10%] right-[-20%] w-[70%] h-[100%] bg-gradient-to-bl from-cyan-400 via-blue-500 to-indigo-500 opacity-[0.12] rounded-[100%] blur-[60px] animate-pulse-slow z-0"></div>
-                
-                {/* 4. Acentos de luz (Orbes brillantes) */}
-                <div className="absolute top-[15%] right-[15%] w-64 h-64 bg-blue-400/20 rounded-full blur-[50px] mix-blend-overlay animate-float"></div>
-                <div className="absolute top-[40%] right-[5%] w-48 h-48 bg-cyan-300/20 rounded-full blur-[40px] mix-blend-overlay animate-float-delayed"></div>
+        <div className="relative w-full bg-white">
 
-                {/* 5. Malla de puntos técnica (Alta definición) */}
-                <div className="absolute inset-0 z-0 opacity-[0.4]" style={{
-                    backgroundImage: 'radial-gradient(circle at 1px 1px, #3b82f6 1px, transparent 0)',
-                    backgroundSize: '40px 40px',
-                    maskImage: 'linear-gradient(to bottom right, rgba(0,0,0,0.8), rgba(0,0,0,0))'
-                }}></div>
+            {/* Hero móvil - Diseño profesional marketplace */}
+            <div className="lg:hidden relative min-h-[calc(100dvh-64px)] z-20 flex flex-col bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 overflow-hidden">
+                {/* Olas multicolor estilo Stripe */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[3]">
+                    <svg className="absolute bottom-0 left-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1200 200" style={{ height: '60%' }}>
+                        <defs>
+                            <linearGradient id="waveGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+                                <stop offset="50%" stopColor="#6366f1" stopOpacity="0.5" />
+                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.4" />
+                            </linearGradient>
+                            <linearGradient id="waveGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+                                <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.5" />
+                                <stop offset="100%" stopColor="#a855f7" stopOpacity="0.3" />
+                            </linearGradient>
+                            <linearGradient id="waveGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
+                                <stop offset="50%" stopColor="#a855f7" stopOpacity="0.4" />
+                                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.3" />
+                            </linearGradient>
+                        </defs>
+                        <g className="stripe-wave-1">
+                            <path
+                                d="M0,100 Q300,50 600,100 T1200,100 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient1)"
+                            />
+                        </g>
+                        <g className="stripe-wave-2">
+                            <path
+                                d="M0,120 Q300,70 600,120 T1200,120 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient2)"
+                            />
+                        </g>
+                        <g className="stripe-wave-3">
+                            <path
+                                d="M0,140 Q300,90 600,140 T1200,140 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient3)"
+                            />
+                        </g>
+                    </svg>
+                </div>
                 
-                {/* 6. Brillo cenital sutil */}
-                <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-white/80 to-transparent z-0"></div>
-                    </div>
-
-            {/* Hero móvil - Diseño Premium y Vibrante */}
-            <div className="lg:hidden relative min-h-[calc(100dvh-60px)] z-20 flex flex-col justify-center px-6 pt-4 pb-12">
-                {/* Contenido principal con Glassmorphism suave */}
-                <div className="relative z-10 w-full max-w-sm mx-auto text-center space-y-6">
+                {/* Copos de nieve animados - Móvil */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[5]">
+                    {[...Array(10)].map((_, i) => (
+                        <div
+                            key={`snow-mobile-${i}`}
+                            className="absolute text-white animate-snowflake"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: `${-10 - Math.random() * 20}%`,
+                                animationDelay: `${Math.random() * 5}s`,
+                                animationDuration: `${8 + Math.random() * 12}s`,
+                                fontSize: `${12 + Math.random() * 16}px`,
+                                opacity: 0.8 + Math.random() * 0.2,
+                                filter: 'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8))',
+                            }}
+                        >
+                            ❄
+                        </div>
+                    ))}
+                </div>
+                <div className="flex-1 flex flex-col justify-center px-5 pt-8 pb-6 relative z-10">
+                    <div className="w-full max-w-md mx-auto space-y-7">
                     
-                    {/* Badge destacado */}
-                    <div className="inline-flex items-center gap-2 bg-blue-50/80 backdrop-blur-sm text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold border border-blue-100 shadow-sm mx-auto mb-2">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                                </span>
-                        <span>Servicios desde 25€ en todo el mundo</span>
+                        {/* Badge simple y profesional */}
+                        <div className="inline-flex items-center gap-2 text-sm text-white/90">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                            <span>Disponible en 50+ países</span>
                             </div>
                             
-                    {/* Título principal - Grande y centrado */}
-                    <h1 className="text-4xl xs:text-5xl font-extrabold text-gray-900 leading-[1.1] tracking-tight">
-                        No compres <br/>
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">a ciegas</span>
+                        {/* Título - Tipografía más natural */}
+                        <div className="space-y-3">
+                            <h1 className="text-[3rem] leading-[1.15] font-bold text-white tracking-[-0.01em]">
+                                No compres a ciegas.{' '}
+                                <span className="text-white font-extrabold">Revisa antes de pagar.</span>
                             </h1>
-                            
-                    {/* Subtítulo y palabra cambiante */}
-                    <div className="text-lg text-gray-600 leading-relaxed font-medium">
-                        Revisamos tu{' '}
-                        <span className="relative inline-block font-bold text-gray-900 min-w-[70px] text-left">
-                            <span className={`${isGlitching ? 'glitch-effect' : ''} transition-all`}>
-                                {isGlitching ? glitchText : currentWord}
-                            </span>
-                            <span className="absolute bottom-0 left-0 w-full h-[3px] bg-blue-500/30 rounded-full"></span>
-                        </span>
-                        {' '}antes de que pagues.
+                            <p className="text-[1.05rem] text-white/90 leading-relaxed">
+                                Revisa tu compra antes de pagar, para que no te estafen. Expertos certificados verifican cada detalle por ti.
+                            </p>
                     </div>
                             
-                    {/* Botón principal CTA - Full width con sombra */}
-                    <div className="pt-4 w-full">
+                        {/* Estadísticas integradas */}
+                        <div className="flex items-center gap-5 text-sm text-white/80 pt-1">
+                            <div className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 002 2h2.945M15 15v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3m0-4V9a2 2 0 012-2h2.945M15 5v3a2 2 0 01-2 2H9a2 2 0 00-2 2v1m6-6V5a2 2 0 012-2h2a2 2 0 012 2v1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span><strong className="text-white font-medium">2.5k+</strong> inspecciones</span>
+                                </div>
+                                <div className="w-px h-4 bg-white/30"></div>
+                                <div className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span><strong className="text-white font-medium">500+</strong> expertos</span>
+                            </div>
+                        </div>
+                                
+                        {/* Botón principal - Diseño marketplace */}
+                        <div className="pt-3">
                                 <button
                                     onClick={onScrollToForm}
-                            className="w-full bg-gray-900 text-white font-bold text-lg py-4 px-8 rounded-2xl shadow-xl shadow-blue-900/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
+                                className="w-full bg-white hover:bg-gray-50 text-blue-600 font-semibold text-base py-3.5 px-6 rounded-lg active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 shadow-xl"
                                 >
-                            <span>Calcular precio</span>
-                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                                <span>Empezar ahora</span>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
                                 </button>
                     </div>
                     
                     {/* Botón secundario Google */}
                                 {!isAuthenticated && (
-                        <div className="w-full scale-95 opacity-90">
+                            <div className="w-full">
                             <GoogleSignInButton />
                                     </div>
                                 )}
+                    </div>
+                </div>
                             
-                    {/* Social proof minimalista */}
-                    <div className="pt-8 flex items-center justify-center gap-4 opacity-80">
-                        <div className="flex -space-x-2">
-                            {[1,2,3].map(i => (
-                                <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500 overflow-hidden`}>
+                {/* Social proof - Parte inferior */}
+                <div className="px-5 pb-8">
+                    <div className="max-w-md mx-auto">
+                        <div className="flex items-center justify-center gap-4">
+                            <div className="flex -space-x-3">
+                                {[1,2,3,4].map(i => (
+                                    <div key={i} className="w-10 h-10 rounded-full border-2 border-white/30 bg-white/20 backdrop-blur-sm overflow-hidden shadow-sm">
                                     <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" className="w-full h-full object-cover" />
                                 </div>
                                         ))}
                                     </div>
                         <div className="text-left">
-                            <div className="flex text-yellow-400 text-xs">★★★★★</div>
-                            <div className="text-xs font-semibold text-gray-600">+2.5k clientes felices</div>
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                    <div className="flex text-yellow-300 text-sm">★★★★★</div>
+                                    <span className="text-xs text-white/90 font-medium">4.9</span>
+                                </div>
+                                <div className="text-xs text-white/80">
+                                    <strong className="text-white font-medium">2,500+</strong> clientes satisfechos
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Sección de formulario móvil - Diseño limpio */}
-            <div id="form-section" className="lg:hidden relative z-10 w-full bg-gray-50 px-4 min-h-[calc(100dvh-60px)] flex flex-col justify-center py-8">
-                <div className="max-w-lg mx-auto w-full flex flex-col gap-8 sm:gap-12">
+            {/* Sección de formulario móvil - Diseño profesional */}
+            <div id="form-section" className="lg:hidden relative z-10 w-full bg-white px-5 py-12">
+                <div className="max-w-lg mx-auto w-full space-y-8">
                     {/* Header */}
-                    <div>
-                        <h2 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">
-                            Calcula el precio
+                    <div className="space-y-2">
+                        <h2 className="text-[1.9rem] font-semibold text-gray-900 tracking-tight">
+                            Encuentra tu experto
                         </h2>
-                        <p className="text-base text-gray-600 leading-relaxed">
-                            Completa el formulario y obtén una cotización personalizada en segundos.
+                        <p className="text-[0.95rem] text-gray-600 leading-relaxed">
+                            Selecciona el tipo de servicio y categoría para comenzar
                         </p>
                     </div>
 
-                    {/* Formulario - Contenedor limpio */}
-                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                        {/* Tipo de servicio - Estilo Airbnb */}
-                        <div className="relative service-type-dropdown border-b border-gray-200">
+                    {/* Formulario - Diseño limpio marketplace */}
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm" style={{ overflow: 'visible' }}>
+                        {/* Tipo de servicio */}
+                        <div className="relative service-type-dropdown border-b border-gray-200" style={{ overflow: 'visible' }}>
                             <button
                                 onClick={() => {
                                     setIsCategoryOpen(false);
                                     setIsServiceTypeOpen(!isServiceTypeOpen);
                                 }}
-                                className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                                className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 transition-colors"
                             >
                                 <div className="flex-1">
-                                    <div className="text-xs font-semibold text-gray-900 mb-0.5">Tipo de servicio</div>
-                                    <div className={searchForm.serviceTypeId ? 'text-sm text-gray-900 font-medium' : 'text-sm text-gray-500'}>
+                                    <div className="text-xs font-medium text-gray-700 mb-1">Tipo de servicio</div>
+                                    <div className={searchForm.serviceTypeId ? 'text-base text-gray-900 font-medium' : 'text-base text-gray-400'}>
                                         {searchForm.serviceTypeId 
                                             ? serviceTypes.find(st => st.id === searchForm.serviceTypeId)?.name || 'Seleccionar'
-                                            : 'Seleccionar'}
+                                            : 'Selecciona un tipo'}
                                     </div>
                                 </div>
                                 <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${isServiceTypeOpen ? 'rotate-180' : ''}`} />
                             </button>
                             {isServiceTypeOpen && (
-                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-80 overflow-y-auto">
+                                <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto" style={{ position: 'absolute', top: '100%', left: 0, right: 0 }}>
                                     {serviceTypesLoading ? (
                                         <div className="px-6 py-4 text-sm text-gray-500">Cargando...</div>
                                     ) : serviceTypes.length > 0 ? (
@@ -464,8 +376,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                 }}
                                                 className="w-full px-6 py-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
                                             >
-                                                <div className="font-medium text-gray-900 text-sm">{st.name}</div>
-                                                {st.description && (
+                                                <div className="font-medium text-gray-900 text-sm">{st?.name || 'Sin nombre'}</div>
+                                                {st?.description && (
                                                     <div className="text-xs text-gray-500 mt-0.5">{st.description}</div>
                                                 )}
                                             </button>
@@ -477,20 +389,23 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             )}
                         </div>
                         
-                        {/* Categoría - Estilo Airbnb con chips arriba */}
-                        <div className="border-b border-gray-200 pb-4">
-                            <div className="text-xs font-semibold text-gray-900 mb-3 px-6 pt-4">Categoría</div>
+                        {/* Categoría */}
+                        <div className="border-b border-gray-200 pb-4" style={{ overflow: 'visible' }}>
+                            <div className="text-xs font-medium text-gray-700 mb-3 px-5 pt-4">Categoría</div>
                             
-                            {/* Categorías visibles (primeras 3-4) */}
-                            <div className="px-6">
+                            {/* Categorías visibles */}
+                            <div className="px-5">
                                 <div className="flex flex-wrap gap-2">
-                                    {categories.slice(0, 4).map((cat) => (
+                                    {categoriesLoading ? (
+                                        <div className="text-sm text-gray-500">Cargando categorías...</div>
+                                    ) : categories && categories.length > 0 ? (
+                                        categories.slice(0, 4).map((cat) => (
                                         <button
                                             key={cat.id}
                                             onClick={() => {
                                                 setSearchForm({...searchForm, categoryId: cat.id});
                                             }}
-                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                                                 searchForm.categoryId === cat.id
                                                     ? 'bg-gray-900 text-white'
                                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -499,10 +414,13 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                             <CategoryImage categoryName={cat.name} size="sm" />
                                             <span>{cat.name}</span>
                                         </button>
-                                    ))}
+                                        ))
+                                    ) : (
+                                        <div className="text-sm text-gray-500">No hay categorías disponibles</div>
+                                    )}
                                     
                                     {/* Botón "Ver más" si hay más categorías */}
-                                    {categories.length > 4 && (
+                                    {!categoriesLoading && categories && categories.length > 4 && (
                                         <button
                                             onClick={() => {
                                                 setIsServiceTypeOpen(false);
@@ -534,6 +452,9 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     </DrawerHeader>
                                     
                                     <div className="overflow-y-auto px-4 py-4">
+                                        {categoriesLoading ? (
+                                            <div className="text-center py-8 text-sm text-gray-500">Cargando categorías...</div>
+                                        ) : categories && categories.length > 0 ? (
                                         <div className="grid grid-cols-2 gap-3">
                                             {categories.map((cat) => (
                                                 <button
@@ -557,6 +478,9 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                 </button>
                                             ))}
                                         </div>
+                                        ) : (
+                                            <div className="text-center py-8 text-sm text-gray-500">No hay categorías disponibles</div>
+                                        )}
                                     </div>
                                 </DrawerContent>
                             </Drawer>
@@ -579,84 +503,187 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             </div>
                         </div>
                         
-                        {/* Botón buscar - Estilo Airbnb circular */}
-                        <div className="px-6 pb-6 pt-2">
+                        {/* Botón buscar */}
+                        <div className="px-5 pb-5 pt-2">
                             <button
                                 onClick={handleSearch}
-                                className="w-full bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-full p-3.5 transition-colors shadow-md hover:shadow-lg flex items-center justify-center"
+                                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium text-base py-3.5 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
                             >
                                 <Search className="w-5 h-5" />
+                                <span>Buscar expertos</span>
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="relative z-10 w-full hidden lg:block px-4 sm:px-6 md:px-12 lg:px-16 py-6 sm:py-8 md:py-10 lg:py-12">
+            {/* Hero Desktop - Con fondo degradado y texto blanco */}
+            <div className="relative z-10 w-full hidden lg:flex min-h-[calc(100vh-64px)] items-start justify-center px-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 overflow-x-hidden">
+                {/* Olas multicolor estilo Stripe - Desktop */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[3]" style={{
+                    clipPath: 'polygon(0 0, 62% 0, 58% 100%, 0 100%)'
+                }}>
+                    <svg className="absolute bottom-0 left-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1200 200" style={{ height: '60%' }}>
+                        <defs>
+                            <linearGradient id="waveGradient1-desktop" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+                                <stop offset="50%" stopColor="#6366f1" stopOpacity="0.5" />
+                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.4" />
+                            </linearGradient>
+                            <linearGradient id="waveGradient2-desktop" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+                                <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.5" />
+                                <stop offset="100%" stopColor="#a855f7" stopOpacity="0.3" />
+                            </linearGradient>
+                            <linearGradient id="waveGradient3-desktop" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
+                                <stop offset="50%" stopColor="#a855f7" stopOpacity="0.4" />
+                                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.3" />
+                            </linearGradient>
+                        </defs>
+                        <g className="stripe-wave-1">
+                            <path
+                                d="M0,100 Q300,50 600,100 T1200,100 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient1-desktop)"
+                            />
+                        </g>
+                        <g className="stripe-wave-2">
+                            <path
+                                d="M0,120 Q300,70 600,120 T1200,120 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient2-desktop)"
+                            />
+                        </g>
+                        <g className="stripe-wave-3">
+                            <path
+                                d="M0,140 Q300,90 600,140 T1200,140 L1200,200 L0,200 Z"
+                                fill="url(#waveGradient3-desktop)"
+                            />
+                        </g>
+                    </svg>
+                </div>
+                
+                {/* Copos de nieve animados */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[5]">
+                    {[...Array(15)].map((_, i) => (
+                        <div
+                            key={`snow-${i}`}
+                            className="absolute text-white animate-snowflake"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: `${-10 - Math.random() * 20}%`,
+                                animationDelay: `${Math.random() * 5}s`,
+                                animationDuration: `${8 + Math.random() * 12}s`,
+                                fontSize: `${12 + Math.random() * 16}px`,
+                                opacity: 0.8 + Math.random() * 0.2,
+                                filter: 'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8))',
+                            }}
+                        >
+                            ❄
+                        </div>
+                    ))}
+                </div>
+                {/* Fondo degradado para el lado izquierdo */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700" style={{
+                    clipPath: 'polygon(0 0, 62% 0, 58% 100%, 0 100%)'
+                }}></div>
+                
+                {/* Imagen real en el lado derecho con corte diagonal suave */}
+                <div className="absolute inset-0 right-0" style={{
+                    clipPath: 'polygon(62% 0, 100% 0, 100% 100%, 58% 100%)'
+                }}>
+                    <img
+                        src={new URL('../media/revisioncoche.jpg', import.meta.url).href}
+                        alt="Revisión profesional de vehículos"
+                        className="w-full h-full"
+                        style={{ 
+                            objectFit: 'cover',
+                            objectPosition: '100% center',
+                            width: '140%',
+                            height: '100%',
+                            transform: 'translateX(10%)'
+                        }}
+                    />
+                    {/* Overlay sutil para mejor contraste */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-transparent"></div>
+                </div>
+                {/* Efecto de interconexiones - Red de líneas animadas (solo lado izquierdo) */}
+                <div className="absolute inset-0 opacity-30 pointer-events-none" style={{
+                    clipPath: 'polygon(0 0, 62% 0, 58% 100%, 0 100%)'
+                }}>
+                    <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="lineGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="rgba(255,255,255,0.2)" />
+                                <stop offset="50%" stopColor="rgba(255,255,255,0.4)" />
+                                <stop offset="100%" stopColor="rgba(255,255,255,0.2)" />
+                            </linearGradient>
+                            <linearGradient id="lineGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="rgba(147,197,253,0.3)" />
+                                <stop offset="50%" stopColor="rgba(255,255,255,0.4)" />
+                                <stop offset="100%" stopColor="rgba(196,181,253,0.3)" />
+                            </linearGradient>
+                        </defs>
+                        {/* Red de líneas de conexión - más líneas para efecto más completo */}
+                        <line key="line1" x1="5%" y1="15%" x2="25%" y2="35%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.6" />
+                        <line key="line2" x1="25%" y1="35%" x2="45%" y2="20%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
+                        <line key="line3" x1="45%" y1="20%" x2="65%" y2="30%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
+                        <line key="line4" x1="65%" y1="30%" x2="85%" y2="15%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
+                        <line key="line5" x1="10%" y1="50%" x2="30%" y2="65%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
+                        <line key="line6" x1="30%" y1="65%" x2="55%" y2="75%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
+                        <line key="line7" x1="55%" y1="75%" x2="75%" y2="85%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
+                        <line key="line8" x1="75%" y1="85%" x2="90%" y2="70%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
+                        <line key="line9" x1="20%" y1="25%" x2="50%" y2="45%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.4" />
+                        <line key="line10" x1="50%" y1="45%" x2="80%" y2="60%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.4" />
+                        <line key="line11" x1="15%" y1="70%" x2="40%" y2="50%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.5" />
+                        <line key="line12" x1="60%" y1="55%" x2="85%" y2="40%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
+                        {/* Nodos/puntos de conexión - más puntos */}
+                        <circle key="circle1" cx="5%" cy="15%" r="4" fill="rgba(255,255,255,0.7)" />
+                        <circle key="circle2" cx="25%" cy="35%" r="4" fill="rgba(147,197,253,0.7)" />
+                        <circle key="circle3" cx="45%" cy="20%" r="4" fill="rgba(255,255,255,0.7)" />
+                        <circle key="circle4" cx="65%" cy="30%" r="4" fill="rgba(196,181,253,0.7)" />
+                        <circle key="circle5" cx="85%" cy="15%" r="4" fill="rgba(255,255,255,0.7)" />
+                        <circle key="circle6" cx="10%" cy="50%" r="4" fill="rgba(147,197,253,0.7)" />
+                        <circle key="circle7" cx="30%" cy="65%" r="4" fill="rgba(255,255,255,0.7)" />
+                        <circle key="circle8" cx="55%" cy="75%" r="4" fill="rgba(196,181,253,0.7)" />
+                        <circle key="circle9" cx="75%" cy="85%" r="4" fill="rgba(255,255,255,0.7)" />
+                        <circle key="circle10" cx="90%" cy="70%" r="4" fill="rgba(147,197,253,0.7)" />
+                        <circle key="circle11" cx="20%" cy="25%" r="3" fill="rgba(255,255,255,0.6)" />
+                        <circle key="circle12" cx="50%" cy="45%" r="3" fill="rgba(196,181,253,0.6)" />
+                        <circle key="circle13" cx="80%" cy="60%" r="3" fill="rgba(255,255,255,0.6)" />
+                        <circle key="circle14" cx="15%" cy="70%" r="3" fill="rgba(147,197,253,0.6)" />
+                        <circle key="circle15" cx="40%" cy="50%" r="3" fill="rgba(255,255,255,0.6)" />
+                        <circle key="circle16" cx="60%" cy="55%" r="3" fill="rgba(196,181,253,0.6)" />
+                    </svg>
+                </div>
+                
                 {/* Contenido principal - solo desktop */}
-                <div className="lg:block">
-                    <div className="max-w-6xl mx-auto w-full">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-center">
-                        <div className="space-y-5 lg:space-y-6 text-left lg:text-left">
-                                {/* Versión móvil - diseño limpio y profesional */}
-                                <div className="lg:hidden space-y-6">
-                                    {/* Título simple y claro */}
-                                    <div>
-                                        <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-3">
-                                                Inspecciona tu{' '}
-                                                <span className="relative inline-block min-w-[80px] text-left">
-                                                    <span 
-                                                        className={`${isGlitching ? 'glitch-effect' : 'glitch-text-gradient'} bg-clip-text text-transparent font-extrabold transition-all duration-300 inline-block`}
-                                                        data-text={isGlitching ? glitchText : currentWord}
-                                                    >
-                                                        {isGlitching ? glitchText : currentWord}
-                                                    </span>
-                                                </span>
-                                            {' '}antes de comprar
-                                        </h1>
-                                        <p className="text-base text-gray-600 leading-relaxed">
-                                            Con expertos certificados que verifican cada detalle antes de tu compra.
-                                        </p>
-                                </div>
+                <div className="max-w-7xl mx-auto w-full relative z-10 px-4 sm:px-6 md:px-12 lg:px-16 pt-24 lg:pt-28">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center w-full">
+                        {/* Columna izquierda - Contenido */}
+                        <div className="space-y-6 lg:space-y-7 text-left flex flex-col justify-center relative z-10">
+                            {/* Badge/Tag optimizado para desktop - Diseño Premium */}
+                            <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 group cursor-default w-fit">
+                                <span className="text-sm font-medium text-white">
+                                    Servicios profesionales desde <span className="text-lg font-bold text-white">25€</span>
+                                </span>
                             </div>
                             
-                            {/* Versión desktop - mantener original */}
-                            <div className="hidden lg:block space-y-4 lg:space-y-5">
-                                {/* Badge/Tag optimizado para desktop - Diseño Premium */}
-                                <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white border border-gray-100 shadow-[0_2px_10px_rgba(59,130,246,0.1)] hover:shadow-[0_4px_15px_rgba(59,130,246,0.15)] hover:-translate-y-0.5 transition-all duration-300 group cursor-default">
-                                    <span className="text-sm font-medium text-gray-600">
-                                        Servicios profesionales desde <span className="text-lg font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-800">25€</span>
-                                    </span>
-                                </div>
-                                
-                                {/* Título desktop */}
-                                <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-[1.1] tracking-tight">
-                                    <div className="block whitespace-nowrap">
-                                        Inspecciona tu{' '}
-                                        <span className="relative inline-block min-w-[120px] lg:min-w-[140px] xl:min-w-[160px] text-left">
-                                            <span 
-                                                className={`${isGlitching ? 'glitch-effect' : 'glitch-text-gradient'} bg-clip-text text-transparent font-extrabold transition-all duration-300 inline-block`}
-                                                data-text={isGlitching ? glitchText : currentWord}
-                                            >
-                                                {isGlitching ? glitchText : currentWord}
-                                            </span>
-                                        </span>
-                                    </div>
-                                    <div className="block">antes de comprar</div>
-                                    <div className="block text-gray-900 font-extrabold">con expertos</div>
-                                </h1>
-                                
-                                {/* Descripción desktop */}
-                                <p className="text-lg text-gray-600 max-w-xl leading-relaxed font-light">
-                                        Plataforma profesional de búsqueda y verificación de vehículos de segunda mano con tecnología avanzada y expertos certificados.
-                                </p>
-                            </div>
+                            {/* Título desktop - Más grande y centrado */}
+                            <h1 className="text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-[1.1] tracking-tight">
+                                No compres a ciegas.{' '}
+                                <span className="text-white font-extrabold">Revisa antes de pagar.</span>
+                            </h1>
+                            
+                            {/* Descripción desktop */}
+                            <p className="text-xl text-white/90 max-w-2xl leading-relaxed font-light">
+                                Revisa tu compra antes de pagar, para que no te estafen. Expertos certificados verifican cada detalle por ti.
+                            </p>
                             
                             {/* Buscador estilo Airbnb - Desktop */}
-                            <div className="hidden lg:block mt-8 relative z-50">
-                                <div className="bg-white rounded-full shadow-xl border border-gray-200 flex items-center hover:shadow-2xl transition-shadow relative z-50">
+                            <div className="mt-6 relative z-50" style={{ overflow: 'visible' }}>
+                                <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-2xl border border-white/30 flex items-center hover:shadow-3xl hover:bg-white transition-all relative z-50" style={{ overflow: 'visible' }}>
                                     {/* Tipo de servicio */}
-                                    <div className="relative flex-shrink-0 service-type-dropdown z-50">
+                                    <div className="relative flex-shrink-0 service-type-dropdown z-50" style={{ overflow: 'visible' }}>
                                         <button
                                             onClick={() => {
                                                 setIsCategoryOpen(false);
@@ -685,8 +712,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                                             }}
                                                             className="w-full px-5 py-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
                                                         >
-                                                            <div className="font-medium text-gray-900">{st.name}</div>
-                                                            {st.description && (
+                                                            <div className="font-medium text-gray-900">{st?.name || 'Sin nombre'}</div>
+                                                            {st?.description && (
                                                                 <div className="text-xs text-gray-500 mt-1">{st.description}</div>
                                                             )}
                                                         </button>
@@ -701,7 +728,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     <div className="w-px h-12 bg-gray-200" />
                                     
                                     {/* Categoría */}
-                                    <div className="relative flex-shrink-0 category-dropdown z-50">
+                                    <div className="relative flex-shrink-0 category-dropdown z-50" style={{ overflow: 'visible' }}>
                                         <button
                                             onClick={() => {
                                                 setIsServiceTypeOpen(false);
@@ -718,7 +745,9 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                         </button>
                                         {isCategoryOpen && (
                                             <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-gray-200 rounded-2xl shadow-2xl z-[200] max-h-96 overflow-y-auto">
-                                                {categories.length > 0 ? (
+                                                {categoriesLoading ? (
+                                                    <div className="px-5 py-4 text-sm text-gray-500">Cargando...</div>
+                                                ) : categories && categories.length > 0 ? (
                                                     categories.map((cat) => (
                                                         <button
                                                             key={cat.id}
@@ -817,170 +846,68 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             </div>
                         </div>
                         
-                        <div className="relative flex justify-center lg:justify-end">
-                            {/* Main image container - oculta en móvil, visible en desktop */}
-                            <div className="hidden lg:block relative p-10">
-                                {/* Icons scattered organically - minimal but impactful */}
-                                
-                                {/* LADO IZQUIERDO - solo 2 iconos estratégicos */}
-                                <div className="absolute top-8 -left-6 animate-fade-float animation-delay-800 z-20">
-                                    <Car className="w-9 h-9 text-blue-500 drop-shadow-lg transform rotate-12" />
-                                </div>
-                                <div className="absolute bottom-12 -left-4 animate-fade-float animation-delay-2400 z-20">
-                                    <Home className="w-7 h-7 text-violet-500 drop-shadow-lg transform rotate-24" />
-                                </div>
-                                
-                                {/* LADO DERECHO - solo 2 iconos estratégicos */}
-                                <div className="absolute top-6 -right-7 animate-fade-float animation-delay-1200 z-20">
-                                    <Bike className="w-10 h-10 text-purple-500 drop-shadow-lg transform -rotate-18" />
-                                </div>
-                                <div className="absolute bottom-16 -right-5 animate-fade-float animation-delay-3200 z-20">
-                                    <Car className="w-8 h-8 text-yellow-500 drop-shadow-lg transform -rotate-21" />
-                                </div>
-                                
-                                {/* Iconos dispersos - solo 3 acentos */}
-                                <div className="absolute -top-2 left-32 animate-fade-float animation-delay-2000 z-20">
-                                    <Home className="w-5 h-5 text-orange-500 drop-shadow-sm transform rotate-30" />
-                                </div>
-                                <div className="absolute -bottom-3 left-28 animate-fade-float animation-delay-3000 z-20">
-                                    <Bike className="w-6 h-6 text-emerald-500 drop-shadow-md transform rotate-45" />
-                                </div>
-                                <div className="absolute top-24 left-8 animate-fade-float animation-delay-1600 z-20">
-                                    <Car className="w-4 h-4 text-pink-500 drop-shadow-sm transform -rotate-15" />
-                                </div>
-                                
-                                {/* Main image */}
-                                <img
-                                    src={new URL('../media/bluecheck.png', import.meta.url).href}
-                                    alt="Verificación profesional de vehículos"
-                                    className="w-full max-w-md object-cover relative z-10"
-                                />
-                            </div>
+                        {/* Columna derecha - Espacio para la imagen (ya está en el fondo) */}
+                        <div className="hidden lg:block relative z-10">
+                            {/* Esta columna está vacía porque la imagen está en el fondo absoluto */}
                         </div>
                     </div>
-                </div>
                 </div>
             </div>
 
-            {/* Sección "Cómo funciona" - visible solo en desktop */}
-            <div className="hidden lg:block py-20 bg-gradient-to-b from-white to-gray-50/50 relative z-0">
-                <div className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8">
-                    {/* Header */}
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">
-                            ¿Cómo funciona?
-                        </h2>
-                        <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                            Contrata un experto verificado en 3 pasos simples y protege tu inversión
-                        </p>
-                    </div>
+            {/* Sección: REVISIONES DE COCHE EN ESPAÑA - Con mapa */}
+            <div className="relative z-20 w-full py-12 lg:py-20 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+                        {/* Mapa - Responsive */}
+                        <div className="w-full lg:w-auto lg:flex-shrink-0 flex justify-center lg:justify-start">
+                            <div className="relative w-full max-w-full lg:w-[646.198px] aspect-[646/650] lg:h-[650px]">
+                                {/* Fondo circular blanco sutil - Responsive */}
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-full max-w-[500px] aspect-square bg-white/60 rounded-full blur-2xl"></div>
+                                </div>
 
-                    {/* Steps */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-                        {/* Step 1 */}
-                        <div className="relative group">
-                            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-100 transition-all duration-300 h-full">
-                                {/* Number Badge */}
-                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600 font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
-                                    1
+                                {/* Contenedor del mapa - Responsive */}
+                                <div 
+                                    className="absolute inset-0 w-full h-full"
+                                    style={{
+                                        backgroundImage: 'url("https://revisario.com/wp-content/uploads/2025/07/mapa-base-revisario.svg")',
+                                        backgroundPosition: '50% 50%',
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundSize: 'contain',
+                                    }}
+                                >
                                 </div>
-                                
-                                {/* Icon */}
-                                <div className="mb-6">
-                                    <Search className="w-12 h-12 text-blue-600" />
-                                </div>
-                                
-                                {/* Content */}
-                                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                                    Encuentra tu experto
-                                </h3>
-                                <p className="text-gray-600 leading-relaxed">
-                                    Introduce la URL del anuncio y selecciona tu categoría. Busca entre expertos verificados cerca de ti.
-                                </p>
-                            </div>
-                            
-                            {/* Connector Arrow */}
-                            <div className="hidden md:block absolute top-1/2 -right-6 transform -translate-y-1/2 z-10">
-                                <svg className="w-12 h-12 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                </svg>
                             </div>
                         </div>
-
-                        {/* Step 2 */}
-                        <div className="relative group">
-                            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-100 transition-all duration-300 h-full">
-                                {/* Number Badge */}
-                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600 font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
-                                    2
-                                </div>
-                                
-                                {/* Icon */}
-                                <div className="mb-6">
-                                    <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        
+                        {/* Texto - Mejorado para móvil */}
+                        <div className="flex-1 w-full lg:w-auto text-center lg:text-left space-y-4 lg:space-y-6">
+                            <h2 className="text-sm lg:text-lg font-normal text-gray-900 uppercase tracking-wide">
+                                REVISIONES DE COCHE EN ESPAÑA
+                            </h2>
+                            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
+                                Estés donde estés, tu revisión está muy cerca
+                            </h3>
+                            <div className="space-y-3 lg:space-y-4 text-gray-700">
+                                <p className="text-sm sm:text-base leading-relaxed">
+                                    Contamos con revisores en toda España. Solo dinos dónde está el coche y enviaremos a nuestro experto más cercano.
+                                </p>
+                                <p className="text-sm sm:text-base leading-relaxed font-medium">
+                                    ¡Rápido, fiable y sin complicaciones!
+                                </p>
+                            </div>
+                            <div className="flex justify-center lg:justify-start pt-2">
+                                <button
+                                    onClick={onScrollToForm}
+                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold px-6 py-3 rounded-xl hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-200 text-sm sm:text-base"
+                                >
+                                    Quiero mi revisión
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                                     </svg>
-                                </div>
-                                
-                                {/* Content */}
-                                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                                    Reserva y paga seguro
-                                </h3>
-                                <p className="text-gray-600 leading-relaxed">
-                                    Elige fecha y hora. Paga de forma segura con Stripe. Tu dinero queda protegido hasta que confirmes el servicio.
-                                </p>
-                            </div>
-                            
-                            {/* Connector Arrow */}
-                            <div className="hidden md:block absolute top-1/2 -right-6 transform -translate-y-1/2 z-10">
-                                <svg className="w-12 h-12 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                </svg>
+                                </button>
                             </div>
                         </div>
-
-                        {/* Step 3 */}
-                        <div className="relative group">
-                            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-100 transition-all duration-300 h-full">
-                                {/* Number Badge */}
-                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 text-blue-600 font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
-                                    3
-                                </div>
-                                
-                                {/* Icon */}
-                                <div className="mb-6">
-                                    <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                                
-                                {/* Content */}
-                                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                                    Recibe tu informe
-                                </h3>
-                                <p className="text-gray-600 leading-relaxed">
-                                    El experto realiza la inspección y te entrega un informe completo con fotos y vídeos. Compra con confianza.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* CTA inferior */}
-                    <div className="text-center mt-16">
-                        <button
-                            onClick={() => {
-                                const formSection = document.getElementById('form-section');
-                                if (formSection) {
-                                    formSection.scrollIntoView({ behavior: 'smooth' });
-                                }
-                            }}
-                            className="inline-flex items-center gap-2 bg-gray-900 text-white font-semibold px-8 py-4 rounded-xl hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 group"
-                        >
-                            <span>Comenzar ahora</span>
-                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                            </svg>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -1368,10 +1295,174 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                     opacity: 0 !important;
                     pointer-events: none !important;
                 }
+                
+                /* Animaciones modernas 2025 */
+                @keyframes slide-down {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                .animate-slide-down {
+                    animation: slide-down 0.3s ease-out;
+                }
+                
+                @keyframes gradient-shift {
+                    0%, 100% {
+                        background-position: 0% 50%;
+                    }
+                    50% {
+                        background-position: 100% 50%;
+                    }
+                }
+                .animate-gradient-shift {
+                    animation: gradient-shift 3s ease infinite;
+                }
+                
+                /* Efecto de brillo en botones */
+                @keyframes shine {
+                    0% {
+                        transform: translateX(-100%);
+                    }
+                    100% {
+                        transform: translateX(100%);
+                    }
+                }
+                
+                /* Mejoras en glassmorphism */
+                .backdrop-blur-xl {
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                }
+                
+                /* Animación de entrada mejorada */
+                @keyframes fade-in-up-smooth {
+                    from {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                .animate-fade-in-up {
+                    animation: fade-in-up-smooth 0.8s ease-out;
+                }
+                
+                .animate-fade-in-up-delayed {
+                    animation: fade-in-up-smooth 0.8s ease-out 0.2s both;
+                }
+                
+                .animate-fade-in-up-delayed-2 {
+                    animation: fade-in-up-smooth 0.8s ease-out 0.4s both;
+                }
+                
+                .animate-fade-in-up-delayed-3 {
+                    animation: fade-in-up-smooth 0.8s ease-out 0.6s both;
+                }
+                
+                /* Efecto de hover mejorado para cards */
+                .hover\:shadow-3xl:hover {
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+                }
+                
+                /* Animación de copos de nieve */
+                @keyframes snowflake {
+                    0% {
+                        transform: translateY(-100vh) translateX(0) rotate(0deg);
+                        opacity: 0;
+                    }
+                    10% {
+                        opacity: 0.8;
+                    }
+                    50% {
+                        opacity: 1;
+                    }
+                    90% {
+                        opacity: 0.8;
+                    }
+                    100% {
+                        transform: translateY(100vh) translateX(30px) rotate(360deg);
+                        opacity: 0;
+                    }
+                }
+                
+                .animate-snowflake {
+                    animation: snowflake linear infinite;
+                    pointer-events: none;
+                    user-select: none;
+                    will-change: transform, opacity;
+                }
+                
+                /* Olas estilo Stripe - Animación multicolor */
+                @keyframes stripe-wave-1 {
+                    0%, 100% {
+                        transform: translateY(0) translateX(0);
+                    }
+                    25% {
+                        transform: translateY(-10px) translateX(20px);
+                    }
+                    50% {
+                        transform: translateY(-5px) translateX(10px);
+                    }
+                    75% {
+                        transform: translateY(-15px) translateX(-10px);
+                    }
+                }
+                
+                @keyframes stripe-wave-2 {
+                    0%, 100% {
+                        transform: translateY(0) translateX(0);
+                    }
+                    25% {
+                        transform: translateY(5px) translateX(-15px);
+                    }
+                    50% {
+                        transform: translateY(10px) translateX(15px);
+                    }
+                    75% {
+                        transform: translateY(5px) translateX(-5px);
+                    }
+                }
+                
+                @keyframes stripe-wave-3 {
+                    0%, 100% {
+                        transform: translateY(0) translateX(0);
+                    }
+                    25% {
+                        transform: translateY(-8px) translateX(10px);
+                    }
+                    50% {
+                        transform: translateY(8px) translateX(-20px);
+                    }
+                    75% {
+                        transform: translateY(-5px) translateX(5px);
+                    }
+                }
+                
+                .stripe-wave-1 {
+                    animation: stripe-wave-1 8s ease-in-out infinite;
+                }
+                
+                .stripe-wave-2 {
+                    animation: stripe-wave-2 10s ease-in-out infinite;
+                    animation-delay: 0.5s;
+                }
+                
+                .stripe-wave-3 {
+                    animation: stripe-wave-3 12s ease-in-out infinite;
+                    animation-delay: 1s;
+                }
+                
             `}</style>
         </div>
     );
 };
 
 export default HomePresentation;
-

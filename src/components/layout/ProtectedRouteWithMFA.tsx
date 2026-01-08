@@ -49,8 +49,23 @@ export const ProtectedRouteWithMFA: React.FC<ProtectedRouteWithMFAProps> = ({
     // 2. Verificar autorización (rol)
     if (allowedRoles && userRole !== null) {
         if (!allowedRoles.includes(userRole)) {
+            console.log('🔒 ProtectedRouteWithMFA - Access denied:', {
+                userRole,
+                allowedRoles,
+                token: token ? 'present' : 'missing'
+            });
             return <Navigate to="/" replace />;
         }
+    }
+    
+    // Debug: Log para admin route
+    if (allowedRoles?.includes(UserRole.Admin)) {
+        console.log('🔍 ProtectedRouteWithMFA - Admin route check:', {
+            userRole,
+            allowedRoles,
+            isAuthenticated,
+            hasToken: !!token
+        });
     }
 
     // 3. Verificar MFA (si es requerido) - DESACTIVADO: MFA ya no es obligatorio
