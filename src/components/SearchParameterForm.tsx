@@ -38,7 +38,6 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
     const [isFavorite, setIsFavorite] = useState(false);
     const navigate = useNavigate();
     
-    // Normalizar imageUrls
     const imageUrls = Array.isArray(service.imageUrls) 
         ? service.imageUrls 
         : Array.isArray(service.ImageUrls) 
@@ -46,8 +45,6 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
             : [];
     const hasMultipleImages = imageUrls.length > 1;
     const serviceId = service.id || service.Id;
-    
-    // Es "Guest favorite" si tiene muchas contrataciones y buena valoración
     const isGuestFavorite = (service.completedSearches || 0) > 5 && (service.averageRating || 0) >= 4.0;
     
     const handleCardClick = (e: React.MouseEvent) => {
@@ -62,78 +59,81 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
         setIsFavorite(!isFavorite);
     };
     
-    // Precio formateado
-    const price = service.price ? `€${Math.round(service.price)}` : 'Consultar';
+    // Formateo estilo Airbnb
+    const price = service.price ? `${Math.round(service.price)} €` : 'Consultar';
+    const duration = service.durationInHours ? `${service.durationInHours}h` : '2h';
+    const completedCount = service.completedSearches || 0;
     
     return (
         <a
             href={`/service/${serviceId}`}
             onClick={handleCardClick}
             className="block cursor-pointer group"
-            style={{ width: '100%', textDecoration: 'none', color: 'inherit', padding: '12px' }}
+            style={{ textDecoration: 'none', color: 'inherit' }}
         >
-            {/* Contenedor principal - Estilo Homepage */}
-            <div className="relative w-full">
-                {/* Imagen cuadrada como en homepage */}
+            <div className="relative">
+                {/* Imagen cuadrada estilo Airbnb */}
                 <div 
-                    className="relative w-full overflow-hidden mb-2" 
-                    style={{ aspectRatio: '1', borderRadius: '16px' }}
+                    className="relative w-full overflow-hidden" 
+                    style={{ aspectRatio: '1/1', borderRadius: '12px', marginBottom: '10px' }}
                 >
                     {imageUrls.length > 0 ? (
                         <>
                             <img
                                 src={imageUrls[imageIndex]}
                                 alt={service.serviceTypeName || 'Servicio'}
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                className="w-full h-full object-cover"
                                 loading="lazy"
                             />
                             
-                            {/* Badge Guest favorite */}
+                            {/* Badge Guest favorite - Airbnb style */}
                             {isGuestFavorite && (
-                                <div className="absolute top-3 left-3 z-10">
-                                    <div style={{
+                                <div 
+                                    className="absolute top-3 left-3"
+                                    style={{
                                         padding: '4px 8px',
-                                        backgroundColor: 'rgba(255,255,255,0.95)',
-                                        borderRadius: '8px',
-                                        fontSize: '10px',
+                                        backgroundColor: 'white',
+                                        borderRadius: '4px',
+                                        fontSize: '12px',
                                         fontWeight: 600,
                                         color: '#222',
-                                    }}>
-                                        Guest favorite
-                                    </div>
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.18)'
+                                    }}
+                                >
+                                    Guest favorite
                                 </div>
                             )}
 
-                            {/* Corazón sin fondo */}
-                            <button onClick={handleFavoriteClick} className="absolute top-3 right-3 z-10" style={{ background: 'none', border: 'none', padding: 0 }}>
-                                <svg viewBox="0 0 32 32" style={{ width: '24px', height: '24px', fill: isFavorite ? '#FF385C' : 'rgba(0,0,0,0.5)', stroke: '#fff', strokeWidth: 2 }}>
+                            {/* Corazón Airbnb */}
+                            <button 
+                                onClick={handleFavoriteClick} 
+                                className="absolute top-3 right-3"
+                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                            >
+                                <svg viewBox="0 0 32 32" style={{ 
+                                    width: '24px', height: '24px', 
+                                    fill: isFavorite ? '#FF385C' : 'rgba(0,0,0,0.5)', 
+                                    stroke: '#fff', strokeWidth: 2 
+                                }}>
                                     <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
                                 </svg>
                             </button>
 
-                            {/* Navegación imágenes */}
+                            {/* Dots indicadores */}
                             {hasMultipleImages && (
-                                <>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setImageIndex((prev) => (prev - 1 + imageUrls.length) % imageUrls.length); }}
-                                        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 p-1.5"
-                                        style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
-                                    >
-                                        <ChevronRight className="w-4 h-4 text-gray-700 rotate-180" />
-                                    </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setImageIndex((prev) => (prev + 1) % imageUrls.length); }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 p-1.5"
-                                        style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
-                                    >
-                                        <ChevronRight className="w-4 h-4 text-gray-700" />
-                                    </button>
-                                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                                        {imageUrls.map((_: string, idx: number) => (
-                                            <div key={idx} className="rounded-full bg-white" style={{ height: '4px', width: idx === imageIndex ? '20px' : '4px', opacity: idx === imageIndex ? 1 : 0.6 }} />
-                                        ))}
-                                    </div>
-                                </>
+                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                                    {imageUrls.slice(0, 5).map((_: string, idx: number) => (
+                                        <div 
+                                            key={idx} 
+                                            className="rounded-full"
+                                            style={{ 
+                                                height: '6px', 
+                                                width: '6px', 
+                                                backgroundColor: idx === imageIndex ? '#fff' : 'rgba(255,255,255,0.6)'
+                                            }} 
+                                        />
+                                    ))}
+                                </div>
                             )}
                         </>
                     ) : (
@@ -143,23 +143,47 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                     )}
                 </div>
 
-                {/* Info del servicio - Estilo homepage */}
-                <div>
-                    {/* Título */}
-                    <div className="truncate" style={{ fontSize: '15px', fontWeight: 600, color: '#222', marginBottom: '2px' }}>
-                        {service.serviceTypeName || service.categoryName || 'Servicio'}
+                {/* Info estilo Airbnb exacto */}
+                <div style={{ fontFamily: 'Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif' }}>
+                    {/* Línea 1: Título + Rating */}
+                    <div className="flex items-start justify-between gap-1">
+                        <div 
+                            className="truncate" 
+                            style={{ fontSize: '15px', fontWeight: 600, color: '#222', lineHeight: '19px' }}
+                        >
+                            {service.serviceTypeName || service.categoryName || 'Servicio'}
+                        </div>
+                        {service.averageRating && service.averageRating > 0 && (
+                            <div className="flex items-center flex-shrink-0" style={{ fontSize: '15px', color: '#222' }}>
+                                <Star className="w-3.5 h-3.5" style={{ fill: '#222', color: '#222' }} />
+                                <span style={{ marginLeft: '2px' }}>{service.averageRating.toFixed(2)}</span>
+                            </div>
+                        )}
                     </div>
-                    {/* Descripción/Experto */}
-                    <div className="truncate" style={{ fontSize: '14px', color: '#717171', marginBottom: '2px' }}>
+                    
+                    {/* Línea 2: Experto */}
+                    <div 
+                        className="truncate" 
+                        style={{ fontSize: '15px', color: '#717171', lineHeight: '19px', marginTop: '2px' }}
+                    >
                         {service.expert?.user?.name || 'Profesional verificado'}
                     </div>
-                    {/* Precio y rating */}
-                    <div className="flex items-center" style={{ fontSize: '15px', color: '#222' }}>
-                        <span style={{ fontWeight: 600 }}>{price}</span>
-                        {service.averageRating && service.averageRating > 0 && (
-                            <span className="flex items-center ml-2" style={{ color: '#717171' }}>
-                                · <Star className="w-3 h-3 ml-1 mr-0.5" style={{ fill: '#222', color: '#222' }} />
-                                {service.averageRating.toFixed(1)}
+                    
+                    {/* Línea 3: Duración y disponibilidad */}
+                    <div 
+                        className="truncate"
+                        style={{ fontSize: '15px', color: '#717171', lineHeight: '19px', marginTop: '2px' }}
+                    >
+                        {duration} · Disponible
+                    </div>
+                    
+                    {/* Línea 4: Precio */}
+                    <div style={{ marginTop: '6px' }}>
+                        <span style={{ fontSize: '15px', fontWeight: 600, color: '#222' }}>{price}</span>
+                        <span style={{ fontSize: '15px', color: '#222' }}> servicio</span>
+                        {completedCount > 0 && (
+                            <span style={{ fontSize: '14px', color: '#717171', marginLeft: '4px' }}>
+                                · {completedCount} realizados
                             </span>
                         )}
                     </div>
@@ -1977,45 +2001,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             });
                             
                             return (
-                                <div className="px-0">
+                                <div className="px-4">
                                     {drawerServices.length > 0 ? (
-                                        <div className="space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:py-4 lg:px-4" style={{ paddingBottom: '24px' }}>
-                                            {drawerServices.map((service) => {
-                                                const isSelected = false; // Nunca está seleccionado porque está excluido
-                                        
-                                        // Normalizar imageUrls
-                                        // Normalizar imageUrls - manejar tanto PascalCase como camelCase
-                                        const imageUrls = Array.isArray(service.imageUrls) 
-                                            ? service.imageUrls 
-                                            : Array.isArray(service.ImageUrls) 
-                                                ? service.ImageUrls 
-                                                : [];
-                                        const hasMultipleImages = imageUrls.length > 1;
-                                        
-                                        // Formatear fecha (simulado - deberías obtener fechas reales del servicio)
-                                        const formatDate = () => {
-                                            const today = new Date();
-                                            const checkIn = new Date(today);
-                                            checkIn.setDate(today.getDate() + 2);
-                                            const checkOut = new Date(checkIn);
-                                            checkOut.setDate(checkIn.getDate() + 2);
-                                            
-                                            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                                            return `${months[checkIn.getMonth()]} ${checkIn.getDate()} – ${checkOut.getDate()}`;
-                                        };
-                                        
-                                        const hostType = service.expert?.user?.name ? 'Individual host' : 'Individual host';
-                                        const nights = service.durationInHours ? Math.ceil(service.durationInHours / 24) : 2;
-
-                                        return (
-                                            <MapServiceCard
-                                                key={service.id}
-                                                service={service}
-                                                isSelected={isSelected}
-                                                onSelect={handleServiceSelect}
-                                            />
-                                        );
-                                    })}
+                                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-3" style={{ paddingBottom: '24px' }}>
+                                            {drawerServices.map((service) => (
+                                                <MapServiceCard
+                                                    key={service.id || service.Id}
+                                                    service={service}
+                                                    isSelected={false}
+                                                    onSelect={handleServiceSelect}
+                                                />
+                                            ))}
                                 </div>
                             ) : (
                                 <div className="py-12 text-center">
