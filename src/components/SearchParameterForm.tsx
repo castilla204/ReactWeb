@@ -61,8 +61,23 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
     
     // Formateo estilo Airbnb
     const price = service.price ? `${Math.round(service.price)} €` : 'Consultar';
-    const duration = service.durationInHours ? `${service.durationInHours}h` : '2h';
     const completedCount = service.completedSearches || 0;
+    const reviewCount = service.reviewCount || 0;
+    
+    // Avatar del experto
+    const expertAvatar = service.expert?.user?.profilePicture || service.expert?.profilePicture;
+    const expertName = service.expert?.user?.name || service.expert?.name || 'Profesional verificado';
+    
+    // Descripción del servicio
+    const description = service.description || service.serviceTypeName || 'Servicio profesional';
+    const shortDescription = description.length > 60 ? description.substring(0, 60) + '...' : description;
+    
+    // Horario de disponibilidad
+    const getSchedule = () => {
+        if (service.availability) return service.availability;
+        // Formato horario
+        return 'Lun-Vie 9:00-18:00';
+    };
     
     return (
         <a
@@ -119,9 +134,30 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 </svg>
                             </button>
 
+                            {/* Foto del experto - Esquina inferior derecha */}
+                            {expertAvatar && (
+                                <div 
+                                    className="absolute bottom-3 right-3"
+                                    style={{
+                                        width: '32px',
+                                        height: '32px',
+                                        border: '2px solid white',
+                                        borderRadius: '50%',
+                                        overflow: 'hidden',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.18)'
+                                    }}
+                                >
+                                    <img 
+                                        src={expertAvatar} 
+                                        alt={expertName}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                </div>
+                            )}
+
                             {/* Dots indicadores */}
                             {hasMultipleImages && (
-                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                                <div className="absolute bottom-3 left-3 flex gap-1.5">
                                     {imageUrls.slice(0, 5).map((_: string, idx: number) => (
                                         <div 
                                             key={idx} 
@@ -145,47 +181,80 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
 
                 {/* Info estilo Airbnb exacto */}
                 <div style={{ fontFamily: 'Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif' }}>
-                    {/* Línea 1: Título + Rating */}
-                    <div className="flex items-start justify-between gap-1">
-                        <div 
-                            className="truncate" 
-                            style={{ fontSize: '15px', fontWeight: 600, color: '#222', lineHeight: '19px' }}
-                        >
-                            {service.serviceTypeName || service.categoryName || 'Servicio'}
-                        </div>
+                    {/* Línea 1: Título */}
+                    <div 
+                        style={{ 
+                            fontSize: '15px', 
+                            fontWeight: 600, 
+                            color: '#222', 
+                            lineHeight: '18px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        {service.serviceTypeName || service.categoryName || 'Servicio'}
+                    </div>
+                    
+                    {/* Línea 2: Rating · Contrataciones · Experto - Todo en una línea */}
+                    <div 
+                        style={{ 
+                            fontSize: '15px', 
+                            color: '#717171', 
+                            lineHeight: '18px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            overflow: 'hidden'
+                        }}
+                    >
                         {service.averageRating && service.averageRating > 0 && (
-                            <div className="flex items-center flex-shrink-0" style={{ fontSize: '15px', color: '#222' }}>
-                                <Star className="w-3.5 h-3.5" style={{ fill: '#222', color: '#222' }} />
-                                <span style={{ marginLeft: '2px' }}>{service.averageRating.toFixed(2)}</span>
-                            </div>
+                            <>
+                                <Star 
+                                    style={{ 
+                                        width: '10px', 
+                                        height: '10px', 
+                                        fill: '#222222', 
+                                        color: '#222222',
+                                        opacity: 0.7,
+                                        flexShrink: 0
+                                    }} 
+                                />
+                                <span>{service.averageRating.toFixed(1)}</span>
+                            </>
+                        )}
+                        {completedCount > 0 && (
+                            <>
+                                <span>·</span>
+                                <span>{completedCount} {completedCount === 1 ? 'contratación' : 'contrataciones'}</span>
+                            </>
+                        )}
+                        {expertName && (
+                            <>
+                                <span>·</span>
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{expertName}</span>
+                            </>
                         )}
                     </div>
                     
-                    {/* Línea 2: Experto */}
+                    {/* Línea 3: Horario */}
                     <div 
-                        className="truncate" 
-                        style={{ fontSize: '15px', color: '#717171', lineHeight: '19px', marginTop: '2px' }}
+                        style={{ 
+                            fontSize: '15px', 
+                            color: '#717171', 
+                            lineHeight: '18px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                        }}
                     >
-                        {service.expert?.user?.name || 'Profesional verificado'}
-                    </div>
-                    
-                    {/* Línea 3: Duración y disponibilidad */}
-                    <div 
-                        className="truncate"
-                        style={{ fontSize: '15px', color: '#717171', lineHeight: '19px', marginTop: '2px' }}
-                    >
-                        {duration} · Disponible
+                        {getSchedule()}
                     </div>
                     
                     {/* Línea 4: Precio */}
-                    <div style={{ marginTop: '6px' }}>
+                    <div style={{ marginTop: '4px' }}>
                         <span style={{ fontSize: '15px', fontWeight: 600, color: '#222' }}>{price}</span>
-                        <span style={{ fontSize: '15px', color: '#222' }}> servicio</span>
-                        {completedCount > 0 && (
-                            <span style={{ fontSize: '14px', color: '#717171', marginLeft: '4px' }}>
-                                · {completedCount} realizados
-                            </span>
-                        )}
+                        <span style={{ fontSize: '15px', color: '#717171' }}> servicio</span>
                     </div>
                 </div>
             </div>
@@ -2001,9 +2070,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             });
                             
                             return (
-                                <div className="px-4">
+                                <div style={{ padding: '0 16px' }}>
                                     {drawerServices.length > 0 ? (
-                                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-3" style={{ paddingBottom: '24px' }}>
+                                        <div 
+                                            className="grid grid-cols-2" 
+                                            style={{ gap: '24px 16px', paddingTop: '8px', paddingBottom: '24px' }}
+                                        >
                                             {drawerServices.map((service) => (
                                                 <MapServiceCard
                                                     key={service.id || service.Id}
