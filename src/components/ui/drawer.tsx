@@ -19,11 +19,13 @@ const Drawer = ({
   activeSnapPoint,
   setActiveSnapPoint,
   modal = true,
+  dismissible = true,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root> & {
   snapPoints?: (number | string)[];
   activeSnapPoint?: number | string;
   setActiveSnapPoint?: (snapPoint: number | string) => void;
+  dismissible?: boolean;
 }) => (
   <DrawerPrimitive.Root
     shouldScaleBackground={shouldScaleBackground}
@@ -31,6 +33,7 @@ const Drawer = ({
     activeSnapPoint={activeSnapPoint}
     setActiveSnapPoint={setActiveSnapPoint}
     modal={modal}
+    dismissible={dismissible}
     {...props}
   />
 )
