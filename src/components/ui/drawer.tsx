@@ -15,10 +15,22 @@ const VisuallyHidden: React.FC<{ asChild?: boolean; children: React.ReactNode }>
 
 const Drawer = ({
   shouldScaleBackground = false,
+  snapPoints,
+  activeSnapPoint,
+  setActiveSnapPoint,
+  modal = true,
   ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
+}: React.ComponentProps<typeof DrawerPrimitive.Root> & {
+  snapPoints?: (number | string)[];
+  activeSnapPoint?: number | string;
+  setActiveSnapPoint?: (snapPoint: number | string) => void;
+}) => (
   <DrawerPrimitive.Root
     shouldScaleBackground={shouldScaleBackground}
+    snapPoints={snapPoints}
+    activeSnapPoint={activeSnapPoint}
+    setActiveSnapPoint={setActiveSnapPoint}
+    modal={modal}
     {...props}
   />
 )
@@ -85,6 +97,17 @@ const DrawerContent = React.forwardRef<
         content.removeAttribute('aria-hidden');
         content.removeAttribute('data-aria-hidden');
         
+        // Buscar y limpiar aria-hidden de todos los elementos fuera del drawer
+        // que puedan haber sido marcados por Vaul
+        const allElements = document.querySelectorAll('[aria-hidden="true"], [data-aria-hidden="true"]');
+        allElements.forEach(el => {
+          // No remover aria-hidden si el elemento está dentro del drawer
+          if (!content.contains(el)) {
+            el.removeAttribute('aria-hidden');
+            el.removeAttribute('data-aria-hidden');
+          }
+        });
+        
         // Verificar si hay un elemento con foco dentro del drawer
         const focusedElement = document.activeElement;
         if (focusedElement && content.contains(focusedElement)) {
@@ -115,6 +138,18 @@ const DrawerContent = React.forwardRef<
       attributes: true,
       attributeFilter: ['data-state', 'aria-hidden', 'data-aria-hidden'],
       subtree: true // ✅ Observar también los descendientes
+    });
+    
+    // También observar cambios en el body para capturar cuando Vaul añade aria-hidden
+    const bodyObserver = new MutationObserver(() => {
+      checkAriaHidden();
+    });
+    
+    bodyObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['aria-hidden', 'data-aria-hidden'],
+      subtree: true,
+      childList: true
     });
     
     // Verificar inicialmente y periódicamente
@@ -148,6 +183,7 @@ const DrawerContent = React.forwardRef<
     
     return () => {
       observer.disconnect();
+      bodyObserver.disconnect();
       clearInterval(intervalId);
       document.removeEventListener('focusin', handleFocusIn);
       // Verificar que el elemento existe antes de remover el listener

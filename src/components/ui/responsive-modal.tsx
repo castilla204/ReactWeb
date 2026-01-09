@@ -21,6 +21,10 @@ interface ResponsiveModalProps {
   noOverlay?: boolean
   noHandle?: boolean
   mobileBreakpoint?: number
+  snapPoints?: (number | string)[]
+  activeSnapPoint?: number | string
+  setActiveSnapPoint?: (snapPoint: number | string) => void
+  modal?: boolean
 }
 
 export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
@@ -38,6 +42,10 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   noOverlay = false,
   noHandle = false,
   mobileBreakpoint = 1024,
+  snapPoints,
+  activeSnapPoint,
+  setActiveSnapPoint,
+  modal = true,
 }) => {
   const { width } = useWindowSize()
   
@@ -48,11 +56,14 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
       const currentWidth = window.innerWidth
       const isMobileValue = currentWidth < mobileBreakpoint
       console.log('🖥️ ResponsiveModal - Render check:', {
+        open,
         windowWidth: currentWidth,
         hookWidth: width,
         mobileBreakpoint,
         isMobile: isMobileValue,
-        willShow: isMobileValue ? 'Drawer ❌' : 'Dialog ✅'
+        willShow: isMobileValue ? 'Drawer ✅' : 'Dialog ✅',
+        snapPoints,
+        activeSnapPoint
       })
       return isMobileValue
     }
@@ -62,12 +73,19 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
     }
     // Por defecto, asumir desktop (no móvil)
     return false
-  }, [width, mobileBreakpoint])
+  }, [width, mobileBreakpoint, open, snapPoints, activeSnapPoint])
 
   if (isMobile) {
-    // Usar Drawer en móvil - Mejorado
+    // Usar Drawer en móvil - Mejorado con snap points
     return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
+      <Drawer 
+        open={open} 
+        onOpenChange={onOpenChange}
+        snapPoints={snapPoints}
+        activeSnapPoint={activeSnapPoint}
+        setActiveSnapPoint={setActiveSnapPoint}
+        modal={modal}
+      >
         <DrawerContent
           className={cn("rounded-t-2xl w-full !max-w-full shadow-lg border-t border-gray-200 bg-white", className, drawerClassName)}
           style={{ 
@@ -75,8 +93,8 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             ...drawerStyle,
             width: '100%',
             maxWidth: '100%',
-            height: '350px',
-            maxHeight: '350px',
+            height: snapPoints ? '100vh' : '350px',
+            maxHeight: snapPoints ? '100vh' : '350px',
             // Asegurar que el drawer tenga un z-index alto cuando no hay overlay
             zIndex: noOverlay ? (drawerStyle?.zIndex || style?.zIndex || 10000) : (drawerStyle?.zIndex || style?.zIndex || 9998)
           }}
@@ -85,7 +103,15 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           title={title}
           description={description}
         >
-          <div className="flex flex-col bg-white" style={{ height: '350px', display: 'flex', flexDirection: 'column' }}>
+          <div 
+            className="flex flex-col bg-white" 
+            style={{ 
+              height: snapPoints ? '100%' : '350px', 
+              display: 'flex', 
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
+          >
             {children}
           </div>
         </DrawerContent>

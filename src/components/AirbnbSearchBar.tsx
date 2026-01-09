@@ -6,20 +6,20 @@ import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-// Importar imágenes
-import cocheImgStatic from '../media/cochepng.png';
-import casaImgStatic from '../media/casapng.png';
-import motoImgStatic from '../media/motopng.png';
-import camaraImgStatic from '../media/internet-61.png';
-import calderaImgStatic from '../media/house.png';
+// Usar rutas absolutas desde la carpeta public para evitar caché de Vite
+// Los archivos en public/ se sirven directamente sin procesamiento
+const getImagePath = (filename: string): string => {
+  // Ruta absoluta desde la raíz (public se mapea a /)
+  return `/media/${filename}`;
+};
 
-// Función helper para agregar parámetro de caché a las imágenes
-// Esto fuerza al navegador a recargar las imágenes cuando cambian
-const getImageWithCache = (imageUrl: string, cacheKey?: number): string => {
-  // En desarrollo, usar timestamp para evitar caché
-  // En producción, usar un hash del build o timestamp
-  const cache = cacheKey || (import.meta.env.DEV ? Date.now() : import.meta.env.VITE_IMAGE_CACHE || Date.now());
-  return `${imageUrl}?v=${cache}`;
+// Función para obtener la URL de una imagen con caché evitado
+// Usa rutas desde public/ que no son procesadas por Vite
+const getImageWithCache = (filename: string, cacheKey: number): string => {
+  const basePath = getImagePath(filename);
+  // Agregar parámetros de caché para forzar recarga
+  const random = Math.random().toString(36).substring(7);
+  return `${basePath}?v=${cacheKey}&t=${cacheKey}&r=${random}&_=${Date.now()}`;
 };
 import { ResponsiveModal } from './ui/responsive-modal';
 import { Separator } from './ui/separator';
@@ -73,11 +73,36 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   // En desarrollo, actualizar el cache key periódicamente para detectar cambios en imágenes
   useEffect(() => {
     if (import.meta.env.DEV) {
+      // Actualizar muy frecuentemente para detectar cambios rápidamente
       const interval = setInterval(() => {
         setImageCacheKey(Date.now());
-      }, 2000); // Actualizar cada 2 segundos en desarrollo
+      }, 500); // Actualizar cada 500ms en desarrollo para detectar cambios más rápido
       
       return () => clearInterval(interval);
+    }
+  }, []);
+  
+  // También escuchar cambios en el archivo para forzar recarga inmediata
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      // Forzar recarga cuando el componente se monta o se actualiza
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          setImageCacheKey(Date.now());
+        }
+      };
+      
+      // Forzar recarga al hacer foco en la ventana
+      const handleFocus = () => {
+        setImageCacheKey(Date.now());
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('focus', handleFocus);
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleFocus);
+      };
     }
   }, []);
 
@@ -172,16 +197,16 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
 
   const getCategoryImage = (categoryName: string): string | null => {
     const nameLower = categoryName.toLowerCase();
-    if (nameLower.includes('moto') && !nameLower.includes('agua')) return getImageWithCache(motoImgStatic, imageCacheKey);
-    if (nameLower.includes('coche') || nameLower.includes('vehículo')) return getImageWithCache(cocheImgStatic, imageCacheKey);
-    if (nameLower.includes('inmobiliaria') || nameLower.includes('casa') || nameLower.includes('inmueble')) return getImageWithCache(casaImgStatic, imageCacheKey);
-    if (nameLower.includes('cámara') || nameLower.includes('camara')) return getImageWithCache(camaraImgStatic, imageCacheKey);
-    if (nameLower.includes('fontanería') || nameLower.includes('fontaneria') || nameLower.includes('caldera')) return getImageWithCache(calderaImgStatic, imageCacheKey);
+    if (nameLower.includes('moto') && !nameLower.includes('agua')) return getImageWithCache('motopng.png', imageCacheKey);
+    if (nameLower.includes('coche') || nameLower.includes('vehículo')) return getImageWithCache('cochepng.png', imageCacheKey);
+    if (nameLower.includes('inmobiliaria') || nameLower.includes('casa') || nameLower.includes('inmueble')) return getImageWithCache('casapng.png', imageCacheKey);
+    if (nameLower.includes('cámara') || nameLower.includes('camara')) return getImageWithCache('internet-61.png', imageCacheKey);
+    if (nameLower.includes('fontanería') || nameLower.includes('fontaneria') || nameLower.includes('caldera')) return getImageWithCache('house.png', imageCacheKey);
     return null;
   };
 
   const handleDrawerCategoryClick = (categoryIdValue: number, categoryName: string) => {
-    const categoryImage = getCategoryImage(categoryName) || getImageWithCache(casaImgStatic, imageCacheKey);
+    const categoryImage = getCategoryImage(categoryName) || getImageWithCache('casapng.png', imageCacheKey);
     
     setDrawerCategoryReplacement({
       id: categoryIdValue,
@@ -458,7 +483,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             onMouseLeave={() => setHoveredTab(null)}
             className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
           >
-            <img src={getImageWithCache(cocheImgStatic, imageCacheKey)} alt="Coche" className="w-8 h-8 object-contain" />
+            <img src={getImageWithCache('cochepng.png', imageCacheKey)} alt="Coche" className="w-8 h-8 object-contain" />
             <span className={`text-base whitespace-nowrap ${activeTab === 'coches' ? 'font-semibold' : 'font-normal'}`}>
               Coches
             </span>
@@ -477,7 +502,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
           >
               <img
-                src={drawerCategoryReplacement?.image || getImageWithCache(casaImgStatic, imageCacheKey)}
+                src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
                 alt={drawerCategoryReplacement?.name || "Casa"}
               className="w-8 h-8 object-contain"
             />
@@ -534,7 +559,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
             className="flex flex-col items-center justify-center py-2 min-w-[40px] flex-1 bg-transparent border-none cursor-pointer"
           >
-            <img src={getImageWithCache(cocheImgStatic, imageCacheKey)} alt="Coche" className="w-12 h-12 object-contain mb-0.5" />
+            <img src={getImageWithCache('cochepng.png', imageCacheKey)} alt="Coche" className="w-12 h-12 object-contain mb-0.5" />
             <span className={`text-[10px] leading-3 text-center w-full ${activeTab === 'coches' ? 'font-semibold' : 'font-normal'}`}>
               Coches
                   </span>
@@ -548,7 +573,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             className="flex flex-col items-center justify-center py-2 min-w-[40px] flex-1 bg-transparent border-none cursor-pointer"
           >
               <img
-                src={drawerCategoryReplacement?.image || getImageWithCache(casaImgStatic, imageCacheKey)}
+                src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
                 alt={drawerCategoryReplacement?.name || "Casa"}
               className="w-12 h-12 object-contain mb-0.5"
             />
