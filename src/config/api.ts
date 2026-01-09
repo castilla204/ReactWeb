@@ -1,7 +1,6 @@
- // ✅ API única: https://newapi-yn9v.onrender.com
- // Tanto en desarrollo como en producción se usa la misma API
- const DEV_SERVER = 'https://newapi-yn9v.onrender.com';
-const API_PATH = '/api'; 
+// ✅ API: localhost en desarrollo, producción en render
+const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : 'https://newapi-yn9v.onrender.com';
+const API_PATH = '/api';
 
 export const API_CONFIG = {
     baseUrl: DEV_SERVER,
