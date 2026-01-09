@@ -293,16 +293,20 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     }, [selectedService]);
     
     // ✅ Estado para controlar el modal (Drawer en móvil, Dialog en PC)
-    // NO abrir el drawer hasta que los servicios estén cargados
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    // SnapPoints de Vaul para la animación correcta
-    const snapPointValue = 0.6; // 60% del viewport
-    const snapPointExpanded = typeof window !== 'undefined' 
-        ? (window.innerHeight - 73) / window.innerHeight 
-        : 0.9; // ~90% menos el topbar
-    const [activeSnapPoint, setActiveSnapPoint] = useState<number | string | null>(snapPointValue);
-    const lastScrollTop = useRef(0);
-    const touchStartY = useRef(0);
+    // Detectar si es móvil al inicio
+    const initialIsMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    // En móvil, iniciar abierto pero invisible hasta que carguen los servicios
+    const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile);
+    const [isDrawerVisible, setIsDrawerVisible] = useState(false); // Controla la visibilidad
+    // Estado para controlar la altura del drawer de forma fluida
+    const [drawerHeight, setDrawerHeight] = useState(60); // En vh (60-95)
+    // Altura máxima del drawer (hasta el topbar, no más)
+    const topbarHeight = 73; // px - altura del topbar
+    const maxDrawerHeight = typeof window !== 'undefined' 
+        ? Math.floor(((window.innerHeight - topbarHeight) / window.innerHeight) * 100) 
+        : 90; // En vh
+    const lastScrollTop = useRef(0); // Para detectar dirección del scroll
+    const touchStartY = useRef(0); // Para seguir el touch
     const drawerContentRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const [headerTop, setHeaderTop] = useState(143); // 64px (top) + 79px (height) por defecto
@@ -500,17 +504,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         services: services.map(s => ({ id: s.id, price: s.price, rating: s.averageRating }))
     });
     
-    // Abrir drawer cuando hay servicios disponibles en móvil
+    // Mostrar drawer cuando hay servicios disponibles en móvil (ya está abierto, solo lo hacemos visible)
     useEffect(() => {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-        if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerOpen) {
-            console.log('✅ Abriendo drawer con snapPoint 0.6');
-            // Establecer snapPoint inicial (60%)
-            setActiveSnapPoint(snapPointValue);
-            // Abrir el drawer
-            setIsDrawerOpen(true);
+        if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible) {
+            console.log('✅ Mostrando drawer (ya posicionado)');
+            setIsDrawerVisible(true);
+            setDrawerHeight(60);
         }
-    }, [allServices.length, isLoadingServices, isDrawerOpen, snapPointValue]);
+    }, [allServices.length, isLoadingServices, isDrawerVisible]);
     
     // Establecer posición inicial del drawer a mitad de página en la primera carga
     useEffect(() => {
@@ -1347,11 +1349,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 e.stopPropagation();
                                                 if (isDrawerOpen) {
                                                     // Si está abierto, alternar entre expandido y colapsado
-                                                    setActiveSnapPoint(activeSnapPoint === snapPointExpanded ? snapPointValue : snapPointExpanded);
+                                                    setDrawerHeight(drawerHeight > 80 ? 60 : maxDrawerHeight);
                                                 } else {
                                                     // Si está cerrado, abrir colapsado
-                                                    setActiveSnapPoint(snapPointValue);
                                                     setIsDrawerOpen(true);
+                                                    setDrawerHeight(60);
                                                 }
                                             }}
                                             size="lg"
@@ -1772,9 +1774,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     onOpenChange={handleDrawerOpenChange}
                     modal={false}
                     dismissible={false}
-                    snapPoints={[snapPointValue, snapPointExpanded]}
-                    activeSnapPoint={activeSnapPoint}
-                    setActiveSnapPoint={setActiveSnapPoint}
+                    drawerHeight={`${drawerHeight}vh`}
+                    style={{
+                        opacity: isDrawerVisible ? 1 : 0,
+                        pointerEvents: isDrawerVisible ? 'auto' : 'none'
+                    }}
                     title={(() => {
                         // Contar solo los servicios que están en el drawer (excluyendo el seleccionado)
                         const drawerServicesCount = selectedService 
@@ -1787,13 +1791,18 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     drawerClassName="lg:hidden flex flex-col bg-white outline-none border-0 shadow-none rounded-none"
                     dialogClassName="max-w-4xl max-h-[90vh] flex flex-col"
                     drawerStyle={{ 
+                        bottom: '0',
                         zIndex: 10000,
+                        height: `${drawerHeight}vh`,
+                        maxHeight: `${drawerHeight}vh`,
+                        position: 'fixed',
                         backgroundColor: 'white',
                         borderTopLeftRadius: '12px',
                         borderTopRightRadius: '12px',
-                        willChange: 'transform',
-                        transform: 'translateZ(0)',
-                        backfaceVisibility: 'hidden'
+                        borderBottomLeftRadius: '0',
+                        borderBottomRightRadius: '0',
+                        transition: 'none', // Sin transición para seguir el dedo en tiempo real
+                        willChange: 'height'
                     }}
                     dialogStyle={{
                         maxHeight: '90vh',
@@ -1820,11 +1829,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             // Si arrastra hacia abajo más de 50px, cerrar
                             if (deltaY < -50) {
                                 setIsDrawerOpen(false);
+                                setIsDrawerVisible(false);
+                            } else if (deltaY < 0) {
+                                // Reducir altura mientras arrastra hacia abajo
+                                const newHeight = Math.max(40, 60 + (deltaY / 5));
+                                setDrawerHeight(Math.round(newHeight));
                             }
-                            touchStartY.current = touchY;
                         }}
                         onTouchEnd={() => {
-                            // Vaul maneja el snap automáticamente
+                            // Si la altura es muy baja, cerrar. Si no, restaurar
+                            if (drawerHeight < 50) {
+                                setIsDrawerOpen(false);
+                                setIsDrawerVisible(false);
+                            } else {
+                                setDrawerHeight(60);
+                            }
                         }}
                     >
                         <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -1881,14 +1900,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             if (!isMobile) return;
                             
                             const touchY = e.touches[0].clientY;
-                            const deltaY = touchStartY.current - touchY;
+                            const deltaY = touchStartY.current - touchY; // Positivo = arrastrando hacia arriba
                             const target = e.currentTarget;
                             
-                            // Si está en el tope y arrastra hacia abajo, cerrar
+                            // Si está en el tope (scrollTop = 0) y arrastra hacia abajo, cerrar
                             if (target.scrollTop <= 0 && deltaY < -30) {
                                 setIsDrawerOpen(false);
+                                setIsDrawerVisible(false);
                                 return;
                             }
+                            
+                            // Calcular altura basada en el scroll y el touch (máximo hasta el topbar)
+                            const scrollPercent = Math.min(target.scrollTop / 100, 1);
+                            const heightRange = maxDrawerHeight - 60; // Rango de expansión
+                            const newHeight = Math.max(40, Math.min(maxDrawerHeight, 60 + (scrollPercent * heightRange)));
+                            setDrawerHeight(Math.round(newHeight));
                         }}
                         onScroll={(e) => {
                             const target = e.currentTarget;
@@ -1896,16 +1922,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             
                             if (!isMobile) return;
                             
-                            // Si hace scroll hacia abajo, expandir
-                            if (target.scrollTop > 50 && activeSnapPoint !== snapPointExpanded) {
-                                setActiveSnapPoint(snapPointExpanded);
-                            }
-                            // Si vuelve arriba del todo, volver a posición de reposo
-                            else if (target.scrollTop <= 5 && activeSnapPoint === snapPointExpanded) {
-                                setActiveSnapPoint(snapPointValue);
+                            // Detectar dirección del scroll
+                            const scrollingDown = target.scrollTop > lastScrollTop.current;
+                            lastScrollTop.current = target.scrollTop;
+                            
+                            // Si está arriba del todo y hace scroll hacia arriba, cerrar
+                            if (target.scrollTop <= 0 && !scrollingDown && drawerHeight <= 60) {
+                                // El usuario está intentando hacer scroll hacia arriba pero ya está arriba
+                                // Esto se maneja en onTouchMove
                             }
                             
-                            lastScrollTop.current = target.scrollTop;
+                            // Calcular altura del drawer basada en el scroll (máximo hasta el topbar)
+                            const scrollPercent = Math.min(target.scrollTop / 100, 1);
+                            const heightRange = maxDrawerHeight - 60;
+                            const newHeight = 60 + (scrollPercent * heightRange);
+                            setDrawerHeight(Math.round(newHeight));
                         }}
                         style={{
                             overscrollBehavior: 'none',
