@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowRight, Star, CheckCircle, User, StarHalf, X, Eye, FileText, Video, XCircle, MapPin } from 'lucide-react';
 import { GoogleMap, useLoadScript, Circle, Marker } from '@react-google-maps/api';
 import { useNavigate } from 'react-router-dom';
@@ -47,7 +47,10 @@ export function ServiceSelection({
     const [detailServiceId, setDetailServiceId] = useState<number | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [carouselIndices, setCarouselIndices] = useState<{ [key: number]: number }>({});
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const initialIsMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile);
+    const [snap, setSnap] = useState<number | string | null>(0.7); // Inicia a 70% (más de la mitad)
+    const drawerContentRef = React.useRef<HTMLDivElement>(null);
     const [filters, setFilters] = useState({
         priceRange: 'all' as 'all' | 'low' | 'medium' | 'high',
         rating: 'all' as 'all' | '4+' | '4.5+',
@@ -121,6 +124,15 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
 };
 
     console.log('ServiceSelection - Services received:', services);
+    
+    // Abrir drawer automáticamente en móvil cuando hay servicios
+    useEffect(() => {
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+        if (isMobile && services.length > 0 && !isLoading) {
+            setIsDrawerOpen(true);
+            setSnap(0.7); // Abrir al 70%
+        }
+    }, [services.length, isLoading]);
     console.log('ServiceSelection - Total services count:', services.length);
     
     // Buscar específicamente el servicio 154
@@ -722,7 +734,10 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                     {services.length > 0 && (
                         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
                             <Button
-                                onClick={() => setIsDrawerOpen(true)}
+                                onClick={() => {
+                                    setIsDrawerOpen(true);
+                                    setSnap(0.7); // Abrir a 70%
+                                }}
                                 size="lg"
                                 className="shadow-lg"
                             >
@@ -813,9 +828,16 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                     </div>
 
             {/* Mobile Drawer with Services */}
-            <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                <DrawerContent className="max-h-[90vh]">
-                    <DrawerHeader className="border-b">
+            <Drawer 
+                open={isDrawerOpen} 
+                onOpenChange={setIsDrawerOpen}
+                snapPoints={[0.7, 1]} // 70% y 100%
+                activeSnapPoint={snap}
+                setActiveSnapPoint={setSnap}
+                modal={false}
+            >
+                <DrawerContent className="max-h-[100vh] h-[100vh]">
+                    <DrawerHeader className="border-b flex-shrink-0">
                         <div className="flex items-center justify-between">
                             <div>
                                 <DrawerTitle>Profesionales Disponibles</DrawerTitle>
@@ -830,7 +852,29 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                             </DrawerClose>
                         </div>
                     </DrawerHeader>
-                    <div className="overflow-y-auto flex-1 px-4 py-4">
+                    <div 
+                        ref={drawerContentRef}
+                        className="overflow-y-auto flex-1 px-4 py-4" 
+                        onScroll={(e) => {
+                            const target = e.currentTarget;
+                            const isMobile = window.innerWidth < 1024;
+                            
+                            if (!isMobile) return;
+                            
+                            // Si hace scroll hacia abajo (más de 50px) y no está al 100%, expandir
+                            if (target.scrollTop > 50 && snap !== 1) {
+                                setSnap(1);
+                            }
+                            // Si vuelve arriba (menos de 20px) y está al 100%, volver a 70%
+                            else if (target.scrollTop < 20 && snap === 1) {
+                                setSnap(0.7);
+                            }
+                        }}
+                        style={{ 
+                            overscrollBehavior: 'contain',
+                            WebkitOverflowScrolling: 'touch'
+                        }}
+                    >
                         {/* Mobile Filters */}
                         <Card className="mb-4">
                             <Accordion type="single" collapsible>
