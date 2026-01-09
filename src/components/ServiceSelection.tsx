@@ -840,6 +840,22 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                 </div>
                                     </div>
 
+            {/* Overlay para cerrar el drawer al hacer clic fuera - Solo móvil */}
+            {isDrawerOpen && isDrawerVisible && (
+                <div 
+                    className="lg:hidden fixed inset-0 z-[9999]"
+                    style={{ 
+                        backgroundColor: 'transparent',
+                        pointerEvents: 'auto'
+                    }}
+                    onClick={() => {
+                        console.log('🗺️ Click en overlay - cerrando drawer');
+                        setIsDrawerOpen(false);
+                        setIsDrawerVisible(false);
+                    }}
+                />
+            )}
+            
             {/* Mobile Drawer with Services */}
             <Drawer 
                 open={isDrawerOpen} 
@@ -855,7 +871,8 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                         transition: 'none',
                         willChange: 'height',
                         borderTopLeftRadius: '12px',
-                        borderTopRightRadius: '12px'
+                        borderTopRightRadius: '12px',
+                        zIndex: 10000
                     }}
                 >
                     {/* Handle draggable para cerrar */}
