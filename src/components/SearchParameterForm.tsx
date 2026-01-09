@@ -293,34 +293,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     }, [selectedService]);
     
     // ✅ Estado para controlar el modal (Drawer en móvil, Dialog en PC)
-    // Detectar si es móvil al inicio
-    const initialIsMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-    // En móvil, iniciar abierto pero invisible hasta que carguen los servicios
-    const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile);
-    const [isDrawerVisible, setIsDrawerVisible] = useState(false); // Controla la visibilidad
-    // Estado para controlar la altura del drawer de forma fluida
-    const [drawerHeight, setDrawerHeight] = useState(60);
+    // NO abrir el drawer hasta que los servicios estén cargados
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    // SnapPoints de Vaul para la animación correcta
+    const snapPointValue = 0.6; // 60% del viewport
+    const snapPointExpanded = typeof window !== 'undefined' 
+        ? (window.innerHeight - 73) / window.innerHeight 
+        : 0.9; // ~90% menos el topbar
+    const [activeSnapPoint, setActiveSnapPoint] = useState<number | string | null>(snapPointValue);
     const lastScrollTop = useRef(0);
     const touchStartY = useRef(0);
-    const animationFrameRef = useRef<number | null>(null);
-    
-    // Calcular altura máxima (100vh - altura del topbar ~73px)
-    const topbarHeight = 73;
-    const maxDrawerHeight = typeof window !== 'undefined' 
-        ? ((window.innerHeight - topbarHeight) / window.innerHeight) * 100 
-        : 90; // En vh
-    
-    // Función para actualizar altura de forma fluida con requestAnimationFrame
-    const updateDrawerHeight = (newHeight: number) => {
-        if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-        }
-        animationFrameRef.current = requestAnimationFrame(() => {
-            // Limitar entre 40vh y maxDrawerHeight (sin superar el topbar)
-            const clampedHeight = Math.max(40, Math.min(maxDrawerHeight, newHeight));
-            setDrawerHeight(Math.round(clampedHeight));
-        });
-    };
     const drawerContentRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const [headerTop, setHeaderTop] = useState(143); // 64px (top) + 79px (height) por defecto
@@ -518,15 +500,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         services: services.map(s => ({ id: s.id, price: s.price, rating: s.averageRating }))
     });
     
-    // Mostrar drawer cuando hay servicios disponibles en móvil (ya está abierto, solo lo hacemos visible)
+    // Abrir drawer cuando hay servicios disponibles en móvil
     useEffect(() => {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-        if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible) {
-            console.log('✅ Mostrando drawer (ya posicionado)');
-            setIsDrawerVisible(true);
-            setDrawerHeight(60);
+        if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerOpen) {
+            console.log('✅ Abriendo drawer con snapPoint 0.6');
+            // Establecer snapPoint inicial (60%)
+            setActiveSnapPoint(snapPointValue);
+            // Abrir el drawer
+            setIsDrawerOpen(true);
         }
-    }, [allServices.length, isLoadingServices, isDrawerVisible]);
+    }, [allServices.length, isLoadingServices, isDrawerOpen, snapPointValue]);
     
     // Establecer posición inicial del drawer a mitad de página en la primera carga
     useEffect(() => {
@@ -1363,11 +1347,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 e.stopPropagation();
                                                 if (isDrawerOpen) {
                                                     // Si está abierto, alternar entre expandido y colapsado
-                                                    setDrawerHeight(drawerHeight > 80 ? 60 : 95);
+                                                    setActiveSnapPoint(activeSnapPoint === snapPointExpanded ? snapPointValue : snapPointExpanded);
                                                 } else {
                                                     // Si está cerrado, abrir colapsado
+                                                    setActiveSnapPoint(snapPointValue);
                                                     setIsDrawerOpen(true);
-                                                    setDrawerHeight(60);
                                                 }
                                             }}
                                             size="lg"
@@ -1788,11 +1772,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     onOpenChange={handleDrawerOpenChange}
                     modal={false}
                     dismissible={false}
-                    drawerHeight={`${drawerHeight}vh`}
-                    style={{
-                        opacity: isDrawerVisible ? 1 : 0,
-                        pointerEvents: isDrawerVisible ? 'auto' : 'none'
-                    }}
+                    snapPoints={[snapPointValue, snapPointExpanded]}
+                    activeSnapPoint={activeSnapPoint}
+                    setActiveSnapPoint={setActiveSnapPoint}
                     title={(() => {
                         // Contar solo los servicios que están en el drawer (excluyendo el seleccionado)
                         const drawerServicesCount = selectedService 
@@ -1805,19 +1787,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     drawerClassName="lg:hidden flex flex-col bg-white outline-none border-0 shadow-none rounded-none"
                     dialogClassName="max-w-4xl max-h-[90vh] flex flex-col"
                     drawerStyle={{ 
-                        bottom: '0',
                         zIndex: 10000,
-                        height: `${drawerHeight}vh`,
-                        maxHeight: `${maxDrawerHeight}vh`,
-                        position: 'fixed',
                         backgroundColor: 'white',
                         borderTopLeftRadius: '12px',
                         borderTopRightRadius: '12px',
-                        borderBottomLeftRadius: '0',
-                        borderBottomRightRadius: '0',
-                        transition: 'none',
-                        willChange: 'height, transform',
-                        transform: 'translateZ(0)', // GPU acceleration
+                        willChange: 'transform',
+                        transform: 'translateZ(0)',
                         backfaceVisibility: 'hidden'
                     }}
                     dialogStyle={{
@@ -1845,23 +1820,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             // Si arrastra hacia abajo más de 50px, cerrar
                             if (deltaY < -50) {
                                 setIsDrawerOpen(false);
-                                setIsDrawerVisible(false);
-                            } else if (deltaY < 0) {
-                                // Reducir altura mientras arrastra hacia abajo
-                                updateDrawerHeight(60 + (deltaY / 5));
-                            } else if (deltaY > 0) {
-                                // Aumentar altura mientras arrastra hacia arriba (hasta el topbar)
-                                updateDrawerHeight(60 + (deltaY / 3));
                             }
+                            touchStartY.current = touchY;
                         }}
                         onTouchEnd={() => {
-                            // Si la altura es muy baja, cerrar. Si no, restaurar
-                            if (drawerHeight < 50) {
-                                setIsDrawerOpen(false);
-                                setIsDrawerVisible(false);
-                            } else {
-                                setDrawerHeight(60);
-                            }
+                            // Vaul maneja el snap automáticamente
                         }}
                     >
                         <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -1924,14 +1887,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             // Si está en el tope y arrastra hacia abajo, cerrar
                             if (target.scrollTop <= 0 && deltaY < -30) {
                                 setIsDrawerOpen(false);
-                                setIsDrawerVisible(false);
                                 return;
                             }
-                            
-                            // Calcular altura fluida (no superar maxDrawerHeight)
-                            const scrollPercent = Math.min(target.scrollTop / 100, 1);
-                            const newHeight = 60 + (scrollPercent * (maxDrawerHeight - 60));
-                            updateDrawerHeight(newHeight);
                         }}
                         onScroll={(e) => {
                             const target = e.currentTarget;
@@ -1939,12 +1896,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             
                             if (!isMobile) return;
                             
-                            lastScrollTop.current = target.scrollTop;
+                            // Si hace scroll hacia abajo, expandir
+                            if (target.scrollTop > 50 && activeSnapPoint !== snapPointExpanded) {
+                                setActiveSnapPoint(snapPointExpanded);
+                            }
+                            // Si vuelve arriba del todo, volver a posición de reposo
+                            else if (target.scrollTop <= 5 && activeSnapPoint === snapPointExpanded) {
+                                setActiveSnapPoint(snapPointValue);
+                            }
                             
-                            // Calcular altura fluida (no superar maxDrawerHeight)
-                            const scrollPercent = Math.min(target.scrollTop / 100, 1);
-                            const newHeight = 60 + (scrollPercent * (maxDrawerHeight - 60));
-                            updateDrawerHeight(newHeight);
+                            lastScrollTop.current = target.scrollTop;
                         }}
                         style={{
                             overscrollBehavior: 'none',
