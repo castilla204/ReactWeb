@@ -129,7 +129,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                         <ChevronRight className="w-4 h-4 text-gray-700" />
                                     </button>
                                     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                                        {imageUrls.map((_, idx) => (
+                                        {imageUrls.map((_: string, idx: number) => (
                                             <div key={idx} className="rounded-full bg-white" style={{ height: '4px', width: idx === imageIndex ? '20px' : '4px', opacity: idx === imageIndex ? 1 : 0.6 }} />
                                         ))}
                                     </div>
@@ -868,6 +868,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }
     }, [selectedLocation, map, formData.latitude, formData.longitude]);
     const handleMapClick = (e: google.maps.MapMouseEvent) => {
+        // ✅ Si el drawer está abierto, cerrarlo
+        if (isDrawerOpen && isDrawerVisible) {
+            console.log('🗺️ Click en mapa - cerrando drawer');
+            setIsDrawerOpen(false);
+            setIsDrawerVisible(false);
+            return;
+        }
+        
         // ✅ Si hay una card abierta, solo cerrarla y deseleccionar, NO mover el mapa
         if (selectedService) {
             console.log('🗺️ Click en mapa - cerrando card (sin mover mapa)');
@@ -1526,7 +1534,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         {/* Indicadores de imágenes si hay más de una */}
                                                         {imageUrls.length > 1 && (
                                                             <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-1">
-                                                                {imageUrls.map((_, idx) => (
+                                                                {imageUrls.map((_: string, idx: number) => (
                                                                     <span
                                                                         key={idx}
                                                                         className={`w-1.5 h-1.5 rounded-full ${
@@ -1676,7 +1684,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 }));
                                                 setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
                                                 setSearchAddress('');
-                                                setSelectedAddress('');
                                             }}
                                             currentCountry={selectedCountry}
                                                 className="[&>button]:h-14 [&>button]:px-4 [&>button]:min-w-[110px] [&>button]:gap-2"
@@ -1767,6 +1774,22 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         )}
                     </div>
                 </div>
+                
+                {/* Overlay para cerrar el drawer al hacer clic fuera - Solo móvil */}
+                {isDrawerOpen && isDrawerVisible && (
+                    <div 
+                        className="lg:hidden fixed inset-0 z-[9999]"
+                        style={{ 
+                            backgroundColor: 'transparent',
+                            pointerEvents: 'auto'
+                        }}
+                        onClick={() => {
+                            console.log('🗺️ Click en overlay - cerrando drawer');
+                            setIsDrawerOpen(false);
+                            setIsDrawerVisible(false);
+                        }}
+                    />
+                )}
                 
                 {/* ResponsiveModal: Drawer en móvil, Dialog en PC */}
                 <ResponsiveModal
