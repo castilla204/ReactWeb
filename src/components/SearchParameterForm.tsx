@@ -35,342 +35,132 @@ interface MapServiceCardProps {
 
 const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, onSelect }) => {
     const [imageIndex, setImageIndex] = useState(0);
-    const [imageError, setImageError] = useState(false);
+    const [isFavorite, setIsFavorite] = useState(false);
+    const navigate = useNavigate();
     
-    // Normalizar imageUrls - manejar tanto PascalCase como camelCase
+    // Normalizar imageUrls
     const imageUrls = Array.isArray(service.imageUrls) 
         ? service.imageUrls 
         : Array.isArray(service.ImageUrls) 
             ? service.ImageUrls 
             : [];
     const hasMultipleImages = imageUrls.length > 1;
-    const hasValidImage = imageUrls.length > 0 && !imageError;
-    
-    // Log comentado para evitar spam en consola
-    // console.log('🖼️ MapServiceCard - Service images:', {
-    //     serviceId: service.id || service.Id,
-    //     imageUrls: imageUrls,
-    //     imageUrlsLength: imageUrls.length,
-    //     hasServiceImageUrls: !!service.imageUrls,
-    //     hasServiceImageUrlsPascal: !!service.ImageUrls
-    // });
-    
-    // Formatear fecha (simulado - deberías obtener fechas reales del servicio)
-    const formatDate = () => {
-        const today = new Date();
-        const checkIn = new Date(today);
-        checkIn.setDate(today.getDate() + 2);
-        const checkOut = new Date(checkIn);
-        checkOut.setDate(checkIn.getDate() + 2);
-        
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return `${months[checkIn.getMonth()]} ${checkIn.getDate()} – ${checkOut.getDate()}`;
-    };
-    
-    const hostType = service.expert?.user?.name ? 'Individual host' : 'Individual host';
-    const nights = service.durationInHours ? Math.ceil(service.durationInHours / 24) : 2;
-
     const serviceId = service.id || service.Id;
-    const navigate = useNavigate();
+    
+    // Es "Guest favorite" si tiene muchas contrataciones y buena valoración
+    const isGuestFavorite = (service.completedSearches || 0) > 5 && (service.averageRating || 0) >= 4.0;
     
     const handleCardClick = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🖱️ Click en card, navegando a:', serviceId);
-        // ✅ Navegar directamente a la página del servicio
         navigate(`/service/${serviceId}`);
     };
     
-    // Detectar si es móvil
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    const handleFavoriteClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setIsFavorite(!isFavorite);
+    };
+    
+    // Precio formateado
+    const price = service.price ? `€${Math.round(service.price)}` : 'Consultar';
     
     return (
         <a
             href={`/service/${serviceId}`}
             onClick={handleCardClick}
-            className={`group cursor-pointer transition-all duration-300 block ${isSelected ? 'ring-2 ring-blue-600 ring-offset-2' : ''}`}
-            style={{ 
-                width: '100%', 
-                maxWidth: isMobile ? '100%' : '347px', 
-                textDecoration: 'none', 
-                color: 'inherit', 
-                display: 'block',
-                padding: isMobile ? '0' : (isSelected ? '4px' : '0'),
-                marginBottom: isMobile ? '0' : '0',
-                ...(isSelected ? { 
-                    border: '2px solid #2563eb',
-                    borderRadius: '16px',
-                    backgroundColor: '#eff6ff',
-                    boxShadow: '0 0 0 2px rgba(37, 99, 235, 0.1)'
-                } : {})
-            }}
+            className="block cursor-pointer group"
+            style={{ width: '100%', textDecoration: 'none', color: 'inherit', padding: '12px' }}
         >
-            {/* Contenedor principal - Estructura exacta de Airbnb */}
-            <div className="relative cursor-pointer group" style={{ width: '100%', padding: isMobile ? '0' : '0' }}>
-                {/* Contenedor de imagen - Estilo Airbnb rectangular con bordes redondeados - Mejorado */}
+            {/* Contenedor principal - Estilo Homepage */}
+            <div className="relative w-full">
+                {/* Imagen cuadrada como en homepage */}
                 <div 
-                    className="relative w-full overflow-hidden bg-gray-100" 
-                    style={{ 
-                        aspectRatio: '4/3', 
-                        borderRadius: '12px', 
-                        width: '100%', 
-                        marginBottom: isMobile ? '8px' : '12px',
-                        minHeight: '200px',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}
+                    className="relative w-full overflow-hidden mb-2" 
+                    style={{ aspectRatio: '1', borderRadius: '16px' }}
                 >
-                    {hasValidImage ? (
+                    {imageUrls.length > 0 ? (
                         <>
-                            {/* Imagen principal - Mejorada para mostrar mejor las fotos */}
-                            <div className="relative w-full h-full bg-gray-100" style={{ width: '100%', height: '100%' }}>
-                                <img
-                                    src={imageUrls[imageIndex]}
-                                    alt={service.serviceTypeName || service.categoryName || 'Servicio'}
-                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                    style={{ 
-                                        display: 'block',
-                                        width: '100%',
-                                        height: '100%',
-                                        objectFit: 'cover',
-                                        backgroundColor: '#f3f4f6',
-                                        minHeight: '200px'
-                                    }}
-                                    loading="lazy"
-                                    onError={(e) => {
-                                        // Si falla la imagen, intentar con la siguiente o mostrar placeholder
-                                        if (imageIndex < imageUrls.length - 1) {
-                                            setImageIndex(imageIndex + 1);
-                                        } else {
-                                            setImageError(true);
-                                        }
-                                    }}
-                                    onLoad={() => {
-                                        setImageError(false);
-                                    }}
-                                />
-                                {/* Overlay sutil para mejor contraste */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
-                            </div>
+                            <img
+                                src={imageUrls[imageIndex]}
+                                alt={service.serviceTypeName || 'Servicio'}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                loading="lazy"
+                            />
                             
-                            {/* Botones de acción - Siempre visible como en Airbnb */}
-                            <div className="absolute top-3 right-3 z-10 flex gap-2">
-                                {/* Botón de favorito (corazón) - Estilo Airbnb */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                    }}
-                                    aria-label="Save to wishlist"
-                                    className="p-2 rounded-full bg-white/90 hover:bg-white transition-all"
-                                    style={{
-                                        margin: '0',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        width: '32px',
-                                        height: '32px',
-                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
-                                    }}
-                                >
-                                    <svg
-                                        viewBox="0 0 32 32"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        aria-hidden="true"
-                                        role="presentation"
-                                        focusable="false"
-                                        style={{
-                                            display: 'block',
-                                            fill: 'rgba(0, 0, 0, 0.5)',
-                                            height: '24px',
-                                            width: '24px',
-                                            stroke: 'var(--palette-icon-primary-inverse, #ffffff)',
-                                            strokeWidth: '2',
-                                            overflow: 'visible',
-                                        }}
-                                    >
-                                        <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
-                                    </svg>
-                                </button>
-                                
-                                {/* Botón de cerrar (X) - Solo visible cuando está seleccionado */}
-                                {isSelected && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                            // Deseleccionar el servicio
-                                            onSelect(0);
-                                        }}
-                                        aria-label="Close"
-                                        style={{
-                                            padding: '8px',
-                                            margin: '0',
-                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                            border: 'none',
-                                            borderRadius: '50%',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            width: '32px',
-                                            height: '32px',
-                                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
-                                        }}
-                                    >
-                                        <svg
-                                            viewBox="0 0 32 32"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            aria-hidden="true"
-                                            role="presentation"
-                                            focusable="false"
-                                            style={{
-                                                display: 'block',
-                                                fill: 'none',
-                                                height: '16px',
-                                                width: '16px',
-                                                stroke: 'var(--palette-icon-primary, #222222)',
-                                                strokeWidth: '3',
-                                                overflow: 'visible',
-                                            }}
-                                        >
-                                            <path d="m6 6 20 20M26 6 6 26" />
-                                        </svg>
-                                    </button>
-                                )}
-                            </div>
+                            {/* Badge Guest favorite */}
+                            {isGuestFavorite && (
+                                <div className="absolute top-3 left-3 z-10">
+                                    <div style={{
+                                        padding: '4px 8px',
+                                        backgroundColor: 'rgba(255,255,255,0.95)',
+                                        borderRadius: '8px',
+                                        fontSize: '10px',
+                                        fontWeight: 600,
+                                        color: '#222',
+                                    }}>
+                                        Guest favorite
+                                    </div>
+                                </div>
+                            )}
 
-                            {/* Navegación de imágenes */}
+                            {/* Corazón sin fondo */}
+                            <button onClick={handleFavoriteClick} className="absolute top-3 right-3 z-10" style={{ background: 'none', border: 'none', padding: 0 }}>
+                                <svg viewBox="0 0 32 32" style={{ width: '24px', height: '24px', fill: isFavorite ? '#FF385C' : 'rgba(0,0,0,0.5)', stroke: '#fff', strokeWidth: 2 }}>
+                                    <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
+                                </svg>
+                            </button>
+
+                            {/* Navegación imágenes */}
                             {hasMultipleImages && (
                                 <>
                                     <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setImageIndex((prev) => (prev - 1 + imageUrls.length) % imageUrls.length);
-                                        }}
-                                        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                        style={{
-                                            padding: '6px',
-                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                        }}
+                                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setImageIndex((prev) => (prev - 1 + imageUrls.length) % imageUrls.length); }}
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 p-1.5"
+                                        style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
                                     >
                                         <ChevronRight className="w-4 h-4 text-gray-700 rotate-180" />
                                     </button>
                                     <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setImageIndex((prev) => (prev + 1) % imageUrls.length);
-                                        }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                        style={{
-                                            padding: '6px',
-                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                        }}
+                                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setImageIndex((prev) => (prev + 1) % imageUrls.length); }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 p-1.5"
+                                        style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
                                     >
                                         <ChevronRight className="w-4 h-4 text-gray-700" />
                                     </button>
-                                    
-                                    {/* Indicadores de imágenes */}
-                                    <div
-                                        className="absolute bottom-3 left-1/2 -translate-x-1/2 flex"
-                                        style={{ gap: '6px' }}
-                                    >
+                                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                                         {imageUrls.map((_, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="rounded-full transition-all bg-white"
-                                                style={{
-                                                    height: '4px',
-                                                    width: idx === imageIndex ? '24px' : '4px',
-                                                    opacity: idx === imageIndex ? 1 : 0.6,
-                                                }}
-                                            />
+                                            <div key={idx} className="rounded-full bg-white" style={{ height: '4px', width: idx === imageIndex ? '20px' : '4px', opacity: idx === imageIndex ? 1 : 0.6 }} />
                                         ))}
                                     </div>
                                 </>
                             )}
                         </>
                     ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center" style={{ minHeight: '200px' }}>
-                            <div className="w-20 h-20 mb-4 rounded-full bg-white/80 flex items-center justify-center shadow-sm">
-                                <Image className="w-10 h-10 text-gray-400" />
-                            </div>
-                            <span className="text-gray-500 text-sm font-medium">Sin imagen disponible</span>
-                            <span className="text-gray-400 text-xs mt-1">{service.serviceTypeName || service.categoryName || 'Servicio'}</span>
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                            <Image className="w-12 h-12 text-gray-400" />
                         </div>
                     )}
                 </div>
 
-                {/* Información del servicio - Estilo Airbnb móvil */}
-                <div style={{ 
-                    marginTop: isMobile ? '8px' : '12px',
-                    padding: isMobile ? '0 24px 24px 24px' : '0'
-                }}>
-                    {/* Primera fila: Nombre del servicio */}
-                    <div
-                        className="overflow-hidden"
-                        style={{
-                            marginBottom: '4px',
-                            fontSize: isMobile ? '15px' : '16px',
-                            lineHeight: isMobile ? '19px' : '20px',
-                            fontWeight: 600,
-                            color: '#222222',
-                            fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                            textAlign: 'left',
-                        }}
-                    >
-                        <div className="truncate" style={{ textAlign: 'left' }}>
-                            {service.serviceTypeName || service.categoryName || 'Servicio'}
-                        </div>
+                {/* Info del servicio - Estilo homepage */}
+                <div>
+                    {/* Título */}
+                    <div className="truncate" style={{ fontSize: '15px', fontWeight: 600, color: '#222', marginBottom: '2px' }}>
+                        {service.serviceTypeName || service.categoryName || 'Servicio'}
                     </div>
-
-                    {/* Segunda fila: Fechas y tipo de host */}
-                    <div
-                        className="truncate"
-                        style={{
-                            marginBottom: '4px',
-                            fontSize: isMobile ? '14px' : '15px',
-                            lineHeight: isMobile ? '18px' : '19px',
-                            fontWeight: 400,
-                            color: '#717171',
-                            fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                            textAlign: 'left',
-                        }}
-                    >
-                        {formatDate()} · {hostType}
+                    {/* Descripción/Experto */}
+                    <div className="truncate" style={{ fontSize: '14px', color: '#717171', marginBottom: '2px' }}>
+                        {service.expert?.user?.name || 'Profesional verificado'}
                     </div>
-
-                    {/* Tercera fila: Precio y calificación */}
-                    <div
-                        className="flex items-center overflow-hidden"
-                        style={{
-                            fontSize: isMobile ? '15px' : '16px',
-                            lineHeight: isMobile ? '19px' : '20px',
-                            fontWeight: 600,
-                            color: '#222222',
-                            fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                            textAlign: 'left',
-                            justifyContent: 'flex-start',
-                        }}
-                    >
-                        <span>€{service.price?.toFixed(0) || '0'}</span>
+                    {/* Precio y rating */}
+                    <div className="flex items-center" style={{ fontSize: '15px', color: '#222' }}>
+                        <span style={{ fontWeight: 600 }}>{price}</span>
                         {service.averageRating && service.averageRating > 0 && (
-                            <>
-                                <span style={{ marginLeft: '8px', marginRight: '4px' }}> · </span>
-                                <Star 
-                                    className="flex-shrink-0" 
-                                    style={{ 
-                                        width: '12px', 
-                                        height: '12px', 
-                                        fill: '#222222', 
-                                        color: '#222222',
-                                    }} 
-                                />
-                                <span style={{ marginLeft: '4px' }}>
-                                    {service.averageRating.toFixed(2)}
-                                </span>
-                            </>
+                            <span className="flex items-center ml-2" style={{ color: '#717171' }}>
+                                · <Star className="w-3 h-3 ml-1 mr-0.5" style={{ fill: '#222', color: '#222' }} />
+                                {service.averageRating.toFixed(1)}
+                            </span>
                         )}
                     </div>
                 </div>
@@ -503,9 +293,34 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     }, [selectedService]);
     
     // ✅ Estado para controlar el modal (Drawer en móvil, Dialog en PC)
+    // Detectar si es móvil al inicio
     const initialIsMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-    const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile); // abrir por defecto en móvil
-    const [drawerSnap, setDrawerSnap] = useState<number | string>(0.7); // Inicia a 70% (más de la mitad)
+    // En móvil, iniciar abierto pero invisible hasta que carguen los servicios
+    const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile);
+    const [isDrawerVisible, setIsDrawerVisible] = useState(false); // Controla la visibilidad
+    // Estado para controlar la altura del drawer de forma fluida
+    const [drawerHeight, setDrawerHeight] = useState(60);
+    const lastScrollTop = useRef(0);
+    const touchStartY = useRef(0);
+    const animationFrameRef = useRef<number | null>(null);
+    
+    // Calcular altura máxima (100vh - altura del topbar ~73px)
+    const topbarHeight = 73;
+    const maxDrawerHeight = typeof window !== 'undefined' 
+        ? ((window.innerHeight - topbarHeight) / window.innerHeight) * 100 
+        : 90; // En vh
+    
+    // Función para actualizar altura de forma fluida con requestAnimationFrame
+    const updateDrawerHeight = (newHeight: number) => {
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+        }
+        animationFrameRef.current = requestAnimationFrame(() => {
+            // Limitar entre 40vh y maxDrawerHeight (sin superar el topbar)
+            const clampedHeight = Math.max(40, Math.min(maxDrawerHeight, newHeight));
+            setDrawerHeight(Math.round(clampedHeight));
+        });
+    };
     const drawerContentRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const [headerTop, setHeaderTop] = useState(143); // 64px (top) + 79px (height) por defecto
@@ -703,14 +518,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         services: services.map(s => ({ id: s.id, price: s.price, rating: s.averageRating }))
     });
     
-    // Abrir drawer automáticamente cuando hay servicios disponibles en móvil
+    // Mostrar drawer cuando hay servicios disponibles en móvil (ya está abierto, solo lo hacemos visible)
     useEffect(() => {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-        if (isMobile && allServices.length > 0 && !isLoadingServices) {
-            setIsDrawerOpen(true);
-            setDrawerSnap(0.7); // Abrir al 70%
+        if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible) {
+            console.log('✅ Mostrando drawer (ya posicionado)');
+            setIsDrawerVisible(true);
+            setDrawerHeight(60);
         }
-    }, [allServices.length, isLoadingServices]);
+    }, [allServices.length, isLoadingServices, isDrawerVisible]);
     
     // Establecer posición inicial del drawer a mitad de página en la primera carga
     useEffect(() => {
@@ -1546,12 +1362,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (isDrawerOpen) {
-                                                    // Si está abierto, alternar entre 70% y 100%
-                                                    setDrawerSnap(drawerSnap === 1 ? 0.7 : 1);
+                                                    // Si está abierto, alternar entre expandido y colapsado
+                                                    setDrawerHeight(drawerHeight > 80 ? 60 : 95);
                                                 } else {
-                                                    // Si está cerrado, abrir a 70%
+                                                    // Si está cerrado, abrir colapsado
                                                     setIsDrawerOpen(true);
-                                                    setDrawerSnap(0.7);
+                                                    setDrawerHeight(60);
                                                 }
                                             }}
                                             size="lg"
@@ -1967,19 +1783,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </div>
                 
                 {/* ResponsiveModal: Drawer en móvil, Dialog en PC */}
-                {console.log('📱 ResponsiveModal props:', { 
-                    isDrawerOpen, 
-                    servicesCount: services.length,
-                    snapPoints: [0.5, 1],
-                    activeSnapPoint: drawerSnap
-                })}
                 <ResponsiveModal
                     open={isDrawerOpen}
                     onOpenChange={handleDrawerOpenChange}
-                    snapPoints={[0.7, 1]}
-                    activeSnapPoint={drawerSnap}
-                    setActiveSnapPoint={setDrawerSnap}
                     modal={false}
+                    dismissible={false}
+                    drawerHeight={`${drawerHeight}vh`}
+                    style={{
+                        opacity: isDrawerVisible ? 1 : 0,
+                        pointerEvents: isDrawerVisible ? 'auto' : 'none'
+                    }}
                     title={(() => {
                         // Contar solo los servicios que están en el drawer (excluyendo el seleccionado)
                         const drawerServicesCount = selectedService 
@@ -1992,22 +1805,20 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     drawerClassName="lg:hidden flex flex-col bg-white outline-none border-0 shadow-none rounded-none"
                     dialogClassName="max-w-4xl max-h-[90vh] flex flex-col"
                     drawerStyle={{ 
-                        top: drawerTopPosition !== null ? `${drawerTopPosition}px` : `${headerTop}px`,
                         bottom: '0',
                         zIndex: 10000,
-                        height: drawerTopPosition !== null 
-                            ? `calc(100vh - ${drawerTopPosition}px)`
-                            : `calc(100vh - ${headerTop}px)`,
-                        maxHeight: drawerTopPosition !== null 
-                            ? `calc(100vh - ${drawerTopPosition}px)`
-                            : `calc(100vh - ${headerTop}px)`,
+                        height: `${drawerHeight}vh`,
+                        maxHeight: `${maxDrawerHeight}vh`,
                         position: 'fixed',
                         backgroundColor: 'white',
-                        borderTopLeftRadius: '0',
-                        borderTopRightRadius: '0',
+                        borderTopLeftRadius: '12px',
+                        borderTopRightRadius: '12px',
                         borderBottomLeftRadius: '0',
                         borderBottomRightRadius: '0',
-                        transition: isFirstLoad ? 'none' : 'top 0.3s ease-out'
+                        transition: 'none',
+                        willChange: 'height, transform',
+                        transform: 'translateZ(0)', // GPU acceleration
+                        backfaceVisibility: 'hidden'
                     }}
                     dialogStyle={{
                         maxHeight: '90vh',
@@ -2020,8 +1831,43 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     noOverlay={true}
                     noHandle={true}
                 >
+                    {/* Handle draggable para cerrar - Solo móvil */}
+                    <div 
+                        className="lg:hidden w-full py-2 flex justify-center cursor-grab active:cursor-grabbing bg-white"
+                        style={{ borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}
+                        onTouchStart={(e) => {
+                            touchStartY.current = e.touches[0].clientY;
+                        }}
+                        onTouchMove={(e) => {
+                            const touchY = e.touches[0].clientY;
+                            const deltaY = touchStartY.current - touchY;
+                            
+                            // Si arrastra hacia abajo más de 50px, cerrar
+                            if (deltaY < -50) {
+                                setIsDrawerOpen(false);
+                                setIsDrawerVisible(false);
+                            } else if (deltaY < 0) {
+                                // Reducir altura mientras arrastra hacia abajo
+                                updateDrawerHeight(60 + (deltaY / 5));
+                            } else if (deltaY > 0) {
+                                // Aumentar altura mientras arrastra hacia arriba (hasta el topbar)
+                                updateDrawerHeight(60 + (deltaY / 3));
+                            }
+                        }}
+                        onTouchEnd={() => {
+                            // Si la altura es muy baja, cerrar. Si no, restaurar
+                            if (drawerHeight < 50) {
+                                setIsDrawerOpen(false);
+                                setIsDrawerVisible(false);
+                            } else {
+                                setDrawerHeight(60);
+                            }
+                        }}
+                    >
+                        <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+                    </div>
                     {/* Header con contador estilo Airbnb - Solo en móvil */}
-                    <div className="lg:hidden px-6 py-4 bg-white border-b border-gray-100 flex-shrink-0" style={{ zIndex: 10001 }}>
+                    <div className="lg:hidden px-6 py-3 bg-white border-b border-gray-100 flex-shrink-0" style={{ zIndex: 10001 }}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-semibold text-gray-900">
                                 {(() => {
@@ -2064,24 +1910,46 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     <div 
                         ref={drawerContentRef}
                         className="flex-1 overflow-y-auto bg-white px-0 lg:px-4"
+                        onTouchStart={(e) => {
+                            touchStartY.current = e.touches[0].clientY;
+                        }}
+                        onTouchMove={(e) => {
+                            const isMobile = window.innerWidth < 1024;
+                            if (!isMobile) return;
+                            
+                            const touchY = e.touches[0].clientY;
+                            const deltaY = touchStartY.current - touchY;
+                            const target = e.currentTarget;
+                            
+                            // Si está en el tope y arrastra hacia abajo, cerrar
+                            if (target.scrollTop <= 0 && deltaY < -30) {
+                                setIsDrawerOpen(false);
+                                setIsDrawerVisible(false);
+                                return;
+                            }
+                            
+                            // Calcular altura fluida (no superar maxDrawerHeight)
+                            const scrollPercent = Math.min(target.scrollTop / 100, 1);
+                            const newHeight = 60 + (scrollPercent * (maxDrawerHeight - 60));
+                            updateDrawerHeight(newHeight);
+                        }}
                         onScroll={(e) => {
                             const target = e.currentTarget;
                             const isMobile = window.innerWidth < 1024;
                             
                             if (!isMobile) return;
                             
-                            // Si hace scroll hacia abajo (más de 50px) y no está al 100%, expandir
-                            if (target.scrollTop > 50 && drawerSnap !== 1) {
-                                setDrawerSnap(1);
-                            }
-                            // Si vuelve arriba (menos de 20px) y está al 100%, volver a 70%
-                            else if (target.scrollTop < 20 && drawerSnap === 1) {
-                                setDrawerSnap(0.7);
-                            }
+                            lastScrollTop.current = target.scrollTop;
+                            
+                            // Calcular altura fluida (no superar maxDrawerHeight)
+                            const scrollPercent = Math.min(target.scrollTop / 100, 1);
+                            const newHeight = 60 + (scrollPercent * (maxDrawerHeight - 60));
+                            updateDrawerHeight(newHeight);
                         }}
                         style={{
-                            overscrollBehavior: 'contain',
-                            WebkitOverflowScrolling: 'touch'
+                            overscrollBehavior: 'none',
+                            WebkitOverflowScrolling: 'touch',
+                            touchAction: 'pan-y'
                         }}
                     >
                         {/* Services List - Estilo Airbnb */}

@@ -25,6 +25,8 @@ interface ResponsiveModalProps {
   activeSnapPoint?: number | string
   setActiveSnapPoint?: (snapPoint: number | string) => void
   modal?: boolean
+  dismissible?: boolean
+  drawerHeight?: string // Altura personalizada del drawer (ej: '60vh', '400px')
 }
 
 export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
@@ -46,6 +48,8 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   activeSnapPoint,
   setActiveSnapPoint,
   modal = true,
+  dismissible = true,
+  drawerHeight,
 }) => {
   const { width } = useWindowSize()
   
@@ -76,7 +80,9 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   }, [width, mobileBreakpoint, open, snapPoints, activeSnapPoint])
 
   if (isMobile) {
-    // Usar Drawer en móvil - Mejorado con snap points
+    // Usar Drawer en móvil - Con altura controlada por CSS
+    const height = drawerHeight || (snapPoints ? '100vh' : '350px');
+    
     return (
       <Drawer 
         open={open} 
@@ -85,16 +91,17 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         activeSnapPoint={activeSnapPoint}
         setActiveSnapPoint={setActiveSnapPoint}
         modal={modal}
+        dismissible={dismissible}
       >
         <DrawerContent
-          className={cn("rounded-t-2xl w-full !max-w-full shadow-lg border-t border-gray-200 bg-white", className, drawerClassName)}
+          className={cn("rounded-t-2xl w-full !max-w-full shadow-lg border-t border-gray-200 bg-white transition-all duration-300", className, drawerClassName)}
           style={{ 
             ...style, 
             ...drawerStyle,
             width: '100%',
             maxWidth: '100%',
-            height: snapPoints ? '100vh' : '350px',
-            maxHeight: snapPoints ? '100vh' : '350px',
+            height: height,
+            maxHeight: height,
             // Asegurar que el drawer tenga un z-index alto cuando no hay overlay
             zIndex: noOverlay ? (drawerStyle?.zIndex || style?.zIndex || 10000) : (drawerStyle?.zIndex || style?.zIndex || 9998)
           }}
@@ -106,7 +113,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           <div 
             className="flex flex-col bg-white" 
             style={{ 
-              height: snapPoints ? '100%' : '350px', 
+              height: '100%', 
               display: 'flex', 
               flexDirection: 'column',
               overflow: 'hidden'
