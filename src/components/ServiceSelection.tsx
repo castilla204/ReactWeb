@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Star, CheckCircle, User, StarHalf, X, Eye, FileText, Video, XCircle, MapPin } from 'lucide-react';
 import { GoogleMap, useLoadScript, Circle, Marker } from '@react-google-maps/api';
 import { useNavigate } from 'react-router-dom';
@@ -47,18 +47,20 @@ export function ServiceSelection({
     const [detailServiceId, setDetailServiceId] = useState<number | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [carouselIndices, setCarouselIndices] = useState<{ [key: number]: number }>({});
-    // NO abrir el drawer hasta que los servicios estén cargados
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    // Detectar si es móvil al inicio - drawer abierto pero invisible hasta cargar
+    const initialIsMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile);
+    const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+    // Estado para controlar la altura del drawer de forma fluida (60 a maxDrawerHeight vh)
+    const [drawerHeight, setDrawerHeight] = useState(60);
+    // Altura máxima del drawer (hasta el topbar, no más)
+    const topbarHeight = 73; // px - altura del topbar
+    const maxDrawerHeight = typeof window !== 'undefined' 
+        ? Math.floor(((window.innerHeight - topbarHeight) / window.innerHeight) * 100) 
+        : 90; // En vh
     const drawerContentRef = useRef<HTMLDivElement>(null);
-    const lastScrollTop = useRef(0);
-    const touchStartY = useRef(0);
-    
-    // SnapPoints de Vaul para la animación correcta
-    const snapPointValue = 0.6; // 60% del viewport
-    const snapPointExpanded = typeof window !== 'undefined' 
-        ? (window.innerHeight - 73) / window.innerHeight 
-        : 0.9; // ~90% menos el topbar
-    const [activeSnapPoint, setActiveSnapPoint] = useState<number | string | null>(snapPointValue);
+    const lastScrollTop = useRef(0); // Para detectar dirección del scroll
+    const touchStartY = useRef(0); // Para seguir el touch
     const [filters, setFilters] = useState({
         priceRange: 'all' as 'all' | 'low' | 'medium' | 'high',
         rating: 'all' as 'all' | '4+' | '4.5+',
@@ -133,15 +135,15 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
 
     console.log('ServiceSelection - Services received:', services);
     
-    // Abrir drawer cuando hay servicios disponibles en móvil
+    // Mostrar drawer cuando hay servicios (ya está abierto, solo lo hacemos visible)
     useEffect(() => {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-        if (isMobile && services.length > 0 && !isLoading && !isDrawerOpen) {
-            console.log('✅ Abriendo drawer con snapPoint 0.6');
-            setActiveSnapPoint(snapPointValue);
-            setIsDrawerOpen(true);
+        if (isMobile && services.length > 0 && !isLoading && !isDrawerVisible) {
+            console.log('✅ Mostrando drawer (ya posicionado)');
+            setIsDrawerVisible(true);
+            setDrawerHeight(60);
         }
-    }, [services.length, isLoading, isDrawerOpen, snapPointValue]);
+    }, [services.length, isLoading, isDrawerVisible]);
     console.log('ServiceSelection - Total services count:', services.length);
     
     // Buscar específicamente el servicio 154
@@ -674,8 +676,9 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                 }}
                                 onClick={(e) => {
                                     // Cerrar drawer si está abierto, o no hacer nada
-                                    if (isDrawerOpen) {
+                                    if (isDrawerOpen && isDrawerVisible) {
                                         setIsDrawerOpen(false);
+                                        setIsDrawerVisible(false);
                                     }
                                 }}
                             >
@@ -745,8 +748,8 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
                             <Button
                                 onClick={() => {
-                                    setActiveSnapPoint(snapPointValue);
                                     setIsDrawerOpen(true);
+                                    setDrawerHeight(60);
                                 }}
                                 size="lg"
                                 className="shadow-lg"
@@ -842,17 +845,17 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                 open={isDrawerOpen} 
                 onOpenChange={setIsDrawerOpen}
                 modal={false}
-                snapPoints={[snapPointValue, snapPointExpanded]}
-                activeSnapPoint={activeSnapPoint}
-                setActiveSnapPoint={setActiveSnapPoint}
             >
                 <DrawerContent 
                     style={{
-                        willChange: 'transform',
+                        height: `${drawerHeight}vh`,
+                        maxHeight: `${drawerHeight}vh`,
+                        opacity: isDrawerVisible ? 1 : 0,
+                        pointerEvents: isDrawerVisible ? 'auto' : 'none',
+                        transition: 'none',
+                        willChange: 'height',
                         borderTopLeftRadius: '12px',
-                        borderTopRightRadius: '12px',
-                        transform: 'translateZ(0)',
-                        backfaceVisibility: 'hidden'
+                        borderTopRightRadius: '12px'
                     }}
                 >
                     {/* Handle draggable para cerrar */}
@@ -868,8 +871,21 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                             // Si arrastra hacia abajo más de 50px, cerrar
                             if (deltaY < -50) {
                                 setIsDrawerOpen(false);
+                                setIsDrawerVisible(false);
+                            } else if (deltaY < 0) {
+                                // Reducir altura mientras arrastra hacia abajo
+                                const newHeight = Math.max(40, 60 + (deltaY / 5));
+                                setDrawerHeight(Math.round(newHeight));
                             }
-                            touchStartY.current = touchY;
+                        }}
+                        onTouchEnd={() => {
+                            // Si la altura es muy baja, cerrar. Si no, restaurar
+                            if (drawerHeight < 50) {
+                                setIsDrawerOpen(false);
+                                setIsDrawerVisible(false);
+                            } else {
+                                setDrawerHeight(60);
+                            }
                         }}
                     >
                         <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -900,14 +916,21 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                             if (!isMobile) return;
                             
                             const touchY = e.touches[0].clientY;
-                            const deltaY = touchStartY.current - touchY;
+                            const deltaY = touchStartY.current - touchY; // Positivo = arrastrando hacia arriba
                             const target = e.currentTarget;
                             
-                            // Si está en el tope y arrastra hacia abajo, cerrar
+                            // Si está en el tope (scrollTop = 0) y arrastra hacia abajo, cerrar
                             if (target.scrollTop <= 0 && deltaY < -30) {
                                 setIsDrawerOpen(false);
+                                setIsDrawerVisible(false);
                                 return;
                             }
+                            
+                            // Calcular altura basada en el scroll (máximo hasta el topbar)
+                            const scrollPercent = Math.min(target.scrollTop / 100, 1);
+                            const heightRange = maxDrawerHeight - 60;
+                            const newHeight = Math.max(40, Math.min(maxDrawerHeight, 60 + (scrollPercent * heightRange)));
+                            setDrawerHeight(Math.round(newHeight));
                         }}
                         onScroll={(e) => {
                             const target = e.currentTarget;
@@ -915,16 +938,15 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                             
                             if (!isMobile) return;
                             
-                            // Si hace scroll hacia abajo, expandir
-                            if (target.scrollTop > 50 && activeSnapPoint !== snapPointExpanded) {
-                                setActiveSnapPoint(snapPointExpanded);
-                            }
-                            // Si vuelve arriba del todo, volver a posición de reposo
-                            else if (target.scrollTop <= 5 && activeSnapPoint === snapPointExpanded) {
-                                setActiveSnapPoint(snapPointValue);
-                            }
-                            
+                            // Detectar dirección del scroll
+                            const scrollingDown = target.scrollTop > lastScrollTop.current;
                             lastScrollTop.current = target.scrollTop;
+                            
+                            // Calcular altura del drawer basada en el scroll (máximo hasta el topbar)
+                            const scrollPercent = Math.min(target.scrollTop / 100, 1);
+                            const heightRange = maxDrawerHeight - 60;
+                            const newHeight = 60 + (scrollPercent * heightRange);
+                            setDrawerHeight(Math.round(newHeight));
                         }}
                         style={{ 
                             overscrollBehavior: 'contain',
