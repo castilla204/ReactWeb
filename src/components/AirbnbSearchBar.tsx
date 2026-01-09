@@ -6,16 +6,21 @@ import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-import cocheImg from '../media/cochepng.png';
-import casaImg from '../media/casapng.png';
-import motoImg from '../media/motopng.png';
-import camaraImg from '../media/internet-61.png';
-import calderaImg from '../media/house.png';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from './ui/popover';
+// Importar imágenes
+import cocheImgStatic from '../media/cochepng.png';
+import casaImgStatic from '../media/casapng.png';
+import motoImgStatic from '../media/motopng.png';
+import camaraImgStatic from '../media/internet-61.png';
+import calderaImgStatic from '../media/house.png';
+
+// Función helper para agregar parámetro de caché a las imágenes
+// Esto fuerza al navegador a recargar las imágenes cuando cambian
+const getImageWithCache = (imageUrl: string, cacheKey?: number): string => {
+  // En desarrollo, usar timestamp para evitar caché
+  // En producción, usar un hash del build o timestamp
+  const cache = cacheKey || (import.meta.env.DEV ? Date.now() : import.meta.env.VITE_IMAGE_CACHE || Date.now());
+  return `${imageUrl}?v=${cache}`;
+};
 import { ResponsiveModal } from './ui/responsive-modal';
 import { Separator } from './ui/separator';
 
@@ -60,10 +65,60 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerCategoryReplacement, setDrawerCategoryReplacement] = useState<{ id: number; name: string; image: string } | null>(null);
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
+  const [imageCacheKey, setImageCacheKey] = useState(Date.now());
   const formRef = useRef<HTMLFormElement>(null);
+  const serviceTypeDropdownRef = useRef<HTMLDivElement>(null);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
-  const selectedServiceType = serviceTypes.find(st => st.id === serviceTypeId);
-  const selectedCategory = categories.find(c => c.id === categoryId);
+  // En desarrollo, actualizar el cache key periódicamente para detectar cambios en imágenes
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const interval = setInterval(() => {
+        setImageCacheKey(Date.now());
+      }, 2000); // Actualizar cada 2 segundos en desarrollo
+      
+      return () => clearInterval(interval);
+    }
+  }, []);
+
+  // Estos se actualizarán después de normalizar los datos
+  let selectedServiceType: { id: number; name: string } | undefined;
+  let selectedCategory: { id: number; name: string } | undefined;
+
+  // Normalizar datos - el backend devuelve PascalCase, convertimos a camelCase
+  const normalizedServiceTypes = serviceTypes.map((st: any) => ({
+    id: st.Id || st.id,
+    name: st.Name || st.name,
+    description: st.Description || st.description,
+    position: st.Position || st.position,
+  }));
+
+  const normalizedCategories = categories.map((cat: any) => ({
+    id: cat.Id || cat.id,
+    name: cat.Name || cat.name,
+    isActive: cat.IsActive ?? cat.isActive ?? true,
+  }));
+
+  // Buscar selecciones actuales en los datos normalizados
+  selectedServiceType = normalizedServiceTypes.find(st => st.id === serviceTypeId);
+  selectedCategory = normalizedCategories.find(c => c.id === categoryId);
+
+  // Cerrar dropdowns al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Solo cerrar si el dropdown está abierto y el clic es fuera
+      if (isServiceTypeOpen && serviceTypeDropdownRef.current && !serviceTypeDropdownRef.current.contains(event.target as Node)) {
+        setIsServiceTypeOpen(false);
+      }
+      if (isCategoryOpen && categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setIsCategoryOpen(false);
+      }
+    };
+
+    // Usar click en vez de mousedown para evitar conflictos
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isServiceTypeOpen, isCategoryOpen]);
   
   // Eliminado: No establecer categoría por defecto
   // useEffect(() => {
@@ -117,16 +172,16 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
 
   const getCategoryImage = (categoryName: string): string | null => {
     const nameLower = categoryName.toLowerCase();
-    if (nameLower.includes('moto') && !nameLower.includes('agua')) return motoImg;
-    if (nameLower.includes('coche') || nameLower.includes('vehículo')) return cocheImg;
-    if (nameLower.includes('inmobiliaria') || nameLower.includes('casa') || nameLower.includes('inmueble')) return casaImg;
-    if (nameLower.includes('cámara') || nameLower.includes('camara')) return camaraImg;
-    if (nameLower.includes('fontanería') || nameLower.includes('fontaneria') || nameLower.includes('caldera')) return calderaImg;
+    if (nameLower.includes('moto') && !nameLower.includes('agua')) return getImageWithCache(motoImgStatic, imageCacheKey);
+    if (nameLower.includes('coche') || nameLower.includes('vehículo')) return getImageWithCache(cocheImgStatic, imageCacheKey);
+    if (nameLower.includes('inmobiliaria') || nameLower.includes('casa') || nameLower.includes('inmueble')) return getImageWithCache(casaImgStatic, imageCacheKey);
+    if (nameLower.includes('cámara') || nameLower.includes('camara')) return getImageWithCache(camaraImgStatic, imageCacheKey);
+    if (nameLower.includes('fontanería') || nameLower.includes('fontaneria') || nameLower.includes('caldera')) return getImageWithCache(calderaImgStatic, imageCacheKey);
     return null;
   };
 
   const handleDrawerCategoryClick = (categoryIdValue: number, categoryName: string) => {
-    const categoryImage = getCategoryImage(categoryName) || casaImg;
+    const categoryImage = getCategoryImage(categoryName) || getImageWithCache(casaImgStatic, imageCacheKey);
     
     setDrawerCategoryReplacement({
       id: categoryIdValue,
@@ -148,19 +203,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
     }
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (formRef.current && !formRef.current.contains(event.target as Node)) {
-        // Cerrar todos los popovers cuando se hace clic fuera
-        setActiveField(null);
-        setIsServiceTypeOpen(false);
-        setIsCategoryOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Radix Popover maneja el cierre automáticamente, no necesitamos handleClickOutside
 
   return (
     <header className="sticky top-0 z-50 bg-[#fbfbfb] border-b border-gray-200">
@@ -185,7 +228,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
         >
           {/* Search Bar Container - Exact Airbnb style */}
           <div
-            className={`flex items-center bg-white border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-all ${
+            className={`flex items-center bg-white border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-all overflow-visible ${
               activeField ? 'shadow-md' : ''
             }`}
             style={{
@@ -196,172 +239,164 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             }}
           >
             {/* Service Type - Tipo de Servicio */}
-            <Popover 
-              open={isServiceTypeOpen} 
-              onOpenChange={(open) => {
-                setIsServiceTypeOpen(open);
-              }}
-              modal={false}
-            >
-              <PopoverTrigger asChild>
-                <div
-                  className={`flex-1 px-4 sm:px-6 py-3 border-r border-gray-300 cursor-pointer transition-colors ${
-                    activeField === 'serviceType' || isServiceTypeOpen ? 'bg-gray-50' : 'hover:bg-gray-50'
-                  } ${activeField === 'serviceType' ? 'rounded-l-full' : ''}`}
-                  onClick={() => {
-                    setActiveField('serviceType');
-                    setIsServiceTypeOpen(true);
-                  }}
-                  style={{ minHeight: '66px', minWidth: '120px' }}
-                >
-                  <div className="flex flex-col justify-center h-full">
-                    <label
-                      className="text-xs font-semibold text-gray-900 mb-1"
-                      style={{ fontSize: '12px', lineHeight: '16px', fontWeight: 600 }}
-                    >
-                      Tipo de servicio
-                    </label>
-                    <div
-                      className="text-sm truncate flex items-center gap-1"
-                      style={{ 
-                        fontSize: '14px', 
-                        lineHeight: '18px',
-                        color: selectedServiceType ? '#222222' : '#717171',
-                        fontWeight: selectedServiceType ? 600 : 400,
-                      }}
-                    >
-                      {selectedServiceType ? selectedServiceType.name : 'Selecciona tipo'}
-                      <ChevronDown className="w-4 h-4 flex-shrink-0" />
-                    </div>
+            <div ref={serviceTypeDropdownRef} className="relative flex-1">
+              <button
+                type="button"
+                className={`w-full px-4 sm:px-6 py-3 border-r border-gray-300 cursor-pointer transition-colors text-left ${
+                  activeField === 'serviceType' || isServiceTypeOpen ? 'bg-gray-50' : 'hover:bg-gray-50'
+                } ${activeField === 'serviceType' ? 'rounded-l-full' : ''}`}
+                style={{ minHeight: '66px', minWidth: '120px' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsServiceTypeOpen(!isServiceTypeOpen);
+                  setIsCategoryOpen(false);
+                  setActiveField('serviceType');
+                }}
+              >
+                <div className="flex flex-col justify-center h-full">
+                  <span
+                    className="text-xs font-semibold text-gray-900 mb-1 block"
+                    style={{ fontSize: '12px', lineHeight: '16px', fontWeight: 600 }}
+                  >
+                    Tipo de servicio
+                  </span>
+                  <div
+                    className="text-sm truncate flex items-center gap-1"
+                    style={{ 
+                      fontSize: '14px', 
+                      lineHeight: '18px',
+                      color: selectedServiceType ? '#222222' : '#717171',
+                      fontWeight: selectedServiceType ? 600 : 400,
+                    }}
+                  >
+                    {selectedServiceType ? selectedServiceType.name : 'Selecciona tipo'}
+                    <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${isServiceTypeOpen ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0" align="start">
-                <div className="max-h-[300px] overflow-y-auto">
-                  {serviceTypesLoading ? (
-                    <div className="p-4 text-center text-sm text-gray-500">Cargando...</div>
-                  ) : serviceTypes.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-gray-500">No hay tipos disponibles</div>
-                  ) : (
-                    serviceTypes.map((serviceType) => (
-                      <button
-                        key={serviceType.id}
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                        onPointerDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setServiceTypeId(serviceType.id);
-                          setActiveField('serviceType');
-                          // Forzar que el popover se mantenga abierto
-                          setTimeout(() => {
-                            setIsServiceTypeOpen(true);
-                          }, 0);
-                        }}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
-                          serviceTypeId === serviceType.id ? 'bg-blue-50' : ''
-                        }`}
-                      >
-                        <div className="font-medium text-sm text-gray-900">{serviceType.name}</div>
-                        {serviceType.description && (
-                          <div className="text-xs text-gray-500 mt-1">{serviceType.description}</div>
-                        )}
-                      </button>
-                    ))
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Category - Categoría */}
-            <Popover open={isCategoryOpen} onOpenChange={setIsCategoryOpen} modal={false}>
-              <PopoverTrigger asChild>
-                <div
-                  className={`flex-1 px-4 sm:px-6 py-3 border-r border-gray-300 cursor-pointer transition-colors ${
-                    activeField === 'category' || isCategoryOpen ? 'bg-gray-50' : 'hover:bg-gray-50'
-                  }`}
-                  onClick={() => {
-                    setActiveField('category');
-                    setIsCategoryOpen(true);
-                  }}
-                  style={{ minHeight: '66px', minWidth: '120px' }}
+              </button>
+              
+              {/* Dropdown de tipos de servicio */}
+              {isServiceTypeOpen && (
+                <div 
+                  className="absolute top-full left-0 mt-2 w-[300px] bg-white border border-gray-200 shadow-2xl rounded-xl"
+                  style={{ zIndex: 99999 }}
                 >
-                  <div className="flex flex-col justify-center h-full">
-                    <label
-                      className="text-xs font-semibold text-gray-900 mb-1"
-                      style={{ fontSize: '12px', lineHeight: '16px', fontWeight: 600 }}
-                    >
-                      Categoría
-                    </label>
-                    <div
-                      className="text-sm truncate flex items-center gap-1"
-                      style={{ 
-                        fontSize: '14px', 
-                        lineHeight: '18px',
-                        color: selectedCategory ? '#222222' : '#717171',
-                        fontWeight: selectedCategory ? 600 : 400,
-                      }}
-                    >
-                      {selectedCategory ? selectedCategory.name : 'Selecciona categoría'}
-                      <ChevronDown className="w-4 h-4 flex-shrink-0" />
-                    </div>
-                  </div>
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0" align="start">
-                <div className="max-h-[300px] overflow-y-auto">
-                  {categoriesLoading ? (
-                    <div className="p-4 text-center text-sm text-gray-500">Cargando...</div>
-                  ) : categories.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-gray-500">No hay categorías disponibles</div>
-                  ) : (
-                    categories
-                      .filter(cat => cat.isActive)
-                      .map((category) => (
+                  <div className="max-h-[300px] overflow-y-auto py-2">
+                    {serviceTypesLoading ? (
+                      <div className="p-4 text-center text-sm text-gray-500">Cargando...</div>
+                    ) : normalizedServiceTypes.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gray-500">No hay tipos disponibles</div>
+                    ) : (
+                      normalizedServiceTypes.map((serviceType) => (
                         <button
-                          key={category.id}
+                          key={serviceType.id}
                           type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setCategoryId(category.id);
+                          onClick={() => {
+                            const newCategoryId = categoryId || CATEGORIES.COCHES;
+                            setServiceTypeId(serviceType.id);
+                            setIsServiceTypeOpen(false);
                             if (onSearch) {
                               onSearch({
-                                serviceTypeId,
-                                categoryId: category.id,
+                                serviceTypeId: serviceType.id,
+                                categoryId: newCategoryId,
                                 adUrl,
                               });
                             }
-                            // Mantener el popover abierto después de la selección
-                            // setIsCategoryOpen(false);
-                            // setActiveField(null);
                           }}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                          onPointerDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                          className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
-                            categoryId === category.id ? 'bg-blue-50' : ''
+                          className={`w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors ${
+                            serviceTypeId === serviceType.id ? 'bg-gray-100' : ''
                           }`}
                         >
-                          <div className="font-medium text-sm text-gray-900">{category.name}</div>
+                          <div className="font-medium text-sm text-gray-900">{serviceType.name}</div>
+                          {serviceType.description && (
+                            <div className="text-xs text-gray-500 mt-1">{serviceType.description}</div>
+                          )}
                         </button>
                       ))
-                  )}
+                    )}
+                  </div>
                 </div>
-              </PopoverContent>
-            </Popover>
+              )}
+            </div>
+
+            {/* Category - Categoría */}
+            <div ref={categoryDropdownRef} className="relative flex-1">
+              <button
+                type="button"
+                className={`w-full px-4 sm:px-6 py-3 border-r border-gray-300 cursor-pointer transition-colors text-left ${
+                  activeField === 'category' || isCategoryOpen ? 'bg-gray-50' : 'hover:bg-gray-50'
+                }`}
+                style={{ minHeight: '66px', minWidth: '120px' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCategoryOpen(!isCategoryOpen);
+                  setIsServiceTypeOpen(false);
+                  setActiveField('category');
+                }}
+              >
+                <div className="flex flex-col justify-center h-full">
+                  <span
+                    className="text-xs font-semibold text-gray-900 mb-1 block"
+                    style={{ fontSize: '12px', lineHeight: '16px', fontWeight: 600 }}
+                  >
+                    Categoría
+                  </span>
+                  <div
+                    className="text-sm truncate flex items-center gap-1"
+                    style={{ 
+                      fontSize: '14px', 
+                      lineHeight: '18px',
+                      color: selectedCategory ? '#222222' : '#717171',
+                      fontWeight: selectedCategory ? 600 : 400,
+                    }}
+                  >
+                    {selectedCategory ? selectedCategory.name : 'Selecciona categoría'}
+                    <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+              </button>
+              
+              {/* Dropdown de categorías */}
+              {isCategoryOpen && (
+                <div 
+                  className="absolute top-full left-0 mt-2 w-[300px] bg-white border border-gray-200 shadow-2xl rounded-xl"
+                  style={{ zIndex: 99999 }}
+                >
+                  <div className="max-h-[300px] overflow-y-auto py-2">
+                    {categoriesLoading ? (
+                      <div className="p-4 text-center text-sm text-gray-500">Cargando...</div>
+                    ) : normalizedCategories.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gray-500">No hay categorías disponibles</div>
+                    ) : (
+                      normalizedCategories
+                        .filter(cat => cat.isActive)
+                        .map((category) => (
+                          <button
+                            key={category.id}
+                            type="button"
+                            onClick={() => {
+                              setCategoryId(category.id);
+                              setIsCategoryOpen(false);
+                              if (onSearch) {
+                                onSearch({
+                                  serviceTypeId,
+                                  categoryId: category.id,
+                                  adUrl,
+                                });
+                              }
+                            }}
+                            className={`w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors ${
+                              categoryId === category.id ? 'bg-gray-100' : ''
+                            }`}
+                          >
+                            <div className="font-medium text-sm text-gray-900">{category.name}</div>
+                          </button>
+                        ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Ad URL - URL del Anuncio (Opcional) */}
             <div
@@ -423,7 +458,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             onMouseLeave={() => setHoveredTab(null)}
             className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
           >
-            <img src={cocheImg} alt="Coche" className="w-8 h-8 object-contain" />
+            <img src={getImageWithCache(cocheImgStatic, imageCacheKey)} alt="Coche" className="w-8 h-8 object-contain" />
             <span className={`text-base whitespace-nowrap ${activeTab === 'coches' ? 'font-semibold' : 'font-normal'}`}>
               Coches
             </span>
@@ -442,7 +477,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
           >
               <img
-                src={drawerCategoryReplacement?.image || casaImg}
+                src={drawerCategoryReplacement?.image || getImageWithCache(casaImgStatic, imageCacheKey)}
                 alt={drawerCategoryReplacement?.name || "Casa"}
               className="w-8 h-8 object-contain"
             />
@@ -499,7 +534,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
             className="flex flex-col items-center justify-center py-2 min-w-[40px] flex-1 bg-transparent border-none cursor-pointer"
           >
-            <img src={cocheImg} alt="Coche" className="w-12 h-12 object-contain mb-0.5" />
+            <img src={getImageWithCache(cocheImgStatic, imageCacheKey)} alt="Coche" className="w-12 h-12 object-contain mb-0.5" />
             <span className={`text-[10px] leading-3 text-center w-full ${activeTab === 'coches' ? 'font-semibold' : 'font-normal'}`}>
               Coches
                   </span>
@@ -513,7 +548,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             className="flex flex-col items-center justify-center py-2 min-w-[40px] flex-1 bg-transparent border-none cursor-pointer"
           >
               <img
-                src={drawerCategoryReplacement?.image || casaImg}
+                src={drawerCategoryReplacement?.image || getImageWithCache(casaImgStatic, imageCacheKey)}
                 alt={drawerCategoryReplacement?.name || "Casa"}
               className="w-12 h-12 object-contain mb-0.5"
             />
@@ -572,12 +607,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   focusable="false"
                   style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 3, overflow: 'visible' }}
                 >
-                  <path d="m6 6 20 20M26 6 6 26"></path>
-                </svg>
+                <path d="m6 6 20 20M26 6 6 26"></path>
+              </svg>
               </span>
             </button>
           </div>
-          
+
           <div className="md:hidden fixed inset-0 z-50 bg-gray-100 flex flex-col">
             <div className="flex-1 overflow-y-auto">
               <div className="pt-16 px-4 pb-4 space-y-3">
@@ -620,76 +655,84 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                   focusable="false"
                                   style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 4, overflow: 'visible' }}
                                 >
-                                  <path d="m20.666 20.666 10 10"></path>
-                                  <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
-                                </svg>
-                              </div>
-                <input 
+                                    <path d="m20.666 20.666 10 10"></path>
+                                    <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
+                                  </svg>
+                                </div>
+                                <input 
                                 id="categories-search-input"
-                                type="search"
+                                  type="search"
                   placeholder="Buscar categorías"
-                  value={categorySearchQuery}
-                  onChange={(e) => setCategorySearchQuery(e.target.value)}
+                                  value={categorySearchQuery}
+                                  onChange={(e) => setCategorySearchQuery(e.target.value)}
                                 className="flex-1 border-0 text-sm outline-none bg-transparent text-gray-900 placeholder:text-gray-400"
                                 style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
                                 autoComplete="off"
                                 autoCorrect="off"
                                 spellCheck="false"
                                 aria-label="Buscar categorías"
-                              />
-                            </label>
+                                />
+                              </label>
                           </div>
                         </form>
                       </div>
-              </div>
+                    </div>
 
                     {/* Contenido expandido al 100% */}
                     <div className="flex-1 overflow-y-auto px-4 py-4">
                       <div>
-                  {categoriesLoading ? (
+                        {categoriesLoading ? (
                           <div className="text-center py-4 text-sm text-gray-500" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
                             Cargando...
                           </div>
-                  ) : (
+                        ) : (
                     <div>
-                      {categories
-                        .filter(cat => cat.isActive)
-                              .filter(cat => {
-                                if (categorySearchQuery.trim()) {
-                                  return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
-                                }
-                                return true;
-                              })
+                              {normalizedCategories
+                                .filter(cat => cat.isActive)
+                                .filter(cat => {
+                                  if (categorySearchQuery.trim()) {
+                                    return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
+                                  }
+                                  return true;
+                                })
                         .map((category) => {
-                          const categoryImage = getCategoryImage(category.name);
-                          return (
-                            <button
-                              key={category.id}
-                              type="button"
+                                  const categoryImage = getCategoryImage(category.name);
+                                  return (
+                                    <button
+                                      key={category.id}
+                                      type="button"
                               onClick={() => {
                                 setCategoryId(category.id);
                                 setCategorySearchQuery('');
-                                      setExpandedAccordion(null);
-                                    }}
+                                setExpandedAccordion(null);
+                                // Llamar a onSearch para actualizar los filtros
+                                if (onSearch) {
+                                  onSearch({
+                                    serviceTypeId,
+                                    categoryId: category.id,
+                                    adUrl,
+                                  });
+                                }
+                              }}
                                     className={`w-full flex items-center gap-3 p-3 mb-2 rounded-lg text-left transition-colors border-2 ${
                                       categoryId === category.id 
                                         ? 'bg-gray-900 text-white border-gray-900' 
                                         : 'hover:bg-gray-50 border-transparent'
                                     }`}
-                            >
-                              {categoryImage ? (
-                                <img 
-                                  src={categoryImage}
+                                    >
+                                      {categoryImage ? (
+                                        <img 
+                                          src={categoryImage}
                                   alt=""
                                   className="w-12 h-12 rounded-lg object-contain"
-                                />
-                              ) : (
+                                        />
+                                      ) : (
                                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
                                   categoryId === category.id ? 'bg-white/20' : 'bg-gray-100'
                                 }`}>
                                   <FolderTree className={`w-6 h-6 ${categoryId === category.id ? 'text-white' : 'text-gray-400'}`} />
-                                </div>
-                              )}
+                                        </div>
+                                      )}
                               <div>
                                     <div className={`text-sm font-medium ${categoryId === category.id ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
                                   {category.name}
@@ -697,11 +740,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                       <div className={`text-xs ${categoryId === category.id ? 'text-white/80' : 'text-gray-500'}`} style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
                                   Explorar servicios
                                 </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      {categories
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                      {normalizedCategories
                         .filter(cat => cat.isActive)
                               .filter(cat => {
                                 if (categorySearchQuery.trim()) {
@@ -711,19 +754,20 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                               }).length === 0 && (
                               <div className="text-center py-4 text-sm text-gray-500" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
                           No se encontraron categorías
-                        </div>
+                            </div>
                       )}
-                    </div>
-                  )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="p-4">
+                    {/* Header fijo con título y buscador */}
+                    <div className="p-4 border-b border-gray-200">
                       <h2 
                         tabIndex={-1}
-                        className="text-2xl font-semibold text-gray-900"
+                        className="text-2xl font-semibold text-gray-900 mb-3"
                         style={{ 
                           fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                           lineHeight: '1.2',
@@ -732,50 +776,48 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                       >
                         <div className="font-semibold">
                           Categorías
-                        </div>
+                  </div>
                       </h2>
-            </div>
-
-                    <div className="flex-1 overflow-y-auto px-4 pb-4">
-                      <div className="mb-4">
-                        <form role="search" className="w-full">
-                          <div>
-                            <label 
-                              htmlFor="categories-search-input-collapsed"
-                              className="flex items-center w-full px-4 py-3 border border-gray-300 rounded-lg bg-white"
-                              style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+                      
+                      {/* Buscador fijo fuera del scroll */}
+                      <form role="search" className="w-full">
+                        <label 
+                          htmlFor="categories-search-input-collapsed"
+                          className="flex items-center w-full px-4 py-3 border border-gray-300 rounded-lg bg-white"
+                          style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+                        >
+                          <div className="flex items-center justify-center mr-3">
+                            <svg 
+                              viewBox="0 0 32 32" 
+                              xmlns="http://www.w3.org/2000/svg" 
+                              aria-hidden="true" 
+                              role="presentation" 
+                              focusable="false"
+                              style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 4, overflow: 'visible' }}
                             >
-                              <div className="flex items-center justify-center mr-3">
-                                <svg 
-                                  viewBox="0 0 32 32" 
-                                  xmlns="http://www.w3.org/2000/svg" 
-                                  aria-hidden="true" 
-                                  role="presentation" 
-                                  focusable="false"
-                                  style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 4, overflow: 'visible' }}
-                                >
-                                  <path d="m20.666 20.666 10 10"></path>
-                                  <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
-                                </svg>
-                              </div>
-                              <input
-                                id="categories-search-input-collapsed"
-                                type="search"
-                                placeholder="Buscar categorías"
-                                value={categorySearchQuery}
-                                onChange={(e) => setCategorySearchQuery(e.target.value)}
-                                className="flex-1 border-0 text-sm outline-none bg-transparent text-gray-900 placeholder:text-gray-400"
-                                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
-                                autoComplete="off"
-                                autoCorrect="off"
-                                spellCheck="false"
-                                aria-label="Buscar categorías"
-                              />
-                            </label>
+                              <path d="m20.666 20.666 10 10"></path>
+                              <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
+                            </svg>
                           </div>
-                        </form>
-                      </div>
+                          <input
+                            id="categories-search-input-collapsed"
+                            type="search"
+                            placeholder="Buscar categorías"
+                            value={categorySearchQuery}
+                            onChange={(e) => setCategorySearchQuery(e.target.value)}
+                            className="flex-1 border-0 text-sm outline-none bg-transparent text-gray-900 placeholder:text-gray-400"
+                            style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+                            autoComplete="off"
+                            autoCorrect="off"
+                            spellCheck="false"
+                            aria-label="Buscar categorías"
+                          />
+                        </label>
+                      </form>
+                    </div>
 
+                    {/* Lista de categorías con scroll */}
+                    <div className="flex-1 overflow-y-auto px-4 py-4">
                       <div>
                         {categoriesLoading ? (
                           <div className="text-center py-4 text-sm text-gray-500" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
@@ -783,7 +825,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                           </div>
                         ) : (
                           <div>
-                            {categories
+                            {normalizedCategories
                               .filter(cat => cat.isActive)
                               .filter(cat => {
                                 if (categorySearchQuery.trim()) {
@@ -800,6 +842,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                     onClick={() => {
                                       setCategoryId(category.id);
                                       setCategorySearchQuery('');
+                                      // Llamar a onSearch para actualizar los filtros
+                                      if (onSearch) {
+                                        onSearch({
+                                          serviceTypeId,
+                                          categoryId: category.id,
+                                          adUrl,
+                                        });
+                                      }
                                     }}
                                     className={`w-full flex items-center gap-3 p-3 mb-2 rounded-lg text-left transition-colors border-2 ${
                                       categoryId === category.id 
@@ -818,7 +868,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                         categoryId === category.id ? 'bg-white/20' : 'bg-gray-100'
                                       }`}>
                                         <FolderTree className={`w-6 h-6 ${categoryId === category.id ? 'text-white' : 'text-gray-400'}`} />
-                                      </div>
+                    </div>
                                     )}
                   <div>
                                       <div className={`text-sm font-medium ${categoryId === category.id ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
@@ -826,12 +876,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                     </div>
                                       <div className={`text-xs ${categoryId === category.id ? 'text-white/80' : 'text-gray-500'}`} style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
                                         Explorar servicios
-                    </div>
                   </div>
-                                  </button>
+                  </div>
+                </button>
                                 );
                               })}
-                            {categories
+                            {normalizedCategories
                               .filter(cat => cat.isActive)
                               .filter(cat => {
                                 if (categorySearchQuery.trim()) {
@@ -872,18 +922,18 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   className="w-full flex items-center justify-between p-4 bg-transparent border-none cursor-pointer"
                 >
                   <label className="text-xs font-semibold text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
-                    Tipo de servicio
+                      Tipo de servicio
                   </label>
                   <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${expandedAccordion === 'type' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
                 </button>
                 
                 {expandedAccordion === 'type' && (
                   <div className="px-4 pb-4">
-                    {serviceTypesLoading ? (
+                      {serviceTypesLoading ? (
                       <div className="text-center py-4 text-sm text-gray-500">Cargando...</div>
-                    ) : (
+                      ) : (
                       <div className="flex flex-col gap-2">
-                        {serviceTypes.map((st) => (
+                        {normalizedServiceTypes.map((st) => (
                           <button
                             key={st.id}
                             type="button"
@@ -891,6 +941,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                               e.preventDefault();
                               e.stopPropagation();
                               setServiceTypeId(st.id);
+                              // Llamar a onSearch para actualizar los filtros
+                              if (onSearch) {
+                                onSearch({
+                                  serviceTypeId: st.id,
+                                  categoryId,
+                                  adUrl,
+                                });
+                              }
                               // Mantener el desplegable abierto
                               setExpandedAccordion('type');
                             }}
@@ -913,8 +971,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                           </button>
                         ))}
                       </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
                 )}
               </div>
 
@@ -934,15 +992,15 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 
                 {expandedAccordion === 'url' && (
                   <div className="px-4 pb-4">
-                    <input
-                      type="text"
+                      <input
+                        type="text"
                       placeholder="Pega la URL aquí..."
-                      value={adUrl}
-                      onChange={(e) => setAdUrl(e.target.value)}
+                        value={adUrl}
+                        onChange={(e) => setAdUrl(e.target.value)}
                       className="w-full px-3 py-3 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
                       autoFocus
                     />
-                  </div>
+                    </div>
                 )}
               </div>
             </div>
@@ -1014,7 +1072,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               </div>
             ) : (
               <div className="flex flex-col">
-                {categories
+                {normalizedCategories
                   .filter(cat => {
                     if (cat.id === CATEGORIES.COCHES || cat.id === CATEGORIES.INMOBILIARIA) {
                       return false;
@@ -1071,7 +1129,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                     );
                   })}
                 
-                {categories
+                {normalizedCategories
                   .filter(cat => {
                     if (cat.id === CATEGORIES.COCHES || cat.id === CATEGORIES.INMOBILIARIA) return false;
                     if (categorySearchQuery.trim()) {

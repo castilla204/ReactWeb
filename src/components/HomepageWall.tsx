@@ -651,7 +651,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
 
   // Memoizar los parámetros de la query para evitar re-renderizados innecesarios
   const queryParams = useMemo(() => ({
-    categoryId, // ✅ OBLIGATORIO
+    categoryId,
     latitude,
     longitude,
     countryCode,

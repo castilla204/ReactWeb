@@ -31,9 +31,8 @@ const HomePage: React.FC = () => {
   }) => {
     setSearchFilters({
       ...searchData,
-      categoryId: searchData.categoryId || 1, // ✅ Asegurar que siempre tenga un valor (default: Coches)
+      categoryId: searchData.categoryId || 1,
     });
-    // NO hacer scroll automático - eliminado según solicitud del usuario
   };
 
   return (
