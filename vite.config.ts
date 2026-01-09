@@ -7,6 +7,12 @@ export default defineConfig({
     server: {
         host: true,
         port: 5173,
+        // Deshabilitar caché en desarrollo para que las imágenes se actualicen
+        headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+        },
         proxy: {
             '/api': {
                 target: 'http://localhost:7124', // URL del backend en desarrollo

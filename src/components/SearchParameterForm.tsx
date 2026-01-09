@@ -503,7 +503,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     }, [selectedService]);
     
     // ✅ Estado para controlar el modal (Drawer en móvil, Dialog en PC)
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const initialIsMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile); // abrir por defecto en móvil
+    const [drawerSnap, setDrawerSnap] = useState<number | string>(0.7); // Inicia a 70% (más de la mitad)
+    const drawerContentRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const [headerTop, setHeaderTop] = useState(143); // 64px (top) + 79px (height) por defecto
     
@@ -700,33 +703,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         services: services.map(s => ({ id: s.id, price: s.price, rating: s.averageRating }))
     });
     
-    // Ref para rastrear si ya se abrió el drawer para esta ubicación
-    const lastLocationRef = useRef<string>('');
-    const hasOpenedDrawerRef = useRef<boolean>(false);
-    
-    // Abrir drawer automáticamente cuando hay servicios disponibles en móvil (solo una vez por ubicación)
+    // Abrir drawer automáticamente cuando hay servicios disponibles en móvil
     useEffect(() => {
-        const locationKey = `${formData.latitude}-${formData.longitude}`;
-        const isMobile = window.innerWidth < 1024;
-        
-        if (
-            formData.latitude && 
-            formData.longitude && 
-            allServices.length > 0 && 
-            isMobile &&
-            locationKey !== lastLocationRef.current &&
-            !hasOpenedDrawerRef.current
-        ) {
-            lastLocationRef.current = locationKey;
-            hasOpenedDrawerRef.current = true;
-            // No abrir automáticamente, solo marcar que se puede abrir
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+        if (isMobile && allServices.length > 0 && !isLoadingServices) {
+            setIsDrawerOpen(true);
+            setDrawerSnap(0.7); // Abrir al 70%
         }
-        
-        // Reset cuando cambia la ubicación
-        if (locationKey !== lastLocationRef.current) {
-            hasOpenedDrawerRef.current = false;
-        }
-    }, [formData.latitude, formData.longitude, allServices.length]);
+    }, [allServices.length, isLoadingServices]);
     
     // Establecer posición inicial del drawer a mitad de página en la primera carga
     useEffect(() => {
@@ -1379,6 +1363,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     
                 {/* Mobile: Map View */}
                 <div className="lg:hidden flex-1 relative w-full flex flex-col">
+                        {/* Loading overlay mientras cargan los servicios */}
+                        {isLoadingServices && (
+                            <div className="absolute inset-0 bg-white z-[10000] flex items-center justify-center">
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                                    <p className="text-sm text-gray-600">Cargando servicios...</p>
+                                </div>
+                            </div>
+                        )}
                         {/* Header estilo Airbnb - Sticky - Igual que Airbnb móvil */}
                         <div 
                             id="mobile-search-header"
@@ -1546,13 +1539,23 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     ) : null}
                                 </div>
                                 
-                            {/* Floating Button - Solo visible cuando NO hay card seleccionada */}
+                            {/* Floating Button - Siempre visible cuando NO hay card seleccionada */}
                                 {formData.latitude && formData.longitude && !selectedService && (
-                                <div className="absolute bottom-[env(safe-area-inset-bottom,16px)] left-1/2 transform -translate-x-1/2 z-[100] pb-4">
+                                <div className="absolute bottom-[env(safe-area-inset-bottom,16px)] left-1/2 transform -translate-x-1/2 z-[9999] pb-4">
                                         <Button
-                                            onClick={() => setIsDrawerOpen(true)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (isDrawerOpen) {
+                                                    // Si está abierto, alternar entre 70% y 100%
+                                                    setDrawerSnap(drawerSnap === 1 ? 0.7 : 1);
+                                                } else {
+                                                    // Si está cerrado, abrir a 70%
+                                                    setIsDrawerOpen(true);
+                                                    setDrawerSnap(0.7);
+                                                }
+                                            }}
                                             size="lg"
-                                        className={`shadow-2xl border-2 h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base rounded-full font-semibold transition-all ${
+                                        className={`shadow-2xl border-2 h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base rounded-full font-semibold transition-all pointer-events-auto ${
                                                 services.length === 0 
                                                     ? 'bg-background/95 backdrop-blur-sm border-muted-foreground/30 text-muted-foreground' 
                                                     : 'bg-primary border-primary text-primary-foreground hover:bg-primary/90'
@@ -1565,7 +1568,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 : 'Ver resultados'
                                             }
                                         </Button>
-                                    </div>
+                                </div>
                                 )}
                             </>
                         )}
@@ -1964,9 +1967,19 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </div>
                 
                 {/* ResponsiveModal: Drawer en móvil, Dialog en PC */}
+                {console.log('📱 ResponsiveModal props:', { 
+                    isDrawerOpen, 
+                    servicesCount: services.length,
+                    snapPoints: [0.5, 1],
+                    activeSnapPoint: drawerSnap
+                })}
                 <ResponsiveModal
                     open={isDrawerOpen}
                     onOpenChange={handleDrawerOpenChange}
+                    snapPoints={[0.7, 1]}
+                    activeSnapPoint={drawerSnap}
+                    setActiveSnapPoint={setDrawerSnap}
+                    modal={false}
                     title={(() => {
                         // Contar solo los servicios que están en el drawer (excluyendo el seleccionado)
                         const drawerServicesCount = selectedService 
@@ -2048,7 +2061,29 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     </div>
                     
                     {/* Contenido con scroll */}
-                    <div className="flex-1 overflow-y-auto bg-white px-0 lg:px-4">
+                    <div 
+                        ref={drawerContentRef}
+                        className="flex-1 overflow-y-auto bg-white px-0 lg:px-4"
+                        onScroll={(e) => {
+                            const target = e.currentTarget;
+                            const isMobile = window.innerWidth < 1024;
+                            
+                            if (!isMobile) return;
+                            
+                            // Si hace scroll hacia abajo (más de 50px) y no está al 100%, expandir
+                            if (target.scrollTop > 50 && drawerSnap !== 1) {
+                                setDrawerSnap(1);
+                            }
+                            // Si vuelve arriba (menos de 20px) y está al 100%, volver a 70%
+                            else if (target.scrollTop < 20 && drawerSnap === 1) {
+                                setDrawerSnap(0.7);
+                            }
+                        }}
+                        style={{
+                            overscrollBehavior: 'contain',
+                            WebkitOverflowScrolling: 'touch'
+                        }}
+                    >
                         {/* Services List - Estilo Airbnb */}
                         {/* ✅ Excluir el servicio seleccionado del drawer - solo mostrar los demás */}
                         {(() => {
