@@ -627,7 +627,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 </span>
                 <span>·</span>
                 <span className="truncate">
-                  {selectedServiceType?.name || selectedCategory?.name || 'Tipo'}
+                  Categoría
                 </span>
               </div>
             </div>
