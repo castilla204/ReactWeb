@@ -3,41 +3,37 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
-import { HubConnectionBuilder, HubConnection, LogLevel, HttpTransportType } from '@microsoft/signalr';
 import { showToast } from '../lib/toast';
 import { getAuthToken } from '../lib/auth';
+import { supabase } from '../lib/supabase';
+import { RealtimeChannel } from '@supabase/supabase-js';
+import type { DBMessage, LegacyMessage, LegacyConversation, Deliverable } from '../types/chat.types';
 
 interface Message {
     id: number;
     conversationId: number;
-    senderId: number | null; // ✅ Nullable si usuario borró cuenta
+    senderId: number | null;
     content: string;
     sentAt: string;
     isRead: boolean;
     sender?: { name: string; $id?: string; $ref?: string };
-    senderName: string; // ✅ "[Usuario eliminado]" si senderId es null
+    senderName: string;
     locationLatitude?: string | null;
     locationLongitude?: string | null;
-    attachmentUrls?: string[]; // ✅ URLs de archivos adjuntos
+    attachmentUrls?: string[];
 }
 
 interface Conversation {
     id: number;
     searchHireId: number;
-    clientId: number | null; // ✅ Nullable si cliente borró cuenta
-    expertId: number | null; // ✅ Nullable si experto borró cuenta
+    clientId: number | null;
+    expertId: number | null;
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
-    messages: Message[]; // ✅ Todos los mensajes incluidos
+    messages: Message[];
     $id?: string;
     $ref?: string;
-}
-
-interface Deliverable {
-    searchHireId: number;
-    deliverableUrls: string[];
-    createdAt: string;
 }
 
 export const useChat = (searchId: number | null = null, searchHireId?: number) => {
@@ -45,31 +41,18 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
     const [newMessage, setNewMessage] = useState('');
-    const [connection, setConnection] = useState<HubConnection | null>(null);
-    const connectionRef = useRef<HubConnection | null>(null); // ✅ Ref para evitar dependencias problemáticas
+    const [isConnected, setIsConnected] = useState(false);
+    const channelRef = useRef<RealtimeChannel | null>(null);
     const failedMessageIds = useRef<Set<number>>(new Set());
     const lastDeliverableFetch = useRef<number>(0);
     const lastSearchHireId = useRef<number | null>(null);
-    
-    // ✅ Sincronizar ref con state
-    useEffect(() => {
-        connectionRef.current = connection;
-    }, [connection]);
 
     // Validate API_CONFIG.endpoints.chat.deliverable
     useEffect(() => {
-        console.log('[10:45 CEST] Validating API_CONFIG.endpoints.chat.deliverable:', API_CONFIG.endpoints.chat.deliverable);
+        console.log('[Supabase Chat] Validating API_CONFIG.endpoints.chat.deliverable:', API_CONFIG.endpoints.chat.deliverable);
         if (!API_CONFIG.endpoints.chat.deliverable) {
-            console.error('[10:45 CEST] API_CONFIG.endpoints.chat.deliverable is undefined');
+            console.error('[Supabase Chat] API_CONFIG.endpoints.chat.deliverable is undefined');
             showToast('error', 'Error de configuración: Endpoint de entregables no definido. Contacta al soporte.', 5000);
-            // Removed setNotifications call
-            /*
-                    type: 'error' as NotificationType,
-                    message: 'Error de configuraci�n: Endpoint de entregables no definido. Contacta al soporte.',
-                    duration: 5000,
-                },
-            ]);
-            */
         }
     }, []);
 
@@ -87,12 +70,12 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                 ? API_CONFIG.endpoints.chat.conversationBySearchHire(searchHireId!)
                 : `${API_CONFIG.endpoints.chat.conversation}?searchId=${searchId}`;
             
-            console.log(`[useChat] Fetching conversation for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}:`, identifier);
-            console.log(`[useChat] Endpoint:`, endpoint);
+            console.log(`[Supabase Chat] Fetching conversation for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}:`, identifier);
+            console.log(`[Supabase Chat] Endpoint:`, endpoint);
             try {
                 const response = await fetchApi<Conversation>(endpoint);
-                console.log('[10:45 CEST] Fetched conversation:', response);
-                console.log('[10:45 CEST] Conversation searchHireId:', response.searchHireId);
+                console.log('[Supabase Chat] Fetched conversation:', response);
+                console.log('[Supabase Chat] Conversation searchHireId:', response.searchHireId);
                 return {
                     ...response,
                     messages: response.messages.map((msg) => ({
@@ -102,20 +85,9 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     })),
                 };
             } catch (err: any) {
-                console.error('[10:45 CEST] Fetch conversation error:', err.message, err.response || err);
+                console.error('[Supabase Chat] Fetch conversation error:', err.message, err.response || err);
                 if (err.message === 'Search hire not found') {
                     showToast('error', 'No se encontró la conversación para este servicio. Verifica el ID del servicio.', 5000);
-                    /*
-                    setNotifications((prev) => [
-                        ...prev,
-                        {
-                            id: `conversation-error-${uuidv4()}`,
-                            type: 'error' as NotificationType,
-                            message: 'No se encontr� la conversaci�n para este servicio. Verifica el ID del servicio.',
-                            duration: 5000,
-                        },
-                    ]);
-                    */
                 }
                 throw err;
             }
@@ -128,24 +100,23 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
     const { data: deliverables, refetch: refetchDeliverables, isLoading: deliverablesLoading, error: deliverablesError } = useQuery<Deliverable, Error>({
         queryKey: ['deliverables', conversation?.searchHireId],
         queryFn: async () => {
-            console.log('[10:45 CEST] Fetching deliverables for searchHireId:', conversation?.searchHireId);
+            console.log('[Supabase Chat] Fetching deliverables for searchHireId:', conversation?.searchHireId);
             if (!conversation?.searchHireId) {
-                console.error('[10:45 CEST] SearchHireId not available for fetching deliverables');
+                console.error('[Supabase Chat] SearchHireId not available for fetching deliverables');
                 throw new Error('SearchHireId not available');
             }
             if (!API_CONFIG.endpoints.chat.deliverable) {
-                console.error('[10:45 CEST] Deliverable endpoint is undefined in API_CONFIG');
+                console.error('[Supabase Chat] Deliverable endpoint is undefined in API_CONFIG');
                 throw new Error('Deliverable endpoint not configured');
             }
             const deliverableEndpoint = API_CONFIG.endpoints.chat.deliverable(conversation.searchHireId);
-            console.log('[10:45 CEST] Deliverable endpoint:', deliverableEndpoint);
+            console.log('[Supabase Chat] Deliverable endpoint:', deliverableEndpoint);
             try {
                 const response = await fetchApi<{ message: string; deliverable?: Deliverable; deliverables?: any[] }>(deliverableEndpoint);
-                console.log('[10:45 CEST] Raw API response for deliverables:', JSON.stringify(response));
+                console.log('[Supabase Chat] Raw API response for deliverables:', JSON.stringify(response));
                 
-                // Handle case when API returns { message, deliverables: [] } (no deliverables found)
                 if (response.deliverables !== undefined) {
-                    console.log('[10:45 CEST] API returned deliverables array format:', response.deliverables);
+                    console.log('[Supabase Chat] API returned deliverables array format:', response.deliverables);
                     return {
                         searchHireId: conversation!.searchHireId,
                         deliverableUrls: Array.isArray(response.deliverables) ? 
@@ -154,9 +125,8 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     };
                 }
                 
-                // Handle case when API returns { message, deliverable: {...} } (deliverables found)
                 if (response.deliverable) {
-                    console.log('[10:45 CEST] API returned deliverable object format:', response.deliverable);
+                    console.log('[Supabase Chat] API returned deliverable object format:', response.deliverable);
                     return {
                         searchHireId: response.deliverable.searchHireId,
                         deliverableUrls: Array.isArray(response.deliverable.deliverableUrls) ? response.deliverable.deliverableUrls : [],
@@ -164,17 +134,16 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     };
                 }
                 
-                // Fallback - return empty deliverables
-                console.log('[10:45 CEST] Unexpected API response format, returning empty deliverables');
+                console.log('[Supabase Chat] Unexpected API response format, returning empty deliverables');
                 return {
                     searchHireId: conversation!.searchHireId,
                     deliverableUrls: [],
                     createdAt: new Date().toISOString(),
                 };
             } catch (err: any) {
-                console.error('[10:45 CEST] Error fetching deliverables:', err.message, err.response || err);
+                console.error('[Supabase Chat] Error fetching deliverables:', err.message, err.response || err);
                 if (err.response?.status === 404) {
-                    console.log('[10:45 CEST] No deliverables found (404), returning empty array');
+                    console.log('[Supabase Chat] No deliverables found (404), returning empty array');
                     return { 
                         searchHireId: conversation!.searchHireId, 
                         deliverableUrls: [], 
@@ -186,8 +155,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         },
         enabled: !!conversation?.searchHireId && !!API_CONFIG.endpoints.chat.deliverable,
         retry: (failureCount, err) => {
-            console.log(`[10:45 CEST] Deliverables query retry attempt ${failureCount}, error:`, err.message);
-            // Don't retry for specific cases that are not actual errors
+            console.log(`[Supabase Chat] Deliverables query retry attempt ${failureCount}, error:`, err.message);
             const noRetryConditions = [
                 '401',
                 'SearchHireId not available',
@@ -197,201 +165,177 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             const shouldNotRetry = noRetryConditions.some(condition => err.message.includes(condition));
             return failureCount < 3 && !shouldNotRetry;
         },
-        staleTime: 30000, // 30 seconds
-        gcTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 30000,
+        gcTime: 5 * 60 * 1000,
     });
 
-    // SignalR connection
-    const connectSignalR = useCallback(async () => {
-        if (!user || !conversation?.id || connection?.state === 'Connected' || connection?.state === 'Connecting') {
-            console.log('[10:45 CEST] Skipping SignalR connection:', {
+    // ==========================================
+    // 🔄 SUPABASE REALTIME CONNECTION
+    // ==========================================
+    
+    // Convertir mensaje de DB a formato de la aplicación
+    const convertDbMessageToMessage = useCallback((dbMessage: DBMessage): Message => {
+        return {
+            id: dbMessage.Id,
+            conversationId: dbMessage.ConversationId,
+            senderId: dbMessage.SenderId,
+            content: dbMessage.Content || '',
+            sentAt: dbMessage.SentAt,
+            isRead: dbMessage.IsRead,
+            senderName: '[Usuario]',
+            locationLatitude: dbMessage.LocationLatitude,
+            locationLongitude: dbMessage.LocationLongitude,
+            attachmentUrls: []
+        };
+    }, []);
+
+    // Conectar a Supabase Realtime
+    const connectSupabase = useCallback(async () => {
+        if (!user || !conversation?.id) {
+            console.log('[Supabase Chat] Skipping Supabase connection:', {
                 userExists: !!user,
                 conversationId: conversation?.id,
-                connectionState: connection?.state,
             });
             return;
         }
 
-        if (connection) {
-            console.log('[10:45 CEST] Stopping existing SignalR connection');
-            if (conversation?.id) {
-                try {
-                    await connection.invoke('LeaveConversation', conversation.id);
-                } catch (err) {
-                    console.warn('[10:45 CEST] Failed to leave previous conversation before reconnecting:', err);
-                }
-            }
-            await connection.stop();
-            setConnection(null);
+        // Limpiar conexión anterior si existe
+        if (channelRef.current) {
+            console.log('[Supabase Chat] Removing existing channel');
+            await supabase.removeChannel(channelRef.current);
+            channelRef.current = null;
         }
 
-        const token = getAuthToken();
-        if (!token) {
-            console.error('[10:45 CEST] No token available for SignalR');
-            showToast('error', 'No se pudo conectar al chat en tiempo real. Verifica tu sesión.', 5000);
-            /*
-            setNotifications((prev) => [
-                ...prev,
+        const channelName = `chat:${conversation.id}:${Date.now()}`;
+        console.log(`📡 [Supabase Chat] Conectando al canal ${channelName}`);
+
+        const channel = supabase
+            .channel(channelName)
+            // Escuchar nuevos mensajes (INSERT)
+            .on(
+                'postgres_changes',
                 {
-                    id: `signalr-error-${uuidv4()}`,
-                    type: 'error' as NotificationType,
-                    message: 'No se pudo conectar al chat en tiempo real. Verifica tu sesi�n.',
-                    duration: 5000,
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'Messages',
+                    filter: `ConversationId=eq.${conversation.id}`
                 },
-            ]);
-            */
-            return;
-        }
+                (payload) => {
+                    console.log('📩 [Supabase Chat] Nuevo mensaje recibido:', payload.new);
+                    const newMsg = convertDbMessageToMessage(payload.new as DBMessage);
+                    
+                    // Actualizar cache de React Query
+                    const updateQueryData = (queryKey: any[]) => {
+                        queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
+                            if (!prev) {
+                                console.log('[Supabase Chat] No previous conversation, creating new with message');
+                                return conversation ? { ...conversation, messages: [newMsg] } : undefined;
+                            }
+                            // Evitar duplicados
+                            if (prev.messages.some(m => m.id === newMsg.id)) {
+                                return prev;
+                            }
+                            const updatedMessages = [
+                                ...prev.messages,
+                                newMsg,
+                            ].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
+                            console.log('[Supabase Chat] Updated messages:', updatedMessages.length);
+                            return {
+                                ...prev,
+                                messages: updatedMessages,
+                            };
+                        });
+                    };
 
-        const transport = window.WebSocket ? HttpTransportType.WebSockets : HttpTransportType.ServerSentEvents;
+                    if (useSearchHireEndpoint && searchHireId) {
+                        updateQueryData(['conversation', 'searchHire', searchHireId]);
+                    }
+                    if (searchId) {
+                        updateQueryData(['conversation', searchId]);
+                    }
 
-        const conn = new HubConnectionBuilder()
-            .withUrl(`${API_CONFIG.baseUrl}/chatHub?conversationId=${conversation.id}`, {
-                accessTokenFactory: () => token,
-                transport,
-                withCredentials: true,
-            })
-            .configureLogging(LogLevel.Debug)
-            .withAutomaticReconnect({
-                nextRetryDelayInMilliseconds: (retryContext) => {
-                    const delay = Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 30000);
-                    console.log(`[10:45 CEST] Reconnect attempt ${retryContext.previousRetryCount + 1}, delay: ${delay}ms`);
-                    return delay;
-                },
-            })
-            .build();
-
-        conn.onclose((error) => {
-            console.log('[10:45 CEST] SignalR connection closed:', error ? error.message : 'No error, attempting reconnect...');
-            setConnection(null);
-        });
-
-        conn.onreconnected((connectionId) => {
-            console.log('[10:45 CEST] SignalR reconnected, new Connection ID:', connectionId);
-            if (conversation?.id) {
-                conn.invoke('JoinConversation', conversation.id).catch((err) =>
-                    console.error('[10:45 CEST] Failed to rejoin conversation:', err)
-                );
-            }
-        });
-
-        conn.on('ReceiveMessage', (message: any) => {
-            console.log('[10:45 CEST] 📨 Received SignalR message (raw):', {
-                message,
-                conversationId: conversation?.id,
-                userId: user?.id,
-                connectionId: conn.connectionId,
-            });
-            if (message && typeof message === 'object' && message.conversationId === conversation?.id) {
-                const typedMessage: Message = {
-                    id: message.id,
-                    conversationId: message.conversationId,
-                    senderId: message.senderId,
-                    content: message.content || '',
-                    sentAt: message.sentAt,
-                    isRead: message.isRead,
-                    sender: message.sender,
-                    senderName: message.senderName,
-                    locationLatitude: message.locationLatitude,
-                    locationLongitude: message.locationLongitude,
-                    attachmentUrls: Array.isArray(message.attachmentUrls) ? message.attachmentUrls : [],
-                };
-                console.log('[10:45 CEST] Updating conversation state with new message:', typedMessage);
-                
-                // Update both query keys (searchId and searchHireId) to ensure consistency
-                const updateQueryData = (queryKey: any[]) => {
-                    queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
-                        if (!prev) {
-                            console.log('[10:45 CEST] No previous conversation, creating new with message');
-                            return conversation ? { ...conversation, messages: [typedMessage] } : undefined;
+                    // Scroll al final
+                    setTimeout(() => {
+                        const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                        if (chatContainer) {
+                            chatContainer.scrollTop = chatContainer.scrollHeight;
                         }
-                        const updatedMessages = [
-                            ...prev.messages.filter((m) => m.id !== typedMessage.id),
-                            { ...typedMessage, conversation: undefined },
-                        ].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
-                        console.log('[10:45 CEST] Updated messages:', updatedMessages);
-                        return {
-                            ...prev,
-                            messages: updatedMessages,
-                        };
-                    });
-                };
-                
-                // Update both possible query keys
-                if (useSearchHireEndpoint && searchHireId) {
-                    updateQueryData(['conversation', 'searchHire', searchHireId]);
+                    }, 100);
                 }
-                if (searchId) {
-                    updateQueryData(['conversation', searchId]);
+            )
+            // Escuchar actualizaciones (UPDATE - para isRead, etc.)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'Messages',
+                    filter: `ConversationId=eq.${conversation.id}`
+                },
+                (payload) => {
+                    console.log('✏️ [Supabase Chat] Mensaje actualizado:', payload.new);
+                    const updatedMsg = convertDbMessageToMessage(payload.new as DBMessage);
+                    
+                    const updateQueryData = (queryKey: any[]) => {
+                        queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
+                            if (!prev) return prev;
+                            return {
+                                ...prev,
+                                messages: prev.messages.map((msg) =>
+                                    msg.id === updatedMsg.id ? { ...msg, ...updatedMsg } : msg
+                                ),
+                            };
+                        });
+                    };
+
+                    if (useSearchHireEndpoint && searchHireId) {
+                        updateQueryData(['conversation', 'searchHire', searchHireId]);
+                    }
+                    if (searchId) {
+                        updateQueryData(['conversation', searchId]);
+                    }
                 }
-                
-                // Invalidate queries to trigger re-render and scroll
-                queryClient.invalidateQueries({ queryKey: ['conversation'] });
-                
-                // Trigger scroll to bottom after message is added
-                setTimeout(() => {
-                    const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
-                    if (chatContainer) {
-                        chatContainer.scrollTop = chatContainer.scrollHeight;
-                    }
-                    // Also try the messages container directly
-                    const messagesContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
-                    if (messagesContainer) {
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    }
-                }, 100);
-            } else {
-                console.log('[10:45 CEST] Message ignored: not for this conversation', {
-                    receivedConversationId: message?.conversationId,
-                    currentConversationId: conversation?.id,
-                });
-            }
-        });
-
-        conn.on('MessageRead', (messageId: number) => {
-            console.log(`[10:45 CEST] ✅ Message ${messageId} marked as read via SignalR`);
-            // ✅ Usar la queryKey correcta según si se usa searchHireId o searchId
-            const useSearchHire = !!searchHireId;
-            const conversationQueryKey = useSearchHire 
-                ? ['conversation', 'searchHire', searchHireId]
-                : ['conversation', searchId];
-            queryClient.setQueryData(conversationQueryKey, (prev: Conversation | undefined) => {
-                if (!prev) return prev;
-                return {
-                    ...prev,
-                    messages: prev.messages.map((msg) =>
-                        msg.id === messageId ? { ...msg, isRead: true, conversation: undefined } : msg
-                    ),
-                };
+            )
+            .subscribe((status) => {
+                console.log(`📡 [Supabase Chat] Estado de suscripción: ${status}`);
+                if (status === 'SUBSCRIBED') {
+                    setIsConnected(true);
+                    console.log('✅ [Supabase Chat] Conectado exitosamente');
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                    setIsConnected(false);
+                    console.error('❌ [Supabase Chat] Error de conexión');
+                    // Reintentar conexión después de 3 segundos
+                    setTimeout(() => {
+                        if (!channelRef.current || channelRef.current.state !== 'joined') {
+                            connectSupabase();
+                        }
+                    }, 3000);
+                }
             });
-        });
 
-        conn.on('ReceiveDeliverable', (deliverable: Deliverable) => {
-            console.log('[10:45 CEST] Received SignalR deliverable:', deliverable);
-            console.log('[10:45 CEST] Updating deliverables cache for searchHireId:', deliverable.searchHireId);
-            queryClient.setQueryData(['deliverables', deliverable.searchHireId], {
-                ...deliverable,
-                deliverableUrls: Array.isArray(deliverable.deliverableUrls) ? deliverable.deliverableUrls : [],
-            });
-            // No necesitamos refetch manual, el cache se actualiza automáticamente
-            lastDeliverableFetch.current = Date.now();
-        });
+        channelRef.current = channel;
+    }, [user?.id, conversation?.id, searchId, searchHireId, queryClient, convertDbMessageToMessage, useSearchHireEndpoint]);
 
-        try {
-            await conn.start();
-            console.log(`[10:45 CEST] SignalR connected for conversation ${conversation.id}, Connection ID: ${conn.connectionId}`);
-            await conn.invoke('JoinConversation', conversation.id);
-            console.log(`[10:45 CEST] Successfully joined conversation ${conversation.id}`);
-            setConnection(conn);
-            connectionRef.current = conn;
-        } catch (err) {
-            console.error('[10:45 CEST] SignalR connection error:', err);
-            showToast('error', 'Error al conectar con el chat en tiempo real. Reintentando...', 5000);
-            setTimeout(() => connectSignalR(), 1000);
+    // Efecto para conectar a Supabase cuando hay conversación
+    useEffect(() => {
+        if (conversation?.id && user?.id) {
+            console.log('[Supabase Chat] Initiating Supabase connection for conversation:', conversation.id);
+            connectSupabase();
         }
-        // ✅ Removido connection de dependencias - usar ref en su lugar
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id, conversation?.id, searchId, searchHireId, queryClient]);
+
+        return () => {
+            if (channelRef.current) {
+                console.log('[Supabase Chat] Cleaning up Supabase connection');
+                supabase.removeChannel(channelRef.current);
+                channelRef.current = null;
+                setIsConnected(false);
+            }
+        };
+    }, [conversation?.id, user?.id, connectSupabase]);
+
+    // ==========================================
+    // MUTATIONS
+    // ==========================================
 
     const sendMessageMutation = useMutation({
         mutationFn: async ({
@@ -404,7 +348,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             files: File[];
         }) => {
             if (!user || !conversation?.id) {
-                console.error('[10:45 CEST] Cannot send message: user or conversation not available', {
+                console.error('[Supabase Chat] Cannot send message: user or conversation not available', {
                     user,
                     conversationId: conversation?.id,
                 });
@@ -430,48 +374,53 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             formData.forEach((value, key) => {
                 formDataEntries[key] = value instanceof File ? { name: value.name, type: value.type, size: value.size } : value;
             });
-            console.log('[10:45 CEST] Sending message with FormData:', formDataEntries);
+            console.log('[Supabase Chat] Sending message with FormData:', formDataEntries);
             try {
                 const response = await fetchApi<Message>(API_CONFIG.endpoints.chat.message, {
                     method: 'POST',
                     body: formData,
                 });
-                console.log('[10:45 CEST] Message sent, response:', response);
+                console.log('[Supabase Chat] Message sent, response:', response);
                 return { ...response, conversation: undefined, attachmentUrls: Array.isArray(response.attachmentUrls) ? response.attachmentUrls : [] };
             } catch (err: any) {
-                console.error('[10:45 CEST] Message send error:', err.message, err.response || err);
+                console.error('[Supabase Chat] Message send error:', err.message, err.response || err);
                 let errorMessage = err.message || 'Failed to send message';
                 if (err.response?.status === 400) {
                     errorMessage = err.response.data?.message || 'Invalid request data';
                 } else if (err.response?.status === 404) {
-                    errorMessage = 'Conversaci�n no encontrada. Verifica el ID del servicio.';
+                    errorMessage = 'Conversación no encontrada. Verifica el ID del servicio.';
                 }
                 throw new Error(errorMessage);
             }
         },
         onSuccess: (message) => {
-            console.log('[10:45 CEST] Message sent successfully:', message);
+            console.log('[Supabase Chat] Message sent successfully:', message);
             
+            // El mensaje llegará por Supabase Realtime, pero lo agregamos inmediatamente
+            // para mejor UX (optimistic update)
             const updateQueryData = (queryKey: any[]) => {
                 queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
                     if (!prev && conversation) {
-                        console.log('[10:45 CEST] No previous conversation, using current conversation');
+                        console.log('[Supabase Chat] No previous conversation, using current conversation');
                         return { ...conversation, messages: [message] };
                     }
                     if (!prev) {
-                        console.warn('[10:45 CEST] No previous or current conversation, cannot update');
+                        console.warn('[Supabase Chat] No previous or current conversation, cannot update');
                         return undefined;
+                    }
+                    // Evitar duplicados
+                    if (prev.messages.some(m => m.id === message.id)) {
+                        return prev;
                     }
                     return {
                         ...prev,
-                        messages: [...prev.messages.filter((m) => m.id !== message.id), message].sort(
+                        messages: [...prev.messages, message].sort(
                             (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
                         ),
                     };
                 });
             };
             
-            // Update both possible query keys
             if (useSearchHireEndpoint && searchHireId) {
                 updateQueryData(['conversation', 'searchHire', searchHireId]);
             }
@@ -482,32 +431,16 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             setNewMessage('');
             showToast('success', 'Mensaje enviado con éxito.', 3000);
             
-            // Trigger scroll to bottom after message is sent
+            // Scroll al final
             setTimeout(() => {
                 const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
                 if (chatContainer) {
                     chatContainer.scrollTop = chatContainer.scrollHeight;
                 }
-                // Also try the messages container directly
-                const messagesContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
-                if (messagesContainer) {
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
             }, 100);
-            /*
-            setNotifications((prev) => [
-                ...prev,
-                {
-                    id: `message-success-${uuidv4()}`,
-                    type: 'success' as NotificationType,
-                    message: 'Mensaje enviado con �xito.',
-                    duration: 3000,
-                },
-            ]);
-            */
         },
         onError: (error: any, variables, context) => {
-            console.error('[10:45 CEST] Failed to send message:', error.message, error, { variables, context });
+            console.error('[Supabase Chat] Failed to send message:', error.message, error, { variables, context });
             showToast('error', `Error al enviar el mensaje: ${error.message || 'Error desconocido'}`, 5000);
             if (error.message.includes('400') || error.message.includes('404')) {
                 refetch();
@@ -517,43 +450,34 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
     const uploadDeliverableMutation = useMutation({
         mutationFn: async (files: File[]) => {
-            console.log('[10:45 CEST] Initiating deliverable upload for searchHireId:', conversation?.searchHireId);
+            console.log('[Supabase Chat] Initiating deliverable upload for searchHireId:', conversation?.searchHireId);
             if (!conversation?.searchHireId) {
-                console.error('[10:45 CEST] Cannot upload deliverable: searchHireId not available', { conversation });
+                console.error('[Supabase Chat] Cannot upload deliverable: searchHireId not available', { conversation });
                 throw new Error('SearchHireId not available');
             }
             if (!API_CONFIG.endpoints.chat.deliverable) {
-                console.error('[10:45 CEST] Deliverable endpoint is undefined in API_CONFIG');
+                console.error('[Supabase Chat] Deliverable endpoint is undefined in API_CONFIG');
                 throw new Error('Deliverable endpoint not configured');
             }
             const safeFiles = Array.isArray(files) ? files : [];
             if (safeFiles.length === 0) {
-                console.error('[10:45 CEST] No files provided for deliverable upload');
+                console.error('[Supabase Chat] No files provided for deliverable upload');
                 throw new Error('No files provided');
             }
             const formData = new FormData();
             safeFiles.forEach((file) => {
                 formData.append('Files', file, file.name);
             });
-            const formDataEntries: { [key: string]: any } = {};
-            formData.forEach((value, key) => {
-                formDataEntries[key] = value instanceof File ? { name: value.name, type: value.type, size: value.size } : value;
-            });
             const deliverableEndpoint = API_CONFIG.endpoints.chat.deliverable(conversation.searchHireId);
-            console.log(`[10:45 CEST] Uploading deliverable to: ${deliverableEndpoint}`, {
-                SearchHireId: conversation.searchHireId,
-                FormData: formDataEntries,
-            });
+            console.log(`[Supabase Chat] Uploading deliverable to: ${deliverableEndpoint}`);
             try {
                 const response = await fetchApi<{ message: string; deliverable?: Deliverable; deliverables?: any[] }>(deliverableEndpoint, {
                     method: 'POST',
                     body: formData,
                 });
-                console.log('[10:45 CEST] Deliverable uploaded, response:', response);
+                console.log('[Supabase Chat] Deliverable uploaded, response:', response);
                 
-                // Handle case when API returns { message, deliverable: {...} } (upload successful)
                 if (response.deliverable) {
-                    console.log('[10:45 CEST] Upload successful, deliverable object format:', response.deliverable);
                     return {
                         searchHireId: response.deliverable.searchHireId,
                         deliverableUrls: Array.isArray(response.deliverable.deliverableUrls) ? response.deliverable.deliverableUrls : [],
@@ -561,9 +485,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     };
                 }
                 
-                // Handle case when API returns { message, deliverables: [...] } (upload successful, different format)
                 if (response.deliverables !== undefined) {
-                    console.log('[10:45 CEST] Upload successful, deliverables array format:', response.deliverables);
                     return {
                         searchHireId: conversation!.searchHireId,
                         deliverableUrls: Array.isArray(response.deliverables) ? 
@@ -572,11 +494,9 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     };
                 }
                 
-                // Fallback
-                console.log('[10:45 CEST] Unexpected upload response format');
                 throw new Error('Unexpected response format from upload');
             } catch (err: any) {
-                console.error('[10:45 CEST] Deliverable upload error:', err.message, err.response || err);
+                console.error('[Supabase Chat] Deliverable upload error:', err.message, err.response || err);
                 let errorMessage = err.message || 'Failed to upload deliverable';
                 if (err.response?.status === 400) {
                     errorMessage = err.response.data?.message || 'Invalid request data';
@@ -587,21 +507,16 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             }
         },
         onSuccess: (deliverable) => {
-            console.log('[10:45 CEST] Deliverable uploaded successfully:', deliverable);
-            console.log('[10:45 CEST] Updating deliverables cache with URLs:', deliverable.deliverableUrls);
-            
-            // Invalidar múltiples queries relacionadas para asegurar que se actualice la UI
+            console.log('[Supabase Chat] Deliverable uploaded successfully:', deliverable);
             queryClient.invalidateQueries({ queryKey: ['deliverables', conversation?.searchHireId] });
             queryClient.invalidateQueries({ queryKey: ['searchDetails', searchId] });
             queryClient.invalidateQueries({ queryKey: ['searchDetailsOptimized', searchId] });
-            
-            // Actualizar el cache directamente para respuesta inmediata
-            queryClient.setQueryData(['deliverables', conversation?.searchHireId, API_CONFIG.endpoints.chat.deliverable], deliverable);
+            queryClient.setQueryData(['deliverables', conversation?.searchHireId], deliverable);
             lastDeliverableFetch.current = Date.now();
             showToast('success', 'Entregable subido con éxito.', 5000);
         },
         onError: (error: any) => {
-            console.error('[10:45 CEST] Failed to upload deliverable:', error.message);
+            console.error('[Supabase Chat] Failed to upload deliverable:', error.message);
             showToast('error', `Error al subir el entregable: ${error.message || 'Error desconocido'}`, 5000);
         },
     });
@@ -612,102 +527,36 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                 method: 'PUT',
             }),
         onSuccess: (_, messageId) => {
-            console.log('[10:45 CEST] ✅ Successfully marked message as read:', messageId);
-            // ✅ Usar la queryKey correcta según si se usa searchHireId o searchId
+            console.log('[Supabase Chat] ✅ Successfully marked message as read:', messageId);
             const conversationQueryKey = useSearchHireEndpoint 
                 ? ['conversation', 'searchHire', searchHireId]
                 : ['conversation', searchId];
             queryClient.setQueryData(conversationQueryKey, (prev: Conversation | undefined) => {
                 if (!prev) return prev;
-                // ✅ Solo actualizar si el mensaje realmente no está marcado como leído
                 const message = prev.messages.find(m => m.id === messageId);
                 if (message && message.isRead) {
-                    console.log('[10:45 CEST] Message already marked as read, skipping update:', messageId);
                     return prev;
                 }
                 return {
                     ...prev,
                     messages: prev.messages.map((msg) =>
-                        msg.id === messageId ? { ...msg, isRead: true, conversation: undefined } : msg
+                        msg.id === messageId ? { ...msg, isRead: true } : msg
                     ),
                 };
             });
             failedMessageIds.current.delete(messageId);
         },
         onError: (error: any, messageId) => {
-            console.error('[10:45 CEST] Failed to mark message as read:', error.message, { messageId });
+            console.error('[Supabase Chat] Failed to mark message as read:', error.message, { messageId });
             failedMessageIds.current.add(messageId);
             showToast('error', 'No se pudo marcar algunos mensajes como leídos. Por favor, intenta de nuevo más tarde.', 5000);
-            /*
-            setNotifications((prev) => {
-                const exists = prev.some((n) => n.id === `mark-read-error-${messageId}`);
-                if (exists) return prev;
-                return [
-                    ...prev,
-                    {
-                        id: `mark-read-error-${messageId}`,
-                        type: 'error' as NotificationType,
-                        message: 'No se pudo marcar algunos mensajes como le�dos. Por favor, intenta de nuevo m�s tarde.',
-                        duration: 5000,
-                    },
-                ];
-            });
-            */
         },
     });
-
-    // Trigger SignalR connection
-    useEffect(() => {
-        const currentConnection = connectionRef.current;
-        const shouldConnect = conversation?.id && user?.id && !currentConnection;
-        
-        if (shouldConnect) {
-            console.log('[10:45 CEST] Initiating SignalR connection for conversation:', conversation.id);
-            connectSignalR();
-        }
-
-        return () => {
-            const cleanupConnection = connectionRef.current;
-            if (cleanupConnection) {
-                console.log('[10:45 CEST] Cleaning up SignalR connection');
-                const currentConversationId = conversation?.id;
-                const state = cleanupConnection.state;
-                
-                // ✅ Verificar que la conexión esté en un estado válido antes de intentar limpiarla
-                if (state === 'Connected' || state === 'Connecting') {
-                    if (currentConversationId) {
-                        // Usar Promise.race para evitar esperar indefinidamente si la conexión está cerrando
-                        Promise.race([
-                            cleanupConnection.invoke('LeaveConversation', currentConversationId),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1000))
-                        ]).catch((err) => {
-                            // Ignorar errores si la conexión ya está cerrada
-                            if (err.message !== 'Invocation canceled due to the underlying connection being closed') {
-                                console.warn('[10:45 CEST] Failed to leave conversation gracefully:', err);
-                            }
-                        });
-                    }
-                    // Detener la conexión sin esperar
-                    cleanupConnection.stop().catch((err) => {
-                        // Ignorar errores si ya está cerrada
-                        if (!err.message?.includes('connection being closed')) {
-                            console.warn('[10:45 CEST] Error stopping connection:', err);
-                        }
-                    });
-                }
-                setConnection(null);
-                connectionRef.current = null;
-            }
-        };
-        // ✅ CRÍTICO: Removido connection?.state de dependencias - causaba re-renders infinitos
-        // Solo depender de conversation?.id y user?.id que son estables
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [conversation?.id, user?.id]);
 
     // ✅ Limpiar mensajes fallidos cuando cambia la conversación
     useEffect(() => {
         if (conversation?.id) {
-            console.log('[10:45 CEST] Conversation changed, clearing failed message IDs');
+            console.log('[Supabase Chat] Conversation changed, clearing failed message IDs');
             failedMessageIds.current.clear();
         }
     }, [conversation?.id]);
@@ -724,27 +573,25 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
     useEffect(() => {
         if (unreadMessageIds.length > 0) {
-            console.log('[10:45 CEST] Marking unread messages:', unreadMessageIds);
+            console.log('[Supabase Chat] Marking unread messages:', unreadMessageIds);
             unreadMessageIds.forEach((messageId) => {
                 markAsReadMutation.mutate(messageId);
             });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [unreadMessageIds.length]);
 
-    // Refetch deliverables only when searchHireId changes (but not on every render)
+    // Refetch deliverables when searchHireId changes
     useEffect(() => {
         if (conversation?.searchHireId && lastSearchHireId.current !== conversation.searchHireId) {
-            console.log('[10:45 CEST] searchHireId changed, refetching deliverables for searchHireId:', conversation.searchHireId);
+            console.log('[Supabase Chat] searchHireId changed, refetching deliverables');
             lastSearchHireId.current = conversation.searchHireId;
             lastDeliverableFetch.current = Date.now();
-            // La query se refetch automáticamente cuando cambia la queryKey
         }
     }, [conversation?.searchHireId]);
 
     // Debug deliverables cache
     useEffect(() => {
-        console.log('[10:45 CEST] Current deliverables cache state:', {
+        console.log('[Supabase Chat] Current deliverables cache state:', {
             deliverables,
             searchHireId: conversation?.searchHireId,
             deliverableUrls: deliverables?.deliverableUrls,
@@ -753,9 +600,8 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         });
     }, [deliverables, deliverablesLoading, deliverablesError, conversation?.searchHireId]);
 
-    // Memoize refetchDeliverables to prevent unnecessary re-renders
     const memoizedRefetchDeliverables = useCallback(() => {
-        console.log('[10:45 CEST] Manual refetch of deliverables requested');
+        console.log('[Supabase Chat] Manual refetch of deliverables requested');
         return refetchDeliverables();
     }, [refetchDeliverables]);
 
@@ -777,5 +623,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         uploadDeliverable: uploadDeliverableMutation.mutate,
         refetchDeliverables: memoizedRefetchDeliverables,
         isUploadingDeliverable: uploadDeliverableMutation.isPending,
+        // ✅ Nuevo: Estado de conexión Supabase
+        isConnected,
     };
 };
