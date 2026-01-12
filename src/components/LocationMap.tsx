@@ -116,15 +116,6 @@ export function LocationMap({
     isLoaded = false,
     expertCountry
 }: LocationMapProps) {
-    // ✅ LOGS DETALLADOS
-    console.log('🗺️ LocationMap - Props recibidas:', {
-        mapExpertsCount: mapExperts.length,
-        servicesCount: services.length,
-        selectedService,
-        isLoaded,
-        mapExperts: mapExperts,
-        services: services
-    });
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [selectedCountry, setSelectedCountry] = useState<string | null>(expertCountry || null);
     const [isLargeMobile, setIsLargeMobile] = useState(false);
@@ -178,12 +169,6 @@ export function LocationMap({
                     const boundsKey = `${northeast.lat().toFixed(4)},${northeast.lng().toFixed(4)},${southwest.lat().toFixed(4)},${southwest.lng().toFixed(4)},${zoom}`;
                     lastBoundsRef.current = boundsKey;
                     
-                    console.log('🗺️ Mapa cargado - llamando onBoundsChange inicial:', {
-                        northeast: { lat: northeast.lat(), lng: northeast.lng() },
-                        southwest: { lat: southwest.lat(), lng: southwest.lng() },
-                        zoom
-                    });
-                    
                     // Llamar inmediatamente sin debounce para la carga inicial
                     onBoundsChange({
                         northeast: { lat: northeast.lat(), lng: northeast.lng() },
@@ -218,12 +203,6 @@ export function LocationMap({
         }
         
         lastBoundsRef.current = boundsKey;
-        
-        console.log('🗺️ Mapa movido - llamando onBoundsChange:', {
-            northeast: { lat: northeast.lat(), lng: northeast.lng() },
-            southwest: { lat: southwest.lat(), lng: southwest.lng() },
-            zoom
-        });
         
         onBoundsChange({
             northeast: { lat: northeast.lat(), lng: northeast.lng() },
@@ -408,18 +387,8 @@ export function LocationMap({
         }
         
         if (mapExperts.length === 0) {
-            console.log('⚠️ LocationMap: No hay expertos para mostrar marcadores');
             return [];
         }
-        
-        console.log('✅ LocationMap: Creando marcadores para', mapExperts.length, 'expertos');
-        console.log('📍 Primer experto:', mapExperts[0] ? {
-            id: mapExperts[0].id,
-            name: mapExperts[0].name,
-            latitude: mapExperts[0].latitude,
-            longitude: mapExperts[0].longitude,
-            price: mapExperts[0].price
-        } : 'Ninguno');
         
         // Obtener zoom actual del mapa
         const currentZoom = map?.getZoom() || 10;
@@ -427,22 +396,11 @@ export function LocationMap({
         // Log comentado para evitar spam en consola
         // console.log('✅ LocationMap - Creando marcadores para', mapExperts.length, 'expertos');
 
-        const markers = mapExperts.map((expert, index) => {
+        const markers = mapExperts.map((expert) => {
             const expertLat = parseFloat(expert.latitude);
             const expertLng = parseFloat(expert.longitude);
 
-            console.log(`🔍 LocationMap - Procesando experto ${index + 1}/${mapExperts.length}:`, {
-                id: expert.id,
-                name: expert.name,
-                latitude: expert.latitude,
-                longitude: expert.longitude,
-                expertLat,
-                expertLng,
-                isValid: !isNaN(expertLat) && !isNaN(expertLng)
-            });
-
             if (isNaN(expertLat) || isNaN(expertLng)) {
-                console.warn('⚠️ Marcador inválido - coordenadas NaN:', expert);
                 return null;
             }
 
@@ -524,16 +482,6 @@ export function LocationMap({
                 ? (matchingService.id || (matchingService as any).Id)
                 : expert.id;
             
-            // Log para debuggear el matching
-            console.log('🎯 Marcador creado:', {
-                expertId: expert.id,
-                expertName: expert.name,
-                expertPrice: expert.price,
-                matchingServiceId: matchingService ? (matchingService.id || (matchingService as any).Id) : null,
-                matchingServicePrice: matchingService ? (matchingService.price ?? (matchingService as any).Price) : null,
-                finalPrice: priceValue,
-                finalServiceId: serviceId
-            });
             const priceInEuros = Math.round(priceValue);
             const priceText = priceInEuros > 0 ? `${priceInEuros} €` : 'Consultar';
             const isSelected = selectedService === serviceId;
@@ -584,14 +532,6 @@ export function LocationMap({
             // });
 
             const handleMarkerClick = (e: google.maps.MapMouseEvent) => {
-                console.log('🖱️ Click en marcador:', { 
-                    expertId: expert.id, 
-                    serviceId: serviceId, 
-                    matchingService: !!matchingService,
-                    matchingServiceId: matchingService?.id,
-                    matchingServiceDetails: matchingService ? { id: matchingService.id, expertProfileId: matchingService.expertProfileId } : null
-                });
-                
                 // Prevenir que el evento se propague al mapa - CRÍTICO para móvil
                 if (e) {
                     if (typeof e.stop === 'function') {
@@ -624,17 +564,16 @@ export function LocationMap({
                 
                 // Si no hay matchingService o no tiene ID válido, buscar por coordenadas
                 if (!serviceToSelect && services.length > 0) {
-                    const expertLat = parseFloat(expert.latitude);
-                    const expertLng = parseFloat(expert.longitude);
+                    const expertLatVal = parseFloat(expert.latitude);
+                    const expertLngVal = parseFloat(expert.longitude);
                     
-                    if (!isNaN(expertLat) && !isNaN(expertLng)) {
-                        // Buscar el servicio más cercano por coordenadas
+                    if (!isNaN(expertLatVal) && !isNaN(expertLngVal)) {
                         let closestService: typeof services[0] | null = null;
                         let closestDistance = Infinity;
                         
                         services.forEach(s => {
-                            const serviceId = s.id || (s as any).Id;
-                            if (!serviceId || serviceId === undefined || serviceId === null) return;
+                            const sId = s.id || (s as any).Id;
+                            if (!sId) return;
                             
                             const serviceLat = parseFloat(
                                 s.expert?.latitude?.toString() || 
@@ -651,13 +590,11 @@ export function LocationMap({
                             
                             if (isNaN(serviceLat) || isNaN(serviceLng)) return;
                             
-                            // Calcular distancia euclidiana
                             const distance = Math.sqrt(
-                                Math.pow(expertLat - serviceLat, 2) + 
-                                Math.pow(expertLng - serviceLng, 2)
+                                Math.pow(expertLatVal - serviceLat, 2) + 
+                                Math.pow(expertLngVal - serviceLng, 2)
                             );
                             
-                            // Si está dentro de un margen razonable (aproximadamente 1km) y es el más cercano
                             if (distance < 0.01 && distance < closestDistance) {
                                 closestDistance = distance;
                                 closestService = s;
@@ -670,28 +607,16 @@ export function LocationMap({
                     }
                 }
                 
-                // Determinar el ID a seleccionar (puede ser id o Id)
                 let serviceIdToSelect: number | undefined = undefined;
                 
                 if (serviceToSelect) {
                     serviceIdToSelect = serviceToSelect.id || (serviceToSelect as any).Id;
                 } else if (expert.id) {
-                    // Intentar usar expert.id como fallback
                     serviceIdToSelect = typeof expert.id === 'number' ? expert.id : undefined;
                 }
                 
-                console.log('🖱️ Seleccionando servicio:', { 
-                    serviceIdToSelect, 
-                    serviceToSelectId: serviceToSelect?.id,
-                    expertId: expert.id,
-                    hasOnServiceSelect: !!onServiceSelect
-                });
-                
                 if (serviceIdToSelect !== undefined && serviceIdToSelect !== null && onServiceSelect) {
-                    console.log('✅ Llamando a onServiceSelect con:', serviceIdToSelect);
                     onServiceSelect(serviceIdToSelect);
-                } else {
-                    console.error('❌ No se pudo determinar un serviceId válido para seleccionar');
                 }
             };
 
@@ -700,16 +625,10 @@ export function LocationMap({
                     key={`price-${expert.id}-${markerKey}-${isSelected ? 'selected' : 'unselected'}`}
                     position={{ lat: finalLat, lng: finalLng }}
                     onLoad={(marker) => {
-                        console.log('🔧 Marker onLoad llamado:', { expertId: expert.id, marker: !!marker });
-                        // Guardar referencia al marcador nativo
                         if (marker) {
                             markerRefs.current.set(expert.id, marker);
                             
-                            // Agregar listener nativo de Google Maps
-                            console.log('🔧 Agregando listener nativo al marcador:', expert.id);
                             const listener = google.maps.event.addListener(marker, 'click', (e: google.maps.MapMouseEvent) => {
-                                console.log('🖱️ Marker click (Google Maps native):', { expertId: expert.id, serviceId: serviceId, hasOnServiceSelect: !!onServiceSelect });
-                                
                                 // CRÍTICO: Detener propagación inmediatamente
                                 if (e) {
                                     if (typeof e.stop === 'function') {
@@ -738,15 +657,10 @@ export function LocationMap({
                                 }, 0);
                             });
                             
-                            // Guardar el listener para poder limpiarlo después
                             (marker as any)._clickListener = listener;
-                            console.log('✅ Listener agregado correctamente al marcador:', expert.id);
-                        } else {
-                            console.error('❌ Marker onLoad recibió null o undefined');
                         }
                     }}
                     onClick={(e) => {
-                        console.log('🖱️ Marker onClick event (React):', { expertId: expert.id, serviceId: serviceId, hasOnServiceSelect: !!onServiceSelect });
                         // Detener propagación del evento
                         if (e) {
                             if (typeof e.stop === 'function') {
