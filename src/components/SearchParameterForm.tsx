@@ -393,9 +393,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [isDrawerVisible, setIsDrawerVisible] = useState(false); // Controla la visibilidad
     
     // ✅ SnapPoints nativos de vaul - Solo 2 posiciones para máxima fluidez
-    // colapsado (25%) y expandido (97% - casi toda la pantalla)
-    const SNAP_POINTS = [0.25, 0.97] as const;
-    const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0.25);
+    // inicial (50% - mitad de pantalla) y expandido (1 - toda la pantalla, tocando el topbar)
+    const SNAP_POINTS = [0.5, 1] as const;
+    const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0.5);
     
     const drawerContentRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
@@ -514,8 +514,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
         if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible) {
             setIsDrawerVisible(true);
-            // Empezar en el snapPoint colapsado (0.25 = 25%)
-            setActiveSnapPoint(0.25);
+            // Empezar en el snapPoint inicial (0.5 = 50%)
+            setActiveSnapPoint(0.5);
         }
     }, [allServices.length, isLoadingServices, isDrawerVisible]);
     
@@ -1261,11 +1261,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 if (isDrawerOpen) {
                                                     // Si está abierto, alternar entre expandido y colapsado
                                                     // Usar snapPoints nativos de vaul (números decimales)
-                                                    setActiveSnapPoint(activeSnapPoint === 0.97 ? 0.25 : 0.97);
+                                                    setActiveSnapPoint(activeSnapPoint === 1 ? 0.5 : 1);
                                                 } else {
                                                     // Si está cerrado, abrir expandido
                                                     setIsDrawerOpen(true);
-                                                    setActiveSnapPoint(0.97);
+                                                    setActiveSnapPoint(1);
                                                 }
                                             }}
                                             size="lg"
@@ -1776,8 +1776,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         style={{
                             overscrollBehavior: 'contain',
                             WebkitOverflowScrolling: 'touch',
-                            // Altura máxima para asegurar que el scroll funcione (97vh menos header del drawer ~80px)
-                            maxHeight: 'calc(97vh - 80px)',
+                            // Altura máxima para asegurar que el scroll funcione (100vh menos header del drawer ~80px)
+                            maxHeight: 'calc(100vh - 80px)',
                         }}
                     >
                         {/* Services List - Estilo Airbnb */}
