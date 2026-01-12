@@ -1,9 +1,8 @@
 import * as React from "react"
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "./drawer"
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, DrawerHandle } from "./drawer"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "./dialog"
 import { useWindowSize } from "../../hooks/useWindowSize"
 import { X } from "lucide-react"
-import { Button } from "./button"
 import { cn } from "../../lib/utils"
 
 interface ResponsiveModalProps {
@@ -22,11 +21,14 @@ interface ResponsiveModalProps {
   noHandle?: boolean
   mobileBreakpoint?: number
   snapPoints?: (number | string)[]
-  activeSnapPoint?: number | string
-  setActiveSnapPoint?: (snapPoint: number | string) => void
+  activeSnapPoint?: number | string | null
+  setActiveSnapPoint?: (snapPoint: number | string | null) => void
   modal?: boolean
   dismissible?: boolean
-  drawerHeight?: string // Altura personalizada del drawer (ej: '60vh', '400px')
+  drawerHeight?: string
+  fadeFromIndex?: number
+  handleOnly?: boolean
+  snapToSequentialPoint?: boolean
 }
 
 export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
@@ -50,38 +52,31 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   modal = true,
   dismissible = true,
   drawerHeight,
+  fadeFromIndex,
+  handleOnly = false,
+  snapToSequentialPoint = true,
 }) => {
   const { width } = useWindowSize()
   
-  // ✅ FORZAR detección en cada render usando window.innerWidth directamente
-  // Esto asegura que siempre use el valor actual, no un valor en caché
+  // Detectar si es móvil
   const isMobile = React.useMemo(() => {
     if (typeof window !== 'undefined') {
-      const currentWidth = window.innerWidth
-      const isMobileValue = currentWidth < mobileBreakpoint
-      console.log('🖥️ ResponsiveModal - Render check:', {
-        open,
-        windowWidth: currentWidth,
-        hookWidth: width,
-        mobileBreakpoint,
-        isMobile: isMobileValue,
-        willShow: isMobileValue ? 'Drawer ✅' : 'Dialog ✅',
-        snapPoints,
-        activeSnapPoint
-      })
-      return isMobileValue
+      return window.innerWidth < mobileBreakpoint
     }
-    // Si no hay window, usar el hook como respaldo
     if (width > 0) {
       return width < mobileBreakpoint
     }
-    // Por defecto, asumir desktop (no móvil)
     return false
-  }, [width, mobileBreakpoint, open, snapPoints, activeSnapPoint])
+  }, [width, mobileBreakpoint])
 
   if (isMobile) {
-    // Usar Drawer en móvil - Con altura controlada por CSS
-    const height = drawerHeight || (snapPoints ? '100vh' : '350px');
+    // Calcular la altura máxima basada en el último snapPoint
+    // Si hay snapPoints, el último define la altura máxima (ej: 0.85 = 85vh)
+    const maxSnapPoint = snapPoints && snapPoints.length > 0 
+      ? Math.max(...snapPoints.map(sp => typeof sp === 'number' ? sp : parseFloat(sp as string) || 0))
+      : 1;
+    const maxHeightVh = `${maxSnapPoint * 100}vh`;
+    const height = drawerHeight || (snapPoints ? maxHeightVh : '350px');
     
     return (
       <Drawer 
@@ -92,17 +87,24 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         setActiveSnapPoint={setActiveSnapPoint}
         modal={modal}
         dismissible={dismissible}
+        fadeFromIndex={fadeFromIndex}
+        handleOnly={handleOnly}
+        snapToSequentialPoint={snapToSequentialPoint}
       >
         <DrawerContent
-          className={cn("rounded-t-2xl w-full !max-w-full shadow-lg border-t border-gray-200 bg-white transition-all duration-300", className, drawerClassName)}
+          className={cn(
+            "rounded-t-[16px] w-full !max-w-full shadow-[0_-4px_24px_rgba(0,0,0,0.12)] border-0 bg-white",
+            "focus:outline-none focus-visible:outline-none",
+            className, 
+            drawerClassName
+          )}
           style={{ 
             ...style, 
             ...drawerStyle,
             width: '100%',
             maxWidth: '100%',
-            height: height,
-            maxHeight: height,
-            // Asegurar que el drawer tenga un z-index alto cuando no hay overlay
+            // Limitar la altura máxima al último snapPoint para evitar que suba más
+            maxHeight: maxHeightVh,
             zIndex: noOverlay ? (drawerStyle?.zIndex || style?.zIndex || 10000) : (drawerStyle?.zIndex || style?.zIndex || 9998)
           }}
           noOverlay={noOverlay}
@@ -114,6 +116,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             className="flex flex-col bg-white" 
             style={{ 
               height: '100%', 
+              maxHeight: '100%',
               display: 'flex', 
               flexDirection: 'column',
               overflow: 'hidden'
@@ -126,7 +129,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
     )
   }
 
-  // Usar Dialog (popup) en PC - Mismo estilo que AccountSettingsModal
+  // Usar Dialog (popup) en PC
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -164,4 +167,3 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
     </Dialog>
   )
 }
-

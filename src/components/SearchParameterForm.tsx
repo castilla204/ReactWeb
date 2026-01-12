@@ -391,43 +391,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     // En móvil, iniciar abierto pero invisible hasta que carguen los servicios
     const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile);
     const [isDrawerVisible, setIsDrawerVisible] = useState(false); // Controla la visibilidad
-    // Estado para controlar la altura del drawer de forma fluida
-    const [drawerHeight, setDrawerHeight] = useState(60); // En vh (60-95)
-    // Altura máxima del drawer (hasta el topbar, no más)
-    const topbarHeight = 73; // px - altura del topbar
-    const maxDrawerHeight = typeof window !== 'undefined' 
-        ? Math.floor(((window.innerHeight - topbarHeight) / window.innerHeight) * 100) 
-        : 90; // En vh
-    const lastScrollTop = useRef(0); // Para detectar dirección del scroll
-    const touchStartY = useRef(0); // Para seguir el touch
+    
+    // ✅ SnapPoints nativos de vaul - Solo 2 posiciones para máxima fluidez
+    // colapsado (25%) y expandido (97% - casi toda la pantalla)
+    const SNAP_POINTS = [0.25, 0.97] as const;
+    const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0.25);
+    
     const drawerContentRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
-    const [headerTop, setHeaderTop] = useState(143); // 64px (top) + 79px (height) por defecto
     
-    // Estado para controlar si es la primera carga y la posición inicial del drawer
-    const [isFirstLoad, setIsFirstLoad] = useState(true);
-    const [drawerTopPosition, setDrawerTopPosition] = useState<number | null>(null);
-    
-    // Calcular dinámicamente la posición del header
-    useEffect(() => {
-        const calculateHeaderPosition = () => {
-            if (headerRef.current) {
-                const rect = headerRef.current.getBoundingClientRect();
-                const top = rect.top;
-                const height = rect.height;
-                setHeaderTop(top + height);
-            }
-        };
-        
-        calculateHeaderPosition();
-        window.addEventListener('resize', calculateHeaderPosition);
-        window.addEventListener('scroll', calculateHeaderPosition);
-        
-        return () => {
-            window.removeEventListener('resize', calculateHeaderPosition);
-            window.removeEventListener('scroll', calculateHeaderPosition);
-        };
-    }, []);
     const [filters, setFilters] = useState({
         priceRange: [0, 100000] as [number, number], // [min, max] en euros - rango amplio para servicios premium
         rating: 0 as number, // Mínimo de estrellas (0-5)
@@ -450,14 +422,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     });
    
     // ✅ OPTIMIZADO: Cargar marcadores ultra ligeros para el mapa
-    // Usar el nuevo endpoint map-markers que es mucho más rápido
-    console.log('🔍 SearchParameterForm - Llamando useMapMarkers:', {
-        selectedCategory,
-        serviceTypeId,
-        hasMapBounds: !!mapBounds,
-        mapBounds: mapBounds
-    });
-    
     const { markers: mapMarkers, loading: markersLoading } = useMapMarkers(
         selectedCategory,
         serviceTypeId,
@@ -485,16 +449,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     }));
     
     // ✅ Para servicios completos, usar useMapSidebar cuando sea necesario
-    // Por ahora, mantener servicesFromBounds vacío ya que los marcadores son ligeros
     const servicesFromBounds: any[] = [];
-    
-    // ✅ LOGS DETALLADOS
-    console.log('🔍 SearchParameterForm - useMapMarkers retornó:', {
-        mapMarkersCount: mapMarkers.length,
-        mapExpertsCount: mapExperts.length,
-        servicesFromBoundsCount: servicesFromBounds.length,
-        markersLoading
-    });
     
     // Handler para cuando cambian los bounds del mapa
     // ✅ Mejorado: Se ejecuta inmediatamente para cargar datos al mismo tiempo que el mapa
@@ -505,35 +460,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         // Actualizar bounds inmediatamente para que useMapExperts pueda cargar datos
         setMapBounds(bounds);
         setMapZoom(zoom);
-        
-        console.log('🔍 SearchParameterForm - handleBoundsChange llamado:', {
-            bounds,
-            zoom,
-            timestamp: new Date().toISOString()
-        });
     }, []);
    
     // ✅ Combinar servicios: de bounds (cuando se mueve el mapa) o de ubicación (cuando hay locationRange)
-    // Priorizar servicios de bounds si existen, sino usar los de ubicación
-    console.log('🔍 SearchParameterForm - Servicios disponibles:', {
-        servicesFromBounds: servicesFromBounds.length,
-        allServices: allServices.length,
-        hasMapBounds: !!mapBounds,
-        servicesFromBoundsData: servicesFromBounds,
-        allServicesData: allServices
-    });
-    
-    // ✅ SIEMPRE usar servicesFromBounds si hay bounds, incluso si está vacío (para evitar usar allServices que puede estar vacío)
     const allServicesCombined = mapBounds 
         ? servicesFromBounds 
         : allServices;
-    
-    console.log('🔍 SearchParameterForm - allServicesCombined:', {
-        count: allServicesCombined.length,
-        data: allServicesCombined
-    });
-    
-    console.log('🔍 SearchParameterForm - allServicesCombined:', allServicesCombined.length, allServicesCombined);
     
     // ✅ Reordenar servicios: el seleccionado aparece primero (como en Airbnb)
     // ✅ IMPORTANTE: El servicio seleccionado NO aparece en el drawer, solo en la Floating Card
@@ -565,131 +497,28 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     }, [allServicesCombined, selectedService]);
    
     // Aplicar filtros a servicios (después de reordenar)
-    console.log('🔍 SearchParameterForm - Antes de filtrar:', {
-        reorderedServicesCount: reorderedServices.length,
-        filters: filters,
-        reorderedServices: reorderedServices.map(s => ({ id: s.id, price: s.price, rating: s.averageRating }))
-    });
-    
     const services = reorderedServices.filter(service => {
-        // El precio viene directamente en euros
         const price = service.price || 0;
         const priceInRange = price >= filters.priceRange[0] && price <= filters.priceRange[1];
-        
-        if (!priceInRange) {
-            console.log(`🔍 SearchParameterForm: Service ${service.id} filtrado por precio - price: ${price}, range: [${filters.priceRange[0]}, ${filters.priceRange[1]}]`);
-            return false;
-        }
+        if (!priceInRange) return false;
         
         const rating = service.averageRating || 0;
         const ratingPassed = rating >= filters.rating;
-        
-        if (!ratingPassed) {
-            console.log(`🔍 SearchParameterForm: Service ${service.id} filtrado por rating - rating: ${rating}, minRating: ${filters.rating}`);
-            return false;
-        }
+        if (!ratingPassed) return false;
         
         return true;
     });
     
-    console.log('🔍 SearchParameterForm - Después de filtrar:', {
-        servicesCount: services.length,
-        services: services.map(s => ({ id: s.id, price: s.price, rating: s.averageRating }))
-    });
-    
-    // Mostrar drawer cuando hay servicios disponibles en móvil (ya está abierto, solo lo hacemos visible)
+    // Mostrar drawer cuando hay servicios disponibles en móvil
     useEffect(() => {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
         if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible) {
-            console.log('✅ Mostrando drawer (ya posicionado)');
             setIsDrawerVisible(true);
-            setDrawerHeight(60);
+            // Empezar en el snapPoint colapsado (0.25 = 25%)
+            setActiveSnapPoint(0.25);
         }
     }, [allServices.length, isLoadingServices, isDrawerVisible]);
     
-    // Establecer posición inicial del drawer a mitad de página en la primera carga
-    useEffect(() => {
-        if (isFirstLoad && isDrawerOpen && typeof window !== 'undefined') {
-            const isMobile = window.innerWidth < 1024;
-            if (isMobile) {
-                // Calcular posición a mitad de página (50% del viewport height)
-                const midPagePosition = window.innerHeight * 0.5;
-                setDrawerTopPosition(midPagePosition);
-            }
-        }
-    }, [isFirstLoad, isDrawerOpen]);
-    
-    // Detectar cuando el usuario interactúa con el drawer para permitir que vaya hasta arriba
-    useEffect(() => {
-        if (!isDrawerOpen || !isFirstLoad || typeof window === 'undefined') return;
-        
-        const isMobile = window.innerWidth < 1024;
-        if (!isMobile) return;
-        
-        const midPagePosition = window.innerHeight * 0.5;
-        
-        // Función para permitir que el drawer vaya hasta arriba
-        const allowFullHeight = () => {
-            if (isFirstLoad) {
-                setIsFirstLoad(false);
-                setDrawerTopPosition(null);
-            }
-        };
-        
-        // Detectar cuando el usuario interactúa con el drawer
-        // Buscar el elemento del drawer después de que se renderice
-        const findAndSetupDrawer = () => {
-            // Buscar el drawer usando varios selectores posibles
-            const drawerSelectors = [
-                '[data-vaul-drawer]',
-                '[data-vaul-drawer-wrapper]',
-                '.p1mcn102', // Clase específica mencionada por el usuario
-                '[role="dialog"]'
-            ];
-            
-            let drawerElement: HTMLElement | null = null;
-            for (const selector of drawerSelectors) {
-                const element = document.querySelector(selector) as HTMLElement;
-                if (element) {
-                    drawerElement = element;
-                    break;
-                }
-            }
-            
-            if (drawerElement) {
-                // Escuchar eventos de interacción en el drawer
-                const handleInteraction = () => {
-                    allowFullHeight();
-                };
-                
-                // Escuchar eventos de touch y mouse
-                drawerElement.addEventListener('touchstart', handleInteraction, { once: true });
-                drawerElement.addEventListener('mousedown', handleInteraction, { once: true });
-                
-                // También verificar periódicamente si el drawer se ha movido
-                const checkInterval = setInterval(() => {
-                    const rect = drawerElement!.getBoundingClientRect();
-                    // Si el drawer se ha movido hacia arriba desde su posición inicial
-                    if (rect.top < midPagePosition - 30) {
-                        allowFullHeight();
-                        clearInterval(checkInterval);
-                    }
-                }, 100);
-                
-                // Limpiar después de 10 segundos si no hay interacción
-                setTimeout(() => {
-                    clearInterval(checkInterval);
-                }, 10000);
-            }
-        };
-        
-        // Esperar a que el drawer se renderice
-        const timeoutId = setTimeout(findAndSetupDrawer, 300);
-        
-        return () => {
-            clearTimeout(timeoutId);
-        };
-    }, [isDrawerOpen, isFirstLoad]);
     
     // Detectar cuando el usuario interactúa con el drawer (arrastra o abre manualmente)
     const handleDrawerOpenChange = (open: boolean) => {
@@ -963,7 +792,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const handleMapClick = (e: google.maps.MapMouseEvent) => {
         // ✅ Si el drawer está abierto, cerrarlo
         if (isDrawerOpen && isDrawerVisible) {
-            console.log('🗺️ Click en mapa - cerrando drawer');
             setIsDrawerOpen(false);
             setIsDrawerVisible(false);
             return;
@@ -971,7 +799,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         
         // ✅ Si hay una card abierta, solo cerrarla y deseleccionar, NO mover el mapa
         if (selectedService) {
-            console.log('🗺️ Click en mapa - cerrando card (sin mover mapa)');
             setSelectedService(null);
             return; // Salir temprano para no cambiar la ubicación
         }
@@ -1012,11 +839,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const sidebarRef = useRef<HTMLDivElement>(null);
     
     const handleServiceSelect = (serviceId: number | undefined | null) => {
-        console.log('🎯 handleServiceSelect llamado con:', { serviceId, servicesCount: services.length, currentSelected: selectedService });
         
         // Si serviceId es 0, null o undefined, cerrar la card (deseleccionar)
         if (serviceId === 0 || serviceId === null || serviceId === undefined) {
-            console.log('❌ Cerrando card - deseleccionando servicio');
             setSelectedService(null);
             return;
         }
@@ -1027,23 +852,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             return;
         }
         
-        // ✅ INTERCAMBIO: Si hay un servicio seleccionado (inmobiliaria), intercambiarlo con el nuevo
-        if (selectedService && selectedService !== serviceId) {
-            console.log('🔄 Intercambiando servicios:', { 
-                servicioAnterior: selectedService, 
-                servicioNuevo: serviceId 
-            });
-            // El servicio anterior (inmobiliaria) se moverá automáticamente al drawer
-            // porque la lista de servicios excluye el selectedService
-        }
-        
         // ✅ Actualizar el estado para que el marcador cambie de color y se muestre la card flotante
-        console.log('✅ Actualizando selectedService a:', serviceId);
         setSelectedService(serviceId);
-        
-        // Verificar que el servicio existe
-        const serviceExists = services.find(s => s.id === serviceId || (s as any).Id === serviceId);
-        console.log('🔍 Servicio encontrado:', { serviceExists: !!serviceExists, serviceId });
         
         // ✅ Hacer scroll al principio del sidebar para mostrar la card seleccionada (solo en desktop)
         if (sidebarRef.current) {
@@ -1450,11 +1260,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 e.stopPropagation();
                                                 if (isDrawerOpen) {
                                                     // Si está abierto, alternar entre expandido y colapsado
-                                                    setDrawerHeight(drawerHeight > 80 ? 60 : maxDrawerHeight);
+                                                    // Usar snapPoints nativos de vaul (números decimales)
+                                                    setActiveSnapPoint(activeSnapPoint === 0.97 ? 0.25 : 0.97);
                                                 } else {
-                                                    // Si está cerrado, abrir colapsado
+                                                    // Si está cerrado, abrir expandido
                                                     setIsDrawerOpen(true);
-                                                    setDrawerHeight(60);
+                                                    setActiveSnapPoint(0.97);
                                                 }
                                             }}
                                             size="lg"
@@ -1868,35 +1679,23 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     </div>
                 </div>
                 
-                {/* Overlay para cerrar el drawer al hacer clic fuera - Solo móvil */}
-                {isDrawerOpen && isDrawerVisible && (
-                    <div 
-                        className="lg:hidden fixed inset-0 z-[9999]"
-                        style={{ 
-                            backgroundColor: 'transparent',
-                            pointerEvents: 'auto'
-                        }}
-                        onClick={() => {
-                            console.log('🗺️ Click en overlay - cerrando drawer');
-                            setIsDrawerOpen(false);
-                            setIsDrawerVisible(false);
-                        }}
-                    />
-                )}
                 
-                {/* ResponsiveModal: Drawer en móvil, Dialog en PC */}
+                {/* ResponsiveModal: Drawer en móvil con snapPoints nativos, Dialog en PC */}
                 <ResponsiveModal
                     open={isDrawerOpen}
                     onOpenChange={handleDrawerOpenChange}
                     modal={false}
-                    dismissible={false}
-                    drawerHeight={`${drawerHeight}vh`}
+                    dismissible={true}
+                    // ✅ NUEVO: SnapPoints nativos de vaul para fluidez estilo Google Maps/Airbnb
+                    snapPoints={SNAP_POINTS as unknown as (number | string)[]}
+                    activeSnapPoint={activeSnapPoint}
+                    setActiveSnapPoint={setActiveSnapPoint}
+                    fadeFromIndex={0}
                     style={{
                         opacity: isDrawerVisible ? 1 : 0,
                         pointerEvents: isDrawerVisible ? 'auto' : 'none'
                     }}
                     title={(() => {
-                        // Contar solo los servicios que están en el drawer (excluyendo el seleccionado)
                         const drawerServicesCount = selectedService 
                             ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
                             : services.length;
@@ -1904,21 +1703,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio' : 'servicios'}` 
                             : 'Sin servicios';
                     })()}
-                    drawerClassName="lg:hidden flex flex-col bg-white outline-none border-0 shadow-none rounded-none"
+                    drawerClassName="lg:hidden flex flex-col bg-white outline-none border-0 rounded-t-[16px] shadow-[0_-4px_24px_rgba(0,0,0,0.12)]"
                     dialogClassName="max-w-4xl max-h-[90vh] flex flex-col"
                     drawerStyle={{ 
                         bottom: '0',
                         zIndex: 10000,
-                        height: `${drawerHeight}vh`,
-                        maxHeight: `${drawerHeight}vh`,
                         position: 'fixed',
                         backgroundColor: 'white',
-                        borderTopLeftRadius: '12px',
-                        borderTopRightRadius: '12px',
-                        borderBottomLeftRadius: '0',
-                        borderBottomRightRadius: '0',
-                        transition: 'none', // Sin transición para seguir el dedo en tiempo real
-                        willChange: 'height'
+                        // Vaul manejará la altura con snapPoints
                     }}
                     dialogStyle={{
                         maxHeight: '90vh',
@@ -1929,47 +1721,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         maxWidth: '1200px'
                     }}
                     noOverlay={true}
-                    noHandle={true}
+                    noHandle={false}
                 >
-                    {/* Handle draggable para cerrar - Solo móvil */}
+                    {/* Header con contador estilo Airbnb - Solo en móvil - ARRASTRABLE */}
                     <div 
-                        className="lg:hidden w-full py-2 flex justify-center cursor-grab active:cursor-grabbing bg-white"
-                        style={{ borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}
-                        onTouchStart={(e) => {
-                            touchStartY.current = e.touches[0].clientY;
-                        }}
-                        onTouchMove={(e) => {
-                            const touchY = e.touches[0].clientY;
-                            const deltaY = touchStartY.current - touchY;
-                            
-                            // Si arrastra hacia abajo más de 50px, cerrar
-                            if (deltaY < -50) {
-                                setIsDrawerOpen(false);
-                                setIsDrawerVisible(false);
-                            } else if (deltaY < 0) {
-                                // Reducir altura mientras arrastra hacia abajo
-                                const newHeight = Math.max(40, 60 + (deltaY / 5));
-                                setDrawerHeight(Math.round(newHeight));
-                            }
-                        }}
-                        onTouchEnd={() => {
-                            // Si la altura es muy baja, cerrar. Si no, restaurar
-                            if (drawerHeight < 50) {
-                                setIsDrawerOpen(false);
-                                setIsDrawerVisible(false);
-                            } else {
-                                setDrawerHeight(60);
-                            }
-                        }}
+                        className="lg:hidden px-6 py-3 bg-white border-b border-gray-100 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none"
+                        style={{ zIndex: 10001 }}
+                        data-vaul-no-drag="false"
                     >
-                        <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
-                    </div>
-                    {/* Header con contador estilo Airbnb - Solo en móvil */}
-                    <div className="lg:hidden px-6 py-3 bg-white border-b border-gray-100 flex-shrink-0" style={{ zIndex: 10001 }}>
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-gray-900">
+                            <h2 className="text-lg font-semibold text-gray-900 select-none">
                                 {(() => {
-                                    // Contar solo los servicios que están en el drawer (excluyendo el seleccionado)
                                     const drawerServicesCount = selectedService 
                                         ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
                                         : services.length;
@@ -1979,7 +1741,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 })()}
                             </h2>
                             <button
-                                onClick={() => setIsDrawerOpen(false)}
+                                onClick={() => {
+                                    setIsDrawerOpen(false);
+                                    setIsDrawerVisible(false);
+                                }}
                                 className="p-2 -mr-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100"
                                 aria-label="Cerrar"
                             >
@@ -2008,62 +1773,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     <div 
                         ref={drawerContentRef}
                         className="flex-1 overflow-y-auto bg-white px-0 lg:px-4"
-                        onTouchStart={(e) => {
-                            touchStartY.current = e.touches[0].clientY;
-                        }}
-                        onTouchMove={(e) => {
-                            const isMobile = window.innerWidth < 1024;
-                            if (!isMobile) return;
-                            
-                            const touchY = e.touches[0].clientY;
-                            const deltaY = touchStartY.current - touchY; // Positivo = arrastrando hacia arriba
-                            const target = e.currentTarget;
-                            
-                            // Si está en el tope (scrollTop = 0) y arrastra hacia abajo, cerrar
-                            if (target.scrollTop <= 0 && deltaY < -30) {
-                                setIsDrawerOpen(false);
-                                setIsDrawerVisible(false);
-                                return;
-                            }
-                            
-                            // Calcular altura basada en el scroll y el touch (máximo hasta el topbar)
-                            const scrollPercent = Math.min(target.scrollTop / 100, 1);
-                            const heightRange = maxDrawerHeight - 60; // Rango de expansión
-                            const newHeight = Math.max(40, Math.min(maxDrawerHeight, 60 + (scrollPercent * heightRange)));
-                            setDrawerHeight(Math.round(newHeight));
-                        }}
-                        onScroll={(e) => {
-                            const target = e.currentTarget;
-                            const isMobile = window.innerWidth < 1024;
-                            
-                            if (!isMobile) return;
-                            
-                            // Detectar dirección del scroll
-                            const scrollingDown = target.scrollTop > lastScrollTop.current;
-                            lastScrollTop.current = target.scrollTop;
-                            
-                            // Si está arriba del todo y hace scroll hacia arriba, cerrar
-                            if (target.scrollTop <= 0 && !scrollingDown && drawerHeight <= 60) {
-                                // El usuario está intentando hacer scroll hacia arriba pero ya está arriba
-                                // Esto se maneja en onTouchMove
-                            }
-                            
-                            // Calcular altura del drawer basada en el scroll (máximo hasta el topbar)
-                            const scrollPercent = Math.min(target.scrollTop / 100, 1);
-                            const heightRange = maxDrawerHeight - 60;
-                            const newHeight = 60 + (scrollPercent * heightRange);
-                            setDrawerHeight(Math.round(newHeight));
-                        }}
                         style={{
-                            overscrollBehavior: 'none',
+                            overscrollBehavior: 'contain',
                             WebkitOverflowScrolling: 'touch',
-                            touchAction: 'pan-y'
+                            // Altura máxima para asegurar que el scroll funcione (97vh menos header del drawer ~80px)
+                            maxHeight: 'calc(97vh - 80px)',
                         }}
                     >
                         {/* Services List - Estilo Airbnb */}
-                        {/* ✅ Excluir el servicio seleccionado del drawer - solo mostrar los demás */}
                         {(() => {
-                            // Filtrar servicios para excluir el seleccionado (que está en la Floating Card)
                             const drawerServices = services.filter(service => {
                                 const serviceId = service.id || (service as any).Id;
                                 return serviceId !== selectedService;
@@ -2084,16 +1802,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     onSelect={handleServiceSelect}
                                                 />
                                             ))}
-                                </div>
-                            ) : (
-                                <div className="py-12 text-center">
-                                    <p className="text-sm text-gray-500">
-                                        {selectedService 
-                                            ? 'El servicio seleccionado está en la tarjeta flotante' 
-                                            : 'No hay servicios disponibles'}
-                                    </p>
-                                </div>
-                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="py-12 text-center">
+                                            <p className="text-sm text-gray-500">
+                                                {selectedService 
+                                                    ? 'El servicio seleccionado está en la tarjeta flotante' 
+                                                    : 'No hay servicios disponibles'}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })()}

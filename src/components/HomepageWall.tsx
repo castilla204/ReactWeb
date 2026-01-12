@@ -5,7 +5,6 @@ import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } fro
 import { Star, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from './Footer';
-import { getCountryName } from '../utils/countries';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -33,23 +32,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const isMobile = useIsMobile();
-
-  // Debug: Log del servicio para verificar datos
-  useEffect(() => {
-    console.log('🎴 ServiceCard - Servicio renderizado:', {
-      id: service.id,
-      serviceTypeName: service.serviceTypeName,
-      serviceTypeDescription: service.serviceTypeDescription,
-      hasDescription: !!service.serviceTypeDescription,
-      categoryName: service.categoryName,
-      price: service.price,
-      imageUrls: service.imageUrls,
-      imageUrlsLength: service.imageUrls?.length || 0,
-      expert: service.expert?.user?.name,
-      averageRating: service.averageRating,
-      isMobile,
-    });
-  }, [service, isMobile]);
 
   const handleCardClick = () => {
     // Navegar a la página de detalle del servicio primero
@@ -318,7 +300,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
             <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName}</div>
           </div>
 
-          {/* Segunda fila: Horario · Precio */}
+          {/* Segunda fila: Ciudad · Horario · Valoración */}
           <div
             className="flex items-center overflow-hidden"
             style={{
@@ -332,13 +314,32 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
             }}
           >
             <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
+              {service.expert?.city && (
+                <>
+                  <span className="truncate">{service.expert.city}</span>
+                  <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
+                </>
+              )}
               <span className="truncate">{availabilityInfo}</span>
               <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-              <span>{price}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Star 
+                  className="flex-shrink-0" 
+                  style={{ 
+                    width: '12px', 
+                    height: '12px', 
+                    fill: '#222222', 
+                    color: '#222222',
+                  }} 
+                />
+                <span>
+                  {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'}
+                </span>
+              </span>
             </div>
           </div>
 
-          {/* Tercera fila: Media de valoración */}
+          {/* Tercera fila: Precio */}
           <div
             className="flex items-center overflow-hidden"
             style={{
@@ -350,20 +351,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
               textAlign: 'left',
             }}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <Star 
-                className="flex-shrink-0" 
-                style={{ 
-                  width: '12px', 
-                  height: '12px', 
-                  fill: '#222222', 
-                  color: '#222222',
-                }} 
-              />
-              <span>
-                {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'}
-              </span>
-            </span>
+            <span>{price}</span>
           </div>
         </div>
       </div>
@@ -652,22 +640,8 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
     );
   }
 
-  console.log('📊 HomepageWall - Renderizando con secciones:', {
-    sectionsCount: sections.length,
-    sections: sections.map(s => ({ title: s.title, servicesCount: s.services.length }))
-  });
-
   // ✅ Función para convertir SearchServiceHomepageDto (PascalCase) a SearchServiceDetailDto (camelCase)
   const mapServiceToDetail = (service: SearchServiceHomepageDto): SearchServiceDetailDto => {
-    // Debug: Verificar si la descripción viene del backend
-    if (service.ServiceTypeDescription) {
-      console.log('📝 HomepageWall - Descripción encontrada:', {
-        serviceId: service.Id,
-        serviceTypeName: service.ServiceTypeName,
-        description: service.ServiceTypeDescription
-      });
-    }
-    
     return {
       id: service.Id,
       categoryId: service.CategoryId,
@@ -692,6 +666,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
         },
         reviews: [],
         country: service.Expert.Country,
+        city: service.Expert.City || null, // ✅ NUEVO: Mapear City del backend
         // ✅ NUEVO: Mapear Availability del backend a currentAvailability
         currentAvailability: service.Expert.Availability ? {
           id: 0, // No disponible en homepage DTO

@@ -34,6 +34,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../lib/toast';
 import { authService } from '../services/authService';
+import { getCountryName } from '../utils/countries';
 
 interface ServiceReviewPageProps {
     serviceId: number;
@@ -621,7 +622,21 @@ export function ServiceReviewPage({
                             {/* Ubicación y tipo centrados */}
                             <div className="mb-3">
                                 <h2 className="text-[15px] text-gray-600 font-normal leading-[1.4]">
-                                    {finalService?.serviceTypeName || 'Servicio'} en {finalService?.expert?.country === 'ES' ? 'España' : finalService?.expert?.country || 'España'}
+                                    {(() => {
+                                        const city = finalService?.expert?.city;
+                                        const country = finalService?.expert?.country;
+                                        const countryName = country ? getCountryName(country) : '';
+                                        
+                                        const locationParts: string[] = [];
+                                        if (city) locationParts.push(city);
+                                        if (countryName) locationParts.push(countryName);
+                                        
+                                        const location = locationParts.length > 0 
+                                            ? locationParts.join(', ')
+                                            : (countryName || 'España');
+                                        
+                                        return `${finalService?.serviceTypeName || 'Servicio'} en ${location}`;
+                                    })()}
                                 </h2>
                             </div>
                             
@@ -675,6 +690,27 @@ export function ServiceReviewPage({
                                             </>
                                         )}
                                     </ol>
+                                    {/* Ubicación del experto */}
+                                    {(finalService?.expert?.city || finalService?.expert?.country) && (
+                                        <div className="flex items-center gap-1.5 mt-2">
+                                            <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                            <span className="text-[14px] text-gray-600">
+                                                {(() => {
+                                                    const city = finalService?.expert?.city;
+                                                    const country = finalService?.expert?.country;
+                                                    const countryName = country ? getCountryName(country) : '';
+                                                    
+                                                    const locationParts: string[] = [];
+                                                    if (city) locationParts.push(city);
+                                                    if (countryName) locationParts.push(countryName);
+                                                    
+                                                    return locationParts.length > 0 
+                                                        ? locationParts.join(', ')
+                                                        : (countryName || '');
+                                                })()}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1448,6 +1484,30 @@ export function ServiceReviewPage({
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
                                     <span>Anfitrión: <span className="text-gray-900 font-medium">{finalExpertName}</span></span>
+                                    {/* Ubicación del experto */}
+                                    {(finalService?.expert?.city || finalService?.expert?.country) && (
+                                        <>
+                                            <span>·</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                                <span>
+                                                    {(() => {
+                                                        const city = finalService?.expert?.city;
+                                                        const country = finalService?.expert?.country;
+                                                        const countryName = country ? getCountryName(country) : '';
+                                                        
+                                                        const locationParts: string[] = [];
+                                                        if (city) locationParts.push(city);
+                                                        if (countryName) locationParts.push(countryName);
+                                                        
+                                                        return locationParts.length > 0 
+                                                            ? locationParts.join(', ')
+                                                            : (countryName || '');
+                                                    })()}
+                                                </span>
+                                            </div>
+                                        </>
+                                    )}
                                 {finalCompletedSearches > 0 && (
                                     <>
                                         <span>·</span>
