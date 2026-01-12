@@ -147,7 +147,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
                 />
               </div>
               
-              {/* Badge "Guest favorite" - Estructura exacta */}
+              {/* Badge "Recomendamos" - Estructura similar a Airbnb */}
               {isGuestFavorite && (
                 <div
                   className="absolute top-3 left-3 z-10"
@@ -174,14 +174,38 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
                       style={{
                         fontSize: '10px',
                         lineHeight: '12px',
-                        fontWeight: 600,
+                        fontWeight: 400,
                         color: '#222222',
                         fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                        letterSpacing: '0.01em',
+                        letterSpacing: '0',
+                      }}
+                      aria-label="Recomendamos"
+                    >
+                      Recomendamos
+                    </span>
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
                       }}
                     >
-                      Guest favorite
-                    </span>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          fontSize: '10px',
+                          lineHeight: '12px',
+                          fontWeight: 400,
+                          color: '#222222',
+                          fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                          letterSpacing: '0',
+                          position: 'absolute',
+                          visibility: 'hidden',
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        Recomendamos
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -211,10 +235,10 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
                   focusable="false"
                   style={{
                     display: 'block',
-                    fill: isFavorite ? '#FF385C' : 'rgba(255, 255, 255, 0.7)',
+                    fill: isFavorite ? '#FF385C' : 'rgba(0, 0, 0, 0.5)',
                     height: '24px',
                     width: '24px',
-                    stroke: isFavorite ? '#FF385C' : '#FFFFFF',
+                    stroke: isFavorite ? '#FF385C' : 'rgba(255, 255, 255, 0.8)',
                     strokeWidth: '2',
                     overflow: 'visible',
                     margin: '0',
@@ -276,17 +300,17 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
           )}
         </div>
 
-        {/* Información del servicio - Estructura como Airbnb */}
+        {/* Información del servicio - Estructura exacta como Airbnb */}
         <div style={{ marginTop: '6px' }}>
-          {/* Primera fila: Solo Título */}
+          {/* Primera fila: Título */}
           <div
             className="overflow-hidden"
             style={{
-              marginBottom: '2px',
+              marginBottom: '0px',
               fontSize: '14px',
-              lineHeight: '2',
-              fontWeight: 400,
-              color: '#222222',
+              lineHeight: '20.02px',
+              fontWeight: 500,
+              color: 'rgb(34, 34, 34)',
               fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
               textAlign: 'left',
             }}
@@ -294,27 +318,27 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
             <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName}</div>
           </div>
 
-          {/* Segunda fila: Ubicación */}
-          {service.expert?.country && (
-            <div
-              className="overflow-hidden"
-              style={{
-                marginBottom: '2px',
-                fontSize: '12px',
-                lineHeight: '16px',
-                fontWeight: 400,
-                color: 'rgb(106, 106, 106)',
-                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                textAlign: 'left',
-              }}
-            >
-              <div className="truncate" style={{ textAlign: 'left' }}>
-                {getCountryName(service.expert.country)}
-              </div>
+          {/* Segunda fila: Horario · Precio */}
+          <div
+            className="flex items-center overflow-hidden"
+            style={{
+              marginBottom: '0px',
+              fontSize: '12px',
+              lineHeight: '16px',
+              fontWeight: 400,
+              color: 'rgb(106, 106, 106)',
+              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+              textAlign: 'left',
+            }}
+          >
+            <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
+              <span className="truncate">{availabilityInfo}</span>
+              <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
+              <span>{price}</span>
             </div>
-          )}
+          </div>
 
-          {/* Tercera fila: Precio · Horario · Rating */}
+          {/* Tercera fila: Media de valoración */}
           <div
             className="flex items-center overflow-hidden"
             style={{
@@ -326,25 +350,20 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
               textAlign: 'left',
             }}
           >
-            <div className="truncate flex items-center gap-1" style={{ textAlign: 'left' }}>
-              <span>{price}</span>
-              <span>·</span>
-              <span className="truncate">{availabilityInfo}</span>
-              <span style={{ marginLeft: '4px' }}>·</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <Star 
                 className="flex-shrink-0" 
                 style={{ 
-                  width: '11px', 
-                  height: '11px', 
+                  width: '12px', 
+                  height: '12px', 
                   fill: '#222222', 
                   color: '#222222',
-                  marginLeft: '4px',
                 }} 
               />
-              <span style={{ marginLeft: '3px' }}>
-                {service.averageRating ? service.averageRating.toFixed(2) : 'N/A'}
+              <span>
+                {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'}
               </span>
-            </div>
+            </span>
           </div>
         </div>
       </div>
@@ -455,6 +474,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
               height: '24px',
               borderRadius: '50%',
               border: '1px solid #DDDDDD',
+              backgroundColor: '#F7F7F7',
             }}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
