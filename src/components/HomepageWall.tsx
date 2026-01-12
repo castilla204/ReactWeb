@@ -255,31 +255,67 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
                     <ChevronRight className="w-4 h-4 text-gray-700" />
                   </button>
                   
-                  {/* Indicadores de imágenes */}
-                  <div
-                    className="absolute bottom-3 left-1/2 -translate-x-1/2 flex"
-                    style={{ gap: '6px' }}
-                  >
-                    {imageUrls.map((_, idx) => (
-                      <div
-                        key={idx}
-                        className="rounded-full transition-all bg-white"
-                        style={{
-                          height: '4px',
-                          width: idx === imageIndex ? '24px' : '4px',
-                          opacity: idx === imageIndex ? 1 : 0.6,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </>
-          ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-400 text-sm">Sin imagen</span>
-            </div>
-          )}
+              {/* Indicadores de imágenes */}
+                                  <div
+                                    className="absolute bottom-3 left-1/2 -translate-x-1/2 flex"
+                                    style={{ gap: '6px' }}
+                                  >
+                                    {imageUrls.map((_, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="rounded-full transition-all bg-white"
+                                        style={{
+                                          height: '4px',
+                                          width: idx === imageIndex ? '24px' : '4px',
+                                          opacity: idx === imageIndex ? 1 : 0.6,
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                </>
+                              )}
+
+                              {/* Avatar del experto - Esquina inferior izquierda */}
+                              {service.expert && (
+                                <div
+                                  className="absolute bottom-3 left-3 z-10"
+                                  style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    border: '2px solid white',
+                                    overflow: 'hidden',
+                                    backgroundColor: '#f0f0f0',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                                  }}
+                                >
+                                  {service.expert.profilePictureUrl ? (
+                                    <img
+                                      src={service.expert.profilePictureUrl}
+                                      alt={service.expert.user?.name || 'Experto'}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div 
+                                      className="w-full h-full flex items-center justify-center"
+                                      style={{
+                                        backgroundColor: '#3b82f6',
+                                        color: 'white',
+                                        fontSize: '14px',
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      {service.expert.user?.name?.charAt(0)?.toUpperCase() || 'E'}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-gray-400 text-sm">Sin imagen</span>
+                            </div>
+                          )}
         </div>
 
         {/* Información del servicio - Estructura exacta como Airbnb */}
