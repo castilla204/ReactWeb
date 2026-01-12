@@ -83,7 +83,7 @@ export interface ExpertProfileDto {
     daysOfWeek: string[];
     startTime: string;
     endTime: string;
-    effectiveFrom: string;
+    effectiveFrom?: string;
   };
   timezone?: string;
   country?: string;
