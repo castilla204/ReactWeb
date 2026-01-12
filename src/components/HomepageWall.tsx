@@ -408,19 +408,35 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
           <div>
             <a
               href="#"
-              className="font-semibold text-gray-900 mb-1 block inline-flex items-center"
+              className="inline-flex items-center"
               style={{ 
-                fontSize: '20px', 
-                lineHeight: '24px', 
-                fontWeight: 600,
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 textDecoration: 'none',
                 color: '#222222',
-                gap: '4px',
               }}
             >
-              <span>{title.replace(' >', '')}</span>
-              <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <h2
+                style={{ 
+                  fontSize: '18px', 
+                  lineHeight: '24px', 
+                  fontWeight: 600,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  color: 'rgb(34, 34, 34)',
+                  margin: 0,
+                  padding: 0,
+                }}
+              >
+                <span>{title.replace(' >', '')}</span>
+              </h2>
+              <span style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginLeft: '8px',
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                border: '1px solid #DDDDDD',
+              }}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 32 32"
@@ -433,11 +449,13 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
                     height: '12px',
                     width: '12px',
                     stroke: 'currentColor',
-                    strokeWidth: '5.33333',
+                    strokeWidth: '4',
                     overflow: 'visible',
                   }}
                 >
-                  <path fill="none" d="m12 4 11.3 11.3a1 1 0 0 1 0 1.4L12 28"></path>
+                  <g fill="none">
+                    <path d="M28 16H2M17 4l11.3 11.3a1 1 0 0 1 0 1.4L17 28"></path>
+                  </g>
                 </svg>
               </span>
             </a>
