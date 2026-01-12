@@ -232,7 +232,7 @@ export const MobileBottomBar: React.FC = () => {
             background: 'transparent',
             padding: 0,
             margin: 0,
-            color: exploreActive ? '#222222' : '#717171',
+            color: exploreActive ? '#ec4899' : '#717171',
             cursor: exploreActive ? 'default' : 'pointer',
             touchAction: 'manipulation',
             WebkitTapHighlightColor: 'transparent',
@@ -257,15 +257,15 @@ export const MobileBottomBar: React.FC = () => {
                 aria-hidden="true"
                 role="presentation"
                 focusable="false"
-                style={{
-                  display: 'block',
-                  fill: 'none',
-                  height: '24px',
-                  width: '24px',
-                  stroke: exploreActive ? '#222222' : '#717171',
-                  strokeWidth: '2.66667',
-                  overflow: 'visible',
-                }}
+              style={{
+                display: 'block',
+                fill: 'none',
+                height: '24px',
+                width: '24px',
+                stroke: exploreActive ? '#ec4899' : '#717171',
+                strokeWidth: '2.66667',
+                overflow: 'visible',
+              }}
               >
                 <path d="m20.666 20.666 10 10"></path>
                 <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
@@ -277,7 +277,7 @@ export const MobileBottomBar: React.FC = () => {
             fontSize: '10px',
             lineHeight: '12px',
             fontWeight: 600,
-            color: exploreActive ? '#222222' : '#717171',
+            color: exploreActive ? '#ec4899' : '#717171',
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
             letterSpacing: '0',
           }}>
@@ -304,7 +304,7 @@ export const MobileBottomBar: React.FC = () => {
             border: 'none',
             background: 'transparent',
             padding: 0,
-            color: wishlistsActive ? '#222222' : '#717171',
+            color: wishlistsActive ? '#ec4899' : '#717171',
             cursor: wishlistsActive ? 'default' : 'pointer',
             touchAction: 'manipulation',
             WebkitTapHighlightColor: 'transparent',
@@ -334,7 +334,7 @@ export const MobileBottomBar: React.FC = () => {
                   fill: 'none',
                   height: '24px',
                   width: '24px',
-                  stroke: wishlistsActive ? '#222222' : '#717171',
+                  stroke: wishlistsActive ? '#ec4899' : '#717171',
                   strokeWidth: '2',
                   overflow: 'visible',
                 }}
@@ -348,7 +348,7 @@ export const MobileBottomBar: React.FC = () => {
             fontSize: '10px',
             lineHeight: '12px',
             fontWeight: 600,
-            color: wishlistsActive ? '#222222' : '#717171',
+            color: wishlistsActive ? '#ec4899' : '#717171',
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
             letterSpacing: '0',
           }}>
@@ -376,7 +376,7 @@ export const MobileBottomBar: React.FC = () => {
             border: 'none',
             background: 'transparent',
             padding: 0,
-            color: loginActive ? '#222222' : '#717171',
+            color: loginActive ? '#ec4899' : '#717171',
             cursor: loginActive ? 'default' : 'pointer',
             touchAction: 'manipulation',
             WebkitTapHighlightColor: 'transparent',
@@ -440,7 +440,7 @@ export const MobileBottomBar: React.FC = () => {
                     fill: 'none',
                     height: '24px',
                     width: '24px',
-                    stroke: loginActive ? '#222222' : '#717171',
+                    stroke: loginActive ? '#ec4899' : '#717171',
                     strokeWidth: '2',
                     overflow: 'visible',
                   }}
@@ -458,7 +458,7 @@ export const MobileBottomBar: React.FC = () => {
             fontSize: '10px',
             lineHeight: '12px',
             fontWeight: 600,
-            color: loginActive ? '#222222' : '#717171',
+            color: loginActive ? '#ec4899' : '#717171',
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
             letterSpacing: '0',
           }}>

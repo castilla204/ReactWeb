@@ -284,10 +284,10 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
             style={{
               marginBottom: '2px',
               fontSize: '14px',
-              lineHeight: '16px',
-              fontWeight: 600,
+              lineHeight: '2',
+              fontWeight: 400,
               color: '#222222',
-              fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
               textAlign: 'left',
             }}
           >
@@ -300,11 +300,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
               className="overflow-hidden"
               style={{
                 marginBottom: '2px',
-                fontSize: '14px',
+                fontSize: '12px',
                 lineHeight: '16px',
                 fontWeight: 400,
-                color: '#717171',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                color: 'rgb(106, 106, 106)',
+                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                 textAlign: 'left',
               }}
             >
@@ -318,11 +318,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
           <div
             className="flex items-center overflow-hidden"
             style={{
-              fontSize: '14px',
+              fontSize: '12px',
               lineHeight: '16px',
               fontWeight: 400,
-              color: '#717171',
-              fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+              color: 'rgb(106, 106, 106)',
+              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
               textAlign: 'left',
             }}
           >
@@ -356,7 +356,6 @@ interface HorizontalScrollSectionProps {
   title: string;
   subtitle?: string;
   services: SearchServiceDetailDto[];
-  showCount?: boolean;
   forceGuestFavorite?: boolean;
 }
 
@@ -364,7 +363,6 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
   title,
   subtitle,
   services,
-  showCount = false,
   forceGuestFavorite = false,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -408,7 +406,6 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
           <div>
             <a
               href="#"
-              className="inline-flex items-center"
               style={{ 
                 textDecoration: 'none',
                 color: '#222222',
@@ -427,37 +424,6 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
               >
                 <span>{title.replace(' >', '')}</span>
               </h2>
-              <span style={{ 
-                display: 'inline-flex', 
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginLeft: '8px',
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                border: '1px solid #DDDDDD',
-              }}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 32 32"
-                  aria-hidden="true"
-                  role="presentation"
-                  focusable="false"
-                  style={{
-                    display: 'block',
-                    fill: 'none',
-                    height: '12px',
-                    width: '12px',
-                    stroke: 'currentColor',
-                    strokeWidth: '4',
-                    overflow: 'visible',
-                  }}
-                >
-                  <g fill="none">
-                    <path d="M28 16H2M17 4l11.3 11.3a1 1 0 0 1 0 1.4L17 28"></path>
-                  </g>
-                </svg>
-              </span>
             </a>
             {subtitle && (
               <div
@@ -474,19 +440,22 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
               </div>
             )}
           </div>
-          {showCount && (
-            <a
-              href="#"
-              className="hidden sm:flex items-center font-semibold text-gray-900 hover:underline"
-              style={{ 
-                fontSize: '14px', 
-                lineHeight: '18px', 
-                fontWeight: 600, 
-                gap: '4px',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-              }}
-            >
-              <span>Show all</span>
+          <a
+            href="#"
+            style={{ 
+              textDecoration: 'none',
+              color: '#222222',
+            }}
+          >
+            <span style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              border: '1px solid #DDDDDD',
+            }}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 32 32"
@@ -499,14 +468,16 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
                   height: '12px',
                   width: '12px',
                   stroke: 'currentColor',
-                  strokeWidth: '5.33333',
+                  strokeWidth: '4',
                   overflow: 'visible',
                 }}
               >
-                <path fill="none" d="m12 4 11.3 11.3a1 1 0 0 1 0 1.4L12 28"></path>
+                <g fill="none">
+                  <path d="M28 16H2M17 4l11.3 11.3a1 1 0 0 1 0 1.4L17 28"></path>
+                </g>
               </svg>
-            </a>
-          )}
+            </span>
+          </a>
         </div>
       </div>
 
@@ -751,7 +722,6 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
                   ? `${section.pagination.totalCount} servicios en ${section.country}` 
                   : undefined}
                 services={filteredServices}
-                showCount={true}
                 forceGuestFavorite={index === 1} // Marcar la segunda sección como "Featured"
               />
             );
