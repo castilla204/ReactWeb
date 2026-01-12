@@ -66,9 +66,10 @@ export interface Service {
             };
             imageUrls?: string[];
         }[];
-        // ✅ CAMPOS DE PAÍS Y TIMEZONE
+        // ✅ CAMPOS DE PAÍS, CIUDAD Y TIMEZONE
         timezone?: string | null;
         country?: string | null;
+        city?: string | null; // ✅ NUEVO: Ciudad del experto
         // ✅ COORDENADAS DEL EXPERTO (para mostrar en el mapa)
         latitude?: string | number | null;
         longitude?: string | number | null;
@@ -256,6 +257,7 @@ export function useServices({
                         })),
                         timezone: (service.Expert || service.expert).Timezone || (service.Expert || service.expert).timezone,
                         country: (service.Expert || service.expert).Country || (service.Expert || service.expert).country,
+                        city: (service.Expert || service.expert).City || (service.Expert || service.expert).city || null, // ✅ NUEVO: Mapear City del backend
                         latitude: (service.Expert || service.expert).Latitude || (service.Expert || service.expert).latitude,
                         longitude: (service.Expert || service.expert).Longitude || (service.Expert || service.expert).longitude,
                         locationRange: (service.Expert || service.expert).LocationRange || (service.Expert || service.expert).locationRange,

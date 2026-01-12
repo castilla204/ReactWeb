@@ -38,6 +38,7 @@ export interface SearchServiceHomepageDto {
     Name: string;
     ProfilePictureUrl: string;
     Country: string;
+    City?: string | null; // ✅ NUEVO: Ciudad del experto
     Availability?: HomepageExpertAvailabilityDto | null; // ✅ NUEVO: Horario del experto
   };
   CompletedSearches: number;
@@ -87,6 +88,7 @@ export interface ExpertProfileDto {
   };
   timezone?: string;
   country?: string;
+  city?: string | null; // ✅ NUEVO: Ciudad del experto
 }
 
 export interface ReviewDto {

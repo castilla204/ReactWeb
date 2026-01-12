@@ -13,6 +13,16 @@ const VisuallyHidden: React.FC<{ asChild?: boolean; children: React.ReactNode }>
   return <span className="sr-only">{children}</span>;
 };
 
+interface DrawerProps extends React.ComponentProps<typeof DrawerPrimitive.Root> {
+  snapPoints?: (number | string)[];
+  activeSnapPoint?: number | string | null;
+  setActiveSnapPoint?: (snapPoint: number | string | null) => void;
+  dismissible?: boolean;
+  fadeFromIndex?: number;
+  handleOnly?: boolean;
+  snapToSequentialPoint?: boolean;
+}
+
 const Drawer = ({
   shouldScaleBackground = false,
   snapPoints,
@@ -20,13 +30,11 @@ const Drawer = ({
   setActiveSnapPoint,
   modal = true,
   dismissible = true,
+  fadeFromIndex,
+  handleOnly = false,
+  snapToSequentialPoint = false, // false para responder más naturalmente a la velocidad del gesto
   ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Root> & {
-  snapPoints?: (number | string)[];
-  activeSnapPoint?: number | string;
-  setActiveSnapPoint?: (snapPoint: number | string) => void;
-  dismissible?: boolean;
-}) => (
+}: DrawerProps) => (
   <DrawerPrimitive.Root
     shouldScaleBackground={shouldScaleBackground}
     snapPoints={snapPoints}
@@ -34,6 +42,9 @@ const Drawer = ({
     setActiveSnapPoint={setActiveSnapPoint}
     modal={modal}
     dismissible={dismissible}
+    fadeFromIndex={fadeFromIndex}
+    handleOnly={handleOnly}
+    snapToSequentialPoint={snapToSequentialPoint}
     {...props}
   />
 )
@@ -45,13 +56,29 @@ const DrawerPortal = DrawerPrimitive.Portal
 
 const DrawerClose = DrawerPrimitive.Close
 
+// Handle component optimizado para drag fluido
+const DrawerHandle = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "mx-auto mt-4 mb-2 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300 cursor-grab active:cursor-grabbing touch-none",
+      className
+    )}
+    {...props}
+  />
+))
+DrawerHandle.displayName = "DrawerHandle"
+
 const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
 >(({ className, style, ...props }, ref) => (
   <DrawerPrimitive.Overlay
     ref={ref}
-    className={cn("fixed inset-0 z-50 bg-black/50", className)}
+    className={cn("fixed inset-0 z-50 bg-black/40", className)}
     style={{ zIndex: 9997, ...style }}
     {...props}
   />
@@ -67,9 +94,6 @@ const DrawerContent = React.forwardRef<
     noHandle?: boolean;
   }
 >(({ className, children, title, description, noOverlay, noHandle, ...props }, ref) => {
-  // ✅ BEST PRACTICE: Prevenir warnings de accesibilidad
-  // Vaul maneja aria-hidden automáticamente, pero podemos asegurarnos de que
-  // cuando el drawer está abierto, los elementos puedan recibir focus correctamente
   const contentRef = React.useRef<HTMLDivElement>(null);
   
   // Verificar si los children ya incluyen DrawerTitle o DrawerDescription
@@ -81,122 +105,6 @@ const DrawerContent = React.forwardRef<
     child?.type?.displayName === DrawerPrimitive.Description.displayName ||
     child?.props?.children?.type?.displayName === DrawerPrimitive.Description.displayName
   );
-  
-  React.useEffect(() => {
-    const content = contentRef.current;
-    if (!content) return;
-    
-    // Función para verificar y corregir aria-hidden cuando el drawer está abierto
-    const checkAriaHidden = () => {
-      const content = contentRef.current;
-      // Verificar que el elemento existe y está en el DOM antes de manipularlo
-      if (!content || !content.parentNode) return;
-      
-      const isOpen = content.getAttribute('data-state') === 'open';
-      
-      // Si el drawer está abierto, eliminar aria-hidden de todos los ancestros y del drawer mismo
-      if (isOpen) {
-        // Eliminar aria-hidden del drawer mismo
-        content.removeAttribute('aria-hidden');
-        content.removeAttribute('data-aria-hidden');
-        
-        // Buscar y limpiar aria-hidden de todos los elementos fuera del drawer
-        // que puedan haber sido marcados por Vaul
-        const allElements = document.querySelectorAll('[aria-hidden="true"], [data-aria-hidden="true"]');
-        allElements.forEach(el => {
-          // No remover aria-hidden si el elemento está dentro del drawer
-          if (!content.contains(el)) {
-            el.removeAttribute('aria-hidden');
-            el.removeAttribute('data-aria-hidden');
-          }
-        });
-        
-        // Verificar si hay un elemento con foco dentro del drawer
-        const focusedElement = document.activeElement;
-        if (focusedElement && content.contains(focusedElement)) {
-          // Eliminar aria-hidden de todos los ancestros del elemento con foco hasta el drawer
-          let parent = focusedElement.parentElement;
-          while (parent && parent !== content) {
-            // Verificar que el parent existe antes de manipularlo
-            if (parent && parent.parentNode) {
-              if (parent.getAttribute('aria-hidden') === 'true') {
-                parent.removeAttribute('aria-hidden');
-              }
-              if (parent.getAttribute('data-aria-hidden') === 'true') {
-                parent.removeAttribute('data-aria-hidden');
-              }
-            }
-            parent = parent.parentElement;
-          }
-        }
-      }
-    };
-    
-    // Observar cambios en data-state y aria-hidden
-    const observer = new MutationObserver(() => {
-      checkAriaHidden();
-    });
-    
-    observer.observe(content, {
-      attributes: true,
-      attributeFilter: ['data-state', 'aria-hidden', 'data-aria-hidden'],
-      subtree: true // ✅ Observar también los descendientes
-    });
-    
-    // También observar cambios en el body para capturar cuando Vaul añade aria-hidden
-    const bodyObserver = new MutationObserver(() => {
-      checkAriaHidden();
-    });
-    
-    bodyObserver.observe(document.body, {
-      attributes: true,
-      attributeFilter: ['aria-hidden', 'data-aria-hidden'],
-      subtree: true,
-      childList: true
-    });
-    
-    // Verificar inicialmente y periódicamente
-    checkAriaHidden();
-    const intervalId = setInterval(checkAriaHidden, 100);
-    
-    // ✅ Escuchar eventos de foco para corregir inmediatamente
-    const handleFocusIn = (e: FocusEvent) => {
-      const currentContent = contentRef.current;
-      const target = e.target as HTMLElement;
-      // Verificar que content existe y contiene el target antes de procesar
-      if (currentContent && currentContent.parentNode && currentContent.contains(target)) {
-        checkAriaHidden();
-      }
-    };
-    
-    // ✅ Escuchar cuando el drawer se abre
-    const handleStateChange = () => {
-      // Verificar que content existe antes de procesar usando la referencia actual
-      const currentContent = contentRef.current;
-      if (currentContent && currentContent.parentNode) {
-        checkAriaHidden();
-      }
-    };
-    
-    document.addEventListener('focusin', handleFocusIn);
-    // Solo agregar el listener si el elemento existe
-    if (content) {
-      content.addEventListener('transitionend', handleStateChange);
-    }
-    
-    return () => {
-      observer.disconnect();
-      bodyObserver.disconnect();
-      clearInterval(intervalId);
-      document.removeEventListener('focusin', handleFocusIn);
-      // Verificar que el elemento existe antes de remover el listener
-      // Usar contentRef.current para obtener la referencia más reciente
-      const currentContent = contentRef.current;
-      if (currentContent && currentContent.parentNode) {
-        currentContent.removeEventListener('transitionend', handleStateChange);
-      }
-    };
-  }, []);
   
   // Verificar si se debe mostrar el overlay (por defecto sí, a menos que se especifique noOverlay)
   const showOverlay = !noOverlay;
@@ -214,29 +122,22 @@ const DrawerContent = React.forwardRef<
           contentRef.current = node;
         }}
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 flex h-auto flex-col rounded-t-[10px] border bg-background sm:inset-x-0 sm:top-auto sm:bottom-0 sm:rounded-t-lg sm:shadow-xl",
-          className,
-          // Si se proporciona un estilo con 'top', sobrescribir bottom-0
-          props.style?.top && "!bottom-auto"
+          "fixed inset-x-0 bottom-0 z-50 flex h-auto flex-col rounded-t-[16px] border-0 bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.12)]",
+          "focus:outline-none",
+          // Animaciones suaves nativas de vaul
+          "data-[state=open]:animate-in data-[state=closed]:animate-out",
+          "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+          "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+          className
         )}
         style={{
           ...props.style,
-          // Asegurar que el z-index del drawer sea mayor que el overlay cuando no hay overlay
           zIndex: showOverlay ? (props.style?.zIndex || 9998) : (props.style?.zIndex || 10000),
-          // Forzar bordes superiores redondeados siempre si se especifican en style
-          ...(props.style?.borderTopLeftRadius && {
-            borderTopLeftRadius: props.style.borderTopLeftRadius + ' !important' as any
-          }),
-          ...(props.style?.borderTopRightRadius && {
-            borderTopRightRadius: props.style.borderTopRightRadius + ' !important' as any
-          }),
-          // Asegurar que los bordes inferiores no estén redondeados si se especifica
-          ...(props.style?.borderBottomLeftRadius !== undefined && {
-            borderBottomLeftRadius: props.style.borderBottomLeftRadius
-          }),
-          ...(props.style?.borderBottomRightRadius !== undefined && {
-            borderBottomRightRadius: props.style.borderBottomRightRadius
-          })
+          // Transición fluida para altura y transform
+          transition: 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
+          // Mejorar rendimiento de animaciones
+          willChange: 'transform',
+          contain: 'layout style',
         }}
         {...props}
       >
@@ -255,10 +156,8 @@ const DrawerContent = React.forwardRef<
             </DrawerPrimitive.Description>
           </VisuallyHidden>
         )}
-        {/* Handle - ocultar si se especifica noHandle */}
-        {!noHandle && (
-          <div className="mx-auto mt-3 mb-2 h-1.5 w-12 rounded-full bg-muted md:hidden" />
-        )}
+        {/* Handle nativo de vaul - más fluido */}
+        {!noHandle && <DrawerHandle />}
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>
@@ -326,5 +225,5 @@ export {
   DrawerFooter,
   DrawerTitle,
   DrawerDescription,
+  DrawerHandle,
 }
-

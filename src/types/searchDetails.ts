@@ -316,6 +316,7 @@ export interface CurrentExpertAvailabilityDto {
 }
 
 export interface ExpertProfileDto {
+  city?: string | null; // ✅ NUEVO: Ciudad del experto
   id: number;
   profilePictureUrl: string;
   description: string;
