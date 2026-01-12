@@ -579,7 +579,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
 
       {/* Mobile */}
       <div className="md:hidden relative">
-        <div className="px-5 pt-3 pb-0">
+        <div className="px-5 pt-2 pb-0">
           <div
             onClick={() => setIsMobileSearchOpen(true)}
             className="w-full bg-white border border-gray-300 rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer relative"
@@ -596,10 +596,28 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
           >
             {/* Contenido centrado: Texto */}
             <div className="flex flex-col items-center flex-1 min-w-0">
-              <span className="text-xs font-semibold text-gray-900 mb-0.5">
+              <span 
+                className="mb-0.5"
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '18px',
+                  fontWeight: 500,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  color: 'rgb(34, 34, 34)',
+                }}
+              >
                 ¿Qué servicio buscas?
               </span>
-              <div className="flex items-center gap-1 text-[10px] text-gray-500">
+              <div 
+                className="flex items-center gap-1"
+                style={{
+                  fontSize: '12px',
+                  lineHeight: '16px',
+                  fontWeight: 400,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  color: 'rgb(106, 106, 106)',
+                }}
+              >
                 <span className="truncate">
                   {adUrl || 'Ubicación'}
                 </span>
@@ -631,22 +649,22 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
         {/* Tabs Mobile - Estructura como Airbnb */}
         <div className="relative w-full" role="tablist">
           {/* Contenedor de tabs con flex */}
-          <div className="flex w-full px-5 pt-3">
+          <div className="flex w-full px-5 pt-1.5">
             {/* Tab 1: Coches */}
             <button
               type="button"
               role="tab"
               aria-selected={activeTab === 'coches'}
               onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
-              className="flex-1 flex flex-col items-center justify-center py-3 bg-transparent border-none cursor-pointer"
+              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer"
             >
               <img 
                 key={`coche-mobile-${imageCacheKey}`}
                 src={getImageWithCache('cochepng.png', imageCacheKey)} 
                 alt="Coche" 
-                className="w-14 h-14 object-contain" 
+                className="w-16 h-16 object-contain" 
               />
-              <span className={`text-[11px] leading-4 text-center mt-1 ${activeTab === 'coches' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
+              <span className={`text-xs leading-3 text-center mt-0.5 ${activeTab === 'coches' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
                 Coches
               </span>
             </button>
@@ -657,15 +675,15 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               role="tab"
               aria-selected={activeTab === 'inmobiliaria'}
               onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
-              className="flex-1 flex flex-col items-center justify-center py-3 bg-transparent border-none cursor-pointer"
+              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer"
             >
               <img
                 key={`casa-mobile-${imageCacheKey}`}
                 src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
                 alt={drawerCategoryReplacement?.name || "Casa"}
-                className="w-14 h-14 object-contain"
+                className="w-16 h-16 object-contain"
               />
-              <span className={`text-[11px] leading-4 text-center mt-1 ${activeTab === 'inmobiliaria' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
+              <span className={`text-xs leading-3 text-center mt-0.5 ${activeTab === 'inmobiliaria' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
                 {drawerCategoryReplacement?.name || 'Inmobiliaria'}
               </span>
             </button>
@@ -676,14 +694,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               role="tab"
               aria-selected={activeTab === 'drawer'}
               onClick={() => setIsDrawerOpen(true)}
-              className="flex-1 flex flex-col items-center justify-center py-3 bg-transparent border-none cursor-pointer"
+              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer"
             >
-              <div className="flex items-center justify-center gap-1.5 w-14 h-14">
+              <div className="flex items-center justify-center gap-1.5 w-16 h-16">
                 <div className="w-2 h-2 rounded-full bg-gray-900" />
                 <div className="w-2 h-2 rounded-full bg-gray-900" />
                 <div className="w-2 h-2 rounded-full bg-gray-900" />
               </div>
-              <span className={`text-[11px] leading-4 text-center mt-1 ${activeTab === 'drawer' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
+              <span className={`text-xs leading-3 text-center mt-0.5 ${activeTab === 'drawer' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
                 Más
               </span>
             </button>
