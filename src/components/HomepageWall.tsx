@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
-import { Heart, Star, ChevronRight, Calendar } from 'lucide-react';
+import { Star, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from './Footer';
 import { getCountryName } from '../utils/countries';
@@ -120,12 +120,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
   };
   
   const availabilityInfo = formatAvailability();
-  
-  // Formatear la segunda línea: "Precio · Horario"
-  const secondLineInfo = `${price} · ${availabilityInfo}`;
-  
-  // Calcular duración en días si está disponible
-  const nights = service.durationInHours ? Math.ceil(service.durationInHours / 24) : null;
 
   return (
     <a
@@ -282,15 +276,15 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
           )}
         </div>
 
-        {/* Información del servicio - Estructura exacta con todos los subdivs */}
-        <div style={{ marginTop: '8px' }}>
-          {/* Primera fila: Nombre del servicio (Título) */}
+        {/* Información del servicio - Estructura como Airbnb */}
+        <div style={{ marginTop: '6px' }}>
+          {/* Primera fila: Solo Título */}
           <div
             className="overflow-hidden"
             style={{
-              marginBottom: '4px',
+              marginBottom: '2px',
               fontSize: '14px',
-              lineHeight: '18px',
+              lineHeight: '16px',
               fontWeight: 600,
               color: '#222222',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
@@ -300,36 +294,32 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
             <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName}</div>
           </div>
 
-          {/* Descripción del servicio - Solo si existe */}
-          {service.serviceTypeDescription && (
+          {/* Segunda fila: Ubicación */}
+          {service.expert?.country && (
             <div
               className="overflow-hidden"
               style={{
-                marginBottom: '4px',
+                marginBottom: '2px',
                 fontSize: '14px',
-                lineHeight: '18px',
+                lineHeight: '16px',
                 fontWeight: 400,
                 color: '#717171',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 textAlign: 'left',
-                display: 'block',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
               }}
             >
-              {service.serviceTypeDescription}
+              <div className="truncate" style={{ textAlign: 'left' }}>
+                {getCountryName(service.expert.country)}
+              </div>
             </div>
           )}
 
-          {/* Segunda fila: Precio · 📅 Horario */}
+          {/* Tercera fila: Precio · Horario · Rating */}
           <div
             className="flex items-center overflow-hidden"
             style={{
-              marginBottom: '4px',
               fontSize: '14px',
-              lineHeight: '18px',
+              lineHeight: '16px',
               fontWeight: 400,
               color: '#717171',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
@@ -339,63 +329,22 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
             <div className="truncate flex items-center gap-1" style={{ textAlign: 'left' }}>
               <span>{price}</span>
               <span>·</span>
-              <Calendar 
+              <span className="truncate">{availabilityInfo}</span>
+              <span style={{ marginLeft: '4px' }}>·</span>
+              <Star 
                 className="flex-shrink-0" 
                 style={{ 
                   width: '11px', 
-                  height: '11px',
-                  color: '#717171',
-                  marginRight: '2px',
+                  height: '11px', 
+                  fill: '#222222', 
+                  color: '#222222',
+                  marginLeft: '4px',
                 }} 
               />
-              <span className="truncate">{availabilityInfo}</span>
+              <span style={{ marginLeft: '3px' }}>
+                {service.averageRating ? service.averageRating.toFixed(2) : 'N/A'}
+              </span>
             </div>
-          </div>
-
-          {/* Tercera fila: Puntuación · Contrataciones · Experto · Ubicación */}
-          <div
-            className="flex items-center overflow-hidden"
-            style={{
-              fontSize: '14px',
-              lineHeight: '18px',
-              fontWeight: 400,
-              color: '#717171',
-              fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-              textAlign: 'left',
-              justifyContent: 'flex-start',
-            }}
-          >
-            <Star 
-              className="flex-shrink-0" 
-              style={{ 
-                width: '10px', 
-                height: '10px', 
-                fill: '#222222', 
-                color: '#222222',
-                opacity: 0.7,
-              }} 
-            />
-            <span style={{ marginLeft: '4px' }}>
-              {service.averageRating ? service.averageRating.toFixed(1) : 'N/A'}
-            </span>
-            {service.completedSearches > 0 && (
-              <>
-                <span style={{ marginLeft: '4px', marginRight: '4px' }}>·</span>
-                <span>{service.completedSearches} {service.completedSearches === 1 ? 'contratación' : 'contrataciones'}</span>
-              </>
-            )}
-            {service.expert?.user?.name && (
-              <>
-                <span style={{ marginLeft: '4px', marginRight: '4px' }}>·</span>
-                <span className="truncate">{service.expert.user.name}</span>
-              </>
-            )}
-            {service.expert?.country && (
-              <>
-                <span style={{ marginLeft: '4px', marginRight: '4px' }}>·</span>
-                <span className="truncate">{getCountryName(service.expert.country)}</span>
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -647,7 +596,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
   serviceTypeId,
   categoryId,
 }) => {
-  const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
+  const { latitude, longitude, error: _geoError, loading: geoLoading } = useGeolocation();
 
   // Memoizar los parámetros de la query para evitar re-renderizados innecesarios
   const queryParams = useMemo(() => ({

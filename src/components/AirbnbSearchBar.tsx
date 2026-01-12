@@ -1,25 +1,60 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, ChevronDown, FolderTree, ArrowLeft } from 'lucide-react';
+import { Search, ChevronDown, FolderTree, ArrowLeft, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-// Usar rutas absolutas desde la carpeta public para evitar caché de Vite
-// Los archivos en public/ se sirven directamente sin procesamiento
+// Importar imágenes directamente desde src/media para que Vite las procese
+import casapngImg from '../media/casapng.png';
+import cochepngImg from '../media/cochepng.png';
+import motorcycleImg from '../media/motorcycle.png';
+import motoaguaImg from '../media/motoagua.png';
+import internet61Img from '../media/internet-61.png';
+import houseImg from '../media/house.png';
+
+// Mapa de imágenes importadas
+const imageMap: Record<string, string> = {
+  'casapng.png': casapngImg,
+  'cochepng.png': cochepngImg,
+  'motopng.png': motorcycleImg, // Usar motorcycle.png como motopng
+  'motorcycle.png': motorcycleImg,
+  'motoagua.png': motoaguaImg,
+  'internet-61.png': internet61Img,
+  'house.png': houseImg,
+};
+
+// Función para obtener la ruta de imagen (desde src/media con Vite)
 const getImagePath = (filename: string): string => {
-  // Ruta absoluta desde la raíz (public se mapea a /)
+  // Si la imagen está en el mapa, usar la importación de Vite (con hash automático)
+  if (imageMap[filename]) {
+    return imageMap[filename];
+  }
+  // Fallback a ruta desde public si no está importada
   return `/media/${filename}`;
 };
 
-// Función para obtener la URL de una imagen con caché evitado
-// Usa rutas desde public/ que no son procesadas por Vite
+// Ya no necesitamos blob URLs ni carga asíncrona
+// Vite maneja el caché automáticamente cuando importamos desde src/media/
+// Al cambiar las imágenes, Vite genera nuevos hashes y el navegador las recarga automáticamente
+
+// Función para obtener la URL de una imagen
+// Si está importada desde src/media, Vite ya añade hash automáticamente (sin caché)
+// Si no, usar ruta desde public con parámetros de caché
 const getImageWithCache = (filename: string, cacheKey: number): string => {
-  const basePath = getImagePath(filename);
-  // Agregar parámetros de caché para forzar recarga
+  const imagePath = getImagePath(filename);
+  
+  // Si la imagen está importada (en imageMap), Vite ya maneja el caché con hash
+  // No necesitamos añadir parámetros adicionales
+  if (imageMap[filename]) {
+    return imagePath;
+  }
+  
+  // Para imágenes desde public, añadir parámetros de caché
+  const timestamp = Date.now();
   const random = Math.random().toString(36).substring(7);
-  return `${basePath}?v=${cacheKey}&t=${cacheKey}&r=${random}&_=${Date.now()}`;
+  return `${imagePath}?v=${cacheKey}&t=${timestamp}&r=${random}&nocache=${timestamp}`;
 };
 import { ResponsiveModal } from './ui/responsive-modal';
 import { Separator } from './ui/separator';
@@ -70,16 +105,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const serviceTypeDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
-  // En desarrollo, actualizar el cache key periódicamente para detectar cambios en imágenes
+  // Actualizar el cache key periódicamente para detectar cambios en imágenes
   useEffect(() => {
-    if (import.meta.env.DEV) {
-      // Actualizar muy frecuentemente para detectar cambios rápidamente
-      const interval = setInterval(() => {
-        setImageCacheKey(Date.now());
-      }, 500); // Actualizar cada 500ms en desarrollo para detectar cambios más rápido
-      
-      return () => clearInterval(interval);
-    }
+    // Actualizar frecuentemente para detectar cambios en las imágenes
+    const interval = setInterval(() => {
+      setImageCacheKey(Date.now());
+    }, 1000); // Actualizar cada 1 segundo para forzar recarga de imágenes
+    
+    return () => clearInterval(interval);
   }, []);
   
   // También escuchar cambios en el archivo para forzar recarga inmediata
@@ -483,7 +516,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             onMouseLeave={() => setHoveredTab(null)}
             className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
           >
-            <img src={getImageWithCache('cochepng.png', imageCacheKey)} alt="Coche" className="w-8 h-8 object-contain" />
+            <img 
+              key={`coche-${imageCacheKey}`}
+              src={getImageWithCache('cochepng.png', imageCacheKey)} 
+              alt="Coche" 
+              className="w-8 h-8 object-contain" 
+            />
             <span className={`text-base whitespace-nowrap ${activeTab === 'coches' ? 'font-semibold' : 'font-normal'}`}>
               Coches
             </span>
@@ -502,10 +540,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
           >
               <img
+                key={`casa-${imageCacheKey}`}
                 src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
                 alt={drawerCategoryReplacement?.name || "Casa"}
-              className="w-8 h-8 object-contain"
-            />
+                className="w-8 h-8 object-contain"
+              />
             <span className={`text-base whitespace-nowrap ${activeTab === 'inmobiliaria' ? 'font-semibold' : 'font-normal'}`}>
               {drawerCategoryReplacement?.name || 'Inmobiliaria'}
             </span>
@@ -539,76 +578,129 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
       </div>
 
       {/* Mobile */}
-      <div className="md:hidden px-6 py-3">
-        <button
-          type="button"
-          onClick={() => setIsMobileSearchOpen(true)}
-          className="w-full bg-white border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-3 px-4 h-14"
-              aria-label="Buscar revisor"
-        >
-          <Search className="w-3 h-3 text-gray-600" />
-          <span className="text-sm font-medium text-gray-900">Buscar revisor</span>
+      <div className="md:hidden relative">
+        <div className="px-5 pt-3 pb-0">
+          <div
+            onClick={() => setIsMobileSearchOpen(true)}
+            className="w-full bg-white border border-gray-300 rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer relative"
+            style={{
+              height: '56px',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.08), 0 4px 12px 0 rgba(0, 0, 0, 0.05)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 2px 4px 0 rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.08), 0 4px 12px 0 rgba(0, 0, 0, 0.05)';
+            }}
+          >
+            {/* Contenido centrado: Texto */}
+            <div className="flex flex-col items-center flex-1 min-w-0">
+              <span className="text-xs font-semibold text-gray-900 mb-0.5">
+                ¿Qué servicio buscas?
+              </span>
+              <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                <span className="truncate">
+                  {adUrl || 'Ubicación'}
+                </span>
+                <span>·</span>
+                <span className="truncate">
+                  Fecha
+                </span>
+                <span>·</span>
+                <span className="truncate">
+                  {selectedServiceType?.name || selectedCategory?.name || 'Tipo'}
+                </span>
+              </div>
+            </div>
+            
+            {/* Botón circular rosa con ícono de filtro - Posicionado absoluto a la derecha */}
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMobileSearchOpen(true);
+              }}
+              className="absolute right-3 flex-shrink-0 w-10 h-10 rounded-full bg-pink-500 hover:bg-pink-600 transition-colors flex items-center justify-center cursor-pointer"
+              aria-label="Filtros"
+            >
+              <Filter className="w-5 h-5 text-white" />
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs Mobile - Estructura como Airbnb */}
+        <div className="relative w-full" role="tablist">
+          {/* Contenedor de tabs con flex */}
+          <div className="flex w-full px-5 pt-3">
+            {/* Tab 1: Coches */}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'coches'}
+              onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
+              className="flex-1 flex flex-col items-center justify-center py-3 bg-transparent border-none cursor-pointer"
+            >
+              <img 
+                key={`coche-mobile-${imageCacheKey}`}
+                src={getImageWithCache('cochepng.png', imageCacheKey)} 
+                alt="Coche" 
+                className="w-14 h-14 object-contain" 
+              />
+              <span className={`text-[11px] leading-4 text-center mt-1 ${activeTab === 'coches' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
+                Coches
+              </span>
             </button>
 
-        {/* Tabs Mobile */}
-        <div className="flex items-center justify-start px-10 relative w-full overflow-x-auto mt-0">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'coches'}
-            onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
-            className="flex flex-col items-center justify-center py-2 min-w-[40px] flex-1 bg-transparent border-none cursor-pointer"
-          >
-            <img src={getImageWithCache('cochepng.png', imageCacheKey)} alt="Coche" className="w-12 h-12 object-contain mb-0.5" />
-            <span className={`text-[10px] leading-3 text-center w-full ${activeTab === 'coches' ? 'font-semibold' : 'font-normal'}`}>
-              Coches
-                  </span>
-          </button>
-
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'inmobiliaria'}
-            onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
-            className="flex flex-col items-center justify-center py-2 min-w-[40px] flex-1 bg-transparent border-none cursor-pointer"
-          >
+            {/* Tab 2: Inmobiliaria */}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'inmobiliaria'}
+              onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
+              className="flex-1 flex flex-col items-center justify-center py-3 bg-transparent border-none cursor-pointer"
+            >
               <img
+                key={`casa-mobile-${imageCacheKey}`}
                 src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
                 alt={drawerCategoryReplacement?.name || "Casa"}
-              className="w-12 h-12 object-contain mb-0.5"
-            />
-            <span className={`text-[10px] leading-3 text-center w-full ${activeTab === 'inmobiliaria' ? 'font-semibold' : 'font-normal'}`}>
-              {drawerCategoryReplacement?.name || 'Inmobiliaria'}
-                  </span>
-          </button>
+                className="w-14 h-14 object-contain"
+              />
+              <span className={`text-[11px] leading-4 text-center mt-1 ${activeTab === 'inmobiliaria' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
+                {drawerCategoryReplacement?.name || 'Inmobiliaria'}
+              </span>
+            </button>
 
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'drawer'}
-            onClick={() => setIsDrawerOpen(true)}
-            className="flex flex-col items-center justify-center py-2 min-w-[40px] flex-1 bg-transparent border-none cursor-pointer"
-          >
-            <div className="flex items-center justify-center gap-1 w-12 h-12 mb-0.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+            {/* Tab 3: Más */}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'drawer'}
+              onClick={() => setIsDrawerOpen(true)}
+              className="flex-1 flex flex-col items-center justify-center py-3 bg-transparent border-none cursor-pointer"
+            >
+              <div className="flex items-center justify-center gap-1.5 w-14 h-14">
+                <div className="w-2 h-2 rounded-full bg-gray-900" />
+                <div className="w-2 h-2 rounded-full bg-gray-900" />
+                <div className="w-2 h-2 rounded-full bg-gray-900" />
               </div>
-            <span className={`text-[10px] leading-3 text-center w-full ${activeTab === 'drawer' ? 'font-semibold' : 'font-normal'}`}>
-              Más
-            </span>
-          </button>
+              <span className={`text-[11px] leading-4 text-center mt-1 ${activeTab === 'drawer' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
+                Más
+              </span>
+            </button>
+          </div>
 
-          <div
-            className="absolute bottom-0 h-0.5 w-10 bg-gray-900 rounded transition-all duration-300"
-            style={{
-              left: activeTab === 'coches' 
-                ? 'calc(40px + ((100% - 80px) / 3) / 2 - 20px)'
-                : activeTab === 'inmobiliaria'
-                ? 'calc(40px + ((100% - 80px) / 3) + ((100% - 80px) / 3) / 2 - 20px)'
-                : 'calc(40px + ((100% - 80px) / 3) * 2 + ((100% - 80px) / 3) / 2 - 20px)',
-            }}
-          />
+          {/* Indicador/Subrayado - Exactamente al ras del borde inferior del contenedor */}
+          <div 
+            className="absolute bottom-0 left-0 right-0 h-[2px] pointer-events-none"
+          >
+            <div 
+              className="absolute bottom-0 left-0 h-[2px] bg-gray-900 transition-transform duration-300 ease-out"
+              style={{
+                width: '33.3333%',
+                transform: `translateX(${activeTab === 'coches' ? '0%' : activeTab === 'inmobiliaria' ? '100%' : '200%'})`,
+              }}
+            />
+          </div>
         </div>
       </div>
 
