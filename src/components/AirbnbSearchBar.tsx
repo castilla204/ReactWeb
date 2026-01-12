@@ -579,7 +579,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
 
       {/* Mobile */}
       <div className="md:hidden relative">
-        <div className="px-5 pt-2 pb-0">
+        <div className="px-5 pt-4 pb-0">
           <div
             onClick={() => setIsMobileSearchOpen(true)}
             className="w-full bg-white border border-gray-300 rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer relative"
