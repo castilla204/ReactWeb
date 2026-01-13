@@ -615,13 +615,34 @@ export function ServiceReviewPage({
                     <div className="relative -mt-12 bg-white rounded-t-3xl pt-8 pb-36 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
                         {/* Título y ubicación centrados estilo Airbnb - Tipografía exacta */}
                         <div className="mb-6 px-5 text-center">
-                            <h1 className="text-[22px] font-semibold text-gray-900 leading-[1.3] mb-3 tracking-[-0.01em]">
+                            <h1 
+                                style={{
+                                    fontSize: '22px',
+                                    lineHeight: '26px',
+                                    fontWeight: 600,
+                                    color: 'rgb(34, 34, 34)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    marginBottom: '12px',
+                                    marginTop: 0,
+                                    padding: 0,
+                                }}
+                            >
                                 {serviceTypeName} por {finalExpertName}
                             </h1>
                             
                             {/* Ubicación y tipo centrados */}
                             <div className="mb-3">
-                                <h2 className="text-[15px] text-gray-600 font-normal leading-[1.4]">
+                                <h2 
+                                    style={{
+                                        fontSize: '15px',
+                                        lineHeight: '20px',
+                                        fontWeight: 400,
+                                        color: 'rgb(113, 113, 113)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        margin: 0,
+                                        padding: 0,
+                                    }}
+                                >
                                     {(() => {
                                         const city = finalService?.expert?.city;
                                         const country = finalService?.expert?.country;
@@ -645,15 +666,38 @@ export function ServiceReviewPage({
                                 <div className="mb-4">
                                     <ol className="flex items-center justify-center gap-2 flex-wrap list-none">
                                         {finalService?.durationInHours && (
-                                            <li className="text-[15px] text-gray-600 font-normal leading-[1.4]">
+                                            <li 
+                                                style={{
+                                                    fontSize: '15px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 400,
+                                                    color: 'rgb(113, 113, 113)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
                                                 {Math.ceil(finalService.durationInHours / 24)} {Math.ceil(finalService.durationInHours / 24) === 1 ? 'día' : 'días'}
                                             </li>
                                         )}
                                         {finalService?.durationInHours && finalService?.selectedDeliverableTypes?.[0] && (
-                                            <li className="text-[15px] text-gray-600 font-normal">·</li>
+                                            <li 
+                                                style={{
+                                                    fontSize: '15px',
+                                                    color: 'rgb(113, 113, 113)',
+                                                }}
+                                            >
+                                                ·
+                                            </li>
                                         )}
                                         {finalService?.selectedDeliverableTypes?.[0] && (
-                                            <li className="text-[15px] text-gray-600 font-normal leading-[1.4]">
+                                            <li 
+                                                style={{
+                                                    fontSize: '15px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 400,
+                                                    color: 'rgb(113, 113, 113)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
                                                 {finalService.selectedDeliverableTypes[0].displayName || 'Informe detallado'}
                                             </li>
                                         )}
@@ -664,7 +708,7 @@ export function ServiceReviewPage({
                     </div>
                     
                     {/* Sección "Quédate con [nombre]" estilo Airbnb */}
-                    <div className="mb-6 px-5">
+                    <div className="mb-8 px-5">
                         <div className="flex items-start gap-3">
                             <Avatar className="w-12 h-12 flex-shrink-0 border-2 border-gray-200">
                                 <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
@@ -673,14 +717,40 @@ export function ServiceReviewPage({
                                 </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                                <div className="text-[15px] text-gray-700 leading-[1.4]">
-                                    <span className="font-semibold">Quédate con {finalExpertName}</span>
+                                <div 
+                                    style={{
+                                        fontSize: '15px',
+                                        lineHeight: '20px',
+                                        fontWeight: 400,
+                                        color: 'rgb(34, 34, 34)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    }}
+                                >
+                                    <span style={{ fontWeight: 600 }}>Quédate con {finalExpertName}</span>
                                     <ol className="inline-flex items-center gap-1.5 list-none ml-2">
-                                        <li className="text-[15px] font-normal text-gray-900">Superanfitrión</li>
+                                        <li 
+                                            style={{
+                                                fontSize: '15px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            }}
+                                        >
+                                            Superanfitrión
+                                        </li>
                                         {finalService?.expert?.createdAt && (
                                             <>
-                                                <li className="text-[15px] text-gray-600">·</li>
-                                                <li className="text-[15px] text-gray-600 font-normal">
+                                                <li style={{ fontSize: '15px', color: 'rgb(113, 113, 113)' }}>·</li>
+                                                <li 
+                                                    style={{
+                                                        fontSize: '15px',
+                                                        lineHeight: '20px',
+                                                        fontWeight: 400,
+                                                        color: 'rgb(113, 113, 113)',
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    }}
+                                                >
                                                     {(() => {
                                                         const months = Math.floor((Date.now() - new Date(finalService.expert.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
                                                         const years = Math.floor(months / 12);
@@ -694,7 +764,15 @@ export function ServiceReviewPage({
                                     {(finalService?.expert?.city || finalService?.expert?.country) && (
                                         <div className="flex items-center gap-1.5 mt-2">
                                             <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                            <span className="text-[14px] text-gray-600">
+                                            <span 
+                                                style={{
+                                                    fontSize: '14px',
+                                                    lineHeight: '18px',
+                                                    fontWeight: 400,
+                                                    color: 'rgb(113, 113, 113)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
                                                 {(() => {
                                                     const city = finalService?.expert?.city;
                                                     const country = finalService?.expert?.country;
@@ -718,12 +796,33 @@ export function ServiceReviewPage({
                     
                     {/* Sección "Entre el 1% de los que más gustan" estilo Airbnb */}
                     {finalRating >= 4.5 && finalReviews.length >= 3 && (
-                        <div className="mb-6 px-5">
+                        <div className="mb-8 px-5">
                             <div className="mb-3">
-                                <h3 className="text-[15px] font-semibold text-gray-900 mb-2 leading-[1.4]">
+                                <h3 
+                                    style={{
+                                        fontSize: '16px',
+                                        lineHeight: '20px',
+                                        fontWeight: 600,
+                                        color: 'rgb(34, 34, 34)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        marginBottom: '8px',
+                                        marginTop: 0,
+                                        padding: 0,
+                                    }}
+                                >
                                     Entre el 1% de los que más gustan
                                 </h3>
-                                <p className="text-[15px] text-gray-700 font-normal leading-[1.5]">
+                                <p 
+                                    style={{
+                                        fontSize: '15px',
+                                        lineHeight: '22px',
+                                        fontWeight: 400,
+                                        color: 'rgb(34, 34, 34)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        margin: 0,
+                                        padding: 0,
+                                    }}
+                                >
                                     Este es uno de los favoritos de los viajeros, según sus valoraciones, evaluaciones y su fiabilidad.
                                 </p>
                             </div>
@@ -731,22 +830,60 @@ export function ServiceReviewPage({
                     )}
                     
                     {/* Descripción del tipo de habitación/servicio */}
-                    <div className="mb-6 px-5">
-                        <p className="text-[15px] text-gray-700 font-normal leading-[1.5]">
-                            {finalService?.serviceTypeName || 'Servicio'} con acceso a zonas comunes.
-                        </p>
-                    </div>
+                    {finalService?.serviceTypeName && (
+                        <div className="mb-8 px-5">
+                            <p 
+                                style={{
+                                    fontSize: '15px',
+                                    lineHeight: '22px',
+                                    fontWeight: 400,
+                                    color: 'rgb(34, 34, 34)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    margin: 0,
+                                    padding: 0,
+                                }}
+                            >
+                                {finalService?.serviceTypeName || 'Servicio'} con acceso a zonas comunes.
+                            </p>
+                        </div>
+                    )}
 
                         {/* Descripción Principal Móvil mejorada - Estilo Airbnb */}
                         {displayMainDescription && (
                             <div className="mb-8 px-5" data-plugin-in-point-id="DESCRIPTION_DEFAULT" data-section-id="DESCRIPTION_DEFAULT" style={{ paddingTop: '32px', paddingBottom: '32px' }}>
-                                <p className={`text-[15px] text-gray-700 leading-[1.5] whitespace-pre-line ${!isDescriptionExpanded && shouldTruncateDescription ? 'line-clamp-4' : ''}`}>
+                                <p 
+                                    className={`whitespace-pre-line ${!isDescriptionExpanded && shouldTruncateDescription ? 'line-clamp-4' : ''}`}
+                                    style={{
+                                        fontSize: '15px',
+                                        lineHeight: '22px',
+                                        fontWeight: 400,
+                                        color: 'rgb(34, 34, 34)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        margin: 0,
+                                        padding: 0,
+                                    }}
+                                >
                                     {displayMainDescription}
                                 </p>
                                 {shouldTruncateDescription && (
                                     <button 
                                         onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                                        className="text-[15px] font-semibold text-gray-900 mt-3 underline decoration-gray-300 underline-offset-2 hover:no-underline"
+                                        style={{
+                                            fontSize: '15px',
+                                            lineHeight: '20px',
+                                            fontWeight: 600,
+                                            color: 'rgb(34, 34, 34)',
+                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            marginTop: '12px',
+                                            padding: 0,
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            textDecoration: 'underline',
+                                            textUnderlineOffset: '2px',
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'none'}
+                                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'underline'}
                                     >
                                         {isDescriptionExpanded ? 'Leer menos' : 'Leer más'}
                                     </button>
@@ -757,14 +894,35 @@ export function ServiceReviewPage({
                         {/* Información del Experto Móvil mejorada */}
                         {showSecondaryDescription && (
                             <div className="mb-8 px-5">
-                                <h3 className="text-[15px] font-semibold text-gray-900 mb-3 leading-[1.4]">Detalles del experto</h3>
-                                <p className="text-[15px] text-gray-700 leading-[1.5]">
+                                <h3 
+                                    style={{
+                                        fontSize: '16px',
+                                        lineHeight: '20px',
+                                        fontWeight: 600,
+                                        color: 'rgb(34, 34, 34)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        marginBottom: '12px',
+                                        marginTop: 0,
+                                        padding: 0,
+                                    }}
+                                >
+                                    Detalles del experto
+                                </h3>
+                                <p 
+                                    style={{
+                                        fontSize: '15px',
+                                        lineHeight: '22px',
+                                        fontWeight: 400,
+                                        color: 'rgb(34, 34, 34)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        margin: 0,
+                                        padding: 0,
+                                    }}
+                                >
                                     {finalUserConditions}
                                 </p>
                             </div>
                         )}
-
-                        <div className="h-[1px] bg-gray-200 mb-8 mx-5" />
 
                         <div className="h-[1px] bg-gray-200 mb-8 mx-5" />
 
@@ -773,8 +931,28 @@ export function ServiceReviewPage({
                             <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
                                 {/* Cabecera de marca */}
                                 <div className="flex items-center gap-1.5 mb-5">
-                                    <span className="text-lg font-bold text-[#0066CC] tracking-tight">inspecciono</span>
-                                    <span className="text-lg font-normal text-gray-900">protección</span>
+                                    <span 
+                                        style={{
+                                            fontSize: '18px',
+                                            lineHeight: '24px',
+                                            fontWeight: 600,
+                                            color: '#0066CC',
+                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        }}
+                                    >
+                                        inspecciono
+                                    </span>
+                                    <span 
+                                        style={{
+                                            fontSize: '18px',
+                                            lineHeight: '24px',
+                                            fontWeight: 400,
+                                            color: 'rgb(34, 34, 34)',
+                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        }}
+                                    >
+                                        protección
+                                    </span>
                                 </div>
                             
                                 <div className="space-y-5">
@@ -783,8 +961,31 @@ export function ServiceReviewPage({
                                             <BadgeCheck className="w-6 h-6 text-[#0066CC] stroke-[2]" />
                                         </div>
                                         <div className="flex-1">
-                                            <h4 className="font-bold text-gray-900 text-base mb-1">Calidad verificada</h4>
-                                            <p className="text-[15px] text-gray-600 leading-relaxed">
+                                            <h4 
+                                                style={{
+                                                    fontSize: '16px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: 'rgb(34, 34, 34)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    marginBottom: '4px',
+                                                    marginTop: 0,
+                                                    padding: 0,
+                                                }}
+                                            >
+                                                Calidad verificada
+                                            </h4>
+                                            <p 
+                                                style={{
+                                                    fontSize: '15px',
+                                                    lineHeight: '22px',
+                                                    fontWeight: 400,
+                                                    color: 'rgb(113, 113, 113)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    margin: 0,
+                                                    padding: 0,
+                                                }}
+                                            >
                                                 Auditamos manualmente la revisión para asegurar estándares profesionales.
                                             </p>
                                         </div>
@@ -795,8 +996,31 @@ export function ServiceReviewPage({
                                             <Lock className="w-6 h-6 text-[#0066CC] stroke-[2]" />
                                         </div>
                                         <div className="flex-1">
-                                            <h4 className="font-bold text-gray-900 text-base mb-1">Pago en custodia</h4>
-                                            <p className="text-[15px] text-gray-600 leading-relaxed">
+                                            <h4 
+                                                style={{
+                                                    fontSize: '16px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: 'rgb(34, 34, 34)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    marginBottom: '4px',
+                                                    marginTop: 0,
+                                                    padding: 0,
+                                                }}
+                                            >
+                                                Pago en custodia
+                                            </h4>
+                                            <p 
+                                                style={{
+                                                    fontSize: '15px',
+                                                    lineHeight: '22px',
+                                                    fontWeight: 400,
+                                                    color: 'rgb(113, 113, 113)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    margin: 0,
+                                                    padding: 0,
+                                                }}
+                                            >
                                                 Tu dinero se retiene seguro hasta que recibes el informe.
                                             </p>
                                         </div>
@@ -811,7 +1035,20 @@ export function ServiceReviewPage({
                         {finalDeliverableTypes.length > 0 && (
                             <>
                                 <div className="mb-8 px-5">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-5">Qué incluye</h3>
+                                    <h3 
+                                        style={{
+                                            fontSize: '18px',
+                                            lineHeight: '24px',
+                                            fontWeight: 600,
+                                            color: 'rgb(34, 34, 34)',
+                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            marginBottom: '20px',
+                                            marginTop: 0,
+                                            padding: 0,
+                                        }}
+                                    >
+                                        Qué incluye
+                                    </h3>
                                     <div className="flex flex-wrap gap-3">
                                         {finalDeliverableTypes.map((dt) => {
                                             const n = (dt.displayName || dt.name).toLowerCase();
@@ -822,9 +1059,22 @@ export function ServiceReviewPage({
                                             else if (n.includes('archivo')) Icon = File;
 
                                             return (
-                                                <div key={dt.id} className="inline-flex items-center gap-2 bg-white text-gray-700 px-4 py-2.5 rounded-xl border-2 border-gray-200 shadow-sm hover:border-gray-300 transition-colors">
+                                                <div 
+                                                    key={dt.id} 
+                                                    className="inline-flex items-center gap-2 bg-white text-gray-700 px-4 py-2.5 rounded-xl border-2 border-gray-200 shadow-sm hover:border-gray-300 transition-colors"
+                                                >
                                                     <Icon className="w-5 h-5 flex-shrink-0 text-gray-600" />
-                                                    <span className="text-[15px] font-medium leading-none">{dt.displayName || dt.name}</span>
+                                                    <span 
+                                                        style={{
+                                                            fontSize: '15px',
+                                                            lineHeight: '20px',
+                                                            fontWeight: 500,
+                                                            color: 'rgb(34, 34, 34)',
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
+                                                        {dt.displayName || dt.name}
+                                                    </span>
                                                 </div>
                                             );
                                         })}
@@ -865,11 +1115,27 @@ export function ServiceReviewPage({
                                                         />
                                                     </picture>
                                                 </div>
-                                                <div className="text-[15px] font-semibold text-gray-900 leading-[1.4]">
+                                                <div 
+                                                    style={{
+                                                        fontSize: '15px',
+                                                        lineHeight: '20px',
+                                                        fontWeight: 600,
+                                                        color: 'rgb(34, 34, 34)',
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    }}
+                                                >
                                                     Guest favorite
                                                 </div>
                                             </div>
-                                            <div className="text-[15px] text-gray-700 leading-[1.5]">
+                                            <div 
+                                                style={{
+                                                    fontSize: '15px',
+                                                    lineHeight: '22px',
+                                                    fontWeight: 400,
+                                                    color: 'rgb(34, 34, 34)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
                                                 This home is a guest favorite based on ratings, reviews, and reliability
                                             </div>
                                         </div>
@@ -879,9 +1145,36 @@ export function ServiceReviewPage({
                                     <div className="mb-6">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Star className="w-5 h-5 fill-gray-900 text-gray-900" />
-                                            <span className="text-[18px] font-semibold text-gray-900 leading-[1.3]">{finalRating.toFixed(1)}</span>
-                                            <span className="text-[18px] text-gray-900">·</span>
-                                            <span className="text-[18px] font-semibold text-gray-900 leading-[1.3]">{finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}</span>
+                                            <span 
+                                                style={{
+                                                    fontSize: '18px',
+                                                    lineHeight: '24px',
+                                                    fontWeight: 600,
+                                                    color: 'rgb(34, 34, 34)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
+                                                {finalRating.toFixed(1)}
+                                            </span>
+                                            <span 
+                                                style={{
+                                                    fontSize: '18px',
+                                                    color: 'rgb(34, 34, 34)',
+                                                }}
+                                            >
+                                                ·
+                                            </span>
+                                            <span 
+                                                style={{
+                                                    fontSize: '18px',
+                                                    lineHeight: '24px',
+                                                    fontWeight: 600,
+                                                    color: 'rgb(34, 34, 34)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
+                                                {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
+                                            </span>
                                         </div>
                                     </div>
                                     
