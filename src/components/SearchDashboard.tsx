@@ -483,7 +483,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     // Solo mostrar pantalla de error si es crítico y no es un error de red (los de red se manejan con toast)
     if (error && !isNetworkErr) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 p-4">
+            <div className="flex items-center justify-center min-h-screen bg-white p-4">
                 <div className="text-center space-y-6 max-w-md">
                     <div className="flex justify-center">
                         <div className="relative">
@@ -513,47 +513,66 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-            {/* Header Section */}
-            <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/60 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-12 sm:h-16">
-                        <div className="flex items-center gap-3 sm:gap-6">
+        <div className="min-h-screen bg-white">
+            {/* Header Section - Estilo Homepage */}
+            <div className="bg-white sticky top-0 z-40 backdrop-blur-md bg-white/80 border-b border-gray-100">
+                <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%] mx-auto px-6">
+                    <div className="flex items-center justify-between py-4">
+                        <div className="flex items-center gap-4">
                             <button
                                 onClick={() => navigate('/')}
-                                className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 hover:bg-gray-50/80 rounded-lg transition-colors duration-150 text-gray-400 hover:text-gray-700"
+                                className="flex items-center justify-center w-8 h-8 hover:bg-gray-100 rounded-full transition-colors duration-200 text-gray-700"
                                 aria-label="Volver"
+                                style={{
+                                    border: '1px solid rgb(221, 221, 221)',
+                                }}
                             >
                                 <ArrowLeft className="w-4 h-4" strokeWidth={2} />
                             </button>
+                            <h1
+                                style={{
+                                    fontSize: '22px',
+                                    lineHeight: '26px',
+                                    fontWeight: 600,
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    color: 'rgb(34, 34, 34)',
+                                    margin: 0,
+                                    padding: 0,
+                                }}
+                            >
+                                Mis búsquedas
+                            </h1>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                             {/* Admin Panel Button */}
                             {isAdmin && (
                                 <button
                                     onClick={() => navigate('/admin')}
-                                    className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-normal text-gray-600 hover:text-gray-900 hover:bg-gray-50/80 rounded-lg transition-all duration-150"
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                                    style={{
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    }}
                                 >
-                                    <Settings className="w-3.5 h-3.5 sm:mr-1.5" strokeWidth={1.5} />
+                                    <Shield className="w-4 h-4" strokeWidth={2} />
                                     <span className="hidden sm:inline">Admin</span>
                                 </button>
                             )}
                             
                             {/* View Mode Toggle */}
-                            <div className="hidden sm:flex items-center gap-0 bg-gray-50/80 p-0.5 rounded-lg border border-gray-200/60">
+                            <div className="hidden sm:flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg">
                                 <button
                                     onClick={() => setViewMode('grid')}
-                                    className={`p-1.5 rounded-md transition-all duration-150 ${viewMode === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`p-1.5 rounded-md transition-all duration-200 ${viewMode === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
                                     aria-label="Vista de cuadrícula"
                                 >
-                                    <LayoutGrid className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                    <LayoutGrid className="w-4 h-4" strokeWidth={2} />
                                 </button>
                                 <button
                                     onClick={() => setViewMode('list')}
-                                    className={`p-1.5 rounded-md transition-all duration-150 ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`p-1.5 rounded-md transition-all duration-200 ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
                                     aria-label="Vista de lista"
                                 >
-                                    <LayoutList className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                    <LayoutList className="w-4 h-4" strokeWidth={2} />
                                 </button>
                             </div>
                         </div>
@@ -561,7 +580,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-10">
+            <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%] mx-auto px-6 pt-6 pb-10">
                 {/* ✅ Mensaje simple para errores de red */}
                 {isNetworkErr && (
                     <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -590,55 +609,76 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                     </div>
                 )}
 
-            {/* Filters Bar - Simplificado */}
+            {/* Filters Bar */}
             {!isNetworkErr && (
             <>
-            <div className="mb-6 flex items-center gap-3 flex-wrap sm:flex-nowrap">
-                {/* Search Bar */}
-                <div className="w-full sm:flex-1 sm:min-w-[200px] sm:max-w-md">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            ref={searchInputRef}
-                            type="text"
-                            value={searchInput}
-                            onChange={handleSearchChange}
-                            onFocus={handleSearchFocus}
-                            onBlur={handleSearchBlur}
-                            placeholder="Buscar inspecciones..."
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm hover:border-gray-300"
-                        />
-                        {isFetching && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                <svg className="w-4 h-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                </svg>
-                            </div>
-                        )}
+            {/* Search Bar */}
+            <div className="mb-4">
+                <div className="relative">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                        <Search className="w-4 h-4" strokeWidth={2} />
                     </div>
+                    <input
+                        ref={searchInputRef}
+                        type="text"
+                        value={searchInput}
+                        onChange={handleSearchChange}
+                        onFocus={handleSearchFocus}
+                        onBlur={handleSearchBlur}
+                        placeholder="Buscar inspecciones..."
+                        className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-300 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-[#ff385c]/50 focus:ring-2 focus:ring-[#ff385c]/10 transition-all"
+                        style={{
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            fontWeight: 400,
+                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                            color: 'rgb(34, 34, 34)',
+                        }}
+                    />
+                    {isFetching && (
+                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                            <div className="w-4 h-4 border-2 border-gray-300 border-t-[#ff385c] rounded-full animate-spin"></div>
+                        </div>
+                    )}
                 </div>
+            </div>
 
-                {/* Filter Buttons - Mobile: 75% width, Desktop: auto */}
-                <div className="flex items-center gap-2 sm:gap-3 w-[75%] sm:w-auto flex-nowrap">
-                    {/* Categorías - Popover */}
+            {/* Filter Pills */}
+            <div className="mb-6">
+                <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-hide">
+                    {/* Categorías - Pill */}
                     <Popover>
                         <PopoverTrigger asChild>
-                            <button className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/90 backdrop-blur-sm border border-blue-200/50 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-blue-50/80 hover:border-blue-300 transition-all shadow-sm whitespace-nowrap flex-1 sm:flex-none sm:w-auto">
-                                <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
-                                <span className="hidden xs:inline">Categorías</span>
-                                <span className="xs:hidden">Cat.</span>
-                                <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <button 
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all whitespace-nowrap"
+                                style={{
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            >
+                                <Filter className="w-3.5 h-3.5 text-gray-600" />
+                                <span>Categorías</span>
                                 {filters.selectedCategories.length < (categories?.length || 0) && (
-                                    <span className="ml-0.5 sm:ml-1 px-1 sm:px-1.5 py-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded text-[10px] sm:text-xs font-semibold">
+                                    <span className="ml-0.5 px-1.5 py-0.5 bg-[#ff385c] text-white rounded-full text-[10px] font-semibold">
                                         {filters.selectedCategories.length}
                                     </span>
                                 )}
+                                <ChevronDown className="w-3.5 h-3.5" />
                             </button>
                         </PopoverTrigger>
                     <PopoverContent className="w-64 p-3" align="start">
                         <div className="space-y-2">
-                            <h4 className="font-semibold text-sm text-gray-900 mb-3">Seleccionar categorías</h4>
+                            <h4 
+                                className="mb-3"
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    fontWeight: 600,
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    color: 'rgb(34, 34, 34)',
+                                }}
+                            >
+                                Seleccionar categorías
+                            </h4>
                             {Array.isArray(categories) && categories.map((category) => {
                                 const isSelected = filters.selectedCategories.includes(category.id);
                                 return (
@@ -664,10 +704,21 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                     }
                                                 });
                                             }}
-                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                                            className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900 focus:ring-2"
                                         />
                                         <CategoryImage categoryId={category.id} categoryName={category.name} size="sm" />
-                                        <span className="text-sm text-gray-700 flex-1">{category.name}</span>
+                                        <span 
+                                            className="flex-1"
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                color: 'rgb(34, 34, 34)',
+                                            }}
+                                        >
+                                            {category.name}
+                                        </span>
                                     </label>
                                 );
                             })}
@@ -675,49 +726,68 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                     </PopoverContent>
                 </Popover>
 
-                    {/* Botón Ver Inactivas */}
+                    {/* Botón Ver Inactivas - Con toque rosa cuando está activo */}
                         <button
                             onClick={() => setFilters((prev) => ({ 
                                 ...prev, 
                             showInactives: !prev.showInactives
                         }))}
-                        className={`inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-sm whitespace-nowrap flex-1 sm:flex-none sm:w-auto ${
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full transition-all whitespace-nowrap shadow-sm hover:shadow ${
                             filters.showInactives
-                                ? 'bg-white/90 backdrop-blur-sm text-gray-700 border border-blue-200/50 hover:bg-blue-50/80 hover:border-blue-300'
-                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700'
+                                ? 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                : 'bg-[#ff385c] text-white hover:bg-[#e31c5f] border border-[#ff385c]'
                         }`}
+                        style={{
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            fontWeight: 500,
+                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                        }}
                     >
-                        <span className="hidden xs:inline">{filters.showInactives ? 'Ver solo activas' : 'Ver inactivas'}</span>
-                        <span className="xs:hidden">{filters.showInactives ? 'Solo activas' : 'Inactivas'}</span>
+                        <Activity className="w-4 h-4" />
+                        <span>{filters.showInactives ? 'Solo activas' : 'Ver inactivas'}</span>
                         </button>
 
-                    {/* Filtro de estado de contratación - Popover */}
+                    {/* Filtro de estado - Pill */}
                     <Popover>
                         <PopoverTrigger asChild>
-                            <button className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm whitespace-nowrap flex-1 sm:flex-none sm:w-auto">
-                                <span className="hidden sm:inline">
+                            <button 
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all whitespace-nowrap"
+                                style={{
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            >
+                                <span>
                                     {filters.searchHireStatus 
                                         ? [
                                             { value: 'pending', label: 'Pendiente' },
-                                            { value: 'awaiting_client_decision', label: 'Esperando decisión' },
-                                            { value: 'disputed', label: 'En disputa' },
+                                            { value: 'awaiting_client_decision', label: 'Esperando' },
+                                            { value: 'disputed', label: 'Disputa' },
                                             { value: 'completed', label: 'Completado' },
                                             { value: 'cancelled', label: 'Cancelado' },
-                                            { value: 'transfer_failed', label: 'Transferencia fallida' },
-                                            { value: 'dispute_resolved', label: 'Disputa resuelta' },
+                                            { value: 'transfer_failed', label: 'Fallida' },
+                                            { value: 'dispute_resolved', label: 'Resuelta' },
                                         ].find(s => s.value === filters.searchHireStatus)?.label || 'Estado'
-                                        : 'Todos los estados'
+                                        : 'Estado'
                                     }
                                 </span>
-                                <span className="sm:hidden">
-                                    {filters.searchHireStatus ? 'Estado' : 'Estados'}
-                                </span>
-                                <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <ChevronDown className="w-3.5 h-3.5" />
                             </button>
                         </PopoverTrigger>
                     <PopoverContent className="w-56 p-3" align="start">
                         <div className="space-y-2">
-                            <h4 className="font-semibold text-sm text-gray-900 mb-3">Seleccionar estado</h4>
+                            <h4 
+                                className="mb-3"
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    fontWeight: 600,
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    color: 'rgb(34, 34, 34)',
+                                }}
+                            >
+                                Seleccionar estado
+                            </h4>
                             {[
                                 { value: '', label: 'Todos los estados' },
                                 { value: 'pending', label: 'Pendiente' },
@@ -745,9 +815,20 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                 searchHireStatus: e.target.value 
                                                 }));
                                             }}
-                                            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2"
+                                            className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900 focus:ring-2"
                                         />
-                                        <span className="text-sm text-gray-700 flex-1">{status.label}</span>
+                                        <span 
+                                            className="flex-1"
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                color: 'rgb(34, 34, 34)',
+                                            }}
+                                        >
+                                            {status.label}
+                                        </span>
                                     </label>
                                 );
                             })}
@@ -759,13 +840,20 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
 
             {/* Results count */}
             <div className="flex items-center justify-between mb-6">
-                <div className="text-sm font-semibold text-gray-700 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-blue-100/50 inline-block">
+                <div 
+                    className="inline-flex items-center gap-1.5"
+                    style={{
+                        fontSize: '14px',
+                        lineHeight: '20px',
+                        fontWeight: 400,
+                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                        color: 'rgb(106, 106, 106)',
+                    }}
+                >
                     {isAdmin && currentPagination ? (
                         <>
-                            {currentPagination.totalCount} {currentPagination.totalCount === 1 ? 'inspección' : 'inspecciones'} total
-                            <span className="text-slate-500 ml-2 font-normal">
-                                • Página {currentPagination.currentPage} de {currentPagination.totalPages}
-                            </span>
+                            {currentPagination.totalCount} {currentPagination.totalCount === 1 ? 'inspección' : 'inspecciones'}
+                            <span>· Página {currentPagination.currentPage}/{currentPagination.totalPages}</span>
                         </>
                     ) : (
                         <>
@@ -776,29 +864,55 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
             </div>
 
             {filteredSearches.length === 0 ? (
-                <Empty className="bg-white/90 backdrop-blur-sm border border-blue-100 rounded-xl shadow-sm">
+                <Empty className="bg-white border border-gray-200 rounded-xl">
                     <EmptyHeader>
                         <EmptyMedia variant="icon">
-                            <Search className="w-7 h-7 text-blue-500" />
+                            <Search className="w-7 h-7 text-gray-400" />
                         </EmptyMedia>
-                        <EmptyTitle>No se encontraron inspecciones</EmptyTitle>
-                        <EmptyDescription>Prueba con otros filtros o crea una nueva inspección para empezar</EmptyDescription>
+                        <EmptyTitle
+                            style={{
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                fontSize: '18px',
+                                lineHeight: '24px',
+                                fontWeight: 600,
+                                color: 'rgb(34, 34, 34)',
+                            }}
+                        >
+                            No se encontraron inspecciones
+                        </EmptyTitle>
+                        <EmptyDescription
+                            style={{
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                fontSize: '14px',
+                                lineHeight: '20px',
+                                fontWeight: 400,
+                                color: 'rgb(113, 113, 113)',
+                            }}
+                        >
+                            Prueba con otros filtros o crea una nueva inspección para empezar
+                        </EmptyDescription>
                         <EmptyContent>
-                            <Button 
+                                <Button 
                                 onClick={() => {
                                     sessionStorage.setItem('scrollToFormSection', 'true');
                                     navigate('/');
                                 }}
-                                className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium"
+                                className="bg-gray-900 hover:bg-gray-800 text-white transition-all duration-200 px-6 py-2.5 rounded-lg"
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    fontWeight: 500,
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
                             >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Crear nueva inspección
+                                <Plus className="w-4 h-4 mr-2" strokeWidth={2} />
+                                Crear inspección
                             </Button>
                         </EmptyContent>
                     </EmptyHeader>
                 </Empty>
             ) : (viewMode === 'grid' || isMobile) ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 auto-rows-fr">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
                     {filteredSearches.map((search) => {
                         const hasUnreadMessages = search.unreadMessagesCount > 0;
 
@@ -806,18 +920,36 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                             <div
                                 key={search.id}
                                 onClick={() => handleSearchClick(search.id)}
-                                className={`group bg-white/90 backdrop-blur-sm rounded-2xl p-5 cursor-pointer transition-all duration-300 relative overflow-hidden
-                                    border border-blue-100/50 shadow-[0_2px_8px_rgba(59,130,246,0.08)] hover:shadow-[0_12px_24px_rgba(59,130,246,0.15)] hover:border-blue-300/50 hover:-translate-y-1
-                                    ${isAdmin && !search.isRevised ? 'ring-2 ring-red-200 bg-red-50/20' : ''}
+                                className={`group bg-white rounded-lg p-4 cursor-pointer transition-all duration-200 relative overflow-hidden
+                                    border border-gray-300 hover:border-gray-400 hover:shadow-md
+                                    ${isAdmin && !search.isRevised ? 'ring-2 ring-red-200 bg-red-50' : ''}
                                 `}
                             >
                                 {/* Header: Title + Badge */}
-                                <div className="flex justify-between items-start mb-3 gap-3">
+                                <div className="flex justify-between items-start mb-4 gap-3">
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-[17px] font-bold text-gray-900 leading-snug group-hover:text-blue-700 transition-colors line-clamp-1 mb-1">
+                                        <h3 
+                                            className="leading-snug transition-colors line-clamp-1 mb-1"
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20.02px',
+                                                fontWeight: 500,
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                color: 'rgb(34, 34, 34)',
+                                            }}
+                                        >
                                             {search.title}
                                         </h3>
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <div 
+                                            className="flex items-center gap-2"
+                                            style={{
+                                                fontSize: '12px',
+                                                lineHeight: '16px',
+                                                fontWeight: 400,
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                color: 'rgb(106, 106, 106)',
+                                            }}
+                                        >
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3.5 h-3.5" />
                                                 {new Date(search.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
@@ -859,23 +991,49 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                 </div>
 
                                 {/* Description */}
-                                <p className="text-sm text-gray-600 line-clamp-2 mb-4 min-h-[40px] leading-relaxed">
+                                <p 
+                                    className="line-clamp-2 mb-4 min-h-[40px] leading-relaxed"
+                                    style={{
+                                        fontSize: '12px',
+                                        lineHeight: '16px',
+                                        fontWeight: 400,
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        color: 'rgb(106, 106, 106)',
+                                    }}
+                                >
                                     {search.description || 'Sin descripción adicional'}
                                 </p>
 
                                 {/* Category & Messages */}
-                                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-50">
-                                    <div className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50/80 rounded-lg group-hover:bg-blue-50/50 transition-colors">
+                                <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full transition-colors group-hover:bg-gray-100">
                                         <CategoryImage categoryId={search.category} categoryName={Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'} size="sm" />
-                                        <span className="text-xs font-semibold text-gray-700">
+                                        <span 
+                                            style={{
+                                                fontSize: '12px',
+                                                lineHeight: '16px',
+                                                fontWeight: 500,
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                color: 'rgb(34, 34, 34)',
+                                            }}
+                                        >
                                             {Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'}
                                         </span>
                                     </div>
 
                                     {hasUnreadMessages && (
-                                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-medium animate-pulse">
-                                            <MessageSquare className="w-3.5 h-3.5" />
-                                            <span>{search.unreadMessagesCount} nuevos</span>
+                                        <div 
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#ff385c]/10 border border-[#ff385c]/20 rounded-full animate-pulse"
+                                            style={{
+                                                fontSize: '12px',
+                                                lineHeight: '16px',
+                                                fontWeight: 600,
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                color: '#ff385c',
+                                            }}
+                                        >
+                                            <div className="w-2 h-2 bg-[#ff385c] rounded-full"></div>
+                                            <span>{search.unreadMessagesCount}</span>
                                         </div>
                                     )}
                                 </div>
@@ -893,21 +1051,58 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full ring-2 ring-white"></div>
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Experto</span>
-                                                <span className="text-xs font-bold text-gray-900 truncate max-w-[100px]">{search.searchHire.expert.name}</span>
+                                                <span 
+                                                    className="uppercase tracking-wide"
+                                                    style={{
+                                                        fontSize: '10px',
+                                                        lineHeight: '12px',
+                                                        fontWeight: 400,
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        color: 'rgb(113, 113, 113)',
+                                                    }}
+                                                >
+                                                    Experto
+                                                </span>
+                                                <span 
+                                                    className="truncate max-w-[100px]"
+                                                    style={{
+                                                        fontSize: '12px',
+                                                        lineHeight: '16px',
+                                                        fontWeight: 400,
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        color: 'rgb(34, 34, 34)',
+                                                    }}
+                                                >
+                                                    {search.searchHire.expert.name}
+                                                </span>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-2 text-gray-400">
-                                            <div className="w-8 h-8 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center">
-                                                <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
+                                        <div 
+                                            className="flex items-center gap-2"
+                                            style={{
+                                                color: 'rgb(113, 113, 113)',
+                                            }}
+                                        >
+                                            <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center">
+                                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
                                             </div>
-                                            <span className="text-xs font-medium">Pendiente de experto</span>
+                                            <span 
+                                                style={{
+                                                    fontSize: '12px',
+                                                    lineHeight: '16px',
+                                                    fontWeight: 400,
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    color: 'rgb(106, 106, 106)',
+                                                }}
+                                            >
+                                                Pendiente de experto
+                                            </span>
                                         </div>
                                     )}
                                     
-                                    <div className="w-8 h-8 rounded-full bg-gray-50 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center transition-all duration-300 shadow-sm">
-                                        <ChevronRight className="w-4 h-4" />
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 group-hover:bg-gray-900 group-hover:text-white flex items-center justify-center transition-all duration-300">
+                                        <ChevronRight className="w-4 h-4" strokeWidth={2} />
                                     </div>
                                 </div>
                             </div>
@@ -915,24 +1110,79 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                     })}
                 </div>
             ) : (
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-white border border-gray-300 rounded-xl overflow-hidden">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-gray-50/50 border-b border-gray-200">
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Inspección</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Categoría</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Estado</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Fecha</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Experto</th>
+                            <tr className="bg-gray-50 border-b border-gray-200">
+                                <th 
+                                    className="px-6 py-4 text-left uppercase tracking-wider"
+                                    style={{
+                                        fontSize: '12px',
+                                        lineHeight: '16px',
+                                        fontWeight: 600,
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        color: 'rgb(34, 34, 34)',
+                                    }}
+                                >
+                                    Inspección
+                                </th>
+                                <th 
+                                    className="px-6 py-4 text-left uppercase tracking-wider"
+                                    style={{
+                                        fontSize: '12px',
+                                        lineHeight: '16px',
+                                        fontWeight: 600,
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        color: 'rgb(34, 34, 34)',
+                                    }}
+                                >
+                                    Categoría
+                                </th>
+                                <th 
+                                    className="px-6 py-4 text-left uppercase tracking-wider"
+                                    style={{
+                                        fontSize: '12px',
+                                        lineHeight: '16px',
+                                        fontWeight: 600,
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        color: 'rgb(34, 34, 34)',
+                                    }}
+                                >
+                                    Estado
+                                </th>
+                                <th 
+                                    className="px-6 py-4 text-left uppercase tracking-wider"
+                                    style={{
+                                        fontSize: '12px',
+                                        lineHeight: '16px',
+                                        fontWeight: 600,
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        color: 'rgb(34, 34, 34)',
+                                    }}
+                                >
+                                    Fecha
+                                </th>
+                                <th 
+                                    className="px-6 py-4 text-left uppercase tracking-wider"
+                                    style={{
+                                        fontSize: '12px',
+                                        lineHeight: '16px',
+                                        fontWeight: 600,
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        color: 'rgb(34, 34, 34)',
+                                    }}
+                                >
+                                    Experto
+                                </th>
                                 <th className="px-6 py-4"></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-200">
                             {filteredSearches.map((search) => {
                                 const hasUnreadMessages = search.unreadMessagesCount > 0;
 
                                 return (
-                                    <tr key={search.id} onClick={() => handleSearchClick(search.id)} className="hover:bg-blue-50/30 cursor-pointer transition-colors group">
+                                    <tr key={search.id} onClick={() => handleSearchClick(search.id)} className="hover:bg-gray-50 cursor-pointer transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="flex items-center gap-1">
@@ -959,10 +1209,28 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="text-sm font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+                                                    <div 
+                                                        className="mb-1 transition-colors"
+                                                        style={{
+                                                            fontSize: '14px',
+                                                            lineHeight: '20px',
+                                                            fontWeight: 500,
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                            color: 'rgb(34, 34, 34)',
+                                                        }}
+                                                    >
                                                         {search.title}
                                                     </div>
-                                                    <div className="text-xs text-gray-600 line-clamp-1">
+                                                    <div 
+                                                        className="line-clamp-1"
+                                                        style={{
+                                                            fontSize: '12px',
+                                                            lineHeight: '16px',
+                                                            fontWeight: 400,
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                            color: 'rgb(113, 113, 113)',
+                                                        }}
+                                                    >
                                                         {search.description}
                                                     </div>
                                                 </div>
@@ -971,31 +1239,68 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 <CategoryImage categoryId={search.category} categoryName={categories?.find((c) => c.id === search.category)?.name || 'N/A'} size="sm" />
-                                                <span className="text-sm font-medium text-gray-700">
+                                                <span 
+                                                    className="font-medium"
+                                                    style={{
+                                                        fontSize: '14px',
+                                                        lineHeight: '20px',
+                                                        fontWeight: 400,
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        color: 'rgb(34, 34, 34)',
+                                                    }}
+                                                >
                                                 {categories?.find((c) => c.id === search.category)?.name}
                                             </span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getActivityStatus(search) === 'Activa' 
-                                                ? 'bg-green-100 text-green-700' 
-                                                : 'bg-gray-100 text-gray-600'}`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${getActivityStatus(search) === 'Activa' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                                            <span 
+                                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${
+                                                    getActivityStatus(search) === 'Activa' 
+                                                        ? 'bg-gray-100' 
+                                                        : 'bg-gray-100'
+                                                }`}
+                                                style={{
+                                                    fontSize: '12px',
+                                                    lineHeight: '16px',
+                                                    fontWeight: 400,
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    color: getActivityStatus(search) === 'Activa' ? 'rgb(34, 34, 34)' : 'rgb(113, 113, 113)',
+                                                }}
+                                            >
+                                                <span className={`w-1.5 h-1.5 rounded-full ${getActivityStatus(search) === 'Activa' ? 'bg-gray-900' : 'bg-gray-400'}`}></span>
                                                 {getActivityStatus(search)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col gap-2">
-                                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <div 
+                                                    className="flex items-center gap-2"
+                                                    style={{
+                                                        fontSize: '14px',
+                                                        lineHeight: '20px',
+                                                        fontWeight: 400,
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        color: 'rgb(113, 113, 113)',
+                                                    }}
+                                                >
                                                     <Calendar className="w-4 h-4 text-gray-500" />
                                                     <span>{new Date(search.createdAt).toLocaleDateString('es-ES', { 
                                                         day: 'numeric', 
                                                         month: 'short' 
                                                     })}</span>
                                                 </div>
-                                                <span className="text-xs text-gray-400">Fecha de creación</span>
                                                 {search.locationName && (
-                                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                    <div 
+                                                        className="flex items-center gap-2"
+                                                        style={{
+                                                            fontSize: '12px',
+                                                            lineHeight: '16px',
+                                                            fontWeight: 400,
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                            color: 'rgb(113, 113, 113)',
+                                                        }}
+                                                    >
                                                         <MapPin className="w-4 h-4 text-gray-500" />
                                                         <span className="truncate max-w-28">{search.locationName}</span>
                                                     </div>
@@ -1010,12 +1315,31 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                         alt={`${search.searchHire.expert.name}'s profile`}
                                                         className="w-6 h-6 rounded-full object-cover"
                                                     />
-                                                    <span className="text-sm text-gray-900 font-medium">
+                                                    <span 
+                                                        className="font-medium"
+                                                        style={{
+                                                            fontSize: '14px',
+                                                            lineHeight: '20px',
+                                                            fontWeight: 400,
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                            color: 'rgb(34, 34, 34)',
+                                                        }}
+                                                    >
                                                         {search.searchHire.expert.name}
                                                     </span>
                                                 </div>
                                             ) : (
-                                                <span className="text-sm text-gray-400">—</span>
+                                                <span 
+                                                    style={{
+                                                        fontSize: '14px',
+                                                        lineHeight: '20px',
+                                                        fontWeight: 400,
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        color: 'rgb(113, 113, 113)',
+                                                    }}
+                                                >
+                                                    —
+                                                </span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
@@ -1038,17 +1362,31 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                             console.log('Cambiar a página anterior');
                         }}
                         disabled={!currentPagination.hasPrevious}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                        className={`px-4 py-2 rounded-lg border transition-colors ${
                             currentPagination.hasPrevious
-                                ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                                ? 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                                 : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                         }`}
+                        style={{
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            fontWeight: 400,
+                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                        }}
                     >
                         Anterior
                     </button>
                     
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-600">
+                        <span 
+                            style={{
+                                fontSize: '14px',
+                                lineHeight: '20px',
+                                fontWeight: 400,
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                color: 'rgb(113, 113, 113)',
+                            }}
+                        >
                             Página {currentPagination.currentPage} de {currentPagination.totalPages}
                         </span>
                     </div>
@@ -1059,11 +1397,17 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                             console.log('Cambiar a página siguiente');
                         }}
                         disabled={!currentPagination.hasNext}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                        className={`px-4 py-2 rounded-lg border transition-colors ${
                             currentPagination.hasNext
-                                ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                                ? 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                                 : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                         }`}
+                        style={{
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            fontWeight: 400,
+                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                        }}
                     >
                         Siguiente
                     </button>
