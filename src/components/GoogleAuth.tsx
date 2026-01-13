@@ -266,12 +266,8 @@ export function GoogleAuth() {
                 };
                 console.warn = suppressKnownWarnings;
                 
-                // Clear any previous initialization
-                try {
-                    window.google.accounts.id.cancel();
-                } catch (e) {
-                    // Ignore errors from cancel
-                }
+                // ⚠️ NO llamar a cancel() aquí - cancela TODOS los botones de Google en la página
+                // incluyendo los de otros componentes como MobileBottomBar
                 
                 window.google.accounts.id.initialize({
                     client_id: clientId,

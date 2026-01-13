@@ -64,9 +64,16 @@ const DrawerHandle = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "mx-auto mt-4 mb-2 h-1.5 w-12 flex-shrink-0 rounded-full bg-gray-300 cursor-grab active:cursor-grabbing touch-none",
+      "mx-auto mt-3 mb-3 h-1 w-12 flex-shrink-0 rounded-full bg-gray-300 cursor-grab active:cursor-grabbing touch-none transition-opacity duration-200",
+      "hover:bg-gray-400 active:bg-gray-500",
       className
     )}
+    style={{
+      userSelect: 'none',
+      WebkitUserSelect: 'none',
+      willChange: 'opacity',
+      ...props.style,
+    }}
     {...props}
   />
 ))
@@ -133,8 +140,8 @@ const DrawerContent = React.forwardRef<
         style={{
           ...props.style,
           zIndex: showOverlay ? (props.style?.zIndex || 9998) : (props.style?.zIndex || 10000),
-          // Transición fluida para altura y transform
-          transition: 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
+          // Transición más fluida y rápida
+          transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           // Mejorar rendimiento de animaciones
           willChange: 'transform',
           contain: 'layout style',

@@ -72,6 +72,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   if (isMobile) {
     // Calcular la altura máxima basada en el último snapPoint
     // Si hay snapPoints, el último define la altura máxima (ej: 0.85 = 85vh)
+    // Los snapPoints en vaul son fracciones de la altura disponible desde bottom
     const maxSnapPoint = snapPoints && snapPoints.length > 0 
       ? Math.max(...snapPoints.map(sp => typeof sp === 'number' ? sp : parseFloat(sp as string) || 0))
       : 1;
@@ -93,7 +94,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
       >
         <DrawerContent
           className={cn(
-            "rounded-t-[16px] w-full !max-w-full shadow-[0_-4px_24px_rgba(0,0,0,0.12)] border-0 bg-white",
+            "rounded-t-[20px] w-full !max-w-full shadow-[0_-8px_32px_rgba(0,0,0,0.15)] border-0 bg-white",
             "focus:outline-none focus-visible:outline-none",
             className, 
             drawerClassName
@@ -105,7 +106,11 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             maxWidth: '100%',
             // Limitar la altura máxima al último snapPoint para evitar que suba más
             maxHeight: maxHeightVh,
-            zIndex: noOverlay ? (drawerStyle?.zIndex || style?.zIndex || 10000) : (drawerStyle?.zIndex || style?.zIndex || 9998)
+            zIndex: noOverlay ? (drawerStyle?.zIndex || style?.zIndex || 10000) : (drawerStyle?.zIndex || style?.zIndex || 9998),
+            // Mejorar rendimiento de animaciones
+            willChange: 'transform',
+            // Transición más fluida y rápida
+            transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
           noOverlay={noOverlay}
           noHandle={noHandle}
