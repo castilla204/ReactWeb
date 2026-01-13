@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 import { FavoritesModal } from './FavoritesModal';
 import { authService } from '../services/authService';
@@ -10,8 +11,6 @@ export const MobileBottomBar: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated, user, updateUser } = useAuth();
   const [showFavoritesModal, setShowFavoritesModal] = useState(false);
-  const googleButtonRef = useRef<HTMLDivElement>(null);
-  const [isGoogleReady, setIsGoogleReady] = useState(false);
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -42,119 +41,74 @@ export const MobileBottomBar: React.FC = () => {
     }
   };
 
-  // Inicializar Google Sign-In
-  useEffect(() => {
-    if (isAuthenticated) return; // No inicializar si ya está autenticado
-    
-    const initGoogleAuth = () => {
-      if (window.google?.accounts?.id && googleButtonRef.current) {
-        const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
+  // ✅ Hook oficial de Google OAuth - Maneja automáticamente la inicialización y estado
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        console.log('🔐 [MobileBottomBar] Autenticación con Google exitosa');
         
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: async (response: any) => {
+        // Enviar el access token directamente al backend
+        // El backend se encargará de validar el token con Google
+        const result = await authService.googleAuth(tokenResponse.access_token);
+        
+        if (!result.success) {
+          throw new Error('Authentication failed');
+        }
+
+        const token = authService.getAccessToken();
+        if (result.user && token) {
+          // Verificar MFA si es necesario
+          const { RoleChecker } = await import('../utils/roleChecker');
+          const userRole = RoleChecker.getUserRole(token);
+          const requiresMfa = RoleChecker.requiresMfa(userRole);
+          
+          let shouldNavigate = true;
+          
+          if (requiresMfa) {
+            const { mfaService } = await import('../services/mfaService');
             try {
-              console.log('🔐 [MobileBottomBar] Iniciando autenticación con Google...');
-              
-              if (!response.credential) {
-                throw new Error('No credential received from Google');
+              const mfaStatus = await mfaService.getMFAStatus();
+              if (mfaStatus.isEnabled) {
+                shouldNavigate = false;
+                updateUser(result.user, token, () => {
+                  navigate('/mfa/verify', { state: { returnTo: null } });
+                });
+                return;
               }
-
-              const result = await authService.googleAuth(response.credential);
-              
-              if (!result.success) {
-                throw new Error('Authentication failed');
-              }
-
-              const token = authService.getAccessToken();
-              if (result.user && token) {
-                // Verificar MFA si es necesario antes de actualizar usuario
-                const { RoleChecker } = await import('../utils/roleChecker');
-                const userRole = RoleChecker.getUserRole(token);
-                const requiresMfa = RoleChecker.requiresMfa(userRole);
-                
-                let shouldNavigate = true;
-                
-                if (requiresMfa) {
-                  const { mfaService } = await import('../services/mfaService');
-                  try {
-                    const mfaStatus = await mfaService.getMFAStatus();
-                    if (mfaStatus.isEnabled && !mfaStatus.isVerified) {
-                      shouldNavigate = false;
-                      updateUser(result.user, token, () => {
-                        navigate('/mfa/verify', { state: { returnTo: null } });
-                      });
-                      return;
-                    }
-                  } catch (error) {
-                    console.error('Error checking MFA status:', error);
-                  }
-                }
-                
-                if (shouldNavigate) {
-                  updateUser(result.user, token, () => {
-                    console.log('✅ [MobileBottomBar] Autenticación exitosa');
-                    toast.success('¡Bienvenido!', { duration: 2000 });
-                    // No redirigir automáticamente después del login
-                    // El usuario puede hacer clic en "Mis revisiones" si quiere ir a /busquedas
-                  });
-                }
-              }
-            } catch (error: any) {
-              console.error('❌ [MobileBottomBar] Error durante autenticación:', error);
-              const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
-              toast.error(errorMessage, { duration: 5000 });
+            } catch (error) {
+              console.error('Error checking MFA status:', error);
             }
-          },
-          auto_select: false,
-          cancel_on_tap_outside: false,
-        });
-
-        // Renderizar botón oculto de Google
-        if (googleButtonRef.current) {
-          googleButtonRef.current.innerHTML = '';
-          window.google.accounts.id.renderButton(googleButtonRef.current, {
-            type: 'standard',
-            theme: 'outline',
-            size: 'large',
-            text: 'signin_with',
-          });
-
-          setTimeout(() => {
-            const renderedButton = googleButtonRef.current?.querySelector('div[role="button"]');
-            if (renderedButton) {
-              setIsGoogleReady(true);
-            }
-          }, 200);
+          }
+          
+          if (shouldNavigate) {
+            updateUser(result.user, token, () => {
+              console.log('✅ [MobileBottomBar] Autenticación exitosa');
+              toast.success('¡Bienvenido!', { duration: 2000 });
+            });
+          }
         }
+      } catch (error: any) {
+        console.error('❌ [MobileBottomBar] Error durante autenticación:', error);
+        const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
+        toast.error(errorMessage, { duration: 5000 });
       }
-    };
-
-    // Esperar a que Google esté cargado
-    if (window.google?.accounts?.id) {
-      initGoogleAuth();
-    } else {
-      const checkGoogle = setInterval(() => {
-        if (window.google?.accounts?.id) {
-          clearInterval(checkGoogle);
-          initGoogleAuth();
-        }
-      }, 100);
-      
-      return () => clearInterval(checkGoogle);
-    }
-  }, [isAuthenticated, navigate, updateUser]);
+    },
+    onError: (error) => {
+      console.error('❌ [MobileBottomBar] Error en Google Login:', error);
+      toast.error('Error al iniciar sesión con Google', { duration: 4000 });
+    },
+    flow: 'implicit', // Usa el flujo implícito para obtener el token directamente
+  });
 
   const handleLoginClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
     if (isAuthenticated) {
-      // Si está autenticado, abrir AccountSettingsModal (configuración con MFA, etc.)
+      // Si está autenticado, abrir AccountSettingsModal
       if (typeof (window as any).openAccountSettings === 'function') {
         (window as any).openAccountSettings();
       } else {
-        // Fallback: usar evento personalizado
         try {
           const event = new CustomEvent('openAccountSettings', { 
             bubbles: true, 
@@ -167,18 +121,9 @@ export const MobileBottomBar: React.FC = () => {
         }
       }
     } else {
-      // Si no está autenticado, iniciar sesión con Google automáticamente
+      // ✅ Triggear el login de Google con el hook oficial
       console.log('🔘 [MobileBottomBar] Iniciando sesión con Google...');
-      if (isGoogleReady && googleButtonRef.current) {
-        const googleButton = googleButtonRef.current.querySelector('div[role="button"]') as HTMLElement;
-        if (googleButton) {
-          googleButton.click();
-        } else {
-          toast.error('Google Sign-In no está listo. Inténtalo de nuevo en un momento.');
-        }
-      } else {
-        toast.error('Google Sign-In se está cargando. Inténtalo de nuevo en un momento.');
-      }
+      googleLogin();
     }
   };
   
@@ -198,7 +143,7 @@ export const MobileBottomBar: React.FC = () => {
       style={{
         height: '65px',
         paddingTop: '11px',
-        paddingBottom: '11px',
+        paddingBottom: 'max(11px, env(safe-area-inset-bottom))',
       }}
     >
       {/* div._18ybk0k - Contenedor de los enlaces */}
@@ -470,22 +415,6 @@ export const MobileBottomBar: React.FC = () => {
       {/* Modal de Favoritos */}
       {showFavoritesModal && (
         <FavoritesModal onClose={() => setShowFavoritesModal(false)} />
-      )}
-      
-      {/* Botón oculto de Google para autenticación */}
-      {!isAuthenticated && (
-        <div 
-          ref={googleButtonRef} 
-          style={{ 
-            position: 'absolute', 
-            opacity: 0, 
-            pointerEvents: 'none', 
-            zIndex: -1,
-            width: '1px',
-            height: '1px',
-            overflow: 'hidden'
-          }} 
-        />
       )}
     </nav>
   );
