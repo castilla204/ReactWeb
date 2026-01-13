@@ -37,6 +37,14 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
     const [imageIndex, setImageIndex] = useState(0);
     const [isFavorite, setIsFavorite] = useState(false);
     const navigate = useNavigate();
+    const [isMobile, setIsMobile] = useState(false);
+    
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
     
     const imageUrls = Array.isArray(service.imageUrls) 
         ? service.imageUrls 
@@ -45,7 +53,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
             : [];
     const hasMultipleImages = imageUrls.length > 1;
     const serviceId = service.id || service.Id;
-    const isGuestFavorite = (service.completedSearches || 0) > 5 && (service.averageRating || 0) >= 4.0;
+    const isGuestFavorite = (service.completedSearches || 0) > 10 && (service.averageRating || 0) >= 4.5;
     
     const handleCardClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -59,26 +67,330 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
         setIsFavorite(!isFavorite);
     };
     
-    // Formateo estilo Airbnb
-    const price = service.price ? `${Math.round(service.price)} €` : 'Consultar';
-    const completedCount = service.completedSearches || 0;
-    const reviewCount = service.reviewCount || 0;
-    
-    // Avatar del experto
-    const expertAvatar = service.expert?.user?.profilePicture || service.expert?.profilePicture;
-    const expertName = service.expert?.user?.name || service.expert?.name || 'Profesional verificado';
-    
-    // Descripción del servicio
-    const description = service.description || service.serviceTypeName || 'Servicio profesional';
-    const shortDescription = description.length > 60 ? description.substring(0, 60) + '...' : description;
-    
-    // Horario de disponibilidad
-    const getSchedule = () => {
-        if (service.availability) return service.availability;
-        // Formato horario
-        return 'Lun-Vie 9:00-18:00';
+    const handleImageNavigation = (e: React.MouseEvent, direction: 'prev' | 'next') => {
+        e.stopPropagation();
+        if (imageUrls.length <= 1) return;
+        
+        if (direction === 'next') {
+            setImageIndex((prev) => (prev + 1) % imageUrls.length);
+        } else {
+            setImageIndex((prev) => (prev - 1 + imageUrls.length) % imageUrls.length);
+        }
     };
     
+    // Precio del servicio
+    const price = service.price ? `€${Math.round(service.price)}` : 'Consultar';
+    
+    // Horario de disponibilidad (formato compacto como en homepage)
+    const formatAvailability = () => {
+        const availability = service.expert?.currentAvailability;
+        if (!availability) return 'Flexible';
+        
+        const days = availability.daysOfWeek || [];
+        if (days.length === 0) return 'Flexible';
+        
+        const dayMap: Record<string, string> = {
+            'Monday': 'L',
+            'Tuesday': 'M',
+            'Wednesday': 'X',
+            'Thursday': 'J',
+            'Friday': 'V',
+            'Saturday': 'S',
+            'Sunday': 'D'
+        };
+        
+        const dayAbbr = days
+            .slice(0, 5)
+            .map((day: string) => dayMap[day] || day.charAt(0))
+            .join('');
+        
+        const startTime = availability.startTime ? availability.startTime.substring(0, 5) : '';
+        const endTime = availability.endTime ? availability.endTime.substring(0, 5) : '';
+        
+        if (startTime && endTime) {
+            const startHour = parseInt(startTime.split(':')[0], 10).toString();
+            const endHour = parseInt(endTime.split(':')[0], 10).toString();
+            return `${dayAbbr} ${startHour}-${endHour}h`;
+        }
+        return dayAbbr || 'Flexible';
+    };
+    
+    const availabilityInfo = formatAvailability();
+    
+    // En desktop, usar el mismo estilo que HomepageWall
+    if (!isMobile) {
+        return (
+            <a
+                href={`/service/${serviceId}`}
+                onClick={handleCardClick}
+                className="block flex-shrink-0 cursor-pointer group"
+                style={{ width: '100%', textDecoration: 'none', color: 'inherit' }}
+            >
+                <div className="relative w-full">
+                    {/* Contenedor de imagen - Estilo exacto de HomepageWall */}
+                    <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '20px', width: '100%' }}>
+                        {imageUrls.length > 0 ? (
+                            <>
+                                <div className="relative w-full h-full">
+                                    <img
+                                        src={imageUrls[imageIndex]}
+                                        alt={service.serviceTypeName || 'Servicio'}
+                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                        style={{ display: 'block' }}
+                                    />
+                                </div>
+                                
+                                {/* Badge "Recomendamos" - Estilo exacto de HomepageWall */}
+                                {isGuestFavorite && (
+                                    <div
+                                        className="absolute top-3 left-3 z-10"
+                                        style={{
+                                            padding: '0',
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                paddingTop: '4px',
+                                                paddingBottom: '4px',
+                                                paddingLeft: '8px',
+                                                paddingRight: '8px',
+                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                backdropFilter: 'blur(4px)',
+                                                borderRadius: '8px',
+                                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            <span
+                                                style={{
+                                                    fontSize: '10px',
+                                                    lineHeight: '12px',
+                                                    fontWeight: 400,
+                                                    color: '#222222',
+                                                    fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                                                    letterSpacing: '0',
+                                                }}
+                                                aria-label="Recomendamos"
+                                            >
+                                                Recomendamos
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Botón de favorito - Estilo exacto de HomepageWall */}
+                                <button
+                                    onClick={handleFavoriteClick}
+                                    className="absolute top-3 right-3 z-10"
+                                    style={{
+                                        padding: '0',
+                                        margin: '0',
+                                        backgroundColor: 'transparent',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '24px',
+                                        height: '24px',
+                                    }}
+                                >
+                                    <svg
+                                        viewBox="0 0 32 32"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        aria-hidden="true"
+                                        role="presentation"
+                                        focusable="false"
+                                        style={{
+                                            display: 'block',
+                                            fill: isFavorite ? '#FF385C' : 'rgba(0, 0, 0, 0.5)',
+                                            height: '24px',
+                                            width: '24px',
+                                            stroke: isFavorite ? '#FF385C' : 'rgba(255, 255, 255, 0.8)',
+                                            strokeWidth: '2',
+                                            overflow: 'visible',
+                                            margin: '0',
+                                            padding: '0',
+                                        }}
+                                    >
+                                        <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
+                                    </svg>
+                                </button>
+
+                                {/* Navegación de imágenes - Solo en desktop */}
+                                {hasMultipleImages && (
+                                    <>
+                                        <button
+                                            onClick={(e) => handleImageNavigation(e, 'prev')}
+                                            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                            style={{
+                                                padding: '6px',
+                                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                            }}
+                                        >
+                                            <ChevronRight className="w-4 h-4 text-gray-700 rotate-180" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleImageNavigation(e, 'next')}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                            style={{
+                                                padding: '6px',
+                                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                            }}
+                                        >
+                                            <ChevronRight className="w-4 h-4 text-gray-700" />
+                                        </button>
+                                        
+                                        {/* Indicadores de imágenes */}
+                                        <div
+                                            className="absolute left-1/2 -translate-x-1/2 flex"
+                                            style={{ 
+                                                gap: '6px',
+                                                bottom: '12px',
+                                            }}
+                                        >
+                                            {imageUrls.map((_, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="rounded-full transition-all bg-white"
+                                                    style={{
+                                                        height: '4px',
+                                                        width: idx === imageIndex ? '24px' : '4px',
+                                                        opacity: idx === imageIndex ? 1 : 0.6,
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Avatar del experto - Esquina inferior izquierda */}
+                                {service.expert && (
+                                    <div
+                                        className="absolute left-3 z-10"
+                                        style={{
+                                            width: '32px',
+                                            height: '32px',
+                                            bottom: '12px',
+                                            borderRadius: '50%',
+                                            border: '2px solid white',
+                                            overflow: 'hidden',
+                                            backgroundColor: '#f0f0f0',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                                        }}
+                                    >
+                                        {service.expert.profilePictureUrl ? (
+                                            <img
+                                                src={service.expert.profilePictureUrl}
+                                                alt={service.expert.user?.name || 'Experto'}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div 
+                                                className="w-full h-full flex items-center justify-center"
+                                                style={{
+                                                    backgroundColor: '#3b82f6',
+                                                    color: 'white',
+                                                    fontSize: '14px',
+                                                    fontWeight: 600,
+                                                }}
+                                            >
+                                                {service.expert.user?.name?.charAt(0)?.toUpperCase() || 'E'}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                <span className="text-gray-400 text-sm">Sin imagen</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Información del servicio - Estructura exacta como HomepageWall */}
+                    <div style={{ marginTop: '6px' }}>
+                        {/* Primera fila: Título */}
+                        <div
+                            className="overflow-hidden"
+                            style={{
+                                marginBottom: '0px',
+                                fontSize: '14px',
+                                lineHeight: '20.02px',
+                                fontWeight: 500,
+                                color: 'rgb(34, 34, 34)',
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                textAlign: 'left',
+                            }}
+                        >
+                            <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName || service.categoryName || 'Servicio'}</div>
+                        </div>
+
+                        {/* Segunda fila: Ciudad · Horario */}
+                        <div
+                            className="flex items-center overflow-hidden"
+                            style={{
+                                marginBottom: '0px',
+                                fontSize: '12px',
+                                lineHeight: '16px',
+                                fontWeight: 400,
+                                color: 'rgb(106, 106, 106)',
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                textAlign: 'left',
+                            }}
+                        >
+                            <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
+                                {service.expert?.city && (
+                                    <>
+                                        <span className="truncate">{service.expert.city}</span>
+                                        <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
+                                    </>
+                                )}
+                                <span className="truncate">{availabilityInfo}</span>
+                            </div>
+                        </div>
+
+                        {/* Tercera fila: Valoración · Precio */}
+                        <div
+                            className="flex items-center overflow-hidden"
+                            style={{
+                                marginBottom: '0px',
+                                fontSize: '12px',
+                                lineHeight: '16px',
+                                fontWeight: 400,
+                                color: 'rgb(106, 106, 106)',
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                textAlign: 'left',
+                            }}
+                        >
+                            <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <Star 
+                                        className="flex-shrink-0" 
+                                        style={{ 
+                                            width: '12px', 
+                                            height: '12px', 
+                                            fill: '#222222', 
+                                            color: '#222222',
+                                        }} 
+                                    />
+                                    <span>
+                                        {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'}
+                                    </span>
+                                </span>
+                                <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
+                                <span>{price}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        );
+    }
+    
+    // En móvil, mantener el estilo original (más compacto)
     return (
         <a
             href={`/service/${serviceId}`}
@@ -87,7 +399,6 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
             style={{ textDecoration: 'none', color: 'inherit' }}
         >
             <div className="relative">
-                {/* Imagen cuadrada estilo Airbnb */}
                 <div 
                     className="relative w-full overflow-hidden" 
                     style={{ aspectRatio: '1/1', borderRadius: '12px', marginBottom: '10px' }}
@@ -101,7 +412,6 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 loading="lazy"
                             />
                             
-                            {/* Badge Guest favorite - Airbnb style */}
                             {isGuestFavorite && (
                                 <div 
                                     className="absolute top-3 left-3"
@@ -115,11 +425,10 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                         boxShadow: '0 2px 4px rgba(0,0,0,0.18)'
                                     }}
                                 >
-                                    Guest favorite
+                                    Recomendamos
                                 </div>
                             )}
 
-                            {/* Corazón Airbnb */}
                             <button 
                                 onClick={handleFavoriteClick} 
                                 className="absolute top-3 right-3"
@@ -134,13 +443,12 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 </svg>
                             </button>
 
-                            {/* Foto del experto - Esquina inferior derecha */}
-                            {expertAvatar && (
+                            {service.expert?.profilePictureUrl && (
                                 <div 
-                                    className="absolute bottom-3 right-3"
+                                    className="absolute bottom-3 left-3"
                                     style={{
-                                        width: '32px',
-                                        height: '32px',
+                                        width: '28px',
+                                        height: '28px',
                                         border: '2px solid white',
                                         borderRadius: '50%',
                                         overflow: 'hidden',
@@ -148,24 +456,23 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                     }}
                                 >
                                     <img 
-                                        src={expertAvatar} 
-                                        alt={expertName}
+                                        src={service.expert.profilePictureUrl} 
+                                        alt={service.expert.user?.name || 'Experto'}
                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     />
                                 </div>
                             )}
 
-                            {/* Dots indicadores */}
                             {hasMultipleImages && (
-                                <div className="absolute bottom-3 left-3 flex gap-1.5">
+                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                                     {imageUrls.slice(0, 5).map((_: string, idx: number) => (
                                         <div 
                                             key={idx} 
-                                            className="rounded-full"
+                                            className="rounded-full bg-white"
                                             style={{ 
-                                                height: '6px', 
-                                                width: '6px', 
-                                                backgroundColor: idx === imageIndex ? '#fff' : 'rgba(255,255,255,0.6)'
+                                                height: '3px', 
+                                                width: idx === imageIndex ? '20px' : '3px', 
+                                                opacity: idx === imageIndex ? 1 : 0.6
                                             }} 
                                         />
                                     ))}
@@ -179,9 +486,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                     )}
                 </div>
 
-                {/* Info estilo Airbnb exacto */}
                 <div style={{ fontFamily: 'Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif' }}>
-                    {/* Línea 1: Título */}
                     <div 
                         style={{ 
                             fontSize: '15px', 
@@ -196,48 +501,6 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         {service.serviceTypeName || service.categoryName || 'Servicio'}
                     </div>
                     
-                    {/* Línea 2: Rating · Contrataciones · Experto - Todo en una línea */}
-                    <div 
-                        style={{ 
-                            fontSize: '15px', 
-                            color: '#717171', 
-                            lineHeight: '18px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            overflow: 'hidden'
-                        }}
-                    >
-                        {service.averageRating && service.averageRating > 0 && (
-                            <>
-                                <Star 
-                                    style={{ 
-                                        width: '10px', 
-                                        height: '10px', 
-                                        fill: '#222222', 
-                                        color: '#222222',
-                                        opacity: 0.7,
-                                        flexShrink: 0
-                                    }} 
-                                />
-                                <span>{service.averageRating.toFixed(1)}</span>
-                            </>
-                        )}
-                        {completedCount > 0 && (
-                            <>
-                                <span>·</span>
-                                <span>{completedCount} {completedCount === 1 ? 'contratación' : 'contrataciones'}</span>
-                            </>
-                        )}
-                        {expertName && (
-                            <>
-                                <span>·</span>
-                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{expertName}</span>
-                            </>
-                        )}
-                    </div>
-                    
-                    {/* Línea 3: Horario */}
                     <div 
                         style={{ 
                             fontSize: '15px', 
@@ -245,16 +508,37 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             lineHeight: '18px',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
+                            marginTop: '2px'
                         }}
                     >
-                        {getSchedule()}
+                        {service.expert?.city && <span>{service.expert.city} · </span>}
+                        {availabilityInfo}
                     </div>
                     
-                    {/* Línea 4: Precio */}
-                    <div style={{ marginTop: '4px' }}>
-                        <span style={{ fontSize: '15px', fontWeight: 600, color: '#222' }}>{price}</span>
-                        <span style={{ fontSize: '15px', color: '#717171' }}> servicio</span>
+                    <div 
+                        style={{ 
+                            fontSize: '15px', 
+                            color: '#717171', 
+                            lineHeight: '18px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            marginTop: '2px'
+                        }}
+                    >
+                        <Star 
+                            style={{ 
+                                width: '12px', 
+                                height: '12px', 
+                                fill: '#222222', 
+                                color: '#222222',
+                                display: 'inline-block',
+                                verticalAlign: 'middle',
+                                marginRight: '4px'
+                            }} 
+                        />
+                        {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'} · {price}
                     </div>
                 </div>
             </div>
@@ -1100,8 +1384,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     {/* Lista de servicios */}
                     <div ref={sidebarRef} className="flex-1 overflow-y-auto">
                         {formData.latitude && formData.longitude && (
-                            <div className="p-4 pb-6">
-                            {/* Services List - Desktop estilo Airbnb en 1 columna, cards más grandes */}
+                            <div className="px-4 md:px-6 pt-4 md:pt-6 pb-6">
+                            {/* Services List - Desktop estilo Airbnb en grid de 2 columnas */}
                             {(() => {
                                 console.log('🔍 SearchParameterForm - Renderizando sidebar:', {
                                     reorderedServicesCount: reorderedServices.length,
@@ -1110,12 +1394,19 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 return null;
                             })()}
                             {reorderedServices.length > 0 ? (
-                                <div className="flex flex-col gap-6" style={{ width: '100%' }}>
+                                <div 
+                                    className="grid grid-cols-1 md:grid-cols-2" 
+                                    style={{ 
+                                        width: '100%',
+                                        gap: '20px',
+                                        padding: '0',
+                                    }}
+                                >
                                     {reorderedServices.map((service) => {
                                         const serviceId = service.id || (service as any).Id;
                                         const isSelected = selectedService === serviceId;
                                         return (
-                                            <div key={serviceId} style={{ width: '100%', maxWidth: '347px' }}>
+                                            <div key={serviceId} style={{ width: '100%' }}>
                                                 <MapServiceCard
                                                     service={service}
                                                     isSelected={isSelected}
