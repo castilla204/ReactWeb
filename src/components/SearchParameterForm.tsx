@@ -392,13 +392,95 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile);
     const [isDrawerVisible, setIsDrawerVisible] = useState(false); // Controla la visibilidad
     
-    // ✅ SnapPoints nativos de vaul - Solo 2 posiciones para máxima fluidez
-    // inicial (50% - mitad de pantalla) y expandido (1 - toda la pantalla, tocando el topbar)
-    const SNAP_POINTS = [0.5, 1] as const;
-    const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0.5);
-    
     const drawerContentRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
+    const [headerHeight, setHeaderHeight] = useState(81); // Altura por defecto del header
+    
+    // Calcular altura del header dinámicamente
+    useEffect(() => {
+        const updateHeaderHeight = () => {
+            if (headerRef.current) {
+                const height = headerRef.current.offsetHeight;
+                setHeaderHeight(height);
+            }
+        };
+        
+        updateHeaderHeight();
+        window.addEventListener('resize', updateHeaderHeight);
+        return () => window.removeEventListener('resize', updateHeaderHeight);
+    }, []);
+    
+    // Calcular snapPoints dinámicamente basados en la altura del header
+    // 3 posiciones: abajo (0 - cerrado), reposo (0.5 - mitad), arriba (max - tocando topbar)
+    // En vaul, los snapPoints son fracciones de la altura disponible (desde bottom)
+    const SNAP_POINTS = useMemo(() => {
+        if (typeof window === 'undefined') return [0, 0.5, 0.95] as const;
+        // Calcular el snapPoint máximo para que toque el topbar sin superponerse
+        // El drawer empieza desde bottom, así que el máximo es la altura disponible menos el header
+        const availableHeight = window.innerHeight - headerHeight;
+        const maxSnapPoint = availableHeight / window.innerHeight; // Fracción de la altura total
+        return [0, 0.5, maxSnapPoint] as const;
+    }, [headerHeight]);
+    
+    // ✅ SnapPoints: 0 = cerrado, 0.5 = reposo (inicial), max = arriba tocando topbar
+    const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0.5);
+    
+    // Detectar scroll hacia abajo para deslizar el drawer hacia arriba automáticamente (fluido)
+    useEffect(() => {
+        const drawerContent = drawerContentRef.current;
+        if (!drawerContent || !isDrawerOpen || !isDrawerVisible) return;
+        
+        let lastScrollTop = 0;
+        let scrollTimeout: NodeJS.Timeout | null = null;
+        let scrollAccumulator = 0; // Acumular scroll para movimiento más fluido
+        
+        const handleScroll = () => {
+            const currentScrollTop = drawerContent.scrollTop;
+            const scrollDelta = currentScrollTop - lastScrollTop;
+            
+            // Detectar scroll hacia abajo (acumular para movimiento más suave)
+            if (scrollDelta > 0) {
+                scrollAccumulator += scrollDelta;
+                
+                // Si el drawer no está en el snapPoint máximo, moverlo hacia arriba
+                const maxSnapPoint = SNAP_POINTS[SNAP_POINTS.length - 1];
+                if (activeSnapPoint !== maxSnapPoint && scrollAccumulator > 30) {
+                    // Limpiar timeout anterior
+                    if (scrollTimeout) {
+                        clearTimeout(scrollTimeout);
+                    }
+                    
+                    // Mover al siguiente snapPoint con delay más corto para fluidez
+                    scrollTimeout = setTimeout(() => {
+                        const currentIndex = SNAP_POINTS.findIndex(sp => sp === activeSnapPoint);
+                        if (currentIndex < SNAP_POINTS.length - 1) {
+                            const nextSnapPoint = SNAP_POINTS[currentIndex + 1];
+                            setActiveSnapPoint(nextSnapPoint);
+                            scrollAccumulator = 0; // Resetear acumulador
+                        }
+                    }, 150); // Delay más corto para más fluidez
+                }
+            } else if (scrollDelta < 0) {
+                // Scroll hacia arriba - resetear acumulador y cancelar movimiento
+                scrollAccumulator = 0;
+                if (scrollTimeout) {
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = null;
+                }
+            }
+            
+            lastScrollTop = currentScrollTop;
+        };
+        
+        drawerContent.addEventListener('scroll', handleScroll, { passive: true });
+        
+        return () => {
+            drawerContent.removeEventListener('scroll', handleScroll);
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+        };
+    }, [isDrawerOpen, isDrawerVisible, activeSnapPoint, SNAP_POINTS]);
     
     const [filters, setFilters] = useState({
         priceRange: [0, 100000] as [number, number], // [min, max] en euros - rango amplio para servicios premium
@@ -514,7 +596,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
         if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible) {
             setIsDrawerVisible(true);
-            // Empezar en el snapPoint inicial (0.5 = 50%)
+            // Empezar en el snapPoint de reposo (0.5 = 50% - mitad de pantalla)
             setActiveSnapPoint(0.5);
         }
     }, [allServices.length, isLoadingServices, isDrawerVisible]);
@@ -1691,9 +1773,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     activeSnapPoint={activeSnapPoint}
                     setActiveSnapPoint={setActiveSnapPoint}
                     fadeFromIndex={0}
+                    snapToSequentialPoint={false}
                     style={{
                         opacity: isDrawerVisible ? 1 : 0,
-                        pointerEvents: isDrawerVisible ? 'auto' : 'none'
+                        pointerEvents: isDrawerVisible ? 'auto' : 'none',
+                        transition: 'opacity 0.2s ease-out',
                     }}
                     title={(() => {
                         const drawerServicesCount = selectedService 
@@ -1703,7 +1787,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio' : 'servicios'}` 
                             : 'Sin servicios';
                     })()}
-                    drawerClassName="lg:hidden flex flex-col bg-white outline-none border-0 rounded-t-[16px] shadow-[0_-4px_24px_rgba(0,0,0,0.12)]"
+                    drawerClassName="lg:hidden flex flex-col bg-white outline-none border-0 rounded-t-[20px] shadow-[0_-8px_32px_rgba(0,0,0,0.15)]"
                     dialogClassName="max-w-4xl max-h-[90vh] flex flex-col"
                     drawerStyle={{ 
                         bottom: '0',
@@ -1711,6 +1795,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         position: 'fixed',
                         backgroundColor: 'white',
                         // Vaul manejará la altura con snapPoints
+                        transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                        willChange: 'transform',
+                        // Asegurar que llegue exactamente hasta el topbar
+                        maxHeight: `calc(100vh - ${headerHeight}px)`,
                     }}
                     dialogStyle={{
                         maxHeight: '90vh',
@@ -1725,8 +1813,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 >
                     {/* Header con contador estilo Airbnb - Solo en móvil - ARRASTRABLE */}
                     <div 
-                        className="lg:hidden px-6 py-3 bg-white border-b border-gray-100 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none"
-                        style={{ zIndex: 10001 }}
+                        className="lg:hidden px-6 py-4 bg-white border-b border-gray-100 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none"
+                        style={{ 
+                            zIndex: 10001,
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                        }}
                         data-vaul-no-drag="false"
                     >
                         <div className="flex items-center justify-between">
@@ -1776,8 +1868,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         style={{
                             overscrollBehavior: 'contain',
                             WebkitOverflowScrolling: 'touch',
-                            // Altura máxima para asegurar que el scroll funcione (100vh menos header del drawer ~80px)
-                            maxHeight: 'calc(100vh - 80px)',
+                            scrollBehavior: 'smooth',
+                            // Altura máxima para asegurar que el scroll funcione (100vh menos header del drawer y topbar)
+                            maxHeight: `calc(100vh - ${headerHeight}px - 80px)`,
+                            // Mejorar rendimiento del scroll
+                            willChange: 'scroll-position',
+                            // Suavizar el scroll en iOS
+                            WebkitTransform: 'translateZ(0)',
+                            transform: 'translateZ(0)',
                         }}
                     >
                         {/* Services List - Estilo Airbnb */}
@@ -1792,7 +1890,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     {drawerServices.length > 0 ? (
                                         <div 
                                             className="grid grid-cols-2" 
-                                            style={{ gap: '24px 16px', paddingTop: '8px', paddingBottom: '24px' }}
+                                            style={{ 
+                                                gap: '20px 16px', 
+                                                paddingTop: '12px', 
+                                                paddingBottom: '32px',
+                                                // Mejorar rendimiento de renderizado
+                                                contain: 'layout style paint',
+                                            }}
                                         >
                                             {drawerServices.map((service) => (
                                                 <MapServiceCard

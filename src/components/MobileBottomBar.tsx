@@ -1,12 +1,31 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 import { FavoritesModal } from './FavoritesModal';
 import { MobileProfileMenu } from './MobileProfileMenu';
 import { authService } from '../services/authService';
 import { toast } from 'sonner';
 import { MessageSquare } from 'lucide-react';
+
+// Declaración de tipos para Google Sign-In
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          renderButton: (element: HTMLElement, config: any) => void;
+          prompt: () => void;
+          cancel: () => void;
+        };
+      };
+    };
+  }
+}
+
+// ID único para este componente para evitar conflictos
+const MOBILE_GOOGLE_BUTTON_ID = 'mobile-bottom-bar-google-btn';
+const GOOGLE_CLIENT_ID = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
 
 export const MobileBottomBar: React.FC = () => {
   const navigate = useNavigate();
@@ -18,132 +37,21 @@ export const MobileBottomBar: React.FC = () => {
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const googleLoginButtonRef = useRef<HTMLDivElement>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitializingRef = useRef(false);
 
-  // ✅ Detectar cuando el botón de Google está listo usando MutationObserver
-  useEffect(() => {
-    if (isAuthenticated) return;
-
-    const checkGoogleButton = () => {
-      const button = googleLoginButtonRef.current?.querySelector('div[role="button"]');
-      if (button) {
-        setIsGoogleReady(true);
-        return true;
-      }
-      return false;
-    };
-
-    // Verificar inmediatamente
-    if (checkGoogleButton()) return;
-
-    // Usar MutationObserver para detectar cuando el botón aparece
-    const observer = new MutationObserver(() => {
-      if (checkGoogleButton()) {
-        observer.disconnect();
-      }
-    });
-
-    if (googleLoginButtonRef.current) {
-      observer.observe(googleLoginButtonRef.current, {
-        childList: true,
-        subtree: true,
-      });
-    }
-
-    // También verificar periódicamente por si acaso
-    const interval = setInterval(() => {
-      if (checkGoogleButton()) {
-        clearInterval(interval);
-      }
-    }, 500);
-
-    return () => {
-      observer.disconnect();
-      clearInterval(interval);
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-      }
-    };
-  }, [isAuthenticated]);
-
-  // ✅ Función para intentar hacer click en el botón de Google con reintentos
-  const tryClickGoogleButton = useCallback((attempt: number = 1, maxAttempts: number = 10) => {
-    const googleButton = googleLoginButtonRef.current?.querySelector('div[role="button"]') as HTMLElement;
-    
-    if (googleButton) {
-      console.log(`✅ [MobileBottomBar] Botón de Google encontrado en intento ${attempt}`);
-      setIsGoogleLoading(false);
-      googleButton.click();
-      return;
-    }
-
-    if (attempt >= maxAttempts) {
-      console.error(`❌ [MobileBottomBar] No se encontró el botón de Google después de ${maxAttempts} intentos`);
-      setIsGoogleLoading(false);
-      toast.error('Error al cargar Google Sign-In. Intenta de nuevo.', { duration: 4000 });
-      return;
-    }
-
-    // Incrementar el delay progresivamente: 200ms, 300ms, 400ms, 500ms...
-    const delay = 200 + (attempt * 100);
-    console.log(`⏳ [MobileBottomBar] Intento ${attempt}/${maxAttempts}, reintentando en ${delay}ms...`);
-    
-    retryTimeoutRef.current = setTimeout(() => {
-      tryClickGoogleButton(attempt + 1, maxAttempts);
-    }, delay);
-  }, []);
-
-  const isActive = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/' || location.pathname === '/explorar';
-    }
-    return location.pathname === path;
-  };
-
-  const exploreActive = isActive('/');
-  const wishlistsActive = showFavoritesModal;
-  const searchesActive = isActive('/busquedas');
-  // profileActive solo cuando está autenticado Y está en perfil
-  const profileActive = isAuthenticated && showProfileMenu;
-
-  const handleExploreClick = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    navigate('/');
-  };
-
-  const handleFavoritesClick = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isAuthenticated) {
-      setShowFavoritesModal(true);
-    } else {
-      // Si no está autenticado, redirigir a la página principal donde puede iniciar sesión
-      navigate('/');
-    }
-  };
-
-  const handleSearchesClick = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isAuthenticated) {
-      navigate('/busquedas');
-    } else {
-      handleLoginClick(e);
-    }
-  };
-
-
-  // ✅ Handler para cuando Google Login es exitoso (devuelve JWT credential)
-  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+  // ✅ Handler para cuando Google Login es exitoso
+  const handleGoogleCredential = useCallback(async (response: any) => {
     try {
-      console.log('🔐 [MobileBottomBar] Autenticación con Google exitosa');
+      console.log('🔐 [MobileBottomBar] Credencial recibida de Google');
       
-      if (!credentialResponse.credential) {
+      if (!response.credential) {
         throw new Error('No credential received from Google');
       }
 
-      // ✅ Enviar el JWT credential al backend (formato que el backend espera)
-      const result = await authService.googleAuth(credentialResponse.credential);
+      // ✅ Enviar el JWT credential al backend
+      const result = await authService.googleAuth(response.credential);
       
       if (!result.success) {
         throw new Error('Authentication failed');
@@ -185,12 +93,229 @@ export const MobileBottomBar: React.FC = () => {
       console.error('❌ [MobileBottomBar] Error durante autenticación:', error);
       const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
       toast.error(errorMessage, { duration: 5000 });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  }, [navigate, updateUser]);
+
+  // ✅ Inicializar Google Sign-In de forma independiente
+  const initializeGoogleButton = useCallback(() => {
+    if (isAuthenticated || isInitializingRef.current) return;
+    
+    const buttonContainer = googleLoginButtonRef.current;
+    if (!buttonContainer || !window.google?.accounts?.id) {
+      console.log('⏳ [MobileBottomBar] Esperando SDK de Google...');
+      return false;
+    }
+
+    isInitializingRef.current = true;
+    console.log('🔄 [MobileBottomBar] Inicializando Google Sign-In...');
+
+    try {
+      // Limpiar el contenedor
+      buttonContainer.innerHTML = '';
+
+      // Inicializar con nuestro propio callback
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: false,
+        use_fedcm_for_prompt: false,
+        itp_support: true,
+      });
+
+      // Renderizar el botón
+      window.google.accounts.id.renderButton(buttonContainer, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: 'signin_with',
+      });
+
+      // Verificar que el botón se renderizó
+      setTimeout(() => {
+        const renderedButton = buttonContainer.querySelector('div[role="button"]');
+        if (renderedButton) {
+          console.log('✅ [MobileBottomBar] Botón de Google renderizado correctamente');
+          setIsGoogleReady(true);
+        } else {
+          console.warn('⚠️ [MobileBottomBar] Botón no renderizado, reintentando...');
+          setIsGoogleReady(false);
+        }
+        isInitializingRef.current = false;
+      }, 200);
+
+      return true;
+    } catch (error) {
+      console.error('❌ [MobileBottomBar] Error inicializando Google:', error);
+      isInitializingRef.current = false;
+      return false;
+    }
+  }, [isAuthenticated, handleGoogleCredential]);
+
+  // ✅ Efecto para inicializar y mantener el botón de Google
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsGoogleReady(false);
+      return;
+    }
+
+    // Función para verificar si el botón sigue funcionando
+    const checkAndReinitialize = () => {
+      const button = googleLoginButtonRef.current?.querySelector('div[role="button"]');
+      if (!button) {
+        console.log('🔄 [MobileBottomBar] Botón de Google no encontrado, reinicializando...');
+        setIsGoogleReady(false);
+        initializeGoogleButton();
+      }
+    };
+
+    // Esperar a que el SDK esté listo
+    const waitForSDK = () => {
+      if (window.google?.accounts?.id) {
+        console.log('✅ [MobileBottomBar] SDK de Google detectado');
+        if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+        initializeGoogleButton();
+        
+        // Verificar periódicamente que el botón siga funcionando
+        // (otros componentes pueden llamar a cancel())
+        checkIntervalRef.current = setInterval(checkAndReinitialize, 2000);
+      }
+    };
+
+    // Verificar inmediatamente y luego cada 300ms
+    waitForSDK();
+    const sdkInterval = setInterval(() => {
+      if (window.google?.accounts?.id) {
+        clearInterval(sdkInterval);
+        waitForSDK();
+      }
+    }, 300);
+
+    // Timeout después de 10 segundos
+    initTimeoutRef.current = setTimeout(() => {
+      clearInterval(sdkInterval);
+      if (!isGoogleReady) {
+        console.error('❌ [MobileBottomBar] Timeout esperando SDK de Google');
+      }
+    }, 10000);
+
+    return () => {
+      clearInterval(sdkInterval);
+      if (initTimeoutRef.current) clearTimeout(initTimeoutRef.current);
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    };
+  }, [isAuthenticated, initializeGoogleButton, isGoogleReady]);
+
+  // ✅ Función para hacer click en el botón de Google
+  // IMPORTANTE: Reinicializa el callback antes de hacer click para evitar que 
+  // otros componentes (GoogleAuth, GoogleSignInButton) hayan sobrescrito nuestro callback
+  const triggerGoogleSignIn = useCallback(() => {
+    // Primero, re-registrar nuestro callback para asegurarnos de que sea el activo
+    if (window.google?.accounts?.id) {
+      console.log('🔄 [MobileBottomBar] Re-registrando callback antes del click');
+      try {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredential,
+          auto_select: false,
+          cancel_on_tap_outside: false,
+          use_fedcm_for_prompt: false,
+          itp_support: true,
+        });
+      } catch (e) {
+        console.warn('⚠️ [MobileBottomBar] Error al re-registrar callback:', e);
+      }
+    }
+
+    const googleButton = googleLoginButtonRef.current?.querySelector('div[role="button"]') as HTMLElement;
+    
+    if (googleButton) {
+      console.log('🔘 [MobileBottomBar] Haciendo click en botón de Google');
+      
+      // Crear y dispatchar eventos para máxima compatibilidad
+      const events = ['mousedown', 'mouseup', 'click'];
+      events.forEach(eventType => {
+        const event = new MouseEvent(eventType, {
+          bubbles: true,
+          cancelable: true,
+          view: window
+        });
+        googleButton.dispatchEvent(event);
+      });
+      
+      // También hacer clic directo
+      googleButton.click();
+      
+      // Para móvil, intentar eventos táctiles
+      if ('ontouchstart' in window) {
+        try {
+          const touchEvents = ['touchstart', 'touchend'];
+          touchEvents.forEach(eventType => {
+            const touchEvent = new TouchEvent(eventType, {
+              bubbles: true,
+              cancelable: true
+            });
+            googleButton.dispatchEvent(touchEvent);
+          });
+        } catch (e) {
+          // TouchEvent puede no estar disponible
+        }
+      }
+      
+      return true;
+    }
+    
+    // Fallback: usar prompt directamente
+    if (window.google?.accounts?.id?.prompt) {
+      console.log('🔘 [MobileBottomBar] Usando Google prompt como fallback');
+      window.google.accounts.id.prompt();
+      return true;
+    }
+    
+    return false;
+  }, [handleGoogleCredential]);
+
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/' || location.pathname === '/explorar';
+    }
+    return location.pathname === path;
+  };
+
+  const exploreActive = isActive('/');
+  const wishlistsActive = showFavoritesModal;
+  const searchesActive = isActive('/busquedas');
+  // profileActive solo cuando está autenticado Y está en perfil
+  const profileActive = isAuthenticated && showProfileMenu;
+
+  const handleExploreClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate('/');
+  };
+
+  const handleFavoritesClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isAuthenticated) {
+      setShowFavoritesModal(true);
+    } else {
+      // Si no está autenticado, redirigir a la página principal donde puede iniciar sesión
+      navigate('/');
     }
   };
 
-  const handleGoogleError = () => {
-    console.error('❌ [MobileBottomBar] Error en Google Login');
-    toast.error('Error al iniciar sesión con Google', { duration: 4000 });
+  const handleSearchesClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isAuthenticated) {
+      navigate('/busquedas');
+    } else {
+      handleLoginClick(e);
+    }
   };
 
   const handleLoginClick = (e: React.MouseEvent | React.TouchEvent) => {
@@ -210,18 +335,37 @@ export const MobileBottomBar: React.FC = () => {
       console.log('🔘 [MobileBottomBar] Iniciando sesión con Google...');
       setIsGoogleLoading(true);
 
-      // Si el botón ya está listo, hacer click inmediatamente
-      if (isGoogleReady) {
-        const googleButton = googleLoginButtonRef.current?.querySelector('div[role="button"]') as HTMLElement;
-        if (googleButton) {
-          setIsGoogleLoading(false);
-          googleButton.click();
-          return;
-        }
+      // Intentar hacer click en el botón de Google
+      if (isGoogleReady && triggerGoogleSignIn()) {
+        // El loading se resetea en handleGoogleCredential
+        return;
       }
 
-      // Si no está listo, usar el sistema de reintentos
-      tryClickGoogleButton(1, 15); // Hasta 15 intentos (~4 segundos total)
+      // Si no está listo, reinicializar y reintentar
+      console.log('⚠️ [MobileBottomBar] Botón no listo, reinicializando...');
+      initializeGoogleButton();
+      
+      // Reintentar después de un delay
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      const retryClick = () => {
+        attempts++;
+        if (triggerGoogleSignIn()) {
+          setIsGoogleLoading(false);
+          return;
+        }
+        
+        if (attempts >= maxAttempts) {
+          setIsGoogleLoading(false);
+          toast.error('Error al cargar Google Sign-In. Recarga la página e intenta de nuevo.', { duration: 4000 });
+          return;
+        }
+        
+        retryTimeoutRef.current = setTimeout(retryClick, 300 + (attempts * 100));
+      };
+      
+      retryTimeoutRef.current = setTimeout(retryClick, 500);
     }
   };
   
@@ -596,10 +740,11 @@ export const MobileBottomBar: React.FC = () => {
         }}
       />
       
-      {/* ✅ Botón de Google Login oculto - Se triggea programáticamente desde el botón custom */}
+      {/* ✅ Contenedor para el botón de Google - Renderizado por window.google.accounts.id */}
       {!isAuthenticated && (
         <div 
           ref={googleLoginButtonRef}
+          id={MOBILE_GOOGLE_BUTTON_ID}
           style={{ 
             position: 'absolute', 
             opacity: 0, 
@@ -609,14 +754,7 @@ export const MobileBottomBar: React.FC = () => {
             height: '1px',
             overflow: 'hidden'
           }}
-        >
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            useOneTap={false}
-            auto_select={false}
-          />
-        </div>
+        />
       )}
     </nav>
   );
