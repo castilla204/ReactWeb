@@ -530,6 +530,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                 <ArrowLeft className="w-4 h-4" strokeWidth={2} />
                             </button>
                             <h1
+                                className="hidden md:block"
                                 style={{
                                     fontSize: '22px',
                                     lineHeight: '26px',
