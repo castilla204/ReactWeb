@@ -41,7 +41,10 @@ const HomePage: React.FC = () => {
       <AirbnbSearchBar onSearch={handleSearch} />
       
       {/* Main Content with proper spacing - Same as Airbnb */}
-      <div className="pt-3 md:pt-10 pb-20 md:pb-0" style={{ paddingTop: '12px', paddingBottom: '80px' }}>
+      <div className="pt-3 md:pt-10 pb-20 md:pb-0" style={{ 
+        paddingTop: '12px', 
+        paddingBottom: 'max(80px, calc(80px + env(safe-area-inset-bottom)))' 
+      }}>
         <div className="md:pt-4" style={{ paddingTop: '8px' }} data-services-section>
           <HomepageWall 
             countryCode={countryCode}
