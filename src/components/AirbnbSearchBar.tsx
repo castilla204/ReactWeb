@@ -1197,33 +1197,77 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
         title="Más Categorías"
         drawerClassName="w-full"
         dialogClassName="max-w-lg"
+        snapPoints={[0.82]}
       >
-        <div className="flex flex-col h-full">
-          <div className="px-4 pt-2 pb-3">
+        <div className="flex flex-col h-full pt-2" style={{ height: '100%', overflow: 'hidden' }}>
+          {/* Header mejorado con tipografía Airbnb - Estilo más sutil y moderno */}
+          <div className="px-6 pt-2 pb-3 border-b border-gray-200 flex-shrink-0">
+            <h2 
+              className="mb-0"
+              style={{
+                fontSize: '20px',
+                lineHeight: '24px',
+                fontWeight: 500,
+                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                color: 'rgb(34, 34, 34)',
+                letterSpacing: '-0.015em',
+              }}
+            >
+              Más Categorías
+            </h2>
+          </div>
+
+          {/* Barra de búsqueda mejorada */}
+          <div className="px-6 pt-3 pb-3 flex-shrink-0">
             <div className="relative">
-              <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Buscar categorías..."
                 value={categorySearchQuery}
                 onChange={(e) => setCategorySearchQuery(e.target.value)}
-                className="w-full pl-8 pr-4 py-2.5 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none border-0 border-b border-gray-200 focus:border-gray-400 transition-colors"
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-lg text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:bg-white transition-all"
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '18px',
+                  fontWeight: 400,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                }}
               />
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto min-h-0">
+          {/* Lista de categorías mejorada - Scroll habilitado */}
+          <div 
+            className="flex-1 overflow-y-auto px-2" 
+            style={{ 
+              minHeight: 0, 
+              maxHeight: '100%',
+              WebkitOverflowScrolling: 'touch',
+              overflowY: 'auto',
+              overscrollBehavior: 'contain'
+            }}
+          >
             {categoriesLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-sm text-gray-500">Cargando categorías...</div>
+              <div className="flex items-center justify-center py-12">
+                <div 
+                  className="text-sm text-gray-500"
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '18px',
+                    fontWeight: 400,
+                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                    color: 'rgb(113, 113, 113)',
+                  }}
+                >
+                  Cargando categorías...
+                </div>
               </div>
             ) : (
-              <div className="flex flex-col">
+              <div className="flex flex-col pb-4">
                 {normalizedCategories
                   .filter(cat => {
-                    if (cat.id === CATEGORIES.COCHES || cat.id === CATEGORIES.INMOBILIARIA) {
-                      return false;
-                    }
+                    // ✅ Mostrar todas las categorías, incluyendo Coches e Inmobiliaria
                     if (categorySearchQuery.trim()) {
                       return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
                     }
@@ -1233,60 +1277,84 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   .map((category, index, array) => {
                     const categoryImage = getCategoryImage(category.name);
                     const isSelected = categoryId === category.id;
-                    const isLast = index === array.length - 1;
                     
                     return (
-                      <React.Fragment key={category.id}>
-                        <button
-                          type="button"
-                          onClick={() => handleDrawerCategoryClick(category.id, category.name)}
-                          className={`flex items-center gap-3 px-4 py-3 transition-colors w-full ${
-                            isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'
-                          }`}
-                        >
-                          {categoryImage ? (
-                            <img
-                              src={categoryImage}
-                              alt={category.name}
-                              className="flex-shrink-0 w-9 h-9 object-contain"
-                            />
-                          ) : (
-                            <div className="flex-shrink-0 w-9 h-9 bg-gray-100 rounded-md flex items-center justify-center">
-                              <FolderTree className="w-5 h-5 text-gray-400" />
-                            </div>
-                          )}
-                          
-                          <div className="flex-1 text-left min-w-0">
-                            <h3 className="text-base font-medium leading-tight">
-                              {category.name}
-                            </h3>
-                            <p className="text-sm text-gray-500 mt-0.5">
-                              Explorar servicios
-                            </p>
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => handleDrawerCategoryClick(category.id, category.name)}
+                        className={`flex items-center gap-4 px-4 py-4 transition-colors w-full rounded-lg ${
+                          isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        {categoryImage ? (
+                          <img
+                            src={categoryImage}
+                            alt={category.name}
+                            className="flex-shrink-0 w-10 h-10 object-contain rounded-md"
+                          />
+                        ) : (
+                          <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center">
+                            <FolderTree className="w-5 h-5 text-gray-400" />
                           </div>
-                          
-                          {isSelected && (
-                            <div className="flex-shrink-0">
-                              <div className="w-2 h-2 bg-gray-900 rounded-full" />
-                            </div>
-                          )}
-                        </button>
-                        {!isLast && <Separator className="mx-4" />}
-                      </React.Fragment>
+                        )}
+                        
+                        <div className="flex-1 text-left min-w-0">
+                          <h3 
+                            className="font-medium leading-tight mb-0.5"
+                            style={{
+                              fontSize: '16px',
+                              lineHeight: '20px',
+                              fontWeight: 500,
+                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                              color: 'rgb(34, 34, 34)',
+                            }}
+                          >
+                            {category.name}
+                          </h3>
+                          <p 
+                            className="text-gray-500"
+                            style={{
+                              fontSize: '14px',
+                              lineHeight: '18px',
+                              fontWeight: 400,
+                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                              color: 'rgb(113, 113, 113)',
+                            }}
+                          >
+                            Explorar servicios
+                          </p>
+                        </div>
+                        
+                        {isSelected && (
+                          <div className="flex-shrink-0">
+                            <div className="w-2 h-2 bg-gray-900 rounded-full" />
+                          </div>
+                        )}
+                      </button>
                     );
                   })}
                 
                 {normalizedCategories
                   .filter(cat => {
-                    if (cat.id === CATEGORIES.COCHES || cat.id === CATEGORIES.INMOBILIARIA) return false;
+                    // ✅ Mostrar todas las categorías, incluyendo Coches e Inmobiliaria
                     if (categorySearchQuery.trim()) {
                       return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
                     }
                     return true;
                   })
                   .filter(cat => cat.isActive).length === 0 && (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-sm text-gray-500">
+                  <div className="flex items-center justify-center py-12">
+                    <div 
+                      className="text-sm text-gray-500"
+                      style={{
+                        fontSize: '14px',
+                        lineHeight: '18px',
+                        fontWeight: 400,
+                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                        color: 'rgb(113, 113, 113)',
+                      }}
+                    >
                       {categorySearchQuery.trim() 
                         ? 'No se encontraron categorías' 
                         : 'No hay categorías disponibles'}
