@@ -106,6 +106,8 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             maxWidth: '100%',
             // Limitar la altura máxima al último snapPoint para evitar que suba más
             maxHeight: maxHeightVh,
+            // ✅ Aplicar margen superior si se especifica en drawerStyle
+            marginTop: drawerStyle?.marginTop || style?.marginTop || undefined,
             zIndex: noOverlay ? (drawerStyle?.zIndex || style?.zIndex || 10000) : (drawerStyle?.zIndex || style?.zIndex || 9998),
             // Mejorar rendimiento de animaciones
             willChange: 'transform',
@@ -124,7 +126,11 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
               maxHeight: '100%',
               display: 'flex', 
               flexDirection: 'column',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              // ✅ Aplicar padding-top si hay margen superior para compensar
+              paddingTop: drawerStyle?.marginTop ? '0' : undefined,
+              // ✅ Asegurar que los hijos puedan hacer scroll
+              position: 'relative',
             }}
           >
             {children}
