@@ -142,6 +142,7 @@ export function ProfileEditForm({
 
     useEffect(() => {
         if (showEditForm && profile) {
+            console.log('🔍 ProfileEditForm: Loading profile data:', profile);
             setFormData({
                 description: profile.description || '',
                 latitude: profile.latitude?.toString() || '',

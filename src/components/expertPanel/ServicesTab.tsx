@@ -27,6 +27,8 @@ interface Service {
     conditions: string;
     price: number;
     durationInHours: number | null;
+    categoryName?: string;
+    serviceTypeName?: string;
 }
 
 interface ServicesTabProps {
@@ -159,7 +161,13 @@ export function ServicesTab({
                         </TableHeader>
                         <TableBody>
                             {services.map((service) => {
-                                const categoryName = categories?.find(c => c.id === service.categoryId)?.name || 'Sin categoría';
+                                // ✅ CRÍTICO: Normalizar búsqueda de categoría (manejar PascalCase y camelCase)
+                                const category = categories?.find(c => {
+                                    const catId = c.id ?? (c as any).Id;
+                                    return catId === service.categoryId;
+                                });
+                                const categoryName = category?.name ?? (category as any)?.Name ?? service.categoryName ?? 'Sin categoría';
+                                const serviceTypeName = service.serviceTypeName ?? (service as any).ServiceTypeName ?? 'Sin categoría';
                                 const hasImages = service.imageUrls && Array.isArray(service.imageUrls) && service.imageUrls.length > 0;
                                 
                                 return (
@@ -199,7 +207,7 @@ export function ServicesTab({
                                             </div>
                                         </TableCell>
                                         <TableCell className="hidden md:table-cell">
-                                            <Badge variant="outline" className="text-xs">{categoryName}</Badge>
+                                            <Badge variant="outline" className="text-xs">{serviceTypeName}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex flex-col items-end gap-0.5">

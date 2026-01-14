@@ -1,4 +1,4 @@
-﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 
@@ -73,6 +73,11 @@ export const useExpertHires = (page: number = 1, pageSize: number = 20) => {
                 };
             }
         },
+        staleTime: 60000, // ✅ Cache por 60 segundos para evitar llamadas repetidas
+        gcTime: 120000, // ✅ Mantener en caché por 2 minutos
+        retry: 1, // ✅ Solo reintentar una vez
+        refetchOnWindowFocus: false, // ✅ No refetch al cambiar de ventana
+        refetchOnMount: false, // ✅ No refetch al montar si hay datos en caché
     });
 
     const updateStatusMutation = useMutation({

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, LogOut, DollarSign, UserPlus, Briefcase, Shield, X, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { toast } from 'sonner';
+import { getAuthToken } from '../lib/auth';
+import { RoleChecker } from '../utils/roleChecker';
 
 interface MobileProfileMenuProps {
   isOpen: boolean;
@@ -19,13 +21,36 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
-  if (!isOpen) return null;
-
-  // Obtener información del usuario
+  // Obtener información del usuario - verificar múltiples formatos posibles
   const userEmail = user?.Email || user?.email;
-  const userRole = user?.Role || user?.role;
-  const isExpert = userRole === 'Expert' || userRole === 'expert';
+  const userRole = user?.Role || user?.role || user?.userRole;
+  
+  // ✅ Detección más robusta de experto - verificar tanto el objeto user como el token
+  const isExpert = useMemo(() => {
+    // Primero verificar el rol del objeto user
+    const roleFromUser = userRole === 'Expert' || userRole === 'expert' || userRole === 'EXPERT' || userRole === 1;
+    if (roleFromUser) return true;
+    
+    // Si no se detecta por el rol del objeto user, verificar el token
+    try {
+      const token = getAuthToken();
+      if (token) {
+        const roleFromToken = RoleChecker.getUserRole(token);
+        return roleFromToken === 1; // UserRole.Expert = 1
+      }
+    } catch (error) {
+      console.warn('[MobileProfileMenu] Error checking role from token:', error);
+    }
+    
+    return false;
+  }, [userRole, user]);
+  
   const userIsAdmin = isAdmin(userEmail) || userRole === 'Admin' || userRole === 'admin';
+  
+  // Debug log
+  console.log('[MobileProfileMenu] User role check:', { userRole, isExpert, user });
+
+  if (!isOpen) return null;
 
   const handleLogout = () => {
     signOut();

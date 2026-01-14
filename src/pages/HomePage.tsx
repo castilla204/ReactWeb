@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { HomepageWall } from '../components/HomepageWall';
 import { AirbnbSearchBar } from '../components/AirbnbSearchBar';
 import { MobileBottomBar } from '../components/MobileBottomBar';
+import { WelcomePopup } from '../components/WelcomePopup';
 
 const HomePage: React.FC = () => {
   // Detectar país del navegador (fallback a ES) - Memoizado para evitar recálculos
@@ -37,6 +38,9 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Welcome Popup - Solo se muestra la primera vez */}
+      <WelcomePopup />
+      
       {/* Search Bar Header con Tabs */}
       <AirbnbSearchBar onSearch={handleSearch} />
       

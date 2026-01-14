@@ -276,17 +276,95 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             </button>
         )}
         
+        {/* Categorías encima de la barra de búsqueda - Solo Desktop */}
+        <div className="flex items-center justify-center mb-3 max-w-[850px] mx-auto">
+          <div className="flex items-center gap-8">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'coches'}
+              onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
+              onMouseEnter={() => setHoveredTab('coches')}
+              onMouseLeave={() => setHoveredTab(null)}
+              className="flex items-center gap-3 py-2 relative bg-transparent border-none cursor-pointer"
+            >
+              <img 
+                key={`coche-${imageCacheKey}`}
+                src={getImageWithCache('cochepng.png', imageCacheKey)} 
+                alt="Coche" 
+                className="w-6 h-6 object-contain" 
+              />
+              <span className={`text-sm whitespace-nowrap ${activeTab === 'coches' ? 'font-semibold text-gray-900' : 'font-normal text-gray-600'}`}>
+                Coches
+              </span>
+              <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
+                activeTab === 'coches' ? 'scale-x-100' : 'scale-x-0'
+              }`} />
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'inmobiliaria'}
+              onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
+              onMouseEnter={() => setHoveredTab('inmobiliaria')}
+              onMouseLeave={() => setHoveredTab(null)}
+              className="flex items-center gap-3 py-2 relative bg-transparent border-none cursor-pointer"
+            >
+              <img
+                key={`casa-${imageCacheKey}`}
+                src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
+                alt={drawerCategoryReplacement?.name || "Casa"}
+                className="w-6 h-6 object-contain"
+              />
+              <span className={`text-sm whitespace-nowrap ${activeTab === 'inmobiliaria' ? 'font-semibold text-gray-900' : 'font-normal text-gray-600'}`}>
+                {drawerCategoryReplacement?.name || 'Inmobiliaria'}
+              </span>
+              <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
+                activeTab === 'inmobiliaria' || hoveredTab === 'inmobiliaria' ? 'scale-x-100' : 'scale-x-0'
+              }`} />
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'drawer'}
+              onClick={() => setIsDrawerOpen(true)}
+              onMouseEnter={() => setHoveredTab('services')}
+              onMouseLeave={() => setHoveredTab(null)}
+              className="flex items-center gap-3 py-2 relative bg-transparent border-none cursor-pointer"
+            >
+              <div className="flex items-center justify-center gap-1 w-6 h-6">
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+              </div>
+              <span className={`text-sm whitespace-nowrap ${activeTab === 'drawer' ? 'font-semibold text-gray-900' : 'font-normal text-gray-600'}`}>
+                Más
+              </span>
+              <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
+                activeTab === 'drawer' || hoveredTab === 'services' ? 'scale-x-100' : 'scale-x-0'
+              }`} />
+            </button>
+          </div>
+        </div>
+        
         <form
           ref={formRef}
           onSubmit={(e) => {
             e.preventDefault();
             handleSearch();
           }}
-          className="flex items-center justify-center w-full"
+          className="flex items-center justify-center w-full gap-4 max-w-[850px] mx-auto"
         >
+          {/* Botones a la izquierda */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Aquí podríamos poner botones adicionales si es necesario */}
+          </div>
+
           {/* Search Bar Container - Exact Airbnb style */}
           <div
-            className={`flex items-center bg-white border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-all overflow-visible ${
+            className={`flex items-center bg-white border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-all overflow-visible flex-1 ${
               activeField ? 'shadow-md' : ''
             }`}
             style={{
@@ -503,78 +581,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               <Search className="w-4 h-4" strokeWidth={2.5} />
             </button>
           </div>
+
+          {/* Botones a la derecha */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Aquí podríamos poner botones adicionales si es necesario */}
+          </div>
         </form>
-
-        {/* Tabs Desktop */}
-        <div className="flex items-center justify-center mt-4 gap-8 max-w-[850px] mx-auto relative">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'coches'}
-            onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
-            onMouseEnter={() => setHoveredTab('coches')}
-            onMouseLeave={() => setHoveredTab(null)}
-            className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
-          >
-            <img 
-              key={`coche-${imageCacheKey}`}
-              src={getImageWithCache('cochepng.png', imageCacheKey)} 
-              alt="Coche" 
-              className="w-8 h-8 object-contain" 
-            />
-            <span className={`text-base whitespace-nowrap ${activeTab === 'coches' ? 'font-semibold' : 'font-normal'}`}>
-              Coches
-            </span>
-            <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
-              activeTab === 'coches' ? 'scale-x-100' : 'scale-x-0'
-            }`} />
-          </button>
-
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'inmobiliaria'}
-            onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
-            onMouseEnter={() => setHoveredTab('inmobiliaria')}
-            onMouseLeave={() => setHoveredTab(null)}
-            className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
-          >
-              <img
-                key={`casa-${imageCacheKey}`}
-                src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
-                alt={drawerCategoryReplacement?.name || "Casa"}
-                className="w-8 h-8 object-contain"
-              />
-            <span className={`text-base whitespace-nowrap ${activeTab === 'inmobiliaria' ? 'font-semibold' : 'font-normal'}`}>
-              {drawerCategoryReplacement?.name || 'Inmobiliaria'}
-            </span>
-            <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
-              activeTab === 'inmobiliaria' || hoveredTab === 'inmobiliaria' ? 'scale-x-100' : 'scale-x-0'
-            }`} />
-          </button>
-
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'drawer'}
-            onClick={() => setIsDrawerOpen(true)}
-            onMouseEnter={() => setHoveredTab('services')}
-            onMouseLeave={() => setHoveredTab(null)}
-            className="flex items-center gap-3 py-4 relative bg-transparent border-none cursor-pointer"
-          >
-            <div className="flex items-center justify-center gap-1 w-8 h-8">
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />
-              </div>
-            <span className={`text-base whitespace-nowrap ${activeTab === 'drawer' ? 'font-semibold' : 'font-normal'}`}>
-              Más
-            </span>
-            <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
-              activeTab === 'drawer' || hoveredTab === 'services' ? 'scale-x-100' : 'scale-x-0'
-            }`} />
-          </button>
-        </div>
       </div>
 
       {/* Mobile */}
