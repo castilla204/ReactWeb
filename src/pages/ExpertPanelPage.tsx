@@ -28,6 +28,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
+import { RoleChecker, UserRole } from '../utils/roleChecker';
+import { getAuthToken } from '../lib/auth';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError, STRIPE_STATUS } from '../hooks/useExpertStripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
@@ -87,7 +89,7 @@ interface Service {
 export function ExpertPanelPage() {
     const navigate = useNavigate();
     const { user, signOut } = useAuth();
-    const { categories } = useCategories();
+    const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
     const { serviceTypes, isLoading: isLoadingServiceTypes } = useServiceTypes();
 
     const [activeTab, setActiveTab] = useState<'services' | 'hires'>('services');
@@ -141,11 +143,14 @@ export function ExpertPanelPage() {
         fetchServiceTypes,
     } = useExpert();
 
-    const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService, updateService, isUpdatingService, deleteService, isDeletingService } = useServices({ expertProfileId: profile?.id });
+    // ✅ Optimización: Solo cargar servicios cuando el profile esté disponible y cargado
+    const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService, updateService, isUpdatingService, deleteService, isDeletingService } = useServices({ 
+        expertProfileId: profile?.id
+    });
 
     const { hires, pagination: hiresPagination, isLoading: isLoadingHires, error: hiresError } = useExpertHires(hiresPage, hiresPageSize);
 
-    const { status: stripeStatus } = useExpertStripeStatus();
+    const { status: stripeStatus, loading: isLoadingStripeStatus } = useExpertStripeStatus();
     const { modalState, hideModal } = useStripeStatusModal();
     const { openAccountLink, isLoading: isAccountLinkLoading } = useStripeAccountLink();
     const { toggleVacationMode, isToggling } = useVacationMode();
@@ -205,31 +210,74 @@ export function ExpertPanelPage() {
         }
     };
     
+    // ✅ Optimización: Solo ejecutar una vez cuando el estado cambia a APPROVED
     useEffect(() => {
         if (stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted && !hasClearedCache) {
             console.log('🧹 ExpertPanelPage: Status changed to APPROVED, clearing cache and refreshing data');
             setHasClearedCache(true);
-            // Limpiar cache y refrescar datos
-            fetchProfile();
-            fetchSearches();
-            fetchServiceTypes();
+            // Limpiar cache y refrescar datos (solo una vez)
+            fetchProfile(true); // force = true para ignorar cache
         }
-    }, [stripeStatus?.stripeStatus, stripeStatus?.onboardingCompleted, hasClearedCache, fetchProfile, fetchSearches, fetchServiceTypes]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [stripeStatus?.stripeStatus, stripeStatus?.onboardingCompleted, hasClearedCache]);
 
     useEffect(() => {
         console.log('ExpertPanelPage State:', { user, profile, isLoadingProfile, profileError, hires });
-        if (user && user.role !== 'Expert') {
-            console.log('User is not Expert, redirecting to become-expert');
-            navigate('/become-expert');
+        
+        // ✅ Verificación robusta del rol - similar a MobileProfileMenu
+        if (user) {
+            const userRole = user.role || user.Role;
+            const isExpertByRole = userRole === 'Expert' || userRole === 'expert' || userRole === 'EXPERT' || userRole === 1 || userRole === UserRole.Expert;
+            
+            // Si no se detecta por el rol del objeto user, verificar el token
+            let isExpertByToken = false;
+            try {
+                const token = getAuthToken();
+                if (token) {
+                    const roleFromToken = RoleChecker.getUserRole(token);
+                    isExpertByToken = roleFromToken === UserRole.Expert;
+                }
+            } catch (error) {
+                console.warn('[ExpertPanelPage] Error checking role from token:', error);
+            }
+            
+            const isExpert = isExpertByRole || isExpertByToken;
+            
+            console.log('[ExpertPanelPage] Role check:', { 
+                userRole, 
+                isExpertByRole, 
+                isExpertByToken, 
+                isExpert 
+            });
+            
+            if (!isExpert) {
+                console.log('User is not Expert, redirecting to become-expert');
+                navigate('/become-expert');
+            }
         }
     }, [user, navigate]);
 
+    // ✅ Optimización: Solo fetch si realmente no hay profile y no está cargando
+    // NO incluir fetchProfile en dependencias para evitar ejecuciones múltiples
     useEffect(() => {
         if (user?.role === 'Expert' && !profile && !isLoadingProfile && !profileError) {
-            console.log('Fetching expert profile');
-            fetchProfile();
+            // ✅ CRÍTICO: Verificar que el token esté disponible antes de hacer requests
+            const token = getAuthToken();
+            if (!token) {
+                console.warn('⚠️ ExpertPanelPage: No token available, waiting...');
+                return;
+            }
+            
+            // ✅ Pequeño delay para asegurar que el token esté completamente disponible
+            const timeoutId = setTimeout(() => {
+                console.log('Fetching expert profile (initial load)');
+                fetchProfile(false); // Usar cache si está disponible
+            }, 150);
+            
+            return () => clearTimeout(timeoutId);
         }
-    }, [user, profile, isLoadingProfile, profileError, fetchProfile]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.role, profile, isLoadingProfile, profileError]);
 
     useEffect(() => {
         console.log('selectedImages changed:', selectedImages.map(f => ({ name: f.name, size: f.size, type: f.type })));
@@ -245,25 +293,42 @@ export function ExpertPanelPage() {
     const validateForm = () => {
         const errors: { [key: string]: string } = {};
 
-        if (!formData.categoryId) {
+        // Validar categoryId
+        const categoryId = formData.categoryId;
+        if (!categoryId || String(categoryId).trim() === '') {
             errors.categoryId = 'La categoría es requerida';
         }
 
-        if (!formData.serviceTypeId) {
+        // Validar serviceTypeId
+        const serviceTypeId = formData.serviceTypeId;
+        if (!serviceTypeId || String(serviceTypeId).trim() === '') {
             errors.serviceTypeId = 'El tipo de servicio es requerido';
         }
 
-        if (!formData.conditions.trim()) {
+        // Validar conditions
+        const conditions = formData.conditions;
+        if (!conditions || (typeof conditions === 'string' && conditions.trim() === '')) {
             errors.conditions = 'Las condiciones son requeridas';
         }
 
-        const price = parseFloat(formData.price);
-        if (isNaN(price) || price <= 0) {
-            errors.price = 'El precio debe ser mayor que 0';
+        // Validar price
+        const priceStr = formData.price;
+        if (!priceStr || String(priceStr).trim() === '') {
+            errors.price = 'El precio es requerido';
+        } else {
+            const price = parseFloat(String(priceStr));
+            if (isNaN(price) || price <= 0) {
+                errors.price = 'El precio debe ser mayor que 0';
+            }
         }
 
-        if (formData.durationInHours && (parseInt(formData.durationInHours) <= 0 || isNaN(parseInt(formData.durationInHours)))) {
-            errors.durationInHours = 'La duración debe ser mayor que 0';
+        // Validar durationInHours (opcional)
+        const durationStr = formData.durationInHours;
+        if (durationStr && String(durationStr).trim() !== '') {
+            const duration = parseInt(String(durationStr));
+            if (isNaN(duration) || duration <= 0) {
+                errors.durationInHours = 'La duración debe ser mayor que 0';
+            }
         }
 
         // Para creación, se requiere al menos una imagen
@@ -372,27 +437,34 @@ export function ExpertPanelPage() {
         if ((service as any).selectedDeliverableTypes && Array.isArray((service as any).selectedDeliverableTypes)) {
             const deliverableTypes = (service as any).selectedDeliverableTypes;
             
-            // Verificar si es la estructura de crear/actualizar (tiene isSelected)
-            if (deliverableTypes.some((dt: any) => dt.hasOwnProperty('isSelected'))) {
-                // Estructura de crear/actualizar: filtrar por isSelected
-                selectedDeliverableTypeIds = deliverableTypes
-                    .filter((dt: any) => dt.isSelected === true)
-                    .map((dt: any) => dt.deliverableTypeId || dt.deliverableType?.id);
-            } else {
-                // Estructura de listado: todos los tipos están seleccionados
-                selectedDeliverableTypeIds = deliverableTypes.map((dt: any) => dt.id);
-            }
+            // ✅ CRÍTICO: Normalizar IDs de deliverable types (manejar PascalCase y camelCase)
+            selectedDeliverableTypeIds = deliverableTypes
+                .map((dt: any) => {
+                    // Intentar obtener ID de diferentes formas
+                    const id = dt.id ?? dt.Id ?? dt.deliverableTypeId ?? dt.DeliverableTypeId ?? dt.deliverableType?.id ?? dt.deliverableType?.Id;
+                    
+                    // Si tiene isSelected, solo incluir si está seleccionado
+                    if (dt.hasOwnProperty('isSelected') || dt.hasOwnProperty('IsSelected')) {
+                        const isSelected = dt.isSelected ?? dt.IsSelected ?? false;
+                        return isSelected ? id : null;
+                    }
+                    
+                    // Si no tiene isSelected, asumir que todos están seleccionados
+                    return id;
+                })
+                .filter((id: any): id is number => id != null && id !== undefined && !isNaN(Number(id)));
         }
         
         console.log('🔍 Extracted selectedDeliverableTypeIds:', selectedDeliverableTypeIds);
+        console.log('🔍 Service selectedDeliverableTypes structure:', (service as any).selectedDeliverableTypes);
         
         setEditingService(service);
         setFormData({
-            categoryId: service.categoryId.toString(),
-            serviceTypeId: service.serviceTypeId.toString(),
-            price: service.price.toString(),
-            conditions: service.conditions,
-            durationInHours: service.durationInHours?.toString() || '24',
+            categoryId: service.categoryId != null ? String(service.categoryId) : '',
+            serviceTypeId: service.serviceTypeId != null ? String(service.serviceTypeId) : '',
+            price: service.price != null ? String(service.price) : '',
+            conditions: service.conditions || '',
+            durationInHours: service.durationInHours != null ? String(service.durationInHours) : '24',
             selectedDeliverableTypes: selectedDeliverableTypeIds,
         });
         setSelectedImages([]);
@@ -445,15 +517,28 @@ export function ExpertPanelPage() {
                 }
             }
             
+            // ✅ CRÍTICO: Validar y convertir todos los valores antes de enviar
+            const categoryId = formData.categoryId ? parseInt(String(formData.categoryId)) : 0;
+            const serviceTypeId = formData.serviceTypeId ? parseInt(String(formData.serviceTypeId)) : 0;
+            const price = formData.price ? parseFloat(String(formData.price)) : 0;
+            const conditions = formData.conditions ? String(formData.conditions).trim() : '';
+            const durationInHours = formData.durationInHours ? parseInt(String(formData.durationInHours)) : null;
+            
+            // Validar que los valores requeridos no sean 0 o vacíos
+            if (categoryId === 0 || serviceTypeId === 0 || price === 0 || conditions === '') {
+                setFormErrors({ general: 'Por favor, completa todos los campos requeridos' });
+                return;
+            }
+            
             await updateService({
                 serviceId: editingService.id,
-                categoryId: parseInt(formData.categoryId),
-                serviceTypeId: parseInt(formData.serviceTypeId),
-                price: parseFloat(formData.price),
-                conditions: formData.conditions.trim(),
-                durationInHours: formData.durationInHours ? parseInt(formData.durationInHours) : null,
+                categoryId: categoryId,
+                serviceTypeId: serviceTypeId,
+                price: price,
+                conditions: conditions,
+                durationInHours: durationInHours,
                 images: imagesToSend,
-                selectedDeliverableTypes: formData.selectedDeliverableTypes,
+                selectedDeliverableTypes: formData.selectedDeliverableTypes || [],
             });
 
             // Cerrar el Drawer primero y esperar a que se cierre completamente antes de resetear
@@ -472,7 +557,17 @@ export function ExpertPanelPage() {
             }));
         } catch (error: any) {
             console.error('Error updating service:', error);
-            setFormErrors({ general: error.message || 'Error al actualizar el servicio' });
+            let errorMessage = 'Error al actualizar el servicio';
+            try {
+                if (error && typeof error === 'object') {
+                    errorMessage = error.message || error.error || JSON.stringify(error);
+                } else if (error != null) {
+                    errorMessage = String(error);
+                }
+            } catch (e) {
+                // Si falla al convertir el error, usar el mensaje por defecto
+            }
+            setFormErrors({ general: errorMessage });
         }
     };
 
@@ -500,15 +595,38 @@ export function ExpertPanelPage() {
         console.log('🔍 Creating service with selectedDeliverableTypes:', formData.selectedDeliverableTypes);
         console.log('🔍 Full formData before creating service:', formData);
         try {
+            // ✅ CRÍTICO: Validar y convertir todos los valores antes de enviar
+            const categoryId = formData.categoryId ? parseInt(String(formData.categoryId)) : 0;
+            const serviceTypeId = formData.serviceTypeId ? parseInt(String(formData.serviceTypeId)) : 0;
+            const price = formData.price ? parseFloat(String(formData.price)) : 0;
+            const conditions = formData.conditions ? String(formData.conditions).trim() : '';
+            const durationInHours = formData.durationInHours ? parseInt(String(formData.durationInHours)) : null;
+            
+            // Validar que los valores requeridos no sean 0 o vacíos
+            if (categoryId === 0 || serviceTypeId === 0 || price === 0 || conditions === '') {
+                setFormErrors({ general: 'Por favor, completa todos los campos requeridos' });
+                return;
+            }
+            
+            // ✅ CRÍTICO: Validar que profile.id sea válido
+            const expertProfileId = profile.id;
+            if (!expertProfileId || expertProfileId === 0) {
+                console.error('⚠️ Expert profile ID is invalid:', expertProfileId, 'Profile:', profile);
+                setFormErrors({ general: 'Error: No se pudo obtener el ID del perfil de experto. Por favor, recarga la página.' });
+                return;
+            }
+            
+            console.log('🔍 Creating service with expertProfileId:', expertProfileId);
+            
             await createService({
-                expertProfileId: profile.id,
-                categoryId: parseInt(formData.categoryId),
-                serviceTypeId: parseInt(formData.serviceTypeId),
-                price: parseFloat(formData.price),
-                conditions: formData.conditions.trim(),
-                durationInHours: formData.durationInHours ? parseInt(formData.durationInHours) : null,
+                expertProfileId: expertProfileId,
+                categoryId: categoryId,
+                serviceTypeId: serviceTypeId,
+                price: price,
+                conditions: conditions,
+                durationInHours: durationInHours,
                 images: selectedImages,
-                selectedDeliverableTypes: formData.selectedDeliverableTypes,
+                selectedDeliverableTypes: formData.selectedDeliverableTypes || [],
             });
 
             // Cerrar el Drawer primero y esperar a que se cierre completamente antes de resetear
@@ -553,7 +671,17 @@ export function ExpertPanelPage() {
                 });
             } else {
                 console.log('🔴 Error no es duplicate combo:', error);
-                setFormErrors({ general: error.message || 'Error al crear el servicio' });
+                let errorMessage = 'Error al crear el servicio';
+                try {
+                    if (error && typeof error === 'object') {
+                        errorMessage = error.message || error.error || JSON.stringify(error);
+                    } else if (error != null) {
+                        errorMessage = String(error);
+                    }
+                } catch (e) {
+                    // Si falla al convertir el error, usar el mensaje por defecto
+                }
+                setFormErrors({ general: errorMessage });
             }
         }
     };
@@ -701,9 +829,41 @@ export function ExpertPanelPage() {
 
     // Verificar si el experto puede acceder al panel según backend
     // Ahora usamos canAccessStripe para permitir acceso de lectura/gestión
-    const canAccessPanel = stripeStatus?.canAccessStripe === true;
+    // ✅ CRÍTICO: Esperar a que el estado de Stripe se cargue antes de evaluar
+    // Si está cargando, mostrar spinner en lugar de bloquear el acceso
+    
+    // ✅ CRÍTICO: Verificar canAccessStripe de forma más robusta
+    // También verificar si el estado es Approved como fallback
+    const canAccessStripe = stripeStatus?.canAccessStripe === true || stripeStatus?.canAccessStripe === 'true';
+    const isApproved = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED || stripeStatus?.stripeStatus === 'Approved';
+    const canAccessPanel = canAccessStripe || (isApproved && stripeStatus?.onboardingCompleted === true);
+    
+    // ✅ CRÍTICO: Log para depurar el problema
+    console.log('🔍 [ExpertPanelPage] Access check:', {
+        stripeStatus: stripeStatus?.stripeStatus,
+        stripeStatusType: typeof stripeStatus?.stripeStatus,
+        canAccessStripe: stripeStatus?.canAccessStripe,
+        canAccessStripeType: typeof stripeStatus?.canAccessStripe,
+        onboardingCompleted: stripeStatus?.onboardingCompleted,
+        isApproved,
+        canAccessStripeBool: canAccessStripe,
+        canAccessPanel,
+        isLoadingStripeStatus,
+        stripeStatusNull: stripeStatus === null,
+        fullStatus: stripeStatus
+    });
 
-    if (!canAccessPanel) {
+    // ✅ Mostrar spinner mientras se carga el estado de Stripe
+    if (isLoadingStripeStatus) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
+        );
+    }
+
+    // ✅ Solo bloquear acceso si el estado está cargado Y canAccessStripe es false
+    if (!canAccessPanel && stripeStatus !== null) {
         return (
             <>
                 <div className="min-h-screen bg-background relative overflow-hidden">
@@ -1204,6 +1364,8 @@ export function ExpertPanelPage() {
                         isLoadingServiceTypes={isLoadingServiceTypes}
                         isCreatingService={isCreatingService}
                         categories={categories}
+                        categoriesLoading={categoriesLoading}
+                        categoriesError={categoriesError}
                         editingService={editingService}
                         handleUpdateService={handleUpdateService}
                         isUpdatingService={isUpdatingService}
@@ -1213,7 +1375,14 @@ export function ExpertPanelPage() {
                     {profile && (
                         <ProfileEditForm
                             showEditForm={showProfileEditForm}
-                            setShowEditForm={setShowProfileEditForm}
+                            setShowEditForm={(value) => {
+                                if (value) {
+                                    // ✅ CRÍTICO: Recargar el perfil cuando se abre el formulario para obtener datos actualizados
+                                    console.log('🔍 ExpertPanelPage: Opening profile edit form, refreshing profile...');
+                                    fetchProfile(true); // Forzar recarga sin usar cache
+                                }
+                                setShowProfileEditForm(value);
+                            }}
                             profile={profile as any}
                             onProfileUpdated={fetchProfile}
                         />

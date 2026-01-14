@@ -53,11 +53,14 @@ const CategoryImage: React.FC<{ categoryId: number; categoryName: string; size?:
         lg: 'w-10 h-10'
     };
 
+    // ✅ CRÍTICO: Validar que categoryName sea válido antes de usar toLowerCase
+    const safeCategoryName = categoryName ? String(categoryName).toLowerCase() : '';
+    
     // Determinar qué imagen usar según el nombre de la categoría
-    const isMotoAgua = categoryName.toLowerCase().includes('moto') && categoryName.toLowerCase().includes('agua');
-    const isMoto = categoryName.toLowerCase().includes('moto') && !isMotoAgua;
-    const isCoche = categoryName.toLowerCase().includes('coche') || categoryName.toLowerCase().includes('vehículo');
-    const isCasa = categoryName.toLowerCase().includes('inmobiliaria') || categoryName.toLowerCase().includes('casa') || categoryName.toLowerCase().includes('inmueble');
+    const isMotoAgua = safeCategoryName.includes('moto') && safeCategoryName.includes('agua');
+    const isMoto = safeCategoryName.includes('moto') && !isMotoAgua;
+    const isCoche = safeCategoryName.includes('coche') || safeCategoryName.includes('vehículo');
+    const isCasa = safeCategoryName.includes('inmobiliaria') || safeCategoryName.includes('casa') || safeCategoryName.includes('inmueble');
 
     if (isMotoAgua) {
         return (

@@ -23,6 +23,14 @@ interface ServiceTypesResponse {
  * Cada tipo incluye automáticamente el nombre de la categoría (no necesita joins manuales)
  * @returns {Object} { serviceTypes, isLoading, error }
  */
+// ✅ Cache global para evitar múltiples llamadas simultáneas
+let globalServiceTypesCache: { data: ServiceType[] | null; timestamp: number; promise: Promise<ServiceTypesResponse> | null } = {
+    data: null,
+    timestamp: 0,
+    promise: null
+};
+const SERVICE_TYPES_CACHE_DURATION = 60000; // 60 segundos
+
 export function useServiceTypes() {
     const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -30,6 +38,36 @@ export function useServiceTypes() {
 
     useEffect(() => {
         const fetchServiceTypes = async () => {
+            // ✅ Verificar cache global primero
+            const now = Date.now();
+            if (globalServiceTypesCache.data && (now - globalServiceTypesCache.timestamp) < SERVICE_TYPES_CACHE_DURATION) {
+                console.log('✅ useServiceTypes: Using global cache');
+                setServiceTypes(globalServiceTypesCache.data);
+                setIsLoading(false);
+                return;
+            }
+            
+            // ✅ Si hay una llamada en progreso, esperar a que termine
+            if (globalServiceTypesCache.promise) {
+                console.log('⏳ useServiceTypes: Waiting for existing request...');
+                try {
+                    const result = await globalServiceTypesCache.promise;
+                    if (result.success) {
+                        const sortedData = result.data.sort((a, b) => {
+                            if (a.position !== b.position) {
+                                return a.position - b.position;
+                            }
+                            return a.id - b.id;
+                        });
+                        setServiceTypes(sortedData);
+                        setIsLoading(false);
+                        return;
+                    }
+                } catch (err) {
+                    // Si falla, continuar con nueva llamada
+                    console.warn('Previous request failed, making new request');
+                }
+            }
             try {
                 setIsLoading(true);
                 setError(null);
@@ -41,29 +79,35 @@ export function useServiceTypes() {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos
                 
-                try {
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            // ✅ NO incluir Authorization header para endpoints públicos
-                        },
-                        signal: controller.signal,
-                    });
-                    
+                // ✅ Crear promise y guardarlo en cache para evitar llamadas duplicadas
+                const fetchPromise = fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        // ✅ NO incluir Authorization header para endpoints públicos
+                    },
+                    signal: controller.signal,
+                }).then(async res => {
                     clearTimeout(timeoutId);
-                    
-                    if (!response.ok) {
+                    if (!res.ok) {
                         // Verificar si la respuesta es HTML en lugar de JSON
-                        const contentType = response.headers.get('content-type');
+                        const contentType = res.headers.get('content-type');
                         if (contentType && !contentType.includes('application/json')) {
                             throw new Error('Server returned HTML instead of JSON. Check backend configuration.');
                         }
-                        throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
+                        throw new Error(`HTTP error! status: ${res.status} ${res.statusText}`);
                     }
+                    return res.json();
+                });
+                
+                globalServiceTypesCache.promise = fetchPromise;
+                
+                try {
+                    const result: ServiceTypesResponse = await fetchPromise;
                     
-                    const result: ServiceTypesResponse = await response.json();
+                    // ✅ Limpiar promise después de completar
+                    globalServiceTypesCache.promise = null;
                     
                     if (result.success) {
                         // Sort by position first, then by id as fallback
@@ -73,11 +117,18 @@ export function useServiceTypes() {
                             }
                             return a.id - b.id;
                         });
+                        
+                        // ✅ Guardar en cache global
+                        globalServiceTypesCache.data = sortedData;
+                        globalServiceTypesCache.timestamp = Date.now();
+                        
                         setServiceTypes(sortedData);
                     } else {
                         throw new Error(result.message || 'Failed to fetch service types');
                     }
                 } catch (fetchError: any) {
+                    // ✅ Limpiar promise en caso de error
+                    globalServiceTypesCache.promise = null;
                     clearTimeout(timeoutId);
                     if (fetchError.name === 'AbortError') {
                         throw new Error('Request timeout: The server took too long to respond. Please try again.');

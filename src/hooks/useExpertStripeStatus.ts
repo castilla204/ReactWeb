@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
-import { ExpertStatusResponse, StripeSyncStatusResponse } from '../types/stripe';
+import { ExpertStatusResponse, StripeSyncStatusResponse, StripeStatus } from '../types/stripe';
 import { handleStripeStatusChange } from '../utils/stripeNotifications';
 
 // Estados de Stripe alineados con backend 2025
@@ -52,6 +52,18 @@ const getStatusInfo = (
     stripeFutureRequirements?: string | null,
     stripeFutureDueAt?: string | null
 ): StatusInfo => {
+    // ✅ CRÍTICO: Normalizar el status a string y trim para evitar problemas
+    const normalizedStatus = String(status || '').trim();
+    
+    // ✅ CRÍTICO: Log para depurar qué status está llegando
+    console.log('🔍 [getStatusInfo] Called with status:', {
+        originalStatus: status,
+        normalizedStatus,
+        statusType: typeof status,
+        STRIPE_STATUS_APPROVED: STRIPE_STATUS.APPROVED,
+        matchesApproved: normalizedStatus === STRIPE_STATUS.APPROVED,
+        allStatuses: Object.values(STRIPE_STATUS)
+    });
     const getRejectionMessage = (reason: string) => {
         switch (reason) {
             case "rejected.fraud":
@@ -97,7 +109,8 @@ const getStatusInfo = (
     const baseFutureDue = formatDeadline();
     const futureRequirementsText = stripeFutureRequirements || null;
 
-    switch (status) {
+    // ✅ CRÍTICO: Usar normalizedStatus en el switch
+    switch (normalizedStatus) {
         case STRIPE_STATUS.NOT_REQUESTED:
             return {
                 canCreateServices: false,
@@ -329,8 +342,28 @@ export const getExpertStatus = async (): Promise<ExpertStatusResponse> => {
             throw new Error(`Failed to get expert status: ${response.status} ${response.statusText}`);
         }
         
-        const data: ExpertStatusResponse = await response.json();
-        console.log('✅ expert-status data received:', data);
+        const rawData = await response.json();
+        console.log('✅ expert-status raw data received:', rawData);
+        
+        // ✅ CRÍTICO: Normalizar la respuesta del backend (puede venir en PascalCase o camelCase)
+        const data: ExpertStatusResponse = {
+            hasStripeAccount: rawData.HasStripeAccount ?? rawData.hasStripeAccount ?? false,
+            hasPendingOnboarding: rawData.HasPendingOnboarding ?? rawData.hasPendingOnboarding ?? false,
+            onboardingCompleted: rawData.OnboardingCompleted ?? rawData.onboardingCompleted ?? false,
+            stripeStatus: (rawData.StripeStatus ?? rawData.stripeStatus) as StripeStatus,
+            stripeStatusDetails: rawData.StripeStatusDetails ?? rawData.stripeStatusDetails ?? null,
+            stripeAccountId: rawData.StripeAccountId ?? rawData.stripeAccountId ?? null,
+            canAccessStripe: rawData.CanAccessStripe ?? rawData.canAccessStripe ?? false,
+            canCreateServices: rawData.CanCreateServices ?? rawData.canCreateServices ?? false,
+            canReceivePayments: rawData.CanReceivePayments ?? rawData.canReceivePayments ?? false,
+            statusMessage: rawData.StatusMessage ?? rawData.statusMessage ?? '',
+            stripeFutureRequirements: rawData.StripeFutureRequirements ?? rawData.stripeFutureRequirements ?? null,
+            stripeFutureDueAt: rawData.StripeFutureDueAt ?? rawData.stripeFutureDueAt ?? null,
+            canRetryOnboarding: rawData.CanRetryOnboarding ?? rawData.canRetryOnboarding ?? false,
+            rejectionReason: rawData.RejectionReason ?? rawData.rejectionReason ?? null
+        };
+        
+        console.log('✅ expert-status normalized data:', data);
         return data;
     } catch (error) {
         const duration = Date.now() - startTime;
@@ -409,7 +442,7 @@ export const useExpertStripeStatus = () => {
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const previousStatusRef = useRef<string | null>(null);
     
-    const CACHE_DURATION = 30000; // 30 segundos
+    const CACHE_DURATION = 60000; // ✅ Aumentado a 60 segundos para evitar llamadas repetidas
 
     const fetchStatus = useCallback(async (force = false) => {
         const now = Date.now();
@@ -504,10 +537,13 @@ export const useExpertStripeStatus = () => {
         lastFetchRef.current = lastFetch;
     }, [lastFetch]);
 
-    // Cargar estado inicial solo una vez
+    // ✅ Cargar estado inicial solo una vez - usar ref para evitar múltiples ejecuciones
+    const initializationRef = useRef(false);
+    
     useEffect(() => {
-        if (!hasInitialized) {
-            console.log('🚀 useExpertStripeStatus: Initial load');
+        if (!hasInitialized && !initializationRef.current) {
+            initializationRef.current = true;
+            console.log('🚀 useExpertStripeStatus: Initial load (only once)');
             setHasInitialized(true);
             
             // Llamada directa sin usar fetchStatus para evitar dependencias
@@ -551,8 +587,8 @@ export const useExpertStripeStatus = () => {
             setIsPolling(true);
             pollingIntervalRef.current = setInterval(() => {
                 console.log('⏰ useExpertStripeStatus: Polling check');
-                fetchStatus(false);
-            }, 60000); // 1 minuto
+                fetchStatus(false); // Usar cache si está disponible
+            }, 120000); // ✅ Aumentado a 2 minutos para reducir llamadas
         } else if (!needsPolling && pollingIntervalRef.current) {
             console.log('⏹️ useExpertStripeStatus: Stopping polling');
             clearInterval(pollingIntervalRef.current);
@@ -585,13 +621,18 @@ export const useExpertStripeStatus = () => {
         }
     }, [status?.stripeStatus, status?.onboardingCompleted]);
 
-    return {
-        status,
-        loading,
-        error,
-        refetch: () => fetchStatus(true),
-        syncStatus,
-        statusInfo: status ? getStatusInfo(
+    // ✅ CRÍTICO: Agregar logs para depurar el problema
+    const statusInfo = status ? (() => {
+        console.log('🔍 [useExpertStripeStatus] Creating statusInfo with:', {
+            stripeStatus: status.stripeStatus,
+            stripeStatusType: typeof status.stripeStatus,
+            STRIPE_STATUS_APPROVED: STRIPE_STATUS.APPROVED,
+            matchesApproved: status.stripeStatus === STRIPE_STATUS.APPROVED,
+            canAccessStripe: status.canAccessStripe,
+            onboardingCompleted: status.onboardingCompleted
+        });
+        
+        const info = getStatusInfo(
             status.stripeStatus, 
             status.rejectionReason || undefined, 
             status.stripeStatusDetails, 
@@ -600,7 +641,24 @@ export const useExpertStripeStatus = () => {
             status.hasStripeAccount,
             status.stripeFutureRequirements || null,
             status.stripeFutureDueAt || null
-        ) : null,
+        );
+        
+        console.log('🔍 [useExpertStripeStatus] statusInfo result:', {
+            action: info.action,
+            buttonText: info.buttonText,
+            message: info.message.substring(0, 50) + '...'
+        });
+        
+        return info;
+    })() : null;
+    
+    return {
+        status,
+        loading,
+        error,
+        refetch: () => fetchStatus(true),
+        syncStatus,
+        statusInfo,
         isPolling
     };
 };

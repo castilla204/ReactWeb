@@ -51,7 +51,7 @@ export function useExpert() {
 
     // Cache para evitar llamadas excesivas
     const lastFetchRef = useRef<{ [key: string]: number }>({});
-    const CACHE_DURATION = 30000; // 30 segundos
+    const CACHE_DURATION = 60000; // ✅ Aumentado a 60 segundos para evitar llamadas repetidas
 
     const fetchProfile = useCallback(async (force = false) => {
         if (!user) {
@@ -86,35 +86,44 @@ export function useExpert() {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    console.log('401 Unauthorized, signing out');
-                    signOut();
+                    // ✅ No desloguear inmediatamente - dejar que el interceptor de authService maneje el refresh
+                    // Solo desloguear si el refresh también falla
+                    console.log('401 Unauthorized en fetchProfile - el interceptor manejará el refresh');
                     throw new Error('Request failed with status 401');
                 }
                 throw new Error(`Failed to fetch profile: ${response.statusText}`);
             }
 
-            const data: ExpertProfileResponse = await response.json();
-            console.log('Fetched expert profile:', data);
+            const data: any = await response.json();
+            console.log('Fetched expert profile (raw):', data);
             
-            // Map the new response structure to the existing interface
+            // ✅ CRÍTICO: Normalizar de PascalCase a camelCase (el backend devuelve PascalCase)
             const mappedProfile: ExpertProfile = {
-                id: data.id,
-                profilePictureUrl: data.profilePictureUrl,
-                description: data.description,
-                stripeAccountId: data.stripeAccountId,
+                id: data.id ?? data.Id ?? 0,
+                profilePictureUrl: data.profilePictureUrl ?? data.ProfilePictureUrl ?? '',
+                description: data.description ?? data.Description ?? '',
+                stripeAccountId: data.stripeAccountId ?? data.StripeAccountId ?? null,
                 pendingStripeAccountId: null, // This field might not be in the new response
-                onboardingCompleted: data.onboardingCompleted,
+                onboardingCompleted: data.onboardingCompleted ?? data.OnboardingCompleted ?? false,
                 canAccessStripe: true, // This might need to be determined from other fields
-                stripeStatus: data.stripeStatus,
-                stripeStatusDetails: data.stripeStatusDetails,
-                stripeFutureRequirements: data.stripeFutureRequirements ?? null,
-                stripeFutureDueAt: data.stripeFutureDueAt ?? null,
-                createdAt: data.createdAt,
-                isOnVacation: data.isOnVacation || false,
-                latitude: data.latitude,
-                longitude: data.longitude,
-                currentAvailability: data.currentAvailability || null
+                stripeStatus: data.stripeStatus ?? data.StripeStatus ?? 0,
+                stripeStatusDetails: data.stripeStatusDetails ?? data.StripeStatusDetails ?? null,
+                stripeFutureRequirements: data.stripeFutureRequirements ?? data.StripeFutureRequirements ?? null,
+                stripeFutureDueAt: data.stripeFutureDueAt ?? data.StripeFutureDueAt ?? null,
+                createdAt: data.createdAt ?? data.CreatedAt ?? new Date().toISOString(),
+                isOnVacation: data.isOnVacation ?? data.IsOnVacation ?? false,
+                latitude: data.latitude ?? data.Latitude ?? null,
+                longitude: data.longitude ?? data.Longitude ?? null,
+                currentAvailability: data.currentAvailability ?? data.CurrentAvailability ?? null
             };
+            
+            console.log('Fetched expert profile (mapped):', mappedProfile);
+            
+            // ✅ CRÍTICO: Validar que el ID sea válido
+            if (!mappedProfile.id || mappedProfile.id === 0) {
+                console.error('⚠️ Expert profile ID is invalid:', mappedProfile.id);
+                throw new Error('Invalid expert profile ID received from server');
+            }
             
             setProfile(mappedProfile);
             lastFetchRef.current[cacheKey] = now;
@@ -158,8 +167,8 @@ export function useExpert() {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    console.log('401 Unauthorized, signing out');
-                    signOut();
+                    // ✅ No desloguear inmediatamente - dejar que el interceptor de authService maneje el refresh
+                    console.log('401 Unauthorized en fetchSearches - el interceptor manejará el refresh');
                     throw new Error('Request failed with status 401');
                 }
                 throw new Error(`Failed to fetch searches: ${response.statusText}`);
@@ -209,8 +218,8 @@ export function useExpert() {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    console.log('401 Unauthorized, signing out');
-                    signOut();
+                    // ✅ No desloguear inmediatamente - dejar que el interceptor de authService maneje el refresh
+                    console.log('401 Unauthorized en fetchServiceTypes - el interceptor manejará el refresh');
                     throw new Error('Request failed with status 401');
                 }
                 throw new Error(`Failed to fetch service types: ${response.statusText}`);
@@ -261,8 +270,8 @@ export function useExpert() {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    console.log('❌ 401 Unauthorized, signing out');
-                    signOut();
+                    // ✅ No desloguear inmediatamente - dejar que el interceptor de authService maneje el refresh
+                    console.log('❌ 401 Unauthorized en startOnboarding - el interceptor manejará el refresh');
                     throw new Error('Request failed with status 401');
                 }
                 if (response.status === 400) {
@@ -374,8 +383,8 @@ export function useExpert() {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    console.log('401 Unauthorized, signing out');
-                    signOut();
+                    // ✅ No desloguear inmediatamente - dejar que el interceptor de authService maneje el refresh
+                    console.log('401 Unauthorized en checkOnboardingStatus - el interceptor manejará el refresh');
                     throw new Error('Request failed with status 401');
                 }
                 throw new Error(`Failed to check onboarding status: ${response.statusText}`);
@@ -429,8 +438,8 @@ export function useExpert() {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    console.log('401 Unauthorized, signing out');
-                    signOut();
+                    // ✅ No desloguear inmediatamente - dejar que el interceptor de authService maneje el refresh
+                    console.log('401 Unauthorized en restartOnboarding - el interceptor manejará el refresh');
                     throw new Error('Request failed with status 401');
                 }
                 throw new Error(`Failed to restart onboarding: ${response.statusText}`);
@@ -474,8 +483,8 @@ export function useExpert() {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    console.log('401 Unauthorized, signing out');
-                    signOut();
+                    // ✅ No desloguear inmediatamente - dejar que el interceptor de authService maneje el refresh
+                    console.log('401 Unauthorized en syncStripeStatus - el interceptor manejará el refresh');
                     throw new Error('Request failed with status 401');
                 }
                 throw new Error(`Failed to sync Stripe status: ${response.statusText}`);
@@ -506,13 +515,38 @@ export function useExpert() {
         }
     };
 
+    // ✅ Ref para evitar que se ejecute múltiples veces
+    const hasInitializedRef = useRef(false);
+    const initializationInProgressRef = useRef(false);
+    
     useEffect(() => {
-        if (user?.role === 'Expert') {
-            // Solo cargar datos iniciales una vez
-            fetchProfile(true); // Forzar carga inicial
-            fetchServiceTypes(true); // Forzar carga inicial
-            fetchSearches(true); // Forzar carga inicial
+        // ✅ Solo ejecutar una vez cuando el usuario es Expert y no se ha inicializado
+        if (user?.role === 'Expert' && !hasInitializedRef.current && !initializationInProgressRef.current) {
+            initializationInProgressRef.current = true;
+            hasInitializedRef.current = true;
+            console.log('🚀 useExpert: Initial load (only once)');
+            
+            // ✅ CRÍTICO: Verificar que el token esté disponible antes de hacer requests
+            const token = getAuthToken();
+            if (!token) {
+                console.warn('⚠️ useExpert: No token available, waiting...');
+                initializationInProgressRef.current = false;
+                hasInitializedRef.current = false; // Permitir reintentar
+                return;
+            }
+            
+            // ✅ Pequeño delay para asegurar que el token esté completamente disponible
+            setTimeout(() => {
+                // Solo cargar profile inicial - los demás se cargan cuando se necesiten
+                fetchProfile(false).finally(() => {
+                    initializationInProgressRef.current = false;
+                });
+            }, 100);
+            
+            // No cargar serviceTypes aquí - se cargan con useServiceTypes hook
+            // No cargar searches aquí - se cargan con useExpertHires hook
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.role]); // Solo depender del role, no de las funciones
 
     // Verificar el estado del onboarding automáticamente si hay un proceso pendiente

@@ -26,7 +26,7 @@ export const ProtectedRouteWithMFA: React.FC<ProtectedRouteWithMFAProps> = ({
     allowedRoles
 }) => {
     const location = useLocation();
-    const { isAuthenticated, isLoading: authLoading } = useAuth();
+    const { isAuthenticated, isLoading: authLoading, user } = useAuth();
     const { isLoading, requiresSetup, isEnforced, userRole } = useMfaEnforcement();
 
     // 1. Verificar autenticación
@@ -46,11 +46,35 @@ export const ProtectedRouteWithMFA: React.FC<ProtectedRouteWithMFAProps> = ({
         return <Navigate to="/" state={{ from: location }} replace />;
     }
 
-    // 2. Verificar autorización (rol)
-    if (allowedRoles && userRole !== null) {
-        if (!allowedRoles.includes(userRole)) {
+    // 2. Verificar autorización (rol) - ✅ Verificación robusta similar a MobileProfileMenu
+    if (allowedRoles) {
+        // Primero verificar el rol del objeto user
+        const userRoleFromUser = user?.role || user?.Role;
+        const isExpertByUser = userRoleFromUser === 'Expert' || userRoleFromUser === 'expert' || userRoleFromUser === 'EXPERT' || userRoleFromUser === 1 || userRoleFromUser === UserRole.Expert;
+        
+        // Verificar el rol del token directamente (más confiable)
+        let roleFromToken: UserRole | null = null;
+        try {
+            roleFromToken = RoleChecker.getUserRole(token);
+        } catch (error) {
+            console.warn('[ProtectedRouteWithMFA] Error checking role from token:', error);
+        }
+        
+        // Usar el rol del token si está disponible, sino usar el de useMfaEnforcement, sino usar el del user
+        const finalUserRole = roleFromToken !== null ? roleFromToken : (userRole !== null ? userRole : (isExpertByUser ? UserRole.Expert : null));
+        
+        console.log('🔒 ProtectedRouteWithMFA - Role check:', {
+            userRoleFromUser,
+            isExpertByUser,
+            roleFromToken,
+            userRole,
+            finalUserRole,
+            allowedRoles
+        });
+        
+        if (finalUserRole === null || !allowedRoles.includes(finalUserRole)) {
             console.log('🔒 ProtectedRouteWithMFA - Access denied:', {
-                userRole,
+                finalUserRole,
                 allowedRoles,
                 token: token ? 'present' : 'missing'
             });

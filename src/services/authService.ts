@@ -191,9 +191,11 @@ class AuthService {
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        // Refresh token inválido o expirado → Logout
-                        this.logout();
-                        window.location.href = '/';
+                        // ✅ Refresh token inválido o expirado → Solo limpiar tokens, no redirigir inmediatamente
+                        // Esto permite que el usuario vea el error en lugar de ser redirigido automáticamente
+                        console.warn('[AuthService] Refresh token inválido o expirado');
+                        this.clearTokens();
+                        // No redirigir automáticamente - dejar que los componentes manejen el error
                         return false;
                     }
                     throw new Error('Failed to refresh token');

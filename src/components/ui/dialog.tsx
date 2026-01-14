@@ -33,15 +33,20 @@ const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { 
     style?: React.CSSProperties;
     hideCloseButton?: boolean;
+    overlayClassName?: string;
+    overlayStyle?: React.CSSProperties;
   }
->(({ className, children, style, hideCloseButton = false, ...props }, ref) => {
+>(({ className, children, style, hideCloseButton = false, overlayClassName, overlayStyle, ...props }, ref) => {
   // ✅ Extraer zIndex del style para aplicarlo también al overlay
   const zIndex = style?.zIndex;
-  const overlayStyle = zIndex ? { zIndex: typeof zIndex === 'number' ? zIndex - 1 : zIndex } : undefined;
+  const finalOverlayStyle = { 
+    ...(zIndex ? { zIndex: typeof zIndex === 'number' ? zIndex - 1 : zIndex } : {}),
+    ...overlayStyle 
+  };
   
   return (
     <DialogPortal>
-      <DialogOverlay style={overlayStyle} />
+      <DialogOverlay className={overlayClassName} style={finalOverlayStyle} />
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
