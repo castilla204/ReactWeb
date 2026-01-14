@@ -39,7 +39,7 @@ export function useMfaEnforcement() {
     useEffect(() => {
         checkMfaEnforcement();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Solo ejecutar una vez al montar
+    }, [user]); // ✅ Re-ejecutar cuando el usuario cambie (por ejemplo, al convertirse en experto)
 
     const checkMfaEnforcement = async () => {
         try {

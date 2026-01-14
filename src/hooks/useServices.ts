@@ -122,6 +122,11 @@ export function useServices({
 
     const servicesQuery = useQuery({
         queryKey: ['services', expertProfileId || categoryId, serviceTypeId, latitude, longitude, locationRange, page, pageSize],
+        enabled: !expertProfileId || (expertProfileId > 0), // ✅ Solo ejecutar si expertProfileId es válido
+        staleTime: 60000, // ✅ Cache por 60 segundos para evitar llamadas repetidas
+        gcTime: 120000, // ✅ Mantener en caché por 2 minutos
+        refetchOnWindowFocus: false, // ✅ No refetch al cambiar de ventana
+        refetchOnMount: false, // ✅ No refetch al montar si hay datos en caché
         queryFn: async () => {
             const token = getAuthToken();
             
@@ -324,8 +329,8 @@ export function useServices({
         },
         enabled: expertProfileId ? !!expertProfileId : (categoryId > 0 && serviceTypeId > 0 && !!latitude && !!longitude && locationRange > 0),
         retry: 1,
-        staleTime: 0, // No cache - always fetch fresh data
-        gcTime: 0, // No garbage collection time - clear immediately
+        staleTime: 30000, // ✅ Cache por 30 segundos para evitar llamadas repetidas
+        gcTime: 60000, // ✅ Mantener en caché por 60 segundos
     });
 
     const createServiceMutation = useMutation({
@@ -348,13 +353,14 @@ export function useServices({
             }
 
             const formData = new FormData();
-            formData.append('expertProfileId', serviceData.expertProfileId.toString());
-            formData.append('categoryId', serviceData.categoryId.toString());
-            formData.append('serviceTypeId', serviceData.serviceTypeId.toString());
-            formData.append('price', serviceData.price.toString());
-            formData.append('conditions', serviceData.conditions);
-            if (serviceData.durationInHours !== null) {
-                formData.append('durationInHours', serviceData.durationInHours.toString());
+            // ✅ CRÍTICO: Validar y convertir todos los valores a string de forma segura
+            formData.append('ExpertProfileId', serviceData.expertProfileId != null ? String(serviceData.expertProfileId) : '0');
+            formData.append('CategoryId', serviceData.categoryId != null ? String(serviceData.categoryId) : '0');
+            formData.append('ServiceTypeId', serviceData.serviceTypeId != null ? String(serviceData.serviceTypeId) : '0');
+            formData.append('Price', serviceData.price != null ? String(serviceData.price) : '0');
+            formData.append('Conditions', serviceData.conditions != null ? String(serviceData.conditions) : '');
+            if (serviceData.durationInHours !== null && serviceData.durationInHours !== undefined) {
+                formData.append('DurationInHours', String(serviceData.durationInHours));
             }
             if (serviceData.selectedDeliverableTypes && serviceData.selectedDeliverableTypes.length > 0) {
                 formData.append('SelectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));
@@ -444,13 +450,14 @@ export function useServices({
             }
 
             const formData = new FormData();
-            formData.append('serviceId', serviceData.serviceId.toString());
-            formData.append('categoryId', serviceData.categoryId.toString());
-            formData.append('serviceTypeId', serviceData.serviceTypeId.toString());
-            formData.append('price', serviceData.price.toString());
-            formData.append('conditions', serviceData.conditions);
-            if (serviceData.durationInHours !== null) {
-                formData.append('durationInHours', serviceData.durationInHours.toString());
+            // ✅ CRÍTICO: Validar y convertir todos los valores a string de forma segura
+            formData.append('ServiceId', serviceData.serviceId != null ? String(serviceData.serviceId) : '0');
+            formData.append('CategoryId', serviceData.categoryId != null ? String(serviceData.categoryId) : '0');
+            formData.append('ServiceTypeId', serviceData.serviceTypeId != null ? String(serviceData.serviceTypeId) : '0');
+            formData.append('Price', serviceData.price != null ? String(serviceData.price) : '0');
+            formData.append('Conditions', serviceData.conditions != null ? String(serviceData.conditions) : '');
+            if (serviceData.durationInHours !== null && serviceData.durationInHours !== undefined) {
+                formData.append('DurationInHours', String(serviceData.durationInHours));
             }
             if (serviceData.selectedDeliverableTypes && serviceData.selectedDeliverableTypes.length > 0) {
                 formData.append('SelectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));

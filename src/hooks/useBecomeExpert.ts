@@ -1,10 +1,11 @@
-﻿import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { setAuthToken } from '../lib/auth';
 import { BecomeExpertResponse } from '../types/stripe';
 import { API_CONFIG } from '../config/api';
 import { AvailabilityFormData } from './useExpertProfile';
+import { authService } from '../services/authService';
 
 interface FormData {
     description: string;
@@ -179,11 +180,42 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 throw new Error(errorMessage);
             }
 
-            const result: BecomeExpertResponse = await response.json();
-            console.log('Success response:', result);
+            const rawResult = await response.json();
+            console.log('Success response (raw):', rawResult);
+            
+            // ✅ Normalizar la respuesta del backend (puede venir en PascalCase o camelCase)
+            const result: BecomeExpertResponse = {
+                message: rawResult.Message || rawResult.message,
+                token: rawResult.Token || rawResult.token,
+                user: {
+                    id: rawResult.User?.Id || rawResult.user?.id,
+                    name: rawResult.User?.Name || rawResult.user?.name,
+                    email: rawResult.User?.Email || rawResult.user?.email,
+                    phoneVerified: rawResult.User?.PhoneVerified ?? rawResult.user?.phoneVerified ?? false,
+                    role: rawResult.User?.Role || rawResult.user?.role,
+                    expertProfile: {
+                        id: rawResult.User?.ExpertProfile?.Id || rawResult.user?.expertProfile?.id,
+                        profilePictureUrl: rawResult.User?.ExpertProfile?.ProfilePictureUrl || rawResult.user?.expertProfile?.profilePictureUrl,
+                        description: rawResult.User?.ExpertProfile?.Description || rawResult.user?.expertProfile?.description,
+                        stripeAccountId: rawResult.User?.ExpertProfile?.StripeAccountId || rawResult.user?.expertProfile?.stripeAccountId,
+                        createdAt: rawResult.User?.ExpertProfile?.CreatedAt || rawResult.user?.expertProfile?.createdAt,
+                        latitude: rawResult.User?.ExpertProfile?.Latitude || rawResult.user?.expertProfile?.latitude,
+                        longitude: rawResult.User?.ExpertProfile?.Longitude || rawResult.user?.expertProfile?.longitude,
+                        stripeStatus: rawResult.User?.ExpertProfile?.StripeStatus || rawResult.user?.expertProfile?.stripeStatus,
+                        stripeStatusDetails: rawResult.User?.ExpertProfile?.StripeStatusDetails || rawResult.user?.expertProfile?.stripeStatusDetails,
+                        onboardingCompleted: rawResult.User?.ExpertProfile?.OnboardingCompleted ?? rawResult.user?.expertProfile?.onboardingCompleted ?? false,
+                        stripeFutureRequirements: rawResult.User?.ExpertProfile?.StripeFutureRequirements || rawResult.user?.expertProfile?.stripeFutureRequirements,
+                        stripeFutureDueAt: rawResult.User?.ExpertProfile?.StripeFutureDueAt || rawResult.user?.expertProfile?.stripeFutureDueAt,
+                        isOnVacation: rawResult.User?.ExpertProfile?.IsOnVacation ?? rawResult.user?.expertProfile?.isOnVacation,
+                        currentAvailability: rawResult.User?.ExpertProfile?.CurrentAvailability || rawResult.user?.expertProfile?.currentAvailability,
+                    }
+                }
+            };
+            
+            console.log('Success response (normalized):', result);
             console.log('User role received:', result.user?.role);
             console.log('Full user object:', result.user);
-            console.log('Expert profile:', result.user.expertProfile);
+            console.log('Expert profile:', result.user?.expertProfile);
 
             if (!result.token || !result.user) {
                 throw new Error('Respuesta del servidor incompleta');
@@ -204,9 +236,130 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 console.log('Onboarding Completed:', result.user.expertProfile.onboardingCompleted);
             }
 
-            // Actualizar autenticación
-            setAuthToken(result.token, result.user);
-            updateUser(result.user, result.token, () => navigate('/expert-panel'));
+            // ✅ Asegurar que el rol esté correctamente establecido como 'Expert'
+            // Normalizar el objeto user para que tenga la estructura correcta
+            const userToUpdate = {
+                id: result.user.id,
+                name: result.user.name,
+                email: result.user.email,
+                phoneVerified: result.user.phoneVerified ?? false,
+                role: 'Expert', // ✅ Forzar rol a Expert para asegurar consistencia
+                // Mantener también en PascalCase para compatibilidad
+                Id: result.user.id,
+                Name: result.user.name,
+                Email: result.user.email,
+                PhoneVerified: result.user.phoneVerified ?? false,
+                Role: 'Expert',
+                // Incluir expertProfile si existe
+                expertProfile: result.user.expertProfile,
+                ExpertProfile: result.user.expertProfile,
+            };
+            
+            console.log('✅ [useBecomeExpert] Actualizando usuario con rol Expert:', userToUpdate);
+            console.log('✅ [useBecomeExpert] Rol del usuario:', userToUpdate.role, userToUpdate.Role);
+
+            // ✅ CRÍTICO: Guardar token en authService PRIMERO para que esté disponible
+            // El backend de become-expert devuelve solo el accessToken en result.token
+            // Verificar si el token viene en formato "accessToken|refreshToken" (como googleAuth)
+            // o solo es el accessToken
+            let accessToken = result.token;
+            let refreshToken: string | null = null;
+            
+            try {
+                // Verificar si el token viene en formato "accessToken|refreshToken"
+                if (result.token.includes('|')) {
+                    [accessToken, refreshToken] = result.token.split('|');
+                    console.log('✅ [useBecomeExpert] Token viene en formato "accessToken|refreshToken"');
+                } else {
+                    // Solo viene accessToken, intentar usar refreshToken existente
+                    // ⚠️ IMPORTANTE: El backend puede invalidar tokens antiguos al generar uno nuevo
+                    // Si el refreshToken antiguo no funciona, el interceptor lo manejará
+                    const existingRefreshToken = localStorage.getItem('refreshToken');
+                    if (existingRefreshToken) {
+                        refreshToken = existingRefreshToken;
+                        console.log('✅ [useBecomeExpert] Usando refreshToken existente del localStorage');
+                    } else {
+                        // ⚠️ No hay refreshToken - esto causará problemas al intentar refrescar
+                        // Por ahora usar el mismo token como refreshToken temporal (puede fallar)
+                        console.warn('⚠️ [useBecomeExpert] No hay refreshToken disponible - el backend debería devolverlo');
+                        refreshToken = result.token; // Temporal, pero mejor que nada
+                    }
+                }
+                
+                // Guardar tokens en authService
+                authService.setTokens(accessToken, refreshToken);
+                
+                // ✅ CRÍTICO: Programar renovación automática del token
+                authService.scheduleTokenRefresh();
+                
+                // ✅ Verificar que los tokens se guardaron correctamente
+                const savedAccessToken = authService.getAccessToken();
+                const savedRefreshToken = authService.getRefreshToken();
+                console.log('✅ [useBecomeExpert] Tokens guardados:', {
+                    accessToken: !!savedAccessToken,
+                    refreshToken: !!savedRefreshToken,
+                    accessTokenCoincide: savedAccessToken === accessToken
+                });
+            } catch (error) {
+                console.error('❌ [useBecomeExpert] Error guardando token en authService:', error);
+                // Si falla, usar el token directamente
+                accessToken = result.token;
+                refreshToken = result.token;
+                authService.setTokens(accessToken, refreshToken);
+            }
+            
+            // Guardar token en localStorage también (compatibilidad)
+            setAuthToken(accessToken, userToUpdate);
+            
+            console.log('✅ [useBecomeExpert] Usuario a actualizar:', {
+                id: userToUpdate.id,
+                email: userToUpdate.email,
+                role: userToUpdate.role,
+                Role: userToUpdate.Role,
+                hasToken: !!accessToken
+            });
+            
+            // Actualizar autenticación - actualizar el contexto
+            updateUser(userToUpdate, accessToken);
+            
+            // ✅ Esperar un momento para que el contexto y authService se actualicen completamente
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Verificar que el token se guardó correctamente
+            const savedToken = authService.getAccessToken();
+            const savedRefreshToken = authService.getRefreshToken();
+            console.log('✅ [useBecomeExpert] Verificación final:', {
+                tokenGuardado: !!savedToken,
+                refreshTokenGuardado: !!savedRefreshToken,
+                userEnContexto: !!userToUpdate,
+                userRole: userToUpdate.role
+            });
+
+            // ✅ CRÍTICO: Verificar que el token esté disponible antes de navegar
+            if (!savedToken) {
+                console.error('❌ [useBecomeExpert] Token no se guardó correctamente, reintentando...');
+                // Reintentar guardar el token
+                const tokenToUse = result.token.includes('|') ? result.token.split('|')[0] : result.token;
+                const refreshToUse = savedRefreshToken || (result.token.includes('|') ? result.token.split('|')[1] : result.token);
+                authService.setTokens(tokenToUse, refreshToUse);
+                authService.scheduleTokenRefresh();
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            // ✅ CRÍTICO: Verificar que el refreshToken funcione
+            // Si el refreshToken antiguo no funciona (porque el backend lo invalidó), 
+            // el interceptor de authService lo manejará automáticamente al recibir 401
+            // Pero es mejor advertir si el refreshToken es igual al accessToken (temporal)
+            try {
+                const currentRefreshToken = authService.getRefreshToken();
+                if (currentRefreshToken && currentRefreshToken === savedToken) {
+                    // El refreshToken es el mismo que el accessToken (temporal), esto puede causar problemas
+                    console.warn('⚠️ [useBecomeExpert] RefreshToken es igual al accessToken - puede causar problemas al refrescar');
+                    console.warn('⚠️ [useBecomeExpert] El backend debería devolver también el refreshToken en la respuesta');
+                }
+            } catch (error) {
+                console.warn('⚠️ [useBecomeExpert] Error verificando refreshToken:', error);
+            }
 
             // Mostrar notificación de éxito
             window.dispatchEvent(new CustomEvent('showNotification', {
@@ -215,6 +368,10 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                     message: '✨ ¡Te has registrado exitosamente como buscador experto!',
                 },
             }));
+
+            // ✅ Navegar después de asegurar que todo se actualice
+            console.log('✅ [useBecomeExpert] Navegando a /expert-panel');
+            navigate('/expert-panel', { replace: true });
 
         } catch (err) {
             console.error('Error in handleSubmit:', err);
@@ -225,11 +382,7 @@ export function useBecomeExpert(): UseBecomeExpertResult {
         }
     }, [formData, navigate, updateUser]);
 
-    useEffect(() => {
-        if (user?.role === 'Expert') {
-            navigate('/expert-panel');
-        }
-    }, [user, navigate]);
+    // ✅ Removido: La navegación se maneja en handleSubmit después de actualizar el usuario
 
     return {
         formData,
