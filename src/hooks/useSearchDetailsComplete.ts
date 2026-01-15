@@ -58,6 +58,9 @@ export const useSearchDetailsComplete = (
       }
       
       console.log(`[useSearchDetailsComplete] Raw response keys:`, Object.keys(rawResponse));
+      console.log(`[useSearchDetailsComplete] Raw response Search:`, rawResponse.Search ?? rawResponse.search);
+      console.log(`[useSearchDetailsComplete] Raw response SearchHire:`, rawResponse.Search?.SearchHire ?? rawResponse.search?.searchHire);
+      console.log(`[useSearchDetailsComplete] Raw response Appointment:`, rawResponse.Appointment ?? rawResponse.appointment);
       
       // ✅ Normalizar respuesta de PascalCase a camelCase
       const normalizeUser = (user: any) => {
@@ -111,6 +114,8 @@ export const useSearchDetailsComplete = (
           statusTranslated: searchHire.StatusTranslated ?? searchHire.statusTranslated ?? '',
           createdAt: searchHire.CreatedAt ?? searchHire.createdAt ?? '',
           expert: normalizeUser(searchHire.Expert ?? searchHire.expert),
+          // ✅ IMPORTANTE: Normalizar también el cliente si está presente
+          client: normalizeUser(searchHire.Client ?? searchHire.client),
           service: normalizeServiceInfo(searchHire.Service ?? searchHire.service),
           statusInfo: normalizeStatusInfo(searchHire.StatusInfo ?? searchHire.statusInfo),
           amount: searchHire.Amount ?? searchHire.amount ?? 0,
@@ -160,26 +165,79 @@ export const useSearchDetailsComplete = (
           id: appointment.Id ?? appointment.id,
           searchHireId: appointment.SearchHireId ?? appointment.searchHireId,
           status: appointment.Status ?? appointment.status ?? '',
+          // ✅ Fechas y horas propuestas (importantes para la lógica de botones)
+          proposedDate: appointment.ProposedDate ?? appointment.proposedDate ?? null,
+          proposedTime: appointment.ProposedTime ?? appointment.proposedTime ?? null,
+          proposedDateLocal: appointment.ProposedDateLocal ?? appointment.proposedDateLocal ?? null,
+          proposedTimeLocal: appointment.ProposedTimeLocal ?? appointment.proposedTimeLocal ?? null,
+          proposedDateUtc: appointment.ProposedDateUtc ?? appointment.proposedDateUtc ?? null,
+          proposedTimeUtc: appointment.ProposedTimeUtc ?? appointment.proposedTimeUtc ?? null,
+          // ✅ Ubicación de la cita
+          location: appointment.Location ?? appointment.location ?? null,
+          latitude: appointment.Latitude ?? appointment.latitude ?? null ? 
+            (typeof (appointment.Latitude ?? appointment.latitude) === 'string' 
+              ? parseFloat(appointment.Latitude ?? appointment.latitude) 
+              : (appointment.Latitude ?? appointment.latitude)) 
+            : null,
+          longitude: appointment.Longitude ?? appointment.longitude ?? null ? 
+            (typeof (appointment.Longitude ?? appointment.longitude) === 'string' 
+              ? parseFloat(appointment.Longitude ?? appointment.longitude) 
+              : (appointment.Longitude ?? appointment.longitude)) 
+            : null,
+          doorNumber: appointment.DoorNumber ?? appointment.doorNumber ?? null,
+          ownerPhone: appointment.OwnerPhone ?? appointment.ownerPhone ?? null,
+          siteDetails: appointment.SiteDetails ?? appointment.siteDetails ?? null,
+          // ✅ Contadores
           rejectionCount: appointment.RejectionCount ?? appointment.rejectionCount ?? 0,
           clientCancellationCount: appointment.ClientCancellationCount ?? appointment.clientCancellationCount ?? 0,
           expertCancellationCount: appointment.ExpertCancellationCount ?? appointment.expertCancellationCount ?? 0,
+          // ✅ Fechas de eventos
+          lastRejectionAt: appointment.LastRejectionAt ?? appointment.lastRejectionAt ?? null,
+          lastClientCancellationAt: appointment.LastClientCancellationAt ?? appointment.lastClientCancellationAt ?? null,
+          lastExpertCancellationAt: appointment.LastExpertCancellationAt ?? appointment.lastExpertCancellationAt ?? null,
+          lastProposalAt: appointment.LastProposalAt ?? appointment.lastProposalAt ?? null,
+          lastResponseAt: appointment.LastResponseAt ?? appointment.lastResponseAt ?? null,
+          // ✅ Información básica
           createdAt: appointment.CreatedAt ?? appointment.createdAt ?? '',
           updatedAt: appointment.UpdatedAt ?? appointment.updatedAt ?? '',
           clientName: appointment.ClientName ?? appointment.clientName ?? null,
           expertName: appointment.ExpertName ?? appointment.expertName ?? null,
           amount: appointment.Amount ?? appointment.amount ?? 0,
-          timers: (appointment.Timers ?? appointment.timers ?? []).map((timer: any) => ({
-            id: timer.Id ?? timer.id,
-            appointmentId: timer.AppointmentId ?? timer.appointmentId,
-            timerType: timer.TimerType ?? timer.timerType ?? '',
-            startTime: timer.StartTime ?? timer.startTime ?? '',
-            endTime: timer.EndTime ?? timer.endTime ?? null,
-            isExpired: timer.IsExpired ?? timer.isExpired ?? false,
-            createdAt: timer.CreatedAt ?? timer.createdAt ?? '',
-          })),
-          expertLatitude: appointment.ExpertLatitude ?? appointment.expertLatitude ?? null,
-          expertLongitude: appointment.ExpertLongitude ?? appointment.expertLongitude ?? null,
-          locationRange: appointment.LocationRange ?? appointment.locationRange ?? null,
+          // ✅ Timers (importantes para la lógica de botones)
+          timers: (appointment.Timers ?? appointment.timers ?? []).map((timer: any) => {
+            const normalizedTimer = {
+              id: timer.Id ?? timer.id,
+              appointmentId: timer.AppointmentId ?? timer.appointmentId,
+              timerType: (timer.TimerType ?? timer.timerType ?? '').toLowerCase(), // ✅ Normalizar a lowercase
+              startTime: timer.StartTime ?? timer.startTime ?? '',
+              endTime: timer.EndTime ?? timer.endTime ?? null,
+              isExpired: timer.IsExpired ?? timer.isExpired ?? false,
+              expiredAt: timer.ExpiredAt ?? timer.expiredAt ?? null,
+              createdAt: timer.CreatedAt ?? timer.createdAt ?? '',
+            };
+            console.log('[useSearchDetailsComplete] Normalizing timer:', {
+              raw: { TimerType: timer.TimerType, IsExpired: timer.IsExpired },
+              normalized: normalizedTimer
+            });
+            return normalizedTimer;
+          }),
+          // ✅ Información de ubicación del experto
+          expertLatitude: appointment.ExpertLatitude ?? appointment.expertLatitude ?? null ? 
+            (typeof (appointment.ExpertLatitude ?? appointment.expertLatitude) === 'string' 
+              ? parseFloat(appointment.ExpertLatitude ?? appointment.expertLatitude) 
+              : (appointment.ExpertLatitude ?? appointment.expertLatitude)) 
+            : null,
+          expertLongitude: appointment.ExpertLongitude ?? appointment.expertLongitude ?? null ? 
+            (typeof (appointment.ExpertLongitude ?? appointment.expertLongitude) === 'string' 
+              ? parseFloat(appointment.ExpertLongitude ?? appointment.expertLongitude) 
+              : (appointment.ExpertLongitude ?? appointment.expertLongitude)) 
+            : null,
+          locationRange: appointment.LocationRange ?? appointment.locationRange ?? null ? 
+            (typeof (appointment.LocationRange ?? appointment.locationRange) === 'string' 
+              ? parseFloat(appointment.LocationRange ?? appointment.locationRange) 
+              : (appointment.LocationRange ?? appointment.locationRange)) 
+            : null,
+          // ✅ Estado completo
           statusInfo: normalizeStatusInfo(appointment.StatusInfo ?? appointment.statusInfo),
         };
       };
@@ -269,21 +327,40 @@ export const useSearchDetailsComplete = (
       
       console.log(`[useSearchDetailsComplete] Normalized data:`, normalizedResponse);
       
-      // ✅ DEBUG: Verificar específicamente el estado del searchHire
+      // ✅ DEBUG: Verificar específicamente el estado del searchHire y appointment
       if (normalizedResponse?.search?.searchHire) {
-        console.log(`[useSearchDetailsComplete] SearchHire status DEBUG:`, {
+        console.log(`[useSearchDetailsComplete] SearchHire DEBUG:`, {
           searchHireId: normalizedResponse.search.searchHire.id,
           status: normalizedResponse.search.searchHire.status,
-          statusType: typeof normalizedResponse.search.searchHire.status,
-          statusLength: normalizedResponse.search.searchHire.status?.length,
-          statusTrimmed: normalizedResponse.search.searchHire.status?.trim(),
-          statusCharCodes: normalizedResponse.search.searchHire.status ? normalizedResponse.search.searchHire.status.split('').map(c => c.charCodeAt(0)) : null,
-          // ✅ DEBUG: Verificar si el estado es exactamente 'awaiting_client_decision'
-          isAwaitingClientDecision: normalizedResponse.search.searchHire.status === 'awaiting_client_decision',
-          // ✅ DEBUG: Verificar si hay algún problema con la comparación
-          comparisonResult: normalizedResponse.search.searchHire.status === 'awaiting_client_decision' ? 'MATCH' : 'NO_MATCH'
+          statusInfo: normalizedResponse.search.searchHire.statusInfo,
+          hasClient: !!normalizedResponse.search.searchHire.client,
+          clientId: normalizedResponse.search.searchHire.client?.id,
+          hasExpert: !!normalizedResponse.search.searchHire.expert,
+          expertId: normalizedResponse.search.searchHire.expert?.id,
+          hasService: !!normalizedResponse.search.searchHire.service,
+          serviceRequiresAppointment: normalizedResponse.search.searchHire.service?.requiresAppointment
+        });
+      }
+      
+      if (normalizedResponse?.appointment) {
+        console.log(`[useSearchDetailsComplete] Appointment DEBUG:`, {
+          appointmentId: normalizedResponse.appointment.id,
+          status: normalizedResponse.appointment.status,
+          statusInfo: normalizedResponse.appointment.statusInfo,
+          hasProposedDate: !!normalizedResponse.appointment.proposedDate,
+          hasProposedTime: !!normalizedResponse.appointment.proposedTime,
+          timersCount: normalizedResponse.appointment.timers?.length ?? 0,
+          timers: normalizedResponse.appointment.timers?.map((t: any) => ({
+            type: t.timerType,
+            isExpired: t.isExpired,
+            hasEndTime: !!t.endTime
+          }))
         });
       } else {
+        console.log(`[useSearchDetailsComplete] No appointment found`);
+      }
+      
+      if (!normalizedResponse?.search?.searchHire) {
         console.log(`[useSearchDetailsComplete] No searchHire data found for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}: ${identifier}`);
         console.log(`[useSearchDetailsComplete] Search data structure:`, {
           hasSearch: !!normalizedResponse.search,

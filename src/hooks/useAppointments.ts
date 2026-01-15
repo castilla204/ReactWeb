@@ -133,10 +133,17 @@ export const useAppointments = () => {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
+      console.log('[useAppointments] confirmAppointmentMutation onSuccess - Invalidating queries');
+      // ✅ Invalidar queries de appointments
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointment'] });
+      // ✅ IMPORTANTE: Invalidar también searchDetailsComplete para que SearchDetails se actualice
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete'] });
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire'] });
+      console.log('[useAppointments] Queries invalidated successfully');
     },
     onError: (error: any) => {
+      console.error('[useAppointments] confirmAppointmentMutation error:', error);
       // Extraer el mensaje del backend si está disponible
       const errorMessage = error?.message || (error instanceof Error ? error.message : 'Error al confirmar cita');
       setError(errorMessage);
@@ -150,10 +157,17 @@ export const useAppointments = () => {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
+      console.log('[useAppointments] rejectAppointmentMutation onSuccess - Invalidating queries');
+      // ✅ Invalidar queries de appointments
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointment'] });
+      // ✅ IMPORTANTE: Invalidar también searchDetailsComplete para que SearchDetails se actualice
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete'] });
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire'] });
+      console.log('[useAppointments] Queries invalidated successfully');
     },
     onError: (error: any) => {
+      console.error('[useAppointments] rejectAppointmentMutation error:', error);
       // Extraer el mensaje del backend si está disponible
       const errorMessage = error?.message || (error instanceof Error ? error.message : 'Error al rechazar cita');
       setError(errorMessage);
