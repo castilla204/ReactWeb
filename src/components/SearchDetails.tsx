@@ -737,7 +737,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
     const userId = Number(user?.id) || 0;
     // ✅ Cuando search es null, no podemos obtener clientId (cliente eliminado)
-    const clientId = Number(search?.userId ?? 0);
+    // ✅ También intentar obtener clientId de searchHire.client si está disponible
+    const clientId = Number(
+        search?.userId ?? 
+        search?.searchHire?.client?.id ?? 
+        0
+    );
     // ✅ Cuando search es null, obtener expertId de expertProfile, expertInfo o searchHire
     const expertId = Number(
         search?.searchHire?.expert?.id ?? 
@@ -747,8 +752,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     );
 
     // ✅ Determinar si es cliente o experto
-    // Si search es null, solo podemos verificar si es experto (el cliente fue eliminado)
-    const isClient = search ? (userId === clientId) : false;
+    // Si search es null, intentar obtener clientId de searchHire.client
+    // ✅ MEJORADO: Verificar también desde searchHire.client para contrataciones recién creadas
+    const isClient = search 
+        ? (userId === clientId) 
+        : (userId === Number(search?.searchHire?.client?.id ?? 0));
     const isExpert = userId === expertId || 
                      (search?.searchHire?.expert?.id && userId === Number(search.searchHire.expert.id)) ||
                      (expertInfo?.id && userId === Number(expertInfo.id)) ||
@@ -835,12 +843,26 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
         // Si no hay cita, solo el cliente puede proponer (si el SearchHire está en estado válido)
         if (!appointment) {
-            const validHireStatuses = ['pending', 'in_progress'];
+            // ✅ Estados válidos para proponer cita cuando no hay cita previa
+            // Incluir 'pending', 'in_progress' y también estados iniciales comunes
+            const validHireStatuses = ['pending', 'in_progress', 'awaiting_appointment'];
             const currentHireStatus = searchHireStatus;
-            const canPropose = currentHireStatus ? validHireStatuses.includes(currentHireStatus) : false;
+            // ✅ Si no hay estado o el estado es válido, permitir proponer (siempre que no esté finalizado)
+            const canPropose = !isSearchHireFinalized && (
+                !currentHireStatus || // Si no hay estado, permitir (contratación recién creada)
+                validHireStatuses.includes(currentHireStatus)
+            );
+            
+            console.log('[SearchDetails] getAppointmentButtons - No appointment:', {
+                isClient,
+                canPropose,
+                currentHireStatus,
+                isSearchHireFinalized,
+                hasSearchHire: !!search?.searchHire
+            });
             
             return {
-                showPropose: isClient && canPropose,
+                showPropose: isClient && canPropose && !!search?.searchHire, // ✅ Asegurar que existe searchHire
                 showCancel: false,
                 showAccept: false,
                 showReject: false
@@ -850,9 +872,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         const status = appointment.status;
         
         // ✅ Verificar si hay una propuesta activa (timer de tipo "proposal" o "response")
-        const hasActiveProposal = appointment.timers && appointment.timers.some((timer: any) => 
-            (timer.timerType === 'proposal' || timer.timerType === 'response') && !timer.isExpired
-        );
+        // ✅ NORMALIZAR: Asegurar que timerType esté en lowercase para comparación
+        const hasActiveProposal = appointment.timers && appointment.timers.some((timer: any) => {
+          const timerType = (timer.timerType || '').toLowerCase();
+          return (timerType === 'proposal' || timerType === 'response') && !timer.isExpired;
+        });
         
         console.log('[SearchDetails] getAppointmentButtons:', {
             status,
@@ -864,17 +888,26 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
         if (isClient) {
             // BOTONES PARA CLIENTE según la guía
-            // ✅ NO mostrar "Proponer" si ya hay una propuesta activa (awaiting_appointment con timer activo)
+            // ✅ CORREGIDO: En 'awaiting_appointment' el cliente SIEMPRE puede proponer cita
+            // El timer activo solo indica que hay tiempo restante, no que no se pueda proponer
             // Solo mostrar "Proponer" si:
             // 1. No hay cita (ya manejado arriba)
-            // 2. La cita fue rechazada o cancelada
-            // 3. O si es awaiting_appointment pero NO hay propuesta activa (timer expirado)
-            const canProposeWhenAwaiting = status === 'awaiting_appointment' && !hasActiveProposal;
+            // 2. Estado es 'awaiting_appointment' (cliente puede proponer siempre)
+            // 3. La cita fue rechazada o cancelada
+            const canProposeWhenAwaiting = status === 'awaiting_appointment'; // ✅ SIEMPRE permitir si es awaiting_appointment
             const canProposeWhenRejectedOrCancelled = [
                 'appointment_rejected',
                 'appointment_cancelled_by_client',
                 'appointment_cancelled_by_expert'
             ].includes(status);
+            
+            console.log('[SearchDetails] getAppointmentButtons - Client logic:', {
+                status,
+                canProposeWhenAwaiting,
+                canProposeWhenRejectedOrCancelled,
+                hasActiveProposal,
+                showPropose: canProposeWhenAwaiting || canProposeWhenRejectedOrCancelled
+            });
             
             return {
                 showPropose: canProposeWhenAwaiting || canProposeWhenRejectedOrCancelled,
@@ -884,11 +917,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             };
         } else if (isExpert) {
             // BOTONES PARA EXPERTO según la guía
-            // ✅ Mostrar aceptar/rechazar cuando:
-            // 1. Estado es 'appointment_proposed' (formato antiguo)
-            // 2. O estado es 'awaiting_appointment' con propuesta activa (formato nuevo del backend)
+            // ✅ CORREGIDO: El experto solo puede aceptar/rechazar cuando:
+            // 1. Estado es 'appointment_proposed' (formato antiguo), O
+            // 2. Estado es 'awaiting_appointment' PERO hay una propuesta REAL (fecha y hora propuestas)
+            // NO mostrar si es 'awaiting_appointment' pero NO hay fecha/hora propuesta (cliente aún no ha propuesto)
+            const hasProposedDateTime = !!(appointment.proposedDate && appointment.proposedTime);
             const canAcceptOrReject = status === 'appointment_proposed' || 
-                                      (status === 'awaiting_appointment' && hasActiveProposal);
+                                      (status === 'awaiting_appointment' && hasProposedDateTime);
+            
+            console.log('[SearchDetails] getAppointmentButtons - Expert logic:', {
+                status,
+                hasProposedDateTime,
+                proposedDate: appointment.proposedDate,
+                proposedTime: appointment.proposedTime,
+                hasActiveProposal,
+                canAcceptOrReject
+            });
             
             return {
                 showPropose: false,
@@ -918,7 +962,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         ),
         buttons: appointmentButtons,
         isClient,
-        isExpert
+        isExpert,
+        searchHireStatus,
+        searchHireId: search?.searchHire?.id,
+        hasSearchHire: !!search?.searchHire,
+        isSearchHireFinalized,
+        userId,
+        clientId,
+        expertId
     });
 
     // ✅ Función para verificar si se puede proponer una cita (compatibilidad con código existente)
