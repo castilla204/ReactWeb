@@ -738,10 +738,16 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
       {isMobileSearchOpen && typeof document !== 'undefined' && createPortal(
         <>
           {/* Botón cerrar arriba derecha - Fuera del div principal - Estilo mejorado */}
-          <div className="md:hidden fixed top-4 right-4 z-[60]">
+          <div className="md:hidden fixed top-6 right-6 z-[60]">
             <button
               type="button"
-              onClick={() => setIsMobileSearchOpen(false)}
+              onClick={() => {
+                if (expandedAccordion === 'where') {
+                  setExpandedAccordion(null);
+                } else {
+                  setIsMobileSearchOpen(false);
+                }
+              }}
               className="p-2.5 bg-white hover:bg-gray-50 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl border-0"
               aria-label="Cerrar"
               style={{
@@ -770,10 +776,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             }}
           >
             <div className="flex-1 overflow-y-auto">
-              <div className="pt-12 px-3 pb-4 space-y-3">
+              <div className="pt-20 px-3 pb-4 space-y-3">
               {/* Categorías - Div más alto con categorías visibles */}
               <div 
-                className={`bg-white border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all flex flex-col ${
+                className={`bg-white border-0 rounded-2xl shadow-xl hover:shadow-2xl transition-all flex flex-col ${
                   expandedAccordion === 'where' ? 'fixed inset-0 z-[60] rounded-none' : ''
                 }`}
                 style={expandedAccordion === 'where' 
@@ -787,14 +793,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                       height: '45vh', 
                       minHeight: '300px', 
                       maxHeight: '500px',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)'
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08)'
                     }
                 }
               >
                 {expandedAccordion === 'where' ? (
                   <>
                     {/* Header con título y buscador cuando está expandido - Estilo Airbnb */}
-                    <div className="px-3 pt-3 pb-3 border-b border-gray-200">
+                    <div className="px-3 pt-20 pb-3 border-b border-gray-200">
                       <h2 
                         tabIndex={-1}
                         className="mb-3"
@@ -807,7 +813,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                           letterSpacing: '-0.01em',
                         }}
                       >
-                        ¿Dónde?
+                        Categorías
                       </h2>
                       <form role="search" className="w-full">
                         <label 
@@ -886,7 +892,6 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                               onClick={() => {
                                 setCategoryId(category.id);
                                 setCategorySearchQuery('');
-                                setExpandedAccordion(null);
                                 // Llamar a onSearch para actualizar los filtros
                                 if (onSearch) {
                                   onSearch({
@@ -983,7 +988,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                           letterSpacing: '-0.01em',
                         }}
                       >
-                        ¿Dónde?
+                        Categorías
                       </h2>
                       
                       {/* Buscador fijo fuera del scroll */}
@@ -1161,7 +1166,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               </div>
 
               {/* Tipo de servicio - Rectángulo con sombra - Estilo Airbnb */}
-              <div className="bg-white border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all">
+              <div className="bg-white border-0 rounded-2xl shadow-xl hover:shadow-2xl transition-all">
                 <button
                   type="button"
                   onClick={() => setExpandedAccordion(expandedAccordion === 'type' ? null : 'type')}
@@ -1244,7 +1249,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               </div>
 
               {/* URL del anuncio - Rectángulo con sombra */}
-              <div className="bg-white border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all">
+              <div className="bg-white border-0 rounded-2xl shadow-xl hover:shadow-2xl transition-all">
                 <button
                   type="button"
                   onClick={() => setExpandedAccordion(expandedAccordion === 'url' ? null : 'url')}

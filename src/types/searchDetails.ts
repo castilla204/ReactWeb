@@ -131,6 +131,7 @@ export interface SearchHireDto {
   statusInfo?: SystemStatusDto;  // ✅ ACTUALIZADO: Usar SystemStatusDto
   createdAt: string;
   expert: UserDto | null;
+  client: UserDto | null;  // ✅ NUEVO: Cliente de la contratación
   service: ServiceInfo | null;
   // ✅ NUEVOS CAMPOS DE PAÍS Y TIMEZONE
   expertTimezone: string | null; // Timezone del experto al momento de contratar
@@ -183,23 +184,27 @@ export interface AppointmentDto {
   statusInfo?: SystemStatusDto;  // ✅ ACTUALIZADO: Usar SystemStatusDto
   
   // ═══════════════════════════════════════════════════════════════
-  // ✅ CAMPOS DE FECHA (Internacionalización)
+  // ✅ CAMPOS DE FECHA (Internacionalización) - Pueden ser null si no se ha propuesto
   // ═══════════════════════════════════════════════════════════════
   // Fechas en UTC (para cálculos, comparaciones, ordenamiento)
-  proposedDate: string;          // UTC (guardada en BD)
-  proposedTime: string;           // UTC (guardada en BD)
+  proposedDate: string | null;          // UTC (guardada en BD) - null si no se ha propuesto
+  proposedTime: string | null;           // UTC (guardada en BD) - null si no se ha propuesto
   
   // ✅ NUEVOS: Fechas en hora local del experto
-  proposedDateLocal?: string;    // Fecha propuesta en hora local
-  proposedTimeLocal?: string;     // Hora propuesta en hora local
+  proposedDateLocal?: string | null;    // Fecha propuesta en hora local
+  proposedTimeLocal?: string | null;     // Hora propuesta en hora local
+  
+  // ✅ NUEVOS: Fechas UTC adicionales (si vienen del backend)
+  proposedDateUtc?: string | null;      // Fecha UTC explícita
+  proposedTimeUtc?: string | null;      // Hora UTC explícita
   
   // ✅ NUEVOS: Información de internacionalización
   timezone?: string;              // Timezone IANA (ej: "Europe/Madrid", "America/Mexico_City")
   country?: string;              // País ISO 3166-1 alpha-2 (ej: "ES", "MX")
   
-  location: string;
-  latitude: number | null;
-  longitude: number | null;
+  location: string | null;
+  latitude: number | string | null;  // Puede venir como string del backend
+  longitude: number | string | null; // Puede venir como string del backend
   doorNumber: string | null;
   ownerPhone: string | null;
   siteDetails: string | null;
