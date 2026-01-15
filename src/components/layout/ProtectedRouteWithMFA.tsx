@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { authService } from '../../services/authService';
@@ -28,9 +28,31 @@ export const ProtectedRouteWithMFA: React.FC<ProtectedRouteWithMFAProps> = ({
     const location = useLocation();
     const { isAuthenticated, isLoading: authLoading, user } = useAuth();
     const { isLoading, requiresSetup, isEnforced, userRole } = useMfaEnforcement();
+    
+    // ✅ CRÍTICO: Todos los hooks deben estar al inicio, antes de cualquier return condicional
+    const token = authService.getAccessToken();
+    const hasUser = !!user;
+    const hasToken = !!token;
+    
+    // ✅ Esperar un momento adicional si hay token pero no hay usuario todavía
+    // Esto da tiempo a que AuthContext termine de restaurar la sesión
+    const [waitingForAuth, setWaitingForAuth] = useState(false);
+    
+    useEffect(() => {
+        if (hasToken && !hasUser && !authLoading) {
+            // Hay token pero no hay usuario todavía - esperar un momento
+            setWaitingForAuth(true);
+            const timeout = setTimeout(() => {
+                setWaitingForAuth(false);
+            }, 500); // Esperar 500ms para que AuthContext termine de restaurar
+            return () => clearTimeout(timeout);
+        } else {
+            setWaitingForAuth(false);
+        }
+    }, [hasToken, hasUser, authLoading]);
 
-    // 1. Verificar autenticación
-    if (authLoading) {
+    // 1. Verificar autenticación - ✅ CRÍTICO: Esperar a que termine la carga antes de redirigir
+    if (authLoading || waitingForAuth) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="flex flex-col items-center gap-3">
@@ -40,9 +62,19 @@ export const ProtectedRouteWithMFA: React.FC<ProtectedRouteWithMFAProps> = ({
             </div>
         );
     }
-
-    const token = authService.getAccessToken();
-    if (!token || !isAuthenticated) {
+    
+    // ✅ Verificar autenticación: debe tener token Y usuario (o isAuthenticated debe ser true)
+    const isReallyAuthenticated = (hasToken && hasUser) || isAuthenticated;
+    
+    if (!token || !isReallyAuthenticated) {
+        console.log('[ProtectedRouteWithMFA] No autenticado, redirigiendo a /', {
+            hasToken: !!token,
+            hasUser: !!user,
+            isAuthenticated,
+            isReallyAuthenticated,
+            authLoading,
+            path: location.pathname
+        });
         return <Navigate to="/" state={{ from: location }} replace />;
     }
 

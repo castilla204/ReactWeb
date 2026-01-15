@@ -98,14 +98,18 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
                         // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
                         const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
                         const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
+                        
+                        // ✅ Manejar caso cuando timeToUse es undefined o null
+                        const formattedTime = timeToUse ? (timeToUse.substring ? timeToUse.substring(0, 5) : String(timeToUse).substring(0, 5)) : '';
+                        
                         return (
                           <>
-                            {new Date(dateToUse).toLocaleDateString('es-ES', {
+                            {dateToUse ? new Date(dateToUse).toLocaleDateString('es-ES', {
                               weekday: 'long',
                               year: 'numeric',
                               month: 'long',
                               day: 'numeric'
-                            })} {timeToUse.substring(0, 5)}
+                            }) : 'Fecha no disponible'}{formattedTime ? ` ${formattedTime}` : ''}
                           </>
                         );
                       })()}

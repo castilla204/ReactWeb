@@ -351,6 +351,107 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
         },
     });
 
+    // ✅ Función para normalizar SystemStatusDto de PascalCase a camelCase
+    const normalizeSystemStatusDto = (status: any): SystemStatusDto | undefined => {
+        if (!status) return undefined;
+        return {
+            id: status.Id ?? status.id,
+            statusType: status.StatusType ?? status.statusType,
+            statusName: status.StatusName ?? status.statusName,
+            statusValue: status.StatusValue ?? status.statusValue,
+            displayName: status.DisplayName ?? status.displayName,
+            description: status.Description ?? status.description ?? null,
+            color: status.Color ?? status.color ?? null,
+            isActive: status.IsActive ?? status.isActive ?? true,
+            isFinalizationStatus: status.IsFinalizationStatus ?? status.isFinalizationStatus ?? false,
+            sortOrder: status.SortOrder ?? status.sortOrder ?? 0,
+            createdAt: status.CreatedAt ?? status.createdAt,
+            updatedAt: status.UpdatedAt ?? status.updatedAt,
+        };
+    };
+
+    // ✅ Función para normalizar SearchHire de PascalCase a camelCase
+    const normalizeSearchHire = (hire: any): SearchHire | undefined => {
+        if (!hire) return undefined;
+        return {
+            id: hire.Id ?? hire.id,
+            expertId: hire.ExpertId ?? hire.expertId,
+            status: hire.Status ?? hire.status,
+            statusTranslated: hire.StatusTranslated ?? hire.statusTranslated,
+            statusInfo: normalizeSystemStatusDto(hire.StatusInfo ?? hire.statusInfo),
+            createdAt: hire.CreatedAt ?? hire.createdAt,
+            amount: hire.Amount ?? hire.amount,
+            baseAmount: hire.BaseAmount ?? hire.baseAmount,
+            taxAmount: hire.TaxAmount ?? hire.taxAmount,
+            expert: hire.Expert || hire.expert ? {
+                id: (hire.Expert ?? hire.expert).Id ?? (hire.Expert ?? hire.expert).id ?? 0,
+                name: (hire.Expert ?? hire.expert).Name ?? (hire.Expert ?? hire.expert).name ?? '',
+                profilePictureUrl: (hire.Expert ?? hire.expert).ProfilePictureUrl ?? (hire.Expert ?? hire.expert).profilePictureUrl ?? '',
+            } : undefined,
+            service: hire.Service || hire.service ? {
+                id: (hire.Service ?? hire.service).Id ?? (hire.Service ?? hire.service).id,
+                serviceTypeId: (hire.Service ?? hire.service).ServiceTypeId ?? (hire.Service ?? hire.service).serviceTypeId,
+                serviceTypeName: (hire.Service ?? hire.service).ServiceTypeName ?? (hire.Service ?? hire.service).serviceTypeName,
+                serviceTypeCategoryId: (hire.Service ?? hire.service).ServiceTypeCategoryId ?? (hire.Service ?? hire.service).serviceTypeCategoryId,
+                serviceTypeCategoryName: (hire.Service ?? hire.service).ServiceTypeCategoryName ?? (hire.Service ?? hire.service).serviceTypeCategoryName,
+                requiresAppointment: (hire.Service ?? hire.service).RequiresAppointment ?? (hire.Service ?? hire.service).requiresAppointment ?? false,
+                price: (hire.Service ?? hire.service).Price ?? (hire.Service ?? hire.service).price,
+            } : undefined,
+        };
+    };
+
+    // ✅ Función para normalizar SearchItem de PascalCase a camelCase
+    const normalizeSearchItem = (item: any): SearchItem => {
+        return {
+            id: item.Id ?? item.id,
+            title: item.Title ?? item.title,
+            description: item.Description ?? item.description,
+            category: item.Category ?? item.category,
+            frequency: item.Frequency ?? item.frequency,
+            isActive: item.IsActive ?? item.isActive ?? true,
+            isRevised: item.IsRevised ?? item.isRevised ?? false,
+            lastExecution: item.LastExecution ?? item.lastExecution,
+            createdAt: item.CreatedAt ?? item.createdAt,
+            startDate: item.StartDate ?? item.startDate,
+            userId: item.UserId ?? item.userId,
+            locationName: item.LocationName ?? item.locationName,
+            searchHire: normalizeSearchHire(item.SearchHire ?? item.searchHire),
+            user: item.User || item.user ? {
+                email: (item.User ?? item.user).Email ?? (item.User ?? item.user).email ?? '',
+                name: (item.User ?? item.user).Name ?? (item.User ?? item.user).name ?? '',
+                profilePictureUrl: (item.User ?? item.user).ProfilePictureUrl ?? (item.User ?? item.user).profilePictureUrl,
+            } : undefined,
+            unreadMessagesCount: item.UnreadMessagesCount ?? item.unreadMessagesCount ?? 0,
+            hasPendingAppointment: item.HasPendingAppointment ?? item.hasPendingAppointment ?? false,
+            pendingAppointmentStatus: item.PendingAppointmentStatus ?? item.pendingAppointmentStatus,
+        };
+    };
+
+    // ✅ Función para normalizar PaginationMetadata de PascalCase a camelCase
+    const normalizePagination = (pagination: any): PaginationMetadata => {
+        return {
+            currentPage: pagination.CurrentPage ?? pagination.currentPage ?? 1,
+            pageSize: pagination.PageSize ?? pagination.pageSize ?? 20,
+            totalCount: pagination.TotalCount ?? pagination.totalCount ?? 0,
+            totalPages: pagination.TotalPages ?? pagination.totalPages ?? 0,
+            hasPrevious: pagination.HasPrevious ?? pagination.hasPrevious ?? false,
+            hasNext: pagination.HasNext ?? pagination.hasNext ?? false,
+        };
+    };
+
+    // ✅ Función para normalizar UserStats de PascalCase a camelCase
+    const normalizeUserStats = (stats: any): UserStats | undefined => {
+        if (!stats) return undefined;
+        return {
+            activeSearches: stats.ActiveSearches ?? stats.activeSearches ?? 0,
+            inactiveSearches: stats.InactiveSearches ?? stats.inactiveSearches ?? 0,
+            searchesWithHire: stats.SearchesWithHire ?? stats.searchesWithHire ?? 0,
+            searchesWithoutHire: stats.SearchesWithoutHire ?? stats.searchesWithoutHire ?? 0,
+            unreadMessages: stats.UnreadMessages ?? stats.unreadMessages ?? 0,
+            pendingAppointments: stats.PendingAppointments ?? stats.pendingAppointments ?? 0,
+        };
+    };
+
     // ✅ NUEVO: Hook para búsquedas con filtros y paginación (para admin y usuarios)
     const useSearchesWithFilters = (filters: SearchFilters = {}, isAdmin: boolean = false, enabled: boolean = true) => {
         return useQuery({
@@ -367,11 +468,47 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
                 const endpoint = isAdmin ? API_CONFIG.endpoints.search.listAll : API_CONFIG.endpoints.search.list;
                 const url = `${endpoint}${params.toString() ? `?${params.toString()}` : ''}`;
                 
-                // ✅ Usar tipo correcto según el endpoint
+                // ✅ Obtener respuesta cruda de la API
+                const rawResponse = await fetchApi<any>(url);
+                
+                // ✅ Debug: Ver estructura de la respuesta
+                console.log('[useSearchesWithFilters] Raw response keys:', Object.keys(rawResponse));
+                console.log('[useSearchesWithFilters] Has Searches?', !!rawResponse.Searches);
+                console.log('[useSearchesWithFilters] Has searches?', !!rawResponse.searches);
+                console.log('[useSearchesWithFilters] Has Pagination?', !!rawResponse.Pagination);
+                console.log('[useSearchesWithFilters] Has pagination?', !!rawResponse.pagination);
+                
+                // ✅ Normalizar respuesta: mapear Searches -> searches, Pagination -> pagination
+                const searchesArray = rawResponse.Searches ?? rawResponse.searches ?? [];
+                console.log('[useSearchesWithFilters] Searches array length:', searchesArray.length);
+                const normalizedSearches = searchesArray.map(normalizeSearchItem);
+                
+                const normalizedPagination = normalizePagination(rawResponse.Pagination ?? rawResponse.pagination ?? {});
+                console.log('[useSearchesWithFilters] Normalized searches count:', normalizedSearches.length);
+                console.log('[useSearchesWithFilters] Normalized pagination:', normalizedPagination);
+                
+                // ✅ Construir respuesta normalizada
                 if (isAdmin) {
-                    return fetchApi<AdminSearchListResponse>(url);
+                    const response: AdminSearchListResponse = {
+                        searches: normalizedSearches,
+                        pagination: normalizedPagination,
+                    };
+                    return response;
                 } else {
-                    return fetchApi<UserSearchListResponse>(url);
+                    const normalizedStats = normalizeUserStats(rawResponse.Stats ?? rawResponse.stats);
+                    const response: UserSearchListResponse = {
+                        searches: normalizedSearches,
+                        pagination: normalizedPagination,
+                        stats: normalizedStats ?? {
+                            activeSearches: 0,
+                            inactiveSearches: 0,
+                            searchesWithHire: 0,
+                            searchesWithoutHire: 0,
+                            unreadMessages: 0,
+                            pendingAppointments: 0,
+                        },
+                    };
+                    return response;
                 }
             },
             enabled: enableQueries && enabled,

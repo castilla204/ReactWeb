@@ -848,27 +848,53 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         }
 
         const status = appointment.status;
+        
+        // ✅ Verificar si hay una propuesta activa (timer de tipo "proposal" o "response")
+        const hasActiveProposal = appointment.timers && appointment.timers.some((timer: any) => 
+            (timer.timerType === 'proposal' || timer.timerType === 'response') && !timer.isExpired
+        );
+        
+        console.log('[SearchDetails] getAppointmentButtons:', {
+            status,
+            hasActiveProposal,
+            timers: appointment.timers,
+            isClient,
+            isExpert
+        });
 
         if (isClient) {
             // BOTONES PARA CLIENTE según la guía
+            // ✅ NO mostrar "Proponer" si ya hay una propuesta activa (awaiting_appointment con timer activo)
+            // Solo mostrar "Proponer" si:
+            // 1. No hay cita (ya manejado arriba)
+            // 2. La cita fue rechazada o cancelada
+            // 3. O si es awaiting_appointment pero NO hay propuesta activa (timer expirado)
+            const canProposeWhenAwaiting = status === 'awaiting_appointment' && !hasActiveProposal;
+            const canProposeWhenRejectedOrCancelled = [
+                'appointment_rejected',
+                'appointment_cancelled_by_client',
+                'appointment_cancelled_by_expert'
+            ].includes(status);
+            
             return {
-                showPropose: [
-                    'awaiting_appointment',
-                    'appointment_rejected',
-                    'appointment_cancelled_by_client',
-                    'appointment_cancelled_by_expert'
-                ].includes(status),
+                showPropose: canProposeWhenAwaiting || canProposeWhenRejectedOrCancelled,
                 showCancel: status === 'appointment_confirmed',
                 showAccept: false,
                 showReject: false
             };
         } else if (isExpert) {
             // BOTONES PARA EXPERTO según la guía
+            // ✅ Mostrar aceptar/rechazar cuando:
+            // 1. Estado es 'appointment_proposed' (formato antiguo)
+            // 2. O estado es 'awaiting_appointment' con propuesta activa (formato nuevo del backend)
+            const canAcceptOrReject = status === 'appointment_proposed' || 
+                                      (status === 'awaiting_appointment' && hasActiveProposal);
+            
             return {
                 showPropose: false,
                 showCancel: status === 'appointment_confirmed',
-                showAccept: status === 'appointment_proposed',
-                showReject: status === 'appointment_proposed'
+                showAccept: canAcceptOrReject,
+                showReject: canAcceptOrReject
             };
         }
 
@@ -881,6 +907,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     };
 
     const appointmentButtons = getAppointmentButtons();
+    
+    // ✅ Debug: Log de los botones que se mostrarán
+    console.log('[SearchDetails] Appointment buttons:', {
+        appointmentStatus: appointment?.status,
+        hasAppointment: !!appointment,
+        timers: appointment?.timers,
+        hasActiveProposal: appointment?.timers?.some((t: any) => 
+            (t.timerType === 'proposal' || t.timerType === 'response') && !t.isExpired
+        ),
+        buttons: appointmentButtons,
+        isClient,
+        isExpert
+    });
 
     // ✅ Función para verificar si se puede proponer una cita (compatibilidad con código existente)
     const canProposeAppointment = () => {

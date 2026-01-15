@@ -73,17 +73,45 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             console.log(`[Supabase Chat] Fetching conversation for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}:`, identifier);
             console.log(`[Supabase Chat] Endpoint:`, endpoint);
             try {
-                const response = await fetchApi<Conversation>(endpoint);
-                console.log('[Supabase Chat] Fetched conversation:', response);
-                console.log('[Supabase Chat] Conversation searchHireId:', response.searchHireId);
-                return {
-                    ...response,
-                    messages: response.messages.map((msg) => ({
+                // ✅ Obtener respuesta cruda (puede venir en PascalCase)
+                const rawResponse = await fetchApi<any>(endpoint);
+                console.log('[Supabase Chat] Fetched conversation (raw):', rawResponse);
+                
+                // ✅ Normalizar respuesta de PascalCase a camelCase
+                const messagesArray = rawResponse.Messages ?? rawResponse.messages ?? [];
+                const normalizedMessages = messagesArray.map((msg: any) => ({
+                    id: msg.Id ?? msg.id,
+                    conversationId: msg.ConversationId ?? msg.conversationId,
+                    senderId: msg.SenderId ?? msg.senderId,
+                    content: msg.Content ?? msg.content ?? '',
+                    sentAt: msg.SentAt ?? msg.sentAt,
+                    isRead: msg.IsRead ?? msg.isRead ?? false,
+                    senderName: msg.SenderName ?? msg.senderName ?? '[Usuario eliminado]',
+                    locationLatitude: msg.LocationLatitude ?? msg.locationLatitude ?? null,
+                    locationLongitude: msg.LocationLongitude ?? msg.locationLongitude ?? null,
+                    attachmentUrls: msg.AttachmentUrls ?? msg.attachmentUrls ?? [],
+                }));
+                
+                const normalizedConversation: Conversation = {
+                    id: rawResponse.Id ?? rawResponse.id,
+                    searchHireId: rawResponse.SearchHireId ?? rawResponse.searchHireId,
+                    clientId: rawResponse.ClientId ?? rawResponse.clientId,
+                    expertId: rawResponse.ExpertId ?? rawResponse.expertId,
+                    isActive: rawResponse.IsActive ?? rawResponse.isActive ?? true,
+                    createdAt: rawResponse.CreatedAt ?? rawResponse.createdAt,
+                    updatedAt: rawResponse.UpdatedAt ?? rawResponse.updatedAt,
+                    messages: normalizedMessages.map((msg) => ({
                         ...msg,
                         conversation: undefined,
                         attachmentUrls: msg.attachmentUrls || [],
                     })),
                 };
+                
+                console.log('[Supabase Chat] Normalized conversation:', normalizedConversation);
+                console.log('[Supabase Chat] Conversation searchHireId:', normalizedConversation.searchHireId);
+                console.log('[Supabase Chat] Messages count:', normalizedConversation.messages.length);
+                
+                return normalizedConversation;
             } catch (err: any) {
                 console.error('[Supabase Chat] Fetch conversation error:', err.message, err.response || err);
                 if (err.message === 'Search hire not found') {
@@ -174,20 +202,31 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
     // ==========================================
     
     // Convertir mensaje de DB a formato de la aplicación
-    const convertDbMessageToMessage = useCallback((dbMessage: DBMessage): Message => {
+    const convertDbMessageToMessage = useCallback((dbMessage: any): Message => {
+        // ✅ Normalizar senderId de PascalCase a camelCase
+        const senderId = dbMessage.SenderId ?? dbMessage.senderId ?? null;
+        
+        console.log('[useChat] Converting DB message to Message:', {
+            rawSenderId: dbMessage.SenderId ?? dbMessage.senderId,
+            normalizedSenderId: senderId,
+            userId: user?.id,
+            messageId: dbMessage.Id ?? dbMessage.id,
+            hasContent: !!dbMessage.Content || !!dbMessage.content
+        });
+        
         return {
-            id: dbMessage.Id,
-            conversationId: dbMessage.ConversationId,
-            senderId: dbMessage.SenderId,
-            content: dbMessage.Content || '',
-            sentAt: dbMessage.SentAt,
-            isRead: dbMessage.IsRead,
-            senderName: '[Usuario]',
-            locationLatitude: dbMessage.LocationLatitude,
-            locationLongitude: dbMessage.LocationLongitude,
-            attachmentUrls: []
+            id: dbMessage.Id ?? dbMessage.id,
+            conversationId: dbMessage.ConversationId ?? dbMessage.conversationId,
+            senderId: senderId,
+            content: dbMessage.Content ?? dbMessage.content ?? '',
+            sentAt: dbMessage.SentAt ?? dbMessage.sentAt,
+            isRead: dbMessage.IsRead ?? dbMessage.isRead ?? false,
+            senderName: dbMessage.SenderName ?? dbMessage.senderName ?? '[Usuario]',
+            locationLatitude: dbMessage.LocationLatitude ?? dbMessage.locationLatitude ?? null,
+            locationLongitude: dbMessage.LocationLongitude ?? dbMessage.locationLongitude ?? null,
+            attachmentUrls: dbMessage.AttachmentUrls ?? dbMessage.attachmentUrls ?? []
         };
-    }, []);
+    }, [user?.id]);
 
     // Conectar a Supabase Realtime
     const connectSupabase = useCallback(async () => {
@@ -376,12 +415,35 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             });
             console.log('[Supabase Chat] Sending message with FormData:', formDataEntries);
             try {
-                const response = await fetchApi<Message>(API_CONFIG.endpoints.chat.message, {
+                const rawResponse = await fetchApi<any>(API_CONFIG.endpoints.chat.message, {
                     method: 'POST',
                     body: formData,
                 });
-                console.log('[Supabase Chat] Message sent, response:', response);
-                return { ...response, conversation: undefined, attachmentUrls: Array.isArray(response.attachmentUrls) ? response.attachmentUrls : [] };
+                console.log('[Supabase Chat] Message sent, raw response:', rawResponse);
+                
+                // ✅ Normalizar respuesta de PascalCase a camelCase
+                const normalizedMessage: Message = {
+                    id: rawResponse.Id ?? rawResponse.id,
+                    conversationId: rawResponse.ConversationId ?? rawResponse.conversationId,
+                    senderId: rawResponse.SenderId ?? rawResponse.senderId ?? user?.id ?? null,
+                    content: rawResponse.Content ?? rawResponse.content ?? '',
+                    sentAt: rawResponse.SentAt ?? rawResponse.sentAt,
+                    isRead: rawResponse.IsRead ?? rawResponse.isRead ?? false,
+                    senderName: rawResponse.SenderName ?? rawResponse.senderName ?? user?.name ?? '[Usuario]',
+                    locationLatitude: rawResponse.LocationLatitude ?? rawResponse.locationLatitude ?? null,
+                    locationLongitude: rawResponse.LocationLongitude ?? rawResponse.locationLongitude ?? null,
+                    attachmentUrls: rawResponse.AttachmentUrls ?? rawResponse.attachmentUrls ?? []
+                };
+                
+                console.log('[Supabase Chat] Normalized message:', normalizedMessage);
+                console.log('[Supabase Chat] Message senderId check:', {
+                    rawSenderId: rawResponse.SenderId ?? rawResponse.senderId,
+                    normalizedSenderId: normalizedMessage.senderId,
+                    userId: user?.id,
+                    match: String(normalizedMessage.senderId) === String(user?.id)
+                });
+                
+                return { ...normalizedMessage, conversation: undefined };
             } catch (err: any) {
                 console.error('[Supabase Chat] Message send error:', err.message, err.response || err);
                 let errorMessage = err.message || 'Failed to send message';
