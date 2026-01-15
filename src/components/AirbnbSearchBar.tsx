@@ -104,6 +104,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const formRef = useRef<HTMLFormElement>(null);
   const serviceTypeDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const categoriesContainerRef = useRef<HTMLDivElement>(null);
 
   // Actualizar el cache key periódicamente para detectar cambios en imágenes
   useEffect(() => {
@@ -160,6 +161,32 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   // Buscar selecciones actuales en los datos normalizados
   selectedServiceType = normalizedServiceTypes.find(st => st.id === serviceTypeId);
   selectedCategory = normalizedCategories.find(c => c.id === categoryId);
+
+  // Forzar sombreado siempre en el contenedor de categorías - se ejecuta en cada render
+  useEffect(() => {
+    const forceShadow = () => {
+      if (categoriesContainerRef.current) {
+        const shadow = expandedAccordion === 'where' 
+          ? '0 8px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.12)'
+          : '0 8px 20px rgba(0, 0, 0, 0.18), 0 4px 8px rgba(0, 0, 0, 0.12)';
+        // Aplicar directamente al estilo, sobrescribiendo cualquier otra regla
+        categoriesContainerRef.current.style.boxShadow = shadow;
+        categoriesContainerRef.current.style.setProperty('box-shadow', shadow, 'important');
+      }
+    };
+    
+    // Ejecutar inmediatamente y también después del render
+    forceShadow();
+    const rafId = requestAnimationFrame(() => {
+      forceShadow();
+      // También después de un pequeño delay adicional
+      setTimeout(forceShadow, 10);
+    });
+    
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
+  });
 
   // Cerrar dropdowns al hacer clic fuera
   useEffect(() => {
@@ -779,23 +806,19 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               <div className="pt-20 px-3 pb-4 space-y-3">
               {/* Categorías - Div más alto con categorías visibles */}
               <div 
-                className={`bg-white border-0 rounded-2xl shadow-xl hover:shadow-2xl transition-all flex flex-col ${
+                ref={categoriesContainerRef}
+                className={`bg-white border-0 rounded-2xl flex flex-col ${
                   expandedAccordion === 'where' ? 'fixed inset-0 z-[60] rounded-none' : ''
                 }`}
-                style={expandedAccordion === 'where' 
-                  ? { 
-                      height: '100vh', 
-                      minHeight: '100vh', 
-                      maxHeight: '100vh',
-                      boxShadow: 'none'
-                    }
-                  : { 
-                      height: '45vh', 
-                      minHeight: '300px', 
-                      maxHeight: '500px',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08)'
-                    }
-                }
+                style={{
+                  height: expandedAccordion === 'where' ? '100vh' : '45vh',
+                  minHeight: expandedAccordion === 'where' ? '100vh' : '300px',
+                  maxHeight: expandedAccordion === 'where' ? '100vh' : '500px',
+                  boxShadow: expandedAccordion === 'where' 
+                    ? '0 8px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.12)'
+                    : '0 8px 20px rgba(0, 0, 0, 0.18), 0 4px 8px rgba(0, 0, 0, 0.12)',
+                  transition: 'height 150ms cubic-bezier(0.4, 0, 0.2, 1), min-height 150ms cubic-bezier(0.4, 0, 0.2, 1), max-height 150ms cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
               >
                 {expandedAccordion === 'where' ? (
                   <>
