@@ -88,6 +88,16 @@ const AppContent: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, isAuthenticated, signOut } = useAuth();
+    
+    // ✅ Debug: Log de la ruta actual para verificar que no se está redirigiendo incorrectamente
+    useEffect(() => {
+        console.log('[AppContent] Current route:', location.pathname, {
+            isAuthenticated,
+            hasUser: !!user,
+            search: location.search,
+            state: location.state
+        });
+    }, [location.pathname, isAuthenticated, user]);
     const [showNotifications, setShowNotifications] = useState(false);
     const [showAccountSettings, setShowAccountSettings] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState<string>('ES');

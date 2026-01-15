@@ -361,10 +361,26 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
     const getAvatarInitials = (senderId: string | number | null) => {
         // ✅ Manejar caso cuando senderId es null (usuario eliminado)
         if (senderId === null || senderId === undefined) {
+            console.log('[Chat] getAvatarInitials: senderId is null/undefined, returning ?');
             return '?';
         }
         
-        if (String(senderId) === String(user?.id)) {
+        const senderIdStr = String(senderId);
+        const userIdStr = String(user?.id ?? '');
+        const expertIdStr = String(expertId ?? '');
+        
+        console.log('[Chat] getAvatarInitials:', {
+            senderId,
+            senderIdStr,
+            userId: user?.id,
+            userIdStr,
+            expertId,
+            expertIdStr,
+            isOwn: senderIdStr === userIdStr,
+            isExpert: senderIdStr === expertIdStr
+        });
+        
+        if (senderIdStr === userIdStr) {
             return user?.name?.charAt(0)?.toUpperCase() || 'Y';
         }
         // Special case for header - 'other' means the other person in conversation
@@ -374,7 +390,10 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
         // ✅ CORREGIDO: Para mensajes en el chat
         // Si el senderId es del experto, mostrar inicial del experto
         // Si el senderId es del cliente, mostrar inicial 'C'
-        return String(senderId) === String(expertId) ? (expertData?.name?.charAt(0)?.toUpperCase() || 'E') : 'C';
+        if (senderIdStr === expertIdStr) {
+            return expertData?.name?.charAt(0)?.toUpperCase() || 'E';
+        }
+        return 'C';
     };
 
     const getAvatarColor = (senderId: string | number | null) => {
@@ -395,10 +414,28 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
     const getAvatarImage = (senderId: string | number | null) => {
         // ✅ Manejar caso cuando senderId es null (usuario eliminado)
         if (senderId === null || senderId === undefined) {
+            console.log('[Chat] getAvatarImage: senderId is null/undefined, returning undefined');
             return undefined;
         }
         
-        if (String(senderId) === String(user?.id)) {
+        const senderIdStr = String(senderId);
+        const userIdStr = String(user?.id ?? '');
+        const expertIdStr = String(expertId ?? '');
+        
+        console.log('[Chat] getAvatarImage:', {
+            senderId,
+            senderIdStr,
+            userId: user?.id,
+            userIdStr,
+            expertId,
+            expertIdStr,
+            isOwn: senderIdStr === userIdStr,
+            isExpert: senderIdStr === expertIdStr,
+            userProfilePicture: user?.profilePictureUrl,
+            expertProfilePicture: expertData?.profilePictureUrl
+        });
+        
+        if (senderIdStr === userIdStr) {
             return user?.profilePictureUrl;
         }
         // Special case for header - 'other' means the other person in conversation
@@ -408,7 +445,10 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
         // ✅ CORREGIDO: Para mensajes en el chat
         // Si el senderId es del experto, mostrar su imagen
         // Si el senderId es del cliente, no mostrar imagen (solo inicial)
-        return String(senderId) === String(expertId) ? expertData?.profilePictureUrl : undefined;
+        if (senderIdStr === expertIdStr) {
+            return expertData?.profilePictureUrl;
+        }
+        return undefined;
     };
 
     const formatFileSize = (bytes: number) => {

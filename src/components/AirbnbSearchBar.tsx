@@ -737,13 +737,16 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
       {/* Modal Mobile */}
       {isMobileSearchOpen && typeof document !== 'undefined' && createPortal(
         <>
-          {/* Botón cerrar arriba derecha - Fuera del div principal */}
+          {/* Botón cerrar arriba derecha - Fuera del div principal - Estilo mejorado */}
           <div className="md:hidden fixed top-4 right-4 z-[60]">
             <button
               type="button"
               onClick={() => setIsMobileSearchOpen(false)}
-              className="p-2 bg-white hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center shadow-sm"
+              className="p-2.5 bg-white hover:bg-gray-50 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl border-0"
               aria-label="Cerrar"
+              style={{
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)'
+              }}
             >
               <span>
                 <svg 
@@ -752,7 +755,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   aria-hidden="true" 
                   role="presentation" 
                   focusable="false"
-                  style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 3, overflow: 'visible' }}
+                  style={{ display: 'block', fill: 'none', height: '18px', width: '18px', stroke: 'currentcolor', strokeWidth: 2.5, overflow: 'visible' }}
                 >
                 <path d="m6 6 20 20M26 6 6 26"></path>
               </svg>
@@ -760,17 +763,32 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             </button>
           </div>
 
-          <div className="md:hidden fixed inset-0 z-50 bg-white flex flex-col">
+          <div 
+            className="md:hidden fixed inset-0 z-50 bg-white flex flex-col"
+            style={{
+              boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)'
+            }}
+          >
             <div className="flex-1 overflow-y-auto">
               <div className="pt-12 px-3 pb-4 space-y-3">
               {/* Categorías - Div más alto con categorías visibles */}
               <div 
-                className={`bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col ${
+                className={`bg-white border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all flex flex-col ${
                   expandedAccordion === 'where' ? 'fixed inset-0 z-[60] rounded-none' : ''
                 }`}
                 style={expandedAccordion === 'where' 
-                  ? { height: '100vh', minHeight: '100vh', maxHeight: '100vh' }
-                  : { height: '45vh', minHeight: '300px', maxHeight: '500px' }
+                  ? { 
+                      height: '100vh', 
+                      minHeight: '100vh', 
+                      maxHeight: '100vh',
+                      boxShadow: 'none'
+                    }
+                  : { 
+                      height: '45vh', 
+                      minHeight: '300px', 
+                      maxHeight: '500px',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)'
+                    }
                 }
               >
                 {expandedAccordion === 'where' ? (
@@ -794,7 +812,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                       <form role="search" className="w-full">
                         <label 
                           htmlFor="categories-search-input"
-                          className="flex items-center w-full px-4 py-3 border border-gray-300 rounded-lg bg-white"
+                          className="flex items-center w-full px-4 py-3 border-0 rounded-lg bg-gray-50 shadow-sm"
                           style={{ 
                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
                           }}
@@ -878,10 +896,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                   });
                                 }
                               }}
-                                    className={`w-full flex items-center gap-3 p-3 mb-2 rounded-lg text-left transition-colors border-2 ${
+                                    className={`w-full flex items-center gap-3 p-3 mb-2 rounded-lg text-left transition-all duration-200 border-0 ${
                                       categoryId === category.id 
-                                        ? 'bg-gray-900 text-white border-gray-900' 
-                                        : 'hover:bg-gray-50 border-transparent'
+                                        ? 'bg-gray-900 text-white shadow-md' 
+                                        : 'hover:bg-gray-50 shadow-sm'
                                     }`}
                                     >
                                       {categoryImage ? (
@@ -972,7 +990,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                       <form role="search" className="w-full">
                         <label 
                           htmlFor="categories-search-input-collapsed"
-                          className="flex items-center w-full px-4 py-3 border border-gray-300 rounded-lg bg-white"
+                          className="flex items-center w-full px-4 py-3 border-0 rounded-lg bg-gray-50 shadow-sm"
                           style={{ 
                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
                           }}
@@ -1055,10 +1073,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                         });
                                       }
                                     }}
-                                    className={`w-full flex items-center gap-3 p-3 mb-2 rounded-lg text-left transition-colors border-2 ${
+                                    className={`w-full flex items-center gap-3 p-3 mb-2 rounded-lg text-left transition-all duration-200 border-0 ${
                                       categoryId === category.id 
-                                        ? 'bg-gray-900 text-white border-gray-900' 
-                                        : 'hover:bg-gray-50 border-transparent'
+                                        ? 'bg-gray-900 text-white shadow-md' 
+                                        : 'hover:bg-gray-50 shadow-sm'
                                     }`}
                                   >
                                     {categoryImage ? (
@@ -1143,7 +1161,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               </div>
 
               {/* Tipo de servicio - Rectángulo con sombra - Estilo Airbnb */}
-              <div className="bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-md transition-all">
+              <div className="bg-white border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all">
                 <button
                   type="button"
                   onClick={() => setExpandedAccordion(expandedAccordion === 'type' ? null : 'type')}
@@ -1226,7 +1244,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
               </div>
 
               {/* URL del anuncio - Rectángulo con sombra */}
-              <div className="bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-md transition-all">
+              <div className="bg-white border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all">
                 <button
                   type="button"
                   onClick={() => setExpandedAccordion(expandedAccordion === 'url' ? null : 'url')}

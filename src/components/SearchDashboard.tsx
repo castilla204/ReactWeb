@@ -340,6 +340,36 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
     // ✅ SIMPLIFICADO: El backend ya filtra, solo usamos los datos tal como vienen
     const filteredSearches = currentSearches;
 
+    // ✅ Helper para obtener el nombre de la categoría de forma robusta
+    const getCategoryName = (categoryId: number | undefined | null): string => {
+        if (!categoryId) {
+            console.log('[SearchDashboard] getCategoryName: categoryId is null/undefined', categoryId);
+            return 'Sin categoría';
+        }
+        
+        if (!Array.isArray(categories) || categories.length === 0) {
+            console.log('[SearchDashboard] getCategoryName: categories not available', { categories, categoryId });
+            return 'Sin categoría';
+        }
+        
+        // Buscar la categoría, manejando tanto números como strings
+        const category = categories.find(cat => {
+            const catId = typeof cat.id === 'number' ? cat.id : parseInt(String(cat.id), 10);
+            const searchId = typeof categoryId === 'number' ? categoryId : parseInt(String(categoryId), 10);
+            return catId === searchId;
+        });
+        
+        if (!category) {
+            console.log('[SearchDashboard] getCategoryName: category not found', { 
+                categoryId, 
+                categoriesIds: categories.map(c => c.id),
+                categoriesNames: categories.map(c => c.name)
+            });
+        }
+        
+        return category?.name || 'Sin categoría';
+    };
+
     const getActivityStatus = (search: SearchItem) => {
         // ✅ NUEVA LÓGICA: Usar isFinalizationStatus del statusInfo del backend
         if (!search.isActive) {
@@ -1011,7 +1041,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                 {/* Category & Messages */}
                                 <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
                                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full transition-colors group-hover:bg-gray-100">
-                                        <CategoryImage categoryId={search.category} categoryName={Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'} size="sm" />
+                                        <CategoryImage categoryId={search.category} categoryName={getCategoryName(search.category)} size="sm" />
                                         <span 
                                             style={{
                                                 fontSize: '12px',
@@ -1021,7 +1051,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                 color: 'rgb(34, 34, 34)',
                                             }}
                                         >
-                                            {Array.isArray(categories) && categories.find(cat => cat.id === search.category)?.name || 'N/A'}
+                                            {getCategoryName(search.category)}
                                         </span>
                                     </div>
 
@@ -1242,7 +1272,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <CategoryImage categoryId={search.category} categoryName={categories?.find((c) => c.id === search.category)?.name || 'N/A'} size="sm" />
+                                                <CategoryImage categoryId={search.category} categoryName={getCategoryName(search.category)} size="sm" />
                                                 <span 
                                                     className="font-medium"
                                                     style={{
@@ -1253,7 +1283,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                         color: 'rgb(34, 34, 34)',
                                                     }}
                                                 >
-                                                {categories?.find((c) => c.id === search.category)?.name}
+                                                {getCategoryName(search.category)}
                                             </span>
                                             </div>
                                         </td>
