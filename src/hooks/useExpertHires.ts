@@ -45,6 +45,21 @@ interface ExpertHire {
         createdAt: string;
         updatedAt: string;
     } | null;
+    // ✅ NUEVO: statusInfo del backend
+    statusInfo?: {
+        id: number;
+        statusType: string;
+        statusName: string;
+        statusValue: string;
+        displayName: string;
+        description: string | null;
+        color: string | null;
+        isActive: boolean;
+        isFinalizationStatus: boolean;
+        sortOrder: number;
+        createdAt: string;
+        updatedAt: string;
+    };
 }
 
 export const useExpertHires = (page: number = 1, pageSize: number = 20) => {
@@ -54,24 +69,118 @@ export const useExpertHires = (page: number = 1, pageSize: number = 20) => {
     const hiresQuery = useQuery({
         queryKey: ['expertHires', page, pageSize],
         queryFn: async () => {
-            const response = await fetchApi<any>(`${API_CONFIG.endpoints.expert.hires.listAsExpert}?page=${page}&pageSize=${pageSize}`);
+            const rawResponse = await fetchApi<any>(`${API_CONFIG.endpoints.expert.hires.listAsExpert}?page=${page}&pageSize=${pageSize}`);
+            
+            console.log('[useExpertHires] Raw response keys:', Object.keys(rawResponse));
+            
+            // ✅ Normalizar respuesta de PascalCase a camelCase
+            const normalizeUser = (user: any) => {
+                if (!user) return null;
+                return {
+                    name: user.Name ?? user.name ?? '',
+                    email: user.Email ?? user.email ?? '',
+                };
+            };
+            
+            const normalizeStatusInfo = (statusInfo: any) => {
+                if (!statusInfo) return undefined;
+                return {
+                    id: statusInfo.Id ?? statusInfo.id,
+                    statusType: statusInfo.StatusType ?? statusInfo.statusType ?? '',
+                    statusName: statusInfo.StatusName ?? statusInfo.statusName ?? '',
+                    statusValue: statusInfo.StatusValue ?? statusInfo.statusValue ?? '',
+                    displayName: statusInfo.DisplayName ?? statusInfo.displayName ?? '',
+                    description: statusInfo.Description ?? statusInfo.description ?? null,
+                    color: statusInfo.Color ?? statusInfo.color ?? null,
+                    isActive: statusInfo.IsActive ?? statusInfo.isActive ?? true,
+                    isFinalizationStatus: statusInfo.IsFinalizationStatus ?? statusInfo.isFinalizationStatus ?? false,
+                    sortOrder: statusInfo.SortOrder ?? statusInfo.sortOrder ?? 0,
+                    createdAt: statusInfo.CreatedAt ?? statusInfo.createdAt ?? '',
+                    updatedAt: statusInfo.UpdatedAt ?? statusInfo.updatedAt ?? '',
+                };
+            };
+            
+            const normalizeService = (service: any) => {
+                if (!service) return null;
+                return {
+                    id: service.Id ?? service.id,
+                    categoryId: service.CategoryId ?? service.categoryId,
+                    price: service.Price ?? service.price ?? 0,
+                    conditions: service.Conditions ?? service.conditions ?? '',
+                    durationInHours: service.DurationInHours ?? service.durationInHours ?? 0,
+                    imageUrls: service.ImageUrls ?? service.imageUrls ?? [],
+                };
+            };
+            
+            const normalizeServiceType = (serviceType: any) => {
+                if (!serviceType) return null;
+                return {
+                    id: serviceType.Id ?? serviceType.id,
+                    name: serviceType.Name ?? serviceType.name ?? '',
+                    description: serviceType.Description ?? serviceType.description ?? '',
+                    isActive: serviceType.IsActive ?? serviceType.isActive ?? true,
+                    createdAt: serviceType.CreatedAt ?? serviceType.createdAt ?? '',
+                    updatedAt: serviceType.UpdatedAt ?? serviceType.updatedAt ?? '',
+                };
+            };
+            
+            const normalizeHire = (hire: any): ExpertHire => {
+                return {
+                    id: hire.Id ?? hire.id,
+                    clientId: hire.ClientId ?? hire.clientId,
+                    expertId: hire.ExpertId ?? hire.expertId ?? null,
+                    searchServiceId: hire.SearchServiceId ?? hire.searchServiceId,
+                    searchId: hire.SearchId ?? hire.searchId ?? null,
+                    status: (hire.Status ?? hire.status ?? 'pending') as ExpertHire['status'],
+                    amount: hire.Amount ?? hire.amount ?? 0,
+                    createdAt: hire.CreatedAt ?? hire.createdAt ?? '',
+                    UpdatedAt: hire.UpdatedAt ?? hire.updatedAt ?? null,
+                    searchTitle: hire.SearchTitle ?? hire.searchTitle ?? null,
+                    searchDescription: hire.SearchDescription ?? hire.searchDescription ?? null,
+                    unreadMessagesCount: hire.UnreadMessagesCount ?? hire.unreadMessagesCount ?? 0,
+                    client: normalizeUser(hire.Client ?? hire.client) ?? {
+                        name: '',
+                        email: '',
+                    },
+                    service: normalizeService(hire.Service ?? hire.service) ?? {
+                        id: 0,
+                        categoryId: 0,
+                        price: 0,
+                        conditions: '',
+                        durationInHours: 0,
+                        imageUrls: [],
+                    },
+                    serviceType: normalizeServiceType(hire.ServiceType ?? hire.serviceType),
+                    statusInfo: normalizeStatusInfo(hire.StatusInfo ?? hire.statusInfo),
+                };
+            };
+            
             // Manejar respuesta paginada o no paginada
-            if (response.hires && response.pagination) {
-                return {
-                    hires: response.hires as ExpertHire[],
-                    pagination: response.pagination
+            let hiresArray: any[] = [];
+            let paginationData: any = null;
+            
+            if (rawResponse.hires && rawResponse.pagination) {
+                hiresArray = rawResponse.hires;
+                paginationData = {
+                    page: rawResponse.pagination.Page ?? rawResponse.pagination.page ?? 1,
+                    pageSize: rawResponse.pagination.PageSize ?? rawResponse.pagination.pageSize ?? 20,
+                    totalCount: rawResponse.pagination.TotalCount ?? rawResponse.pagination.totalCount ?? 0,
+                    totalPages: rawResponse.pagination.TotalPages ?? rawResponse.pagination.totalPages ?? 0,
+                    hasNextPage: rawResponse.pagination.HasNextPage ?? rawResponse.pagination.hasNextPage ?? false,
+                    hasPreviousPage: rawResponse.pagination.HasPreviousPage ?? rawResponse.pagination.hasPreviousPage ?? false,
                 };
-            } else if (Array.isArray(response)) {
-                return {
-                    hires: response as ExpertHire[],
-                    pagination: null
-                };
-            } else {
-                return {
-                    hires: [] as ExpertHire[],
-                    pagination: null
-                };
+            } else if (Array.isArray(rawResponse)) {
+                hiresArray = rawResponse;
             }
+            
+            const normalizedHires = hiresArray.map(normalizeHire);
+            
+            console.log('[useExpertHires] Normalized hires count:', normalizedHires.length);
+            
+            return {
+                hires: normalizedHires,
+                pagination: paginationData
+            };
         },
         staleTime: 60000, // ✅ Cache por 60 segundos para evitar llamadas repetidas
         gcTime: 120000, // ✅ Mantener en caché por 2 minutos

@@ -49,57 +49,251 @@ export const useSearchDetailsComplete = (
       console.log(`[useSearchDetailsComplete] Fetching data for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}: ${identifier}`);
       console.log(`[useSearchDetailsComplete] Endpoint: ${endpoint}`);
       
-      const response = await fetchApi<SearchDetailsCompleteDto>(endpoint);
+      const rawResponse = await fetchApi<any>(endpoint);
       
       // ✅ DEBUG: Verificar si hay algún problema con la respuesta
-      if (!response) {
+      if (!rawResponse) {
         console.error(`[useSearchDetailsComplete] No response received for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}: ${identifier}`);
         throw new Error('No response received from API');
       }
       
+      console.log(`[useSearchDetailsComplete] Raw response keys:`, Object.keys(rawResponse));
+      
+      // ✅ Normalizar respuesta de PascalCase a camelCase
+      const normalizeUser = (user: any) => {
+        if (!user) return null;
+        return {
+          id: user.Id ?? user.id,
+          name: user.Name ?? user.name ?? '',
+          email: user.Email ?? user.email ?? '',
+          profilePictureUrl: user.ProfilePictureUrl ?? user.profilePictureUrl ?? null,
+        };
+      };
+      
+      const normalizeStatusInfo = (statusInfo: any) => {
+        if (!statusInfo) return undefined;
+        return {
+          id: statusInfo.Id ?? statusInfo.id,
+          statusType: statusInfo.StatusType ?? statusInfo.statusType ?? '',
+          statusName: statusInfo.StatusName ?? statusInfo.statusName ?? '',
+          statusValue: statusInfo.StatusValue ?? statusInfo.statusValue ?? '',
+          displayName: statusInfo.DisplayName ?? statusInfo.displayName ?? '',
+          description: statusInfo.Description ?? statusInfo.description ?? null,
+          isActive: statusInfo.IsActive ?? statusInfo.isActive ?? true,
+          isFinalizationStatus: statusInfo.IsFinalizationStatus ?? statusInfo.isFinalizationStatus ?? false,
+          sortOrder: statusInfo.SortOrder ?? statusInfo.sortOrder ?? 0,
+          createdAt: statusInfo.CreatedAt ?? statusInfo.createdAt ?? '',
+          updatedAt: statusInfo.UpdatedAt ?? statusInfo.updatedAt ?? '',
+        };
+      };
+      
+      const normalizeServiceInfo = (service: any) => {
+        if (!service) return null;
+        return {
+          id: service.Id ?? service.id,
+          serviceTypeId: service.ServiceTypeId ?? service.serviceTypeId,
+          serviceTypeName: service.ServiceTypeName ?? service.serviceTypeName ?? '',
+          serviceTypeCategoryId: service.ServiceTypeCategoryId ?? service.serviceTypeCategoryId,
+          serviceTypeCategoryName: service.ServiceTypeCategoryName ?? service.serviceTypeCategoryName ?? '',
+          requiresAppointment: service.RequiresAppointment ?? service.requiresAppointment ?? false,
+          price: service.Price ?? service.price ?? 0,
+          expertLatitude: service.ExpertLatitude ?? service.expertLatitude ?? null,
+          expertLongitude: service.ExpertLongitude ?? service.expertLongitude ?? null,
+          locationRange: service.LocationRange ?? service.locationRange ?? null,
+        };
+      };
+      
+      const normalizeSearchHire = (searchHire: any) => {
+        if (!searchHire) return null;
+        return {
+          id: searchHire.Id ?? searchHire.id,
+          status: searchHire.Status ?? searchHire.status ?? '',
+          statusTranslated: searchHire.StatusTranslated ?? searchHire.statusTranslated ?? '',
+          createdAt: searchHire.CreatedAt ?? searchHire.createdAt ?? '',
+          expert: normalizeUser(searchHire.Expert ?? searchHire.expert),
+          service: normalizeServiceInfo(searchHire.Service ?? searchHire.service),
+          statusInfo: normalizeStatusInfo(searchHire.StatusInfo ?? searchHire.statusInfo),
+          amount: searchHire.Amount ?? searchHire.amount ?? 0,
+          baseAmount: searchHire.BaseAmount ?? searchHire.baseAmount ?? null,
+          taxAmount: searchHire.TaxAmount ?? searchHire.taxAmount ?? null,
+          expertTimezone: searchHire.ExpertTimezone ?? searchHire.expertTimezone ?? null,
+          expertCountry: searchHire.ExpertCountry ?? searchHire.expertCountry ?? null,
+        };
+      };
+      
+      const normalizeSearch = (search: any) => {
+        if (!search) return null;
+        return {
+          id: search.Id ?? search.id,
+          userId: search.UserId ?? search.userId,
+          title: search.Title ?? search.title ?? '',
+          description: search.Description ?? search.description ?? '',
+          frequency: search.Frequency ?? search.frequency ?? 0,
+          isActive: search.IsActive ?? search.isActive ?? true,
+          isRevised: search.IsRevised ?? search.isRevised ?? false,
+          lastExecution: search.LastExecution ?? search.lastExecution ?? '',
+          nextExecution: search.NextExecution ?? search.nextExecution ?? '',
+          createdAt: search.CreatedAt ?? search.createdAt ?? '',
+          startDate: search.StartDate ?? search.startDate ?? '',
+          category: search.Category ?? search.category ?? 0,
+          user: normalizeUser(search.User ?? search.user),
+          searchHire: normalizeSearchHire(search.SearchHire ?? search.searchHire),
+          unreadMessagesCount: search.UnreadMessagesCount ?? search.unreadMessagesCount ?? 0,
+          hasPendingAppointment: search.HasPendingAppointment ?? search.hasPendingAppointment ?? false,
+        };
+      };
+      
+      const normalizeCategory = (category: any) => {
+        if (!category) return null;
+        return {
+          id: category.Id ?? category.id,
+          name: category.Name ?? category.name ?? '',
+          isActive: category.IsActive ?? category.isActive ?? true,
+          createdAt: category.CreatedAt ?? category.createdAt ?? '',
+          updatedAt: category.UpdatedAt ?? category.updatedAt ?? '',
+        };
+      };
+      
+      const normalizeAppointment = (appointment: any) => {
+        if (!appointment) return null;
+        return {
+          id: appointment.Id ?? appointment.id,
+          searchHireId: appointment.SearchHireId ?? appointment.searchHireId,
+          status: appointment.Status ?? appointment.status ?? '',
+          rejectionCount: appointment.RejectionCount ?? appointment.rejectionCount ?? 0,
+          clientCancellationCount: appointment.ClientCancellationCount ?? appointment.clientCancellationCount ?? 0,
+          expertCancellationCount: appointment.ExpertCancellationCount ?? appointment.expertCancellationCount ?? 0,
+          createdAt: appointment.CreatedAt ?? appointment.createdAt ?? '',
+          updatedAt: appointment.UpdatedAt ?? appointment.updatedAt ?? '',
+          clientName: appointment.ClientName ?? appointment.clientName ?? null,
+          expertName: appointment.ExpertName ?? appointment.expertName ?? null,
+          amount: appointment.Amount ?? appointment.amount ?? 0,
+          timers: (appointment.Timers ?? appointment.timers ?? []).map((timer: any) => ({
+            id: timer.Id ?? timer.id,
+            appointmentId: timer.AppointmentId ?? timer.appointmentId,
+            timerType: timer.TimerType ?? timer.timerType ?? '',
+            startTime: timer.StartTime ?? timer.startTime ?? '',
+            endTime: timer.EndTime ?? timer.endTime ?? null,
+            isExpired: timer.IsExpired ?? timer.isExpired ?? false,
+            createdAt: timer.CreatedAt ?? timer.createdAt ?? '',
+          })),
+          expertLatitude: appointment.ExpertLatitude ?? appointment.expertLatitude ?? null,
+          expertLongitude: appointment.ExpertLongitude ?? appointment.expertLongitude ?? null,
+          locationRange: appointment.LocationRange ?? appointment.locationRange ?? null,
+          statusInfo: normalizeStatusInfo(appointment.StatusInfo ?? appointment.statusInfo),
+        };
+      };
+      
+      const normalizeExpertProfile = (profile: any) => {
+        if (!profile) return null;
+        return {
+          id: profile.Id ?? profile.id,
+          profilePictureUrl: profile.ProfilePictureUrl ?? profile.profilePictureUrl ?? '',
+          description: profile.Description ?? profile.description ?? '',
+          stripeAccountId: profile.StripeAccountId ?? profile.stripeAccountId ?? null,
+          createdAt: profile.CreatedAt ?? profile.createdAt ?? '',
+          user: normalizeUser(profile.User ?? profile.user),
+          reviews: (profile.Reviews ?? profile.reviews ?? []).map((review: any) => ({
+            id: review.Id ?? review.id,
+            score: review.Score ?? review.score ?? 0,
+            description: review.Description ?? review.description ?? '',
+            createdAt: review.CreatedAt ?? review.createdAt ?? '',
+            reviewer: normalizeUser(review.Reviewer ?? review.reviewer),
+            imageUrls: review.ImageUrls ?? review.imageUrls ?? [],
+          })),
+          latitude: profile.Latitude ?? profile.latitude ?? '',
+          longitude: profile.Longitude ?? profile.longitude ?? '',
+          stripeStatus: profile.StripeStatus ?? profile.stripeStatus ?? 0,
+          stripeStatusDetails: profile.StripeStatusDetails ?? profile.stripeStatusDetails ?? null,
+          onboardingCompleted: profile.OnboardingCompleted ?? profile.onboardingCompleted ?? false,
+          isOnVacation: profile.IsOnVacation ?? profile.isOnVacation ?? false,
+          currentAvailability: profile.CurrentAvailability ? {
+            id: profile.CurrentAvailability.Id ?? profile.CurrentAvailability.id,
+            daysOfWeek: profile.CurrentAvailability.DaysOfWeek ?? profile.CurrentAvailability.daysOfWeek ?? [],
+            startTime: profile.CurrentAvailability.StartTime ?? profile.CurrentAvailability.startTime ?? '',
+            endTime: profile.CurrentAvailability.EndTime ?? profile.CurrentAvailability.endTime ?? '',
+            effectiveFrom: profile.CurrentAvailability.EffectiveFrom ?? profile.CurrentAvailability.effectiveFrom ?? '',
+          } : null,
+        };
+      };
+      
+      const normalizedResponse: SearchDetailsCompleteDto = {
+        search: normalizeSearch(rawResponse.Search ?? rawResponse.search),
+        category: normalizeCategory(rawResponse.Category ?? rawResponse.category),
+        appointment: normalizeAppointment(rawResponse.Appointment ?? rawResponse.appointment),
+        deliverables: (rawResponse.Deliverables ?? rawResponse.deliverables ?? []).map((deliverable: any) => ({
+          id: deliverable.Id ?? deliverable.id,
+          type: deliverable.Type ?? deliverable.type ?? '',
+          url: deliverable.Url ?? deliverable.url ?? '',
+          createdAt: deliverable.CreatedAt ?? deliverable.createdAt ?? '',
+        })),
+        disputes: (rawResponse.Disputes ?? rawResponse.disputes ?? []).map((dispute: any) => ({
+          id: dispute.Id ?? dispute.id,
+          searchHireId: dispute.SearchHireId ?? dispute.searchHireId,
+          reporterId: dispute.ReporterId ?? dispute.reporterId,
+          status: dispute.Status ?? dispute.status ?? '',
+          reason: dispute.Reason ?? dispute.reason ?? '',
+          expertResponse: dispute.ExpertResponse ?? dispute.expertResponse ?? null,
+          createdAt: dispute.CreatedAt ?? dispute.createdAt ?? '',
+        })),
+        requiredDeliverableTypes: (rawResponse.RequiredDeliverableTypes ?? rawResponse.requiredDeliverableTypes ?? []).map((type: any) => ({
+          id: type.Id ?? type.id,
+          name: type.Name ?? type.name ?? '',
+          displayName: type.DisplayName ?? type.displayName ?? '',
+          description: type.Description ?? type.description ?? '',
+          isRequired: type.IsRequired ?? type.isRequired ?? false,
+          isActive: type.IsActive ?? type.isActive ?? true,
+          sortOrder: type.SortOrder ?? type.sortOrder ?? 0,
+        })),
+        expertProfile: normalizeExpertProfile(rawResponse.ExpertProfile ?? rawResponse.expertProfile),
+        moneyDistribution: rawResponse.MoneyDistribution ?? rawResponse.moneyDistribution ?? null,
+        review: rawResponse.Review ?? rawResponse.review ?? null,
+      };
+      
       // ✅ Cuando se usa searchHireId, el search puede ser null (cliente eliminado) - esto es válido
       // ✅ Cuando se usa searchId, el search debería estar presente, pero verificamos
-      if (!useSearchHireEndpoint && !response.search) {
+      if (!useSearchHireEndpoint && !normalizedResponse.search) {
         console.warn(`[useSearchDetailsComplete] No search data in response for searchId: ${searchId} - esto puede ser normal si el cliente borró su cuenta`);
         // No lanzamos error, permitimos que search sea null
       }
       
       // ✅ Log para debugging cuando search es null
-      if (!response.search) {
+      if (!normalizedResponse.search) {
         console.log(`[useSearchDetailsComplete] Search is null (cliente probablemente eliminado), pero tenemos otros datos:`, {
-          hasAppointment: !!response.appointment,
-          hasDeliverables: response.deliverables?.length > 0,
-          hasDisputes: response.disputes?.length > 0,
-          hasExpertProfile: !!response.expertProfile
+          hasAppointment: !!normalizedResponse.appointment,
+          hasDeliverables: normalizedResponse.deliverables?.length > 0,
+          hasDisputes: normalizedResponse.disputes?.length > 0,
+          hasExpertProfile: !!normalizedResponse.expertProfile
         });
       }
       
-      console.log(`[useSearchDetailsComplete] Data received:`, response);
+      console.log(`[useSearchDetailsComplete] Normalized data:`, normalizedResponse);
       
       // ✅ DEBUG: Verificar específicamente el estado del searchHire
-      if (response?.search?.searchHire) {
+      if (normalizedResponse?.search?.searchHire) {
         console.log(`[useSearchDetailsComplete] SearchHire status DEBUG:`, {
-          searchHireId: response.search.searchHire.id,
-          status: response.search.searchHire.status,
-          statusType: typeof response.search.searchHire.status,
-          statusLength: response.search.searchHire.status?.length,
-          statusTrimmed: response.search.searchHire.status?.trim(),
-          statusCharCodes: response.search.searchHire.status ? response.search.searchHire.status.split('').map(c => c.charCodeAt(0)) : null,
+          searchHireId: normalizedResponse.search.searchHire.id,
+          status: normalizedResponse.search.searchHire.status,
+          statusType: typeof normalizedResponse.search.searchHire.status,
+          statusLength: normalizedResponse.search.searchHire.status?.length,
+          statusTrimmed: normalizedResponse.search.searchHire.status?.trim(),
+          statusCharCodes: normalizedResponse.search.searchHire.status ? normalizedResponse.search.searchHire.status.split('').map(c => c.charCodeAt(0)) : null,
           // ✅ DEBUG: Verificar si el estado es exactamente 'awaiting_client_decision'
-          isAwaitingClientDecision: response.search.searchHire.status === 'awaiting_client_decision',
+          isAwaitingClientDecision: normalizedResponse.search.searchHire.status === 'awaiting_client_decision',
           // ✅ DEBUG: Verificar si hay algún problema con la comparación
-          comparisonResult: response.search.searchHire.status === 'awaiting_client_decision' ? 'MATCH' : 'NO_MATCH'
+          comparisonResult: normalizedResponse.search.searchHire.status === 'awaiting_client_decision' ? 'MATCH' : 'NO_MATCH'
         });
       } else {
         console.log(`[useSearchDetailsComplete] No searchHire data found for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}: ${identifier}`);
         console.log(`[useSearchDetailsComplete] Search data structure:`, {
-          hasSearch: !!response.search,
-          searchId: response.search?.id,
-          searchTitle: response.search?.title,
-          searchHire: response.search?.searchHire
+          hasSearch: !!normalizedResponse.search,
+          searchId: normalizedResponse.search?.id,
+          searchTitle: normalizedResponse.search?.title,
+          searchHire: normalizedResponse.search?.searchHire
         });
       }
-      return response;
+      
+      return normalizedResponse;
     },
     enabled: enabled && (!!searchHireId || !!searchId),
     staleTime,
