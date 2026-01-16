@@ -390,7 +390,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
         );
     }
     
-    // En móvil, mantener el estilo original (más compacto)
+    // En móvil, estilo Airbnb mejorado - una sola columna
     return (
         <a
             href={`/service/${serviceId}`}
@@ -398,17 +398,17 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
             className="block cursor-pointer group"
             style={{ textDecoration: 'none', color: 'inherit' }}
         >
-            <div className="relative">
+            <div className="relative" style={{ maxWidth: '100%', margin: '0 auto' }}>
                 <div 
                     className="relative w-full overflow-hidden" 
-                    style={{ aspectRatio: '1/1', borderRadius: '12px', marginBottom: '10px' }}
+                    style={{ aspectRatio: '1/1', borderRadius: '12px', marginBottom: '10px', maxWidth: '100%' }}
                 >
                     {imageUrls.length > 0 ? (
                         <>
                             <img
                                 src={imageUrls[imageIndex]}
                                 alt={service.serviceTypeName || 'Servicio'}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                 loading="lazy"
                             />
                             
@@ -431,13 +431,13 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
 
                             <button 
                                 onClick={handleFavoriteClick} 
-                                className="absolute top-3 right-3"
-                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                                className="absolute top-4 right-4"
+                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', zIndex: 10 }}
                             >
                                 <svg viewBox="0 0 32 32" style={{ 
-                                    width: '24px', height: '24px', 
+                                    width: '28px', height: '28px', 
                                     fill: isFavorite ? '#FF385C' : 'rgba(0,0,0,0.5)', 
-                                    stroke: '#fff', strokeWidth: 2 
+                                    stroke: '#fff', strokeWidth: 2.5 
                                 }}>
                                     <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
                                 </svg>
@@ -445,14 +445,15 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
 
                             {service.expert?.profilePictureUrl && (
                                 <div 
-                                    className="absolute bottom-3 left-3"
+                                    className="absolute bottom-4 left-4"
                                     style={{
-                                        width: '28px',
-                                        height: '28px',
-                                        border: '2px solid white',
+                                        width: '40px',
+                                        height: '40px',
+                                        border: '3px solid white',
                                         borderRadius: '50%',
                                         overflow: 'hidden',
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.18)'
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                                        zIndex: 10
                                     }}
                                 >
                                     <img 
@@ -486,16 +487,17 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                     )}
                 </div>
 
-                <div style={{ fontFamily: 'Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif' }}>
+                <div style={{ fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
                     <div 
                         style={{ 
                             fontSize: '15px', 
                             fontWeight: 600, 
-                            color: '#222', 
-                            lineHeight: '18px',
+                            color: 'rgb(34, 34, 34)', 
+                            lineHeight: '19px',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
+                            marginBottom: '3px'
                         }}
                     >
                         {service.serviceTypeName || service.categoryName || 'Servicio'}
@@ -503,13 +505,13 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                     
                     <div 
                         style={{ 
-                            fontSize: '15px', 
-                            color: '#717171', 
+                            fontSize: '14px', 
+                            color: 'rgb(113, 113, 113)', 
                             lineHeight: '18px',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            marginTop: '2px'
+                            marginBottom: '3px'
                         }}
                     >
                         {service.expert?.city && <span>{service.expert.city} · </span>}
@@ -518,13 +520,12 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                     
                     <div 
                         style={{ 
-                            fontSize: '15px', 
-                            color: '#717171', 
+                            fontSize: '14px', 
+                            color: 'rgb(113, 113, 113)', 
                             lineHeight: '18px',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            marginTop: '2px'
+                            whiteSpace: 'nowrap'
                         }}
                     >
                         <Star 
@@ -538,7 +539,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 marginRight: '4px'
                             }} 
                         />
-                        {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'} · {price}
+                        {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'} · <span style={{ fontWeight: 600, color: 'rgb(34, 34, 34)' }}>{price}</span>
                     </div>
                 </div>
             </div>
@@ -695,61 +696,76 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     }, []);
     
     // Calcular snapPoints dinámicamente basados en la altura del header
-    // 3 posiciones: abajo (0 - cerrado), reposo (0.5 - mitad), arriba (max - tocando topbar)
+    // 3 posiciones: abajo (0 - cerrado), reposo (0.5 - mitad), arriba (0.95 - casi arriba, pero permite subir más)
     // En vaul, los snapPoints son fracciones de la altura disponible (desde bottom)
     const SNAP_POINTS = useMemo(() => {
         if (typeof window === 'undefined') return [0, 0.5, 0.95] as const;
-        // Calcular el snapPoint máximo para que toque el topbar sin superponerse
-        // El drawer empieza desde bottom, así que el máximo es la altura disponible menos el header
-        const availableHeight = window.innerHeight - headerHeight;
-        const maxSnapPoint = availableHeight / window.innerHeight; // Fracción de la altura total
-        return [0, 0.5, maxSnapPoint] as const;
+        // Permitir que suba más allá del topbar - usar 0.95 como snapPoint pero permitir arrastrar más
+        return [0, 0.5, 0.95] as const;
     }, [headerHeight]);
     
     // ✅ SnapPoints: 0 = cerrado, 0.5 = reposo (inicial), max = arriba tocando topbar
     const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0.5);
     
-    // Detectar scroll hacia abajo para deslizar el drawer hacia arriba automáticamente (fluido)
+    // Lógica mejorada de scroll: sube progresivamente sin límite
     useEffect(() => {
         const drawerContent = drawerContentRef.current;
         if (!drawerContent || !isDrawerOpen || !isDrawerVisible) return;
         
         let lastScrollTop = 0;
         let scrollTimeout: NodeJS.Timeout | null = null;
-        let scrollAccumulator = 0; // Acumular scroll para movimiento más fluido
+        let scrollAccumulator = 0;
+        let isScrolling = false;
         
         const handleScroll = () => {
             const currentScrollTop = drawerContent.scrollTop;
             const scrollDelta = currentScrollTop - lastScrollTop;
+            const maxSnapPoint = SNAP_POINTS[SNAP_POINTS.length - 1];
             
-            // Detectar scroll hacia abajo (acumular para movimiento más suave)
-            if (scrollDelta > 0) {
+            // Scroll hacia abajo - subir drawer progresivamente
+            if (scrollDelta > 0 && !isScrolling) {
                 scrollAccumulator += scrollDelta;
                 
-                // Si el drawer no está en el snapPoint máximo, moverlo hacia arriba
-                const maxSnapPoint = SNAP_POINTS[SNAP_POINTS.length - 1];
-                if (activeSnapPoint !== maxSnapPoint && scrollAccumulator > 30) {
-                    // Limpiar timeout anterior
-                    if (scrollTimeout) {
-                        clearTimeout(scrollTimeout);
-                    }
-                    
-                    // Mover al siguiente snapPoint con delay más corto para fluidez
+                // Si estamos en la mitad, subir al snapPoint máximo
+                if (activeSnapPoint === 0.5 && scrollAccumulator > 20) {
+                    if (scrollTimeout) clearTimeout(scrollTimeout);
                     scrollTimeout = setTimeout(() => {
-                        const currentIndex = SNAP_POINTS.findIndex(sp => sp === activeSnapPoint);
-                        if (currentIndex < SNAP_POINTS.length - 1) {
-                            const nextSnapPoint = SNAP_POINTS[currentIndex + 1];
-                            setActiveSnapPoint(nextSnapPoint);
-                            scrollAccumulator = 0; // Resetear acumulador
-                        }
-                    }, 150); // Delay más corto para más fluidez
+                        setActiveSnapPoint(maxSnapPoint);
+                        scrollAccumulator = 0;
+                        isScrolling = false;
+                    }, 50);
+                    isScrolling = true;
                 }
-            } else if (scrollDelta < 0) {
-                // Scroll hacia arriba - resetear acumulador y cancelar movimiento
-                scrollAccumulator = 0;
-                if (scrollTimeout) {
-                    clearTimeout(scrollTimeout);
-                    scrollTimeout = null;
+                // Si ya estamos en el snapPoint máximo, permitir subir más calculando posición dinámica
+                else if (activeSnapPoint === maxSnapPoint && scrollAccumulator > 30) {
+                    if (scrollTimeout) clearTimeout(scrollTimeout);
+                    // Calcular nueva posición basada en el scroll acumulado
+                    const scrollProgress = Math.min(scrollAccumulator / 200, 0.1); // Máximo 10% adicional
+                    const newPosition = Math.min(0.95 + scrollProgress, 0.98);
+                    scrollTimeout = setTimeout(() => {
+                        setActiveSnapPoint(newPosition);
+                        scrollAccumulator = 0;
+                        isScrolling = false;
+                    }, 50);
+                    isScrolling = true;
+                }
+            }
+            // Scroll hacia arriba - bajar drawer solo si estamos arriba y el scroll está en 0
+            else if (scrollDelta < 0 && !isScrolling) {
+                // Si estamos arriba y el scroll vuelve al inicio, bajar a mitad
+                if (activeSnapPoint !== 0.5 && currentScrollTop === 0) {
+                    scrollAccumulator += Math.abs(scrollDelta);
+                    if (scrollAccumulator > 20) {
+                        if (scrollTimeout) clearTimeout(scrollTimeout);
+                        scrollTimeout = setTimeout(() => {
+                            setActiveSnapPoint(0.5);
+                            scrollAccumulator = 0;
+                            isScrolling = false;
+                        }, 50);
+                        isScrolling = true;
+                    }
+                } else {
+                    scrollAccumulator = 0;
                 }
             }
             
@@ -879,9 +895,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     useEffect(() => {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
         if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible) {
-            setIsDrawerVisible(true);
-            // Empezar en el snapPoint de reposo (0.5 = 50% - mitad de pantalla)
-            setActiveSnapPoint(0.5);
+            // Pequeño delay para asegurar que el drawer se renderice completamente
+            const timer = setTimeout(() => {
+                setIsDrawerVisible(true);
+                // Empezar siempre en el snapPoint de reposo (0.5 = 50% - mitad de pantalla)
+                setActiveSnapPoint(0.5);
+            }, 50);
+            return () => clearTimeout(timer);
         }
     }, [allServices.length, isLoadingServices, isDrawerVisible]);
     
@@ -1464,7 +1484,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             ref={headerRef}
                             className="sticky top-0 z-[9999] bg-white"
                         >
-                            <div className="px-4 py-3 flex items-center gap-2">
+                            <div 
+                                className="px-4 py-3 flex items-center gap-2"
+                                style={{
+                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08)',
+                                }}
+                            >
                                 {/* Botón de atrás - Estilo Airbnb */}
                                 <button
                                     type="button"
@@ -1485,10 +1510,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     onClick={() => {
                                         // Scroll to search bar or open search modal
                                     }}
-                                    className="flex-1 h-[57px] px-4 rounded-full border border-gray-300 bg-white hover:shadow-md transition-all flex items-center justify-center text-center shadow-sm"
+                                    className="flex-1 h-[57px] px-4 rounded-full border border-gray-300 bg-white hover:shadow-lg transition-all flex items-center justify-center text-center"
                                     aria-label="Revisores en tu zona"
                                     aria-describedby="searchInputDescriptionId"
-                                    style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+                                    style={{ 
+                                        fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)'
+                                    }}
                                 >
                                     <div className="flex flex-col items-center justify-center text-center">
                                         <span className="text-sm text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 500 }}>
@@ -2065,10 +2093,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     setActiveSnapPoint={setActiveSnapPoint}
                     fadeFromIndex={0}
                     snapToSequentialPoint={false}
+                    allowDragToClose={true}
                     style={{
                         opacity: isDrawerVisible ? 1 : 0,
                         pointerEvents: isDrawerVisible ? 'auto' : 'none',
-                        transition: 'opacity 0.2s ease-out',
+                        transition: 'opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
                     }}
                     title={(() => {
                         const drawerServicesCount = selectedService 
@@ -2078,14 +2107,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio' : 'servicios'}` 
                             : 'Sin servicios';
                     })()}
-                    drawerClassName="lg:hidden flex flex-col bg-white outline-none border-0 rounded-t-[20px] shadow-[0_-8px_32px_rgba(0,0,0,0.15)]"
+                    drawerClassName="lg:hidden flex flex-col bg-white outline-none border-0 rounded-t-[20px]"
                     dialogClassName="max-w-4xl max-h-[90vh] flex flex-col"
                     drawerStyle={{ 
                         bottom: '0',
                         zIndex: 10000,
                         position: 'fixed',
                         backgroundColor: 'white',
-                        // Vaul manejará la altura con snapPoints
+                        // Sombra igual que el topbar de categorías
+                        boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)',
+                        // Vaul manejará la altura con snapPoints - transición más fluida
                         transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                         willChange: 'transform',
                         // Asegurar que llegue exactamente hasta el topbar
@@ -2104,7 +2135,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 >
                     {/* Header con contador estilo Airbnb - Solo en móvil - ARRASTRABLE */}
                     <div 
-                        className="lg:hidden px-6 py-4 bg-white border-b border-gray-100 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none"
+                        className="lg:hidden px-6 py-1.5 bg-white flex-shrink-0 cursor-grab active:cursor-grabbing touch-none"
                         style={{ 
                             zIndex: 10001,
                             userSelect: 'none',
@@ -2112,27 +2143,57 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         }}
                         data-vaul-no-drag="false"
                     >
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-gray-900 select-none">
-                                {(() => {
-                                    const drawerServicesCount = selectedService 
-                                        ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
-                                        : services.length;
-                                    return drawerServicesCount > 0 
-                                        ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio' : 'servicios'}` 
-                                        : 'Sin servicios';
-                                })()}
-                            </h2>
-                            <button
-                                onClick={() => {
-                                    setIsDrawerOpen(false);
-                                    setIsDrawerVisible(false);
-                                }}
-                                className="p-2 -mr-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100"
-                                aria-label="Cerrar"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1"></div>
+                            <div className="flex flex-col items-center flex-1">
+                                <h2 
+                                    className="select-none"
+                                    style={{
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        fontSize: '15px',
+                                        fontWeight: 500,
+                                        lineHeight: '19px',
+                                        color: 'rgb(34, 34, 34)',
+                                        margin: 0,
+                                        padding: 0,
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {(() => {
+                                        const drawerServicesCount = selectedService 
+                                            ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
+                                            : services.length;
+                                        return drawerServicesCount > 0 
+                                            ? `Más de ${drawerServicesCount} ${drawerServicesCount === 1 ? 'revisión' : 'revisiones'}` 
+                                            : 'Sin servicios';
+                                    })()}
+                                </h2>
+                                <div 
+                                    style={{
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        fontSize: '12px',
+                                        fontWeight: 400,
+                                        lineHeight: '16px',
+                                        color: 'rgb(106, 106, 106)',
+                                        whiteSpace: 'nowrap',
+                                        marginTop: '2px',
+                                    }}
+                                >
+                                    Cómo ordenamos los resultados
+                                </div>
+                            </div>
+                            <div className="flex-1 flex justify-end">
+                                <button
+                                    onClick={() => {
+                                        setIsDrawerOpen(false);
+                                        setIsDrawerVisible(false);
+                                    }}
+                                    className="p-2 -mr-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100 flex-shrink-0"
+                                    aria-label="Cerrar"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -2159,7 +2220,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         style={{
                             overscrollBehavior: 'contain',
                             WebkitOverflowScrolling: 'touch',
-                            scrollBehavior: 'smooth',
+                            scrollBehavior: 'auto',
                             // Altura máxima para asegurar que el scroll funcione (100vh menos header del drawer y topbar)
                             maxHeight: `calc(100vh - ${headerHeight}px - 80px)`,
                             // Mejorar rendimiento del scroll
@@ -2167,6 +2228,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             // Suavizar el scroll en iOS
                             WebkitTransform: 'translateZ(0)',
                             transform: 'translateZ(0)',
+                            // Forzar aceleración por hardware
+                            backfaceVisibility: 'hidden',
+                            perspective: '1000px',
                         }}
                     >
                         {/* Services List - Estilo Airbnb */}
@@ -2180,11 +2244,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 <div style={{ padding: '0 16px' }}>
                                     {drawerServices.length > 0 ? (
                                         <div 
-                                            className="grid grid-cols-2" 
+                                            className="flex flex-col" 
                                             style={{ 
-                                                gap: '20px 16px', 
+                                                gap: '18px', 
                                                 paddingTop: '12px', 
-                                                paddingBottom: '32px',
+                                                paddingBottom: '28px',
                                                 // Mejorar rendimiento de renderizado
                                                 contain: 'layout style paint',
                                             }}
