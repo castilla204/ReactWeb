@@ -1089,19 +1089,35 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
             </div>
 
             {/* Fixed Input Area at Bottom - Optimizado para móvil y desktop - Siempre visible */}
-            <div className="flex-shrink-0 bg-white z-10 border-t border-gray-200 lg:relative lg:static" style={{ 
-                flexShrink: 0, 
-                minHeight: 'auto', 
-                margin: 0, 
-                padding: 0, 
-                marginBottom: 0, 
-                paddingBottom: 0,
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.05)',
-            }}>
+            <div 
+                className="flex-shrink-0 bg-white z-10 border-t border-gray-200 chat-input-container" 
+                style={{ 
+                    flexShrink: 0, 
+                    minHeight: 'auto', 
+                    margin: 0, 
+                    padding: 0, 
+                    marginBottom: 0, 
+                    paddingBottom: 0,
+                }}
+            >
+                <style>{`
+                    .chat-input-container {
+                        position: fixed;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+                    }
+                    @media (min-width: 1024px) {
+                        .chat-input-container {
+                            position: relative !important;
+                            left: auto !important;
+                            right: auto !important;
+                            bottom: auto !important;
+                            box-shadow: none !important;
+                        }
+                    }
+                `}</style>
                 <div className="w-full px-4 pt-4 pb-4 sm:px-4 sm:pt-4 sm:pb-4 lg:px-6 lg:pt-3 lg:pb-3" style={{ 
                     paddingBottom: 'max(1rem, calc(1rem + env(safe-area-inset-bottom, 0px)))', 
                     paddingTop: '1rem', 
