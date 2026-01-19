@@ -229,10 +229,20 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
             requestAnimationFrame(() => {
                 const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
                 if (chatContainer) {
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    // Only scroll if user is near bottom (within 200px)
+                    const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 200;
+                    if (isNearBottom) {
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }
                 }
                 if (messagesEndRef.current) {
-                    messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                    if (chatContainer) {
+                        const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 200;
+                        if (isNearBottom) {
+                            messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        }
+                    }
                 }
             });
             lastMessageCount.current = conversation.messages.length;
@@ -242,26 +252,34 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
     // Scroll to bottom when conversation loads for the first time
     useEffect(() => {
         if (conversation?.messages && messagesEndRef.current && !loading) {
-            // Use multiple timeouts to ensure DOM is fully rendered
+            // Check if chat container is visible before scrolling
+            const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+            if (!chatContainer) return;
+            
+            // Check if container is visible (not hidden by tab switching)
+            const containerRect = chatContainer.getBoundingClientRect();
+            const isContainerVisible = containerRect.width > 0 && containerRect.height > 0;
+            
+            if (!isContainerVisible) return;
+            
+            // Use a single timeout to avoid multiple scrolls
             const scrollToBottom = () => {
-                const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
-                if (chatContainer) {
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }
-                if (messagesEndRef.current) {
-                    const container = messagesEndRef.current.closest('[data-chat-messages]') as HTMLElement;
-                    if (container) {
-                        container.scrollTop = container.scrollHeight;
-                    } else {
-                        messagesEndRef.current.scrollIntoView({ behavior: 'auto', block: 'end' });
-                    }
+                // Check again if container is still visible
+                const currentContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                if (!currentContainer) return;
+                
+                const currentRect = currentContainer.getBoundingClientRect();
+                if (currentRect.width === 0 || currentRect.height === 0) return;
+                
+                // Check if already at bottom to avoid unnecessary scroll
+                const isNearBottom = currentContainer.scrollHeight - currentContainer.scrollTop <= currentContainer.clientHeight + 100;
+                if (!isNearBottom && messagesEndRef.current) {
+                    currentContainer.scrollTop = currentContainer.scrollHeight;
                 }
             };
-            // Try multiple times to ensure it works
-            setTimeout(scrollToBottom, 50);
-            setTimeout(scrollToBottom, 150);
-            setTimeout(scrollToBottom, 300);
-            setTimeout(scrollToBottom, 500);
+            // Single timeout to avoid multiple scrolls
+            const timeoutId = setTimeout(scrollToBottom, 150);
+            return () => clearTimeout(timeoutId);
         }
     }, [conversation?.id, loading]);
 
