@@ -2143,37 +2143,39 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                         </Button>
                                     )}
                                     
-                                    {/* Programar Cita */}
+                                    {/* Programar Cita - Solo en desktop (en móvil está en el botón fijo) */}
                                     {appointmentButtons.showPropose && (
-                                        <Button
-                                            onClick={() => handleAppointmentAction('propose', { 
-                                                id: 0, 
-                                                searchHireId: search?.searchHire?.id || 0,
-                                                status: 'awaiting_appointment',
-                                                amount: serviceInfo?.price || 0
-                                            } as Appointment)}
-                                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] rounded-lg"
-                                            size="lg"
-                                            disabled={isProposing}
-                                        >
-                                            {isProposing ? (
-                                                <>
-                                                    <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                    </svg>
-                                                    Proponiendo...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Calendar className="w-5 h-5 mr-2" />
-                                                    {appointment && appointment.status === 'appointment_cancelled_by_expert' 
-                                                        ? 'Proponer Nueva Cita'
-                                                        : 'Programar Cita'
-                                                    }
-                                                </>
-                                            )}
-                                        </Button>
+                                        <div className="hidden lg:block">
+                                            <Button
+                                                onClick={() => handleAppointmentAction('propose', { 
+                                                    id: 0, 
+                                                    searchHireId: search?.searchHire?.id || 0,
+                                                    status: 'awaiting_appointment',
+                                                    amount: serviceInfo?.price || 0
+                                                } as Appointment)}
+                                                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] rounded-lg"
+                                                size="lg"
+                                                disabled={isProposing}
+                                            >
+                                                {isProposing ? (
+                                                    <>
+                                                        <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                        </svg>
+                                                        Proponiendo...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Calendar className="w-5 h-5 mr-2" />
+                                                        {appointment && appointment.status === 'appointment_cancelled_by_expert' 
+                                                            ? 'Proponer Nueva Cita'
+                                                            : 'Programar Cita'
+                                                        }
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
                                     )}
                                 </div>
                                 </div>
@@ -2833,43 +2835,6 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             </div>
                             )}
 
-                            {/* Programar Cita - Solo en móvil (en desktop está dentro de la card) */}
-                            <div className="lg:hidden">
-                            {appointmentButtons.showPropose && (
-                                <>
-                                    <Separator />
-                                    <Button
-                                        onClick={() => handleAppointmentAction('propose', { 
-                                            id: 0, 
-                                            searchHireId: search?.searchHire?.id || 0,
-                                            status: 'awaiting_appointment',
-                                            amount: serviceInfo?.price || 0
-                                        } as Appointment)}
-                                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] rounded-lg"
-                                        size="lg"
-                                        disabled={isProposing}
-                                    >
-                                        {isProposing ? (
-                                            <>
-                                                <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                </svg>
-                                                Proponiendo...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Calendar className="w-5 h-5 mr-2" />
-                                                {appointment && appointment.status === 'appointment_cancelled_by_expert' 
-                                                    ? 'Proponer Nueva Cita'
-                                                    : 'Programar Cita'
-                                                }
-                                            </>
-                                        )}
-                                    </Button>
-                                </>
-                            )}
-                            </div>
 
                             {/* Espacio mínimo para el final del contenido */}
                             <div className="h-2"></div>
