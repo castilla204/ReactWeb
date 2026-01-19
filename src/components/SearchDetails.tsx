@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw, AlertCircle, List } from 'lucide-react';
 import CountryFlag from './CountryFlag';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
@@ -1179,8 +1179,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     return (
         <div className="bg-gray-50 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 64px)', maxHeight: 'calc(100vh - 64px)', minHeight: 'calc(100vh - 64px)', margin: 0, padding: 0 }}>
             {/* Header - Minimalista y limpio */}
-            <header className="hidden lg:flex bg-white border-b border-gray-200/60 flex-shrink-0 z-50" style={{ margin: 0 }}>
-                <div className="px-6 py-3 w-full">
+            <header className="hidden lg:flex bg-white border-b border-gray-200 flex-shrink-0 z-50" style={{ margin: 0 }}>
+                <div className="px-6 py-4 w-full">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                             <Button
@@ -1192,7 +1192,15 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 <ArrowLeft className="w-4 h-4 text-gray-700" />
                             </Button>
                             <div className="flex flex-col min-w-0 flex-1">
-                                <h1 className="text-base font-semibold text-gray-900 tracking-tight truncate">
+                                <h1 
+                                    className="text-lg font-semibold text-gray-900 tracking-tight truncate"
+                                    style={{
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        fontSize: '18px',
+                                        lineHeight: '24px',
+                                        fontWeight: 600,
+                                    }}
+                                >
                                     {search?.title || serviceInfo?.name || category?.name || 'Contratación'}
                                 </h1>
                                 {searchHireStatusInfo && (
@@ -1256,20 +1264,32 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                     <div className="flex-1 lg:w-[70%] xl:w-[75%] bg-white flex flex-col lg:rounded-lg lg:border lg:border-gray-200/60 lg:overflow-hidden flex-shrink-0 min-h-0" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', margin: 0 }}>
                         {/* Tabs - Solo en móvil - Minimalista */}
                         <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')} className="w-full flex flex-col flex-1 min-h-0" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                            <div className="bg-white sticky top-0 z-40 lg:hidden flex-shrink-0 border-b border-gray-200/60">
-                                <TabsList className="w-full grid grid-cols-2 h-11 bg-transparent p-0 gap-0 border-none">
+                            <div className="bg-white sticky top-0 z-40 lg:hidden flex-shrink-0 border-b border-gray-200">
+                                <TabsList className="w-full grid grid-cols-2 h-12 bg-transparent p-0 gap-0 border-none">
                                     <TabsTrigger 
                                         value="chat" 
-                                        className="flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 relative border-b-2 border-transparent data-[state=active]:text-gray-900 data-[state=active]:border-gray-900 data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:border-gray-300"
+                                        className="flex items-center justify-center gap-2 font-normal transition-all duration-200 relative border-b-2 border-transparent data-[state=active]:text-gray-900 data-[state=active]:border-gray-900 data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:border-gray-200"
+                                        style={{
+                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            fontSize: '15px',
+                                            lineHeight: '20px',
+                                            fontWeight: 400,
+                                        }}
                                     >
-                                        <MessageSquare className="w-4 h-4" />
+                                        <MessageCircle className="w-4 h-4" strokeWidth={2} />
                                         Chat
                                     </TabsTrigger>
                                     <TabsTrigger 
                                         value="details" 
-                                        className="flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 relative border-b-2 border-transparent data-[state=active]:text-gray-900 data-[state=active]:border-gray-900 data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:border-gray-300"
+                                        className="flex items-center justify-center gap-2 font-normal transition-all duration-200 relative border-b-2 border-transparent data-[state=active]:text-gray-900 data-[state=active]:border-gray-900 data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:border-gray-200"
+                                        style={{
+                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            fontSize: '15px',
+                                            lineHeight: '20px',
+                                            fontWeight: 400,
+                                        }}
                                     >
-                                        <FileText className="w-4 h-4" />
+                                        <List className="w-4 h-4" strokeWidth={2} />
                                         Detalles
                                     </TabsTrigger>
                                 </TabsList>
@@ -1296,11 +1316,21 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                             {activeTab === 'details' && (
                                 <div className="mt-0 flex-1 flex flex-col lg:hidden min-h-0 overflow-hidden">
                                 <div className="flex-1 flex flex-col bg-background min-h-0 overflow-hidden">
-                                    <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ paddingBottom: '0.5rem' }}>
+                                    <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6" style={{ paddingBottom: '0.5rem' }}>
                                 {/* Service Info - Minimalista */}
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-sm font-semibold text-gray-900">Servicio</h3>
+                                        <h3 
+                                            className="text-base font-semibold text-gray-900"
+                                            style={{
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                fontSize: '16px',
+                                                lineHeight: '20px',
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            Servicio
+                                        </h3>
                                         <div className="flex items-center gap-2">
                                             {searchHireStatusInfo && (
                                                 <StatusBadge statusInfo={searchHireStatusInfo} />
@@ -1312,23 +1342,47 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 text-sm text-gray-900">
-                                            <Tag className="w-3.5 h-3.5 text-gray-500" />
-                                            <span>{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
+                                            <Tag className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                            <span 
+                                                style={{
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
+                                                {serviceInfo?.categoryName || category?.name || 'N/A'}
+                                            </span>
                                                 </div>
                                         {serviceInfo?.serviceTypeName && (
-                                            <div className="text-sm">
+                                            <div 
+                                                className="text-sm"
+                                                style={{
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
                                                 <span className="text-gray-500">Tipo: </span>
                                                 <span className="text-gray-900 font-medium">{serviceInfo.serviceTypeName}</span>
                                             </div>
                                         )}
                                         {search?.description && (
-                                            <div className="text-sm">
+                                            <div className="text-sm leading-relaxed">
                                                 <span className="text-gray-500">Descripción: </span>
-                                                <span className="text-gray-700 leading-relaxed">{search.description}</span>
+                                                <span 
+                                                    className="text-gray-700"
+                                                    style={{
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        lineHeight: '1.5',
+                                                    }}
+                                                >
+                                                    {search.description}
+                                                </span>
                                             </div>
                                         )}
                                         {serviceInfo?.locationRange && (
-                                            <div className="text-xs text-gray-500">
+                                            <div 
+                                                className="text-xs text-gray-500"
+                                                style={{
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
                                                 Radio de servicio: <span className="font-medium text-gray-900">{serviceInfo.locationRange} km</span>
                                             </div>
                                         )}
@@ -1339,12 +1393,26 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             const priceDisplay = getPriceDisplay(priceSource);
                                             
                                             return (
-                                                <div className="bg-gray-50/50 rounded-lg border border-gray-100 p-3 mt-1">
+                                                <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mt-2">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-sm font-medium text-gray-600">Precio total</span>
+                                                        <span 
+                                                            className="text-sm font-medium text-gray-600"
+                                                            style={{
+                                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                            }}
+                                                        >
+                                                            Precio total
+                                                        </span>
                                                         <div className="text-right">
                                                             <div className="flex items-center justify-end gap-1.5">
-                                                                <span className="text-lg font-bold text-gray-900">{priceDisplay.formattedTotal}</span>
+                                                                <span 
+                                                                    className="text-lg font-bold text-gray-900"
+                                                                    style={{
+                                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                    }}
+                                                                >
+                                                                    {priceDisplay.formattedTotal}
+                                                                </span>
                                             </div>
                                                             {priceDisplay.hasTaxInfo && (
                                                                 <p className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full inline-block mt-0.5">IVA incluido</p>
@@ -1355,15 +1423,30 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     {priceDisplay.hasTaxInfo && (
                                                         <Accordion type="single" collapsible className="w-full mt-2 border-t border-gray-200/50">
                                                             <AccordionItem value="price-breakdown" className="border-none">
-                                                                <AccordionTrigger className="text-xs py-1.5 text-gray-500 hover:text-gray-700 hover:no-underline font-normal justify-start gap-2 h-auto min-h-0">
+                                                                <AccordionTrigger 
+                                                                    className="text-xs py-1.5 text-gray-500 hover:text-gray-700 hover:no-underline font-normal justify-start gap-2 h-auto min-h-0"
+                                                                    style={{
+                                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                    }}
+                                                                >
                                                                     <span>Ver desglose de impuestos</span>
                                                                 </AccordionTrigger>
                                                                 <AccordionContent className="pb-0 pt-1 space-y-1">
-                                                                    <div className="flex justify-between text-xs">
+                                                                    <div 
+                                                                        className="flex justify-between text-xs"
+                                                                        style={{
+                                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                        }}
+                                                                    >
                                                                         <span className="text-gray-500">Base imponible</span>
                                                                         <span className="text-gray-700 font-medium">{priceDisplay.formattedBase}</span>
                                                                     </div>
-                                                                    <div className="flex justify-between text-xs">
+                                                                    <div 
+                                                                        className="flex justify-between text-xs"
+                                                                        style={{
+                                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                        }}
+                                                                    >
                                                                         <span className="text-gray-500">IVA</span>
                                                                         <span className="text-gray-700 font-medium">{priceDisplay.formattedTax}</span>
                                                                     </div>
@@ -1380,10 +1463,20 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     {searchHireStatusInfo && (
                                         <Accordion type="multiple" className="w-full">
                                             <AccordionItem value="status-info" className="border-none">
-                                                <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                <AccordionTrigger 
+                                                    className="text-xs py-2 hover:no-underline"
+                                                    style={{
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    }}
+                                                >
                                                     ¿Qué significa este estado?
                                                 </AccordionTrigger>
-                                                <AccordionContent className="text-xs text-muted-foreground pt-2 pb-0">
+                                                <AccordionContent 
+                                                    className="text-xs text-muted-foreground pt-2 pb-0"
+                                                    style={{
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    }}
+                                                >
                                                     <p className="leading-relaxed">
                                                         {searchHireStatusInfo.description || 'Estado del servicio contratado.'}
                                                     </p>
@@ -1396,7 +1489,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             </AccordionItem>
                                             {searchHireStatuses && Array.isArray(searchHireStatuses) && searchHireStatuses.length > 0 && (
                                                 <AccordionItem value="status-timeline" className="border-none">
-                                                    <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                    <AccordionTrigger 
+                                                        className="text-xs py-2 hover:no-underline"
+                                                        style={{
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
                                                         Timeline del estado
                                                     </AccordionTrigger>
                                                     <AccordionContent className="pt-2 pb-0">
@@ -1414,9 +1512,17 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                                 {/* Sección de Cita - Móvil - Siempre visible si necesita cita */}
                                 {needsAppointment && (
-                                    <div className="mt-4 pt-4 border-t border-gray-200/60 lg:hidden">
+                                    <div className="mt-6 pt-6 border-t border-gray-200 lg:hidden">
                                         <div className="space-y-2">
-                                            <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                                            <h3 
+                                                className="text-base font-semibold text-gray-900 mb-3"
+                                                style={{
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    fontSize: '16px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                }}
+                                            >
                                                     {appointment ? (
                                                         appointmentStatusInfo?.displayName || 
                                                         (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
@@ -1432,8 +1538,13 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                 const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
                                                                 const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
                                                                 return (
-                                                                <div className="flex items-center gap-2 text-sm text-gray-900">
-                                                                    <Calendar className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                                                                <div 
+                                                                    className="flex items-center gap-2 text-sm text-gray-900"
+                                                                    style={{
+                                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                    }}
+                                                                >
+                                                                    <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
                                                                         <span className="font-medium">
                                                                             {new Date(dateToUse).toLocaleDateString('es-ES', {
                                                                                 day: 'numeric',
@@ -1445,13 +1556,23 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                 );
                                                             })()}
                                                             {appointment.location && (
-                                                            <div className="flex items-start gap-2 text-sm text-gray-900">
-                                                                <MapPin className="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-0.5" />
+                                                            <div 
+                                                                className="flex items-start gap-2 text-sm text-gray-900"
+                                                                style={{
+                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                }}
+                                                            >
+                                                                <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
                                                                     <span className="leading-relaxed">{appointment.location}</span>
                                                                 </div>
                                                             )}
                                                             {appointment.doorNumber && (
-                                                            <div className="text-sm text-gray-900 ml-6">
+                                                            <div 
+                                                                className="text-sm text-gray-900 ml-6"
+                                                                style={{
+                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                }}
+                                                            >
                                                                 <span className="text-gray-500">Puerta: </span>
                                                                     <span className="font-medium">{appointment.doorNumber}</span>
                                                                 </div>
@@ -1459,7 +1580,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                             {/* Reportes del Experto - Dentro del cuadro de cita */}
                                                             {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
                                                             <div className="mt-3 pt-3 border-t border-gray-200">
-                                                                <div className="flex items-center gap-2 text-sm text-gray-900 mb-2">
+                                                                <div 
+                                                                    className="flex items-center gap-2 text-sm text-gray-900 mb-2"
+                                                                    style={{
+                                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                    }}
+                                                                >
                                                                         <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
                                                                         <span className="font-medium">Informe Enviado</span>
                                                                     </div>
@@ -1470,7 +1596,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                                                 <button
                                                                                     key={deliverable.id}
                                                                                     onClick={() => window.open(deliverable.url, '_blank')}
-                                                                                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors w-full text-left"
+                                                                                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors w-full text-left"
+                                                                                    style={{
+                                                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                                    }}
                                                                                 >
                                                                                     <FileText className="w-3 h-3 flex-shrink-0" />
                                                                                     <span className="truncate">{fileName}</span>
@@ -1483,12 +1612,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         </>
                                                     ) : (
                                                         <div className="space-y-2">
-                                                        <div className="flex items-center gap-2 text-sm text-gray-700">
+                                                        <div 
+                                                            className="flex items-center gap-2 text-sm text-gray-700"
+                                                            style={{
+                                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                            }}
+                                                        >
                                                             <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
                                                                 <span>Debes proponer una cita</span>
                                                             </div>
                                                             {timeRemaining && timeRemaining !== '00:00:00' && (
-                                                            <div className="flex items-center gap-2 text-sm text-amber-600 ml-6">
+                                                            <div 
+                                                                className="flex items-center gap-2 text-sm text-amber-600 ml-6"
+                                                                style={{
+                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                }}
+                                                            >
                                                                     <Clock className="w-4 h-4 flex-shrink-0" />
                                                                     <span className="font-medium">Tiempo restante: {timeRemaining}</span>
                                                                 </div>
@@ -1499,7 +1638,12 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
                                                     <Accordion type="single" collapsible className="w-full mt-3">
                                                         <AccordionItem value="appointment-timeline" className="border-none">
-                                                            <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                                                            <AccordionTrigger 
+                                                                className="text-xs py-2 hover:no-underline"
+                                                                style={{
+                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                }}
+                                                            >
                                                                 Timeline del estado
                                                             </AccordionTrigger>
                                                             <AccordionContent className="pt-2 pb-0">
@@ -1516,12 +1660,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     </div>
                                 )}
 
-                                <div className="border-t border-gray-200/60 pt-4"></div>
+                                <div className="border-t border-gray-200 pt-6"></div>
 
                                 {/* Cliente - Minimalista */}
                                 {search?.user && (
-                                    <div className="space-y-2">
-                                        <h3 className="text-sm font-semibold text-gray-900">Cliente</h3>
+                                    <div className="space-y-3">
+                                        <h3 
+                                            className="text-base font-semibold text-gray-900"
+                                            style={{
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                fontSize: '16px',
+                                                lineHeight: '20px',
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            Cliente
+                                        </h3>
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-9 w-9">
                                                 <AvatarImage 
@@ -1533,8 +1687,22 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-gray-900 truncate">{search.user.name}</p>
-                                                <p className="text-xs text-gray-500 truncate mt-0.5">{search.user.email}</p>
+                                                <p 
+                                                    className="text-sm font-medium text-gray-900 truncate"
+                                                    style={{
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    }}
+                                                >
+                                                    {search.user.name}
+                                                </p>
+                                                <p 
+                                                    className="text-xs text-gray-500 truncate mt-0.5"
+                                                    style={{
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    }}
+                                                >
+                                                    {search.user.email}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -1543,9 +1711,19 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 {/* Experto - Minimalista */}
                                 {expertData && (
                                     <>
-                                        <div className="border-t border-gray-200/60 pt-4"></div>
-                                        <div className="space-y-2">
-                                            <h3 className="text-sm font-semibold text-gray-900">Experto</h3>
+                                        <div className="border-t border-gray-200 pt-6"></div>
+                                        <div className="space-y-3">
+                                            <h3 
+                                                className="text-base font-semibold text-gray-900"
+                                                style={{
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    fontSize: '16px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                }}
+                                            >
+                                                Experto
+                                            </h3>
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-9 w-9">
                                                     <AvatarImage 
@@ -1558,7 +1736,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 </Avatar>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 flex-wrap">
-                                                        <p className="text-sm font-medium text-gray-900 truncate">{expertData.name}</p>
+                                                        <p 
+                                                            className="text-sm font-medium text-gray-900 truncate"
+                                                            style={{
+                                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                            }}
+                                                        >
+                                                            {expertData.name}
+                                                        </p>
                                                         {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
                                                         {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
                                                             <CountryFlag 
@@ -1747,7 +1932,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     
                                     {/* ✅ Botones de acción fijos en móvil - Según la guía */}
                                     {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
-                                        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 p-4 space-y-2 shadow-lg">
+                                        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 px-5 py-4 space-y-3 shadow-lg">
                                             <div className="flex gap-2">
                                                 {/* ✅ BOTÓN: Aceptar (Solo Experto, solo cuando appointment_proposed) */}
                                                 {appointmentButtons.showAccept && (
@@ -2412,7 +2597,14 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                             </Avatar>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <p className="text-sm font-medium text-gray-900 truncate">{expertData.name}</p>
+                                                    <p 
+                                                        className="text-sm font-medium text-gray-900 truncate"
+                                                        style={{
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
+                                                        {expertData.name}
+                                                    </p>
                                                     {/* ✅ BANDERA DEL PAÍS DEL EXPERTO - Desktop */}
                                                     {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
                                                         <CountryFlag 

@@ -1,10 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { HomepageWall } from '../components/HomepageWall';
 import { AirbnbSearchBar } from '../components/AirbnbSearchBar';
 import { MobileBottomBar } from '../components/MobileBottomBar';
 import { WelcomePopup } from '../components/WelcomePopup';
 
 const HomePage: React.FC = () => {
+  const location = useLocation();
+  
+  // Posicionar arriba cuando se carga o se vuelve a la homepage (sin scroll)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [location.pathname]);
   // Detectar país del navegador (fallback a ES) - Memoizado para evitar recálculos
   const countryCode = useMemo(() => {
     if (typeof navigator !== 'undefined' && navigator.language) {
