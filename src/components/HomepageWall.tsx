@@ -5,6 +5,9 @@ import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } fro
 import { Star, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from './Footer';
+import { useAuth } from '../contexts/AuthContext';
+import { useServiceFavorites } from '../hooks/useServiceFavorites';
+import { showToast } from '../lib/toast';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -25,22 +28,49 @@ const useIsMobile = () => {
 interface ServiceCardProps {
   service: SearchServiceDetailDto;
   forceGuestFavorite?: boolean;
+  initialIsFavorite?: boolean; // Estado inicial desde el backend (IsFavorite)
 }
 
-const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite = false }) => {
+const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite = false, initialIsFavorite = false }) => {
   const navigate = useNavigate();
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const { toggleFavoriteAsync } = useServiceFavorites();
+  // ✅ Usar isFavorite del servicio directamente (viene del backend) o el estado inicial como fallback
+  const [isFavorite, setIsFavorite] = useState(service.isFavorite ?? initialIsFavorite);
   const [imageIndex, setImageIndex] = useState(0);
   const isMobile = useIsMobile();
+
+  // Sincronizar con el estado del servicio cuando cambia (viene del backend)
+  useEffect(() => {
+    if (service.isFavorite !== undefined) {
+      setIsFavorite(service.isFavorite);
+    } else if (initialIsFavorite !== undefined) {
+      setIsFavorite(initialIsFavorite);
+    }
+  }, [service.isFavorite, initialIsFavorite]);
 
   const handleCardClick = () => {
     // Navegar a la página de detalle del servicio primero
     navigate(`/service/${service.id}`);
   };
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsFavorite(!isFavorite);
+    e.preventDefault();
+    
+    if (!isAuthenticated) {
+      showToast('info', 'Inicia sesión para guardar favoritos', 3000);
+      return;
+    }
+
+    try {
+      const result = await toggleFavoriteAsync(service.id);
+      setIsFavorite(result.isFavorite);
+      showToast('success', result.message, 2000);
+    } catch (error: any) {
+      console.error('Error al actualizar favorito:', error);
+      showToast('error', error.message || 'Error al actualizar favorito', 3000);
+    }
   };
 
   const handleImageNavigation = (e: React.MouseEvent, direction: 'prev' | 'next') => {
@@ -549,7 +579,12 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
           onScroll={checkScroll}
         >
           {services.map((service) => (
-            <ServiceCard key={service.id} service={service} forceGuestFavorite={forceGuestFavorite} />
+            <ServiceCard 
+              key={service.id} 
+              service={service} 
+              forceGuestFavorite={forceGuestFavorite}
+              initialIsFavorite={service.isFavorite ?? false}
+            />
           ))}
         </div>
 
@@ -696,6 +731,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
       categoryName: service.CategoryName,
       completedSearches: service.CompletedSearches,
       averageRating: service.AverageRating,
+      isFavorite: service.IsFavorite ?? false, // ✅ NUEVO: Mapear IsFavorite del backend
       expert: service.Expert ? {
         id: service.Expert.Id,
         profilePictureUrl: service.Expert.ProfilePictureUrl,

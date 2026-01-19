@@ -8,6 +8,9 @@ import { useServices } from '../hooks/useServices';
 import { useMapExperts } from '../hooks/useMapExperts'; // ✅ Mantener para compatibilidad
 import { useMapMarkers } from '../hooks/useMapMarkers'; // ✅ NUEVO: Marcadores ultra ligeros
 import { LocationMap } from './LocationMap';
+import { useAuth } from '../contexts/AuthContext';
+import { useServiceFavorites } from '../hooks/useServiceFavorites';
+import { showToast } from '../lib/toast';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
@@ -31,13 +34,18 @@ interface MapServiceCardProps {
     service: any;
     isSelected: boolean;
     onSelect: (serviceId: number) => void;
+    initialIsFavorite?: boolean; // Estado inicial desde check-multiple
 }
 
-const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, onSelect }) => {
+const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, onSelect, initialIsFavorite = false }) => {
     const [imageIndex, setImageIndex] = useState(0);
-    const [isFavorite, setIsFavorite] = useState(false);
+    const { isAuthenticated } = useAuth();
+    const { toggleFavoriteAsync, checkFavorite } = useServiceFavorites();
+    const [isFavorite, setIsFavorite] = useState(initialIsFavorite);
     const navigate = useNavigate();
     const [isMobile, setIsMobile] = useState(false);
+    
+    const serviceId = service.id || service.Id;
     
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -46,13 +54,23 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
     
+    // Verificar favorito si no se pasó estado inicial
+    const { data: favoriteCheck } = checkFavorite(serviceId);
+    
+    useEffect(() => {
+        if (favoriteCheck?.data?.isFavorite !== undefined) {
+            setIsFavorite(favoriteCheck.data.isFavorite);
+        } else if (initialIsFavorite !== undefined) {
+            setIsFavorite(initialIsFavorite);
+        }
+    }, [favoriteCheck, initialIsFavorite]);
+    
     const imageUrls = Array.isArray(service.imageUrls) 
         ? service.imageUrls 
         : Array.isArray(service.ImageUrls) 
             ? service.ImageUrls 
             : [];
     const hasMultipleImages = imageUrls.length > 1;
-    const serviceId = service.id || service.Id;
     const isGuestFavorite = (service.completedSearches || 0) > 10 && (service.averageRating || 0) >= 4.5;
     
     const handleCardClick = (e: React.MouseEvent) => {
@@ -61,10 +79,23 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
         navigate(`/service/${serviceId}`);
     };
     
-    const handleFavoriteClick = (e: React.MouseEvent) => {
+    const handleFavoriteClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
-        setIsFavorite(!isFavorite);
+        
+        if (!isAuthenticated) {
+            showToast('info', 'Inicia sesión para guardar favoritos', 3000);
+            return;
+        }
+
+        try {
+            const result = await toggleFavoriteAsync(serviceId);
+            setIsFavorite(result.isFavorite);
+            showToast('success', result.message, 2000);
+        } catch (error: any) {
+            console.error('Error al actualizar favorito:', error);
+            showToast('error', error.message || 'Error al actualizar favorito', 3000);
+        }
     };
     
     const handleImageNavigation = (e: React.MouseEvent, direction: 'prev' | 'next') => {
@@ -466,7 +497,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
 
                             {hasMultipleImages && (
                                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                                    {imageUrls.slice(0, 5).map((_: string, idx: number) => (
+                                    {imageUrls.slice(0, 5).map((_item: string, idx: number) => (
                                         <div 
                                             key={idx} 
                                             className="rounded-full bg-white"
@@ -890,6 +921,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         
         return true;
     });
+    
+    // Verificar favoritos de todos los servicios de una vez (check-multiple) - para el drawer
+    const { isAuthenticated } = useAuth();
+    const { checkMultipleFavorites } = useServiceFavorites();
+    const serviceIds = useMemo(() => services.map(s => s.id || s.Id), [services]);
+    const { data: favoritesData } = checkMultipleFavorites(serviceIds);
+    const favoritesMap = favoritesData?.data || {};
     
     // Mostrar drawer cuando hay servicios disponibles en móvil
     useEffect(() => {
@@ -2093,7 +2131,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     setActiveSnapPoint={setActiveSnapPoint}
                     fadeFromIndex={0}
                     snapToSequentialPoint={false}
-                    allowDragToClose={true}
                     style={{
                         opacity: isDrawerVisible ? 1 : 0,
                         pointerEvents: isDrawerVisible ? 'auto' : 'none',
@@ -2234,46 +2271,43 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         }}
                     >
                         {/* Services List - Estilo Airbnb */}
-                        {(() => {
-                            const drawerServices = services.filter(service => {
-                                const serviceId = service.id || (service as any).Id;
-                                return serviceId !== selectedService;
-                            });
-                            
-                            return (
-                                <div style={{ padding: '0 16px' }}>
-                                    {drawerServices.length > 0 ? (
-                                        <div 
-                                            className="flex flex-col" 
-                                            style={{ 
-                                                gap: '18px', 
-                                                paddingTop: '12px', 
-                                                paddingBottom: '28px',
-                                                // Mejorar rendimiento de renderizado
-                                                contain: 'layout style paint',
-                                            }}
-                                        >
-                                            {drawerServices.map((service) => (
-                                                <MapServiceCard
-                                                    key={service.id || service.Id}
-                                                    service={service}
-                                                    isSelected={false}
-                                                    onSelect={handleServiceSelect}
-                                                />
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="py-12 text-center">
-                                            <p className="text-sm text-gray-500">
-                                                {selectedService 
-                                                    ? 'El servicio seleccionado está en la tarjeta flotante' 
-                                                    : 'No hay servicios disponibles'}
-                                            </p>
-                                        </div>
-                                    )}
+                        {services.length > 0 ? (
+                            <div style={{ padding: '0 16px' }}>
+                                <div 
+                                    className="flex flex-col" 
+                                    style={{ 
+                                        gap: '18px', 
+                                        paddingTop: '12px', 
+                                        paddingBottom: '28px',
+                                        // Mejorar rendimiento de renderizado
+                                        contain: 'layout style paint',
+                                    }}
+                                >
+                                    {services.map((service) => {
+                                        const serviceId = service.id || service.Id;
+                                        return (
+                                            <MapServiceCard
+                                                key={serviceId}
+                                                service={service}
+                                                isSelected={false}
+                                                onSelect={handleServiceSelect}
+                                                initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
+                                            />
+                                        );
+                                    })}
                                 </div>
-                            );
-                        })()}
+                            </div>
+                        ) : (
+                            <div style={{ padding: '0 16px' }}>
+                                <div className="py-12 text-center">
+                                    <p className="text-sm text-gray-500">
+                                        {selectedService 
+                                            ? 'El servicio seleccionado está en la tarjeta flotante' 
+                                            : 'No hay servicios disponibles'}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </ResponsiveModal>
         </div>

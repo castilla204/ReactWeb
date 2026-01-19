@@ -80,6 +80,15 @@ export interface SearchItem {
     unreadMessagesCount: number; // Número de mensajes sin leer
     hasPendingAppointment: boolean; // Si hay cita pendiente
     pendingAppointmentStatus?: string; // Estado de la cita pendiente
+    // ✅ NUEVOS CAMPOS: Información del servicio y experto para cards
+    serviceImageUrl?: string | null; // Primera imagen del servicio
+    expertAvailability?: {
+        daysOfWeek: string[]; // ["Monday", "Tuesday", ...]
+        startTime: string; // "09:00:00"
+        endTime: string; // "18:00:00"
+    } | null; // Horario del experto
+    expertCity?: string | null; // Ciudad del experto
+    categoryName?: string | null; // ✅ NUEVO: Nombre de la categoría (ej: "Hogar", "Coches", "Motos")
 }
 
 // ✅ NUEVO: Interfaz para metadatos de paginación
@@ -402,6 +411,18 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
 
     // ✅ Función para normalizar SearchItem de PascalCase a camelCase
     const normalizeSearchItem = (item: any): SearchItem => {
+        // ✅ Normalizar ExpertAvailability
+        const normalizeExpertAvailability = (availability: any) => {
+            if (!availability) return null;
+            const avail = availability.ExpertAvailability ?? availability.expertAvailability ?? availability;
+            if (!avail) return null;
+            return {
+                daysOfWeek: avail.DaysOfWeek ?? avail.daysOfWeek ?? [],
+                startTime: avail.StartTime ?? avail.startTime ?? '',
+                endTime: avail.EndTime ?? avail.endTime ?? '',
+            };
+        };
+
         return {
             id: item.Id ?? item.id,
             title: item.Title ?? item.title,
@@ -424,6 +445,12 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
             unreadMessagesCount: item.UnreadMessagesCount ?? item.unreadMessagesCount ?? 0,
             hasPendingAppointment: item.HasPendingAppointment ?? item.hasPendingAppointment ?? false,
             pendingAppointmentStatus: item.PendingAppointmentStatus ?? item.pendingAppointmentStatus,
+            // ✅ NUEVOS CAMPOS: Información del servicio y experto
+            // Intentar múltiples variantes del nombre del campo
+            serviceImageUrl: item.ServiceImageUrl ?? item.serviceImageUrl ?? item.service_image_url ?? null,
+            expertAvailability: normalizeExpertAvailability(item),
+            expertCity: item.ExpertCity ?? item.expertCity ?? null,
+            categoryName: item.CategoryName ?? item.categoryName ?? null, // ✅ NUEVO: Nombre de la categoría
         };
     };
 
@@ -481,7 +508,18 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
                 // ✅ Normalizar respuesta: mapear Searches -> searches, Pagination -> pagination
                 const searchesArray = rawResponse.Searches ?? rawResponse.searches ?? [];
                 console.log('[useSearchesWithFilters] Searches array length:', searchesArray.length);
+                // ✅ Debug: Verificar campos de imagen en el primer item
+                if (searchesArray.length > 0) {
+                    const firstItem = searchesArray[0];
+                    console.log('[useSearchesWithFilters] First item keys:', Object.keys(firstItem));
+                    console.log('[useSearchesWithFilters] ServiceImageUrl (PascalCase):', firstItem.ServiceImageUrl);
+                    console.log('[useSearchesWithFilters] serviceImageUrl (camelCase):', firstItem.serviceImageUrl);
+                }
                 const normalizedSearches = searchesArray.map(normalizeSearchItem);
+                // ✅ Debug: Verificar después de normalizar
+                if (normalizedSearches.length > 0) {
+                    console.log('[useSearchesWithFilters] Normalized first item serviceImageUrl:', normalizedSearches[0].serviceImageUrl);
+                }
                 
                 const normalizedPagination = normalizePagination(rawResponse.Pagination ?? rawResponse.pagination ?? {});
                 console.log('[useSearchesWithFilters] Normalized searches count:', normalizedSearches.length);

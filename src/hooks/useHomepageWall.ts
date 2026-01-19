@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { HomepageWallResponse } from '../types/homepageWall';
 import { API_CONFIG } from '../config/api';
+import { getAuthToken } from '../lib/auth';
 
 interface HomepageWallParams {
   categoryId: number; // ✅ OBLIGATORIO: ID de la categoría
@@ -79,16 +80,23 @@ export const useHomepageWallQuery = (params: HomepageWallParams) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
       
+      // ✅ Obtener token si el usuario está autenticado (opcional pero recomendado)
+      const token = getAuthToken();
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      // ✅ Añadir token si existe (para que el backend verifique favoritos)
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       let response: Response;
       try {
         response = await fetch(url, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           signal: controller.signal,
-          // Marcar como petición pública para que el interceptor no agregue token
-          _skipAuth: true,
-        } as any);
+        });
         
         clearTimeout(timeoutId);
       } catch (error) {

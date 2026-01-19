@@ -43,6 +43,7 @@ export interface SearchServiceHomepageDto {
   };
   CompletedSearches: number;
   AverageRating: number;
+  IsFavorite: boolean; // ✅ NUEVO: Indica si el servicio es favorito del usuario autenticado
 }
 
 // ✅ Mantener interfaces antiguas para compatibilidad (si se necesitan)
@@ -65,6 +66,7 @@ export interface SearchServiceDetailDto {
   averageRating: number;
   expert?: ExpertProfileDto;
   selectedDeliverableTypes: DeliverableTypeDto[];
+  isFavorite?: boolean; // ✅ NUEVO: Indica si el servicio es favorito del usuario autenticado
 }
 
 export interface ExpertProfileDto {

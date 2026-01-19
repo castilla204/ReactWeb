@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { FavoritesModal } from './FavoritesModal';
 import { MobileProfileMenu } from './MobileProfileMenu';
 import { authService } from '../services/authService';
 import { toast } from 'sonner';
 import { MessageSquare } from 'lucide-react';
+import { UserRole, RoleChecker } from '../utils/roleChecker';
 
 // Declaración de tipos para Google Sign-In
 declare global {
@@ -31,7 +31,6 @@ export const MobileBottomBar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, user, updateUser } = useAuth();
-  const [showFavoritesModal, setShowFavoritesModal] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
@@ -286,7 +285,7 @@ export const MobileBottomBar: React.FC = () => {
   };
 
   const exploreActive = isActive('/');
-  const wishlistsActive = showFavoritesModal;
+  const wishlistsActive = isActive('/favoritos');
   const searchesActive = isActive('/busquedas');
   // profileActive solo cuando está autenticado Y está en perfil
   const profileActive = isAuthenticated && showProfileMenu;
@@ -301,7 +300,7 @@ export const MobileBottomBar: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     if (isAuthenticated) {
-      setShowFavoritesModal(true);
+      navigate('/favoritos');
     } else {
       // Si no está autenticado, redirigir a la página principal donde puede iniciar sesión
       navigate('/');
@@ -312,7 +311,34 @@ export const MobileBottomBar: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     if (isAuthenticated) {
-      navigate('/busquedas');
+      // Verificar si el usuario es experto
+      const userRole = user?.role;
+      let isExpert = false;
+      
+      // Verificar por rol del objeto user
+      if (userRole === 'Expert' || userRole === 'expert' || userRole === 'EXPERT' || userRole === UserRole.Expert) {
+        isExpert = true;
+      }
+      
+      // Si no se detecta por el rol del objeto user, verificar el token
+      if (!isExpert) {
+        try {
+          const token = authService.getAccessToken();
+          if (token) {
+            const roleFromToken = RoleChecker.getUserRole(token);
+            isExpert = roleFromToken === UserRole.Expert;
+          }
+        } catch (error) {
+          console.warn('[MobileBottomBar] Error checking role from token:', error);
+        }
+      }
+      
+      // Si es experto, ir al panel de experto en el tab de contratación
+      if (isExpert) {
+        navigate('/expert-panel?tab=hires');
+      } else {
+        navigate('/busquedas');
+      }
     } else {
       handleLoginClick(e);
     }
@@ -714,9 +740,6 @@ export const MobileBottomBar: React.FC = () => {
       </div>
       
       {/* Modal de Favoritos */}
-      {showFavoritesModal && (
-        <FavoritesModal onClose={() => setShowFavoritesModal(false)} />
-      )}
 
       {/* ✅ Menú de Perfil Móvil */}
       <MobileProfileMenu

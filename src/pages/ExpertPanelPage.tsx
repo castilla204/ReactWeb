@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -88,11 +88,28 @@ interface Service {
 
 export function ExpertPanelPage() {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { user, signOut } = useAuth();
     const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
     const { serviceTypes, isLoading: isLoadingServiceTypes } = useServiceTypes();
 
-    const [activeTab, setActiveTab] = useState<'services' | 'hires'>('services');
+    // Leer el tab desde los query params, por defecto 'services'
+    const tabFromUrl = searchParams.get('tab');
+    const initialTab = (tabFromUrl === 'hires' || tabFromUrl === 'services') ? tabFromUrl : 'services';
+    const [activeTab, setActiveTab] = useState<'services' | 'hires'>(initialTab as 'services' | 'hires');
+    
+    // Sincronizar el tab con la URL cuando cambia
+    useEffect(() => {
+        if (tabFromUrl && (tabFromUrl === 'hires' || tabFromUrl === 'services')) {
+            setActiveTab(tabFromUrl as 'services' | 'hires');
+        }
+    }, [tabFromUrl]);
+    
+    // Actualizar la URL cuando cambia el tab
+    const handleTabChange = (value: string) => {
+        setActiveTab(value as 'services' | 'hires');
+        setSearchParams({ tab: value });
+    };
     const [hireTab, setHireTab] = useState<'active' | 'inactive'>('active');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [showServiceForm, setShowServiceForm] = useState(false);
@@ -983,7 +1000,7 @@ export function ExpertPanelPage() {
                     {/* Sidebar Content */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         {/* Navegación con Tabs */}
-                        <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as 'services' | 'hires')} className="w-full">
+                        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                             <TabsList className="w-full grid grid-cols-2 h-auto p-1">
                                 <TabsTrigger 
                                     value="services" 
