@@ -990,112 +990,7 @@ export function ServiceReviewPage({
 
                         <div className="h-[1px] bg-gray-200 mb-8 mx-4 sm:mx-6" />
 
-                        {/* GARANTÍA INSPECCIONO mejorada */}
-                        <div className="mb-8 px-4 sm:px-6">
-                            <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
-                                {/* Cabecera de marca */}
-                                <div className="flex items-center gap-1.5 mb-5">
-                                    <span 
-                                        style={{
-                                            fontSize: '16px',
-                                            lineHeight: '20px',
-                                            fontWeight: 600,
-                                            color: '#0066CC',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        }}
-                                    >
-                                        inspecciono
-                                    </span>
-                                    <span 
-                                        style={{
-                                            fontSize: '16px',
-                                            lineHeight: '20px',
-                                            fontWeight: 400,
-                                            color: 'rgb(34, 34, 34)',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        }}
-                                    >
-                                        protección
-                                    </span>
-                                </div>
-                            
-                                <div className="space-y-5">
-                                    <div className="flex gap-4 items-start">
-                                        <div className="mt-0.5 flex-shrink-0">
-                                            <BadgeCheck className="w-6 h-6 text-[#0066CC] stroke-[2]" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    marginBottom: '4px',
-                                                    marginTop: 0,
-                                                    padding: 0,
-                                                }}
-                                            >
-                                                Calidad verificada
-                                            </h4>
-                                            <p 
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 400,
-                                                    color: 'rgb(113, 113, 113)',
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    margin: 0,
-                                                    padding: 0,
-                                                }}
-                                            >
-                                                Auditamos manualmente la revisión para asegurar estándares profesionales.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-4 items-start">
-                                        <div className="mt-0.5 flex-shrink-0">
-                                            <Lock className="w-6 h-6 text-[#0066CC] stroke-[2]" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    marginBottom: '4px',
-                                                    marginTop: 0,
-                                                    padding: 0,
-                                                }}
-                                            >
-                                                Pago en custodia
-                                            </h4>
-                                            <p 
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 400,
-                                                    color: 'rgb(113, 113, 113)',
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    margin: 0,
-                                                    padding: 0,
-                                                }}
-                                            >
-                                                Tu dinero se retiene seguro hasta que recibes el informe.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="h-[1px] bg-gray-200 mb-6 mx-5" />
-
-                        {/* Qué incluye mejorado */}
+                        {/* Qué incluye mejorado - Diseño profesional */}
                         {finalDeliverableTypes.length > 0 && (
                             <>
                                 <div className="mb-6 px-5">
@@ -1113,32 +1008,46 @@ export function ServiceReviewPage({
                                     >
                                         Qué incluye
                                     </h3>
-                                    <div className="flex flex-wrap gap-3">
-                                        {finalDeliverableTypes.map((dt) => {
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                        {finalDeliverableTypes.map((dt, idx) => {
                                             const n = (dt.displayName || dt.name).toLowerCase();
                                             let Icon = FileText;
-                                            if (n.includes('video')) Icon = Video;
-                                            else if (n.includes('imagen') || n.includes('foto')) Icon = Image;
-                                            else if (n.includes('documento') || n.includes('informe')) Icon = FileText;
-                                            else if (n.includes('archivo')) Icon = File;
+                                            
+                                            if (n.includes('video')) {
+                                                Icon = Video;
+                                            } else if (n.includes('imagen') || n.includes('foto')) {
+                                                Icon = Image;
+                                            } else if (n.includes('documento') || n.includes('informe')) {
+                                                Icon = FileText;
+                                            } else if (n.includes('archivo')) {
+                                                Icon = File;
+                                            }
 
                                             return (
-                                                <div 
-                                                    key={dt.id} 
-                                                    className="inline-flex items-center gap-2 bg-white text-gray-700 px-4 py-2.5 rounded-xl border-2 border-gray-200 shadow-sm hover:border-gray-300 transition-colors"
-                                                >
-                                                    <Icon className="w-5 h-5 flex-shrink-0 text-gray-600" />
+                                                <div key={dt.id} className="flex items-center gap-1.5">
+                                                    <Icon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
                                                     <span 
                                                         style={{
                                                             fontSize: '14px',
                                                             lineHeight: '20px',
-                                                            fontWeight: 500,
+                                                            fontWeight: 400,
                                                             color: 'rgb(34, 34, 34)',
                                                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                                         }}
                                                     >
                                                         {dt.displayName || dt.name}
                                                     </span>
+                                                    {idx < finalDeliverableTypes.length - 1 && (
+                                                        <span 
+                                                            style={{
+                                                                fontSize: '14px',
+                                                                color: 'rgb(113, 113, 113)',
+                                                                marginLeft: '4px',
+                                                            }}
+                                                        >
+                                                            ·
+                                                        </span>
+                                                    )}
                                                 </div>
                                             );
                                         })}
@@ -1196,7 +1105,7 @@ export function ServiceReviewPage({
                                         Ubicación del experto
                                     </p>
                                 )}
-                                <div className="h-[400px] rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                                <div className="h-[200px] rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
                                     <AppointmentMap
                                         expertLocation={expertLocation}
                                         expertRange={expertRange || 25}
@@ -1205,7 +1114,7 @@ export function ServiceReviewPage({
                                         disabled={true}
                                         showSearch={false}
                                         showCountrySelector={false}
-                                        showExpertMarker={false}
+                                        showExpertMarker={true}
                                         defaultZoom={9}
                                     />
                                 </div>
