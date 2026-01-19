@@ -28,6 +28,11 @@ interface AppointmentMapProps {
   radius?: number;
   service?: any;
   expertCountry?: string | null; // ✅ NUEVO: País del experto para mostrar en el selector
+  // ✅ NUEVAS PROPS PARA MODO SIMPLIFICADO
+  showSearch?: boolean; // Mostrar input de búsqueda
+  showCountrySelector?: boolean; // Mostrar selector de país
+  showExpertMarker?: boolean; // Mostrar marcador verde del experto
+  defaultZoom?: number; // Zoom por defecto (menor = más alejado)
 }
 
 const AppointmentMap: React.FC<AppointmentMapProps> = ({
@@ -41,7 +46,12 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
   expertRange,
   onLocationSelect,
   initialLocation,
-  expertCountry
+  expertCountry,
+  disabled = false,
+  showSearch = true,
+  showCountrySelector = true,
+  showExpertMarker = true,
+  defaultZoom = 10
 }) => {
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
@@ -159,22 +169,23 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
     try {
       const map = new (window as any).google.maps.Map(mapRef.current, {
         center: { lat: memoizedCoordinates.lat, lng: memoizedCoordinates.lng },
-        zoom: 12,
+        zoom: defaultZoom,
         mapTypeId: 'roadmap',
         streetViewControl: false,
-        fullscreenControl: true,
-        zoomControl: true,
+        fullscreenControl: false,
+        zoomControl: false,
         mapTypeControl: false,
         scaleControl: false,
         rotateControl: false,
-        clickableIcons: false
+        clickableIcons: false,
+        draggable: !disabled // Deshabilitar arrastre si está deshabilitado
       });
 
       // Guardar referencia del mapa para poder actualizarlo desde el selector de países
       mapInstanceRef.current = map;
 
-      // Solo crear marcador del experto si las coordenadas son válidas
-      if (isFinite(memoizedCoordinates.lat) && isFinite(memoizedCoordinates.lng)) {
+      // Solo crear marcador del experto si las coordenadas son válidas Y showExpertMarker es true
+      if (showExpertMarker && isFinite(memoizedCoordinates.lat) && isFinite(memoizedCoordinates.lng)) {
         new (window as any).google.maps.Marker({
           position: { lat: memoizedCoordinates.lat, lng: memoizedCoordinates.lng },
           map: map,
@@ -314,6 +325,12 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
 
       // Función para crear marcador
       const createMarker = (lat: number, lng: number, title: string = "Ubicación seleccionada") => {
+        // Si el mapa está deshabilitado, no crear marcadores
+        if (disabled) {
+          console.log('🚫 Mapa deshabilitado, no se creará marcador');
+          return null;
+        }
+        
         try {
           // Validar coordenadas
           if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
@@ -357,12 +374,17 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         }
       };
 
-      // Si hay una ubicación inicial, crear el marcador
-      if (initialLocation) {
+      // Si hay una ubicación inicial, crear el marcador solo si no está deshabilitado
+      if (initialLocation && !disabled) {
         createMarker(initialLocation.latitude, initialLocation.longitude, "Ubicación seleccionada");
       }
 
        const handleMapClick = (event: any) => {
+         // Si el mapa está deshabilitado, no hacer nada
+         if (disabled || !onLocationSelect) {
+           return;
+         }
+         
          if (!event || !event.latLng) {
            console.error('Evento de clic inválido:', event);
            return;
@@ -414,15 +436,17 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
             });
           }
         });
-      };
+      };
 
-       // Agregar listener de clic al mapa
-       map.addListener('click', handleMapClick);
+       // Agregar listener de clic al mapa solo si no está deshabilitado
+      if (!disabled && onLocationSelect) {
+        map.addListener('click', handleMapClick);
+      }
 
-      const searchInput = document.getElementById(searchInputId);
-      if (searchInput) {
-        // Crear SearchBox pero sin vincularlo al mapa para evitar interferencias
-        const searchBox = new (window as any).google.maps.places.SearchBox(searchInput);
+      const searchInput = document.getElementById(searchInputId);
+      if (searchInput && showSearch) {
+        // Crear SearchBox pero sin vincularlo al mapa para evitar interferencias
+        const searchBox = new (window as any).google.maps.places.SearchBox(searchInput);
         
         searchBox.addListener('places_changed', () => {
           const places = searchBox.getPlaces();
@@ -436,8 +460,10 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
               map.setCenter(place.geometry.location);
               map.setZoom(15);
               
-             // Crear marcador para la búsqueda usando la función helper
-             createMarker(placeLat, placeLng, "Ubicación encontrada");
+             // Crear marcador para la búsqueda usando la función helper (solo si no está deshabilitado)
+             if (!disabled) {
+               createMarker(placeLat, placeLng, "Ubicación encontrada");
+             }
 
              const address = place.formatted_address || place.name || `Lat: ${placeLat.toFixed(6)}, Lng: ${placeLng.toFixed(6)}`;
              
@@ -520,40 +546,46 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       <div ref={mapRef} className="w-full h-full rounded-lg overflow-hidden" />
       
       {/* Selector de países y búsqueda - Fuera del overflow-hidden */}
-      <div className="absolute top-4 left-4 right-4 z-[9999] flex gap-2 pointer-events-none">
-        {/* Selector de países */}
-        <div className="pointer-events-auto">
-          <CountrySelector
-            onCountrySelect={(countryCode, coordinates) => {
-              setSelectedCountry(countryCode);
-              if (mapInstanceRef.current) {
-                mapInstanceRef.current.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
-                mapInstanceRef.current.setZoom(coordinates.zoom);
-              }
-            }}
-            currentCountry={selectedCountry}
-            className="flex-shrink-0"
-          />
+      {(showCountrySelector || showSearch) && (
+        <div className="absolute top-4 left-4 right-4 z-[9999] flex gap-2 pointer-events-none">
+          {/* Selector de países */}
+          {showCountrySelector && (
+            <div className="pointer-events-auto">
+              <CountrySelector
+                onCountrySelect={(countryCode, coordinates) => {
+                  setSelectedCountry(countryCode);
+                  if (mapInstanceRef.current) {
+                    mapInstanceRef.current.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
+                    mapInstanceRef.current.setZoom(coordinates.zoom);
+                  }
+                }}
+                currentCountry={selectedCountry}
+                className="flex-shrink-0"
+              />
+            </div>
+          )}
+          
+          {/* Input de búsqueda */}
+          {showSearch && (
+            <div className="relative flex-1 min-w-0 pointer-events-auto">
+              <input
+                type="text"
+                placeholder="Buscar dirección..."
+                className="w-full px-4 py-2.5 pr-10 bg-white/98 backdrop-blur-md border-2 border-gray-300 rounded-lg shadow-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:border-blue-500 transition-all"
+                id={searchInputId}
+              />
+              <svg 
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          )}
         </div>
-        
-        {/* Input de búsqueda */}
-        <div className="relative flex-1 min-w-0 pointer-events-auto">
-          <input
-            type="text"
-            placeholder="Buscar dirección..."
-            className="w-full px-4 py-2.5 pr-10 bg-white/98 backdrop-blur-md border-2 border-gray-300 rounded-lg shadow-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:border-blue-500 transition-all"
-            id={searchInputId}
-          />
-          <svg 
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
