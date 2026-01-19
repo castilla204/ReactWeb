@@ -123,6 +123,15 @@ export interface SearchListDto {
   createdAt: string;
   user: UserDto;
   searchHire: SearchHireDto | null;
+  // ✅ NUEVOS CAMPOS: Información del servicio y experto para cards
+  serviceImageUrl?: string | null; // Primera imagen del servicio
+  expertAvailability?: {
+    daysOfWeek: string[]; // ["Monday", "Tuesday", ...]
+    startTime: string; // "09:00:00"
+    endTime: string; // "18:00:00"
+  } | null; // Horario del experto
+  expertCity?: string | null; // Ciudad del experto
+  categoryName?: string | null; // ✅ NUEVO: Nombre de la categoría (ej: "Hogar", "Coches", "Motos")
 }
 
 export interface SearchHireDto {

@@ -58,6 +58,20 @@ export const API_CONFIG = {
             check: (adId: string) => `${API_PATH}/Likes/check/${adId}`,
             toggle: (adId: string) => `${API_PATH}/Likes/${adId}`,
         },
+        favorites: {
+            toggle: `${API_PATH}/Favorites/toggle`,
+            add: `${API_PATH}/Favorites`,
+            remove: (searchServiceId: number) => `${API_PATH}/Favorites/${searchServiceId}`,
+            check: (searchServiceId: number) => `${API_PATH}/Favorites/check/${searchServiceId}`,
+            checkMultiple: `${API_PATH}/Favorites/check-multiple`,
+            list: (page?: number, pageSize?: number) => {
+                const params = new URLSearchParams();
+                if (page) params.append('page', page.toString());
+                if (pageSize) params.append('pageSize', pageSize.toString());
+                return `${API_PATH}/Favorites${params.toString() ? `?${params.toString()}` : ''}`;
+            },
+            count: (searchServiceId: number) => `${API_PATH}/Favorites/service/${searchServiceId}/count`,
+        },
         subscription: {
             plans: `${API_PATH}/Subscription/plans`,
             current: `${API_PATH}/Subscription/current`,
