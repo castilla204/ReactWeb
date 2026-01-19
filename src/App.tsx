@@ -47,6 +47,7 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import QuienesSomosPage from './pages/QuienesSomosPage';
 import ComoFuncionaPage from './pages/ComoFuncionaPage';
 import FAQPage from './pages/FAQPage';
+import { FavoritesPage } from './pages/FavoritesPage';
 import { AccountSettingsModal } from './components/AccountSettingsModal';
 import { AdminLayout } from './components/layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -631,6 +632,7 @@ const AppContent: React.FC = () => {
                             <Route path="/quienes-somos" element={<QuienesSomosPage />} />
                             <Route path="/como-funciona" element={<ComoFuncionaPage />} />
                             <Route path="/faq" element={<FAQPage />} />
+                            <Route path="/favoritos" element={<FavoritesPage />} />
                             <Route path="/explorar" element={<HomePage />} />
                             <Route path="/" element={<HomePage />} />
                             
