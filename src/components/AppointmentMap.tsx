@@ -193,7 +193,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
           icon: {
             url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
               <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" fill="#10B981" stroke="#059669" stroke-width="2"/>
+                <circle cx="12" cy="12" r="10" fill="#4B5563" stroke="#374151" stroke-width="1.5"/>
                 <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
               </svg>
             `),
@@ -286,11 +286,11 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       // Add a transparent circle to define the boundary (solo si las coordenadas son válidas)
       if (isFinite(memoizedCoordinates.lat) && isFinite(memoizedCoordinates.lng) && isFinite(radiusInMeters)) {
         new (window as any).google.maps.Circle({
-          strokeColor: '#10B981',
-          strokeOpacity: 0.8,
-          strokeWeight: 3,
-          fillColor: 'transparent',
-          fillOpacity: 0,
+          strokeColor: '#6B7280',
+          strokeOpacity: 0.4,
+          strokeWeight: 2,
+          fillColor: '#F3F4F6',
+          fillOpacity: 0.15,
           map: map,
           center: { lat: memoizedCoordinates.lat, lng: memoizedCoordinates.lng },
           radius: radiusInMeters,
