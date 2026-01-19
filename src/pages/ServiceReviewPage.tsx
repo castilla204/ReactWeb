@@ -252,6 +252,9 @@ export function ServiceReviewPage({
 
     // Estado para "Leer más" en detalles del experto
     const [isUserConditionsExpanded, setIsUserConditionsExpanded] = useState(false);
+    
+    // Estado para el tab activo en móvil
+    const [activeTab, setActiveTab] = useState<'about' | 'how'>('about');
     const shouldTruncateUserConditions = (finalUserConditions || '').length > 250; // Aprox 6 líneas
 
     // Estado para "Mostrar más" en reviews
@@ -893,241 +896,380 @@ export function ServiceReviewPage({
                     {/* Barra de separación discreta */}
                     <div className="border-t border-gray-200 my-6"></div>
                     
-                    {/* Descripción del tipo de habitación/servicio */}
-                    {finalService?.serviceTypeName && (
-                        <div className="mb-6 px-5">
-                            <p 
+                    {/* Tabs: Acerca del servicio y ¿Cómo funciona? */}
+                    <div className="mb-6 px-5">
+                        <div className="flex border-b border-gray-200">
+                            <button
+                                onClick={() => setActiveTab('about')}
+                                className="flex-1 py-3 text-center relative"
                                 style={{
-                                    fontSize: '15px',
-                                    lineHeight: '22px',
-                                    fontWeight: 400,
-                                    color: 'rgb(34, 34, 34)',
+                                    fontSize: '16px',
+                                    lineHeight: '20px',
+                                    fontWeight: activeTab === 'about' ? 600 : 400,
+                                    color: activeTab === 'about' ? 'rgb(34, 34, 34)' : 'rgb(113, 113, 113)',
                                     fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    margin: 0,
-                                    padding: 0,
+                                    borderBottom: activeTab === 'about' ? '2px solid rgb(34, 34, 34)' : '2px solid transparent',
+                                    transition: 'all 0.2s',
                                 }}
                             >
-                                {finalService?.serviceTypeName || 'Servicio'} con acceso a zonas comunes.
-                            </p>
+                                Acerca del servicio
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('how')}
+                                className="flex-1 py-3 text-center relative"
+                                style={{
+                                    fontSize: '16px',
+                                    lineHeight: '20px',
+                                    fontWeight: activeTab === 'how' ? 600 : 400,
+                                    color: activeTab === 'how' ? 'rgb(34, 34, 34)' : 'rgb(113, 113, 113)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    borderBottom: activeTab === 'how' ? '2px solid rgb(34, 34, 34)' : '2px solid transparent',
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                ¿Cómo funciona?
+                            </button>
                         </div>
-                    )}
+                        
+                        {/* Contenido del tab "Acerca del servicio" */}
+                        {activeTab === 'about' && (
+                            <div className="pt-6">
+                                {/* Descripción del tipo de habitación/servicio */}
+                                {finalService?.serviceTypeName && (
+                                    <div className="mb-6">
+                                        <p 
+                                            style={{
+                                                fontSize: '15px',
+                                                lineHeight: '22px',
+                                                fontWeight: 400,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                padding: 0,
+                                            }}
+                                        >
+                                            {finalService?.serviceTypeName || 'Servicio'} con acceso a zonas comunes.
+                                        </p>
+                                    </div>
+                                )}
 
-                        {/* Descripción Principal Móvil mejorada - Estilo Airbnb */}
-                        {displayMainDescription && (
-                            <div className="mb-6 px-5" data-plugin-in-point-id="DESCRIPTION_DEFAULT" data-section-id="DESCRIPTION_DEFAULT">
-                                <p 
-                                    className={`whitespace-pre-line ${!isDescriptionExpanded && shouldTruncateDescription ? 'line-clamp-4' : ''}`}
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 400,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        margin: 0,
-                                        padding: 0,
-                                    }}
-                                >
-                                    {displayMainDescription}
-                                </p>
-                                {shouldTruncateDescription && (
-                                    <button 
-                                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                                        style={{
-                                            fontSize: '15px',
-                                            lineHeight: '20px',
-                                            fontWeight: 600,
-                                            color: 'rgb(34, 34, 34)',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            marginTop: '12px',
-                                            padding: 0,
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            textDecoration: 'underline',
-                                            textUnderlineOffset: '2px',
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'none'}
-                                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                                    >
-                                        {isDescriptionExpanded ? 'Leer menos' : 'Leer más'}
-                                    </button>
+                                {/* Descripción Principal Móvil mejorada - Estilo Airbnb */}
+                                {displayMainDescription && (
+                                    <div data-plugin-in-point-id="DESCRIPTION_DEFAULT" data-section-id="DESCRIPTION_DEFAULT">
+                                        <p 
+                                            className="whitespace-pre-line"
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                padding: 0,
+                                            }}
+                                        >
+                                            {displayMainDescription}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Qué incluye mejorado - Diseño profesional */}
+                                {finalDeliverableTypes.length > 0 && (
+                                    <>
+                                        <div className="mb-6 mt-6">
+                                            <h3 
+                                                style={{
+                                                    fontSize: '16px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: 'rgb(34, 34, 34)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    marginBottom: '16px',
+                                                    marginTop: 0,
+                                                    padding: 0,
+                                                }}
+                                            >
+                                                Qué incluye
+                                            </h3>
+                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                                {finalDeliverableTypes.map((dt, idx) => {
+                                                    const n = (dt.displayName || dt.name).toLowerCase();
+                                                    let Icon = FileText;
+                                                    
+                                                    if (n.includes('video')) {
+                                                        Icon = Video;
+                                                    } else if (n.includes('imagen') || n.includes('foto')) {
+                                                        Icon = Image;
+                                                    } else if (n.includes('documento') || n.includes('informe')) {
+                                                        Icon = FileText;
+                                                    } else if (n.includes('archivo')) {
+                                                        Icon = File;
+                                                    }
+
+                                                    return (
+                                                        <div key={dt.id} className="flex items-center gap-1.5">
+                                                            <Icon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                                                            <span 
+                                                                style={{
+                                                                    fontSize: '14px',
+                                                                    lineHeight: '20px',
+                                                                    fontWeight: 400,
+                                                                    color: 'rgb(34, 34, 34)',
+                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                }}
+                                                            >
+                                                                {dt.displayName || dt.name}
+                                                            </span>
+                                                            {idx < finalDeliverableTypes.length - 1 && (
+                                                                <span 
+                                                                    style={{
+                                                                        fontSize: '14px',
+                                                                        color: 'rgb(113, 113, 113)',
+                                                                        marginLeft: '4px',
+                                                                    }}
+                                                                >
+                                                                    ·
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* ✅ MAPA DE RANGO DE TRABAJO DEL EXPERTO */}
+                                {expertLocation ? (
+                                    <div className="mb-6">
+                                        <h3 
+                                            style={{
+                                                fontSize: '16px',
+                                                lineHeight: '20px',
+                                                fontWeight: 600,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                marginBottom: '8px',
+                                                marginTop: 0,
+                                                padding: 0,
+                                            }}
+                                        >
+                                            Zona de cobertura
+                                        </h3>
+                                        {expertRange ? (
+                                            <p 
+                                                style={{
+                                                    fontSize: '14px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 400,
+                                                    color: 'rgb(113, 113, 113)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    marginBottom: '12px',
+                                                    marginTop: 0,
+                                                    padding: 0,
+                                                }}
+                                            >
+                                                El experto cubre un radio de {expertRange} km desde su ubicación
+                                            </p>
+                                        ) : (
+                                            <p 
+                                                style={{
+                                                    fontSize: '14px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 400,
+                                                    color: 'rgb(113, 113, 113)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    marginBottom: '12px',
+                                                    marginTop: 0,
+                                                    padding: 0,
+                                                }}
+                                            >
+                                                Ubicación del experto
+                                            </p>
+                                        )}
+                                        <div className="h-[200px] rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                                            <AppointmentMap
+                                                expertLocation={expertLocation}
+                                                expertRange={expertRange || 25}
+                                                expertCountry={expertCountry}
+                                                className="w-full h-full"
+                                                disabled={true}
+                                                showSearch={false}
+                                                showCountrySelector={false}
+                                                showExpertMarker={true}
+                                                defaultZoom={9}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="mb-8">
+                                        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                                            <p className="text-sm text-yellow-800">
+                                                ℹ️ La información de ubicación del experto no está disponible en este momento.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Información del Experto Móvil mejorada */}
+                                {showSecondaryDescription && (
+                                    <div className="mb-6">
+                                        <h3 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 600,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                marginBottom: '8px',
+                                                marginTop: 0,
+                                                padding: 0,
+                                            }}
+                                        >
+                                            Información adicional del experto
+                                        </h3>
+                                        <p 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(113, 113, 113)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                padding: 0,
+                                            }}
+                                        >
+                                            {finalUserConditions}
+                                        </p>
+                                    </div>
                                 )}
                             </div>
                         )}
-
-                        {/* Información del Experto Móvil mejorada */}
-                        {showSecondaryDescription && (
-                            <div className="mb-6 px-5">
-                                <h3 
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 600,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        marginBottom: '8px',
-                                        marginTop: 0,
-                                        padding: 0,
-                                    }}
-                                >
-                                    Información adicional del experto
-                                </h3>
-                                <p 
+                        
+                        {/* Contenido del tab "¿Cómo funciona?" */}
+                        {activeTab === 'how' && (
+                            <div className="pt-6">
+                                <div 
                                     style={{
                                         fontSize: '14px',
                                         lineHeight: '20px',
                                         fontWeight: 400,
-                                        color: 'rgb(113, 113, 113)',
+                                        color: 'rgb(34, 34, 34)',
                                         fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        margin: 0,
-                                        padding: 0,
                                     }}
                                 >
-                                    {finalUserConditions}
-                                </p>
-                            </div>
-                        )}
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h4 style={{ 
+                                            fontSize: '15px', 
+                                            lineHeight: '20px', 
+                                            fontWeight: 600, 
+                                            marginBottom: '8px', 
+                                            marginTop: 0,
+                                            color: 'rgb(34, 34, 34)',
+                                        }}>
+                                            1. Realiza el pago seguro
+                                        </h4>
+                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
+                                            Una vez que realices el pago, tu dinero queda completamente a salvo en custodia. Se abrirá automáticamente un chat con el experto donde comenzará un flujo de trabajo completamente automatizado gestionado por inspecciono.com.
+                                        </p>
+                                    </div>
 
-                        <div className="h-[1px] bg-gray-200 mb-8 mx-4 sm:mx-6" />
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h4 style={{ 
+                                            fontSize: '15px', 
+                                            lineHeight: '20px', 
+                                            fontWeight: 600, 
+                                            marginBottom: '8px', 
+                                            marginTop: 0,
+                                            color: 'rgb(34, 34, 34)',
+                                        }}>
+                                            2. Propón una cita válida
+                                        </h4>
+                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
+                                            A través del chat automatizado, deberás proponer una fecha, hora y ubicación para la cita. <strong>Es fundamental que la cita cumpla estos requisitos:</strong> debe tener un mínimo de 24 horas de antelación, debe estar dentro del horario disponible del experto (mostrado arriba) y la ubicación debe estar dentro del rango de cobertura del experto (indicado en el mapa). Si no cumple estos requisitos, el sistema automatizado no permitirá realizar la inspección.
+                                        </p>
+                                    </div>
 
-                        {/* Qué incluye mejorado - Diseño profesional */}
-                        {finalDeliverableTypes.length > 0 && (
-                            <>
-                                <div className="mb-6 px-5">
-                                    <h3 
-                                        style={{
-                                            fontSize: '16px',
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h4 style={{ 
+                                            fontSize: '15px', 
+                                            lineHeight: '20px', 
+                                            fontWeight: 600, 
+                                            marginBottom: '8px', 
+                                            marginTop: 0,
+                                            color: 'rgb(34, 34, 34)',
+                                        }}>
+                                            3. Confirmación del experto
+                                        </h4>
+                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
+                                            El experto puede aceptar o rechazar la cita propuesta. Si la rechaza, tendrá una única oportunidad para hacerlo. Si rechaza la cita, se te devolverá el dinero automáticamente y de forma segura. Tu dinero siempre está protegido.
+                                        </p>
+                                    </div>
+
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h4 style={{ 
+                                            fontSize: '15px', 
+                                            lineHeight: '20px', 
+                                            fontWeight: 600, 
+                                            marginBottom: '8px', 
+                                            marginTop: 0,
+                                            color: 'rgb(34, 34, 34)',
+                                        }}>
+                                            4. Realización del servicio
+                                        </h4>
+                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
+                                            Una vez aceptada la cita, el experto realizará la inspección en la fecha, hora y ubicación acordadas. Durante todo este proceso, tu dinero permanece seguro en custodia.
+                                        </p>
+                                    </div>
+
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h4 style={{ 
+                                            fontSize: '15px', 
+                                            lineHeight: '20px', 
+                                            fontWeight: 600, 
+                                            marginBottom: '8px', 
+                                            marginTop: 0,
+                                            color: 'rgb(34, 34, 34)',
+                                        }}>
+                                            5. Entrega y aprobación final
+                                        </h4>
+                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
+                                            El experto te enviará todos los materiales acordados (videos, informes, documentos, etc.) a través del chat. Solo cuando tú, como cliente, apruebes explícitamente que todo está correcto y completo, se liberará el pago al experto. Hasta ese momento, tu dinero permanece completamente seguro en custodia. Si no estás satisfecho, puedes solicitar correcciones y el dinero seguirá protegido.
+                                        </p>
+                                    </div>
+
+                                    <div style={{ 
+                                        marginTop: '24px', 
+                                        padding: '16px', 
+                                        backgroundColor: '#F0F9FF', 
+                                        borderRadius: '12px',
+                                        border: '1px solid #BAE6FD',
+                                    }}>
+                                        <p style={{ 
+                                            marginBottom: '8px', 
+                                            marginTop: 0,
+                                            fontSize: '14px',
                                             lineHeight: '20px',
                                             fontWeight: 600,
                                             color: 'rgb(34, 34, 34)',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            marginBottom: '16px',
+                                        }}>
+                                            🔒 Tu dinero siempre está seguro
+                                        </p>
+                                        <p style={{ 
+                                            marginBottom: 0, 
                                             marginTop: 0,
-                                            padding: 0,
-                                        }}
-                                    >
-                                        Qué incluye
-                                    </h3>
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                        {finalDeliverableTypes.map((dt, idx) => {
-                                            const n = (dt.displayName || dt.name).toLowerCase();
-                                            let Icon = FileText;
-                                            
-                                            if (n.includes('video')) {
-                                                Icon = Video;
-                                            } else if (n.includes('imagen') || n.includes('foto')) {
-                                                Icon = Image;
-                                            } else if (n.includes('documento') || n.includes('informe')) {
-                                                Icon = FileText;
-                                            } else if (n.includes('archivo')) {
-                                                Icon = File;
-                                            }
-
-                                            return (
-                                                <div key={dt.id} className="flex items-center gap-1.5">
-                                                    <Icon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-                                                    <span 
-                                                        style={{
-                                                            fontSize: '14px',
-                                                            lineHeight: '20px',
-                                                            fontWeight: 400,
-                                                            color: 'rgb(34, 34, 34)',
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        {dt.displayName || dt.name}
-                                                    </span>
-                                                    {idx < finalDeliverableTypes.length - 1 && (
-                                                        <span 
-                                                            style={{
-                                                                fontSize: '14px',
-                                                                color: 'rgb(113, 113, 113)',
-                                                                marginLeft: '4px',
-                                                            }}
-                                                        >
-                                                            ·
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
+                                            fontSize: '14px',
+                                            lineHeight: '20px',
+                                            fontWeight: 400,
+                                            color: 'rgb(34, 34, 34)',
+                                        }}>
+                                            Todo el proceso está completamente automatizado y inspecciono.com actúa como mediador y custodio del pago en todo momento. Tu dinero solo se libera cuando apruebas el trabajo completado, garantizando la seguridad y transparencia de la transacción para ambas partes.
+                                        </p>
                                     </div>
                                 </div>
-                                <div className="h-[1px] bg-gray-200 mb-6 mx-5" />
-                            </>
-                        )}
-
-                        {/* ✅ MAPA DE RANGO DE TRABAJO DEL EXPERTO */}
-                        {expertLocation ? (
-                            <div className="mb-6 px-5">
-                                <h3 
-                                    style={{
-                                        fontSize: '16px',
-                                        lineHeight: '20px',
-                                        fontWeight: 600,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        marginBottom: '8px',
-                                        marginTop: 0,
-                                        padding: 0,
-                                    }}
-                                >
-                                    Zona de cobertura
-                                </h3>
-                                {expertRange ? (
-                                    <p 
-                                        style={{
-                                            fontSize: '14px',
-                                            lineHeight: '20px',
-                                            fontWeight: 400,
-                                            color: 'rgb(113, 113, 113)',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            marginBottom: '12px',
-                                            marginTop: 0,
-                                            padding: 0,
-                                        }}
-                                    >
-                                        El experto cubre un radio de {expertRange} km desde su ubicación
-                                    </p>
-                                ) : (
-                                    <p 
-                                        style={{
-                                            fontSize: '14px',
-                                            lineHeight: '20px',
-                                            fontWeight: 400,
-                                            color: 'rgb(113, 113, 113)',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            marginBottom: '12px',
-                                            marginTop: 0,
-                                            padding: 0,
-                                        }}
-                                    >
-                                        Ubicación del experto
-                                    </p>
-                                )}
-                                <div className="h-[200px] rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                                    <AppointmentMap
-                                        expertLocation={expertLocation}
-                                        expertRange={expertRange || 25}
-                                        expertCountry={expertCountry}
-                                        className="w-full h-full"
-                                        disabled={true}
-                                        showSearch={false}
-                                        showCountrySelector={false}
-                                        showExpertMarker={true}
-                                        defaultZoom={9}
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="mb-8 px-5">
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                                    <p className="text-sm text-yellow-800">
-                                        ℹ️ La información de ubicación del experto no está disponible en este momento.
-                                    </p>
-                                </div>
                             </div>
                         )}
+                    </div>
 
                         {/* Reseñas (MÓVIL - ESTILO AIRBNB EXACTO) */}
                         {finalReviews.length > 0 ? (
@@ -2027,6 +2169,119 @@ export function ServiceReviewPage({
                                 )}
                             </div>
 
+                            {/* Barra de separación discreta */}
+                            <div className="border-t border-gray-200 my-6"></div>
+
+                            {/* Sección "Revisor" estilo Airbnb - Desktop */}
+                            <div className="mb-4 px-6">
+                                <div className="flex items-start gap-4">
+                                    <div className="relative flex-shrink-0" style={{ height: '40px', width: '40px' }}>
+                                        <button
+                                            type="button"
+                                            aria-label={`${finalExpertName} es revisor verificado de inspecciono.com. Obtén más información sobre ${finalExpertName}.`}
+                                            className="relative w-full h-full border-none bg-transparent p-0 cursor-pointer"
+                                        >
+                                            <Avatar className="w-10 h-10 flex-shrink-0 border-0" style={{ height: '40px', width: '40px', borderRadius: '50%' }}>
+                                                <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
+                                                <AvatarFallback className="bg-gray-900 text-white font-bold text-sm">
+                                                    {finalExpertName.charAt(0)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            {/* Badge de Superanfitrión */}
+                                            <div className="absolute -bottom-0.5 -right-0.5" style={{ height: '20px', width: '20px' }}>
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 14" aria-hidden="true" role="presentation" focusable="false" style={{ display: 'block', height: '20px', width: '20px' }}>
+                                                    <linearGradient id="superhost-gradient" x1="8.5%" x2="92.18%" y1="17.16%" y2="17.16%">
+                                                        <stop offset="0" stopColor="#e61e4d"></stop>
+                                                        <stop offset=".5" stopColor="#e31c5f"></stop>
+                                                        <stop offset="1" stopColor="#d70466"></stop>
+                                                    </linearGradient>
+                                                    <path fill="#fff" d="M9.93 0c.88 0 1.6.67 1.66 1.52l.01.15v2.15c0 .54-.26 1.05-.7 1.36l-.13.08-3.73 2.17a3.4 3.4 0 1 1-2.48 0L.83 5.26A1.67 1.67 0 0 1 0 3.96L0 3.82V1.67C0 .79.67.07 1.52 0L1.67 0z"></path>
+                                                    <path fill="url(#superhost-gradient)" d="M5.8 8.2a2.4 2.4 0 0 0-.16 4.8h.32a2.4 2.4 0 0 0-.16-4.8zM9.93 1H1.67a.67.67 0 0 0-.66.57l-.01.1v2.15c0 .2.1.39.25.52l.08.05L5.46 6.8c.1.06.2.09.29.1h.1l.1-.02.1-.03.09-.05 4.13-2.4c.17-.1.3-.29.32-.48l.01-.1V1.67a.67.67 0 0 0-.57-.66z"></path>
+                                                </svg>
+                                            </div>
+                                        </button>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            }}
+                                        >
+                                            <div style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(34, 34, 34)', fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
+                                                Revisor: {finalExpertName}
+                                            </div>
+                                            <div className="mt-1" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(113, 113, 113)', fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
+                                                Revisor verificado de inspecciono.com
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Sección "Entre el 1% de los que más gustan" estilo Airbnb */}
+                            {finalRating >= 4.5 && finalReviews.length >= 3 && (
+                                <div className="mb-6 px-5">
+                                    <div className="mb-3">
+                                        <h3 
+                                            style={{
+                                                fontSize: '16px',
+                                                lineHeight: '20px',
+                                                fontWeight: 600,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                marginBottom: '8px',
+                                                marginTop: 0,
+                                                padding: 0,
+                                            }}
+                                        >
+                                            Entre el 1% de los que más gustan
+                                        </h3>
+                                        <p 
+                                            style={{
+                                                fontSize: '15px',
+                                                lineHeight: '22px',
+                                                fontWeight: 400,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                padding: 0,
+                                            }}
+                                        >
+                                            Este es uno de los favoritos de los viajeros, según sus valoraciones, evaluaciones y su fiabilidad.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Barra de separación discreta */}
+                            <div className="border-t border-gray-200 my-6"></div>
+                            
+                            {/* Descripción del tipo de habitación/servicio */}
+                            {finalService?.serviceTypeName && (
+                                <div className="mb-6 px-5">
+                                    <p 
+                                        style={{
+                                            fontSize: '15px',
+                                            lineHeight: '22px',
+                                            fontWeight: 400,
+                                            color: 'rgb(34, 34, 34)',
+                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            margin: 0,
+                                            padding: 0,
+                                        }}
+                                    >
+                                        {finalService?.serviceTypeName || 'Servicio'} con acceso a zonas comunes.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Barra de separación discreta */}
+                            <div className="border-t border-gray-200 my-6"></div>
+
                             {/* Descripción Oficial (ServiceTypeDescription) */}
                             <div className="mb-8">
                                 <h3 
@@ -2044,7 +2299,7 @@ export function ServiceReviewPage({
                                     Acerca del servicio
                                 </h3>
                                     <p 
-                                        className={`whitespace-pre-line ${!isDescriptionExpanded && shouldTruncateDescription ? 'max-h-[4.5em] overflow-hidden' : ''}`}
+                                        className="whitespace-pre-line"
                                         style={{
                                             fontSize: '14px',
                                             lineHeight: '20px',
@@ -2057,29 +2312,6 @@ export function ServiceReviewPage({
                                     >
                                         {finalServiceTypeDescription}
                                     </p>
-                                {shouldTruncateDescription && (
-                                    <button 
-                                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                                        style={{
-                                            fontSize: '14px',
-                                            lineHeight: '20px',
-                                            fontWeight: 600,
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            color: 'rgb(34, 34, 34)',
-                                            marginTop: '8px',
-                                            padding: 0,
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            textDecoration: 'underline',
-                                            textUnderlineOffset: '2px',
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'none'}
-                                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                                    >
-                                        {isDescriptionExpanded ? 'Leer menos' : 'Leer más'}
-                                    </button>
-                                )}
                             </div>
 
                             {/* Información del Experto (User Conditions) */}
@@ -2101,7 +2333,7 @@ export function ServiceReviewPage({
                                     </h3>
                                     <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                                             <p 
-                                                className={`whitespace-pre-line ${!isUserConditionsExpanded && shouldTruncateUserConditions ? 'max-h-[5em] overflow-hidden' : ''}`}
+                                                className="whitespace-pre-line"
                                                 style={{
                                                     fontSize: '14px',
                                                     lineHeight: '20px',
@@ -2114,189 +2346,80 @@ export function ServiceReviewPage({
                                             >
                                                 {finalUserConditions}
                                             </p>
-                                        {shouldTruncateUserConditions && (
-                                            <button 
-                                                onClick={() => setIsUserConditionsExpanded(!isUserConditionsExpanded)}
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    color: 'rgb(113, 113, 113)',
-                                                    marginTop: '4px',
-                                                    padding: 0,
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    cursor: 'pointer',
-                                                    textDecoration: 'underline',
-                                                    textUnderlineOffset: '2px',
-                                                }}
-                                                onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'none'}
-                                                onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                                            >
-                                                {isUserConditionsExpanded ? 'Leer menos' : 'Leer más'}
-                                            </button>
-                                        )}
                                 </div>
                                     </div>
                             )}
 
-                            {/* Entregables (Iconos) - VERSIÓN DESKTOP */}
+                            {/* Qué incluye mejorado - Diseño profesional - Desktop */}
                             {finalDeliverableTypes.length > 0 && (
-                                <div className="mb-4">
-                                    <h3 
-                                        style={{
-                                            fontSize: '14px',
-                                            lineHeight: '20px',
-                                            fontWeight: 600,
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            color: 'rgb(34, 34, 34)',
-                                            marginBottom: '8px',
-                                            marginTop: 0,
-                                            padding: 0,
-                                        }}
-                                    >
-                                        Incluye
-                                    </h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {finalDeliverableTypes.map((dt) => {
-                                            const n = (dt.displayName || dt.name).toLowerCase();
-                                            let Icon = File;
-                                            if (n.includes('video')) Icon = Video;
-                                            else if (n.includes('foto') || n.includes('photo') || n.includes('imagen')) Icon = Image;
-                                            else if (n.includes('informe') || n.includes('report') || n.includes('pdf')) Icon = FileText;
+                                <>
+                                    <div className="mb-6 px-5">
+                                        <h3 
+                                            style={{
+                                                fontSize: '16px',
+                                                lineHeight: '20px',
+                                                fontWeight: 600,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                marginBottom: '16px',
+                                                marginTop: 0,
+                                                padding: 0,
+                                            }}
+                                        >
+                                            Qué incluye
+                                        </h3>
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                            {finalDeliverableTypes.map((dt, idx) => {
+                                                const n = (dt.displayName || dt.name).toLowerCase();
+                                                let Icon = FileText;
+                                                
+                                                if (n.includes('video')) {
+                                                    Icon = Video;
+                                                } else if (n.includes('imagen') || n.includes('foto')) {
+                                                    Icon = Image;
+                                                } else if (n.includes('documento') || n.includes('informe')) {
+                                                    Icon = FileText;
+                                                } else if (n.includes('archivo')) {
+                                                    Icon = File;
+                                                }
 
-                                            return (
-                                                <div 
-                                                    key={dt.id} 
-                                                    className="flex items-center gap-1.5 bg-blue-50/50 px-2.5 py-1.5 rounded-md border border-blue-100/50" 
-                                                    title={(dt as any).description}
-                                                    style={{
-                                                        color: 'rgb(29, 78, 216)',
-                                                    }}
-                                                >
-                                                    <Icon className="w-3.5 h-3.5" />
-                                                    <span 
-                                                        style={{
-                                                            fontSize: '12px',
-                                                            lineHeight: '16px',
-                                                            fontWeight: 500,
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        {dt.displayName || dt.name}
-                                                    </span>
-                                </div>
-                                            );
-                                        })}
+                                                return (
+                                                    <div key={dt.id} className="flex items-center gap-1.5">
+                                                        <Icon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                                                        <span 
+                                                            style={{
+                                                                fontSize: '14px',
+                                                                lineHeight: '20px',
+                                                                fontWeight: 400,
+                                                                color: 'rgb(34, 34, 34)',
+                                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                            }}
+                                                        >
+                                                            {dt.displayName || dt.name}
+                                                        </span>
+                                                        {idx < finalDeliverableTypes.length - 1 && (
+                                                            <span 
+                                                                style={{
+                                                                    fontSize: '14px',
+                                                                    color: 'rgb(113, 113, 113)',
+                                                                    marginLeft: '4px',
+                                                                }}
+                                                            >
+                                                                ·
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
-                                )}
-
-                            {/* GARANTÍA INSPECCIONO (DESKTOP - SUPER COMPACTA / 2 COLUMNAS) */}
-                            <div className="mb-4 border border-gray-200 rounded-lg p-4 shadow-sm bg-white">
-                                <div className="flex items-center gap-1 mb-3">
-                                    <span 
-                                        style={{
-                                            fontSize: '16px',
-                                            lineHeight: '20px',
-                                            fontWeight: 600,
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            color: '#0066CC',
-                                            letterSpacing: '-0.01em',
-                                        }}
-                                    >
-                                        inspecciono
-                                    </span>
-                                    <span 
-                                        style={{
-                                            fontSize: '16px',
-                                            lineHeight: '20px',
-                                            fontWeight: 400,
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            color: 'rgb(34, 34, 34)',
-                                        }}
-                                    >
-                                        protección
-                                    </span>
-                            </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="flex gap-2.5 items-start">
-                                        <div className="mt-0.5 flex-shrink-0">
-                                            <BadgeCheck className="w-4 h-4 text-[#0066CC] stroke-[2]" />
-                                            </div>
-                                        <div>
-                                            <h4 
-                                                style={{
-                                                    fontSize: '12px',
-                                                    lineHeight: '16px',
-                                                    fontWeight: 600,
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    color: 'rgb(34, 34, 34)',
-                                                    marginBottom: '2px',
-                                                    marginTop: 0,
-                                                    padding: 0,
-                                                }}
-                                            >
-                                                Calidad verificada
-                                            </h4>
-                                            <p 
-                                                style={{
-                                                    fontSize: '12px',
-                                                    lineHeight: '16px',
-                                                    fontWeight: 400,
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    color: 'rgb(113, 113, 113)',
-                                                    margin: 0,
-                                                    padding: 0,
-                                                }}
-                                            >
-                                                Auditoría manual garantizada.
-                                            </p>
-                                    </div>
-                                </div>
-
-                                    <div className="flex gap-2.5 items-start">
-                                        <div className="mt-0.5 flex-shrink-0">
-                                            <Lock className="w-4 h-4 text-[#0066CC] stroke-[2]" />
-                                        </div>
-                                        <div>
-                                            <h4 
-                                                style={{
-                                                    fontSize: '12px',
-                                                    lineHeight: '16px',
-                                                    fontWeight: 600,
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    color: 'rgb(34, 34, 34)',
-                                                    marginBottom: '2px',
-                                                    marginTop: 0,
-                                                    padding: 0,
-                                                }}
-                                            >
-                                                Pago en custodia
-                                            </h4>
-                                            <p 
-                                                style={{
-                                                    fontSize: '12px',
-                                                    lineHeight: '16px',
-                                                    fontWeight: 400,
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    color: 'rgb(113, 113, 113)',
-                                                    margin: 0,
-                                                    padding: 0,
-                                                }}
-                                            >
-                                                Dinero seguro hasta entrega.
-                                </p>
-                            </div>
-                                    </div>
-                                </div>
-                        </div>
+                                    <div className="h-[1px] bg-gray-200 mb-6 mx-5" />
+                                </>
+                            )}
 
                             {/* ✅ MAPA DE RANGO DE TRABAJO DEL EXPERTO - Desktop */}
                             {expertLocation ? (
-                                <div className="mb-6">
+                                <div className="mb-6 px-5">
                                     <h3 
                                         style={{
                                             fontSize: '16px',
@@ -2342,7 +2465,7 @@ export function ServiceReviewPage({
                                             Ubicación del experto
                                         </p>
                                     )}
-                                    <div className="h-[300px] rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                                    <div className="h-[200px] rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
                                         <AppointmentMap
                                             expertLocation={expertLocation}
                                             expertRange={expertRange || 25}
@@ -2351,20 +2474,22 @@ export function ServiceReviewPage({
                                             disabled={true}
                                             showSearch={false}
                                             showCountrySelector={false}
-                                            showExpertMarker={false}
+                                            showExpertMarker={true}
                                             defaultZoom={9}
                                         />
                                     </div>
                                 </div>
                             ) : (
-                                <div className="mb-6">
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                                        <p className="text-xs text-yellow-800">
-                                            ℹ️ La información de ubicación del experto no está disponible.
+                                <div className="mb-8 px-5">
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                                        <p className="text-sm text-yellow-800">
+                                            ℹ️ La información de ubicación del experto no está disponible en este momento.
                                         </p>
                                     </div>
                                 </div>
                             )}
+
+
 
                             {/* TARJETA DE RESERVA COMPACTA */}
                             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
