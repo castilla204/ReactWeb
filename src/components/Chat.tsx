@@ -539,8 +539,18 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
     return (
         <div className="flex flex-col h-full w-full bg-gray-50" style={{ minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: '1 1 0%', margin: 0, padding: 0 }}>
             {/* Messages Container - Takes remaining space with padding for input */}
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8" style={{ minHeight: 0, flex: '1 1 0%', overflowY: 'auto', overflowX: 'hidden', margin: 0, paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: 0, marginBottom: 0 }}>
-                <div className="space-y-3 sm:space-y-4 pt-4 sm:pt-6 lg:pt-8" data-chat-messages style={{ paddingBottom: 0, marginBottom: 0 }}>
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8" style={{ 
+                minHeight: 0, 
+                flex: '1 1 0%', 
+                overflowY: 'auto', 
+                overflowX: 'hidden', 
+                margin: 0, 
+                paddingLeft: '1rem', 
+                paddingRight: '1rem', 
+                paddingBottom: '120px',
+                marginBottom: 0 
+            }}>
+                <div className="space-y-4 pt-5 sm:pt-6 lg:pt-8 pb-4" data-chat-messages style={{ paddingBottom: '1rem', marginBottom: 0 }}>
                     {/* Mensajes de bienvenida - Siempre se muestran */}
                     {isExpert ? (
                         <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-8 lg:pt-12' : 'pt-4 lg:pt-6'} pb-6 text-center px-4`}>
@@ -555,7 +565,14 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                     </Avatar>
                                     <div className="flex-1 flex justify-start">
                                         <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
-                                            <p className="text-sm text-gray-700 leading-relaxed">
+                                            <p 
+                                                className="text-gray-700 leading-relaxed"
+                                                style={{
+                                                    fontSize: '15px',
+                                                    lineHeight: '20px',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
                                                 ¡Hola! 👋 Bienvenido al chat de este servicio. El cliente te ha contratado y está esperando poder comunicarse contigo.
                                             </p>
                                         </div>
@@ -573,10 +590,24 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                     <div className="flex-1 flex justify-start">
                                         <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
                                             <div className="space-y-2">
-                                                <p className="text-sm text-gray-700 leading-relaxed mb-2 font-medium">
+                                                <p 
+                                                    className="text-gray-700 leading-relaxed mb-2 font-medium"
+                                                    style={{
+                                                        fontSize: '15px',
+                                                        lineHeight: '20px',
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    }}
+                                                >
                                                     Aquí tienes algunas cosas que puedes hacer:
                                                 </p>
-                                                <ul className="space-y-1.5 text-xs text-gray-600">
+                                                <ul 
+                                                    className="space-y-1.5 text-gray-600"
+                                                    style={{
+                                                        fontSize: '13px',
+                                                        lineHeight: '18px',
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    }}
+                                                >
                                                     <li className="flex items-start gap-2">
                                                         <MessageSquare className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
                                                         <span>Responder preguntas sobre el servicio</span>
@@ -614,7 +645,14 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                     </Avatar>
                                     <div className="flex-1 flex justify-start">
                                         <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
-                                            <p className="text-sm text-gray-700 leading-relaxed">
+                                            <p 
+                                                className="text-gray-700 leading-relaxed"
+                                                style={{
+                                                    fontSize: '15px',
+                                                    lineHeight: '20px',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
                                                 ¡Hola! 👋 Soy <span className="font-semibold text-gray-900">{expertData?.name || 'tu experto'}</span>. Estoy aquí para ayudarte con tu búsqueda. Puedes preguntarme cualquier cosa sobre el servicio.
                                             </p>
                                         </div>
@@ -632,7 +670,14 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                     <div className="flex-1 flex justify-start">
                                         <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
                                             <div className="space-y-2">
-                                                <p className="text-sm text-gray-700 leading-relaxed mb-2 font-medium">
+                                                <p 
+                                                    className="text-gray-700 leading-relaxed mb-2 font-medium"
+                                                    style={{
+                                                        fontSize: '15px',
+                                                        lineHeight: '20px',
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    }}
+                                                >
                                                     ¿En qué puedo ayudarte hoy?
                                                 </p>
                                                 {conversation.messages?.length === 0 && (
@@ -642,7 +687,12 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                                                 onClick={() => {
                                                                     setNewMessage("¿Podrías explicarme cómo funciona el servicio?");
                                                                 }}
-                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-sm text-gray-700 group flex items-center gap-2 font-medium"
+                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-gray-700 group flex items-center gap-2 font-medium"
+                                                                style={{
+                                                                    fontSize: '15px',
+                                                                    lineHeight: '20px',
+                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                }}
                                                             >
                                                                 <div className="p-1 rounded-md bg-blue-600 text-white">
                                                                     <HelpCircle className="w-3.5 h-3.5" />
@@ -653,7 +703,12 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                                                 onClick={() => {
                                                                     setNewMessage("¿Cuándo podemos coordinar la cita?");
                                                                 }}
-                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-sm text-gray-700 group flex items-center gap-2 font-medium"
+                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-gray-700 group flex items-center gap-2 font-medium"
+                                                                style={{
+                                                                    fontSize: '15px',
+                                                                    lineHeight: '20px',
+                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                }}
                                                             >
                                                                 <div className="p-1 rounded-md bg-orange-500 text-white">
                                                                     <Calendar className="w-3.5 h-3.5" />
@@ -664,7 +719,12 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                                                 onClick={() => {
                                                                     setNewMessage("¿Qué documentos necesito?");
                                                                 }}
-                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-sm text-gray-700 group flex items-center gap-2 font-medium"
+                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-gray-700 group flex items-center gap-2 font-medium"
+                                                                style={{
+                                                                    fontSize: '15px',
+                                                                    lineHeight: '20px',
+                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                }}
                                                             >
                                                                 <div className="p-1 rounded-md bg-blue-600 text-white">
                                                                     <FileText className="w-3.5 h-3.5" />
@@ -780,17 +840,29 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                                     group.isOwn 
                                                         ? 'bg-blue-600 text-white' 
                                                         : 'bg-white text-gray-900 border border-gray-200'
-                                                } rounded-2xl px-4 py-2.5 shadow-sm`}>
-                                                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                                                } rounded-2xl px-4 py-3 shadow-sm`}>
+                                                    <p 
+                                                        className="leading-relaxed whitespace-pre-wrap break-words"
+                                                        style={{
+                                                            fontSize: '15px',
+                                                            lineHeight: '20px',
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
                                                         {message.content}
                                                     </p>
                                                     {/* Timestamp y botón compartir */}
-                                                    <div className={`flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t ${
+                                                    <div className={`flex items-center justify-between gap-2 mt-2 pt-2 border-t ${
                                                         group.isOwn 
                                                             ? 'border-white/20 text-white/70' 
                                                             : 'border-gray-200 text-gray-500'
                                                     }`}>
-                                                        <span className="text-xs">
+                                                        <span 
+                                                            className="text-xs"
+                                                            style={{
+                                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                            }}
+                                                        >
                                                             {(() => {
                                                                 const date = new Date(message.sentAt);
                                                                 return isNaN(date.getTime()) 
@@ -1017,26 +1089,56 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
             </div>
 
             {/* Fixed Input Area at Bottom - Optimizado para móvil y desktop - Siempre visible */}
-            <div className="flex-shrink-0 bg-white z-10" style={{ flexShrink: 0, minHeight: 'auto', margin: 0, padding: 0, borderTop: 'none', boxShadow: 'none', marginBottom: 0, paddingBottom: 0 }}>
-                <div className="w-full px-3 pt-2 pb-1 sm:px-4 sm:pt-2 sm:pb-1 lg:px-6 lg:pt-2.5 lg:pb-1" style={{ paddingBottom: '0.125rem', paddingTop: '0.5rem', marginBottom: 0 }}>
+            <div className="flex-shrink-0 bg-white z-10 border-t border-gray-200 lg:relative lg:static" style={{ 
+                flexShrink: 0, 
+                minHeight: 'auto', 
+                margin: 0, 
+                padding: 0, 
+                marginBottom: 0, 
+                paddingBottom: 0,
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.05)',
+            }}>
+                <div className="w-full px-4 pt-4 pb-4 sm:px-4 sm:pt-4 sm:pb-4 lg:px-6 lg:pt-3 lg:pb-3" style={{ 
+                    paddingBottom: 'max(1rem, calc(1rem + env(safe-area-inset-bottom, 0px)))', 
+                    paddingTop: '1rem', 
+                    marginBottom: 0 
+                }}>
                     <div className="max-w-4xl mx-auto">
-                        {/* PromptInput Container - Más limpio */}
-                        <div className="relative bg-white border border-gray-300 rounded-xl shadow-sm overflow-hidden">
+                        {/* PromptInput Container - Más limpio y moderno */}
+                        <div className="relative bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden focus-within:border-blue-400 focus-within:shadow-md transition-all duration-200">
                             {/* Header - Attachments */}
                             {(selectedFiles.length > 0 || location) && (
-                                <div className="px-3 py-2 border-b border-gray-200 bg-gray-50">
+                                <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/80">
                                     <div className="flex flex-wrap gap-2">
                                         {selectedFiles.map((file, index) => (
                                             <div
                                                 key={index}
-                                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-white border border-gray-200 text-xs"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-xs shadow-sm"
+                                                style={{
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
                                             >
-                                                <Paperclip className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                                                <Paperclip className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-gray-900 truncate max-w-[100px] sm:max-w-[120px]">
+                                                    <p 
+                                                        className="font-medium text-gray-900 truncate max-w-[100px] sm:max-w-[120px]"
+                                                        style={{
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
                                                         {file.name}
                                                     </p>
-                                                    <p className="text-gray-500 text-[10px]">
+                                                    <p 
+                                                        className="text-gray-500"
+                                                        style={{
+                                                            fontSize: '11px',
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
                                                         {formatFileSize(file.size)}
                                                     </p>
                                                 </div>
@@ -1054,9 +1156,20 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                             </div>
                                         ))}
                                         {location && (
-                                            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-green-50 border border-green-200 text-xs">
-                                                <MapPin className="w-3 h-3 text-green-600 flex-shrink-0" />
-                                                <div className="font-medium text-green-700 text-[10px] sm:text-xs">
+                                            <div 
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-xs shadow-sm"
+                                                style={{
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
+                                                <MapPin className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                                                <div 
+                                                    className="font-medium text-green-700"
+                                                    style={{
+                                                        fontSize: '11px',
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    }}
+                                                >
                                                     {parseFloat(location.latitude).toFixed(4)}, {parseFloat(location.longitude).toFixed(4)}
                                                 </div>
                                                 <button
@@ -1073,7 +1186,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                             )}
 
                             {/* Body - Textarea - Más limpio */}
-                            <div className="px-3 py-2">
+                            <div className="px-5 py-3.5">
                                 <textarea
                                     value={newMessage}
                                     onChange={(e) => {
@@ -1083,9 +1196,15 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                         e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
                                     }}
                                     placeholder="Escribe un mensaje..."
-                                    className="w-full bg-transparent resize-none text-gray-900 placeholder:text-gray-400 text-sm sm:text-base leading-relaxed focus:outline-none border-0"
+                                    className="w-full bg-transparent resize-none text-gray-900 placeholder:text-gray-400 leading-relaxed focus:outline-none border-0 focus:ring-0"
                                     rows={1}
-                                    style={{ minHeight: '40px', maxHeight: '120px' }}
+                                    style={{ 
+                                        minHeight: '48px', 
+                                        maxHeight: '120px',
+                                        fontSize: '16px',
+                                        lineHeight: '22px',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    }}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
                                             e.preventDefault();
@@ -1097,19 +1216,19 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                             </div>
 
                             {/* Footer - Tools and Submit - Más limpio */}
-                            <div className="px-3 py-2 border-t border-gray-200 bg-gray-50 flex items-center justify-between gap-2 min-w-0">
+                            <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3 min-w-0">
                                 {/* Tools - Left side */}
-                                <div className="flex items-center gap-1 flex-shrink-0">
+                                <div className="flex items-center gap-2.5 flex-shrink-0">
                                     <label className="cursor-pointer">
                                         <Button
                                             type="button"
                                             variant="ghost"
                                             size="icon"
                                             asChild
-                                            className="h-8 w-8 rounded-md hover:bg-gray-200 transition-colors"
+                                            className="h-10 w-10 rounded-full hover:bg-gray-200/80 transition-all active:scale-95"
                                         >
                                             <span>
-                                                <Paperclip className="w-4 h-4 text-gray-600" />
+                                                <Paperclip className="w-4.5 h-4.5 text-gray-600" />
                                                 <span className="sr-only">Adjuntar archivo</span>
                                             </span>
                                         </Button>
@@ -1127,10 +1246,10 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                         variant="ghost"
                                         size="icon"
                                         onClick={handleOpenMapModal}
-                                        className="h-8 w-8 rounded-md hover:bg-gray-200 transition-colors"
+                                        className="h-10 w-10 rounded-full hover:bg-gray-200/80 transition-all active:scale-95"
                                         title="Seleccionar ubicación"
                                     >
-                                        <MapPin className="w-4 h-4 text-gray-600" />
+                                        <MapPin className="w-4.5 h-4.5 text-gray-600" />
                                         <span className="sr-only">Ubicación</span>
                                     </Button>
                                 </div>
@@ -1140,21 +1259,21 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                     type="button"
                                     onClick={handleSendMessage}
                                     size="icon"
-                                    className={`h-8 w-8 rounded-md transition-all duration-200 shrink-0 ${
+                                    className={`h-10 w-10 rounded-full transition-all duration-200 shrink-0 shadow-sm ${
                                         isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
                                             ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                             : messageSent
-                                            ? 'bg-green-500 text-white hover:bg-green-600'
-                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                            ? 'bg-green-500 text-white hover:bg-green-600 active:scale-95'
+                                            : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
                                     }`}
                                     disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
                                 >
                                     {isSending ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <Loader2 className="w-4.5 h-4.5 animate-spin" />
                                     ) : messageSent ? (
-                                        <CheckCircle2 className="w-4 h-4" />
+                                        <CheckCircle2 className="w-4.5 h-4.5" />
                                     ) : (
-                                        <Send className="w-4 h-4" />
+                                        <Send className="w-4.5 h-4.5" />
                                     )}
                                     <span className="sr-only">Enviar mensaje</span>
                                 </Button>

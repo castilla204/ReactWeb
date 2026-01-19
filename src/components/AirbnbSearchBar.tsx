@@ -765,7 +765,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
       {isMobileSearchOpen && typeof document !== 'undefined' && createPortal(
         <>
           {/* Botón cerrar arriba derecha - Fuera del div principal - Estilo mejorado */}
-          <div className="md:hidden fixed top-6 right-6 z-[60]">
+          <div className="md:hidden fixed top-3 right-3 z-[60]">
             <button
               type="button"
               onClick={() => {
@@ -775,7 +775,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   setIsMobileSearchOpen(false);
                 }
               }}
-              className="p-2.5 bg-white hover:bg-gray-50 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl border-0"
+              className="p-2 bg-gray-200 hover:bg-gray-300 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl border-0"
               aria-label="Cerrar"
               style={{
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)'
@@ -788,7 +788,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   aria-hidden="true" 
                   role="presentation" 
                   focusable="false"
-                  style={{ display: 'block', fill: 'none', height: '18px', width: '18px', stroke: 'currentcolor', strokeWidth: 2.5, overflow: 'visible' }}
+                  style={{ display: 'block', fill: 'none', height: '14px', width: '14px', stroke: 'currentcolor', strokeWidth: 2.5, overflow: 'visible' }}
                 >
                 <path d="m6 6 20 20M26 6 6 26"></path>
               </svg>
@@ -797,13 +797,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
           </div>
 
           <div 
-            className="md:hidden fixed inset-0 z-50 bg-white flex flex-col"
+            className="md:hidden fixed inset-0 z-50 bg-white flex flex-col pb-4"
             style={{
               boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)'
             }}
           >
             <div className="flex-1 overflow-y-auto">
-              <div className="pt-20 px-3 pb-4 space-y-3">
+              <div className="pt-12 px-3 pb-4 space-y-3">
               {/* Categorías - Div más alto con categorías visibles */}
               <div 
                 ref={categoriesContainerRef}
@@ -823,7 +823,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 {expandedAccordion === 'where' ? (
                   <>
                     {/* Header con título y buscador cuando está expandido - Estilo Airbnb */}
-                    <div className="px-3 pt-20 pb-3 border-b border-gray-200">
+                    <div className="px-3 pt-12 pb-3 border-b border-gray-200">
                       <h2 
                         tabIndex={-1}
                         className="mb-3"
