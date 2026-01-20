@@ -439,6 +439,7 @@ export function useServices({
             conditions: string;
             durationInHours: number | null;
             images?: File[];
+            imagesToDelete?: number[]; // ✅ NUEVO: IDs de imágenes a eliminar
             selectedDeliverableTypes?: number[];
         }) => {
             setIsUpdatingService(true);
@@ -462,10 +463,19 @@ export function useServices({
             if (serviceData.selectedDeliverableTypes && serviceData.selectedDeliverableTypes.length > 0) {
                 formData.append('SelectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));
             }
+            
+            // ✅ NUEVO: Agregar imágenes a eliminar (IDs)
+            if (serviceData.imagesToDelete && serviceData.imagesToDelete.length > 0) {
+                formData.append('ImagesToDelete', JSON.stringify(serviceData.imagesToDelete));
+                console.log('🔍 useServices: Adding ImagesToDelete:', serviceData.imagesToDelete);
+            }
+            
+            // ✅ NUEVO: Agregar nuevas imágenes a agregar
             if (serviceData.images && serviceData.images.length > 0) {
                 serviceData.images.forEach((image) => {
                     formData.append('Images', image);
                 });
+                console.log('🔍 useServices: Adding new Images:', serviceData.images.length);
             }
 
             console.log('🔍 useServices: FormData contents (updateService):');
