@@ -32,28 +32,44 @@ export const useSearchDetailsComplete = (
     refetchOnWindowFocus = false
   } = { ...restOptions, gcTime: restOptions.gcTime || 300000 };
 
-  // ✅ Usar searchHireId si está disponible, sino usar searchId
-  const useSearchHireEndpoint = !!searchHireId;
+  // ✅ SIEMPRE usar searchHireId - El endpoint por searchId fue eliminado
+  // Si no hay searchHireId, intentar obtenerlo del searchId primero
   const identifier = searchHireId || searchId;
-  const queryKey = useSearchHireEndpoint 
+  const queryKey = searchHireId 
     ? ['searchDetailsCompleteByHire', searchHireId]
     : ['searchDetailsComplete', searchId];
 
   const query = useQuery({
     queryKey,
     queryFn: async (): Promise<SearchDetailsCompleteDto> => {
-      const endpoint = useSearchHireEndpoint
-        ? API_CONFIG.endpoints.expert.hires.detailsComplete(searchHireId!)
-        : API_CONFIG.endpoints.search.detailsComplete(searchId!);
+      // ✅ SIEMPRE usar el endpoint de searchHire
+      // Si no tenemos searchHireId, necesitamos obtenerlo primero
+      let finalSearchHireId = searchHireId;
       
-      console.log(`[useSearchDetailsComplete] Fetching data for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}: ${identifier}`);
+      if (!finalSearchHireId && searchId) {
+        // Intentar obtener searchHireId desde el searchId
+        try {
+          const searchResponse = await fetchApi<any>(API_CONFIG.endpoints.search.get(searchId));
+          finalSearchHireId = searchResponse?.searchHire?.id || searchResponse?.SearchHire?.Id;
+        } catch (error) {
+          console.warn(`[useSearchDetailsComplete] Could not get searchHireId from searchId ${searchId}:`, error);
+        }
+      }
+      
+      if (!finalSearchHireId) {
+        throw new Error('searchHireId is required. The endpoint /api/Search/{searchId}/details-complete has been removed. Please use /api/searchhire/{id}/details-complete instead.');
+      }
+      
+      const endpoint = API_CONFIG.endpoints.expert.hires.detailsComplete(finalSearchHireId);
+      
+      console.log(`[useSearchDetailsComplete] Fetching data for searchHireId: ${finalSearchHireId}`);
       console.log(`[useSearchDetailsComplete] Endpoint: ${endpoint}`);
       
       const rawResponse = await fetchApi<any>(endpoint);
       
       // ✅ DEBUG: Verificar si hay algún problema con la respuesta
       if (!rawResponse) {
-        console.error(`[useSearchDetailsComplete] No response received for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}: ${identifier}`);
+        console.error(`[useSearchDetailsComplete] No response received for searchHireId: ${finalSearchHireId}`);
         throw new Error('No response received from API');
       }
       
@@ -309,9 +325,9 @@ export const useSearchDetailsComplete = (
       };
       
       // ✅ Cuando se usa searchHireId, el search puede ser null (cliente eliminado) - esto es válido
-      // ✅ Cuando se usa searchId, el search debería estar presente, pero verificamos
-      if (!useSearchHireEndpoint && !normalizedResponse.search) {
-        console.warn(`[useSearchDetailsComplete] No search data in response for searchId: ${searchId} - esto puede ser normal si el cliente borró su cuenta`);
+      // El endpoint siempre usa searchHireId ahora, así que search puede ser null
+      if (!normalizedResponse.search) {
+        console.warn(`[useSearchDetailsComplete] No search data in response for searchHireId: ${finalSearchHireId} - esto puede ser normal si el cliente borró su cuenta`);
         // No lanzamos error, permitimos que search sea null
       }
       
@@ -361,7 +377,7 @@ export const useSearchDetailsComplete = (
       }
       
       if (!normalizedResponse?.search?.searchHire) {
-        console.log(`[useSearchDetailsComplete] No searchHire data found for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}: ${identifier}`);
+        console.log(`[useSearchDetailsComplete] No searchHire data found for searchHireId: ${finalSearchHireId}`);
         console.log(`[useSearchDetailsComplete] Search data structure:`, {
           hasSearch: !!normalizedResponse.search,
           searchId: normalizedResponse.search?.id,
