@@ -39,7 +39,8 @@ export const API_CONFIG = {
             toggleActive: (id: number) => `${API_PATH}/Search/${id}/toggle-active`,
             revise: (id: number) => `${API_PATH}/Search/${id}/revise`,
             // ✅ ENDPOINT OPTIMIZADO (details-additional eliminado)
-            detailsComplete: (id: number) => `${API_PATH}/Search/${id}/details-complete`,
+            // ❌ ELIMINADO: detailsComplete - Usar expert.hires.detailsComplete en su lugar
+            // detailsComplete: (id: number) => `${API_PATH}/Search/${id}/details-complete`,
         },
         searchParameters: {
             create: (searchId: number) => `${API_PATH}/SearchParameter/${searchId}`,

@@ -90,20 +90,80 @@ export const useDisputes = () => {
         
         const response = await fetchApi<any>(url);
         
-        // ✅ NORMALIZAR respuesta según la guía
+        // ✅ NORMALIZAR respuesta según la guía (soporta PascalCase y camelCase)
+        const disputesArray = response.Disputes || response.disputes || [];
+        const paginationData = response.Pagination || response.pagination;
+        const statsData = response.Stats || response.stats;
+        
         const normalized: DisputeListResponseDto = {
-          disputes: response.disputes || [],
-          pagination: response.pagination ? {
-            currentPage: response.pagination.currentPage || response.pagination.page || 1,
-            pageSize: response.pagination.pageSize || filters.pageSize || 20,
-            totalCount: response.pagination.totalCount || response.pagination.totalItems || 0,
-            totalPages: response.pagination.totalPages || 0,
-            hasNext: response.pagination.hasNext ?? response.pagination.hasNextPage ?? false,
-            hasPrevious: response.pagination.hasPrevious ?? response.pagination.hasPreviousPage ?? false,
+          disputes: disputesArray.map((dispute: any) => ({
+            id: dispute.Id ?? dispute.id,
+            searchHireId: dispute.SearchHireId ?? dispute.searchHireId,
+            reporterId: dispute.ReporterId ?? dispute.reporterId,
+            status: dispute.Status ?? dispute.status,
+            reason: dispute.Reason ?? dispute.reason,
+            resolutionComments: dispute.ResolutionComments ?? dispute.resolutionComments,
+            createdAt: dispute.CreatedAt ?? dispute.createdAt,
+            expertResponse: dispute.ExpertResponse ?? dispute.expertResponse,
+            expertResponseDeadline: dispute.ExpertResponseDeadline ?? dispute.expertResponseDeadline,
+            expertResponseAt: dispute.ExpertResponseAt ?? dispute.expertResponseAt,
+            canExpertRespond: dispute.CanExpertRespond ?? dispute.canExpertRespond,
+            searchHire: dispute.SearchHire ? {
+              id: dispute.SearchHire.Id ?? dispute.SearchHire.id,
+              status: dispute.SearchHire.Status ?? dispute.SearchHire.status,
+              amount: dispute.SearchHire.Amount ?? dispute.SearchHire.amount,
+              createdAt: dispute.SearchHire.CreatedAt ?? dispute.SearchHire.createdAt,
+            } : dispute.searchHire,
+            reporter: dispute.Reporter ? {
+              id: dispute.Reporter.Id ?? dispute.Reporter.id,
+              email: dispute.Reporter.Email ?? dispute.Reporter.email,
+              name: dispute.Reporter.Name ?? dispute.Reporter.name,
+              profilePictureUrl: dispute.Reporter.ProfilePictureUrl ?? dispute.Reporter.profilePictureUrl,
+            } : dispute.reporter,
+            client: dispute.Client ? {
+              id: dispute.Client.Id ?? dispute.Client.id,
+              email: dispute.Client.Email ?? dispute.Client.email,
+              name: dispute.Client.Name ?? dispute.Client.name,
+              profilePictureUrl: dispute.Client.ProfilePictureUrl ?? dispute.Client.profilePictureUrl,
+            } : dispute.client,
+            expert: dispute.Expert ? {
+              id: dispute.Expert.Id ?? dispute.Expert.id,
+              email: dispute.Expert.Email ?? dispute.Expert.email,
+              name: dispute.Expert.Name ?? dispute.Expert.name,
+              profilePictureUrl: dispute.Expert.ProfilePictureUrl ?? dispute.Expert.profilePictureUrl,
+            } : dispute.expert,
+            search: dispute.Search ? {
+              id: dispute.Search.Id ?? dispute.Search.id,
+              title: dispute.Search.Title ?? dispute.Search.title,
+              description: dispute.Search.Description ?? dispute.Search.description,
+              createdAt: dispute.Search.CreatedAt ?? dispute.Search.createdAt,
+            } : dispute.search,
+            files: (dispute.Files || dispute.files || []).map((file: any) => ({
+              id: file.Id ?? file.id,
+              fileName: file.FileName ?? file.fileName,
+              filePath: file.FilePath ?? file.filePath,
+              fileType: file.FileType ?? file.fileType,
+              fileSize: file.FileSize ?? file.fileSize,
+              createdAt: file.CreatedAt ?? file.createdAt,
+              fileUrl: file.FileUrl ?? file.fileUrl,
+              uploadedByUserId: file.UploadedByUserId ?? file.uploadedByUserId,
+              uploadedByUserName: file.UploadedByUserName ?? file.uploadedByUserName,
+              uploadedByUserEmail: file.UploadedByUserEmail ?? file.uploadedByUserEmail,
+              fileCategory: file.FileCategory ?? file.fileCategory,
+              fileCategoryLabel: file.FileCategoryLabel ?? file.fileCategoryLabel,
+            })),
+          })),
+          pagination: paginationData ? {
+            currentPage: paginationData.CurrentPage ?? paginationData.currentPage ?? paginationData.page ?? 1,
+            pageSize: paginationData.PageSize ?? paginationData.pageSize ?? filters.pageSize ?? 20,
+            totalCount: paginationData.TotalCount ?? paginationData.totalCount ?? paginationData.totalItems ?? 0,
+            totalPages: paginationData.TotalPages ?? paginationData.totalPages ?? 0,
+            hasNext: paginationData.HasNext ?? paginationData.hasNext ?? paginationData.hasNextPage ?? false,
+            hasPrevious: paginationData.HasPrevious ?? paginationData.hasPrevious ?? paginationData.hasPreviousPage ?? false,
             // Campos legacy para compatibilidad
-            totalItems: response.pagination.totalItems,
-            hasNextPage: response.pagination.hasNextPage,
-            hasPreviousPage: response.pagination.hasPreviousPage,
+            totalItems: paginationData.TotalItems ?? paginationData.totalItems,
+            hasNextPage: paginationData.HasNextPage ?? paginationData.hasNextPage,
+            hasPreviousPage: paginationData.HasPreviousPage ?? paginationData.hasPreviousPage,
           } : {
             currentPage: 1,
             pageSize: filters.pageSize || 20,
@@ -112,7 +172,14 @@ export const useDisputes = () => {
             hasNext: false,
             hasPrevious: false,
           },
-          stats: response.stats || {
+          stats: statsData ? {
+            pendingDisputes: statsData.PendingDisputes ?? statsData.pendingDisputes ?? 0,
+            resolvedDisputes: statsData.ResolvedDisputes ?? statsData.resolvedDisputes ?? 0,
+            clientDisputes: statsData.ClientDisputes ?? statsData.clientDisputes ?? 0,
+            expertDisputes: statsData.ExpertDisputes ?? statsData.expertDisputes ?? 0,
+            thisWeekDisputes: statsData.ThisWeekDisputes ?? statsData.thisWeekDisputes ?? 0,
+            thisMonthDisputes: statsData.ThisMonthDisputes ?? statsData.thisMonthDisputes ?? 0,
+          } : {
             pendingDisputes: 0,
             resolvedDisputes: 0,
             clientDisputes: 0,
