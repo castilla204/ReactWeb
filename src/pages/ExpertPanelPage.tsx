@@ -1405,6 +1405,9 @@ export function ExpertPanelPage() {
                         isUpdatingService={isUpdatingService}
                         existingImages={existingImages}
                         setExistingImages={setExistingImages}
+                        existingImagesWithIds={existingImagesWithIds}
+                        imagesToDelete={imagesToDelete}
+                        setImagesToDelete={setImagesToDelete}
                     />
                     {profile && (
                         <ProfileEditForm

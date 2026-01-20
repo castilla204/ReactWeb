@@ -100,6 +100,9 @@ interface ServiceFormProps {
     isUpdatingService?: boolean;
     existingImages?: string[];
     setExistingImages?: (images: string[]) => void;
+    existingImagesWithIds?: Array<{ id: number; url: string }>; // ✅ NUEVO: Imágenes con IDs
+    imagesToDelete?: number[]; // ✅ NUEVO: IDs de imágenes a eliminar
+    setImagesToDelete?: (ids: number[]) => void; // ✅ NUEVO: Función para actualizar IDs a eliminar
 }
 
 export function ServiceForm({
@@ -125,6 +128,9 @@ export function ServiceForm({
     isUpdatingService,
     existingImages: propExistingImages,
     setExistingImages: propSetExistingImages,
+    existingImagesWithIds: propExistingImagesWithIds,
+    imagesToDelete: propImagesToDelete = [],
+    setImagesToDelete: propSetImagesToDelete,
 }: ServiceFormProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { deliverableTypes, isLoading: isLoadingDeliverableTypes, error: deliverableTypesError } = useDeliverableTypes();
@@ -375,13 +381,36 @@ export function ServiceForm({
         setFormData({ ...formData, serviceTypeId: newSelected[0] || '' });
     };
 
-    const removeExistingImage = (index: number) => {
+    const removeExistingImage = (imageId: number) => {
+        // ✅ NUEVO: Si hay IDs disponibles, agregar a imagesToDelete
+        if (propSetImagesToDelete && imageId > 0) {
+            const currentIdsToDelete = propImagesToDelete || [];
+            if (!currentIdsToDelete.includes(imageId)) {
+                propSetImagesToDelete([...currentIdsToDelete, imageId]);
+            }
+        }
+        
+        // También remover de la lista visual (para retrocompatibilidad)
         const currentImages = propExistingImages || existingImages;
-        const newImages = currentImages.filter((_, i) => i !== index);
-        if (propSetExistingImages) {
-            propSetExistingImages(newImages);
+        // Si tenemos imágenes con IDs, encontrar el índice por ID
+        if (propExistingImagesWithIds && propExistingImagesWithIds.length > 0) {
+            const imageIndex = propExistingImagesWithIds.findIndex(img => img.id === imageId);
+            if (imageIndex !== -1) {
+                const newImages = currentImages.filter((_, i) => i !== imageIndex);
+                if (propSetExistingImages) {
+                    propSetExistingImages(newImages);
+                } else {
+                    setExistingImages(newImages);
+                }
+            }
         } else {
-            setExistingImages(newImages);
+            // Fallback: usar índice directamente
+            const newImages = currentImages.filter((_, i) => i !== imageId);
+            if (propSetExistingImages) {
+                propSetExistingImages(newImages);
+            } else {
+                setExistingImages(newImages);
+            }
         }
     };
 
@@ -414,6 +443,13 @@ export function ServiceForm({
     };
 
     const getCurrentExistingImages = () => {
+        // ✅ NUEVO: Si tenemos imágenes con IDs, filtrar las que no están marcadas para eliminar
+        if (propExistingImagesWithIds && propExistingImagesWithIds.length > 0) {
+            const idsToDelete = propImagesToDelete || [];
+            return propExistingImagesWithIds
+                .filter(img => !idsToDelete.includes(img.id))
+                .map(img => img.url);
+        }
         return propExistingImages || existingImages;
     };
 
@@ -738,16 +774,18 @@ export function ServiceForm({
                                 Imágenes del servicio ({getTotalImagesCount()})
                             </p>
                             {/* Mensaje informativo cuando hay cambios */}
-                            {(getCurrentExistingImages().length !== (editingService?.imageUrls?.length || 0) || selectedImages.length > 0) && editingService && (
-                                <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md p-3">
+                            {((propImagesToDelete && propImagesToDelete.length > 0) || selectedImages.length > 0) && editingService && (
+                                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3">
                                     <div className="flex items-start gap-2">
-                                        <div className="text-amber-600 dark:text-amber-400 mt-0.5">⚠️</div>
-                                        <div className="text-sm text-amber-800 dark:text-amber-200">
+                                        <div className="text-blue-600 dark:text-blue-400 mt-0.5">ℹ️</div>
+                                        <div className="text-sm text-blue-800 dark:text-blue-200">
                                             <p className="font-medium mb-1">Cambios en las imágenes:</p>
-                                            {selectedImages.length > 0 ? (
-                                                <p>Las nuevas imágenes reemplazarán todas las existentes.</p>
+                                            {selectedImages.length > 0 && (propImagesToDelete && propImagesToDelete.length > 0) ? (
+                                                <p>Se agregarán {selectedImages.length} nueva(s) imagen(es) y se eliminarán {propImagesToDelete.length} imagen(es). Las demás se conservarán.</p>
+                                            ) : selectedImages.length > 0 ? (
+                                                <p>Se agregarán {selectedImages.length} nueva(s) imagen(es). Las imágenes existentes se conservarán.</p>
                                             ) : (
-                                                <p>Se eliminarán las imágenes seleccionadas.</p>
+                                                <p>Se eliminarán {propImagesToDelete?.length || 0} imagen(es). Las demás se conservarán.</p>
                                             )}
                                         </div>
                                     </div>
@@ -756,27 +794,34 @@ export function ServiceForm({
                             
                             <div className="grid grid-cols-2 gap-3">
                                 {/* Imágenes existentes */}
-                                {getCurrentExistingImages().map((imageUrl, index) => (
-                                    <div key={`existing-${index}`} className="relative group">
-                                        <img
-                                            src={imageUrl}
-                                            alt={`Imagen ${index + 1}`}
-                                            className="w-full h-24 object-cover rounded-md border border-border shadow-sm group-hover:shadow-md transition-shadow"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="icon"
-                                            onClick={() => removeExistingImage(index)}
-                                            className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </Button>
-                                        <div className="absolute bottom-1 left-1 bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs px-2 py-0.5 rounded-full">
-                                            Actual
+                                {(() => {
+                                    // ✅ NUEVO: Usar imágenes con IDs si están disponibles
+                                    const imagesToShow = propExistingImagesWithIds && propExistingImagesWithIds.length > 0
+                                        ? propExistingImagesWithIds.filter(img => !(propImagesToDelete || []).includes(img.id))
+                                        : getCurrentExistingImages().map((url, index) => ({ id: -(index + 1), url }));
+                                    
+                                    return imagesToShow.map((image) => (
+                                        <div key={`existing-${image.id}`} className="relative group">
+                                            <img
+                                                src={image.url}
+                                                alt={`Imagen ${image.id}`}
+                                                className="w-full h-24 object-cover rounded-md border border-border shadow-sm group-hover:shadow-md transition-shadow"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                onClick={() => removeExistingImage(image.id)}
+                                                className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </Button>
+                                            <div className="absolute bottom-1 left-1 bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                                                Actual
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ));
+                                })()}
                                 
                                 {/* Imágenes nuevas */}
                                 {selectedImages.map((image, index) => (
