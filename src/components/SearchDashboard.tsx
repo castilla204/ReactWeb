@@ -464,47 +464,27 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                     </div>
 
                     {/* Cards Skeleton */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                        {[...Array(6)].map((_, i) => (
-                            <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 shadow-sm">
-                                {/* Header */}
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="flex-1 space-y-2">
-                                        <div className="h-6 bg-gray-200 rounded-md w-4/5 animate-pulse"></div>
-                                        <div className="h-4 bg-gray-200 rounded-md w-full animate-pulse"></div>
-                                        <div className="h-4 bg-gray-200 rounded-md w-3/5 animate-pulse"></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
+                        {[...Array(10)].map((_, i) => (
+                            <div key={i} className="bg-white border border-gray-200/80 rounded-2xl overflow-hidden shadow-sm">
+                                {/* Content skeleton */}
+                                <div className="p-3.5 sm:p-4 space-y-2.5 relative">
+                                    {/* Small image skeleton in top right */}
+                                    <div className="absolute top-3.5 right-3.5 w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gray-200 animate-pulse"></div>
+                                    
+                                    <div className="flex items-start justify-between mb-2 pr-20">
+                                        <div className="h-6 bg-gray-200 rounded-lg w-24 animate-pulse"></div>
+                                        <div className="h-6 bg-gray-200 rounded-full w-20 animate-pulse"></div>
                                     </div>
-                                    <div className="w-7 h-7 bg-gray-200 rounded-full ml-3 animate-pulse"></div>
+                                    <div className="h-4 bg-gray-200 rounded-md w-3/4 animate-pulse"></div>
+                                    <div className="h-3 bg-gray-200 rounded-md w-1/2 animate-pulse"></div>
+                                    <div className="h-3 bg-gray-200 rounded-md w-full animate-pulse"></div>
+                                    <div className="h-3 bg-gray-200 rounded-md w-4/5 animate-pulse"></div>
+                                    <div className="flex items-center justify-between pt-2.5 border-t border-gray-100">
+                                        <div className="h-3 bg-gray-200 rounded-md w-16 animate-pulse"></div>
+                                        <div className="h-3 bg-gray-200 rounded-md w-12 animate-pulse"></div>
+                                    </div>
                                 </div>
-                                
-                                {/* Meta Info */}
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
-                                        <div className="h-4 bg-gray-200 rounded-md w-20 animate-pulse"></div>
-                                    </div>
-                                    <div className="h-4 bg-gray-200 rounded-md w-16 animate-pulse"></div>
-                                </div>
-                                
-                                {/* Status */}
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-20 h-6 bg-gray-200 rounded-full animate-pulse"></div>
-                                        <div className="w-24 h-6 bg-gray-200 rounded-full animate-pulse"></div>
-                                    </div>
-                                    <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
-                                </div>
-                                
-                                {/* Expert info (sometimes) */}
-                                {i % 3 === 0 && (
-                                    <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
-                                        <div className="flex-1 space-y-1.5">
-                                            <div className="h-4 bg-gray-200 rounded-md w-24 animate-pulse"></div>
-                                            <div className="h-3 bg-gray-200 rounded-md w-32 animate-pulse"></div>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         ))}
                     </div>
@@ -955,7 +935,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                     </EmptyHeader>
                 </Empty>
             ) : (viewMode === 'grid' || isMobile) ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
                     {filteredSearches.map((search) => {
                         const hasUnreadMessages = search.unreadMessagesCount > 0;
 
@@ -963,58 +943,50 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                             <div
                                 key={search.id}
                                 onClick={() => handleSearchClick(search.id)}
-                                className={`group bg-gray-50 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 relative flex flex-col
-                                    border border-gray-200 shadow-md hover:border-gray-300 hover:shadow-[0_0_20px_rgba(59,130,246,0.4),0_0_40px_rgba(147,51,234,0.3),0_0_60px_rgba(236,72,153,0.2)]
-                                    ${isAdmin && !search.isRevised ? 'ring-2 ring-red-200 bg-red-50' : ''}
+                                className={`group bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 relative flex flex-col
+                                    border border-gray-200/80 shadow-sm hover:border-gray-300/80 hover:shadow-md hover:-translate-y-0.5
+                                    ${isAdmin && !search.isRevised ? 'ring-2 ring-red-200/50 bg-red-50/50' : ''}
                                 `}
                             >
-                                {/* Imagen del servicio - Arriba */}
-                                <div className="relative w-full aspect-[3/1] bg-gray-100 overflow-hidden">
-                                    {search.serviceImageUrl ? (
-                                        <img
-                                            src={search.serviceImageUrl}
-                                            alt={search.title}
-                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                            onError={(e) => {
-                                                console.error('[SearchDashboard] Error loading image:', search.serviceImageUrl);
-                                                const target = e.target as HTMLImageElement;
-                                                target.style.display = 'none';
-                                                const placeholder = target.parentElement?.querySelector('.image-placeholder') as HTMLElement;
-                                                if (placeholder) {
-                                                    placeholder.style.display = 'flex';
-                                                }
-                                            }}
-                                        />
-                                    ) : null}
-                                    {/* Placeholder */}
-                                    <div 
-                                        className={`image-placeholder absolute inset-0 flex items-center justify-center bg-gray-200 ${search.serviceImageUrl ? 'hidden' : 'flex'}`}
-                                    >
-                                        <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                        </svg>
-                                    </div>
-                                    
-                                    {/* Badge de categoría superpuesto */}
-                                    <div className="absolute top-3 left-3">
-                                        <span 
-                                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/95 backdrop-blur-sm shadow-sm"
-                                            style={{
-                                                fontSize: '12px',
-                                                lineHeight: '16px',
-                                                fontWeight: 500,
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                color: 'rgb(34, 34, 34)',
-                                            }}
-                                        >
-                                            <CategoryImage categoryId={search.category} categoryName={search.categoryName || getCategoryName(search.category)} size="sm" />
-                                            {search.categoryName || getCategoryName(search.category)}
-                                        </span>
-                                    </div>
+                                {/* Contenido */}
+                                <div className="p-3.5 sm:p-4 flex flex-col flex-1 relative">
+                                    {/* Imagen pequeña en esquina superior derecha */}
+                                    {search.serviceImageUrl && (
+                                        <div className="absolute top-3.5 right-3.5 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-gray-200/60 shadow-sm">
+                                            <img
+                                                src={search.serviceImageUrl}
+                                                alt={search.title}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    console.error('[SearchDashboard] Error loading image:', search.serviceImageUrl);
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.style.display = 'none';
+                                                }}
+                                            />
+                                        </div>
+                                    )}
 
-                                    {/* Status Badge superpuesto */}
-                                    {search.searchHire && (
-                                        <div className="absolute top-3 right-3">
+                                    {/* Header con badges */}
+                                    <div className="flex items-start justify-between mb-2 pr-20">
+                                        {/* Badge de categoría */}
+                                        <div>
+                                            <span 
+                                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 border border-gray-200/60"
+                                                style={{
+                                                    fontSize: '11px',
+                                                    lineHeight: '14px',
+                                                    fontWeight: 500,
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    color: 'rgb(34, 34, 34)',
+                                                }}
+                                            >
+                                                <CategoryImage categoryId={search.category} categoryName={search.categoryName || getCategoryName(search.category)} size="sm" />
+                                                <span className="truncate max-w-[80px]">{search.categoryName || getCategoryName(search.category)}</span>
+                                            </span>
+                                        </div>
+
+                                        {/* Status Badge */}
+                                        {search.searchHire && (
                                             <StatusBadge 
                                                 statusInfo={(() => {
                                                     const info = getStatusInfoWithFallback(
@@ -1030,59 +1002,15 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                     return info;
                                                 })()}
                                                 size="sm"
-                                                className="shadow-sm bg-white/95 backdrop-blur-sm"
                                             />
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Contenido - Abajo */}
-                                <div className="p-4 sm:p-5 flex flex-col flex-1">
-                                    {/* Ubicación y disponibilidad */}
-                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                        {search.expertCity && (
-                                            <div className="flex items-center gap-1">
-                                                <MapPin className="w-3.5 h-3.5" style={{ color: 'rgb(106, 106, 106)' }} />
-                                                <span 
-                                                    style={{
-                                                        fontSize: '12px',
-                                                        lineHeight: '16px',
-                                                        fontWeight: 400,
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        color: 'rgb(106, 106, 106)',
-                                                    }}
-                                                >
-                                                    {search.expertCity}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {search.expertAvailability && search.expertCity && (
-                                            <span style={{ color: 'rgb(200, 200, 200)' }}>•</span>
-                                        )}
-                                        {search.expertAvailability && (
-                                            <div className="flex items-center gap-1">
-                                                <Clock className="w-3.5 h-3.5" style={{ color: 'rgb(106, 106, 106)' }} />
-                                                <span 
-                                                    style={{
-                                                        fontSize: '12px',
-                                                        lineHeight: '16px',
-                                                        fontWeight: 400,
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        color: 'rgb(106, 106, 106)',
-                                                    }}
-                                                >
-                                                    Disponible
-                                                </span>
-                                            </div>
                                         )}
                                     </div>
-
                                     {/* Título */}
                                     <h3 
-                                        className="mb-2 line-clamp-2"
+                                        className={`mb-1.5 line-clamp-2 ${search.serviceImageUrl ? 'pr-20' : ''}`}
                                         style={{
-                                            fontSize: '16px',
-                                            lineHeight: '22px',
+                                            fontSize: '15px',
+                                            lineHeight: '20px',
                                             fontWeight: 600,
                                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                             color: 'rgb(34, 34, 34)',
@@ -1091,15 +1019,55 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                         {search.title}
                                     </h3>
 
+                                    {/* Ubicación y disponibilidad */}
+                                    <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                                        {search.expertCity && (
+                                            <div className="flex items-center gap-1">
+                                                <MapPin className="w-3 h-3" style={{ color: 'rgb(113, 113, 113)' }} />
+                                                <span 
+                                                    className="truncate max-w-[100px]"
+                                                    style={{
+                                                        fontSize: '11px',
+                                                        lineHeight: '14px',
+                                                        fontWeight: 400,
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        color: 'rgb(113, 113, 113)',
+                                                    }}
+                                                >
+                                                    {search.expertCity}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {search.expertAvailability && search.expertCity && (
+                                            <span style={{ color: 'rgb(200, 200, 200)' }} className="text-[10px]">•</span>
+                                        )}
+                                        {search.expertAvailability && (
+                                            <div className="flex items-center gap-1">
+                                                <Clock className="w-3 h-3" style={{ color: 'rgb(113, 113, 113)' }} />
+                                                <span 
+                                                    style={{
+                                                        fontSize: '11px',
+                                                        lineHeight: '14px',
+                                                        fontWeight: 400,
+                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        color: 'rgb(113, 113, 113)',
+                                                    }}
+                                                >
+                                                    Disponible
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {/* Descripción */}
                                     <p 
-                                        className="mb-3 line-clamp-2 flex-1"
+                                        className="mb-2.5 line-clamp-2 flex-1"
                                         style={{
-                                            fontSize: '14px',
-                                            lineHeight: '20px',
+                                            fontSize: '12px',
+                                            lineHeight: '16px',
                                             fontWeight: 400,
                                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            color: 'rgb(106, 106, 106)',
+                                            color: 'rgb(113, 113, 113)',
                                         }}
                                     >
                                         {search.description || 'Sin descripción adicional'}
@@ -1108,16 +1076,16 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                     {/* Disponibilidad detallada */}
                                     {search.expertAvailability && (
                                         <div 
-                                            className="mb-3 flex flex-wrap items-center gap-1.5"
+                                            className="mb-2.5 flex flex-wrap items-center gap-1"
                                             style={{
-                                                fontSize: '11px',
-                                                lineHeight: '14px',
+                                                fontSize: '10px',
+                                                lineHeight: '12px',
                                                 fontWeight: 400,
                                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                                 color: 'rgb(34, 34, 34)',
                                             }}
                                         >
-                                            {search.expertAvailability.daysOfWeek.slice(0, 5).map((day: string, idx: number) => {
+                                            {search.expertAvailability.daysOfWeek.slice(0, 4).map((day: string, idx: number) => {
                                                 const dayMap: Record<string, string> = {
                                                     'Monday': 'L',
                                                     'Tuesday': 'M',
@@ -1128,70 +1096,55 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                                     'Sunday': 'D'
                                                 };
                                                 return (
-                                                    <span key={idx} className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-700 text-xs">
+                                                    <span key={idx} className="px-1.5 py-0.5 bg-gray-50 rounded-md text-gray-600 border border-gray-100">
                                                         {dayMap[day] || day.charAt(0)}
                                                     </span>
                                                 );
                                             })}
-                                            {search.expertAvailability.daysOfWeek.length > 5 && (
-                                                <span className="text-gray-600 text-xs">+{search.expertAvailability.daysOfWeek.length - 5}</span>
+                                            {search.expertAvailability.daysOfWeek.length > 4 && (
+                                                <span className="text-gray-500">+{search.expertAvailability.daysOfWeek.length - 4}</span>
                                             )}
-                                            <span className="text-gray-600 text-xs">
-                                                {search.expertAvailability.startTime.substring(0, 5)} - {search.expertAvailability.endTime.substring(0, 5)}
-                                            </span>
                                         </div>
                                     )}
 
                                     {/* Footer con acciones */}
-                                    <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto gap-6">
-                                        <div className="flex items-center gap-3">
-                                            {/* Enlace "Ver más" */}
+                                    <div className="flex items-center justify-between pt-2.5 border-t border-gray-100/80 mt-auto gap-3">
+                                        {/* Mensajes no leídos */}
+                                        {hasUnreadMessages && (
                                             <div 
-                                                className="flex items-center gap-1.5 cursor-pointer group/link"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleSearchClick(search.id);
-                                                }}
+                                                className="flex items-center gap-1 px-2 py-1 bg-[#ff385c]/10 rounded-lg border border-[#ff385c]/20"
                                                 style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 500,
+                                                    fontSize: '11px',
+                                                    lineHeight: '14px',
+                                                    fontWeight: 600,
                                                     fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    color: 'rgb(34, 34, 34)',
+                                                    color: '#ff385c',
                                                 }}
                                             >
-                                                <span className="group-hover/link:underline">Ver más</span>
-                                                <ArrowRight className="w-4 h-4 transition-transform group-hover/link:translate-x-1" />
+                                                <MessageSquare className="w-3 h-3" />
+                                                <span>{search.unreadMessagesCount}</span>
                                             </div>
+                                        )}
+                                        {!hasUnreadMessages && <div></div>}
 
-                                            {/* Mensajes no leídos */}
-                                            {hasUnreadMessages && (
-                                                <div 
-                                                    className="flex items-center gap-1.5 px-2 py-1 bg-[#ff385c]/10 rounded-full"
-                                                    style={{
-                                                        fontSize: '12px',
-                                                        lineHeight: '16px',
-                                                        fontWeight: 600,
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        color: '#ff385c',
-                                                    }}
-                                                >
-                                                    <MessageSquare className="w-3.5 h-3.5" />
-                                                    <span>{search.unreadMessagesCount}</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Botón de acción (plus) */}
-                                        <button
+                                        {/* Enlace "Ver más" */}
+                                        <div 
+                                            className="flex items-center gap-1 cursor-pointer group/link"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleSearchClick(search.id);
                                             }}
-                                            className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 group/btn flex-shrink-0"
+                                            style={{
+                                                fontSize: '12px',
+                                                lineHeight: '16px',
+                                                fontWeight: 500,
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                color: 'rgb(34, 34, 34)',
+                                            }}
                                         >
-                                            <Plus className="w-4 h-4 text-gray-700 group-hover/btn:text-gray-900" />
-                                        </button>
+                                            <span className="group-hover/link:underline">Ver más</span>
+                                            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover/link:translate-x-0.5" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

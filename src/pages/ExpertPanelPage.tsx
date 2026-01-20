@@ -56,6 +56,11 @@ interface Hire {
     amount: number;
 }
 
+interface ServiceImage {
+    id: number;
+    url: string;
+}
+
 interface Service {
     id: number;
     expertProfileId?: number;
@@ -65,6 +70,7 @@ interface Service {
     conditions: string;
     durationInHours: number | null;
     imageUrls: string[];
+    images?: ServiceImage[]; // Imágenes con IDs para conservación
     createdAt?: string;
     updatedAt?: string;
     selectedDeliverableTypes?: Array<{
@@ -125,6 +131,8 @@ export function ExpertPanelPage() {
     });
     const [editingService, setEditingService] = useState<Service | null>(null);
     const [existingImages, setExistingImages] = useState<string[]>([]);
+    const [existingImagesWithIds, setExistingImagesWithIds] = useState<ServiceImage[]>([]); // Imágenes con IDs
+    const [imagesToDelete, setImagesToDelete] = useState<number[]>([]); // IDs de imágenes a eliminar
     const [showProfileEditForm, setShowProfileEditForm] = useState(false);
     const [filters, setFilters] = useState<{
         clientName: string;
@@ -435,6 +443,8 @@ export function ExpertPanelPage() {
         });
         setSelectedImages([]);
         setExistingImages([]);
+        setExistingImagesWithIds([]);
+        setImagesToDelete([]);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -486,6 +496,24 @@ export function ExpertPanelPage() {
         });
         setSelectedImages([]);
         setExistingImages(service.imageUrls || []);
+        
+        // ✅ NUEVO: Cargar imágenes con IDs si están disponibles
+        // Si el servicio tiene images con IDs, usarlos; si no, crear estructura desde imageUrls
+        if (service.images && service.images.length > 0) {
+            setExistingImagesWithIds(service.images);
+        } else if (service.imageUrls && service.imageUrls.length > 0) {
+            // Si no vienen con IDs, crear estructura temporal (el backend debería proporcionar IDs)
+            // Por ahora, usamos índices negativos como placeholders
+            const imagesWithIds: ServiceImage[] = service.imageUrls.map((url, index) => ({
+                id: -(index + 1), // IDs temporales negativos
+                url: url
+            }));
+            setExistingImagesWithIds(imagesWithIds);
+        } else {
+            setExistingImagesWithIds([]);
+        }
+        
+        setImagesToDelete([]); // Resetear imágenes a eliminar
         setFormErrors({});
         setShowServiceForm(true);
     };
@@ -507,32 +535,20 @@ export function ExpertPanelPage() {
         console.log('🔍 Updating service with selectedDeliverableTypes:', formData.selectedDeliverableTypes);
         console.log('🔍 Existing images to keep:', existingImages);
         console.log('🔍 Original images:', editingService.imageUrls);
+        console.log('🔍 Images to delete (IDs):', imagesToDelete);
         
         try {
-            // Determinar si necesitamos enviar imágenes
-            const originalImages = editingService.imageUrls || [];
-            const hasRemovedImages = existingImages.length !== originalImages.length;
-            const hasNewImages = selectedImages.length > 0;
+            // ✅ NUEVO: Calcular qué imágenes se eliminaron comparando las originales con las actuales
+            const originalImagesWithIds = existingImagesWithIds;
+            const currentImageIds = existingImagesWithIds
+                .filter(img => !imagesToDelete.includes(img.id))
+                .map(img => img.id);
             
-            // Si se removieron imágenes existentes O se agregaron nuevas, necesitamos actualizar
-            const needsImageUpdate = hasRemovedImages || hasNewImages;
+            // Filtrar IDs válidos (positivos) para eliminar
+            const validImagesToDelete = imagesToDelete.filter(id => id > 0);
             
-            let imagesToSend = undefined;
-            if (needsImageUpdate) {
-                // Necesitamos combinar las imágenes existentes que quiere mantener con las nuevas
-                // Como el backend reemplaza todas las imágenes, necesitamos enviar todas las que queremos mantener
-                
-                if (hasRemovedImages && !hasNewImages) {
-                    // Solo se eliminaron imágenes, no se agregaron nuevas
-                    // En este caso, no podemos mantener las existentes sin enviar algo
-                    // Tendremos que trabajar con las limitaciones del backend actual
-                    imagesToSend = selectedImages; // Esto será un array vacío, efectivamente eliminando todas
-                } else if (hasNewImages) {
-                    // Se agregaron nuevas imágenes
-                    // El backend reemplazará todas las imágenes con las nuevas
-                    imagesToSend = selectedImages;
-                }
-            }
+            // Las nuevas imágenes a agregar
+            const newImages = selectedImages.length > 0 ? selectedImages : undefined;
             
             // ✅ CRÍTICO: Validar y convertir todos los valores antes de enviar
             const categoryId = formData.categoryId ? parseInt(String(formData.categoryId)) : 0;
@@ -554,7 +570,8 @@ export function ExpertPanelPage() {
                 price: price,
                 conditions: conditions,
                 durationInHours: durationInHours,
-                images: imagesToSend,
+                images: newImages, // Nuevas imágenes a agregar
+                imagesToDelete: validImagesToDelete.length > 0 ? validImagesToDelete : undefined, // IDs de imágenes a eliminar
                 selectedDeliverableTypes: formData.selectedDeliverableTypes || [],
             });
 
