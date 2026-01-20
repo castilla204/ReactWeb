@@ -245,7 +245,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
         useSearchActions();
     
     // Hook para obtener información de disputa
-    const { expertResponse, debugDispute } = useDisputes();
+    const { expertResponse, debugDispute, useDisputeBySearchHire } = useDisputes();
+    
+    // Obtener disputa por searchHireId
+    const { data: disputeData, isLoading: isLoadingDispute } = useDisputeBySearchHire(searchHireId || 0);
     
     // Hook para enviar respuesta del experto
     const { sendExpertResponse, isSubmitting: isSubmittingExpertResponse } = useExpertResponse();
@@ -275,10 +278,27 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             
             if (response.ok) {
                 const result = await response.json();
+                
+                // Si no hay tipos requeridos definidos, no hay nada que validar
+                if (!result.requiredTypes || result.requiredTypes.length === 0) {
+                    return { canSubmit: true, message: 'No hay tipos de archivo requeridos definidos' };
+                }
+                
+                // Si hay tipos requeridos pero no hay archivos subidos
+                if (result.uploadedFiles && result.uploadedFiles.length === 0 && result.requiredTypes && result.requiredTypes.length > 0) {
+                    const requiredText = result.requiredTypes.map((t: any) => t.displayName || t.name).join(' y ');
+                    return { 
+                        canSubmit: false, 
+                        message: `Para enviar el reporte necesitas subir: ${requiredText}` 
+                    };
+                }
+                
                 if (result.isValid) {
                     return { canSubmit: true, message: 'Todos los archivos requeridos están subidos' };
                 } else {
-                    const missingText = result.missingFiles.join(' y ');
+                    const missingText = result.missingFiles && result.missingFiles.length > 0 
+                        ? result.missingFiles.join(' y ')
+                        : result.requiredTypes?.map((t: any) => t.displayName || t.name).join(' y ') || 'archivos requeridos';
                     return { 
                         canSubmit: false, 
                         message: `Para enviar el reporte necesitas subir: ${missingText}` 
@@ -1778,11 +1798,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                                 
 
-                                {/* Subir Informe */}
+                                {/* Subir Informe - Solo en desktop (en móvil está en botones fijos) */}
                                 {isExpert && appointment?.status === 'appointment_awaiting_report' && (
                                     <>
-                                        <Separator />
-                                        <div className="space-y-3">
+                                        <Separator className="hidden lg:block" />
+                                        <div className="space-y-3 hidden lg:block">
                                             <h3 className="text-sm font-semibold text-foreground">Subir Informe</h3>
                                         {fileValidation && (
                                                 <div className={`p-2.5 rounded-md text-xs ${
@@ -1933,6 +1953,69 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                     {/* ✅ Botones de acción fijos en móvil - Según la guía */}
                                     {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
                                         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 px-5 py-4 space-y-3 shadow-lg">
+                                            {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
+                                            {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
+                                                <div className="space-y-2 pb-2 border-b border-gray-200">
+                                                    <div 
+                                                        className="flex items-center gap-2 text-sm text-gray-900"
+                                                        style={{
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
+                                                        <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                                        <span className="font-medium">
+                                                            {(() => {
+                                                                const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
+                                                                const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                                                                return `${new Date(dateToUse).toLocaleDateString('es-ES', {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    year: 'numeric'
+                                                                })} ${timeToUse.substring(0, 5)}`;
+                                                            })()}
+                                                        </span>
+                                                    </div>
+                                                    <div 
+                                                        className="flex items-start gap-2 text-sm text-gray-700"
+                                                        style={{
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
+                                                        <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                                                        <span className="leading-relaxed">
+                                                            {appointment.location && appointment.location.trim() 
+                                                                ? appointment.location 
+                                                                : 'Ubicación no aportada'}
+                                                        </span>
+                                                    </div>
+                                                    <div 
+                                                        className="text-sm text-gray-700 ml-6"
+                                                        style={{
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
+                                                        <span className="text-gray-500">Puerta: </span>
+                                                        <span className="font-medium">
+                                                            {appointment.doorNumber && appointment.doorNumber.trim() 
+                                                                ? appointment.doorNumber 
+                                                                : 'No aportada'}
+                                                        </span>
+                                                    </div>
+                                                    <div 
+                                                        className="flex items-center gap-2 text-sm text-gray-700"
+                                                        style={{
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
+                                                        <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                                        <span>
+                                                            {appointment.phoneNumber && appointment.phoneNumber.trim() 
+                                                                ? appointment.phoneNumber 
+                                                                : 'No aportado'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="flex gap-2">
                                                 {/* ✅ BOTÓN: Aceptar (Solo Experto, solo cuando appointment_proposed) */}
                                                 {appointmentButtons.showAccept && (
@@ -2424,6 +2507,69 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject) && (
                                     <div className="mt-4 hidden lg:block">
                                         <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+                                            {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
+                                            {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
+                                                <div className="space-y-2 pb-3 border-b border-gray-200">
+                                                    <div 
+                                                        className="flex items-center gap-2 text-sm text-gray-900"
+                                                        style={{
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
+                                                        <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                                        <span className="font-medium">
+                                                            {(() => {
+                                                                const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
+                                                                const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                                                                return `${new Date(dateToUse).toLocaleDateString('es-ES', {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    year: 'numeric'
+                                                                })} ${timeToUse.substring(0, 5)}`;
+                                                            })()}
+                                                        </span>
+                                                    </div>
+                                                    <div 
+                                                        className="flex items-start gap-2 text-sm text-gray-700"
+                                                        style={{
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
+                                                        <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                                                        <span className="leading-relaxed">
+                                                            {appointment.location && appointment.location.trim() 
+                                                                ? appointment.location 
+                                                                : 'Ubicación no aportada'}
+                                                        </span>
+                                                    </div>
+                                                    <div 
+                                                        className="text-sm text-gray-700 ml-6"
+                                                        style={{
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
+                                                        <span className="text-gray-500">Puerta: </span>
+                                                        <span className="font-medium">
+                                                            {appointment.doorNumber && appointment.doorNumber.trim() 
+                                                                ? appointment.doorNumber 
+                                                                : 'No aportada'}
+                                                        </span>
+                                                    </div>
+                                                    <div 
+                                                        className="flex items-center gap-2 text-sm text-gray-700"
+                                                        style={{
+                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        }}
+                                                    >
+                                                        <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                                        <span>
+                                                            {appointment.phoneNumber && appointment.phoneNumber.trim() 
+                                                                ? appointment.phoneNumber 
+                                                                : 'No aportado'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="flex gap-2">
                                                 {/* ✅ BOTÓN: Aceptar (Solo Experto, solo cuando appointment_proposed) */}
                                                 {appointmentButtons.showAccept && (
