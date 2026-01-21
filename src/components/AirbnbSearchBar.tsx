@@ -88,7 +88,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const userIsAdmin = isAuthenticated && (isAdminByEmail || isAdminByRole);
   
   const [serviceTypeId, setServiceTypeId] = useState<number | null>(null);
-  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [categoryId, setCategoryId] = useState<number | null>(CATEGORIES.INMOBILIARIA);
   const [adUrl, setAdUrl] = useState('');
   const [activeField, setActiveField] = useState<string | null>(null);
   const [isServiceTypeOpen, setIsServiceTypeOpen] = useState(false);
@@ -96,7 +96,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'coches' | 'inmobiliaria' | 'drawer' | null>('coches');
+  const [activeTab, setActiveTab] = useState<'coches' | 'inmobiliaria' | 'drawer' | null>('inmobiliaria');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerCategoryReplacement, setDrawerCategoryReplacement] = useState<{ id: number; name: string; image: string } | null>(null);
   const [categorySearchQuery, setCategorySearchQuery] = useState('');

@@ -2609,28 +2609,31 @@ export function ServiceReviewPage({
 
             {/* Lightbox */}
             <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
-                <DialogContent className="max-w-7xl w-full p-0 bg-black/95 backdrop-blur-sm border-none animate-in fade-in-0 zoom-in-95 duration-200">
+                <DialogContent 
+                    className="max-w-7xl w-full p-0 bg-transparent border-none animate-in fade-in-0 zoom-in-95 duration-200"
+                    overlayClassName="bg-black/20"
+                >
                     <div className="relative h-[90vh] max-h-[90vh]">
                         <button
                             onClick={() => setIsLightboxOpen(false)}
-                            className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all duration-200 hover:scale-110"
+                            className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 shadow-lg border border-gray-200 transition-all duration-200 hover:scale-110"
                         >
-                            <X className="w-6 h-6 text-white" />
+                            <X className="w-5 h-5 text-gray-700" />
                         </button>
                         
                         {validImages.length > 1 && (
                             <>
                                 <button
                                     onClick={() => handleLightboxNavigation('prev')}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-lg hover:scale-110 transition-all duration-200 backdrop-blur-sm"
+                                    className="absolute left-6 top-1/2 -translate-y-1/2 z-50 w-14 h-14 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-md hover:bg-white shadow-2xl border border-gray-100 hover:scale-110 hover:shadow-3xl transition-all duration-300 group"
                                 >
-                                    <ChevronLeft className="w-6 h-6 text-gray-900" />
+                                    <ChevronLeft className="w-7 h-7 text-gray-800 group-hover:text-gray-900 transition-colors" strokeWidth={2.5} />
                                 </button>
                                 <button
                                     onClick={() => handleLightboxNavigation('next')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-lg hover:scale-110 transition-all duration-200 backdrop-blur-sm"
+                                    className="absolute right-6 top-1/2 -translate-y-1/2 z-50 w-14 h-14 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-md hover:bg-white shadow-2xl border border-gray-100 hover:scale-110 hover:shadow-3xl transition-all duration-300 group"
                                 >
-                                    <ChevronRight className="w-6 h-6 text-gray-900" />
+                                    <ChevronRight className="w-7 h-7 text-gray-800 group-hover:text-gray-900 transition-colors" strokeWidth={2.5} />
                                 </button>
                             </>
                         )}
@@ -2639,7 +2642,7 @@ export function ServiceReviewPage({
                             {validImages[lightboxIndex] ? (
                                 <>
                                     {loadingImages.has(validImages[lightboxIndex]) && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-10">
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10">
                                             <div className="w-12 h-12 border-3 border-white/50 border-t-white rounded-full animate-spin"></div>
                                         </div>
                                     )}
@@ -2735,28 +2738,31 @@ export function ServiceReviewPage({
                 
                 return (
                     <Dialog key={reviewId} open={isOpen} onOpenChange={(open) => setReviewLightboxOpen(prev => ({ ...prev, [reviewId]: open }))}>
-                        <DialogContent className="max-w-7xl w-full p-0 bg-black/95 backdrop-blur-sm border-none animate-in fade-in-0 zoom-in-95 duration-200">
+                        <DialogContent 
+                            className="max-w-7xl w-full p-0 bg-transparent border-none animate-in fade-in-0 zoom-in-95 duration-200"
+                            overlayClassName="bg-black/20"
+                        >
                             <div className="relative h-[90vh] max-h-[90vh]">
                                 <button
                                     onClick={() => setReviewLightboxOpen(prev => ({ ...prev, [reviewId]: false }))}
-                                    className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all duration-200 hover:scale-110"
+                                    className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 shadow-lg border border-gray-200 transition-all duration-200 hover:scale-110"
                                 >
-                                    <X className="w-6 h-6 text-white" />
+                                    <X className="w-5 h-5 text-gray-700" />
                                 </button>
                                 
                                 {reviewImages.length > 1 && (
                                     <>
                                         <button
                                             onClick={() => handleReviewLightboxNavigation(reviewId, 'prev', reviewImages.length)}
-                                            className="absolute left-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-lg hover:scale-110 transition-all duration-200 backdrop-blur-sm"
+                                            className="absolute left-6 top-1/2 -translate-y-1/2 z-50 w-14 h-14 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-md hover:bg-white shadow-2xl border border-gray-100 hover:scale-110 hover:shadow-3xl transition-all duration-300 group"
                                         >
-                                            <ChevronLeft className="w-6 h-6 text-gray-900" />
+                                            <ChevronLeft className="w-7 h-7 text-gray-800 group-hover:text-gray-900 transition-colors" strokeWidth={2.5} />
                                         </button>
                                         <button
                                             onClick={() => handleReviewLightboxNavigation(reviewId, 'next', reviewImages.length)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-lg hover:scale-110 transition-all duration-200 backdrop-blur-sm"
+                                            className="absolute right-6 top-1/2 -translate-y-1/2 z-50 w-14 h-14 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-md hover:bg-white shadow-2xl border border-gray-100 hover:scale-110 hover:shadow-3xl transition-all duration-300 group"
                                         >
-                                            <ChevronRight className="w-6 h-6 text-gray-900" />
+                                            <ChevronRight className="w-7 h-7 text-gray-800 group-hover:text-gray-900 transition-colors" strokeWidth={2.5} />
                                         </button>
                                     </>
                                 )}
