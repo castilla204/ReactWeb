@@ -283,13 +283,15 @@ export const useMapExperts = (
               selectedDeliverableTypes: Array.isArray(selectedDeliverableTypes) ? selectedDeliverableTypes : [],
               expert: {
                 id: expert.id || expert.Id,
-                profilePictureUrl: expert.profilePictureUrl || expert.ProfilePictureUrl || expert.user?.profilePictureUrl || expert.User?.profilePictureUrl || '',
+                // ✅ CORRECTO: Usar ProfilePictureUrl del nivel superior, NO de user (que siempre es null para expertos)
+                profilePictureUrl: expert.profilePictureUrl || expert.ProfilePictureUrl || '',
                 description: expert.description || expert.Description || '',
                 createdAt: expert.createdAt || expert.CreatedAt || '',
                 user: {
                   name: expert.user?.name || expert.User?.name || expert.User?.Name || expert.name || expert.Name || 'Experto',
                   email: expert.user?.email || expert.User?.email || expert.User?.Email || '',
-                  profilePictureUrl: expert.user?.profilePictureUrl || expert.User?.profilePictureUrl,
+                  // ✅ user.profilePictureUrl siempre será null para expertos - no usar como fallback
+                  profilePictureUrl: null,
                 },
                 currentAvailability: (expert.currentAvailability || expert.CurrentAvailability) ? {
                   id: (expert.currentAvailability || expert.CurrentAvailability).id || (expert.currentAvailability || expert.CurrentAvailability).Id,

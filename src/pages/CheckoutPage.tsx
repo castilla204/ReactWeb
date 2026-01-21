@@ -88,14 +88,16 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 reviewsCount: service.ReviewsCount ?? service.reviewsCount ?? 0,
                                 expert: expert && (expert.Id || expert.id) ? {
                                     id: expert.Id || expert.id,
-                                    profilePictureUrl: expert.ProfilePictureUrl || expert.profilePictureUrl || expertUser?.ProfilePictureUrl || expertUser?.profilePictureUrl,
+                                    // ✅ CORRECTO: Usar ProfilePictureUrl del nivel superior, NO de user (que siempre es null)
+                                    profilePictureUrl: expert.ProfilePictureUrl || expert.profilePictureUrl || '',
                                     description: expert.Description || expert.description || expert.Bio || expert.bio || '',
                                     stripeAccountId: expert.StripeAccountId || expert.stripeAccountId,
                                     createdAt: expert.CreatedAt || expert.createdAt,
                                     user: expertUser ? {
                                         name: expertUser.Name || expertUser.name || '',
                                         email: expertUser.Email || expertUser.email || '',
-                                        profilePictureUrl: expertUser.ProfilePictureUrl || expertUser.profilePictureUrl,
+                                        // ✅ user.profilePictureUrl siempre será null para expertos - no usar como fallback
+                                        profilePictureUrl: null,
                                     } : {
                                         name: '',
                                         email: '',

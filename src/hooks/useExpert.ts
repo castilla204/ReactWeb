@@ -96,11 +96,21 @@ export function useExpert() {
 
             const data: any = await response.json();
             console.log('Fetched expert profile (raw):', data);
+            console.log('🔍 useExpert: data.ProfilePictureUrl (principal):', data.ProfilePictureUrl);
+            console.log('🔍 useExpert: data.profilePictureUrl (camelCase):', data.profilePictureUrl);
             
             // ✅ CRÍTICO: Normalizar de PascalCase a camelCase (el backend devuelve PascalCase)
+            // ✅ IMPORTANTE: Usar ProfilePictureUrl del objeto principal (ExpertProfileDto), NO del objeto User
+            // ✅ user.profilePictureUrl siempre será null para expertos según el cambio del backend
+            // ✅ PRIORIZAR ProfilePictureUrl (PascalCase) del nivel superior
+            const profilePictureUrl = data.ProfilePictureUrl ?? data.profilePictureUrl ?? '';
+            console.log('🔍 useExpert: data.ProfilePictureUrl (PascalCase):', data.ProfilePictureUrl);
+            console.log('🔍 useExpert: data.profilePictureUrl (camelCase):', data.profilePictureUrl);
+            console.log('🔍 useExpert: Final profilePictureUrl to use:', profilePictureUrl);
+            
             const mappedProfile: ExpertProfile = {
                 id: data.id ?? data.Id ?? 0,
-                profilePictureUrl: data.profilePictureUrl ?? data.ProfilePictureUrl ?? '',
+                profilePictureUrl: profilePictureUrl,
                 description: data.description ?? data.Description ?? '',
                 stripeAccountId: data.stripeAccountId ?? data.StripeAccountId ?? null,
                 pendingStripeAccountId: null, // This field might not be in the new response
@@ -114,7 +124,19 @@ export function useExpert() {
                 isOnVacation: data.isOnVacation ?? data.IsOnVacation ?? false,
                 latitude: data.latitude ?? data.Latitude ?? null,
                 longitude: data.longitude ?? data.Longitude ?? null,
-                currentAvailability: data.currentAvailability ?? data.CurrentAvailability ?? null
+                // ✅ CRÍTICO: Transformar CurrentAvailability de PascalCase a camelCase
+                currentAvailability: (() => {
+                    const avail = data.currentAvailability ?? data.CurrentAvailability;
+                    if (!avail) return null;
+                    
+                    return {
+                        id: avail.id ?? avail.Id ?? 0,
+                        daysOfWeek: avail.daysOfWeek ?? avail.DaysOfWeek ?? [],
+                        startTime: avail.startTime ?? avail.StartTime ?? '',
+                        endTime: avail.endTime ?? avail.EndTime ?? '',
+                        effectiveFrom: avail.effectiveFrom ?? avail.EffectiveFrom ?? undefined
+                    };
+                })()
             };
             
             console.log('Fetched expert profile (mapped):', mappedProfile);

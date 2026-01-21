@@ -786,10 +786,11 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     // Debug: Verificar isExpert
     console.log('[SearchDetails] isExpert:', isExpert);
     
-    // ✅ SOLUCIÓN TEMPORAL: Usar datos del usuario actual si es experto
+    // ✅ CORRECTO: Usar datos del experto del nivel superior, NO de user.profilePictureUrl (que siempre es null)
     const expertData = isExpert && user ? {
         name: user.name || expertInfo?.name || 'Experto',
-        profilePictureUrl: user.profilePictureUrl || expertInfo?.profilePictureUrl
+        // ✅ Usar profilePictureUrl del nivel superior del experto, NO de user
+        profilePictureUrl: expertInfo?.profilePictureUrl || ''
     } : expertInfo;
     
     const isDisputeExpert = userId === Number(disputes[0]?.expert?.id ?? search?.searchHire?.expert?.id ?? 0);
