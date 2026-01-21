@@ -24,7 +24,7 @@ interface DrawerProps extends React.ComponentProps<typeof DrawerPrimitive.Root> 
 }
 
 const Drawer = ({
-  shouldScaleBackground = false,
+  shouldScaleBackground = true, // ✅ Efecto de escalado del fondo como Airbnb
   snapPoints,
   activeSnapPoint,
   setActiveSnapPoint,
@@ -32,7 +32,7 @@ const Drawer = ({
   dismissible = true,
   fadeFromIndex,
   handleOnly = false,
-  snapToSequentialPoint = false, // false para responder más naturalmente a la velocidad del gesto
+  snapToSequentialPoint = true, // ✅ true para mejor fluidez y snap points secuenciales
   ...props
 }: DrawerProps) => (
   <DrawerPrimitive.Root
@@ -86,7 +86,11 @@ const DrawerOverlay = React.forwardRef<
   <DrawerPrimitive.Overlay
     ref={ref}
     className={cn("fixed inset-0 z-50 bg-black/40", className)}
-    style={{ zIndex: 9997, ...style }}
+    style={{ 
+      zIndex: 9997, 
+      // ✅ Vaul maneja las transiciones del overlay nativamente
+      ...style 
+    }}
     {...props}
   />
 ))
@@ -140,8 +144,7 @@ const DrawerContent = React.forwardRef<
         style={{
           ...props.style,
           zIndex: showOverlay ? (props.style?.zIndex || 9998) : (props.style?.zIndex || 10000),
-          // Transición más fluida y rápida
-          transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          // ✅ Vaul maneja las transiciones nativamente - no sobrescribir
           // Mejorar rendimiento de animaciones
           willChange: 'transform',
           contain: 'layout style',

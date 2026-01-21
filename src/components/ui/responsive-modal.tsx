@@ -90,7 +90,8 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         dismissible={dismissible}
         fadeFromIndex={fadeFromIndex}
         handleOnly={handleOnly}
-        snapToSequentialPoint={snapToSequentialPoint}
+        snapToSequentialPoint={snapToSequentialPoint !== undefined ? snapToSequentialPoint : true} // ✅ true por defecto para fluidez
+        shouldScaleBackground={true} // ✅ Efecto de escalado del fondo como Airbnb
       >
         <DrawerContent
           className={cn(
@@ -104,15 +105,14 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             ...drawerStyle,
             width: '100%',
             maxWidth: '100%',
-            // Limitar la altura máxima al último snapPoint para evitar que suba más
-            maxHeight: maxHeightVh,
+            // ✅ Sin límite de altura - permitir que suba hasta 100vh
+            maxHeight: '100vh',
             // ✅ Aplicar margen superior si se especifica en drawerStyle
             marginTop: drawerStyle?.marginTop || style?.marginTop || undefined,
             zIndex: noOverlay ? (drawerStyle?.zIndex || style?.zIndex || 10000) : (drawerStyle?.zIndex || style?.zIndex || 9998),
             // Mejorar rendimiento de animaciones
             willChange: 'transform',
-            // Transición más fluida y rápida
-            transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+            // ✅ Vaul maneja las transiciones nativamente - no sobrescribir
           }}
           noOverlay={noOverlay}
           noHandle={noHandle}

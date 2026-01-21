@@ -1,5 +1,18 @@
 // ✅ API: localhost en desarrollo, producción en render
-const DEV_SERVER = import.meta.env.DEV ? 'http://localhost:7124' : 'https://newapi-yn9v.onrender.com';
+// Permitir ngrok en desarrollo mediante variable de entorno VITE_API_URL
+const getDevServer = () => {
+    if (import.meta.env.DEV) {
+        // Si hay una variable de entorno VITE_API_URL, usarla (para ngrok)
+        if (import.meta.env.VITE_API_URL) {
+            return import.meta.env.VITE_API_URL;
+        }
+        // Si no, usar localhost por defecto
+        return 'http://localhost:7124';
+    }
+    return 'https://newapi-yn9v.onrender.com';
+};
+
+const DEV_SERVER = getDevServer();
 const API_PATH = '/api';
 
 export const API_CONFIG = {
