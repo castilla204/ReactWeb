@@ -342,29 +342,145 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         )}
                     </div>
 
-                    {/* Información del servicio - Estructura exacta como HomepageWall */}
-                    <div style={{ marginTop: '6px' }}>
-                        {/* Primera fila: Título */}
+                    {/* Información del servicio - Estructura exacta como Airbnb */}
+                    <div style={{ marginTop: '12px' }}>
+                        {/* Primera fila: Título con Rating en la misma línea */}
                         <div
-                            className="overflow-hidden"
                             style={{
-                                marginBottom: '0px',
-                                fontSize: '14px',
-                                lineHeight: '20.02px',
-                                fontWeight: 500,
-                                color: 'rgb(34, 34, 34)',
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                textAlign: 'left',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                marginBottom: '4px',
+                                gap: '8px',
+                                width: '100%',
                             }}
                         >
-                            <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName || service.categoryName || 'Servicio'}</div>
+                            <div
+                                style={{
+                                    flex: '1 1 auto',
+                                    minWidth: 0,
+                                    overflow: 'hidden',
+                                    fontSize: '16px',
+                                    lineHeight: '22px',
+                                    fontWeight: 600,
+                                    color: 'rgb(34, 34, 34)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    textAlign: 'left',
+                                }}
+                            >
+                                <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName || service.categoryName || 'Servicio'}</div>
+                            </div>
+                            {service.averageRating && service.averageRating > 0 && (
+                                <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '4px', 
+                                    flexShrink: 0,
+                                    whiteSpace: 'nowrap',
+                                }}>
+                                    <Star 
+                                        className="flex-shrink-0" 
+                                        style={{ 
+                                            width: '14px', 
+                                            height: '14px', 
+                                            fill: '#222222', 
+                                            color: '#222222',
+                                        }} 
+                                    />
+                                    <span style={{ 
+                                        fontSize: '16px',
+                                        lineHeight: '22px',
+                                        fontWeight: 600,
+                                        color: 'rgb(34, 34, 34)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    }}>
+                                        {service.averageRating.toFixed(2).replace('.', ',')}
+                                    </span>
+                                    {(() => {
+                                        // Buscar totalReviews en múltiples ubicaciones posibles
+                                        const totalReviews = service.totalReviews 
+                                            ?? (service as any).TotalReviews 
+                                            ?? service.expert?.totalReviews 
+                                            ?? (service.expert as any)?.TotalReviews
+                                            ?? 0;
+                                        // Debug temporal
+                                        if (process.env.NODE_ENV === 'development') {
+                                            console.log('🔍 [MapServiceCard Desktop] totalReviews:', {
+                                                serviceId: service.id || service.Id,
+                                                totalReviews,
+                                                serviceTotalReviews: service.totalReviews,
+                                                serviceTotalReviewsPascal: (service as any).TotalReviews,
+                                                expertTotalReviews: service.expert?.totalReviews,
+                                                expertTotalReviewsPascal: (service.expert as any)?.TotalReviews,
+                                                serviceKeys: Object.keys(service)
+                                            });
+                                        }
+                                        return totalReviews > 0 ? (
+                                            <span style={{ 
+                                                fontSize: '16px',
+                                                lineHeight: '22px',
+                                                fontWeight: 400,
+                                                color: 'rgb(113, 113, 113)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            }}>
+                                                ({totalReviews})
+                                            </span>
+                                        ) : null;
+                                    })()}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Segunda fila: Ciudad · Horario */}
+                        {/* Segunda fila: Categoría/Tipo */}
+                        {service.categoryName && service.serviceTypeName && (
+                            <div
+                                className="overflow-hidden"
+                                style={{
+                                    marginBottom: '4px',
+                                    fontSize: '15px',
+                                    lineHeight: '19px',
+                                    fontWeight: 400,
+                                    color: 'rgb(106, 106, 106)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    textAlign: 'left',
+                                }}
+                            >
+                                <div className="truncate" style={{ textAlign: 'left' }}>{service.categoryName}</div>
+                            </div>
+                        )}
+
+                        {/* Tercera fila: Descripción del servicio */}
+                        {(() => {
+                            const serviceDescription = service.serviceTypeDescription || (service as any).ServiceTypeDescription || service.conditions || (service as any).Conditions;
+                            return serviceDescription ? (
+                                <div
+                                    className="overflow-hidden"
+                                    style={{
+                                        marginBottom: '4px',
+                                        fontSize: '15px',
+                                        lineHeight: '19px',
+                                        fontWeight: 400,
+                                        color: 'rgb(106, 106, 106)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        textAlign: 'left',
+                                    }}
+                                >
+                                    <div style={{ 
+                                        textAlign: 'left',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden',
+                                    }}>{serviceDescription}</div>
+                                </div>
+                            ) : null;
+                        })()}
+
+                        {/* Cuarta fila: Ciudad · Horario */}
                         <div
                             className="flex items-center overflow-hidden"
                             style={{
-                                marginBottom: '0px',
+                                marginBottom: '4px',
                                 fontSize: '15px',
                                 lineHeight: '19px',
                                 fontWeight: 400,
@@ -384,37 +500,20 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             </div>
                         </div>
 
-                        {/* Tercera fila: Valoración · Precio */}
+                        {/* Quinta fila: Precio */}
                         <div
-                            className="flex items-center overflow-hidden"
+                            className="overflow-hidden"
                             style={{
-                                marginBottom: '0px',
-                                fontSize: '12px',
-                                lineHeight: '16px',
+                                marginTop: '2px',
+                                fontSize: '15px',
+                                lineHeight: '19px',
                                 fontWeight: 400,
-                                color: 'rgb(106, 106, 106)',
+                                color: 'rgb(34, 34, 34)',
                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                 textAlign: 'left',
                             }}
                         >
-                            <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                    <Star 
-                                        className="flex-shrink-0" 
-                                        style={{ 
-                                            width: '12px', 
-                                            height: '12px', 
-                                            fill: '#222222', 
-                                            color: '#222222',
-                                        }} 
-                                    />
-                                    <span>
-                                        {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'}
-                                    </span>
-                                </span>
-                                <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-                                <span>{price}</span>
-                            </div>
+                            <span style={{ fontWeight: 600 }}>{price}</span>
                         </div>
                     </div>
                 </div>
@@ -428,10 +527,10 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
             href={`/service/${serviceId}`}
             onClick={handleCardClick}
             className="block cursor-pointer group"
-            style={{ textDecoration: 'none', color: 'inherit', width: '100%', maxWidth: '92%', margin: '0 auto' }}
+            style={{ textDecoration: 'none', color: 'inherit', width: '100%', maxWidth: '92%', margin: '0 auto', display: 'block' }}
         >
             {/* Contenedor principal - Estructura exacta de Airbnb */}
-            <div className="relative cursor-pointer group w-full">
+            <div className="relative cursor-pointer group" style={{ width: '100%' }}>
                 {/* Contenedor de imagen con todos los subdivs - Cuadrada y un poco menos ancha */}
                 <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '12px', width: '100%' }}>
                     {imageUrls.length > 0 ? (
@@ -592,22 +691,100 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                     )}
                 </div>
 
-                {/* Información del servicio - Estructura mejorada como Airbnb */}
-                <div style={{ marginTop: '10px' }}>
-                    {/* Primera fila: Título (más grande y destacado) */}
+                {/* Información del servicio - Estructura exacta como Airbnb */}
+                <div style={{ marginTop: '12px', width: '100%' }}>
+                    {/* Primera fila: Título con Rating en la misma línea */}
                     <div
-                        className="overflow-hidden"
                         style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
                             marginBottom: '4px',
-                            fontSize: '16px',
-                            lineHeight: '22px',
-                            fontWeight: 600,
-                            color: 'rgb(34, 34, 34)',
-                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                            textAlign: 'left',
+                            gap: '8px',
+                            width: '100%',
+                            boxSizing: 'border-box',
                         }}
                     >
-                        <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName || service.categoryName || 'Servicio'}</div>
+                        <div
+                            style={{
+                                flex: '1 1 0%',
+                                minWidth: 0,
+                                overflow: 'hidden',
+                                fontSize: '16px',
+                                lineHeight: '22px',
+                                fontWeight: 600,
+                                color: 'rgb(34, 34, 34)',
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                textAlign: 'left',
+                            }}
+                        >
+                            <div className="truncate" style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{service.serviceTypeName || service.categoryName || 'Servicio'}</div>
+                        </div>
+                        {service.averageRating && service.averageRating > 0 && (
+                            <div style={{ 
+                                display: 'flex', 
+                                flexDirection: 'row',
+                                alignItems: 'center', 
+                                gap: '4px', 
+                                flexShrink: 0,
+                                flexGrow: 0,
+                                whiteSpace: 'nowrap',
+                            }}>
+                                <Star 
+                                    className="flex-shrink-0" 
+                                    style={{ 
+                                        width: '14px', 
+                                        height: '14px', 
+                                        fill: '#222222', 
+                                        color: '#222222',
+                                        flexShrink: 0,
+                                    }} 
+                                />
+                                <span style={{ 
+                                    fontSize: '16px',
+                                    lineHeight: '22px',
+                                    fontWeight: 600,
+                                    color: 'rgb(34, 34, 34)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    whiteSpace: 'nowrap',
+                                }}>
+                                    {service.averageRating.toFixed(2).replace('.', ',')}
+                                </span>
+                                {(() => {
+                                    // Buscar totalReviews en múltiples ubicaciones posibles
+                                    const totalReviews = service.totalReviews 
+                                        ?? (service as any).TotalReviews 
+                                        ?? service.expert?.totalReviews 
+                                        ?? (service.expert as any)?.TotalReviews
+                                        ?? 0;
+                                    // Debug temporal
+                                    if (process.env.NODE_ENV === 'development') {
+                                        console.log('🔍 [MapServiceCard Mobile] totalReviews:', {
+                                            serviceId: service.id || service.Id,
+                                            totalReviews,
+                                            serviceTotalReviews: service.totalReviews,
+                                            serviceTotalReviewsPascal: (service as any).TotalReviews,
+                                            expertTotalReviews: service.expert?.totalReviews,
+                                            expertTotalReviewsPascal: (service.expert as any)?.TotalReviews,
+                                            serviceKeys: Object.keys(service)
+                                        });
+                                    }
+                                    return totalReviews > 0 ? (
+                                        <span style={{ 
+                                            fontSize: '16px',
+                                            lineHeight: '22px',
+                                            fontWeight: 400,
+                                            color: 'rgb(113, 113, 113)',
+                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            whiteSpace: 'nowrap',
+                                        }}>
+                                            ({totalReviews})
+                                        </span>
+                                    ) : null;
+                                })()}
+                            </div>
+                        )}
                     </div>
 
                     {/* Segunda fila: Categoría/Tipo */}
@@ -616,10 +793,10 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             className="overflow-hidden"
                             style={{
                                 marginBottom: '4px',
-                                fontSize: '14px',
-                                lineHeight: '18px',
+                                fontSize: '15px',
+                                lineHeight: '19px',
                                 fontWeight: 400,
-                                color: 'rgb(113, 113, 113)',
+                                color: 'rgb(106, 106, 106)',
                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                 textAlign: 'left',
                             }}
@@ -628,7 +805,34 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         </div>
                     )}
 
-                    {/* Tercera fila: Ciudad · Horario */}
+                    {/* Tercera fila: Descripción del servicio */}
+                    {(() => {
+                        const serviceDescription = service.serviceTypeDescription || (service as any).ServiceTypeDescription || service.conditions || (service as any).Conditions;
+                        return serviceDescription ? (
+                            <div
+                                className="overflow-hidden"
+                                style={{
+                                    marginBottom: '4px',
+                                    fontSize: '15px',
+                                    lineHeight: '19px',
+                                    fontWeight: 400,
+                                    color: 'rgb(106, 106, 106)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    textAlign: 'left',
+                                }}
+                            >
+                                <div style={{ 
+                                    textAlign: 'left',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden',
+                                }}>{serviceDescription}</div>
+                            </div>
+                        ) : null;
+                    })()}
+
+                    {/* Cuarta fila: Ciudad · Horario */}
                     <div
                         className="flex items-center overflow-hidden"
                         style={{
@@ -652,45 +856,20 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         </div>
                     </div>
 
-                    {/* Cuarta fila: Valoración con número de reseñas · Precio */}
+                    {/* Quinta fila: Precio */}
                     <div
-                        className="flex items-center justify-between overflow-hidden"
+                        className="overflow-hidden"
                         style={{
-                            marginTop: '6px',
-                            fontSize: '14px',
-                            lineHeight: '18px',
+                            marginTop: '2px',
+                            fontSize: '15px',
+                            lineHeight: '19px',
                             fontWeight: 400,
                             color: 'rgb(34, 34, 34)',
                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                             textAlign: 'left',
                         }}
                     >
-                        <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-                            {service.averageRating && service.averageRating > 0 ? (
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                    <Star 
-                                        className="flex-shrink-0" 
-                                        style={{ 
-                                            width: '14px', 
-                                            height: '14px', 
-                                            fill: '#222222', 
-                                            color: '#222222',
-                                        }} 
-                                    />
-                                    <span style={{ fontWeight: 600 }}>
-                                        {service.averageRating.toFixed(2).replace('.', ',')}
-                                    </span>
-                                    {service.completedSearches && service.completedSearches > 0 && (
-                                        <span style={{ color: 'rgb(113, 113, 113)', fontWeight: 400 }}>
-                                            {' '}({service.completedSearches})
-                                        </span>
-                                    )}
-                                </span>
-                            ) : null}
-                        </div>
-                        <div style={{ fontWeight: 600, color: 'rgb(34, 34, 34)' }}>
-                            {price}
-                        </div>
+                        <span style={{ fontWeight: 600 }}>{price}</span>
                     </div>
                 </div>
             </div>
@@ -1375,7 +1554,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             {/* Main Layout - Split View */}
             <div className="flex flex-1 min-h-0 overflow-visible w-full">
                 {/* Left Side - Panel de resultados (Desktop) */}
-                <div className="hidden lg:flex flex-col w-[420px] min-w-[380px] border-r border-gray-200 bg-white">
+                <div className="hidden lg:flex flex-col w-[900px] min-w-[800px] max-w-[900px] bg-white">
                     {/* Header del panel */}
                     <div className="px-6 py-4 border-b border-gray-100">
                         <p className="text-sm text-gray-500">
@@ -1485,9 +1664,22 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     )}
                     
                     {/* Lista de servicios */}
-                    <div ref={sidebarRef} className="flex-1 overflow-y-auto">
+                    <div 
+                        ref={sidebarRef} 
+                        className="flex-1 overflow-y-auto"
+                        data-sidebar-scroll
+                        style={{
+                            scrollbarWidth: 'none', /* Firefox */
+                            msOverflowStyle: 'none', /* IE and Edge */
+                        }}
+                    >
+                        <style>{`
+                            [data-sidebar-scroll]::-webkit-scrollbar {
+                                display: none; /* Chrome, Safari, Opera */
+                            }
+                        `}</style>
                         {formData.latitude && formData.longitude && (
-                            <div className="px-4 md:px-6 pt-4 md:pt-6 pb-6">
+                            <div className="px-8 md:px-10 pt-4 md:pt-6 pb-6">
                             {/* Services List - Desktop estilo Airbnb en grid de 2 columnas */}
                             {(() => {
                                 console.log('🔍 SearchParameterForm - Renderizando sidebar:', {
@@ -1498,10 +1690,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             })()}
                             {reorderedServices.length > 0 ? (
                                 <div 
-                                    className="grid grid-cols-1 md:grid-cols-2" 
+                                    className="grid grid-cols-2" 
                                     style={{ 
                                         width: '100%',
-                                        gap: '20px',
+                                        gap: '24px',
                                         padding: '0',
                                     }}
                                 >
@@ -2027,9 +2219,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                             style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
                                                         >
                                                             {selectedServiceData.averageRating.toFixed(2)}
-                                                            {selectedServiceData.completedSearches && selectedServiceData.completedSearches > 0 && (
-                                                                <span className="text-gray-600"> ({selectedServiceData.completedSearches})</span>
-                                                            )}
+                                                            {(() => {
+                                                                const totalReviews = selectedServiceData.totalReviews || (selectedServiceData as any).TotalReviews || 0;
+                                                                return totalReviews > 0 && (
+                                                                    <span className="text-gray-600"> ({totalReviews})</span>
+                                                                );
+                                                            })()}
                                                         </span>
                                                     </div>
                                                 )}
@@ -2044,91 +2239,23 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </div>
                 
                 {/* Desktop: Right Side - Map */}
-                <div className="hidden lg:flex lg:flex-1 relative bg-gray-100">
+                <div className="hidden lg:flex lg:flex-1 relative bg-white" style={{ paddingTop: '80px', paddingLeft: '32px', paddingRight: '32px', paddingBottom: '32px' }}>
                         {loadError ? (
                         <div className="h-full w-full flex items-center justify-center bg-gray-100">
                             <div className="text-red-500">Error al cargar el mapa</div>
                             </div>
                         ) : (
                             <>
-                            {/* Barra de búsqueda desktop - Estilo Airbnb Compacto - Responsive para todos los formatos */}
-                            <div className="absolute left-6 z-[9999] pointer-events-none" style={{ top: 'clamp(80px, calc(64px + 2vh), 96px)' }}>
-                                <div className="w-[400px] pointer-events-auto">
-                                    <div className="bg-white rounded-full shadow-2xl hover:shadow-3xl border border-gray-200 flex items-center overflow-hidden transition-all duration-300" style={{ minHeight: '56px' }}>
-                                        {/* Selector de país - Compacto */}
-                                        <div className="flex-shrink-0">
-                                        <CountrySelector
-                                            onCountrySelect={(countryCode, coordinates) => {
-                                                setSelectedCountry(countryCode);
-                                                if (map) {
-                                                    map.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
-                                                    map.setZoom(coordinates.zoom);
-                                                }
-                                                setFormData(prev => ({
-                                                    ...prev,
-                                                    latitude: coordinates.lat.toString(),
-                                                    longitude: coordinates.lng.toString(),
-                                                    locationName: getCountryName(countryCode) || '',
-                                                }));
-                                                setSelectedLocation({ lat: coordinates.lat, lng: coordinates.lng });
-                                                setSearchAddress('');
-                                            }}
-                                            currentCountry={selectedCountry}
-                                                className="[&>button]:h-14 [&>button]:px-4 [&>button]:min-w-[110px] [&>button]:gap-2"
-                                        />
-                                        </div>
-                                        
-                                        {/* Separador - Más cerca */}
-                                        <div className="w-px h-7 bg-gray-200 flex-shrink-0 mx-1" />
-                                        
-                                        {/* Campo de búsqueda */}
-                                        <div className="flex-1 relative min-w-0">
-                                            {isLoaded ? (
-                                                <Autocomplete
-                                                    onPlaceSelected={handlePlaceSelected}
-                                                    options={{
-                                                        componentRestrictions: { country: selectedCountry.toLowerCase() },
-                                                        fields: ['formatted_address', 'geometry', 'name', 'place_id', 'address_components']
-                                                    }}
-                                                    className="w-full h-14 pl-4 pr-12 text-sm text-gray-900 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0 truncate"
-                                                    placeholder="Buscar ciudad o dirección..."
-                                                    disabled={isGeocoding}
-                                                />
-                                            ) : (
-                                                <input
-                                                type="text"
-                                                    placeholder="Cargando mapa..."
-                                                    disabled
-                                                    className="w-full h-14 pl-4 pr-12 text-sm text-gray-400 placeholder-gray-400 bg-transparent border-0 truncate"
-                                                />
-                                            )}
-                                            {isGeocoding ? (
-                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                                    <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-                                                </div>
-                                            ) : searchAddress ? (
-                                                <button
-                                                    onClick={() => {
-                                                        setSearchAddress('');
-                                                        if (searchInputRef.current) {
-                                                            searchInputRef.current.value = '';
-                                                            searchInputRef.current.focus();
-                                                        }
-                                                    }}
-                                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
-                                                >
-                                                    <X className="w-5 h-5" />
-                                                </button>
-                                            ) : (
-                                                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                                            )}
-                                        </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                            {/* Map ocupa todo el espacio */}
-                            <div className="absolute inset-0">
+                            {/* Map ocupa todo el espacio con borde blanco más grueso y laterales muy redondeados */}
+                            <div className="absolute" style={{ 
+                                border: '24px solid white', 
+                                borderRadius: '32px', 
+                                overflow: 'hidden',
+                                top: '80px',
+                                left: '32px',
+                                right: '32px',
+                                bottom: '32px'
+                            }}>
                                 {isLoaded ? (
                                     <LocationMap
                                         selectedLocation={selectedLocation}
