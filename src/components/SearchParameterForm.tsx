@@ -18,6 +18,7 @@ import { Input } from './ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose, DrawerOverlay } from './ui/drawer';
 import { ResponsiveModal } from './ui/responsive-modal';
+import { CustomBottomSheet } from './ui/custom-bottom-sheet';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
@@ -364,8 +365,8 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             className="flex items-center overflow-hidden"
                             style={{
                                 marginBottom: '0px',
-                                fontSize: '12px',
-                                lineHeight: '16px',
+                                fontSize: '15px',
+                                lineHeight: '19px',
                                 fontWeight: 400,
                                 color: 'rgb(106, 106, 106)',
                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
@@ -421,156 +422,275 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
         );
     }
     
-    // En móvil, estilo Airbnb mejorado - una sola columna
+    // En móvil, usar exactamente el mismo estilo que HomepageWall (igual a Airbnb) pero cuadradas y un poco menos anchas
     return (
         <a
             href={`/service/${serviceId}`}
             onClick={handleCardClick}
             className="block cursor-pointer group"
-            style={{ textDecoration: 'none', color: 'inherit' }}
+            style={{ textDecoration: 'none', color: 'inherit', width: '100%', maxWidth: '92%', margin: '0 auto' }}
         >
-            <div className="relative" style={{ maxWidth: '100%', margin: '0 auto' }}>
-                <div 
-                    className="relative w-full overflow-hidden" 
-                    style={{ aspectRatio: '1/1', borderRadius: '12px', marginBottom: '10px', maxWidth: '100%' }}
-                >
+            {/* Contenedor principal - Estructura exacta de Airbnb */}
+            <div className="relative cursor-pointer group w-full">
+                {/* Contenedor de imagen con todos los subdivs - Cuadrada y un poco menos ancha */}
+                <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '12px', width: '100%' }}>
                     {imageUrls.length > 0 ? (
                         <>
-                            <img
-                                src={imageUrls[imageIndex]}
-                                alt={service.serviceTypeName || 'Servicio'}
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                loading="lazy"
-                            />
+                            {/* Imagen principal */}
+                            <div className="relative w-full h-full">
+                                <img
+                                    src={imageUrls[imageIndex]}
+                                    alt={service.serviceTypeName || service.categoryName || 'Servicio'}
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    style={{ display: 'block' }}
+                                />
+                            </div>
                             
+                            {/* Badge "Recomendamos" - Estructura similar a Airbnb */}
                             {isGuestFavorite && (
-                                <div 
-                                    className="absolute top-3 left-3"
+                                <div
+                                    className="absolute top-3 left-3 z-10"
                                     style={{
-                                        padding: '4px 8px',
-                                        backgroundColor: 'white',
-                                        borderRadius: '4px',
-                                        fontSize: '12px',
-                                        fontWeight: 600,
-                                        color: '#222',
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.18)'
+                                        padding: '0',
                                     }}
                                 >
-                                    Recomendamos
+                                    <div
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            paddingTop: '4px',
+                                            paddingBottom: '4px',
+                                            paddingLeft: '8px',
+                                            paddingRight: '8px',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                            backdropFilter: 'blur(4px)',
+                                            borderRadius: '8px',
+                                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                fontSize: '10px',
+                                                lineHeight: '12px',
+                                                fontWeight: 400,
+                                                color: '#222222',
+                                                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                                                letterSpacing: '0',
+                                            }}
+                                            aria-label="Recomendamos"
+                                        >
+                                            Recomendamos
+                                        </span>
+                                    </div>
                                 </div>
                             )}
 
-                            <button 
-                                onClick={handleFavoriteClick} 
-                                className="absolute top-4 right-4"
-                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', zIndex: 10 }}
+                            {/* Botón de favorito - Solo el corazón sin círculo */}
+                            <button
+                                onClick={handleFavoriteClick}
+                                className="absolute top-3 right-3 z-10"
+                                style={{
+                                    padding: '0',
+                                    margin: '0',
+                                    backgroundColor: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '24px',
+                                    height: '24px',
+                                }}
                             >
-                                <svg viewBox="0 0 32 32" style={{ 
-                                    width: '28px', height: '28px', 
-                                    fill: isFavorite ? '#FF385C' : 'rgba(0,0,0,0.5)', 
-                                    stroke: '#fff', strokeWidth: 2.5 
-                                }}>
+                                <svg
+                                    viewBox="0 0 32 32"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    role="presentation"
+                                    focusable="false"
+                                    style={{
+                                        display: 'block',
+                                        fill: isFavorite ? '#FF385C' : 'rgba(0, 0, 0, 0.5)',
+                                        height: '24px',
+                                        width: '24px',
+                                        stroke: isFavorite ? '#FF385C' : 'rgba(255, 255, 255, 0.8)',
+                                        strokeWidth: '2',
+                                        overflow: 'visible',
+                                        margin: '0',
+                                        padding: '0',
+                                    }}
+                                >
                                     <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
                                 </svg>
                             </button>
 
-                            {service.expert?.profilePictureUrl && (
-                                <div 
-                                    className="absolute bottom-4 left-4"
-                                    style={{
-                                        width: '40px',
-                                        height: '40px',
-                                        border: '3px solid white',
-                                        borderRadius: '50%',
-                                        overflow: 'hidden',
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                                        zIndex: 10
+                            {/* Indicadores de imágenes */}
+                            {hasMultipleImages && (
+                                <div
+                                    className="absolute left-1/2 -translate-x-1/2 flex"
+                                    style={{ 
+                                        gap: '6px',
+                                        bottom: '8px',
                                     }}
                                 >
-                                    <img 
-                                        src={service.expert.profilePictureUrl} 
-                                        alt={service.expert.user?.name || 'Experto'}
-                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    />
+                                    {imageUrls.map((_, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="rounded-full transition-all bg-white"
+                                            style={{
+                                                height: '3px',
+                                                width: idx === imageIndex ? '20px' : '3px',
+                                                opacity: idx === imageIndex ? 1 : 0.6,
+                                            }}
+                                        />
+                                    ))}
                                 </div>
                             )}
 
-                            {hasMultipleImages && (
-                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                                    {imageUrls.slice(0, 5).map((_item: string, idx: number) => (
-                                        <div 
-                                            key={idx} 
-                                            className="rounded-full bg-white"
-                                            style={{ 
-                                                height: '3px', 
-                                                width: idx === imageIndex ? '20px' : '3px', 
-                                                opacity: idx === imageIndex ? 1 : 0.6
-                                            }} 
+                            {/* Avatar del experto - Esquina inferior izquierda */}
+                            {service.expert && (
+                                <div
+                                    className="absolute left-3 z-10"
+                                    style={{
+                                        width: '28px',
+                                        height: '28px',
+                                        bottom: '8px',
+                                        borderRadius: '50%',
+                                        border: '2px solid white',
+                                        overflow: 'hidden',
+                                        backgroundColor: '#f0f0f0',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                                    }}
+                                >
+                                    {service.expert.profilePictureUrl ? (
+                                        <img
+                                            src={service.expert.profilePictureUrl}
+                                            alt={service.expert.user?.name || 'Experto'}
+                                            className="w-full h-full object-cover"
                                         />
-                                    ))}
+                                    ) : (
+                                        <div 
+                                            className="w-full h-full flex items-center justify-center"
+                                            style={{
+                                                backgroundColor: '#3b82f6',
+                                                color: 'white',
+                                                fontSize: '14px',
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            {service.expert.user?.name?.charAt(0)?.toUpperCase() || 'E'}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </>
                     ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                            <Image className="w-12 h-12 text-gray-400" />
+                            <span className="text-gray-400 text-sm">Sin imagen</span>
                         </div>
                     )}
                 </div>
 
-                <div style={{ fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
-                    <div 
-                        style={{ 
-                            fontSize: '15px', 
-                            fontWeight: 600, 
-                            color: 'rgb(34, 34, 34)', 
+                {/* Información del servicio - Estructura mejorada como Airbnb */}
+                <div style={{ marginTop: '10px' }}>
+                    {/* Primera fila: Título (más grande y destacado) */}
+                    <div
+                        className="overflow-hidden"
+                        style={{
+                            marginBottom: '4px',
+                            fontSize: '16px',
+                            lineHeight: '22px',
+                            fontWeight: 600,
+                            color: 'rgb(34, 34, 34)',
+                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                            textAlign: 'left',
+                        }}
+                    >
+                        <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName || service.categoryName || 'Servicio'}</div>
+                    </div>
+
+                    {/* Segunda fila: Categoría/Tipo */}
+                    {service.categoryName && service.serviceTypeName && (
+                        <div
+                            className="overflow-hidden"
+                            style={{
+                                marginBottom: '4px',
+                                fontSize: '14px',
+                                lineHeight: '18px',
+                                fontWeight: 400,
+                                color: 'rgb(113, 113, 113)',
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                textAlign: 'left',
+                            }}
+                        >
+                            <div className="truncate" style={{ textAlign: 'left' }}>{service.categoryName}</div>
+                        </div>
+                    )}
+
+                    {/* Tercera fila: Ciudad · Horario */}
+                    <div
+                        className="flex items-center overflow-hidden"
+                        style={{
+                            marginBottom: '4px',
+                            fontSize: '15px',
                             lineHeight: '19px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            marginBottom: '3px'
+                            fontWeight: 400,
+                            color: 'rgb(106, 106, 106)',
+                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                            textAlign: 'left',
                         }}
                     >
-                        {service.serviceTypeName || service.categoryName || 'Servicio'}
+                        <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
+                            {service.expert?.city && (
+                                <>
+                                    <span className="truncate">{service.expert.city}</span>
+                                    <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
+                                </>
+                            )}
+                            <span className="truncate">{availabilityInfo}</span>
+                        </div>
                     </div>
-                    
-                    <div 
-                        style={{ 
-                            fontSize: '14px', 
-                            color: 'rgb(113, 113, 113)', 
+
+                    {/* Cuarta fila: Valoración con número de reseñas · Precio */}
+                    <div
+                        className="flex items-center justify-between overflow-hidden"
+                        style={{
+                            marginTop: '6px',
+                            fontSize: '14px',
                             lineHeight: '18px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            marginBottom: '3px'
+                            fontWeight: 400,
+                            color: 'rgb(34, 34, 34)',
+                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                            textAlign: 'left',
                         }}
                     >
-                        {service.expert?.city && <span>{service.expert.city} · </span>}
-                        {availabilityInfo}
-                    </div>
-                    
-                    <div 
-                        style={{ 
-                            fontSize: '14px', 
-                            color: 'rgb(113, 113, 113)', 
-                            lineHeight: '18px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                        }}
-                    >
-                        <Star 
-                            style={{ 
-                                width: '12px', 
-                                height: '12px', 
-                                fill: '#222222', 
-                                color: '#222222',
-                                display: 'inline-block',
-                                verticalAlign: 'middle',
-                                marginRight: '4px'
-                            }} 
-                        />
-                        {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'} · <span style={{ fontWeight: 600, color: 'rgb(34, 34, 34)' }}>{price}</span>
+                        <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
+                            {service.averageRating && service.averageRating > 0 ? (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <Star 
+                                        className="flex-shrink-0" 
+                                        style={{ 
+                                            width: '14px', 
+                                            height: '14px', 
+                                            fill: '#222222', 
+                                            color: '#222222',
+                                        }} 
+                                    />
+                                    <span style={{ fontWeight: 600 }}>
+                                        {service.averageRating.toFixed(2).replace('.', ',')}
+                                    </span>
+                                    {service.completedSearches && service.completedSearches > 0 && (
+                                        <span style={{ color: 'rgb(113, 113, 113)', fontWeight: 400 }}>
+                                            {' '}({service.completedSearches})
+                                        </span>
+                                    )}
+                                </span>
+                            ) : null}
+                        </div>
+                        <div style={{ fontWeight: 600, color: 'rgb(34, 34, 34)' }}>
+                            {price}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -596,6 +716,7 @@ interface SearchParameterFormProps {
 export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId }: SearchParameterFormProps) {
     const { width } = useWindowSize();
     const navigate = useNavigate();
+    const isMobileDevice = width > 0 ? width < 1024 : (typeof window !== 'undefined' && window.innerWidth < 1024);
     
     // Calcular tamaños basados en el ancho real de la pantalla
     // iPhone SE: 375px, iPhone XR: 414px, iPhone 12 Pro Max: 428px
@@ -726,92 +847,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         return () => window.removeEventListener('resize', updateHeaderHeight);
     }, []);
     
-    // Calcular snapPoints dinámicamente basados en la altura del header
-    // 3 posiciones: abajo (0 - cerrado), reposo (0.5 - mitad), arriba (0.95 - casi arriba, pero permite subir más)
-    // En vaul, los snapPoints son fracciones de la altura disponible (desde bottom)
+    // ✅ SnapPoints estilo Airbnb: 0 = cerrado, 0.7 = reposo (70%), 0.95 = casi arriba
+    // Vaul manejará los gestos y animaciones de forma nativa y fluida
     const SNAP_POINTS = useMemo(() => {
-        if (typeof window === 'undefined') return [0, 0.5, 0.95] as const;
-        // Permitir que suba más allá del topbar - usar 0.95 como snapPoint pero permitir arrastrar más
-        return [0, 0.5, 0.95] as const;
-    }, [headerHeight]);
+        return [0, 0.7, 0.95] as const;
+    }, []);
     
-    // ✅ SnapPoints: 0 = cerrado, 0.5 = reposo (inicial), max = arriba tocando topbar
-    const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0.5);
+    // ✅ Posición de reposo: 0.7 (70% de la pantalla) - Vaul manejará los cambios de forma fluida
+    const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0.7);
     
-    // Lógica mejorada de scroll: sube progresivamente sin límite
-    useEffect(() => {
-        const drawerContent = drawerContentRef.current;
-        if (!drawerContent || !isDrawerOpen || !isDrawerVisible) return;
-        
-        let lastScrollTop = 0;
-        let scrollTimeout: NodeJS.Timeout | null = null;
-        let scrollAccumulator = 0;
-        let isScrolling = false;
-        
-        const handleScroll = () => {
-            const currentScrollTop = drawerContent.scrollTop;
-            const scrollDelta = currentScrollTop - lastScrollTop;
-            const maxSnapPoint = SNAP_POINTS[SNAP_POINTS.length - 1];
-            
-            // Scroll hacia abajo - subir drawer progresivamente
-            if (scrollDelta > 0 && !isScrolling) {
-                scrollAccumulator += scrollDelta;
-                
-                // Si estamos en la mitad, subir al snapPoint máximo
-                if (activeSnapPoint === 0.5 && scrollAccumulator > 20) {
-                    if (scrollTimeout) clearTimeout(scrollTimeout);
-                    scrollTimeout = setTimeout(() => {
-                        setActiveSnapPoint(maxSnapPoint);
-                        scrollAccumulator = 0;
-                        isScrolling = false;
-                    }, 50);
-                    isScrolling = true;
-                }
-                // Si ya estamos en el snapPoint máximo, permitir subir más calculando posición dinámica
-                else if (activeSnapPoint === maxSnapPoint && scrollAccumulator > 30) {
-                    if (scrollTimeout) clearTimeout(scrollTimeout);
-                    // Calcular nueva posición basada en el scroll acumulado
-                    const scrollProgress = Math.min(scrollAccumulator / 200, 0.1); // Máximo 10% adicional
-                    const newPosition = Math.min(0.95 + scrollProgress, 0.98);
-                    scrollTimeout = setTimeout(() => {
-                        setActiveSnapPoint(newPosition);
-                        scrollAccumulator = 0;
-                        isScrolling = false;
-                    }, 50);
-                    isScrolling = true;
-                }
-            }
-            // Scroll hacia arriba - bajar drawer solo si estamos arriba y el scroll está en 0
-            else if (scrollDelta < 0 && !isScrolling) {
-                // Si estamos arriba y el scroll vuelve al inicio, bajar a mitad
-                if (activeSnapPoint !== 0.5 && currentScrollTop === 0) {
-                    scrollAccumulator += Math.abs(scrollDelta);
-                    if (scrollAccumulator > 20) {
-                        if (scrollTimeout) clearTimeout(scrollTimeout);
-                        scrollTimeout = setTimeout(() => {
-                            setActiveSnapPoint(0.5);
-                            scrollAccumulator = 0;
-                            isScrolling = false;
-                        }, 50);
-                        isScrolling = true;
-                    }
-                } else {
-                    scrollAccumulator = 0;
-                }
-            }
-            
-            lastScrollTop = currentScrollTop;
-        };
-        
-        drawerContent.addEventListener('scroll', handleScroll, { passive: true });
-        
-        return () => {
-            drawerContent.removeEventListener('scroll', handleScroll);
-            if (scrollTimeout) {
-                clearTimeout(scrollTimeout);
-            }
-        };
-    }, [isDrawerOpen, isDrawerVisible, activeSnapPoint, SNAP_POINTS]);
+    // ✅ Eliminada lógica de scroll personalizada - Vaul maneja todo nativamente con gestos suaves
     
     const [filters, setFilters] = useState({
         priceRange: [0, 100000] as [number, number], // [min, max] en euros - rango amplio para servicios premium
@@ -2119,8 +2164,62 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </div>
                 
                 
-                {/* ResponsiveModal: Drawer en móvil con snapPoints nativos, Dialog en PC */}
-                <ResponsiveModal
+                {/* CustomBottomSheet con Framer Motion en móvil, ResponsiveModal (Dialog) en PC */}
+                {isMobileDevice ? (
+                    <CustomBottomSheet
+                        open={isDrawerOpen && isDrawerVisible}
+                        onOpenChange={(open) => {
+                            setIsDrawerOpen(open);
+                            setIsDrawerVisible(open);
+                        }}
+                        title={(() => {
+                            const drawerServicesCount = selectedService 
+                                ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
+                                : services.length;
+                            return drawerServicesCount > 0 
+                                ? `Más de ${drawerServicesCount} ${drawerServicesCount === 1 ? 'revisión' : 'revisiones'}` 
+                                : 'Sin servicios';
+                        })()}
+                        headerHeight={headerHeight}
+                        className="lg:hidden"
+                    >
+                        {/* Contenido con scroll */}
+                        <div style={{ padding: '0 16px' }}>
+                            {services.length > 0 ? (
+                                <div 
+                                    className="flex flex-col" 
+                                    style={{ 
+                                        gap: '32px', // ✅ Más espacio entre cards
+                                        paddingTop: '12px', 
+                                        paddingBottom: '40px', // ✅ Más padding inferior
+                                    }}
+                                >
+                                    {services.map((service) => {
+                                        const serviceId = service.id || service.Id;
+                                        return (
+                                            <MapServiceCard
+                                                key={serviceId}
+                                                service={service}
+                                                isSelected={false}
+                                                onSelect={handleServiceSelect}
+                                                initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="py-12 text-center">
+                                    <p className="text-sm text-gray-500">
+                                        {selectedService 
+                                            ? 'El servicio seleccionado está en la tarjeta flotante' 
+                                            : 'No hay servicios disponibles'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </CustomBottomSheet>
+                ) : (
+                    <ResponsiveModal
                     open={isDrawerOpen}
                     onOpenChange={handleDrawerOpenChange}
                     modal={false}
@@ -2130,7 +2229,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     activeSnapPoint={activeSnapPoint}
                     setActiveSnapPoint={setActiveSnapPoint}
                     fadeFromIndex={0}
-                    snapToSequentialPoint={false}
+                    snapToSequentialPoint={true} // ✅ true para mejor fluidez estilo Airbnb
                     style={{
                         opacity: isDrawerVisible ? 1 : 0,
                         pointerEvents: isDrawerVisible ? 'auto' : 'none',
@@ -2153,11 +2252,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         backgroundColor: 'white',
                         // Sombra igual que el topbar de categorías
                         boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)',
-                        // Vaul manejará la altura con snapPoints - transición más fluida
-                        transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                        // ✅ Vaul maneja las transiciones nativamente - no sobrescribir
                         willChange: 'transform',
-                        // Asegurar que llegue exactamente hasta el topbar
-                        maxHeight: `calc(100vh - ${headerHeight}px)`,
+                        // ✅ Sin límite de altura - permitir que suba hasta 100vh
+                        maxHeight: '100vh',
                     }}
                     dialogStyle={{
                         maxHeight: '90vh',
@@ -2309,7 +2407,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                         )}
                     </div>
-                </ResponsiveModal>
+                    </ResponsiveModal>
+                )}
         </div>
     );
 }

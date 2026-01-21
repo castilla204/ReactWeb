@@ -500,7 +500,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 <div className="flex flex-col justify-center h-full">
                   <span
                     className="text-xs font-semibold text-gray-900 mb-1 block"
-                    style={{ fontSize: '12px', lineHeight: '16px', fontWeight: 600 }}
+                    style={{ 
+                      fontSize: '12px', 
+                      lineHeight: '16px', 
+                      fontWeight: 600,
+                      fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif'
+                    }}
                   >
                     Categoría
                   </span>
@@ -511,6 +516,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                       lineHeight: '18px',
                       color: selectedCategory ? '#222222' : '#717171',
                       fontWeight: selectedCategory ? 600 : 400,
+                      fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif'
                     }}
                   >
                     {selectedCategory ? selectedCategory.name : 'Selecciona categoría'}
@@ -527,9 +533,23 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 >
                   <div className="max-h-[300px] overflow-y-auto py-2">
                     {categoriesLoading ? (
-                      <div className="p-4 text-center text-sm text-gray-500">Cargando...</div>
+                      <div 
+                        className="p-4 text-center text-sm text-gray-500"
+                        style={{
+                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif'
+                        }}
+                      >
+                        Cargando...
+                      </div>
                     ) : normalizedCategories.length === 0 ? (
-                      <div className="p-4 text-center text-sm text-gray-500">No hay categorías disponibles</div>
+                      <div 
+                        className="p-4 text-center text-sm text-gray-500"
+                        style={{
+                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif'
+                        }}
+                      >
+                        No hay categorías disponibles
+                      </div>
                     ) : (
                       normalizedCategories
                         .filter(cat => cat.isActive)
@@ -552,7 +572,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                               categoryId === category.id ? 'bg-gray-100' : ''
                             }`}
                           >
-                            <div className="font-medium text-sm text-gray-900">{category.name}</div>
+                            <div 
+                              className="font-medium text-sm text-gray-900"
+                              style={{
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif'
+                              }}
+                            >
+                              {category.name}
+                            </div>
                           </button>
                         ))
                     )}
@@ -764,46 +791,44 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
       {/* Modal Mobile */}
       {isMobileSearchOpen && typeof document !== 'undefined' && createPortal(
         <>
-          {/* Botón cerrar arriba derecha - Fuera del div principal - Estilo mejorado */}
-          <div className="md:hidden fixed top-3 right-3 z-[60]">
-            <button
-              type="button"
-              onClick={() => {
-                if (expandedAccordion === 'where') {
-                  setExpandedAccordion(null);
-                } else {
-                  setIsMobileSearchOpen(false);
-                }
-              }}
-              className="p-2 bg-gray-200 hover:bg-gray-300 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl border-0"
-              aria-label="Cerrar"
-              style={{
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)'
-              }}
-            >
-              <span>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  viewBox="0 0 32 32" 
-                  aria-hidden="true" 
-                  role="presentation" 
-                  focusable="false"
-                  style={{ display: 'block', fill: 'none', height: '14px', width: '14px', stroke: 'currentcolor', strokeWidth: 2.5, overflow: 'visible' }}
-                >
-                <path d="m6 6 20 20M26 6 6 26"></path>
-              </svg>
-              </span>
-            </button>
-          </div>
-
           <div 
             className="md:hidden fixed inset-0 z-50 bg-white flex flex-col pb-4"
             style={{
               boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)'
             }}
           >
+            {/* Botón cerrar arriba derecha - Mejorado y con mejor espaciado */}
+            <div className="absolute top-4 right-4 z-[60]">
+              <button
+                type="button"
+                onClick={() => {
+                  if (expandedAccordion === 'where') {
+                    setExpandedAccordion(null);
+                  } else {
+                    setIsMobileSearchOpen(false);
+                  }
+                }}
+                className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl border border-gray-200 hover:border-gray-300 active:scale-95"
+                aria-label="Cerrar"
+                style={{
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)'
+                }}
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  viewBox="0 0 32 32" 
+                  aria-hidden="true" 
+                  role="presentation" 
+                  focusable="false"
+                  style={{ display: 'block', fill: 'none', height: '18px', width: '18px', stroke: 'currentcolor', strokeWidth: 2.5, overflow: 'visible', color: '#222222' }}
+                >
+                  <path d="m6 6 20 20M26 6 6 26"></path>
+                </svg>
+              </button>
+            </div>
+
             <div className="flex-1 overflow-y-auto">
-              <div className="pt-12 px-3 pb-4 space-y-3">
+              <div className="pt-16 px-4 pb-4 space-y-3">
               {/* Categorías - Div más alto con categorías visibles */}
               <div 
                 ref={categoriesContainerRef}
@@ -829,11 +854,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                         className="mb-3"
                         style={{
                           fontSize: '22px',
-                          lineHeight: '26px',
+                          lineHeight: '28px',
                           fontWeight: 600,
                           fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                           color: 'rgb(34, 34, 34)',
                           letterSpacing: '-0.01em',
+                          fontFeatureSettings: '"liga" 1, "kern" 1',
+                          WebkitFontSmoothing: 'antialiased',
+                          MozOsxFontSmoothing: 'grayscale',
                         }}
                       >
                         Categorías
@@ -1004,11 +1032,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                         className="mb-3"
                         style={{
                           fontSize: '22px',
-                          lineHeight: '26px',
+                          lineHeight: '28px',
                           fontWeight: 600,
                           fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                           color: 'rgb(34, 34, 34)',
                           letterSpacing: '-0.01em',
+                          fontFeatureSettings: '"liga" 1, "kern" 1',
+                          WebkitFontSmoothing: 'antialiased',
+                          MozOsxFontSmoothing: 'grayscale',
                         }}
                       >
                         Categorías
