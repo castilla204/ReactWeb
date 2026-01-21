@@ -543,9 +543,11 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
 
       {/* Información de la cita */}
       {/* ✅ INTERNACIONALIZACIÓN: Usar formatAppointmentForDisplay para fechas */}
+      {/* ✅ CORRECTO: formatAppointmentForDisplay usa proposedDateLocal/proposedTimeLocal automáticamente */}
       {(() => {
         const formattedDate = formatAppointmentForDisplay(appointment);
-        const userTimezone = getStoredTimezone();
+        // ✅ CORRECTO: Usar timezone del appointment (del experto), no del navegador del usuario
+        const appointmentTimezone = appointment.timezone || appointment.userTimezone || 'UTC';
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
@@ -563,10 +565,10 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                 </span>
               </div>
               
-              {/* Mostrar zona horaria */}
+              {/* ✅ Mostrar zona horaria del experto (no del navegador del usuario) */}
               <div className="flex items-center space-x-2 text-gray-500 text-xs">
                 <Globe className="w-3 h-3" />
-                <span>Zona horaria: {userTimezone}</span>
+                <span>Zona horaria: {appointmentTimezone}</span>
               </div>
               
               <div className="flex items-start space-x-2 text-gray-600">

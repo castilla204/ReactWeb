@@ -1555,9 +1555,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                     {appointment ? (
                                                         <>
                                                             {appointment.proposedDate && appointment.proposedTime && (() => {
-                                                                // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
-                                                                const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
-                                                                const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                                                                // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
+                                                                // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
+                                                                const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
+                                                                const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
                                                                 return (
                                                                 <div 
                                                                     className="flex items-center gap-2 text-sm text-gray-900"
@@ -1966,8 +1967,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
                                                         <span className="font-medium">
                                                             {(() => {
-                                                                const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
-                                                                const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                                                                // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
+                                                                // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
+                                                                const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
+                                                                const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
                                                                 return `${new Date(dateToUse).toLocaleDateString('es-ES', {
                                                                     day: 'numeric',
                                                                     month: 'short',
@@ -2408,9 +2411,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                 {appointment ? (
                                                     <>
                                                         {appointment.proposedDate && appointment.proposedTime && (() => {
-                                                            // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
-                                                            const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
-                                                            const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                                                            // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
+                                                            // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
+                                                            const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
+                                                            const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
                                                             return (
                                                                 <div className="flex items-center gap-2 text-sm">
                                                                     <Calendar className="w-3.5 h-3.5 text-gray-500" />
@@ -2520,8 +2524,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                                         <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
                                                         <span className="font-medium">
                                                             {(() => {
-                                                                const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
-                                                                const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                                                                // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
+                                                                // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
+                                                                const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
+                                                                const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
                                                                 return `${new Date(dateToUse).toLocaleDateString('es-ES', {
                                                                     day: 'numeric',
                                                                     month: 'short',
@@ -3062,9 +3068,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
                                 <Calendar className="w-4 h-4" />
                                 <span>
                                     {(() => {
-                                        // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
-                                        const dateToUse = (appointmentToConfirm as any).proposedDateLocal || appointmentToConfirm.proposedDate;
-                                        const timeToUse = (appointmentToConfirm as any).proposedTimeLocal || appointmentToConfirm.proposedTime;
+                                        // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
+                                        // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
+                                        const dateToUse = appointmentToConfirm.proposedDateLocal || appointmentToConfirm.proposedDate;
+                                        const timeToUse = appointmentToConfirm.proposedTimeLocal || appointmentToConfirm.proposedTime;
                                         return (
                                             <>
                                                 {new Date(dateToUse).toLocaleDateString('es-ES', {

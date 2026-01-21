@@ -268,8 +268,9 @@ export const SearchDetailsOptimized: React.FC<SearchDetailsOptimizedProps> = ({
                   <label className="block text-sm font-medium text-gray-700">Fecha Propuesta</label>
                   <p className="mt-1 text-sm text-gray-900">
                     {(() => {
-                      // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
-                      const dateToUse = (appointment as any).proposedDateLocal || appointment.proposedDate;
+                      // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
+                      // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
+                      const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
                       return dateToUse;
                     })()}
                   </p>
@@ -278,8 +279,9 @@ export const SearchDetailsOptimized: React.FC<SearchDetailsOptimizedProps> = ({
                   <label className="block text-sm font-medium text-gray-700">Hora</label>
                   <p className="mt-1 text-sm text-gray-900">
                     {(() => {
-                      // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
-                      const timeToUse = (appointment as any).proposedTimeLocal || appointment.proposedTime;
+                      // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
+                      // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
+                      const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
                       return timeToUse;
                     })()}
                   </p>
