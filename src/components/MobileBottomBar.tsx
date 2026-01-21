@@ -84,7 +84,7 @@ export const MobileBottomBar: React.FC = () => {
         if (shouldNavigate) {
           updateUser(result.user, token, () => {
             console.log('✅ [MobileBottomBar] Autenticación exitosa');
-            toast.success('¡Bienvenido!', { duration: 2000 });
+            // No mostrar notificación de bienvenida
           });
         }
       }

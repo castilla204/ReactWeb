@@ -54,7 +54,7 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
 
   const handleLogout = () => {
     signOut();
-    toast.info('👋 ¡Hasta pronto!');
+    // No mostrar notificación de adiós
     onClose();
     navigate('/');
   };

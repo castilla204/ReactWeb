@@ -655,7 +655,7 @@ export function ServiceReviewPage({
                             {validImages.length > 0 ? validImages.map((img, idx) => (
                                 <div 
                                     key={idx}
-                                    className="relative w-full flex-shrink-0 aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 snap-start overflow-hidden"
+                                    className="relative w-full flex-shrink-0 aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 snap-start overflow-hidden cursor-pointer active:scale-[0.98] transition-transform duration-150"
                                     onClick={() => handleImageClick(idx)}
                                 >
                                     {loadingImages.has(img) && (
@@ -872,41 +872,6 @@ export function ServiceReviewPage({
                         </div>
                     </div>
                     
-                    {/* Sección "Entre el 1% de los que más gustan" estilo Airbnb */}
-                    {finalRating >= 4.5 && finalReviews.length >= 3 && (
-                        <div className="mb-6 px-5">
-                            <div className="mb-3">
-                                <h3 
-                                    style={{
-                                        fontSize: '16px',
-                                        lineHeight: '20px',
-                                        fontWeight: 600,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        marginBottom: '8px',
-                                        marginTop: 0,
-                                        padding: 0,
-                                    }}
-                                >
-                                    Entre el 1% de los que más gustan
-                                </h3>
-                                <p 
-                                    style={{
-                                        fontSize: '15px',
-                                        lineHeight: '22px',
-                                        fontWeight: 400,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        margin: 0,
-                                        padding: 0,
-                                    }}
-                                >
-                                    Este es uno de los favoritos de los viajeros, según sus valoraciones, evaluaciones y su fiabilidad.
-                                </p>
-                            </div>
-                        </div>
-                    )}
-                    
                     {/* Barra de separación discreta */}
                     <div className="border-t border-gray-200 my-6"></div>
                     
@@ -922,7 +887,7 @@ export function ServiceReviewPage({
                                     fontWeight: activeTab === 'about' ? 600 : 400,
                                     color: activeTab === 'about' ? 'rgb(34, 34, 34)' : 'rgb(113, 113, 113)',
                                         fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    borderBottom: activeTab === 'about' ? '2px solid rgb(34, 34, 34)' : '2px solid transparent',
+                                    borderBottom: activeTab === 'about' ? '2px solid #E61E4D' : '2px solid transparent',
                                     transition: 'all 0.2s',
                                     }}
                                 >
@@ -937,7 +902,7 @@ export function ServiceReviewPage({
                                     fontWeight: activeTab === 'how' ? 600 : 400,
                                     color: activeTab === 'how' ? 'rgb(34, 34, 34)' : 'rgb(113, 113, 113)',
                                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    borderBottom: activeTab === 'how' ? '2px solid rgb(34, 34, 34)' : '2px solid transparent',
+                                    borderBottom: activeTab === 'how' ? '2px solid #E61E4D' : '2px solid transparent',
                                     transition: 'all 0.2s',
                                 }}
                             >
@@ -1022,7 +987,7 @@ export function ServiceReviewPage({
 
                                             return (
                                                         <div key={dt.id} className="flex items-center gap-1.5">
-                                                            <Icon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                                                            <Icon className="w-3.5 h-3.5 text-[#E61E4D] flex-shrink-0" />
                                                     <span 
                                                         style={{
                                                             fontSize: '14px',
@@ -1251,101 +1216,41 @@ export function ServiceReviewPage({
                                             El experto te enviará todos los materiales acordados (videos, informes, documentos, etc.) a través del chat. Solo cuando tú, como cliente, apruebes explícitamente que todo está correcto y completo, se liberará el pago al experto. Hasta ese momento, tu dinero permanece completamente seguro en custodia. Si no estás satisfecho, puedes solicitar correcciones y el dinero seguirá protegido.
                                         </p>
                                     </div>
-
-                                    <div style={{ 
-                                        marginTop: '24px', 
-                                        padding: '16px', 
-                                        backgroundColor: '#F0F9FF', 
-                                        borderRadius: '12px',
-                                        border: '1px solid #BAE6FD',
-                                    }}>
-                                        <p style={{ 
-                                            marginBottom: '8px', 
-                                            marginTop: 0,
-                                            fontSize: '14px',
-                                            lineHeight: '20px',
-                                            fontWeight: 600,
-                                            color: 'rgb(34, 34, 34)',
-                                        }}>
-                                            🔒 Tu dinero siempre está seguro
-                                        </p>
-                                        <p style={{ 
-                                            marginBottom: 0, 
-                                            marginTop: 0,
-                                            fontSize: '14px',
-                                            lineHeight: '20px',
-                                            fontWeight: 400,
-                                            color: 'rgb(34, 34, 34)',
-                                        }}>
-                                            Todo el proceso está completamente automatizado y inspecciono.com actúa como mediador y custodio del pago en todo momento. Tu dinero solo se libera cuando apruebas el trabajo completado, garantizando la seguridad y transparencia de la transacción para ambas partes.
-                                        </p>
-                                    </div>
                                 </div>
                             </div>
                         )}
                     </div>
 
-                        {/* Reseñas (MÓVIL - ESTILO AIRBNB EXACTO) */}
+                        {/* Reseñas (MÓVIL - MEJORADO) */}
                         {finalReviews.length > 0 ? (
                             <>
-                                <div className="h-px bg-gray-200 mb-6 mx-5" />
-                                <div className="mb-24 px-5 w-full">
-                                    {/* Badge Guest Favorite - Imágenes correctas */}
-                                    {finalRating >= 4.5 && finalReviews.length >= 3 && (
-                                        <div className="mb-6">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <div className="flex items-center gap-1.5">
-                                                    <picture>
-                                                        <source srcSet="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-GuestFavorite/original/33b80859-e87e-4c86-841c-645c786ba4c1.png?im_w=240 1x" media="(min-width: 0px)" />
-                                                        <img 
-                                                            src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-GuestFavorite/original/33b80859-e87e-4c86-841c-645c786ba4c1.png?im_w=720" 
-                                                            alt="Guest favorite" 
-                                                            className="h-[105px] w-auto object-contain"
-                                                            style={{ width: '68.97058823529412px', height: '105px' }}
-                                                            decoding="async"
-                                                        />
-                                                    </picture>
-                                                    <picture>
-                                                        <source srcSet="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-GuestFavorite/original/059619e1-1751-42dd-84e4-50881483571a.png?im_w=240 1x" media="(min-width: 0px)" />
-                                                        <img 
-                                                            src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-GuestFavorite/original/059619e1-1751-42dd-84e4-50881483571a.png?im_w=720" 
-                                                            alt="Guest favorite" 
-                                                            className="h-[105px] w-auto object-contain"
-                                                            style={{ width: '68.97058823529412px', height: '105px' }}
-                                                            decoding="async"
-                                                        />
-                                                    </picture>
-                                                </div>
-                                                <div 
-                                                    style={{
-                                                        fontSize: '15px',
-                                                        lineHeight: '20px',
-                                                        fontWeight: 600,
-                                                        color: 'rgb(34, 34, 34)',
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    }}
-                                                >
-                                                    Guest favorite
-                                                </div>
-                                            </div>
-                                            <div 
-                                                style={{
-                                                    fontSize: '15px',
-                                                    lineHeight: '22px',
-                                                    fontWeight: 400,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                This home is a guest favorite based on ratings, reviews, and reliability
-                                            </div>
-                                        </div>
-                                    )}
+                                <div className="h-px bg-gray-200 mb-4 mx-4" />
+                                <div className="mb-8 px-4 w-full">
+                                    {/* Texto de reseñas verificadas */}
+                                    <div className="mb-2">
+                                        <p 
+                                            style={{
+                                                fontSize: '13px',
+                                                lineHeight: '18px',
+                                                fontWeight: 400,
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                padding: 0,
+                                                background: 'linear-gradient(135deg, #E61E4D 0%, #E31C5F 50%, #D70466 100%)',
+                                                WebkitBackgroundClip: 'text',
+                                                WebkitTextFillColor: 'transparent',
+                                                backgroundClip: 'text',
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            Reseñas de clientes verificados
+                                        </p>
+                                    </div>
                                     
                                     {/* Header de reseñas - Estilo Airbnb */}
-                                    <div className="mb-6">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Star className="w-5 h-5 fill-gray-900 text-gray-900" />
+                                    <div className="mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <Star className="w-5 h-5 fill-[#FFB800] text-[#FFB800]" />
                                             <span 
                                                 style={{
                                                     fontSize: '18px',
@@ -1381,7 +1286,7 @@ export function ServiceReviewPage({
                                     
                                     <div 
                                         ref={reviewsScrollRefMobile}
-                                        className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide w-full snap-x snap-mandatory px-0"
+                                        className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide w-full snap-x snap-mandatory"
                                     >
                                         {finalReviews.map((review: any, idx: number) => {
                                             // Formatear fecha en formato "mes de año" como Airbnb
@@ -1396,114 +1301,101 @@ export function ServiceReviewPage({
                                             const reviewerYears = reviewerMonths ? Math.floor(reviewerMonths / 12) : null;
                                             
                                             const reviewText = review.description || review.comment || '';
-                                            // Calcular si el texto necesita truncarse (aproximadamente 4 líneas con line-height 1.25rem = ~150 caracteres)
-                                            const shouldTruncate = reviewText.length > 150;
+                                            // Calcular si el texto necesita truncarse (aproximadamente 6 líneas con line-height 1.5rem = ~200 caracteres)
+                                            const shouldTruncate = reviewText.length > 200;
                                             const isExpanded = expandedReviews[review.id || idx] || false;
                                             const rating = review.rating || review.score || 5;
                                             
+                                            const hasImages = review.imageUrls && review.imageUrls.length > 0;
+                                            const showImages = showReviewImages[review.id || idx] || false;
+                                            
                                             return (
-                                                <div key={review.id || idx} className={`flex-shrink-0 w-[85%] max-w-sm snap-start pr-4 ${idx === 0 ? 'pl-2' : ''}`}>
-                                                    {/* Estructura vertical exacta de Airbnb con marco */}
-                                                    <div className={`flex flex-col bg-white border border-gray-200 rounded-lg p-4 shadow-sm ${isExpanded ? 'min-h-[200px]' : 'h-[200px]'}`}>
+                                                <div key={review.id || idx} className={`flex-shrink-0 w-[75%] max-w-[320px] snap-start ${idx === 0 ? 'ml-4' : ''} ${idx === finalReviews.length - 1 ? 'mr-4' : ''}`}>
+                                                    {/* Estructura mejorada para móvil - Altura fija */}
+                                                    <div className={`flex flex-col bg-white border border-gray-200 rounded-xl p-4 shadow-sm h-[380px] ${isExpanded && reviewText.length > 300 ? 'overflow-y-auto' : 'overflow-hidden'}`}>
                                                         {/* 1. Arriba: Estrellas y fecha */}
-                                                        <div className="mb-2">
+                                                        <div className="mb-2.5 flex items-start justify-between gap-2 flex-shrink-0">
                                                             <span role="img" aria-label={`Valoración: ${rating} estrellas`}>
-                                                                <div className="flex gap-[0.0625rem] inline-flex items-center">
+                                                                <div className="flex gap-0.5 inline-flex items-center">
                                                                     {[...Array(5)].map((_, i) => (
                                                                         <Star 
                                                                             key={i} 
-                                                                            className={`w-[0.5625rem] h-[0.5625rem] flex-shrink-0 ${i < rating ? 'fill-gray-900 text-gray-900' : 'fill-gray-200 text-gray-200'}`} 
+                                                                            className={`w-3 h-3 flex-shrink-0 ${i < rating ? 'fill-[#FFB800] text-[#FFB800]' : 'fill-gray-200 text-gray-200'}`} 
                                                                         />
                                                                     ))}
                                                                 </div>
                                                             </span>
-                                                            <span className="text-[14px] text-gray-500 leading-[1.4]">, </span>
-                                                            <span aria-hidden="true" className="text-[14px] text-gray-500 leading-[1.4]"> · </span>
-                                                            <span className="text-[14px] text-gray-500 leading-[1.4]">{formattedDate}</span>
+                                                            <span className="text-[13px] text-gray-500 leading-[1.4] text-right flex-shrink-0">{formattedDate}</span>
                                                         </div>
                                             
                                                         {/* 2. Medio: Texto de la review */}
-                                                        <div className="mb-3 flex-1">
+                                                        <div className={`mb-2 flex-1 min-h-0 ${hasImages ? '' : 'mb-3'}`}>
                                                             <div 
                                                                 style={{
-                                                                    lineHeight: '1.25rem',
+                                                                    lineHeight: '1.5rem',
                                                                     overflow: isExpanded ? 'visible' : 'hidden',
                                                                     textOverflow: isExpanded ? 'clip' : 'ellipsis',
                                                                     display: isExpanded ? 'block' : '-webkit-box',
-                                                                    WebkitLineClamp: isExpanded ? 'unset' : 4,
+                                                                    WebkitLineClamp: isExpanded ? 'unset' : 5,
                                                                     WebkitBoxOrient: 'vertical' as 'vertical',
                                                                 }}
                                                             >
-                                                                <span>
-                                                                    <span className="text-[15px] text-gray-700 leading-[1.5]">
-                                                                        {reviewText}
-                                                                    </span>
+                                                                <span className="text-[15px] text-gray-700 leading-[1.5]">
+                                                                    {reviewText}
                                                                 </span>
                                                             </div>
-                                                            <div></div>
                                                             {shouldTruncate && (
                                                                 <button
                                                                     role="button"
                                                                     type="button"
-                                                                    onClick={() => setExpandedReviews(prev => ({ ...prev, [review.id || idx]: !prev[review.id || idx] }))}
-                                                                    className="mt-2 text-[15px] font-semibold text-gray-900 underline hover:no-underline leading-[1.4]"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setExpandedReviews(prev => ({ ...prev, [review.id || idx]: !prev[review.id || idx] }));
+                                                                    }}
+                                                                    className="mt-1.5 text-[14px] font-semibold text-[#E61E4D] underline hover:no-underline leading-[1.4] hover:text-[#D70466] transition-colors"
                                                                 >
                                                                     {isExpanded ? 'Mostrar menos' : 'Mostrar más'}
                                                                 </button>
                                                             )}
                                                         </div>
                                                 
-                                                        {/* Imágenes de la reseña */}
-                                                        {review.imageUrls && review.imageUrls.length > 0 && (
-                                                            <div className="mt-3 mb-3">
+                                                        {/* Botón ver imágenes - Solo si hay imágenes */}
+                                                        {hasImages && (
+                                                            <div className="mb-2 flex-shrink-0">
                                                                 <button
                                                                     type="button"
-                                                                    className="text-[15px] font-semibold text-gray-900 underline hover:no-underline leading-[1.4]"
-                                                                    onClick={() => {
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
                                                                         setShowReviewImages(prev => ({
                                                                             ...prev,
                                                                             [review.id || idx]: !prev[review.id || idx]
                                                                         }));
                                                                     }}
+                                                                    className="text-[14px] font-semibold text-[#E61E4D] underline hover:no-underline leading-[1.4] hover:text-[#D70466] transition-colors"
                                                                 >
-                                                                    Ver fotos
+                                                                    {showImages ? 'Ocultar imágenes' : `Ver ${review.imageUrls.length} ${review.imageUrls.length === 1 ? 'imagen' : 'imágenes'}`}
                                                                 </button>
-                                                                {showReviewImages[review.id || idx] && (
-                                                                    <>
-                                                                        {/* Móvil: Scroll horizontal */}
-                                                                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full mt-2 lg:hidden">
-                                                                            {review.imageUrls.map((img: string, imgIdx: number) => (
-                                                                                <div key={imgIdx} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                                                                                    <img 
-                                                                                        src={img} 
-                                                                                        alt={`Foto reseña ${imgIdx + 1}`} 
-                                                                                        className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                                                        onClick={() => {
-                                                                                            // TODO: Abrir lightbox con la imagen
-                                                                                            console.log('Abrir imagen:', img);
-                                                                                        }}
-                                                                                    />
-                                                                                </div>
-                                                                            ))}
+                                                            </div>
+                                                        )}
+                                                
+                                                        {/* Imágenes de la reseña - Mostrar solo si está expandido */}
+                                                        {hasImages && showImages && (
+                                                            <div className="mb-2 flex-shrink-0">
+                                                                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full">
+                                                                    {review.imageUrls.map((img: string, imgIdx: number) => (
+                                                                        <div key={imgIdx} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                                                                            <img 
+                                                                                src={img} 
+                                                                                alt={`Foto reseña ${imgIdx + 1}`} 
+                                                                                className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                                                                onClick={() => {
+                                                                                    // TODO: Abrir lightbox con la imagen
+                                                                                    console.log('Abrir imagen:', img);
+                                                                                }}
+                                                                            />
                                                                         </div>
-                                                                        {/* Desktop: Grid vertical */}
-                                                                        <div className="hidden lg:grid lg:grid-cols-4 lg:gap-2 w-full mt-2">
-                                                                            {review.imageUrls.map((img: string, imgIdx: number) => (
-                                                                                <div key={imgIdx} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                                                                                    <img 
-                                                                                        src={img} 
-                                                                                        alt={`Foto reseña ${imgIdx + 1}`} 
-                                                                                        className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                                                        onClick={() => {
-                                                                                            // TODO: Abrir lightbox con la imagen
-                                                                                            console.log('Abrir imagen:', img);
-                                                                                        }}
-                                                                                    />
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    </>
-                                                                )}
+                                                                    ))}
+                                                                </div>
                                                             </div>
                                                         )}
                                                         
@@ -1554,7 +1446,7 @@ export function ServiceReviewPage({
                             </>
                         ) : (
                             /* ESTADO SIN RESEÑAS MÓVIL */
-                            <div className="mb-24 px-5 py-8 bg-gray-50/50 rounded-xl border border-dashed border-gray-200 text-center w-full mt-6">
+                            <div className="mb-8 px-4 py-8 bg-gray-50/50 rounded-xl border border-dashed border-gray-200 text-center w-full mt-6">
                                 <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-gray-100">
                                     <Star className="w-6 h-6 text-gray-300 fill-gray-50" />
                                 </div>
@@ -1603,14 +1495,13 @@ export function ServiceReviewPage({
                                 >
                                     <div className="flex items-baseline gap-1">
                                         <span 
-                                            className="text-[16px] font-semibold text-gray-900 leading-[1.5] underline decoration-gray-900 underline-offset-2" 
-                                            aria-label={`${formatPrice(finalPrice)} € por 2 noches`}
-                                            style={{ textDecorationThickness: '1px' }}
+                                            className="text-[16px] font-semibold text-gray-900 leading-[1.5]" 
+                                            aria-label={`${formatPrice(finalPrice)} € el servicio`}
                                         >
                                             {formatPrice(finalPrice)} €
                                         </span>
                                     </div>
-                                    <span className="text-[15px] text-gray-600 font-normal leading-[1.4]">por 2 noches</span>
+                                    <span className="text-[15px] text-gray-600 font-normal leading-[1.4]">el servicio</span>
                                 </button>
                             </div>
                             {isAuthenticated ? (
@@ -1688,7 +1579,7 @@ export function ServiceReviewPage({
 
             {/* ========== VERSIÓN DESKTOP COMPACTA Y REFINADA ========== */}
             <div className="hidden lg:block min-h-screen bg-white">
-                <div className="max-w-6xl mx-auto px-6 pt-16 pb-8">
+                <div className="max-w-7xl mx-auto px-4 pt-6 pb-24">
                     {/* Botón de ir hacia atrás en desktop */}
                     <div className="mb-6">
                         <button 
@@ -1852,46 +1743,31 @@ export function ServiceReviewPage({
                             <div className="animate-fade-in-up">
                                 {finalReviews.length > 0 ? (
                                     <>
-                                        {/* Badge Guest Favorite - Imágenes correctas */}
-                                        {finalRating >= 4.5 && finalReviews.length >= 3 && (
-                                            <div className="mb-6">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <picture>
-                                                            <source srcSet="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-GuestFavorite/original/33b80859-e87e-4c86-841c-645c786ba4c1.png?im_w=240 1x" media="(min-width: 0px)" />
-                                                            <img 
-                                                                src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-GuestFavorite/original/33b80859-e87e-4c86-841c-645c786ba4c1.png?im_w=720" 
-                                                                alt="Guest favorite" 
-                                                                className="h-[105px] w-auto object-contain"
-                                                                style={{ width: '68.97058823529412px', height: '105px' }}
-                                                                decoding="async"
-                                                            />
-                                                        </picture>
-                                                        <picture>
-                                                            <source srcSet="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-GuestFavorite/original/059619e1-1751-42dd-84e4-50881483571a.png?im_w=240 1x" media="(min-width: 0px)" />
-                                                            <img 
-                                                                src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-GuestFavorite/original/059619e1-1751-42dd-84e4-50881483571a.png?im_w=720" 
-                                                                alt="Guest favorite" 
-                                                                className="h-[105px] w-auto object-contain"
-                                                                style={{ width: '68.97058823529412px', height: '105px' }}
-                                                                decoding="async"
-                                                            />
-                                                        </picture>
-                                                    </div>
-                                                    <div className="text-[15px] font-semibold text-gray-900 leading-[1.4]">
-                                                        Guest favorite
-                                                    </div>
-                                                </div>
-                                                <div className="text-[15px] text-gray-700 leading-[1.5]">
-                                                    This home is a guest favorite based on ratings, reviews, and reliability
-                                                </div>
-                                            </div>
-                                        )}
+                                        {/* Texto de reseñas verificadas */}
+                                        <div className="mb-3">
+                                            <p 
+                                                style={{
+                                                    fontSize: '14px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 400,
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    margin: 0,
+                                                    padding: 0,
+                                                    background: 'linear-gradient(135deg, #E61E4D 0%, #E31C5F 50%, #D70466 100%)',
+                                                    WebkitBackgroundClip: 'text',
+                                                    WebkitTextFillColor: 'transparent',
+                                                    backgroundClip: 'text',
+                                                    fontWeight: 600,
+                                                }}
+                                            >
+                                                Reseñas de clientes verificados
+                                            </p>
+                                        </div>
                                         
                                         {/* Header de reseñas - Estilo Airbnb */}
                                         <div className="mb-6">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <Star className="w-5 h-5 fill-gray-900 text-gray-900" />
+                                                <Star className="w-5 h-5 fill-[#FFB800] text-[#FFB800]" />
                                                 <span 
                                                     style={{
                                                         fontSize: '18px',
@@ -1922,33 +1798,33 @@ export function ServiceReviewPage({
                                                 >
                                                     {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
                                                 </span>
-                                                            </div>
-                                                        </div>
+                                            </div>
+                                        </div>
 
                                         {/* Scroll horizontal en desktop con flechas */}
                                         <div className="relative">
                                             {/* Flecha izquierda */}
                                             <button
                                                 onClick={() => scrollReviews('left', false)}
-                                                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full p-2 shadow-md hover:shadow-lg transition-shadow hover:bg-gray-50"
+                                                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full p-2 shadow-md hover:shadow-lg transition-all hover:bg-gray-50 hover:border-[#E61E4D]"
                                                 aria-label="Scroll izquierda"
                                             >
-                                                <ChevronLeft className="w-5 h-5 text-gray-700" />
+                                                <ChevronLeft className="w-5 h-5 text-gray-700 hover:text-[#E61E4D] transition-colors" />
                                             </button>
                                             
                                             {/* Flecha derecha */}
                                             <button
                                                 onClick={() => scrollReviews('right', false)}
-                                                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full p-2 shadow-md hover:shadow-lg transition-shadow hover:bg-gray-50"
+                                                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-300 rounded-full p-2 shadow-md hover:shadow-lg transition-all hover:bg-gray-50 hover:border-[#E61E4D]"
                                                 aria-label="Scroll derecha"
                                             >
-                                                <ChevronRight className="w-5 h-5 text-gray-700" />
+                                                <ChevronRight className="w-5 h-5 text-gray-700 hover:text-[#E61E4D] transition-colors" />
                                             </button>
                                             
                                             <div 
                                                 ref={reviewsScrollRefDesktop}
-                                                className="flex gap-4 overflow-x-auto scrollbar-hide w-full snap-x snap-mandatory pl-8 pr-10"
-                                                style={{ paddingBottom: '62px' }}
+                                                className="flex gap-4 overflow-x-auto scrollbar-hide w-full snap-x snap-mandatory pl-4 pr-4"
+                                                style={{ paddingBottom: '20px' }}
                                             >
                                                 {finalReviews.map((review: any, idx: number) => {
                                                 // Formatear fecha en formato "mes de año" como Airbnb
@@ -1962,98 +1838,103 @@ export function ServiceReviewPage({
                                                 const reviewerMonths = reviewerCreatedAt ? Math.floor((now.getTime() - reviewerCreatedAt.getTime()) / (1000 * 60 * 60 * 24 * 30)) : null;
                                                 const reviewerYears = reviewerMonths ? Math.floor(reviewerMonths / 12) : null;
                                                 
-                                                const reviewText = review.description || review.comment || '';
-                                                // Calcular si el texto necesita truncarse (aproximadamente 4 líneas con line-height 1.25rem = ~150 caracteres)
-                                                const shouldTruncate = reviewText.length > 150;
-                                                const isExpanded = expandedReviews[review.id || idx] || false;
-                                                const rating = review.rating || review.score || 5;
-                                                
-                                                return (
-                                                    <div key={review.id || idx} className="flex-shrink-0 w-[85%] max-w-sm snap-start pr-4">
-                                                        {/* Estructura vertical exacta de Airbnb con marco - Mismo que móvil */}
-                                                        <div className={`flex flex-col bg-white border border-gray-200 rounded-lg p-4 shadow-sm ${isExpanded ? 'min-h-[200px]' : 'h-[200px]'}`}>
-                                                            {/* 1. Arriba: Estrellas y fecha */}
-                                                            <div className="mb-2">
-                                                                <span role="img" aria-label={`Valoración: ${rating} estrellas`}>
-                                                                    <div className="flex gap-[0.0625rem] inline-flex items-center">
-                                                            {[...Array(5)].map((_, i) => (
-                                                                <Star 
-                                                                    key={i} 
-                                                                                className={`w-[0.5625rem] h-[0.5625rem] flex-shrink-0 ${i < rating ? 'fill-gray-900 text-gray-900' : 'fill-gray-200 text-gray-200'}`} 
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                                </span>
-                                                                <span className="text-xs text-gray-500">, </span>
-                                                                <span aria-hidden="true" className="text-xs text-gray-500"> · </span>
-                                                                <span className="text-xs text-gray-500">{formattedDate}</span>
-                                                    </div>
-                                                    
-                                                            {/* 2. Medio: Texto de la review */}
-                                                            <div className="mb-3 flex-1">
-                                                                <div 
-                                                                    style={{
-                                                                        lineHeight: '1.25rem',
-                                                                        overflow: isExpanded ? 'visible' : 'hidden',
-                                                                        textOverflow: isExpanded ? 'clip' : 'ellipsis',
-                                                                        display: isExpanded ? 'block' : '-webkit-box',
-                                                                        WebkitLineClamp: isExpanded ? 'unset' : 4,
-                                                                        WebkitBoxOrient: 'vertical' as 'vertical',
-                                                                    }}
-                                                                >
-                                                                    <span>
-                                                                        <span className="text-[15px] text-gray-700 leading-[1.25rem]">
-                                                                            {reviewText}
-                                                                        </span>
-                                                                    </span>
-                                                                </div>
-                                                                <div></div>
-                                                                {shouldTruncate && (
-                                                                    <button
-                                                                        role="button"
-                                                                        type="button"
-                                                                        onClick={() => setExpandedReviews(prev => ({ ...prev, [review.id || idx]: !prev[review.id || idx] }))}
-                                                                        className="mt-2 text-[15px] font-semibold text-gray-900 underline hover:no-underline leading-[1.4]"
-                                                                    >
-                                                                        {isExpanded ? 'Mostrar menos' : 'Mostrar más'}
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                            
-                                                            {/* Imágenes de la reseña */}
-                                                        {review.imageUrls && review.imageUrls.length > 0 && (
-                                                                <div className="mt-3 mb-3">
-                                                                    <button
-                                                                        type="button"
-                                                                        className="text-[15px] font-semibold text-gray-900 underline hover:no-underline leading-[1.4]"
-                                                                        onClick={() => {
-                                                                            setShowReviewImages(prev => ({
-                                                                                ...prev,
-                                                                                [review.id || idx]: !prev[review.id || idx]
-                                                                            }));
-                                                                        }}
-                                                                    >
-                                                                        Ver fotos
-                                                                    </button>
-                                                                    {showReviewImages[review.id || idx] && (
-                                                                        <div className="grid grid-cols-4 gap-2 w-full mt-2">
-                                                                            {review.imageUrls.map((img: string, imgIdx: number) => (
-                                                                                <div key={imgIdx} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                                                                        <img 
-                                                                            src={img} 
-                                                                            alt={`Foto reseña ${imgIdx + 1}`} 
-                                                                                        className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                                                        onClick={() => {
-                                                                                            // TODO: Abrir lightbox con la imagen
-                                                                                            console.log('Abrir imagen:', img);
-                                                                                        }}
+                                            const reviewText = review.description || review.comment || '';
+                                            // Calcular si el texto necesita truncarse (aproximadamente 5 líneas con line-height 1.5rem = ~200 caracteres)
+                                            const shouldTruncate = reviewText.length > 200;
+                                            const isExpanded = expandedReviews[review.id || idx] || false;
+                                            const rating = review.rating || review.score || 5;
+                                            const hasImages = review.imageUrls && review.imageUrls.length > 0;
+                                            const showImages = showReviewImages[review.id || idx] || false;
+                                            
+                                            return (
+                                                <div key={review.id || idx} className="flex-shrink-0 w-[75%] max-w-[320px] snap-start">
+                                                    {/* Estructura mejorada - Mismo estilo que móvil */}
+                                                    <div className={`flex flex-col bg-white border border-gray-200 rounded-xl p-4 shadow-sm h-[320px] ${isExpanded && reviewText.length > 300 ? 'overflow-y-auto' : 'overflow-hidden'}`}>
+                                                        {/* 1. Arriba: Estrellas y fecha */}
+                                                        <div className="mb-2.5 flex items-start justify-between gap-2 flex-shrink-0">
+                                                            <span role="img" aria-label={`Valoración: ${rating} estrellas`}>
+                                                                <div className="flex gap-0.5 inline-flex items-center">
+                                                                    {[...Array(5)].map((_, i) => (
+                                                                        <Star 
+                                                                            key={i} 
+                                                                            className={`w-3 h-3 flex-shrink-0 ${i < rating ? 'fill-[#FFB800] text-[#FFB800]' : 'fill-gray-200 text-gray-200'}`} 
                                                                         />
-                                                                    </div>
-                                                                ))}
-                                        </div>
-                                    )}
-                                                    </div>
+                                                                    ))}
+                                                                </div>
+                                                            </span>
+                                                            <span className="text-[13px] text-gray-500 leading-[1.4] text-right flex-shrink-0">{formattedDate}</span>
+                                                        </div>
+                                            
+                                                        {/* 2. Medio: Texto de la review */}
+                                                        <div className={`mb-2 flex-1 min-h-0 ${hasImages ? '' : 'mb-3'}`}>
+                                                            <div 
+                                                                style={{
+                                                                    lineHeight: '1.5rem',
+                                                                    overflow: isExpanded ? 'visible' : 'hidden',
+                                                                    textOverflow: isExpanded ? 'clip' : 'ellipsis',
+                                                                    display: isExpanded ? 'block' : '-webkit-box',
+                                                                    WebkitLineClamp: isExpanded ? 'unset' : 5,
+                                                                    WebkitBoxOrient: 'vertical' as 'vertical',
+                                                                }}
+                                                            >
+                                                                <span className="text-[15px] text-gray-700 leading-[1.5]">
+                                                                    {reviewText}
+                                                                </span>
+                                                            </div>
+                                                            {shouldTruncate && (
+                                                                <button
+                                                                    role="button"
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setExpandedReviews(prev => ({ ...prev, [review.id || idx]: !prev[review.id || idx] }));
+                                                                    }}
+                                                                    className="mt-1.5 text-[14px] font-semibold text-[#E61E4D] underline hover:no-underline leading-[1.4] hover:text-[#D70466] transition-colors"
+                                                                >
+                                                                    {isExpanded ? 'Mostrar menos' : 'Mostrar más'}
+                                                                </button>
                                                             )}
+                                                        </div>
+                                                
+                                                        {/* Botón ver imágenes - Solo si hay imágenes */}
+                                                        {hasImages && (
+                                                            <div className="mb-2 flex-shrink-0">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setShowReviewImages(prev => ({
+                                                                            ...prev,
+                                                                            [review.id || idx]: !prev[review.id || idx]
+                                                                        }));
+                                                                    }}
+                                                                    className="text-[14px] font-semibold text-[#E61E4D] underline hover:no-underline leading-[1.4] hover:text-[#D70466] transition-colors"
+                                                                >
+                                                                    {showImages ? 'Ocultar imágenes' : `Ver ${review.imageUrls.length} ${review.imageUrls.length === 1 ? 'imagen' : 'imágenes'}`}
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                
+                                                        {/* Imágenes de la reseña - Mostrar solo si está expandido */}
+                                                        {hasImages && showImages && (
+                                                            <div className="mb-2 flex-shrink-0">
+                                                                <div className="grid grid-cols-4 gap-2 w-full">
+                                                                    {review.imageUrls.map((img: string, imgIdx: number) => (
+                                                                        <div key={imgIdx} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                                                                            <img 
+                                                                                src={img} 
+                                                                                alt={`Foto reseña ${imgIdx + 1}`} 
+                                                                                className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                                                                onClick={() => {
+                                                                                    // TODO: Abrir lightbox con la imagen
+                                                                                    console.log('Abrir imagen:', img);
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                             
                                                             {/* 3. Abajo: Avatar + Nombre + Antigüedad (horizontal, misma línea) */}
                                                             <div className="flex items-center gap-2 mt-auto">
@@ -2139,6 +2020,116 @@ export function ServiceReviewPage({
                         </div>
                     )}
                             </div>
+                            
+                            {/* Sección "¿Cómo funciona?" - Desktop */}
+                            <div className="mb-2 -mt-4">
+                                <h3 
+                                    style={{
+                                        fontSize: '16px',
+                                        lineHeight: '20px',
+                                        fontWeight: 600,
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        background: 'linear-gradient(135deg, #E61E4D 0%, #E31C5F 50%, #D70466 100%)',
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent',
+                                        backgroundClip: 'text',
+                                        marginBottom: '16px',
+                                        marginTop: 0,
+                                        padding: 0,
+                                    }}
+                                >
+                                    ¿Cómo funciona?
+                                </h3>
+                                <div 
+                                    style={{
+                                        fontSize: '14px',
+                                        lineHeight: '20px',
+                                        fontWeight: 400,
+                                        color: 'rgb(34, 34, 34)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    }}
+                                >
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h4 style={{ 
+                                            fontSize: '15px', 
+                                            lineHeight: '20px', 
+                                            fontWeight: 600, 
+                                            marginBottom: '8px', 
+                                            marginTop: 0,
+                                            color: 'rgb(34, 34, 34)',
+                                        }}>
+                                            1. Realiza el pago seguro
+                                        </h4>
+                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
+                                            Una vez que realices el pago, tu dinero queda completamente a salvo en custodia. Se abrirá automáticamente un chat con el experto donde comenzará un flujo de trabajo completamente automatizado gestionado por inspecciono.com.
+                                        </p>
+                                    </div>
+
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h4 style={{ 
+                                            fontSize: '15px', 
+                                            lineHeight: '20px', 
+                                            fontWeight: 600, 
+                                            marginBottom: '8px', 
+                                            marginTop: 0,
+                                            color: 'rgb(34, 34, 34)',
+                                        }}>
+                                            2. Propón una cita válida
+                                        </h4>
+                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
+                                            A través del chat automatizado, deberás proponer una fecha, hora y ubicación para la cita. <strong>Es fundamental que la cita cumpla estos requisitos:</strong> debe tener un mínimo de 24 horas de antelación, debe estar dentro del horario disponible del experto (mostrado arriba) y la ubicación debe estar dentro del rango de cobertura del experto (indicado en el mapa). Si no cumple estos requisitos, el sistema automatizado no permitirá realizar la inspección.
+                                        </p>
+                                    </div>
+
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h4 style={{ 
+                                            fontSize: '15px', 
+                                            lineHeight: '20px', 
+                                            fontWeight: 600, 
+                                            marginBottom: '8px', 
+                                            marginTop: 0,
+                                            color: 'rgb(34, 34, 34)',
+                                        }}>
+                                            3. Confirmación del experto
+                                        </h4>
+                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
+                                            El experto puede aceptar o rechazar la cita propuesta. Si la rechaza, tendrá una única oportunidad para hacerlo. Si rechaza la cita, se te devolverá el dinero automáticamente y de forma segura. Tu dinero siempre está protegido.
+                                        </p>
+                                    </div>
+
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h4 style={{ 
+                                            fontSize: '15px', 
+                                            lineHeight: '20px', 
+                                            fontWeight: 600, 
+                                            marginBottom: '8px', 
+                                            marginTop: 0,
+                                            color: 'rgb(34, 34, 34)',
+                                        }}>
+                                            4. Realización del servicio
+                                        </h4>
+                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
+                                            Una vez aceptada la cita, el experto realizará la inspección en la fecha, hora y ubicación acordadas. Durante todo este proceso, tu dinero permanece seguro en custodia.
+                                        </p>
+                                    </div>
+
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h4 style={{ 
+                                            fontSize: '15px', 
+                                            lineHeight: '20px', 
+                                            fontWeight: 600, 
+                                            marginBottom: '8px', 
+                                            marginTop: 0,
+                                            color: 'rgb(34, 34, 34)',
+                                        }}>
+                                            5. Entrega y aprobación final
+                                        </h4>
+                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
+                                            El experto te enviará todos los materiales acordados (videos, informes, documentos, etc.) a través del chat. Solo cuando tú, como cliente, apruebes explícitamente que todo está correcto y completo, se liberará el pago al experto. Hasta ese momento, tu dinero permanece completamente seguro en custodia. Si no estás satisfecho, puedes solicitar correcciones y el dinero seguirá protegido.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {/* COLUMNA DERECHA: INFO + RESERVA */}
@@ -2184,7 +2175,7 @@ export function ServiceReviewPage({
                                         <>
                                             <span>·</span>
                                             <div className="flex items-center gap-1.5">
-                                                <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                                <MapPin className="w-3.5 h-3.5 text-[#E61E4D] flex-shrink-0" />
                                                 <span>
                                                     {(() => {
                                                         const city = finalService?.expert?.city;
@@ -2206,7 +2197,7 @@ export function ServiceReviewPage({
                                 {finalCompletedSearches > 0 && (
                                     <>
                                         <span>·</span>
-                                            <span style={{ color: 'rgb(34, 197, 94)', fontWeight: 500 }}>{finalCompletedSearches} trabajos hechos</span>
+                                            <span style={{ color: '#E61E4D', fontWeight: 600 }}>{finalCompletedSearches} trabajos hechos</span>
                                     </>
                                 )}
                                 </div>
@@ -2302,47 +2293,12 @@ export function ServiceReviewPage({
                                 </div>
                             </div>
                             
-                            {/* Sección "Entre el 1% de los que más gustan" estilo Airbnb */}
-                            {finalRating >= 4.5 && finalReviews.length >= 3 && (
-                                <div className="mb-6 px-5">
-                                    <div className="mb-3">
-                                <h3 
-                                    style={{
-                                        fontSize: '16px',
-                                        lineHeight: '20px',
-                                        fontWeight: 600,
-                                        color: 'rgb(34, 34, 34)',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        marginBottom: '8px',
-                                        marginTop: 0,
-                                        padding: 0,
-                                    }}
-                                >
-                                            Entre el 1% de los que más gustan
-                                </h3>
-                                    <p 
-                                        style={{
-                                                fontSize: '15px',
-                                                lineHeight: '22px',
-                                            fontWeight: 400,
-                                                color: 'rgb(34, 34, 34)',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            margin: 0,
-                                            padding: 0,
-                                        }}
-                                    >
-                                            Este es uno de los favoritos de los viajeros, según sus valoraciones, evaluaciones y su fiabilidad.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                            
                             {/* Barra de separación discreta */}
                             <div className="border-t border-gray-200 my-6"></div>
                             
                             {/* Descripción del tipo de habitación/servicio */}
                             {finalService?.serviceTypeName && (
-                                <div className="mb-6 px-5">
+                                <div className="mb-8">
                                     <p 
                                         style={{
                                             fontSize: '15px',
@@ -2396,44 +2352,42 @@ export function ServiceReviewPage({
 
                             {/* Información del Experto (User Conditions) */}
                             {finalUserConditions && (
-                                <div className="mb-4">
+                                <div className="mb-8">
                                     <h3 
                                         style={{
-                                            fontSize: '14px',
+                                            fontSize: '16px',
                                             lineHeight: '20px',
                                             fontWeight: 600,
                                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                             color: 'rgb(34, 34, 34)',
-                                            marginBottom: '4px',
+                                            marginBottom: '8px',
                                             marginTop: 0,
                                             padding: 0,
                                         }}
                                     >
                                         Detalles del experto
                                     </h3>
-                                    <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                                            <p 
-                                                className="whitespace-pre-line"
-                                                    style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 400,
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    color: 'rgb(113, 113, 113)',
-                                                    margin: 0,
-                                                    padding: 0,
-                                                }}
-                                            >
-                                                {finalUserConditions}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
+                                    <p 
+                                        className="whitespace-pre-line"
+                                        style={{
+                                            fontSize: '14px',
+                                            lineHeight: '20px',
+                                            fontWeight: 400,
+                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            color: 'rgb(113, 113, 113)',
+                                            margin: 0,
+                                            padding: 0,
+                                        }}
+                                    >
+                                        {finalUserConditions}
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Qué incluye mejorado - Diseño profesional - Desktop */}
                             {finalDeliverableTypes.length > 0 && (
                                 <>
-                                    <div className="mb-6 px-5">
+                                    <div className="mb-8">
                                         <h3 
                                         style={{
                                             fontSize: '16px',
@@ -2465,7 +2419,7 @@ export function ServiceReviewPage({
 
                                                 return (
                                                     <div key={dt.id} className="flex items-center gap-1.5">
-                                                        <Icon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                                                        <Icon className="w-3.5 h-3.5 text-[#E61E4D] flex-shrink-0" />
                                     <span 
                                         style={{
                                                                 fontSize: '14px',
@@ -2493,13 +2447,13 @@ export function ServiceReviewPage({
                                             })}
                                 </div>
                                         </div>
-                                    <div className="h-[1px] bg-gray-200 mb-6 mx-5" />
+                                    <div className="h-[1px] bg-gray-200 mb-6" />
                                 </>
                             )}
 
                             {/* ✅ MAPA DE RANGO DE TRABAJO DEL EXPERTO - Desktop */}
                             {expertLocation ? (
-                                <div className="mb-6 px-5">
+                                <div className="mb-8">
                                     <h3 
                                         style={{
                                             fontSize: '16px',
@@ -2568,76 +2522,83 @@ export function ServiceReviewPage({
                                     </div>
                                 </div>
                             )}
-
-
-
-                            {/* TARJETA DE RESERVA COMPACTA */}
-                            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                                <div className="flex flex-col mb-6">
-                                    <div className="flex items-baseline gap-1 mb-1">
-                                        <span className="text-[22px] font-semibold text-gray-900 leading-[1.3]" aria-label={`${formatPrice(finalPrice)} € por 2 noches`}>{formatPrice(finalPrice)} €</span>
-                                    </div>
-                                    <span className="text-[15px] text-gray-600 font-normal leading-[1.4]" aria-hidden="true">por 2 noches</span>
-                                </div>
-
-                                    {isAuthenticated ? (
-                                        <button
-                                            onClick={handleReserveClick}
-                                            className="relative w-full py-3 bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] hover:from-[#D70466] hover:via-[#E61E4D] hover:to-[#E31C5F] text-white text-[16px] font-semibold rounded-lg transition-all duration-200 overflow-hidden"
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Barra fija desktop para contratar - Similar a móvil */}
+                <div className="hidden lg:block fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t-2 border-gray-300 z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+                    <div className="max-w-7xl mx-auto px-6 py-5">
+                        <div className="flex items-center justify-between gap-6">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex flex-col">
+                                    <div className="flex items-baseline gap-1">
+                                        <span 
+                                            className="text-[20px] font-bold leading-[1.5]" 
                                             style={{
-                                                backgroundPosition: 'calc((100 - var(--mouse-x, 0)) * 1%) calc((100 - var(--mouse-y, 0)) * 1%)',
+                                                background: 'linear-gradient(135deg, #E61E4D 0%, #E31C5F 50%, #D70466 100%)',
+                                                WebkitBackgroundClip: 'text',
+                                                WebkitTextFillColor: 'transparent',
+                                                backgroundClip: 'text',
                                             }}
-                                            onMouseMove={(e) => {
-                                                const rect = e.currentTarget.getBoundingClientRect();
-                                                const x = ((e.clientX - rect.left) / rect.width) * 100;
-                                                const y = ((e.clientY - rect.top) / rect.height) * 100;
-                                                e.currentTarget.style.setProperty('--mouse-x', x.toString());
-                                                e.currentTarget.style.setProperty('--mouse-y', y.toString());
-                                            }}
+                                            aria-label={`${formatPrice(finalPrice)} € el servicio`}
                                         >
-                                            <span className="relative z-10">Reservar</span>
-                                        </button>
-                                    ) : (
-                                    <div className="relative">
-                                        <div ref={googleButtonRefDesktop} className="absolute inset-0 opacity-0 z-10" />
-                                            <button
-                                                onClick={handleGoogleSignIn}
-                                                disabled={!isGoogleReady}
-                                                className="relative w-full py-3 bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] hover:from-[#D70466] hover:via-[#E61E4D] hover:to-[#E31C5F] text-white text-[16px] font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 overflow-hidden"
-                                                style={{
-                                                    backgroundPosition: 'calc((100 - var(--mouse-x, 0)) * 1%) calc((100 - var(--mouse-y, 0)) * 1%)',
-                                                }}
-                                                onMouseMove={(e) => {
-                                                    const rect = e.currentTarget.getBoundingClientRect();
-                                                    const x = ((e.clientX - rect.left) / rect.width) * 100;
-                                                    const y = ((e.clientY - rect.top) / rect.height) * 100;
-                                                    e.currentTarget.style.setProperty('--mouse-x', x.toString());
-                                                    e.currentTarget.style.setProperty('--mouse-y', y.toString());
-                                                }}
-                                            >
-                                                {isAuthenticating ? (
-                                                    <>
-                                                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                                        <span className="relative z-10 flex items-center gap-1">
-                                                            <span className="loading-dot" style={{ animationDelay: '0ms' }}>.</span>
-                                                            <span className="loading-dot" style={{ animationDelay: '150ms' }}>.</span>
-                                                            <span className="loading-dot" style={{ animationDelay: '300ms' }}>.</span>
-                                                        </span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <GoogleIcon />
-                                                        <span className="relative z-10">Iniciar sesión</span>
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
-                                    )}
-
-                                <p className="mt-3 text-center text-xs text-gray-400">
-                                    No se te cobrará nada todavía
-                                </p>
+                                            {formatPrice(finalPrice)} €
+                                        </span>
+                                    </div>
+                                    <span className="text-[14px] text-gray-600 font-medium leading-[1.4]">el servicio</span>
+                                </div>
                             </div>
+                            {isAuthenticated ? (
+                                <button
+                                    onClick={handleReserveClick}
+                                    type="button"
+                                    className="relative h-12 px-8 bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] hover:from-[#D70466] hover:via-[#E61E4D] hover:to-[#E31C5F] text-white text-[16px] font-semibold transition-all duration-200 flex-shrink-0 min-w-[140px] overflow-hidden rounded-full"
+                                    style={{
+                                        backgroundPosition: 'calc((100 - var(--mouse-x, 0)) * 1%) calc((100 - var(--mouse-y, 0)) * 1%)',
+                                    }}
+                                    onMouseMove={(e) => {
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const x = ((e.clientX - rect.left) / rect.width) * 100;
+                                        const y = ((e.clientY - rect.top) / rect.height) * 100;
+                                        e.currentTarget.style.setProperty('--mouse-x', x.toString());
+                                        e.currentTarget.style.setProperty('--mouse-y', y.toString());
+                                    }}
+                                >
+                                    <span className="relative z-10" data-button-content="true">Reservar</span>
+                                </button>
+                            ) : (
+                                <div className="relative flex-shrink-0">
+                                    {/* Hidden Google button */}
+                                    <div ref={googleButtonRefDesktop} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }}></div>
+                                    {/* Custom button */}
+                                    <button
+                                        onClick={handleGoogleSignIn}
+                                        disabled={!isGoogleReady || isAuthenticating}
+                                        type="button"
+                                        className={`relative h-12 px-8 bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] hover:from-[#D70466] hover:via-[#E61E4D] hover:to-[#E31C5F] text-white text-[16px] font-semibold transition-all duration-200 min-w-[140px] overflow-hidden rounded-full ${isAuthenticating ? 'opacity-75 cursor-wait' : ''}`}
+                                        style={{
+                                            backgroundPosition: 'calc((100 - var(--mouse-x, 0)) * 1%) calc((100 - var(--mouse-y, 0)) * 1%)',
+                                        }}
+                                        onMouseMove={(e) => {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            const x = ((e.clientX - rect.left) / rect.width) * 100;
+                                            const y = ((e.clientY - rect.top) / rect.height) * 100;
+                                            e.currentTarget.style.setProperty('--mouse-x', x.toString());
+                                            e.currentTarget.style.setProperty('--mouse-y', y.toString());
+                                        }}
+                                    >
+                                        {isAuthenticating ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
+                                                <span className="relative z-10" data-button-content="true">{authStep || 'Iniciando sesión...'}</span>
+                                            </>
+                                        ) : (
+                                            <span className="relative z-10" data-button-content="true">Inicia sesión</span>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -2645,11 +2606,11 @@ export function ServiceReviewPage({
 
             {/* Lightbox */}
             <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
-                <DialogContent className="max-w-6xl w-full p-0 bg-black border-none">
-                    <div className="relative h-[85vh]">
+                <DialogContent className="max-w-7xl w-full p-0 bg-black/95 backdrop-blur-sm border-none animate-in fade-in-0 zoom-in-95 duration-200">
+                    <div className="relative h-[90vh] max-h-[90vh]">
                         <button
                             onClick={() => setIsLightboxOpen(false)}
-                            className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                            className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all duration-200 hover:scale-110"
                         >
                             <X className="w-6 h-6 text-white" />
                         </button>
@@ -2658,13 +2619,13 @@ export function ServiceReviewPage({
                             <>
                                 <button
                                     onClick={() => handleLightboxNavigation('prev')}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white shadow-lg hover:scale-105 transition-transform"
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-lg hover:scale-110 transition-all duration-200 backdrop-blur-sm"
                                 >
                                     <ChevronLeft className="w-6 h-6 text-gray-900" />
                                 </button>
                                 <button
                                     onClick={() => handleLightboxNavigation('next')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white shadow-lg hover:scale-105 transition-transform"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-lg hover:scale-110 transition-all duration-200 backdrop-blur-sm"
                                 >
                                     <ChevronRight className="w-6 h-6 text-gray-900" />
                                 </button>
@@ -2675,15 +2636,16 @@ export function ServiceReviewPage({
                             {validImages[lightboxIndex] ? (
                                 <>
                                     {loadingImages.has(validImages[lightboxIndex]) && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                                            <div className="w-12 h-12 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-10">
+                                            <div className="w-12 h-12 border-3 border-white/50 border-t-white rounded-full animate-spin"></div>
                                         </div>
                                     )}
                                     <img
+                                        key={lightboxIndex}
                                         src={validImages[lightboxIndex]}
                                         alt={`Foto ${lightboxIndex + 1} del servicio`}
-                                        className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${
-                                            loadingImages.has(validImages[lightboxIndex]) ? 'opacity-0' : 'opacity-100'
+                                        className={`max-w-full max-h-full object-contain transition-all duration-300 ease-in-out ${
+                                            loadingImages.has(validImages[lightboxIndex]) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
                                         }`}
                                         onError={() => handleImageError(validImages[lightboxIndex])}
                                         onLoad={() => handleImageLoad(validImages[lightboxIndex])}

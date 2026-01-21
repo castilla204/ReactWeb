@@ -12,8 +12,8 @@ export interface ToastNotificationOptions extends Omit<ToastOptions, 'duration'>
 }
 
 /**
- * Helper function to show toast notifications con diseño moderno y estético
- * Replaces the old Notification component system
+ * Helper function to show toast notifications
+ * Solo muestra notificaciones de error (y warnings en desarrollo)
  */
 export const showToast = (
   type: NotificationType, 
@@ -21,6 +21,14 @@ export const showToast = (
   duration?: number,
   options?: ToastNotificationOptions
 ) => {
+  // Solo mostrar errores y warnings (warnings solo en desarrollo)
+  const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
+  
+  // Si no es error ni warning (en desarrollo), no mostrar nada
+  if (type !== 'error' && (type !== 'warning' || !isDevelopment)) {
+    return; // No mostrar notificaciones de success o info
+  }
+  
   const baseOptions: ToastOptions = {
     duration: duration || 4000,
     ...options,
@@ -36,13 +44,6 @@ export const showToast = (
   baseOptions.className = 'modern-toast';
   
   switch (type) {
-    case 'success':
-      toast.success(message, {
-        ...baseOptions,
-        description: options?.description,
-        action: options?.action,
-      });
-      break;
     case 'error':
       toast.error(message, {
         ...baseOptions,
@@ -50,22 +51,19 @@ export const showToast = (
         action: options?.action,
       });
       break;
-    case 'info':
-      toast.info(message, {
-        ...baseOptions,
-        description: options?.description,
-        action: options?.action,
-      });
-      break;
     case 'warning':
-      toast.warning(message, {
-        ...baseOptions,
-        description: options?.description,
-        action: options?.action,
-      });
+      // Solo en desarrollo
+      if (isDevelopment) {
+        toast.warning(message, {
+          ...baseOptions,
+          description: options?.description,
+          action: options?.action,
+        });
+      }
       break;
+    // success e info no se muestran
     default:
-      toast(message, baseOptions);
+      break;
   }
 };
 
