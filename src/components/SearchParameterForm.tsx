@@ -1968,7 +1968,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         className="lg:hidden"
                     >
                         {/* Contenido con scroll */}
-                        <div style={{ padding: '0 16px' }}>
+                        <div 
+                            style={{ padding: '0 16px' }}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onTouchMove={(e) => e.stopPropagation()}
+                            onTouchEnd={(e) => e.stopPropagation()}
+                            onWheel={(e) => e.stopPropagation()}
+                        >
                             {services.length > 0 ? (
                                 <div 
                                     className="flex flex-col" 
@@ -1977,14 +1983,19 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         paddingTop: '12px', 
                                         paddingBottom: '40px', // ✅ Más padding inferior
                                     }}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                    onTouchMove={(e) => e.stopPropagation()}
+                                    onTouchEnd={(e) => e.stopPropagation()}
+                                    onWheel={(e) => e.stopPropagation()}
                                 >
                                     {services.map((service) => {
                                         const serviceId = service.id || service.Id;
+                                        const isSelected = selectedService === serviceId;
                                         return (
                                             <MapServiceCard
                                                 key={serviceId}
                                                 service={service}
-                                                isSelected={false}
+                                                isSelected={isSelected}
                                                 onSelect={handleServiceSelect}
                                                 initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
                                             />
@@ -1994,9 +2005,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             ) : (
                                 <div className="py-12 text-center">
                                     <p className="text-sm text-gray-500">
-                                        {selectedService 
-                                            ? 'El servicio seleccionado está en la tarjeta flotante' 
-                                            : 'No hay servicios disponibles'}
+                                        No hay servicios disponibles
                                     </p>
                                 </div>
                             )}
@@ -2167,11 +2176,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 >
                                     {services.map((service) => {
                                         const serviceId = service.id || service.Id;
+                                        const isSelected = selectedService === serviceId;
                                         return (
                                             <MapServiceCard
                                                 key={serviceId}
                                                 service={service}
-                                                isSelected={false}
+                                                isSelected={isSelected}
                                                 onSelect={handleServiceSelect}
                                                 initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
                                             />
