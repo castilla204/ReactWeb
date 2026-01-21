@@ -32,7 +32,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   
   // Calcular alturas basadas en viewport
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-  const calculatedInitialHeight = initialHeight || viewportHeight * 0.7; // 70% por defecto (estado de reposo más alto)
+  const calculatedInitialHeight = initialHeight || viewportHeight * 0.5; // 50% por defecto (posición más baja)
   const calculatedMaxHeight = maxHeight || viewportHeight - headerHeight; // 100vh menos header
   
   // Motion values
@@ -42,24 +42,17 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   // Scroll tracking del contenido
   const { scrollY } = useScroll({ container: contentRef });
   
-  // Transformar scroll a altura adicional (expansión proporcional)
-  // Cuando scrollY va de 0 a 300px, la altura adicional va de 0 a (maxHeight - initialHeight)
-  const scrollRange = 300; // Rango de scroll para expansión completa
-  const heightRange = calculatedMaxHeight - calculatedInitialHeight;
-  
-  // Vincular scroll a altura - expansión proporcional
+  // Vincular scroll a altura - relación 1:1 sin límite
+  // Cada píxel de scroll aumenta la altura del drawer en 1 píxel
   const expandedHeight = useTransform(
     scrollY,
-    [0, scrollRange],
-    [calculatedInitialHeight, calculatedMaxHeight],
-    { clamp: true }
+    (latest) => calculatedInitialHeight + latest
   );
   
   // Snap points
   const snapPoints = [
     0, // cerrado
     calculatedInitialHeight, // reposo (50%)
-    calculatedMaxHeight, // máximo
   ];
   
   // Calcular snap point más cercano
@@ -77,31 +70,24 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
     const currentY = y.get();
     const velocity = info.velocity.y;
     
-    // Si la velocidad es alta, cerrar o abrir completamente
-    if (Math.abs(velocity) > 500) {
-      if (velocity > 0) {
-        // Arrastrando hacia abajo - cerrar
-        sheetHeight.set(0);
-        y.set(0);
-        onOpenChange(false);
-        return;
-      } else {
-        // Arrastrando hacia arriba - abrir al máximo
-        sheetHeight.set(calculatedMaxHeight);
-        y.set(0);
-        return;
-      }
-    }
-    
-    // Snap al punto más cercano
-    const closestSnap = getClosestSnapPoint(currentY, currentHeight);
-    sheetHeight.set(closestSnap);
-    y.set(0);
-    
-    // Si está en 0, cerrar
-    if (closestSnap === 0) {
+    // Si la velocidad es alta hacia abajo, cerrar
+    if (velocity > 500) {
+      // Arrastrando hacia abajo - cerrar
+      sheetHeight.set(0);
+      y.set(0);
       onOpenChange(false);
+      return;
     }
+    
+    // Si la altura actual es menor que la inicial, hacer snap a la inicial
+    if (currentHeight < calculatedInitialHeight) {
+      sheetHeight.set(calculatedInitialHeight);
+      y.set(0);
+      return;
+    }
+    
+    // Mantener la altura actual (sin snap, permite altura ilimitada)
+    y.set(0);
   };
   
   // Sincronizar altura con scroll cuando hay scroll - usar useTransform directamente
@@ -133,7 +119,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
       <motion.div
         ref={sheetRef}
         drag="y"
-        dragConstraints={{ top: -(calculatedMaxHeight - calculatedInitialHeight), bottom: calculatedInitialHeight }}
+        dragConstraints={{ top: -Infinity, bottom: calculatedInitialHeight }}
         dragElastic={0.2}
         dragMomentum={false}
         onDragEnd={handleDragEnd}
@@ -146,6 +132,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
         style={{
           ...style,
           willChange: 'transform, height',
+          touchAction: 'none', // Prevenir interacción con el mapa cuando se arrastra el drawer
         }}
         transition={{
           type: "spring",
@@ -157,6 +144,10 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           "flex flex-col",
           className
         )}
+        onTouchStart={(e) => {
+          // Prevenir que el mapa se mueva cuando se toca el drawer
+          e.stopPropagation();
+        }}
       >
         {/* Handle */}
         <div className="flex-shrink-0 px-6 py-1.5 cursor-grab active:cursor-grabbing touch-none">
@@ -203,6 +194,23 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
             overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch',
             willChange: 'scroll-position',
+            touchAction: 'pan-y', // Solo permitir scroll vertical, prevenir pan del mapa
+          }}
+          onTouchStart={(e) => {
+            // Prevenir que el mapa se mueva cuando se toca el drawer
+            e.stopPropagation();
+          }}
+          onTouchMove={(e) => {
+            // Prevenir propagación durante el scroll
+            e.stopPropagation();
+          }}
+          onTouchEnd={(e) => {
+            // Prevenir propagación al soltar
+            e.stopPropagation();
+          }}
+          onWheel={(e) => {
+            // Prevenir que el scroll del mouse se propague al mapa
+            e.stopPropagation();
           }}
         >
           {children}
