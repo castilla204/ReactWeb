@@ -279,6 +279,7 @@ export const useMapExperts = (
               imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
               categoryName: service.categoryName || service.CategoryName,
               completedSearches: service.completedSearches || service.CompletedSearches,
+              totalReviews: service.totalReviews || service.TotalReviews || 0, // ✅ NUEVO: Total de reseñas
               averageRating: service.averageRating || service.AverageRating,
               selectedDeliverableTypes: Array.isArray(selectedDeliverableTypes) ? selectedDeliverableTypes : [],
               expert: {
@@ -324,7 +325,7 @@ export const useMapExperts = (
               name: expert.user?.name || 'Experto',
               profilePictureUrl: expert.profilePictureUrl || '',
               averageRating: service.averageRating || 0,
-              totalReviews: expert.reviews?.length || 0,
+              totalReviews: service.totalReviews || service.TotalReviews || 0, // ✅ CORRECTO: Usar totalReviews del servicio, no reviews.length
               completedSearches: service.completedSearches || 0,
               registeredSince: expert.createdAt || '',
               latitude: latitude,
