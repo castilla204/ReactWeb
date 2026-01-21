@@ -303,8 +303,8 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                     <div
                                         className="absolute left-3 z-10"
                                         style={{
-                                            width: '32px',
-                                            height: '32px',
+                                            width: '40px',
+                                            height: '40px',
                                             bottom: '12px',
                                             borderRadius: '50%',
                                             border: '2px solid white',
@@ -350,7 +350,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
-                                marginBottom: '2px',
+                                marginBottom: '4px',
                                 gap: '8px',
                                 width: '100%',
                             }}
@@ -361,9 +361,9 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                     minWidth: 0,
                                     overflow: 'hidden',
                                     fontSize: '16px',
-                                    lineHeight: '22px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
+                                    lineHeight: 'normal',
+                                    fontWeight: 500,
+                                    color: 'rgb(0, 0, 0)',
                                     fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                     textAlign: 'left',
                                 }}
@@ -388,10 +388,10 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                         }} 
                                     />
                                     <span style={{ 
-                                        fontSize: '16px',
-                                        lineHeight: '22px',
-                                        fontWeight: 600,
-                                        color: 'rgb(34, 34, 34)',
+                                        fontSize: '15px',
+                                        lineHeight: '19px',
+                                        fontWeight: 400,
+                                        color: 'rgb(106, 106, 106)',
                                         fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                     }}>
                                         {service.averageRating.toFixed(2).replace('.', ',')}
@@ -417,10 +417,10 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                         }
                                         return totalReviews > 0 ? (
                                             <span style={{ 
-                                                fontSize: '16px',
-                                                lineHeight: '22px',
+                                                fontSize: '15px',
+                                                lineHeight: '19px',
                                                 fontWeight: 400,
-                                                color: 'rgb(113, 113, 113)',
+                                                color: 'rgb(106, 106, 106)',
                                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                             }}>
                                                 ({totalReviews})
@@ -435,54 +435,39 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         {(() => {
                             const serviceDescription = service.serviceTypeDescription || (service as any).ServiceTypeDescription || service.conditions || (service as any).Conditions;
                             return serviceDescription ? (
-                                <div
-                                    className="overflow-hidden"
-                                    style={{
-                                        marginBottom: '2px',
-                                        fontSize: '15px',
-                                        lineHeight: '19px',
-                                        fontWeight: 400,
-                                        color: 'rgb(106, 106, 106)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        textAlign: 'left',
-                                    }}
-                                >
-                                    <div style={{ 
-                                        textAlign: 'left',
-                                        display: '-webkit-box',
-                                        WebkitLineClamp: 2,
-                                        WebkitBoxOrient: 'vertical',
-                                        overflow: 'hidden',
-                                    }}>{serviceDescription}</div>
-                                </div>
+                                <>
+                                    <div
+                                        className="overflow-hidden"
+                                        style={{
+                                            marginBottom: '4px',
+                                            fontSize: '15px',
+                                            lineHeight: '19px',
+                                            fontWeight: 400,
+                                            color: 'rgb(106, 106, 106)',
+                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            textAlign: 'left',
+                                        }}
+                                    >
+                                        <div style={{ 
+                                            textAlign: 'left',
+                                            whiteSpace: 'pre-line',
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            lineHeight: '19px',
+                                            gap: '4px',
+                                        }}>{serviceDescription}</div>
+                                    </div>
+                                </>
                             ) : null;
                         })()}
 
-                        {/* Tercera fila: Anfitrión (si existe) */}
-                        {service.expert?.user?.name && (
-                            <div
-                                className="overflow-hidden"
-                                style={{
-                                    marginBottom: '2px',
-                                    fontSize: '15px',
-                                    lineHeight: '19px',
-                                    fontWeight: 400,
-                                    color: 'rgb(106, 106, 106)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    textAlign: 'left',
-                                }}
-                            >
-                                <div className="truncate" style={{ textAlign: 'left' }}>
-                                    {service.expert.isProfessional ? 'Anfitrión profesional' : 'Anfitrión particular'}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Cuarta fila: Ciudad · Horario */}
+                        {/* Tercera fila: Ciudad · Horario */}
                         <div
                             className="flex items-center overflow-hidden"
                             style={{
-                                marginBottom: '2px',
+                                marginBottom: '4px',
                                 fontSize: '15px',
                                 lineHeight: '19px',
                                 fontWeight: 400,
@@ -502,20 +487,37 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             </div>
                         </div>
 
-                        {/* Quinta fila: Precio */}
+                        {/* Quinta fila: Precio con "por servicio" seguido */}
                         <div
-                            className="overflow-hidden"
+                            className="flex items-center"
                             style={{
                                 marginTop: '4px',
-                                fontSize: '15px',
-                                lineHeight: '19px',
-                                fontWeight: 400,
-                                color: 'rgb(34, 34, 34)',
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                textAlign: 'left',
+                                gap: '4px',
                             }}
                         >
-                            <span style={{ fontWeight: 600 }}>{price}</span>
+                            <span
+                                style={{
+                                    fontSize: '16px',
+                                    lineHeight: 'normal',
+                                    fontWeight: 500,
+                                    color: 'rgb(0, 0, 0)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    textDecoration: 'underline',
+                                }}
+                            >
+                                {price}
+                            </span>
+                            <span
+                                style={{
+                                    fontSize: '15px',
+                                    lineHeight: '19px',
+                                    fontWeight: 400,
+                                    color: 'rgb(106, 106, 106)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            >
+                                por servicio
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -654,8 +656,8 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 <div
                                     className="absolute left-3 z-10"
                                     style={{
-                                        width: '28px',
-                                        height: '28px',
+                                        width: '36px',
+                                        height: '36px',
                                         bottom: '8px',
                                         borderRadius: '50%',
                                         border: '2px solid white',
@@ -702,7 +704,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             flexDirection: 'row',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            marginBottom: '2px',
+                            marginBottom: '4px',
                             gap: '8px',
                             width: '100%',
                             boxSizing: 'border-box',
@@ -714,9 +716,9 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 minWidth: 0,
                                 overflow: 'hidden',
                                 fontSize: '16px',
-                                lineHeight: '22px',
-                                fontWeight: 600,
-                                color: 'rgb(34, 34, 34)',
+                                lineHeight: 'normal',
+                                fontWeight: 500,
+                                color: 'rgb(0, 0, 0)',
                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                 textAlign: 'left',
                             }}
@@ -744,10 +746,10 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                     }} 
                                 />
                                 <span style={{ 
-                                    fontSize: '16px',
-                                    lineHeight: '22px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
+                                    fontSize: '15px',
+                                    lineHeight: '19px',
+                                    fontWeight: 400,
+                                    color: 'rgb(106, 106, 106)',
                                     fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                     whiteSpace: 'nowrap',
                                 }}>
@@ -774,10 +776,10 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                     }
                                     return totalReviews > 0 ? (
                                         <span style={{ 
-                                            fontSize: '16px',
-                                            lineHeight: '22px',
+                                            fontSize: '15px',
+                                            lineHeight: '19px',
                                             fontWeight: 400,
-                                            color: 'rgb(113, 113, 113)',
+                                            color: 'rgb(106, 106, 106)',
                                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                             whiteSpace: 'nowrap',
                                         }}>
@@ -793,54 +795,38 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                     {(() => {
                         const serviceDescription = service.serviceTypeDescription || (service as any).ServiceTypeDescription || service.conditions || (service as any).Conditions;
                         return serviceDescription ? (
-                            <div
-                                className="overflow-hidden"
-                                style={{
-                                    marginBottom: '2px',
-                                    fontSize: '15px',
-                                    lineHeight: '19px',
-                                    fontWeight: 400,
-                                    color: 'rgb(106, 106, 106)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    textAlign: 'left',
-                                }}
-                            >
-                                <div style={{ 
-                                    textAlign: 'left',
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: 'vertical',
-                                    overflow: 'hidden',
-                                }}>{serviceDescription}</div>
-                            </div>
+                            <>
+                                <div
+                                    className="overflow-hidden"
+                                    style={{
+                                        marginBottom: '4px',
+                                        fontSize: '15px',
+                                        lineHeight: '19px',
+                                        fontWeight: 400,
+                                        color: 'rgb(106, 106, 106)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        textAlign: 'left',
+                                    }}
+                                >
+                                    <div style={{ 
+                                        textAlign: 'left',
+                                        whiteSpace: 'pre-line',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden',
+                                        lineHeight: '23px',
+                                    }}>{serviceDescription}</div>
+                                </div>
+                            </>
                         ) : null;
                     })()}
 
-                    {/* Tercera fila: Anfitrión (si existe) */}
-                    {service.expert?.user?.name && (
-                        <div
-                            className="overflow-hidden"
-                            style={{
-                                marginBottom: '2px',
-                                fontSize: '15px',
-                                lineHeight: '19px',
-                                fontWeight: 400,
-                                color: 'rgb(106, 106, 106)',
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                textAlign: 'left',
-                            }}
-                        >
-                            <div className="truncate" style={{ textAlign: 'left' }}>
-                                {service.expert.isProfessional ? 'Anfitrión profesional' : 'Anfitrión particular'}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Cuarta fila: Ciudad · Horario */}
+                    {/* Tercera fila: Ciudad · Horario */}
                     <div
                         className="flex items-center overflow-hidden"
                         style={{
-                            marginBottom: '2px',
+                            marginBottom: '4px',
                             fontSize: '15px',
                             lineHeight: '19px',
                             fontWeight: 400,
@@ -860,20 +846,37 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         </div>
                     </div>
 
-                    {/* Quinta fila: Precio */}
+                    {/* Quinta fila: Precio con "por servicio" seguido */}
                     <div
-                        className="overflow-hidden"
+                        className="flex items-center"
                         style={{
                             marginTop: '4px',
-                            fontSize: '15px',
-                            lineHeight: '19px',
-                            fontWeight: 400,
-                            color: 'rgb(34, 34, 34)',
-                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                            textAlign: 'left',
+                            gap: '4px',
                         }}
                     >
-                        <span style={{ fontWeight: 600 }}>{price}</span>
+                        <span
+                            style={{
+                                fontSize: '16px',
+                                lineHeight: 'normal',
+                                fontWeight: 500,
+                                color: 'rgb(0, 0, 0)',
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                textDecoration: 'underline',
+                            }}
+                        >
+                            {price}
+                        </span>
+                        <span
+                            style={{
+                                fontSize: '15px',
+                                lineHeight: '19px',
+                                fontWeight: 400,
+                                color: 'rgb(106, 106, 106)',
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                            }}
+                        >
+                            por servicio
+                        </span>
                     </div>
                 </div>
             </div>
