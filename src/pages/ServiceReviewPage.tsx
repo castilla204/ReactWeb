@@ -261,7 +261,8 @@ export function ServiceReviewPage({
     // Estado para "Mostrar más" en reviews
     const [expandedReviews, setExpandedReviews] = useState<Record<number, boolean>>({});
     // Estado para mostrar/ocultar imágenes de las reseñas
-    const [showReviewImages, setShowReviewImages] = useState<Record<number, boolean>>({});
+    const [reviewLightboxOpen, setReviewLightboxOpen] = useState<Record<number, boolean>>({});
+    const [reviewLightboxIndex, setReviewLightboxIndex] = useState<Record<number, number>>({});
     
     // Refs para scroll horizontal de reseñas
     const reviewsScrollRefMobile = useRef<HTMLDivElement>(null);
@@ -549,6 +550,18 @@ export function ServiceReviewPage({
         } else {
             setLightboxIndex(prev => (prev === validImages.length - 1 ? 0 : prev + 1));
         }
+    };
+
+    // Funciones para manejar el lightbox de imágenes de reseñas
+    const handleReviewLightboxNavigation = (reviewId: number, direction: 'prev' | 'next', totalImages: number) => {
+        setReviewLightboxIndex(prev => {
+            const currentIndex = prev[reviewId] || 0;
+            if (direction === 'prev') {
+                return { ...prev, [reviewId]: currentIndex === 0 ? totalImages - 1 : currentIndex - 1 };
+            } else {
+                return { ...prev, [reviewId]: currentIndex === totalImages - 1 ? 0 : currentIndex + 1 };
+            }
+        });
     };
 
     // Navegación del carrusel móvil mejorada
@@ -1307,7 +1320,6 @@ export function ServiceReviewPage({
                                             const rating = review.rating || review.score || 5;
                                             
                                             const hasImages = review.imageUrls && review.imageUrls.length > 0;
-                                            const showImages = showReviewImages[review.id || idx] || false;
                                             
                                             return (
                                                 <div key={review.id || idx} className={`flex-shrink-0 w-[75%] max-w-[320px] snap-start ${idx === 0 ? 'ml-4' : ''} ${idx === finalReviews.length - 1 ? 'mr-4' : ''}`}>
@@ -1359,42 +1371,38 @@ export function ServiceReviewPage({
                                                             )}
                                                         </div>
                                                 
-                                                        {/* Botón ver imágenes - Solo si hay imágenes */}
+                                                        {/* Imágenes de la reseña - Mostrar por defecto, máximo 3 */}
                                                         {hasImages && (
                                                             <div className="mb-2 flex-shrink-0">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setShowReviewImages(prev => ({
-                                                                            ...prev,
-                                                                            [review.id || idx]: !prev[review.id || idx]
-                                                                        }));
-                                                                    }}
-                                                                    className="text-[14px] font-semibold text-[#E61E4D] underline hover:no-underline leading-[1.4] hover:text-[#D70466] transition-colors"
-                                                                >
-                                                                    {showImages ? 'Ocultar imágenes' : `Ver ${review.imageUrls.length} ${review.imageUrls.length === 1 ? 'imagen' : 'imágenes'}`}
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                
-                                                        {/* Imágenes de la reseña - Mostrar solo si está expandido */}
-                                                        {hasImages && showImages && (
-                                                            <div className="mb-2 flex-shrink-0">
                                                                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full">
-                                                                    {review.imageUrls.map((img: string, imgIdx: number) => (
-                                                                        <div key={imgIdx} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                                                                            <img 
-                                                                                src={img} 
-                                                                                alt={`Foto reseña ${imgIdx + 1}`} 
-                                                                                className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                                                onClick={() => {
-                                                                                    // TODO: Abrir lightbox con la imagen
-                                                                                    console.log('Abrir imagen:', img);
-                                                                                }}
-                                                                            />
-                                                                        </div>
-                                                                    ))}
+                                                                    {review.imageUrls.slice(0, 3).map((img: string, imgIdx: number) => {
+                                                                        const isLast = imgIdx === 2 && review.imageUrls.length > 3;
+                                                                        const remainingCount = review.imageUrls.length - 3;
+                                                                        return (
+                                                                            <div key={imgIdx} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                                                                                <img 
+                                                                                    src={img} 
+                                                                                    alt={`Foto reseña ${imgIdx + 1}`} 
+                                                                                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                                                                    onClick={() => {
+                                                                                        setReviewLightboxIndex(prev => ({ ...prev, [review.id || idx]: imgIdx }));
+                                                                                        setReviewLightboxOpen(prev => ({ ...prev, [review.id || idx]: true }));
+                                                                                    }}
+                                                                                />
+                                                                                {isLast && (
+                                                                                    <div 
+                                                                                        className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-black/50 transition-colors"
+                                                                                        onClick={() => {
+                                                                                            setReviewLightboxIndex(prev => ({ ...prev, [review.id || idx]: 2 }));
+                                                                                            setReviewLightboxOpen(prev => ({ ...prev, [review.id || idx]: true }));
+                                                                                        }}
+                                                                                    >
+                                                                                        <span className="text-white text-sm font-bold">+{remainingCount}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -1844,7 +1852,6 @@ export function ServiceReviewPage({
                                             const isExpanded = expandedReviews[review.id || idx] || false;
                                             const rating = review.rating || review.score || 5;
                                             const hasImages = review.imageUrls && review.imageUrls.length > 0;
-                                            const showImages = showReviewImages[review.id || idx] || false;
                                             
                                             return (
                                                 <div key={review.id || idx} className="flex-shrink-0 w-[75%] max-w-[320px] snap-start">
@@ -1896,42 +1903,38 @@ export function ServiceReviewPage({
                                                             )}
                                                         </div>
                                                 
-                                                        {/* Botón ver imágenes - Solo si hay imágenes */}
+                                                        {/* Imágenes de la reseña - Mostrar por defecto, máximo 3 */}
                                                         {hasImages && (
                                                             <div className="mb-2 flex-shrink-0">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setShowReviewImages(prev => ({
-                                                                            ...prev,
-                                                                            [review.id || idx]: !prev[review.id || idx]
-                                                                        }));
-                                                                    }}
-                                                                    className="text-[14px] font-semibold text-[#E61E4D] underline hover:no-underline leading-[1.4] hover:text-[#D70466] transition-colors"
-                                                                >
-                                                                    {showImages ? 'Ocultar imágenes' : `Ver ${review.imageUrls.length} ${review.imageUrls.length === 1 ? 'imagen' : 'imágenes'}`}
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                
-                                                        {/* Imágenes de la reseña - Mostrar solo si está expandido */}
-                                                        {hasImages && showImages && (
-                                                            <div className="mb-2 flex-shrink-0">
                                                                 <div className="grid grid-cols-4 gap-2 w-full">
-                                                                    {review.imageUrls.map((img: string, imgIdx: number) => (
-                                                                        <div key={imgIdx} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                                                                            <img 
-                                                                                src={img} 
-                                                                                alt={`Foto reseña ${imgIdx + 1}`} 
-                                                                                className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                                                onClick={() => {
-                                                                                    // TODO: Abrir lightbox con la imagen
-                                                                                    console.log('Abrir imagen:', img);
-                                                                                }}
-                                                                            />
-                                                                        </div>
-                                                                    ))}
+                                                                    {review.imageUrls.slice(0, 3).map((img: string, imgIdx: number) => {
+                                                                        const isLast = imgIdx === 2 && review.imageUrls.length > 3;
+                                                                        const remainingCount = review.imageUrls.length - 3;
+                                                                        return (
+                                                                            <div key={imgIdx} className="relative w-full aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                                                                                <img 
+                                                                                    src={img} 
+                                                                                    alt={`Foto reseña ${imgIdx + 1}`} 
+                                                                                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                                                                    onClick={() => {
+                                                                                        setReviewLightboxIndex(prev => ({ ...prev, [review.id || idx]: imgIdx }));
+                                                                                        setReviewLightboxOpen(prev => ({ ...prev, [review.id || idx]: true }));
+                                                                                    }}
+                                                                                />
+                                                                                {isLast && (
+                                                                                    <div 
+                                                                                        className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-black/50 transition-colors"
+                                                                                        onClick={() => {
+                                                                                            setReviewLightboxIndex(prev => ({ ...prev, [review.id || idx]: 2 }));
+                                                                                            setReviewLightboxOpen(prev => ({ ...prev, [review.id || idx]: true }));
+                                                                                        }}
+                                                                                    >
+                                                                                        <span className="text-white text-sm font-bold">+{remainingCount}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -2720,6 +2723,116 @@ export function ServiceReviewPage({
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Lightbox para imágenes de reseñas */}
+            {finalReviews.map((review: any, idx: number) => {
+                const reviewId = review.id || idx;
+                const isOpen = reviewLightboxOpen[reviewId] || false;
+                const currentIndex = reviewLightboxIndex[reviewId] || 0;
+                const reviewImages = review.imageUrls || [];
+                
+                if (!isOpen || reviewImages.length === 0) return null;
+                
+                return (
+                    <Dialog key={reviewId} open={isOpen} onOpenChange={(open) => setReviewLightboxOpen(prev => ({ ...prev, [reviewId]: open }))}>
+                        <DialogContent className="max-w-7xl w-full p-0 bg-black/95 backdrop-blur-sm border-none animate-in fade-in-0 zoom-in-95 duration-200">
+                            <div className="relative h-[90vh] max-h-[90vh]">
+                                <button
+                                    onClick={() => setReviewLightboxOpen(prev => ({ ...prev, [reviewId]: false }))}
+                                    className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all duration-200 hover:scale-110"
+                                >
+                                    <X className="w-6 h-6 text-white" />
+                                </button>
+                                
+                                {reviewImages.length > 1 && (
+                                    <>
+                                        <button
+                                            onClick={() => handleReviewLightboxNavigation(reviewId, 'prev', reviewImages.length)}
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-lg hover:scale-110 transition-all duration-200 backdrop-blur-sm"
+                                        >
+                                            <ChevronLeft className="w-6 h-6 text-gray-900" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleReviewLightboxNavigation(reviewId, 'next', reviewImages.length)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-lg hover:scale-110 transition-all duration-200 backdrop-blur-sm"
+                                        >
+                                            <ChevronRight className="w-6 h-6 text-gray-900" />
+                                        </button>
+                                    </>
+                                )}
+
+                                <div className="h-full flex items-center justify-center p-8">
+                                    {reviewImages[currentIndex] ? (
+                                        <img
+                                            key={currentIndex}
+                                            src={reviewImages[currentIndex]}
+                                            alt={`Foto reseña ${currentIndex + 1}`}
+                                            className="max-w-full max-h-full object-contain transition-all duration-300 ease-in-out"
+                                        />
+                                    ) : (
+                                        <div className="text-center text-white">
+                                            <Image className="w-16 h-16 mx-auto mb-3 opacity-75" strokeWidth={1.5} />
+                                            <p className="text-sm">No hay imágenes disponibles</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {reviewImages.length > 1 && (
+                                    <div 
+                                        className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10"
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            paddingTop: '4px',
+                                            paddingBottom: '4px',
+                                            paddingLeft: '8px',
+                                            paddingRight: '8px',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                            backdropFilter: 'blur(4px)',
+                                            borderRadius: '8px',
+                                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                fontSize: '10px',
+                                                lineHeight: '12px',
+                                                fontWeight: 400,
+                                                color: '#222222',
+                                                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                                                letterSpacing: '0',
+                                            }}
+                                        >
+                                        {currentIndex + 1} / {reviewImages.length}
+                                        </span>
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '3px',
+                                            }}
+                                        >
+                                            {reviewImages.map((_: string, imgIdx: number) => (
+                                                <div
+                                                    key={imgIdx}
+                                                    className="rounded-full transition-all"
+                                                    style={{
+                                                        height: '3px',
+                                                        width: imgIdx === currentIndex ? '12px' : '3px',
+                                                        backgroundColor: imgIdx === currentIndex ? '#222222' : 'rgba(34, 34, 34, 0.4)',
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                );
+            })}
 
             <style>{`
                 .scrollbar-hide::-webkit-scrollbar {
