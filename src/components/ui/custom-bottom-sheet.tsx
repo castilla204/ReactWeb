@@ -127,15 +127,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   
   return (
     <>
-      {/* Overlay */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={() => onOpenChange(false)}
-        className="fixed inset-0 z-[9997] bg-black/40"
-        style={{ pointerEvents: open ? 'auto' : 'none' }}
-      />
+      {/* Sin overlay - permite interacción con el mapa */}
       
       {/* Bottom Sheet */}
       <motion.div
