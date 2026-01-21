@@ -95,7 +95,8 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
                     <Calendar className="w-4 h-4" />
                     <span className="font-medium text-foreground">
                       {(() => {
-                        // ✅ INTERNACIONALIZACIÓN: Usar campos locales si están disponibles
+                        // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
+                        // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
                         const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
                         const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
                         

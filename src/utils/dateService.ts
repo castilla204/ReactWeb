@@ -3,12 +3,17 @@
  * SERVICIO DE FECHAS Y TIMEZONE
  * ═══════════════════════════════════════════════════════════════
  * 
- * Este servicio maneja todas las conversiones de fecha/hora entre
- * UTC y la zona horaria local del usuario.
+ * ✅ IMPORTANTE: El backend maneja automáticamente todas las conversiones de timezone.
+ * El frontend solo necesita:
+ * 1. Enviar fechas/horas en hora LOCAL del experto (sin conversión)
+ * 2. Mostrar fechas/horas usando los campos *Local que el backend proporciona
+ * 3. NO hacer conversiones manuales - el backend lo hace todo
  * 
  * REGLA DE ORO:
- * - Backend siempre almacena y procesa en UTC
- * - Frontend convierte UTC ↔ Local para mostrar/enviar
+ * - Backend convierte Local → UTC al recibir fechas del frontend
+ * - Backend convierte UTC → Local al devolver fechas al frontend
+ * - Frontend usa proposedDateLocal/proposedTimeLocal para mostrar
+ * - Frontend envía proposedDate/proposedTime en hora LOCAL (sin conversión)
  * - Usar IANA timezone IDs (Europe/Madrid, America/Mexico_City)
  */
 
@@ -103,34 +108,45 @@ export const localToUtc = (localDate: Date, timezone?: string): Date => {
 /**
  * Prepara fecha/hora para enviar al backend
  * 
- * @param date - Fecha seleccionada por el usuario (en su hora local)
+ * ✅ IMPORTANTE: Envía fecha/hora en hora LOCAL del experto (sin conversión).
+ * El backend convierte automáticamente Local → UTC antes de guardar.
+ * 
+ * @param date - Fecha seleccionada por el usuario (en hora local del experto)
  * @param time - Hora seleccionada (formato "HH:mm" o "HH:mm:ss")
- * @param timezone - Zona horaria IANA (opcional, usa la almacenada)
- * @returns Objeto con proposedDate, proposedTime y timezone para enviar al backend
+ * @param timezone - Zona horaria IANA (opcional, el backend usa el del experto automáticamente)
+ * @returns Objeto con proposedDate, proposedTime (y timezone opcional) para enviar al backend
  */
 export const prepareForBackend = (
   date: Date,
   time: string,
   timezone?: string
-): { proposedDate: string; proposedTime: string; timezone: string } => {
-  const tz = getUserTimezone(timezone);
+): { proposedDate: string; proposedTime: string; timezone?: string } => {
+  // ✅ CORRECTO: Formatear fecha/hora en hora LOCAL (sin conversión a UTC)
+  // El backend detecta automáticamente el timezone del experto y convierte Local → UTC
   
-  // Formatear la fecha en formato YYYY-MM-DD
+  // Formatear la fecha en formato YYYY-MM-DD (hora local)
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   const dateStr = `${year}-${month}-${day}`;
   
-  // Asegurar que el tiempo tenga formato HH:mm:ss
+  // Asegurar que el tiempo tenga formato HH:mm:ss (hora local)
   const timeStr = time.includes(':') && time.split(':').length === 2 
     ? `${time}:00` 
     : time;
   
-  return {
-    proposedDate: `${dateStr}T${timeStr}`,
-    proposedTime: timeStr,
-    timezone: tz
+  const result: { proposedDate: string; proposedTime: string; timezone?: string } = {
+    proposedDate: dateStr,  // ✅ Hora LOCAL (formato: "YYYY-MM-DD")
+    proposedTime: timeStr    // ✅ Hora LOCAL (formato: "HH:mm:ss")
   };
+  
+  // ✅ OPCIONAL: Solo enviar timezone si se proporciona explícitamente
+  // El backend usa automáticamente el timezone del experto guardado en SearchHire.ExpertTimezone
+  if (timezone) {
+    result.timezone = timezone;
+  }
+  
+  return result;
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -148,22 +164,20 @@ interface FormattedAppointmentDate {
 /**
  * Formatea la fecha de una cita para mostrar en la UI
  * 
+ * ✅ IMPORTANTE: Usa los campos *Local que el backend proporciona.
+ * NO hace conversiones manuales - el backend ya convirtió UTC → Local.
+ * 
  * @param appointment - Cita con campos de fecha
- * @param timezone - Zona horaria IANA (opcional, usa la almacenada)
+ * @param timezone - Zona horaria IANA (opcional, solo para mostrar info)
  * @returns Objeto con fechas formateadas
  */
 export const formatAppointmentForDisplay = (
   appointment: Appointment,
   timezone?: string
 ): FormattedAppointmentDate => {
-  // ✅ INTERNACIONALIZACIÓN: Priorizar timezone del appointment, luego el parámetro, luego userTimezone
-  const appointmentTimezone = appointment.timezone || appointment.userTimezone;
-  const tz = appointmentTimezone && appointmentTimezone !== 'UTC' 
-    ? appointmentTimezone 
-    : (timezone || getUserTimezone());
-  
-  // Si el backend ya devolvió la conversión y tenemos campos locales, usar directamente
+  // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
   if (appointment.proposedDateLocal && appointment.proposedTimeLocal) {
+    // El backend ya convirtió UTC → Local, solo formatear para mostrar
     const localDateTime = parseISO(`${appointment.proposedDateLocal}T${appointment.proposedTimeLocal}`);
     
     return {
@@ -175,9 +189,17 @@ export const formatAppointmentForDisplay = (
     };
   }
   
-  // Si no hay campos locales, convertir desde UTC
+  // ⚠️ FALLBACK: Si no hay campos *Local, usar UTC (no debería pasar si el backend está correcto)
+  // Esto es solo para compatibilidad con datos antiguos
+  console.warn('[dateService] Appointment sin campos *Local, usando UTC como fallback');
   const utcDateTime = `${appointment.proposedDateUtc || appointment.proposedDate}T${appointment.proposedTimeUtc || appointment.proposedTime}Z`;
   const utcDate = parseISO(utcDateTime);
+  
+  // Usar timezone del appointment si está disponible
+  const appointmentTimezone = appointment.timezone || appointment.userTimezone;
+  const tz = appointmentTimezone && appointmentTimezone !== 'UTC' 
+    ? appointmentTimezone 
+    : (timezone || getUserTimezone());
   
   return {
     date: formatInTimeZone(utcDate, tz, 'dd/MM/yyyy'),

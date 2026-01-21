@@ -128,16 +128,23 @@ export async function handleNetworkError(error: Error, url: string): Promise<voi
     const isApiDown = !(await checkApiHealth());
 
     if (isApiDown) {
-        toast.error('🔴 API no disponible', {
-            description: 'El servidor no está respondiendo. Por favor, intenta más tarde.',
-            duration: 8000,
+        // Solo loguear en consola, no mostrar notificación al usuario
+        console.error('🔴 API no disponible:', {
+            url,
+            error: error.message,
+            timestamp: new Date().toISOString()
         });
+        // No mostrar toast - solo consola
+        return;
     } else {
-        // Error de red del cliente
-        toast.error('🌐 Error de conexión', {
-            description: 'No se pudo conectar con el servidor. Verifica tu conexión a internet.',
-            duration: 6000,
+        // Error de red del cliente - también solo consola
+        console.error('🌐 Error de conexión:', {
+            url,
+            error: error.message,
+            timestamp: new Date().toISOString()
         });
+        // No mostrar toast - solo consola
+        return;
     }
 }
 

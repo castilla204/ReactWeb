@@ -617,27 +617,31 @@ export function ServiceReviewPage({
                 
             {/* ========== VERSIÓN MÓVIL MEJORADA ========== */}
             <div className="lg:hidden">
-                    {/* Botones de acción móvil con fondo blanco */}
-                    <div className="relative z-50 flex items-center justify-between px-4 py-3 bg-white shadow-sm pointer-events-none">
-                        <button 
-                            onClick={onBack}
-                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors pointer-events-auto"
-                        >
-                            <ArrowLeft className="w-5 h-5 text-gray-900" />
-                        </button>
-                        <div className="flex items-center gap-2 pointer-events-auto">
-                            <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
-                                <Share2 className="w-5 h-5 text-gray-900" />
-                            </button>
-                            <button 
-                                onClick={() => setIsFavorite(!isFavorite)}
-                                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-                            >
-                                <Heart className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-900'}`} />
-                            </button>
-                        </div>
-                    </div>
-
+                {/* Botones flotantes móvil con fondo blanco redondo */}
+                <div className="fixed top-4 left-4 z-50">
+                    <button 
+                        onClick={onBack}
+                        className="p-2 bg-white rounded-full shadow-md hover:shadow-lg text-gray-700 transition-all border border-gray-200"
+                        aria-label="Volver"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                </div>
+                <div className="fixed top-4 right-4 z-50 flex gap-2">
+                    <button 
+                        className="p-2 bg-white rounded-full shadow-md hover:shadow-lg text-gray-700 transition-all border border-gray-200"
+                        aria-label="Compartir"
+                    >
+                        <Share2 className="w-5 h-5" />
+                    </button>
+                    <button 
+                        onClick={() => setIsFavorite(!isFavorite)}
+                        className="p-2 bg-white rounded-full shadow-md hover:shadow-lg text-gray-700 transition-all border border-gray-200"
+                        aria-label="Favorito"
+                    >
+                        <Heart className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+                    </button>
+                </div>
                 {/* Galería móvil mejorada - Carrusel de imágenes */}
                 <div className="relative w-full">
                     {/* Carrusel de imágenes con indicadores */}
@@ -679,56 +683,36 @@ export function ServiceReviewPage({
                                         </div>
                                     )}
                                     
-                                    {/* Badge discreto con indicadores - Solo en la primera imagen visible */}
+                                    {/* Contador de imágenes discreto - Abajo a la derecha */}
                                     {validImages.length > 1 && idx === mobileImageIndex && (
                                         <div 
-                                            className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none"
+                                            className="absolute bottom-16 right-3 z-30 pointer-events-none"
                                             style={{
                                                 display: 'inline-flex',
                                                 alignItems: 'center',
-                                                gap: '6px',
-                                                paddingTop: '4px',
-                                                paddingBottom: '4px',
-                                                paddingLeft: '8px',
-                                                paddingRight: '8px',
-                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                gap: '4px',
+                                                paddingTop: '2px',
+                                                paddingBottom: '2px',
+                                                paddingLeft: '6px',
+                                                paddingRight: '6px',
+                                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
                                                 backdropFilter: 'blur(4px)',
-                                                borderRadius: '8px',
-                                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                                                borderRadius: '6px',
                                                 whiteSpace: 'nowrap',
                                             }}
                                         >
                                             <span
                                                 style={{
-                                                    fontSize: '10px',
-                                                    lineHeight: '12px',
-                                                    fontWeight: 400,
-                                                    color: '#222222',
+                                                    fontSize: '9px',
+                                                    lineHeight: '11px',
+                                                    fontWeight: 500,
+                                                    color: 'rgba(255, 255, 255, 0.9)',
                                                     fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                                                    letterSpacing: '0',
+                                                    letterSpacing: '0.2px',
                                                 }}
                                             >
                                                 {mobileImageIndex + 1} / {validImages.length}
                                             </span>
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '3px',
-                                                }}
-                                            >
-                                                {validImages.map((_, dotIdx) => (
-                                                    <div
-                                                        key={dotIdx}
-                                                        className="rounded-full transition-all"
-                                                        style={{
-                                                            height: '3px',
-                                                            width: dotIdx === mobileImageIndex ? '12px' : '3px',
-                                                            backgroundColor: dotIdx === mobileImageIndex ? '#222222' : 'rgba(34, 34, 34, 0.4)',
-                                                        }}
-                                                    />
-                                                ))}
-                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -1705,6 +1689,16 @@ export function ServiceReviewPage({
             {/* ========== VERSIÓN DESKTOP COMPACTA Y REFINADA ========== */}
             <div className="hidden lg:block min-h-screen bg-white">
                 <div className="max-w-6xl mx-auto px-6 pt-16 pb-8">
+                    {/* Botón de ir hacia atrás en desktop */}
+                    <div className="mb-6">
+                        <button 
+                            onClick={onBack}
+                            className="p-2 bg-white rounded-full shadow-sm hover:shadow-md text-gray-700 transition-all border border-gray-200"
+                            aria-label="Volver"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                    </div>
                     <div className="grid grid-cols-[45%_1fr] gap-12 items-start">
                         
                         {/* COLUMNA IZQUIERDA: ÁLBUM DE FOTOS + RESEÑAS PREMIUM */}
@@ -2166,10 +2160,10 @@ export function ServiceReviewPage({
                                         {serviceTypeName}
                                     </h1>
                                     <div className="flex gap-2">
-                                        <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
+                                        <button className="p-2 bg-white rounded-full shadow-sm hover:shadow-md text-gray-700 transition-all border border-gray-200">
                                             <Share2 className="w-4 h-4" />
                                         </button>
-                                        <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors" onClick={() => setIsFavorite(!isFavorite)}>
+                                        <button className="p-2 bg-white rounded-full shadow-sm hover:shadow-md text-gray-700 transition-all border border-gray-200" onClick={() => setIsFavorite(!isFavorite)}>
                                             <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
                                         </button>
                                     </div>
