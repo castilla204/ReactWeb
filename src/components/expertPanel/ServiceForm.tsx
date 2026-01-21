@@ -382,18 +382,32 @@ export function ServiceForm({
     };
 
     const removeExistingImage = (imageId: number) => {
-        // ✅ NUEVO: Si hay IDs disponibles, agregar a imagesToDelete
-        if (propSetImagesToDelete && imageId > 0) {
+        console.log('🔍 removeExistingImage called with imageId:', imageId);
+        
+        // ✅ Validar que el ID es positivo (real del backend)
+        if (imageId <= 0) {
+            console.error('❌ No se puede eliminar: ID temporal/negativo. El backend debe devolver IDs reales.');
+            // Mostrar mensaje al usuario
+            setFormErrors({ 
+                general: 'No se puede eliminar esta imagen porque no tiene un ID válido. Por favor, recarga la página.' 
+            });
+            return;
+        }
+        
+        // ✅ Agregar a imagesToDelete solo si el ID es válido (positivo)
+        if (propSetImagesToDelete) {
             const currentIdsToDelete = propImagesToDelete || [];
             if (!currentIdsToDelete.includes(imageId)) {
+                console.log('✅ Adding valid imageId to imagesToDelete:', imageId);
                 propSetImagesToDelete([...currentIdsToDelete, imageId]);
             }
         }
         
-        // También remover de la lista visual (para retrocompatibilidad)
+        // ✅ SIEMPRE remover de la lista visual para feedback inmediato
         const currentImages = propExistingImages || existingImages;
-        // Si tenemos imágenes con IDs, encontrar el índice por ID
+        
         if (propExistingImagesWithIds && propExistingImagesWithIds.length > 0) {
+            // Si tenemos imágenes con IDs, encontrar el índice por ID
             const imageIndex = propExistingImagesWithIds.findIndex(img => img.id === imageId);
             if (imageIndex !== -1) {
                 const newImages = currentImages.filter((_, i) => i !== imageIndex);
@@ -404,8 +418,10 @@ export function ServiceForm({
                 }
             }
         } else {
-            // Fallback: usar índice directamente
-            const newImages = currentImages.filter((_, i) => i !== imageId);
+            // Fallback: sin IDs, remover por índice
+            // Si imageId es negativo (temporal), convertirlo a índice: -(imageId + 1)
+            const indexToRemove = imageId < 0 ? (-imageId - 1) : imageId;
+            const newImages = currentImages.filter((_, i) => i !== indexToRemove);
             if (propSetExistingImages) {
                 propSetExistingImages(newImages);
             } else {
@@ -796,9 +812,14 @@ export function ServiceForm({
                                 {/* Imágenes existentes */}
                                 {(() => {
                                     // ✅ NUEVO: Usar imágenes con IDs si están disponibles
+                                    const idsToDelete = propImagesToDelete || [];
                                     const imagesToShow = propExistingImagesWithIds && propExistingImagesWithIds.length > 0
-                                        ? propExistingImagesWithIds.filter(img => !(propImagesToDelete || []).includes(img.id))
+                                        ? propExistingImagesWithIds.filter(img => !idsToDelete.includes(img.id))
                                         : getCurrentExistingImages().map((url, index) => ({ id: -(index + 1), url }));
+                                    
+                                    console.log('🔍 Rendering images - imagesToShow:', imagesToShow.length, 'idsToDelete:', idsToDelete);
+                                    console.log('🔍 Images with real IDs:', imagesToShow.filter(img => img.id > 0).length);
+                                    console.log('🔍 Images with temp IDs:', imagesToShow.filter(img => img.id <= 0).length);
                                     
                                     return imagesToShow.map((image) => (
                                         <div key={`existing-${image.id}`} className="relative group">
@@ -811,8 +832,13 @@ export function ServiceForm({
                                                 type="button"
                                                 variant="destructive"
                                                 size="icon"
-                                                onClick={() => removeExistingImage(image.id)}
-                                                className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    console.log('🔍 Button clicked for image:', image.id);
+                                                    removeExistingImage(image.id);
+                                                }}
+                                                className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                             >
                                                 <X className="w-3 h-3" />
                                             </Button>

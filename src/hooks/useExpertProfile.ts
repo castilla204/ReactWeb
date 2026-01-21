@@ -41,16 +41,25 @@ export function useExpertProfile() {
                 formData.append('profilePicture', data.profilePicture);
             }
 
-            // Si se incluye disponibilidad, agregar todos los campos
+            // ✅ CRÍTICO: Si se incluye disponibilidad, agregar todos los campos
             if (data.availability) {
-                data.availability.daysOfWeek.forEach(day => {
+                console.log('🔍 useExpertProfile: Adding availability to FormData:', data.availability);
+                console.log('🔍 useExpertProfile: daysOfWeek:', data.availability.daysOfWeek);
+                
+                data.availability.daysOfWeek.forEach((day: string) => {
                     formData.append('AvailabilityDaysOfWeek', day);
+                    console.log('🔍 useExpertProfile: Added day to FormData:', day);
                 });
                 formData.append('AvailabilityStartTime', data.availability.startTime);
                 formData.append('AvailabilityEndTime', data.availability.endTime);
+                
+                console.log('🔍 useExpertProfile: Added startTime:', data.availability.startTime);
+                console.log('🔍 useExpertProfile: Added endTime:', data.availability.endTime);
+            } else {
+                console.log('🔍 useExpertProfile: No availability to send');
             }
 
-            console.log('Updating expert profile with data:', {
+            console.log('🔍 useExpertProfile: Updating expert profile with data:', {
                 description: data.description,
                 latitude: data.latitude,
                 longitude: data.longitude,
@@ -58,6 +67,16 @@ export function useExpertProfile() {
                 hasAvailability: !!data.availability,
                 availability: data.availability
             });
+            
+            // ✅ DEBUG: Verificar FormData
+            console.log('🔍 useExpertProfile: FormData contents:');
+            for (const [key, value] of formData.entries()) {
+                if (value instanceof File) {
+                    console.log(`  ${key}: [File] ${value.name}`);
+                } else {
+                    console.log(`  ${key}: ${value}`);
+                }
+            }
 
             const response = await fetch(`${API_CONFIG.baseUrl}/api/User/expert-profile`, {
                 method: 'PUT',
@@ -88,8 +107,15 @@ export function useExpertProfile() {
 
             const updatedProfile: UpdateExpertProfileResponse = await response.json();
             console.log('Profile updated successfully:', updatedProfile);
-            console.log('Updated Stripe Status:', updatedProfile.expertProfile.stripeStatus);
-            console.log('Updated Stripe Status Details:', updatedProfile.expertProfile.stripeStatusDetails);
+            
+            // ✅ Validar que expertProfile existe antes de acceder a sus propiedades
+            if (updatedProfile?.expertProfile) {
+                console.log('Updated Stripe Status:', updatedProfile.expertProfile.stripeStatus);
+                console.log('Updated Stripe Status Details:', updatedProfile.expertProfile.stripeStatusDetails);
+            } else {
+                console.warn('⚠️ useExpertProfile: expertProfile is missing in response:', updatedProfile);
+            }
+            
             return updatedProfile;
         } catch (error) {
             console.error('Error updating expert profile:', error);

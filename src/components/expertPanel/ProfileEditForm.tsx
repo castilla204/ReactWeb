@@ -103,10 +103,16 @@ export function ProfileEditForm({
     const { updateExpertProfile, isUpdating } = useExpertProfile();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // ✅ Validar que profile existe antes de usarlo
+    if (!profile) {
+        console.error('❌ ProfileEditForm: profile is undefined or null');
+        return null;
+    }
+
     const [formData, setFormData] = useState({
-        description: profile.description || '',
-        latitude: profile.latitude?.toString() || '',
-        longitude: profile.longitude?.toString() || '',
+        description: profile?.description || '',
+        latitude: profile?.latitude?.toString() || '',
+        longitude: profile?.longitude?.toString() || '',
     });
 
     // Formatear tiempo de TimeSpan (HH:mm:ss) a HH:mm
@@ -116,11 +122,26 @@ export function ProfileEditForm({
         return `${parts[0]}:${parts[1]}`;
     };
 
-    // Inicializar disponibilidad desde el perfil
-    const initialAvailability: AvailabilityFormData = profile.currentAvailability ? {
-        daysOfWeek: profile.currentAvailability.daysOfWeek || [],
-        startTime: formatTimeFromTimeSpan(profile.currentAvailability.startTime),
-        endTime: formatTimeFromTimeSpan(profile.currentAvailability.endTime),
+    // ✅ CRÍTICO: Inicializar disponibilidad desde el perfil con transformación correcta
+    const initialAvailability: AvailabilityFormData = profile?.currentAvailability ? {
+        daysOfWeek: (() => {
+            // Manejar tanto camelCase como PascalCase
+            const days = profile?.currentAvailability?.daysOfWeek ?? 
+                        (profile?.currentAvailability as any)?.DaysOfWeek ?? 
+                        [];
+            console.log('🔍 ProfileEditForm: Initial availability daysOfWeek:', days);
+            return Array.isArray(days) ? days : [];
+        })(),
+        startTime: formatTimeFromTimeSpan(
+            profile?.currentAvailability?.startTime ?? 
+            (profile?.currentAvailability as any)?.StartTime ?? 
+            ''
+        ),
+        endTime: formatTimeFromTimeSpan(
+            profile?.currentAvailability?.endTime ?? 
+            (profile?.currentAvailability as any)?.EndTime ?? 
+            ''
+        ),
     } : {
         daysOfWeek: [],
         startTime: '09:00',
@@ -130,6 +151,7 @@ export function ProfileEditForm({
     const [availability, setAvailability] = useState<AvailabilityFormData>(initialAvailability);
 
     const [profilePicture, setProfilePicture] = useState<File | null>(null);
+    // ✅ Inicializar previewUrl como null, se actualizará en useEffect
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [selectedLocation, setSelectedLocation] = useState(defaultCenter);
@@ -143,25 +165,52 @@ export function ProfileEditForm({
     useEffect(() => {
         if (showEditForm && profile) {
             console.log('🔍 ProfileEditForm: Loading profile data:', profile);
+            console.log('🔍 ProfileEditForm: profile.profilePictureUrl:', profile.profilePictureUrl);
+            console.log('🔍 ProfileEditForm: (profile as any)?.ProfilePictureUrl:', (profile as any)?.ProfilePictureUrl);
+            
             setFormData({
                 description: profile.description || '',
                 latitude: profile.latitude?.toString() || '',
                 longitude: profile.longitude?.toString() || '',
             });
             setProfilePicture(null);
-            setPreviewUrl(profile.profilePictureUrl || null);
             setFormErrors({});
             
-            // Actualizar disponibilidad
+            // ✅ CRÍTICO: Actualizar previewUrl inmediatamente cuando se abre el formulario
+            // ✅ PRIORIZAR ProfilePictureUrl (PascalCase) del nivel superior, NO de user
+            const profileImageUrl = (profile as any)?.ProfilePictureUrl || profile.profilePictureUrl || null;
+            console.log('🔍 ProfileEditForm: Setting previewUrl on form open:', profileImageUrl);
+            console.log('🔍 ProfileEditForm: (profile as any)?.ProfilePictureUrl:', (profile as any)?.ProfilePictureUrl);
+            console.log('🔍 ProfileEditForm: profile.profilePictureUrl:', profile.profilePictureUrl);
+            setPreviewUrl(profileImageUrl);
+            
+            // ✅ CRÍTICO: Actualizar disponibilidad con transformación correcta
             const newAvailability: AvailabilityFormData = profile.currentAvailability ? {
-                daysOfWeek: profile.currentAvailability.daysOfWeek || [],
-                startTime: formatTimeFromTimeSpan(profile.currentAvailability.startTime),
-                endTime: formatTimeFromTimeSpan(profile.currentAvailability.endTime),
+                daysOfWeek: (() => {
+                    // Manejar tanto camelCase como PascalCase
+                    const days = profile.currentAvailability?.daysOfWeek ?? 
+                                (profile.currentAvailability as any)?.DaysOfWeek ?? 
+                                [];
+                    console.log('🔍 ProfileEditForm: Loading daysOfWeek from profile:', days);
+                    console.log('🔍 ProfileEditForm: profile.currentAvailability:', profile.currentAvailability);
+                    return Array.isArray(days) ? days : [];
+                })(),
+                startTime: formatTimeFromTimeSpan(
+                    profile.currentAvailability.startTime ?? 
+                    (profile.currentAvailability as any)?.StartTime ?? 
+                    ''
+                ),
+                endTime: formatTimeFromTimeSpan(
+                    profile.currentAvailability.endTime ?? 
+                    (profile.currentAvailability as any)?.EndTime ?? 
+                    ''
+                ),
             } : {
                 daysOfWeek: [],
                 startTime: '09:00',
                 endTime: '18:00',
             };
+            console.log('🔍 ProfileEditForm: Setting availability:', newAvailability);
             setAvailability(newAvailability);
             
             // Actualizar la ubicación seleccionada en el mapa
@@ -177,6 +226,40 @@ export function ProfileEditForm({
             }
         }
     }, [showEditForm, profile]);
+
+    // ✅ CRÍTICO: Actualizar previewUrl cuando cambia profile.profilePictureUrl (después de actualizar el perfil)
+    // ✅ Este useEffect se ejecuta cuando el profile cambia o cuando no hay un archivo nuevo seleccionado
+    useEffect(() => {
+        if (profile) {
+            // ✅ IMPORTANTE: Usar ProfilePictureUrl del objeto principal, NO del objeto User
+            // ✅ PRIORIZAR ProfilePictureUrl (PascalCase) del nivel superior
+            const profileImageUrl = (profile as any)?.ProfilePictureUrl || 
+                                  profile.profilePictureUrl || 
+                                  null;
+            console.log('🔍 ProfileEditForm (useEffect): Full profile object:', JSON.stringify(profile, null, 2));
+            console.log('🔍 ProfileEditForm (useEffect): profile.profilePictureUrl:', profile.profilePictureUrl);
+            console.log('🔍 ProfileEditForm (useEffect): (profile as any)?.ProfilePictureUrl:', (profile as any)?.ProfilePictureUrl);
+            console.log('🔍 ProfileEditForm (useEffect): (profile as any)?.profilePictureUrl:', (profile as any)?.profilePictureUrl);
+            console.log('🔍 ProfileEditForm (useEffect): profilePicture (new file):', profilePicture);
+            console.log('🔍 ProfileEditForm (useEffect): Current previewUrl:', previewUrl);
+            console.log('🔍 ProfileEditForm (useEffect): Final profileImageUrl:', profileImageUrl);
+            
+            // Solo actualizar si no hay un archivo nuevo seleccionado
+            if (!profilePicture) {
+                if (profileImageUrl && profileImageUrl.trim() !== '') {
+                    console.log('✅ ProfileEditForm: Setting previewUrl from profile:', profileImageUrl);
+                    setPreviewUrl(profileImageUrl);
+                } else {
+                    console.log('⚠️ ProfileEditForm: No profile image found, clearing previewUrl');
+                    setPreviewUrl(null);
+                }
+            } else {
+                console.log('📁 ProfileEditForm: New file selected, keeping previewUrl from file');
+            }
+        } else {
+            console.log('⚠️ ProfileEditForm (useEffect): profile is null/undefined');
+        }
+    }, [profile, profile?.profilePictureUrl, (profile as any)?.ProfilePictureUrl, profilePicture, previewUrl]);
 
     // Prevenir scroll del body cuando el drawer está abierto
     useEffect(() => {
@@ -316,6 +399,11 @@ export function ProfileEditForm({
             // Incluir disponibilidad solo si hay días seleccionados
             const availabilityData = availability.daysOfWeek.length > 0 ? availability : undefined;
             
+            console.log('🔍 ProfileEditForm: Submitting with availability:', availabilityData);
+            console.log('🔍 ProfileEditForm: daysOfWeek to send:', availabilityData?.daysOfWeek);
+            console.log('🔍 ProfileEditForm: startTime to send:', availabilityData?.startTime);
+            console.log('🔍 ProfileEditForm: endTime to send:', availabilityData?.endTime);
+            
             await updateExpertProfile({
                 description: formData.description.trim(),
                 latitude: formData.latitude,
@@ -379,12 +467,18 @@ export function ProfileEditForm({
     };
 
     const toggleDay = (day: string) => {
-        setAvailability(prev => ({
-            ...prev,
-            daysOfWeek: prev.daysOfWeek.includes(day)
+        console.log('🔍 toggleDay called with day:', day);
+        setAvailability(prev => {
+            const newDays = prev.daysOfWeek.includes(day)
                 ? prev.daysOfWeek.filter(d => d !== day)
-                : [...prev.daysOfWeek, day]
-        }));
+                : [...prev.daysOfWeek, day];
+            console.log('🔍 toggleDay: Previous days:', prev.daysOfWeek);
+            console.log('🔍 toggleDay: New days:', newDays);
+            return {
+                ...prev,
+                daysOfWeek: newDays
+            };
+        });
     };
 
     return (
@@ -410,18 +504,47 @@ export function ProfileEditForm({
                                 <div className="space-y-2">
                                     <Label>Foto de perfil</Label>
                                     <div className="flex items-center gap-4">
-                                <div className="flex-shrink-0">
-                                    {previewUrl || profile.profilePictureUrl ? (
-                                        <img
-                                            src={previewUrl || profile.profilePictureUrl}
-                                            alt="Profile"
-                                                    className="w-20 h-20 rounded-full object-cover border-2 border-border"
-                                        />
-                                    ) : (
-                                                <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
-                                                    <User className="w-10 h-10 text-muted-foreground" />
-                                        </div>
-                                    )}
+                                <div className="flex-shrink-0 relative">
+                                    {(() => {
+                                        // ✅ Priorizar previewUrl (imagen nueva seleccionada), luego ProfilePictureUrl del nivel superior
+                                        // ✅ IMPORTANTE: Usar ProfilePictureUrl (PascalCase) del objeto principal, NO del objeto User
+                                        const imageUrl = previewUrl || 
+                                                       (profile as any)?.ProfilePictureUrl || 
+                                                       profile.profilePictureUrl || 
+                                                       null;
+                                        console.log('🔍 ProfileEditForm (render): imageUrl:', imageUrl);
+                                        console.log('🔍 ProfileEditForm (render): previewUrl:', previewUrl);
+                                        console.log('🔍 ProfileEditForm (render): profile.profilePictureUrl:', profile.profilePictureUrl);
+                                        
+                                        if (imageUrl) {
+                                            return (
+                                                <>
+                                                    <img
+                                                        src={imageUrl}
+                                                        alt="Profile"
+                                                        className="w-20 h-20 rounded-full object-cover border-2 border-border"
+                                                        onError={(e) => {
+                                                            // ✅ Si la imagen falla al cargar, ocultar y mostrar placeholder
+                                                            console.error('❌ ProfileEditForm: Error loading image:', imageUrl);
+                                                            e.currentTarget.style.display = 'none';
+                                                            const placeholder = e.currentTarget.nextElementSibling as HTMLElement;
+                                                            if (placeholder) {
+                                                                placeholder.style.display = 'flex';
+                                                            }
+                                                        }}
+                                                    />
+                                                    <div className="w-20 h-20 bg-muted rounded-full items-center justify-center hidden">
+                                                        <User className="w-10 h-10 text-muted-foreground" />
+                                                    </div>
+                                                </>
+                                            );
+                                        }
+                                        return (
+                                            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
+                                                <User className="w-10 h-10 text-muted-foreground" />
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                                         <div className="flex-1 space-y-2">
                                             <div className="flex items-center gap-2">
