@@ -350,7 +350,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
-                                marginBottom: '4px',
+                                marginBottom: '2px',
                                 gap: '8px',
                                 width: '100%',
                             }}
@@ -431,32 +431,14 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             )}
                         </div>
 
-                        {/* Segunda fila: Categoría/Tipo */}
-                        {service.categoryName && service.serviceTypeName && (
-                            <div
-                                className="overflow-hidden"
-                                style={{
-                                    marginBottom: '4px',
-                                    fontSize: '15px',
-                                    lineHeight: '19px',
-                                    fontWeight: 400,
-                                    color: 'rgb(106, 106, 106)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    textAlign: 'left',
-                                }}
-                            >
-                                <div className="truncate" style={{ textAlign: 'left' }}>{service.categoryName}</div>
-                            </div>
-                        )}
-
-                        {/* Tercera fila: Descripción del servicio */}
+                        {/* Segunda fila: Descripción del servicio (justo después del título) */}
                         {(() => {
                             const serviceDescription = service.serviceTypeDescription || (service as any).ServiceTypeDescription || service.conditions || (service as any).Conditions;
                             return serviceDescription ? (
                                 <div
                                     className="overflow-hidden"
                                     style={{
-                                        marginBottom: '4px',
+                                        marginBottom: '2px',
                                         fontSize: '15px',
                                         lineHeight: '19px',
                                         fontWeight: 400,
@@ -476,11 +458,31 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             ) : null;
                         })()}
 
+                        {/* Tercera fila: Anfitrión (si existe) */}
+                        {service.expert?.user?.name && (
+                            <div
+                                className="overflow-hidden"
+                                style={{
+                                    marginBottom: '2px',
+                                    fontSize: '15px',
+                                    lineHeight: '19px',
+                                    fontWeight: 400,
+                                    color: 'rgb(106, 106, 106)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    textAlign: 'left',
+                                }}
+                            >
+                                <div className="truncate" style={{ textAlign: 'left' }}>
+                                    {service.expert.isProfessional ? 'Anfitrión profesional' : 'Anfitrión particular'}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Cuarta fila: Ciudad · Horario */}
                         <div
                             className="flex items-center overflow-hidden"
                             style={{
-                                marginBottom: '4px',
+                                marginBottom: '2px',
                                 fontSize: '15px',
                                 lineHeight: '19px',
                                 fontWeight: 400,
@@ -504,7 +506,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         <div
                             className="overflow-hidden"
                             style={{
-                                marginTop: '2px',
+                                marginTop: '4px',
                                 fontSize: '15px',
                                 lineHeight: '19px',
                                 fontWeight: 400,
@@ -700,7 +702,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             flexDirection: 'row',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            marginBottom: '4px',
+                            marginBottom: '2px',
                             gap: '8px',
                             width: '100%',
                             boxSizing: 'border-box',
@@ -787,32 +789,14 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         )}
                     </div>
 
-                    {/* Segunda fila: Categoría/Tipo */}
-                    {service.categoryName && service.serviceTypeName && (
-                        <div
-                            className="overflow-hidden"
-                            style={{
-                                marginBottom: '4px',
-                                fontSize: '15px',
-                                lineHeight: '19px',
-                                fontWeight: 400,
-                                color: 'rgb(106, 106, 106)',
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                textAlign: 'left',
-                            }}
-                        >
-                            <div className="truncate" style={{ textAlign: 'left' }}>{service.categoryName}</div>
-                        </div>
-                    )}
-
-                    {/* Tercera fila: Descripción del servicio */}
+                    {/* Segunda fila: Descripción del servicio (justo después del título) */}
                     {(() => {
                         const serviceDescription = service.serviceTypeDescription || (service as any).ServiceTypeDescription || service.conditions || (service as any).Conditions;
                         return serviceDescription ? (
                             <div
                                 className="overflow-hidden"
                                 style={{
-                                    marginBottom: '4px',
+                                    marginBottom: '2px',
                                     fontSize: '15px',
                                     lineHeight: '19px',
                                     fontWeight: 400,
@@ -832,11 +816,31 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         ) : null;
                     })()}
 
+                    {/* Tercera fila: Anfitrión (si existe) */}
+                    {service.expert?.user?.name && (
+                        <div
+                            className="overflow-hidden"
+                            style={{
+                                marginBottom: '2px',
+                                fontSize: '15px',
+                                lineHeight: '19px',
+                                fontWeight: 400,
+                                color: 'rgb(106, 106, 106)',
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                textAlign: 'left',
+                            }}
+                        >
+                            <div className="truncate" style={{ textAlign: 'left' }}>
+                                {service.expert.isProfessional ? 'Anfitrión profesional' : 'Anfitrión particular'}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Cuarta fila: Ciudad · Horario */}
                     <div
                         className="flex items-center overflow-hidden"
                         style={{
-                            marginBottom: '4px',
+                            marginBottom: '2px',
                             fontSize: '15px',
                             lineHeight: '19px',
                             fontWeight: 400,
@@ -860,7 +864,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                     <div
                         className="overflow-hidden"
                         style={{
-                            marginTop: '2px',
+                            marginTop: '4px',
                             fontSize: '15px',
                             lineHeight: '19px',
                             fontWeight: 400,
@@ -1554,9 +1558,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             {/* Main Layout - Split View */}
             <div className="flex flex-1 min-h-0 overflow-visible w-full">
                 {/* Left Side - Panel de resultados (Desktop) */}
-                <div className="hidden lg:flex flex-col w-[900px] min-w-[800px] max-w-[900px] bg-white">
+                <div className="hidden lg:flex flex-col bg-white flex-shrink-0" style={{ 
+                    width: width >= 1280 ? '900px' : '600px', 
+                    minWidth: '600px', 
+                    maxWidth: '900px' 
+                }}>
                     {/* Header del panel */}
-                    <div className="px-6 py-4 border-b border-gray-100">
+                    <div className="px-8 md:px-10 py-4 border-b border-gray-100">
                         <p className="text-sm text-gray-500">
                             {formData.latitude && formData.longitude 
                                 ? `${services.length} expertos disponibles`
@@ -1564,104 +1572,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             }
                         </p>
                         </div>
-                    
-                    {/* Filtros estilo Airbnb */}
-                        {formData.latitude && formData.longitude && (
-                        <div className="px-6 py-3 border-b border-gray-100 flex items-center gap-2">
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                    <button 
-                                        type="button"
-                                        className={`h-9 px-4 rounded-full border text-sm font-medium transition-all flex items-center gap-1.5 ${
-                                            filters.priceRange[0] > 0 || filters.priceRange[1] < 100000 || filters.rating > 0
-                                                ? 'border-gray-900 bg-gray-900 text-white'
-                                                : 'border-gray-300 bg-white text-gray-700 hover:border-gray-900'
-                                        }`}
-                                    >
-                                        <span className="flex items-center gap-1.5">
-                                            <svg 
-                                                xmlns="http://www.w3.org/2000/svg" 
-                                                viewBox="0 0 32 32" 
-                                                aria-hidden="true" 
-                                                role="presentation" 
-                                                focusable="false" 
-                                                className="block fill-none h-4 w-4 stroke-current stroke-[3] overflow-visible"
-                                            >
-                                                <path 
-                                                    fill="none" 
-                                                    d="M7 16H3m26 0H15M29 6h-4m-8 0H3m26 20h-4M7 16a4 4 0 1 0 8 0 4 4 0 0 0-8 0zM17 6a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 20a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 0H3"
-                                                />
-                                            </svg>
-                                            <span>Filtros</span>
-                                        </span>
-                                    </button>
-                                        </PopoverTrigger>
-                                <PopoverContent className="w-80 p-5" align="start">
-                                            <div className="space-y-6">
-                                        <h4 className="font-semibold text-gray-900">Filtros</h4>
-                                        
-                                        {/* Filtro de Precio */}
-                                        <div className="space-y-4">
-                                            <h5 className="text-sm font-medium text-gray-700">Rango de precio</h5>
-                                                    <Slider
-                                                        value={filters.priceRange}
-                                                        onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
-                                                        min={0}
-                                            max={1000}
-                                                        step={10}
-                                                        className="w-full"
-                                                    />
-                                        <div className="flex items-center justify-between gap-4">
-                                            <div className="flex-1">
-                                                <label className="text-xs text-gray-500 mb-1 block">Mínimo</label>
-                                                <div className="h-10 px-3 border border-gray-300 rounded-lg flex items-center text-sm">
-                                                    €{filters.priceRange[0]}
-                                                </div>
-                                            </div>
-                                            <div className="text-gray-400 mt-5">—</div>
-                                            <div className="flex-1">
-                                                <label className="text-xs text-gray-500 mb-1 block">Máximo</label>
-                                                <div className="h-10 px-3 border border-gray-300 rounded-lg flex items-center text-sm">
-                                                    €{filters.priceRange[1]}+
-                                                </div>
-                                                    </div>
-                                                </div>
-                                        </div>
-
-                                        {/* Filtro de Valoración */}
-                                        <div className="space-y-4">
-                                            <h5 className="text-sm font-medium text-gray-700">Valoración mínima</h5>
-                                        <div className="flex gap-2">
-                                            {[0, 3, 3.5, 4, 4.5].map((rating) => (
-                                                <button
-                                                    key={rating}
-                                                    onClick={() => setFilters({...filters, rating})}
-                                                    className={`flex-1 h-10 rounded-lg border text-sm font-medium transition-all ${
-                                                        filters.rating === rating
-                                                            ? 'border-gray-900 bg-gray-900 text-white'
-                                                            : 'border-gray-300 hover:border-gray-900'
-                                                    }`}
-                                                >
-                                                    {rating === 0 ? 'Todas' : `${rating}+`}
-                                                </button>
-                                            ))}
-                                                </div>
-                                        </div>
-
-                                        {/* Botón Borrar */}
-                                        {(filters.priceRange[0] > 0 || filters.priceRange[1] < 100000 || filters.rating > 0) && (
-                                            <button 
-                                                onClick={() => setFilters({ priceRange: [0, 100000], rating: 0 })}
-                                                className="text-sm font-medium text-gray-900 underline w-full text-left"
-                                            >
-                                                Borrar filtros
-                                            </button>
-                                        )}
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                            </div>
-                    )}
                     
                     {/* Lista de servicios */}
                     <div 
@@ -1679,7 +1589,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             }
                         `}</style>
                         {formData.latitude && formData.longitude && (
-                            <div className="px-8 md:px-10 pt-4 md:pt-6 pb-6">
+                            <div className="px-8 md:px-10 pt-20 pb-6">
                             {/* Services List - Desktop estilo Airbnb en grid de 2 columnas */}
                             {(() => {
                                 console.log('🔍 SearchParameterForm - Renderizando sidebar:', {
@@ -1689,14 +1599,29 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 return null;
                             })()}
                             {reorderedServices.length > 0 ? (
-                                <div 
-                                    className="grid grid-cols-2" 
-                                    style={{ 
-                                        width: '100%',
-                                        gap: '24px',
-                                        padding: '0',
-                                    }}
-                                >
+                                <>
+                                    {/* Header con total de revisiones estilo Airbnb */}
+                                    <div className="px-8 md:px-10 pb-4">
+                                        <p className="text-base font-medium text-gray-900">
+                                            {(() => {
+                                                const totalReviews = reorderedServices.reduce((sum, service) => {
+                                                    const reviews = service.totalReviews || (service as any).TotalReviews || service.expert?.totalReviews || service.expert?.TotalReviews || 0;
+                                                    return sum + reviews;
+                                                }, 0);
+                                                return totalReviews > 0 
+                                                    ? `Más de ${totalReviews} ${totalReviews === 1 ? 'revisión' : 'revisiones'}`
+                                                    : `${reorderedServices.length} ${reorderedServices.length === 1 ? 'experto disponible' : 'expertos disponibles'}`;
+                                            })()}
+                                        </p>
+                                    </div>
+                                    <div 
+                                        className="grid grid-cols-1 xl:grid-cols-2" 
+                                        style={{ 
+                                            width: '100%',
+                                            gap: '24px',
+                                            padding: '0',
+                                        }}
+                                    >
                                     {reorderedServices.map((service) => {
                                         const serviceId = service.id || (service as any).Id;
                                         const isSelected = selectedService === serviceId;
@@ -1710,7 +1635,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             </div>
                                         );
                                     })}
-                                </div>
+                                    </div>
+                                </>
                             ) : (
                                     <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
                                         <div className="flex flex-col items-center gap-4 max-w-sm">
@@ -2239,7 +2165,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </div>
                 
                 {/* Desktop: Right Side - Map */}
-                <div className="hidden lg:flex lg:flex-1 relative bg-white" style={{ paddingTop: '80px', paddingLeft: '32px', paddingRight: '32px', paddingBottom: '32px' }}>
+                <div className="hidden lg:flex lg:flex-1 relative bg-white" style={{ paddingTop: '80px', paddingLeft: '0px', paddingRight: '32px', paddingBottom: '32px', minWidth: '400px' }}>
                         {loadError ? (
                         <div className="h-full w-full flex items-center justify-center bg-gray-100">
                             <div className="text-red-500">Error al cargar el mapa</div>
@@ -2248,13 +2174,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             <>
                             {/* Map ocupa todo el espacio con borde blanco más grueso y laterales muy redondeados */}
                             <div className="absolute" style={{ 
-                                border: '24px solid white', 
                                 borderRadius: '32px', 
                                 overflow: 'hidden',
                                 top: '80px',
-                                left: '32px',
+                                left: '40px',
                                 right: '32px',
-                                bottom: '32px'
+                                bottom: '32px',
+                                boxShadow: '0 0 0 24px white'
                             }}>
                                 {isLoaded ? (
                                     <LocationMap
