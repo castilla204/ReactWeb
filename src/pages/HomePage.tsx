@@ -30,7 +30,7 @@ const HomePage: React.FC = () => {
     adUrl: string;
   }>({
     serviceTypeId: null,
-    categoryId: 1, // ✅ Por defecto Coches (categoryId: 1)
+    categoryId: 3, // ✅ Por defecto Inmobiliaria (categoryId: 3) - categoría del medio
     adUrl: '',
   });
 
@@ -41,7 +41,7 @@ const HomePage: React.FC = () => {
   }) => {
     setSearchFilters({
       ...searchData,
-      categoryId: searchData.categoryId || 1,
+      categoryId: searchData.categoryId || 3,
     });
   };
 
