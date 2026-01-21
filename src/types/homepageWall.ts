@@ -63,6 +63,7 @@ export interface SearchServiceDetailDto {
   imageUrls: string[];
   categoryName: string;
   completedSearches: number;
+  totalReviews?: number; // ✅ NUEVO: Total de reseñas del experto
   averageRating: number;
   expert?: ExpertProfileDto;
   selectedDeliverableTypes: DeliverableTypeDto[];

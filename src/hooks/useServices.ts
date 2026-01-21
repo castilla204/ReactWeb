@@ -23,6 +23,7 @@ export interface Service {
     images?: Array<{ id: number; url: string }>; // ✅ NUEVO: Imágenes con IDs reales
     categoryName?: string;
     completedSearches?: number;
+    totalReviews?: number; // ✅ NUEVO: Total de reseñas del experto
     averageRating?: number;
     isActive?: boolean;
     selectedDeliverableTypes?: {
@@ -224,6 +225,20 @@ export function useServices({
                     })).filter((img: { id: number; url: string }) => img.id > 0), // Solo IDs válidos
                     categoryName: service.CategoryName || service.categoryName,
                     completedSearches: service.CompletedSearches ?? service.completedSearches,
+                    totalReviews: (() => {
+                        const total = service.TotalReviews ?? service.totalReviews ?? 0;
+                        // Debug temporal
+                        if (process.env.NODE_ENV === 'development' && total === 0) {
+                            console.log('🔍 [useServices] totalReviews mapping:', {
+                                serviceId: service.Id || service.id,
+                                TotalReviews: service.TotalReviews,
+                                totalReviews: service.totalReviews,
+                                total,
+                                serviceKeys: Object.keys(service).filter(k => k.toLowerCase().includes('review') || k.toLowerCase().includes('total'))
+                            });
+                        }
+                        return total;
+                    })(), // ✅ NUEVO: Total de reseñas
                     averageRating: service.AverageRating ?? service.averageRating,
                     isActive: service.IsActive ?? service.isActive ?? true,
                     selectedDeliverableTypes: (service.SelectedDeliverableTypes || service.selectedDeliverableTypes || []).map((dt: any) => ({
