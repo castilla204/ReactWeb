@@ -40,6 +40,7 @@
     "embla-carousel": "^8.6.0",
     "embla-carousel-auto-scroll": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
+    "framer-motion": "^12.28.1",
     "input-otp": "^1.2.4",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.562.0",
