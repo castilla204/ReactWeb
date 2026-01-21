@@ -173,7 +173,8 @@ export function ServiceReviewPage({
     };
     
     const finalExpertName = finalService?.expert?.user?.name || expertName || 'Experto';
-    const finalExpertPicture = finalService?.expert?.profilePictureUrl || finalService?.expert?.user?.profilePictureUrl || expertProfilePicture;
+    // ✅ CORRECTO: Usar profilePictureUrl del nivel superior del experto, NO de user (que siempre es null)
+    const finalExpertPicture = finalService?.expert?.profilePictureUrl || expertProfilePicture;
     const finalPrice = finalService?.price || servicePrice || 0;
     
     // ✅ PRIORIDAD DE DESCRIPCIONES (Sin texto genérico inventado)

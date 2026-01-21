@@ -497,15 +497,36 @@ export function ExpertPanelPage() {
         setSelectedImages([]);
         setExistingImages(service.imageUrls || []);
         
-        // ✅ NUEVO: Cargar imágenes con IDs si están disponibles
-        // Si el servicio tiene images con IDs, usarlos; si no, crear estructura desde imageUrls
+        // ✅ CRÍTICO: Usar el campo 'images' del backend que ahora incluye IDs reales
+        // El campo ya viene transformado a camelCase por useServices.ts
         if (service.images && service.images.length > 0) {
-            setExistingImagesWithIds(service.images);
+            // ✅ El backend ahora devuelve IDs reales en el campo 'images'
+            // useServices.ts ya transformó PascalCase a camelCase
+            console.log('✅ Usando campo Images del backend con IDs reales:', service.images);
+            console.log('✅ Imágenes transformadas:', service.images.map(img => ({ id: img.id, url: img.url })));
+            
+            // Filtrar solo imágenes con IDs válidos (positivos)
+            const validImages = service.images.filter((img: any) => {
+                const imageId = img.id ?? img.Id ?? 0;
+                return imageId > 0;
+            }).map((img: any) => ({
+                id: img.id ?? img.Id ?? 0,      // ✅ ID real del backend (positivo)
+                url: img.url ?? img.Url ?? ''
+            }));
+            
+            if (validImages.length > 0) {
+                setExistingImagesWithIds(validImages);
+                console.log('✅ Imágenes válidas cargadas:', validImages.length);
+            } else {
+                console.warn('⚠️ No hay imágenes con IDs válidos');
+                setExistingImagesWithIds([]);
+            }
         } else if (service.imageUrls && service.imageUrls.length > 0) {
-            // Si no vienen con IDs, crear estructura temporal (el backend debería proporcionar IDs)
-            // Por ahora, usamos índices negativos como placeholders
+            // ⚠️ Fallback: Si no hay 'images', usar 'imageUrls' pero mostrar advertencia
+            console.warn('⚠️ El servicio no devuelve el campo Images con IDs. Usando imageUrls como fallback.');
+            console.warn('⚠️ Las imágenes NO se podrán eliminar porque no hay IDs reales.');
             const imagesWithIds: ServiceImage[] = service.imageUrls.map((url, index) => ({
-                id: -(index + 1), // IDs temporales negativos
+                id: -(index + 1), // ❌ IDs temporales negativos - NO funcionarán para eliminar
                 url: url
             }));
             setExistingImagesWithIds(imagesWithIds);
@@ -538,14 +559,38 @@ export function ExpertPanelPage() {
         console.log('🔍 Images to delete (IDs):', imagesToDelete);
         
         try {
-            // ✅ NUEVO: Calcular qué imágenes se eliminaron comparando las originales con las actuales
-            const originalImagesWithIds = existingImagesWithIds;
-            const currentImageIds = existingImagesWithIds
-                .filter(img => !imagesToDelete.includes(img.id))
-                .map(img => img.id);
-            
-            // Filtrar IDs válidos (positivos) para eliminar
+            // ✅ CRÍTICO: Filtrar IDs válidos (solo positivos, que son los IDs reales del backend)
+            // Los IDs negativos son temporales y no se pueden eliminar del backend
             const validImagesToDelete = imagesToDelete.filter(id => id > 0);
+            const invalidIds = imagesToDelete.filter(id => id <= 0);
+            
+            console.log('🔍 All imagesToDelete:', imagesToDelete);
+            console.log('🔍 Valid imagesToDelete (positive IDs only):', validImagesToDelete);
+            console.log('🔍 Invalid IDs (temporary/negative):', invalidIds);
+            console.log('🔍 existingImagesWithIds:', existingImagesWithIds);
+            
+            // ⚠️ Advertencia si hay IDs inválidos
+            if (invalidIds.length > 0) {
+                if (validImagesToDelete.length === 0) {
+                    console.warn('⚠️ Solo hay IDs temporales (negativos). Las imágenes no se pueden eliminar.');
+                    console.warn('⚠️ El backend debe devolver el campo Images con IDs reales para poder eliminarlas.');
+                    setFormErrors({ 
+                        general: 'No se pueden eliminar las imágenes porque el backend no devolvió los IDs reales. Por favor, recarga la página.' 
+                    });
+                    return;
+                } else {
+                    console.warn('⚠️ Algunos IDs son temporales y se ignorarán:', invalidIds);
+                }
+            }
+            
+            // ✅ Validar que hay IDs válidos para eliminar
+            if (imagesToDelete.length > 0 && validImagesToDelete.length === 0) {
+                console.warn('⚠️ No hay IDs válidos para eliminar. Todas las imágenes tienen IDs temporales.');
+                setFormErrors({ 
+                    general: 'No se pueden eliminar las imágenes seleccionadas porque no tienen IDs válidos.' 
+                });
+                return;
+            }
             
             // Las nuevas imágenes a agregar
             const newImages = selectedImages.length > 0 ? selectedImages : undefined;
@@ -563,7 +608,8 @@ export function ExpertPanelPage() {
                 return;
             }
             
-            await updateService({
+            // ✅ Preparar datos para actualizar
+            const updateData = {
                 serviceId: editingService.id,
                 categoryId: categoryId,
                 serviceTypeId: serviceTypeId,
@@ -573,7 +619,17 @@ export function ExpertPanelPage() {
                 images: newImages, // Nuevas imágenes a agregar
                 imagesToDelete: validImagesToDelete.length > 0 ? validImagesToDelete : undefined, // IDs de imágenes a eliminar
                 selectedDeliverableTypes: formData.selectedDeliverableTypes || [],
+            };
+            
+            console.log('🔍 ExpertPanelPage: Enviando updateData:', {
+                ...updateData,
+                images: updateData.images ? `${updateData.images.length} archivo(s)` : 'ninguna',
+                imagesToDelete: updateData.imagesToDelete || 'ninguna'
             });
+            console.log('🔍 ExpertPanelPage: imagesToDelete array:', updateData.imagesToDelete);
+            console.log('🔍 ExpertPanelPage: imagesToDelete JSON string:', updateData.imagesToDelete ? JSON.stringify(updateData.imagesToDelete) : 'undefined');
+            
+            await updateService(updateData);
 
             // Cerrar el Drawer primero y esperar a que se cierre completamente antes de resetear
             setShowServiceForm(false);

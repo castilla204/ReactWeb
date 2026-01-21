@@ -20,6 +20,7 @@ export interface Service {
     durationInHours: number | null;
     createdAt: string;
     imageUrls: string[];
+    images?: Array<{ id: number; url: string }>; // ✅ NUEVO: Imágenes con IDs reales
     categoryName?: string;
     completedSearches?: number;
     averageRating?: number;
@@ -216,6 +217,11 @@ export function useServices({
                     durationInHours: service.DurationInHours ?? service.durationInHours,
                     createdAt: service.CreatedAt || service.createdAt,
                     imageUrls: service.ImageUrls || service.imageUrls || [],
+                    // ✅ NUEVO: Mapear campo Images con IDs reales (PascalCase o camelCase)
+                    images: (service.Images || service.images || []).map((img: any) => ({
+                        id: img.Id ?? img.id ?? 0,
+                        url: img.Url ?? img.url ?? ''
+                    })).filter((img: { id: number; url: string }) => img.id > 0), // Solo IDs válidos
                     categoryName: service.CategoryName || service.categoryName,
                     completedSearches: service.CompletedSearches ?? service.completedSearches,
                     averageRating: service.AverageRating ?? service.averageRating,
@@ -464,10 +470,15 @@ export function useServices({
                 formData.append('SelectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));
             }
             
-            // ✅ NUEVO: Agregar imágenes a eliminar (IDs)
+            // ✅ NUEVO: Agregar imágenes a eliminar (IDs) - DEBE SER STRING JSON
             if (serviceData.imagesToDelete && serviceData.imagesToDelete.length > 0) {
-                formData.append('ImagesToDelete', JSON.stringify(serviceData.imagesToDelete));
-                console.log('🔍 useServices: Adding ImagesToDelete:', serviceData.imagesToDelete);
+                const imagesToDeleteJson = JSON.stringify(serviceData.imagesToDelete);
+                formData.append('ImagesToDelete', imagesToDeleteJson);
+                console.log('🔍 useServices: Adding ImagesToDelete (array):', serviceData.imagesToDelete);
+                console.log('🔍 useServices: Adding ImagesToDelete (JSON string):', imagesToDeleteJson);
+                console.log('🔍 useServices: ImagesToDelete type:', typeof imagesToDeleteJson);
+            } else {
+                console.log('🔍 useServices: No ImagesToDelete to send (array is empty or undefined)');
             }
             
             // ✅ NUEVO: Agregar nuevas imágenes a agregar
@@ -481,10 +492,20 @@ export function useServices({
             console.log('🔍 useServices: FormData contents (updateService):');
             for (const [key, value] of formData.entries()) {
                 if (value instanceof File) {
-                    console.log(`🔍 FormData ${key} = ${value.name}, ${value.size} bytes, ${value.type}`);
+                    console.log(`🔍 FormData ${key} = [File] ${value.name}, ${value.size} bytes, ${value.type}`);
                 } else {
-                    console.log(`🔍 FormData ${key} = ${value}`);
+                    console.log(`🔍 FormData ${key} = ${value} (type: ${typeof value})`);
                 }
+            }
+            
+            // ✅ DEBUG ESPECÍFICO: Verificar ImagesToDelete en FormData
+            const imagesToDeleteValue = formData.get('ImagesToDelete');
+            if (imagesToDeleteValue) {
+                console.log('✅ ImagesToDelete encontrado en FormData:', imagesToDeleteValue);
+                console.log('✅ Tipo de ImagesToDelete:', typeof imagesToDeleteValue);
+                console.log('✅ Es string JSON válido:', typeof imagesToDeleteValue === 'string');
+            } else {
+                console.log('⚠️ ImagesToDelete NO encontrado en FormData');
             }
 
             // Create AbortController for timeout - increased for large files
