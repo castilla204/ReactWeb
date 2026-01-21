@@ -211,6 +211,46 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                         </div>
                                     </div>
                                 )}
+                                
+                                {/* Badge "Recomendación del viajero" cuando está seleccionado */}
+                                {isSelected && (
+                                    <div
+                                        className="absolute top-3 left-3 z-10"
+                                        style={{
+                                            padding: '0',
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                paddingTop: '4px',
+                                                paddingBottom: '4px',
+                                                paddingLeft: '8px',
+                                                paddingRight: '8px',
+                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                backdropFilter: 'blur(4px)',
+                                                borderRadius: '8px',
+                                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            <span style={{ fontSize: '14px', color: '#000000' }}>✓</span>
+                                            <span
+                                                style={{
+                                                    fontSize: '12px',
+                                                    lineHeight: '16px',
+                                                    fontWeight: 400,
+                                                    color: '#000000',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
+                                                Selección del usuario
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Botón de favorito - Estilo exacto de HomepageWall */}
                                 <button
@@ -302,10 +342,10 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 {service.expert && (
                                     <div
                                         className="absolute left-3 z-10"
-                                        style={{
-                                            width: '40px',
-                                            height: '40px',
-                                            bottom: '12px',
+                                    style={{
+                                        width: '52px',
+                                        height: '52px',
+                                        bottom: '12px',
                                             borderRadius: '50%',
                                             border: '2px solid white',
                                             overflow: 'hidden',
@@ -588,6 +628,46 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                     </div>
                                 </div>
                             )}
+                            
+                            {/* Badge "Recomendación del viajero" cuando está seleccionado */}
+                            {isSelected && (
+                                <div
+                                    className="absolute top-3 left-3 z-10"
+                                    style={{
+                                        padding: '0',
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            paddingTop: '4px',
+                                            paddingBottom: '4px',
+                                            paddingLeft: '8px',
+                                            paddingRight: '8px',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                            backdropFilter: 'blur(4px)',
+                                            borderRadius: '8px',
+                                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '14px', color: '#000000' }}>✓</span>
+                                        <span
+                                            style={{
+                                                fontSize: '12px',
+                                                lineHeight: '16px',
+                                                fontWeight: 400,
+                                                color: '#000000',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            }}
+                                        >
+                                            Selección del usuario
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Botón de favorito - Solo el corazón sin círculo */}
                             <button
@@ -602,8 +682,8 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    width: '24px',
-                                    height: '24px',
+                                    width: '28px',
+                                    height: '28px',
                                 }}
                             >
                                 <svg
@@ -615,8 +695,8 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                     style={{
                                         display: 'block',
                                         fill: isFavorite ? '#FF385C' : 'rgba(0, 0, 0, 0.5)',
-                                        height: '24px',
-                                        width: '24px',
+                                        height: '28px',
+                                        width: '28px',
                                         stroke: isFavorite ? '#FF385C' : 'rgba(255, 255, 255, 0.8)',
                                         strokeWidth: '2',
                                         overflow: 'visible',
@@ -656,8 +736,8 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 <div
                                     className="absolute left-3 z-10"
                                     style={{
-                                        width: '36px',
-                                        height: '36px',
+                                        width: '48px',
+                                        height: '48px',
                                         bottom: '8px',
                                         borderRadius: '50%',
                                         border: '2px solid white',
@@ -1684,19 +1764,20 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 </div>
                             </div>
                         )}
-                        {/* Header estilo Airbnb - Sticky - Igual que Airbnb móvil */}
+                        {/* Header móvil - Completamente transparente, solo botones flotantes */}
                         <div 
                             id="mobile-search-header"
                             ref={headerRef}
-                            className="sticky top-0 z-[9999] bg-white"
+                            className="absolute top-0 left-0 right-0 z-[9999] pointer-events-none px-4 pt-3"
+                            style={{
+                                background: 'transparent',
+                                backgroundColor: 'transparent',
+                                backgroundImage: 'none',
+                                backdropFilter: 'none'
+                            }}
                         >
-                            <div 
-                                className="px-4 py-3 flex items-center gap-2"
-                                style={{
-                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08)',
-                                }}
-                            >
-                                {/* Botón de atrás - Estilo Airbnb */}
+                            <div className="flex items-center justify-between pointer-events-auto">
+                                {/* Botón de atrás */}
                                 <button
                                     type="button"
                                     onClick={(e) => {
@@ -1704,46 +1785,19 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         e.stopPropagation();
                                         navigate('/');
                                     }}
-                                    className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 transition-colors flex-shrink-0 shadow-lg"
                                     aria-label="Atrás"
                                 >
                                     <ArrowLeft className="w-5 h-5 text-gray-900" />
                                 </button>
                                 
-                                {/* Botón de búsqueda grande estilo Airbnb - Centrado */}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        // Scroll to search bar or open search modal
-                                    }}
-                                    className="flex-1 h-[57px] px-4 rounded-full border border-gray-300 bg-white hover:shadow-lg transition-all flex items-center justify-center text-center"
-                                    aria-label="Revisores en tu zona"
-                                    aria-describedby="searchInputDescriptionId"
-                                    style={{ 
-                                        fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                >
-                                    <div className="flex flex-col items-center justify-center text-center">
-                                        <span className="text-sm text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 500 }}>
-                                            Revisores en tu zona
-                                        </span>
-                                        <span className="text-xs text-gray-500 mt-0.5" aria-hidden="true" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 400 }}>
-                                            Cualquier semana • Añade viajeros
-                                        </span>
-                                    </div>
-                                    <span className="sr-only" id="searchInputDescriptionId">
-                                        Filtro aplicado: Cualquier semana, Añade viajeros. Cambia la búsqueda.
-                                    </span>
-                                </button>
-                                
-                                {/* Botón de filtros - Estilo Airbnb */}
+                                {/* Botón de filtros */}
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <button
                                             type="button"
                                             aria-label="Show filters"
-                                            className="w-10 h-10 rounded-full border-0 bg-transparent hover:bg-gray-100 transition-all flex items-center justify-center flex-shrink-0"
+                                            className="w-10 h-10 rounded-full bg-white hover:bg-gray-100 transition-all flex items-center justify-center flex-shrink-0 shadow-lg"
                                         >
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
