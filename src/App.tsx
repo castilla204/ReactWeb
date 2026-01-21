@@ -153,13 +153,11 @@ const AppContent: React.FC = () => {
     useEffect(() => {
         const handleShowNotification = (event: CustomEvent) => {
             const { type, message } = event.detail;
-            if (type === 'success') {
-                toast.success(message);
-            } else if (type === 'error') {
+            // Solo mostrar errores
+            if (type === 'error') {
                 toast.error(message);
-            } else {
-                toast.info(message);
             }
+            // No mostrar success ni info
         };
 
         window.addEventListener('showNotification', handleShowNotification as EventListener);
@@ -206,11 +204,11 @@ const AppContent: React.FC = () => {
 
     const handleSignOut = () => {
         signOut();
-        toast.info('👋 ¡Hasta pronto!');
+        // No mostrar notificación de adiós
     };
 
     const handleRequireAuth = (action: string) => {
-        toast.info(`Para ${action.toLowerCase()} necesitas iniciar sesión primero`);
+        // No mostrar notificación de autenticación requerida
     };
 
     // El objeto user viene del backend con mayúsculas: Email, Role (no email, role)

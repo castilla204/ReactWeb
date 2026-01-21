@@ -14,29 +14,30 @@ const Toaster = ({ ...props }: ToasterProps) => {
       expand={false}
       duration={4000}
       gap={8}
+      icons={false}
       style={{ zIndex: 9999 }}
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-white/95 group-[.toaster]:text-gray-900 group-[.toaster]:border group-[.toaster]:shadow-lg group-[.toaster]:shadow-black/5 group-[.toaster]:rounded-xl group-[.toaster]:backdrop-blur-xl group-[.toaster]:ring-1 group-[.toaster]:ring-black/5 group-[.toaster]:px-3 group-[.toaster]:py-2.5 group-[.toaster]:text-sm",
+            "group toast group-[.toaster]:bg-white group-[.toaster]:text-gray-900 group-[.toaster]:border group-[.toaster]:border-gray-200 group-[.toaster]:shadow-md group-[.toaster]:rounded-lg group-[.toaster]:px-4 group-[.toaster]:py-3 group-[.toaster]:text-sm",
           error: 
-            "group-[.toaster]:bg-gradient-to-br group-[.toaster]:from-red-50 group-[.toaster]:to-red-100/80 group-[.toaster]:border-red-200/80 group-[.toaster]:text-red-900 group-[.toaster]:shadow-red-500/10",
+            "group-[.toaster]:bg-white group-[.toaster]:border-red-300 group-[.toaster]:text-red-800",
           success: 
-            "group-[.toaster]:bg-gradient-to-br group-[.toaster]:from-green-50 group-[.toaster]:to-emerald-50/80 group-[.toaster]:border-green-200/80 group-[.toaster]:text-green-900 group-[.toaster]:shadow-green-500/10",
+            "group-[.toaster]:bg-white group-[.toaster]:border-green-300 group-[.toaster]:text-green-800",
           info: 
-            "group-[.toaster]:bg-gradient-to-br group-[.toaster]:from-blue-50 group-[.toaster]:to-cyan-50/80 group-[.toaster]:border-blue-200/80 group-[.toaster]:text-blue-900 group-[.toaster]:shadow-blue-500/10",
+            "group-[.toaster]:bg-white group-[.toaster]:border-blue-300 group-[.toaster]:text-blue-800",
           warning: 
-            "group-[.toaster]:bg-gradient-to-br group-[.toaster]:from-amber-50 group-[.toaster]:to-yellow-50/80 group-[.toaster]:border-amber-200/80 group-[.toaster]:text-amber-900 group-[.toaster]:shadow-amber-500/10",
+            "group-[.toaster]:bg-white group-[.toaster]:border-amber-300 group-[.toaster]:text-amber-800",
           description: 
-            "group-[.toast]:text-gray-600 group-[.toast]:text-xs group-[.toast]:mt-0.5",
+            "group-[.toast]:text-gray-600 group-[.toast]:text-sm group-[.toast]:mt-1",
           title: 
-            "group-[.toast]:font-semibold group-[.toast]:text-sm group-[.toast]:leading-tight",
+            "group-[.toast]:font-medium group-[.toast]:text-sm group-[.toast]:leading-normal",
           actionButton:
-            "group-[.toast]:bg-gray-900 group-[.toast]:text-white group-[.toast]:rounded-lg group-[.toast]:px-3 group-[.toast]:py-1.5 group-[.toast]:text-sm group-[.toast]:font-medium group-[.toast]:hover:bg-gray-800 group-[.toast]:transition-colors",
+            "group-[.toast]:bg-gray-900 group-[.toast]:text-white group-[.toast]:rounded-md group-[.toast]:px-3 group-[.toast]:py-1.5 group-[.toast]:text-sm group-[.toast]:font-medium group-[.toast]:hover:bg-gray-800 group-[.toast]:transition-colors",
           cancelButton:
-            "group-[.toast]:bg-gray-100 group-[.toast]:text-gray-700 group-[.toast]:rounded-lg group-[.toast]:px-3 group-[.toast]:py-1.5 group-[.toast]:text-sm group-[.toast]:font-medium group-[.toast]:hover:bg-gray-200 group-[.toast]:transition-colors",
+            "group-[.toast]:bg-gray-100 group-[.toast]:text-gray-700 group-[.toast]:rounded-md group-[.toast]:px-3 group-[.toast]:py-1.5 group-[.toast]:text-sm group-[.toast]:font-medium group-[.toast]:hover:bg-gray-200 group-[.toast]:transition-colors",
           closeButton:
-            "group-[.toast]:text-gray-400 group-[.toast]:hover:text-gray-600 group-[.toast]:hover:bg-gray-100/80 group-[.toast]:rounded-full group-[.toast]:transition-all",
+            "group-[.toast]:text-gray-400 group-[.toast]:hover:text-gray-600 group-[.toast]:hover:bg-gray-100 group-[.toast]:rounded-md group-[.toast]:transition-all",
         },
         style: {
           background: 'transparent',

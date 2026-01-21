@@ -691,20 +691,19 @@ img[alt*="country"],
     color: #717171;
 }
 
-/* Sonner Toast Notifications - Estilos mejorados y modernos */
+/* Sonner Toast Notifications - Estilo clásico y simple */
 [data-sonner-toaster] {
     --width: 320px;
-    --border-radius: 12px;
+    --border-radius: 8px;
 }
 
 [data-sonner-toast] {
-    animation: toast-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: toast-in 0.3s ease-out;
     transform-origin: top right;
 }
 
 [data-sonner-toast][data-styled="true"] {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    /* Sin backdrop-filter para estilo clásico */
 }
 
 [data-sonner-toast][data-swipe="move"] {
@@ -722,111 +721,90 @@ img[alt*="country"],
 
 @keyframes toast-in {
     from {
-        transform: translateX(calc(100% + 16px)) scale(0.95);
+        transform: translateX(calc(100% + 20px));
         opacity: 0;
     }
     to {
-        transform: translateX(0) scale(1);
+        transform: translateX(0);
         opacity: 1;
     }
 }
 
 @keyframes toast-out {
     from {
-        transform: translateX(0) scale(1);
+        transform: translateX(0);
         opacity: 1;
     }
     to {
-        transform: translateX(calc(100% + 16px)) scale(0.95);
+        transform: translateX(calc(100% + 20px));
         opacity: 0;
     }
 }
 
-/* Mejorar el icono en las notificaciones */
+/* Ocultar iconos en las notificaciones - solo texto */
 [data-sonner-toast] [data-icon] {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
+    display: none !important;
 }
 
-/* Mejorar el botón de cerrar */
+/* Botón de cerrar simple */
 [data-sonner-toast] [data-close-button] {
-    width: 20px;
-    height: 20px;
-    border-radius: 6px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
 }
 
 [data-sonner-toast] [data-close-button]:hover {
-    background-color: rgba(0, 0, 0, 0.08);
-    transform: scale(1.1);
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
-/* Mejorar el título y descripción */
+/* Título y descripción - estilo clásico */
 [data-sonner-toast] [data-title] {
-    font-weight: 600;
-    line-height: 1.4;
-    letter-spacing: -0.01em;
+    font-weight: 500;
+    line-height: 1.5;
+    font-size: 14px;
 }
 
 [data-sonner-toast] [data-description] {
     margin-top: 4px;
     line-height: 1.5;
-    opacity: 0.85;
+    font-size: 13px;
+    color: #6b7280;
 }
 
-/* Efecto de brillo sutil en hover */
+/* Hover sutil - sin transformaciones exageradas */
 [data-sonner-toast]:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: box-shadow 0.2s ease;
 }
 
-/* Barra de progreso animada para duración */
-[data-sonner-toast]::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, currentColor, transparent);
-    opacity: 0.3;
-    animation: progress-bar var(--duration, 4s) linear forwards;
-    border-radius: 0 0 16px 16px;
-}
-
-@keyframes progress-bar {
-    from {
-        width: 100%;
-    }
-    to {
-        width: 0%;
-    }
-}
-
-/* Mejorar el espaciado interno - más compacto */
+/* Espaciado interno simple */
 [data-sonner-toast] [data-content] {
-    padding: 10px 12px;
+    padding: 12px 16px;
     gap: 8px;
 }
 
-/* Efecto de glassmorphism mejorado */
+/* Fondos sólidos y bordes definidos - sin gradientes ni transparencias */
 [data-sonner-toast][data-type="success"] {
-    background: linear-gradient(135deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.9) 100%);
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    background: #ffffff !important;
+    border: 1px solid #86efac !important;
+    color: #166534 !important;
 }
 
 [data-sonner-toast][data-type="error"] {
-    background: linear-gradient(135deg, rgba(254, 242, 242, 0.95) 0%, rgba(254, 226, 226, 0.9) 100%);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: #ffffff !important;
+    border: 1px solid #fca5a5 !important;
+    color: #991b1b !important;
 }
 
 [data-sonner-toast][data-type="info"] {
-    background: linear-gradient(135deg, rgba(239, 246, 255, 0.95) 0%, rgba(219, 234, 254, 0.9) 100%);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: #ffffff !important;
+    border: 1px solid #93c5fd !important;
+    color: #1e40af !important;
 }
 
 [data-sonner-toast][data-type="warning"] {
-    background: linear-gradient(135deg, rgba(255, 251, 235, 0.95) 0%, rgba(254, 243, 199, 0.9) 100%);
-    border: 1px solid rgba(245, 158, 11, 0.2);
+    background: #ffffff !important;
+    border: 1px solid #fcd34d !important;
+    color: #92400e !important;
 }

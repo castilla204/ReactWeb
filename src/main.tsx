@@ -77,7 +77,7 @@ const queryClient = new QueryClient({
                     }
                     
                     // Solo mostrar toast para errores 5xx que no sean de API caída
-                    toast.error('⚠️ Error al cargar datos', {
+                    toast.error('Error al cargar datos', {
                         description: errorMessage,
                         duration: 6000,
                     });
@@ -121,12 +121,12 @@ const queryClient = new QueryClient({
                     }
                     
                     // Solo mostrar toast para errores 5xx que no sean de API caída
-                    toast.error('⚠️ Error del servidor', {
+                    toast.error('Error del servidor', {
                         description: errorMessage,
                         duration: 6000,
                     });
                 } else if (error?.response?.status >= 400) {
-                    toast.error('❌ Error en la operación', {
+                    toast.error('Error en la operación', {
                         description: errorMessage,
                         duration: 5000,
                     });

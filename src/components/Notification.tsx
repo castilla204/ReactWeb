@@ -91,13 +91,8 @@ export function Notification({ type, message, action, onClose, duration = 5000 }
                 {/* Subtle dot indicator */}
                 <div className={`absolute top-4 left-4 w-2 h-2 rounded-full ${config.dotColor}`} />
                 
-                <div className="pl-8 pr-4 py-4">
+                <div className="pl-4 pr-4 py-4">
                     <div className="flex items-start gap-3">
-                        {/* Icon - more subtle */}
-                        <div className={`flex-shrink-0 ${config.iconColor} mt-0.5`}>
-                            {config.icon}
-                        </div>
-                        
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                             <p className={`text-sm ${config.textColor} leading-relaxed font-medium`}>

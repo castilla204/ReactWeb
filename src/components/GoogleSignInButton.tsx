@@ -113,7 +113,7 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                             
                             setAuthStep('¡Inicio de sesión exitoso!');
                             console.log('✅ [GoogleSignIn] Paso 7: Proceso completado');
-                            toast.success('¡Bienvenido!', { duration: 2000 });
+                            // No mostrar notificación de bienvenida
                             
                             // Llamar callback si existe
                             if (onSuccess) {

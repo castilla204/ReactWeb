@@ -59,7 +59,7 @@ export function handleHttpError(response: Response, url: string): void {
 
     switch (response.status) {
         case 404:
-            toast.error('🔍 Recurso no encontrado', {
+            toast.error('Recurso no encontrado', {
                 description: 'La página o recurso que buscas no existe.',
                 duration: 5000,
             });
@@ -72,7 +72,7 @@ export function handleHttpError(response: Response, url: string): void {
         case 403:
             // Los errores 403 se manejan principalmente en authService
             // Solo mostrar notificación genérica si authService no lo maneja
-            toast.error('🚫 Acceso denegado', {
+            toast.error('Acceso denegado', {
                 description: 'No tienes permisos para acceder a este recurso. Si el problema persiste, intenta cerrar sesión y volver a iniciar sesión.',
                 duration: 6000,
             });
@@ -86,7 +86,7 @@ export function handleHttpError(response: Response, url: string): void {
         case 502:
         case 503:
         case 504:
-            toast.error('⚠️ Error del servidor', {
+            toast.error('Error del servidor', {
                 description: 'El servidor está experimentando problemas. Por favor, intenta más tarde.',
                 duration: 6000,
             });
@@ -94,12 +94,12 @@ export function handleHttpError(response: Response, url: string): void {
 
         default:
             if (response.status >= 500) {
-                toast.error('⚠️ Error del servidor', {
+                toast.error('Error del servidor', {
                     description: `Error ${response.status}: ${response.statusText}`,
                     duration: 6000,
                 });
             } else if (response.status >= 400) {
-                toast.error('❌ Error en la solicitud', {
+                toast.error('Error en la solicitud', {
                     description: `Error ${response.status}: ${response.statusText}`,
                     duration: 5000,
                 });
