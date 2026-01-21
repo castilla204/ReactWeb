@@ -49,8 +49,34 @@ const queryClient = new QueryClient({
                 
                 const errorMessage = getFriendlyErrorMessage(error);
                 
-                // Solo mostrar toast si es un error de red o servidor
-                if (isNetworkError(error) || (error?.response?.status >= 500)) {
+                // Solo loguear errores de red/API en consola, no mostrar toast
+                if (isNetworkError(error)) {
+                    console.error('🌐 Error de conexión (solo consola):', {
+                        error: errorMessage,
+                        url: error?.config?.url || error?.request?.url,
+                        timestamp: new Date().toISOString()
+                    });
+                    return; // No mostrar toast
+                }
+                
+                // Para errores 5xx, solo mostrar si no es un error de API caída
+                if (error?.response?.status >= 500) {
+                    // Verificar si es un error de API caída (timeout, connection refused, etc)
+                    const isApiDown = error?.code === 'ECONNREFUSED' || 
+                                     error?.code === 'ETIMEDOUT' ||
+                                     error?.message?.includes('Failed to fetch') ||
+                                     error?.message?.includes('NetworkError');
+                    
+                    if (isApiDown) {
+                        console.error('🔴 API no disponible (solo consola):', {
+                            error: errorMessage,
+                            status: error?.response?.status,
+                            timestamp: new Date().toISOString()
+                        });
+                        return; // No mostrar toast
+                    }
+                    
+                    // Solo mostrar toast para errores 5xx que no sean de API caída
                     toast.error('⚠️ Error al cargar datos', {
                         description: errorMessage,
                         duration: 6000,
@@ -68,13 +94,33 @@ const queryClient = new QueryClient({
                 
                 const errorMessage = getFriendlyErrorMessage(error);
                 
-                // Mostrar toast para errores en mutations
+                // Solo loguear errores de red/API en consola, no mostrar toast
                 if (isNetworkError(error)) {
-                    toast.error('🌐 Error de conexión', {
-                        description: errorMessage,
-                        duration: 6000,
+                    console.error('🌐 Error de conexión (solo consola):', {
+                        error: errorMessage,
+                        url: error?.config?.url || error?.request?.url,
+                        timestamp: new Date().toISOString()
                     });
-                } else if (error?.response?.status >= 500) {
+                    return; // No mostrar toast
+                }
+                
+                // Para errores 5xx, verificar si es API caída
+                if (error?.response?.status >= 500) {
+                    const isApiDown = error?.code === 'ECONNREFUSED' || 
+                                     error?.code === 'ETIMEDOUT' ||
+                                     error?.message?.includes('Failed to fetch') ||
+                                     error?.message?.includes('NetworkError');
+                    
+                    if (isApiDown) {
+                        console.error('🔴 API no disponible (solo consola):', {
+                            error: errorMessage,
+                            status: error?.response?.status,
+                            timestamp: new Date().toISOString()
+                        });
+                        return; // No mostrar toast
+                    }
+                    
+                    // Solo mostrar toast para errores 5xx que no sean de API caída
                     toast.error('⚠️ Error del servidor', {
                         description: errorMessage,
                         duration: 6000,

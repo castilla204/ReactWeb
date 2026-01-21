@@ -26,7 +26,13 @@ export const useErrorHandler = (error: Error | null | undefined, isError: boolea
         error?.name === 'TypeError';
 
       if (isNetworkError) {
-        showToast('error', '🌐 Error de conexión. Por favor, verifica tu conexión a internet e intenta nuevamente.', 6000);
+        // Solo loguear en consola, no mostrar toast para errores de red/API
+        console.error('🌐 Error de conexión (solo consola):', {
+          error: errorMessage,
+          errorObject: error,
+          timestamp: new Date().toISOString()
+        });
+        return; // No mostrar toast
       } else if (!errorMessage.includes('401') && !errorMessage.includes('403') && !errorMessage.includes('Sesión expirada')) {
         // No mostrar toasts para errores de autenticación (ya se manejan en otros lugares)
         showToast('error', errorMessage, 5000);
