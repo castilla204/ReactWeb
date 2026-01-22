@@ -178,7 +178,9 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         scaleControl: false,
         rotateControl: false,
         clickableIcons: false,
-        draggable: !disabled // Deshabilitar arrastre si está deshabilitado
+        draggable: !disabled, // Deshabilitar arrastre si está deshabilitado
+        minZoom: 3, // ✅ Permite ver continentes pero evita el fondo gris (zoom 0-2)
+        maxZoom: 20, // ✅ Zoom máximo normal de Google Maps
       });
 
       // Guardar referencia del mapa para poder actualizarlo desde el selector de países

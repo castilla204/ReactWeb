@@ -728,6 +728,8 @@ export function LocationMap({
                 fullscreenControl: false,
                 gestureHandling: 'greedy', // Mejora interacción táctil
                 clickableIcons: false, // Evita que POIs capturen clicks
+                minZoom: 3, // ✅ Permite ver continentes pero evita el fondo gris (zoom 0-2)
+                maxZoom: 20, // ✅ Zoom máximo normal de Google Maps
             }}
             onIdle={handleMapIdle}
             onLoad={handleMapLoad}
