@@ -23,8 +23,8 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   const lastYRef = React.useRef<number | null>(null);
   const isDraggingRef = React.useRef(false);
   
-  // Snap points: 0.7 = reposo (70%), 0.95 = casi arriba
-  const snapPoints: (number | string)[] = [0.7, 0.95];
+  // Snap points: 0.7 = reposo (70%), 0.85 = casi arriba (deja espacio para el header)
+  const snapPoints: (number | string)[] = [0.7, 0.85];
   
   // ✅ Detectar movimiento del drawer para cambiar snap point más rápido
   React.useEffect(() => {
@@ -151,7 +151,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           width: '100%',
           maxWidth: '100%',
           maxHeight: '100vh',
-          zIndex: 10000,
+          zIndex: 9998, // ✅ Menor que el header (z-[9999]) para que no tape los botones
           willChange: 'transform',
         }}
         noOverlay={true} // ✅ Sin overlay

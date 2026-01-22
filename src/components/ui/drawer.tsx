@@ -143,7 +143,7 @@ const DrawerContent = React.forwardRef<
         )}
         style={{
           ...props.style,
-          zIndex: showOverlay ? (props.style?.zIndex || 9998) : (props.style?.zIndex || 10000),
+          zIndex: showOverlay ? (props.style?.zIndex || 9998) : (props.style?.zIndex || 9998), // ✅ Menor que el header (z-[9999]) para que no tape los botones
           // ✅ Vaul maneja las transiciones nativamente - no sobrescribir
           // Mejorar rendimiento de animaciones
           willChange: 'transform',
