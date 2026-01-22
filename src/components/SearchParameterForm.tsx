@@ -1096,6 +1096,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     // En móvil, iniciar abierto y visible si viene de búsqueda, sino esperar a que carguen servicios
     const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile);
     const [isDrawerVisible, setIsDrawerVisible] = useState(initialIsMobile && comesFromSearch); // Abrir inmediatamente si viene de búsqueda
+    // ✅ Rastrear si el usuario cerró el drawer manualmente para evitar reabrir automáticamente
+    const [wasManuallyClosed, setWasManuallyClosed] = useState(false);
     
     const drawerContentRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
@@ -1240,8 +1242,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const favoritesMap = favoritesData?.data || {};
     
     // ✅ OPTIMIZADO: Mostrar drawer inmediatamente si viene de búsqueda, sino esperar servicios
+    // ✅ PERO NO reabrir si el usuario lo cerró manualmente
     useEffect(() => {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+        // ✅ NO abrir automáticamente si el usuario lo cerró manualmente
+        if (wasManuallyClosed) return;
+        
         if (isMobile && comesFromSearch && !isDrawerVisible) {
             // Si viene de búsqueda, abrir inmediatamente
             setIsDrawerOpen(true);
@@ -1256,7 +1262,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             }, 50);
             return () => clearTimeout(timer);
         }
-    }, [allServices.length, isLoadingServices, isDrawerVisible, comesFromSearch]);
+    }, [allServices.length, isLoadingServices, isDrawerVisible, comesFromSearch, wasManuallyClosed]);
     
     
     // Detectar cuando el usuario interactúa con el drawer (arrastra o abre manualmente)
@@ -1529,10 +1535,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }
     }, [selectedLocation, map, formData.latitude, formData.longitude]);
     const handleMapClick = (e: google.maps.MapMouseEvent) => {
-        // ✅ Si el drawer está abierto, cerrarlo
+        // ✅ Si el drawer está abierto, cerrarlo y marcar como cerrado manualmente
         if (isDrawerOpen && isDrawerVisible) {
             setIsDrawerOpen(false);
             setIsDrawerVisible(false);
+            setWasManuallyClosed(true); // ✅ Marcar que fue cerrado manualmente
             return;
         }
         
@@ -1598,6 +1605,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         if (isMobileDevice) {
             setIsDrawerOpen(true);
             setIsDrawerVisible(true);
+            setWasManuallyClosed(false); // ✅ Resetear flag cuando se selecciona un servicio (acción intencional)
         }
         
         // ✅ Hacer scroll al principio del sidebar para mostrar la card seleccionada (solo en desktop)
@@ -1880,6 +1888,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     setIsDrawerOpen(true);
                                                     setIsDrawerVisible(true);
                                                     setActiveSnapPoint(1);
+                                                    setWasManuallyClosed(false); // ✅ Resetear flag cuando se abre manualmente con el botón
                                                 }
                                             }}
                                             size="lg"
@@ -1963,6 +1972,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         onOpenChange={(open) => {
                             setIsDrawerOpen(open);
                             setIsDrawerVisible(open);
+                            // ✅ Si el usuario cierra el drawer, marcar como cerrado manualmente
+                            if (!open) {
+                                setWasManuallyClosed(true);
+                            } else {
+                                // Si lo abre, resetear el flag (puede abrirse manualmente)
+                                setWasManuallyClosed(false);
+                            }
                         }}
                         title={(() => {
                             const drawerServicesCount = services.length;
