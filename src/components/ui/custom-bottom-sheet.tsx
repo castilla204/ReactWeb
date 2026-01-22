@@ -19,10 +19,72 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   className,
 }) => {
   const [activeSnapPoint, setActiveSnapPoint] = React.useState<number | string | null>(0.7);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const lastScrollTopRef = React.useRef(0);
+  const scrollThresholdRef = React.useRef(0);
   
-  // ✅ SNAP POINTS MÁS FLUIDOS: Más puntos intermedios para transiciones suaves
-  // 0.5 = medio, 0.7 = reposo, 0.85 = expandido, 0.95 = casi arriba
-  const snapPoints: (number | string)[] = [0.5, 0.7, 0.85, 0.95];
+  // Snap points: 0.7 = reposo (70%), 0.95 = casi arriba
+  const snapPoints: (number | string)[] = [0.7, 0.95];
+  
+  // ✅ Detectar scroll y cambiar snap point suavemente con umbral reducido
+  React.useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !open) return;
+    
+    let rafId: number | null = null;
+    
+    const handleScroll = () => {
+      if (rafId !== null) return; // Evitar múltiples llamadas
+      
+      rafId = requestAnimationFrame(() => {
+        const scrollTop = container.scrollTop;
+        const scrollDelta = scrollTop - lastScrollTopRef.current;
+        lastScrollTopRef.current = scrollTop;
+        
+        // ✅ Umbral MUY reducido: solo 20px de scroll acumulado para cambiar snap point
+        const threshold = 20;
+        scrollThresholdRef.current += scrollDelta;
+        
+        // ✅ Si el usuario hace scroll hacia arriba (positivo) y supera el umbral
+        if (scrollThresholdRef.current > threshold && activeSnapPoint !== 0.95) {
+          setActiveSnapPoint(0.95); // Ir al snap point superior
+          scrollThresholdRef.current = 0; // Resetear contador
+        }
+        // ✅ Si el usuario hace scroll hacia abajo (negativo) y está en el top
+        else if (scrollTop <= 5 && scrollThresholdRef.current < -threshold && activeSnapPoint !== 0.7) {
+          setActiveSnapPoint(0.7); // Volver al snap point de reposo
+          scrollThresholdRef.current = 0; // Resetear contador
+        }
+        // ✅ Si está en el top y hace scroll hacia abajo, acumular para cerrar
+        else if (scrollTop <= 5 && scrollDelta < 0) {
+          // Mantener el acumulador negativo para detectar cuando supere el umbral
+        }
+        // ✅ Si hace scroll hacia arriba pero no está en el top, resetear acumulador negativo
+        else if (scrollTop > 5 && scrollDelta > 0) {
+          scrollThresholdRef.current = Math.max(0, scrollThresholdRef.current);
+        }
+        
+        rafId = null;
+      });
+    };
+    
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [activeSnapPoint, open]);
+  
+  // ✅ Resetear contador cuando cambia el snap point o se abre/cierra
+  React.useEffect(() => {
+    scrollThresholdRef.current = 0;
+    if (scrollContainerRef.current) {
+      lastScrollTopRef.current = scrollContainerRef.current.scrollTop;
+    }
+  }, [activeSnapPoint, open]);
 
   return (
     <Drawer
@@ -33,7 +95,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
       setActiveSnapPoint={setActiveSnapPoint}
       modal={false} // ✅ Sin overlay para permitir interacción con el mapa
       dismissible={true}
-      snapToSequentialPoint={true} // ✅ Snap secuencial para fluidez
+      snapToSequentialPoint={true}
       shouldScaleBackground={false} // ✅ Sin escalado del fondo
       {...({} as any)} // ✅ Type assertion para children (DrawerPrimitive.Root acepta children en runtime)
     >
@@ -48,16 +110,10 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           maxWidth: '100%',
           maxHeight: '100vh',
           zIndex: 10000,
-          // ✅ OPTIMIZACIONES MÁXIMAS PARA FLUIDEZ
           willChange: 'transform',
-          // ✅ Aceleración de hardware para drag fluido
-          transform: 'translateZ(0)',
-          backfaceVisibility: 'hidden',
-          // ✅ Mejorar rendimiento durante el drag
-          contain: 'layout style paint',
         }}
         noOverlay={true} // ✅ Sin overlay
-        noHandle={false} // ✅ Mostrar handle para drag
+        noHandle={true} // ✅ Ocultar handle
         title={title}
       >
         {/* Header con título y botón cerrar */}
@@ -92,18 +148,13 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           </div>
         )}
 
-        {/* Contenido scrolleable - OPTIMIZADO PARA FLUIDEZ MÁXIMA */}
+        {/* Contenido scrolleable */}
         <div
+          ref={scrollContainerRef}
           className="flex-1 overflow-y-auto bg-white px-0"
           style={{
             overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch',
-            // ✅ Optimizaciones de rendimiento para fluidez
-            touchAction: 'pan-y',
-            willChange: 'scroll-position',
-            // ✅ Mejorar rendimiento del scroll
-            transform: 'translateZ(0)', // Aceleración de hardware
-            backfaceVisibility: 'hidden',
           }}
           onTouchStart={(e) => {
             // Prevenir que el mapa se mueva cuando se toca el drawer
