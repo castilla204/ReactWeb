@@ -56,7 +56,7 @@ const DrawerPortal = DrawerPrimitive.Portal
 
 const DrawerClose = DrawerPrimitive.Close
 
-// Handle component optimizado para drag fluido
+// Handle component optimizado para drag ULTRA FLUIDO - MÁXIMA SENSIBILIDAD
 const DrawerHandle = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -64,14 +64,23 @@ const DrawerHandle = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "mx-auto mt-3 mb-3 h-1 w-12 flex-shrink-0 rounded-full bg-gray-300 cursor-grab active:cursor-grabbing touch-none transition-opacity duration-200",
+      "mx-auto mt-3 mb-3 h-1.5 w-16 flex-shrink-0 rounded-full bg-gray-300 cursor-grab active:cursor-grabbing touch-none transition-opacity duration-200",
       "hover:bg-gray-400 active:bg-gray-500",
       className
     )}
     style={{
       userSelect: 'none',
       WebkitUserSelect: 'none',
-      willChange: 'opacity',
+      // ✅ Optimizaciones máximas para fluidez
+      willChange: 'opacity, transform',
+      // ✅ Área táctil MÁS GRANDE para mejor detección (más fácil de arrastrar)
+      padding: '12px 0',
+      margin: '-12px 0',
+      // ✅ Solo drag, no scroll - máxima sensibilidad
+      touchAction: 'none',
+      // ✅ Aceleración de hardware
+      transform: 'translateZ(0)',
+      backfaceVisibility: 'hidden',
       ...props.style,
     }}
     {...props}
@@ -144,12 +153,16 @@ const DrawerContent = React.forwardRef<
         style={{
           ...props.style,
           zIndex: showOverlay ? (props.style?.zIndex || 9998) : (props.style?.zIndex || 10000),
-          // ✅ Vaul maneja las transiciones nativamente - no sobrescribir
-          // Mejorar rendimiento de animaciones
+          // ✅ OPTIMIZACIONES MÁXIMAS PARA FLUIDEZ
           willChange: 'transform',
-          contain: 'layout style',
+          contain: 'layout style paint',
           // ✅ Asegurar que Vaul controle completamente el transform durante el drag
           transition: 'none', // Vaul maneja las transiciones internamente
+          // ✅ Mejorar fluidez del drag con aceleración de hardware
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
+          // ✅ Permitir drag vertical sin interferencias
+          touchAction: 'pan-y',
         }}
         {...props}
       >
