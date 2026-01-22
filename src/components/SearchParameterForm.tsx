@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
-import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, List, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 import { useLoadScript } from '@react-google-maps/api';
@@ -1912,28 +1912,46 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 if (isDrawerOpen && isDrawerVisible) {
                                                     // Si está abierto, alternar entre expandido y colapsado
                                                     // Usar snapPoints nativos de vaul (números decimales)
-                                                    setActiveSnapPoint(activeSnapPoint === 1 ? 0.5 : 1);
+                                                    setActiveSnapPoint(activeSnapPoint === 0.85 ? 0.7 : 0.85);
                                                 } else {
                                                     // Si está cerrado, abrir expandido
                                                     setIsDrawerOpen(true);
                                                     setIsDrawerVisible(true);
-                                                    setActiveSnapPoint(1);
+                                                    setActiveSnapPoint(0.7);
                                                     setWasManuallyClosed(false); // ✅ Resetear flag cuando se abre manualmente con el botón
                                                 }
                                             }}
                                             size="lg"
-                                        className={`shadow-2xl border-2 h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base rounded-full font-semibold transition-all pointer-events-auto ${
+                                            className={`shadow-[0_4px_16px_rgba(0,0,0,0.2)] border-0 h-14 px-8 text-base rounded-full font-semibold transition-all duration-200 pointer-events-auto ${
                                                 services.length === 0 
-                                                    ? 'bg-background/95 backdrop-blur-sm border-muted-foreground/30 text-muted-foreground' 
-                                                    : 'bg-primary border-primary text-primary-foreground hover:bg-primary/90'
+                                                    ? 'bg-white/90 backdrop-blur-md text-gray-400 cursor-not-allowed' 
+                                                    : 'bg-[#222222] text-white hover:bg-[#000000] active:bg-[#000000] hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.98]'
                                             }`}
                                             disabled={services.length === 0}
+                                            style={{
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                letterSpacing: '-0.01em',
+                                            }}
                                         >
-                                            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                                            {services.length > 0 
-                                                ? `Ver ${services.length} ${services.length === 1 ? 'resultado' : 'resultados'}`
-                                                : 'Ver resultados'
-                                            }
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative">
+                                                    <List className={`w-5 h-5 ${services.length === 0 ? 'text-gray-400' : 'text-white'}`} strokeWidth={2.5} />
+                                                    {services.length > 0 && (
+                                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                                                            <span className="text-[10px] font-bold text-[#222222] leading-none">
+                                                                {services.length > 99 ? '99+' : services.length}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <span>
+                                                    {services.length > 0 
+                                                        ? `Ver ${services.length} ${services.length === 1 ? 'resultado' : 'resultados'}`
+                                                        : 'Ver resultados'
+                                                    }
+                                                </span>
+                                                <ChevronUp className={`w-4 h-4 ${services.length === 0 ? 'text-gray-400' : 'text-white/80'}`} strokeWidth={2.5} />
+                                            </div>
                                         </Button>
                                 </div>
                                 )}
