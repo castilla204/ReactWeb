@@ -3,7 +3,7 @@ import logoImg from '../media/logoi.png';
 
 export const Footer = () => {
     return (
-        <footer className="bg-white border-t border-gray-100 relative z-30" style={{ backgroundColor: '#fbfbfb' }}>
+        <footer className="hidden md:block bg-white border-t border-gray-100 relative z-30" style={{ backgroundColor: '#fbfbfb' }}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
                 {/* Links principales - Compacto */}
                 <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-3 md:mb-4">

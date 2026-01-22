@@ -26,6 +26,14 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   // Snap points: 0.7 = reposo (70%), 0.85 = casi arriba (deja espacio para el header)
   const snapPoints: (number | string)[] = [0.7, 0.85];
   
+  // ✅ Resetear snap point a 0.7 cuando se abre el drawer
+  React.useEffect(() => {
+    if (open) {
+      // ✅ Resetear a posición de reposo cuando se abre
+      setActiveSnapPoint(0.7);
+    }
+  }, [open]); // Solo cuando cambia `open`
+  
   // ✅ Detectar movimiento del drawer para cambiar snap point más rápido
   React.useEffect(() => {
     if (!open) return;
