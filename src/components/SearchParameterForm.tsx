@@ -1254,12 +1254,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     
     // ✅ INFINITE SCROLL: IntersectionObserver para cargar más servicios
     useEffect(() => {
-        const sentinel = sentinelRefMobile.current || sentinelRefDesktop.current;
-        if (!sentinel || !hasNextPage || isFetchingNextPage) return;
+        const sentinels = [sentinelRefMobile.current, sentinelRefDesktop.current].filter(Boolean) as HTMLDivElement[];
+        if (sentinels.length === 0 || !hasNextPage || isFetchingNextPage) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
-                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                if (entries.some(e => e.isIntersecting) && hasNextPage && !isFetchingNextPage) {
                     console.log('🔍 [InfiniteScroll] Cargando más servicios...');
                     fetchNextPage();
                 }
@@ -1267,7 +1267,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             { threshold: 0.1, rootMargin: '100px' } // ✅ Cargar 100px antes de llegar al final
         );
 
-        observer.observe(sentinel);
+        sentinels.forEach(sentinel => observer.observe(sentinel));
         return () => observer.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
     
@@ -2040,7 +2040,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     onWheel={(e) => e.stopPropagation()}
                                 >
                                     {allServices.map((service) => {
-                                        const serviceId = service.id || service.Id;
+                                        const serviceId = service.id;
                                         const isSelected = selectedService === serviceId;
                                         return (
                                             <MapServiceCard
@@ -2250,7 +2250,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     }}
                                 >
                                     {allServices.map((service) => {
-                                        const serviceId = service.id || service.Id;
+                                        const serviceId = service.id;
                                         const isSelected = selectedService === serviceId;
                                         return (
                                             <MapServiceCard
