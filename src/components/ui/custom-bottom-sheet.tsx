@@ -157,6 +157,23 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
         noOverlay={true} // ✅ Sin overlay
         noHandle={false} // ✅ Mostrar handle para drag
         title={title}
+        onPointerDownOutside={(e) => {
+          // ✅ Detectar clicks fuera del drawer para cerrarlo
+          const target = e.target as HTMLElement;
+          // ✅ Verificar que no sea un click en el mapa (para no interferir con la interacción del mapa)
+          const isMapClick = target.closest('[role="button"]') || 
+                             target.closest('.gm-style') || 
+                             target.closest('[class*="map"]') ||
+                             target.closest('#mobile-search-header'); // ✅ No cerrar si es click en el header
+          
+          // ✅ Solo cerrar si no es un click en el mapa o header
+          if (!isMapClick) {
+            onOpenChange(false);
+          } else {
+            // ✅ Prevenir el cierre si es click en el mapa
+            e.preventDefault();
+          }
+        }}
       >
         {/* Header con título y botón cerrar */}
         {title && (

@@ -211,9 +211,9 @@ export function LocationMap({
     }, [map, onBoundsChange]);
 
     const handleMapIdle = () => {
-        if (map) {
+        if (map && !isDraggingRef.current) {
             google.maps.event.trigger(map, 'resize');
-            // Forzar actualización de marcadores cuando el mapa está idle (para recalcular offsets)
+            // ✅ Solo actualizar marcadores cuando NO se está arrastrando (evita parpadeo)
             setMarkerKey(prev => prev + 1);
             
             // ✅ Debouncing mejorado para bounds change (500ms para evitar llamadas excesivas)
@@ -242,6 +242,9 @@ export function LocationMap({
         isDraggingRef.current = false;
         // Actualizar bounds después de que termine el arrastre
         if (map) {
+            // ✅ Forzar actualización de marcadores después del drag (solo una vez)
+            setMarkerKey(prev => prev + 1);
+            
             // Usar un timeout más corto después del arrastre para respuesta más rápida
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
@@ -282,7 +285,10 @@ export function LocationMap({
         if (!map || !isLoaded) return;
         
         const zoomChangedListener = map.addListener('zoom_changed', () => {
-            setMarkerKey(prev => prev + 1);
+            // ✅ Solo actualizar si NO se está arrastrando (evita parpadeo)
+            if (!isDraggingRef.current) {
+                setMarkerKey(prev => prev + 1);
+            }
         });
         
         return () => {
@@ -296,6 +302,9 @@ export function LocationMap({
     // Ref para almacenar blob URLs y limpiarlos cuando sea necesario
     const blobUrlsRef = useRef<Set<string>>(new Set());
     
+    // ✅ Caché de iconos para evitar recrearlos durante el drag
+    const iconCacheRef = useRef<Map<string, string>>(new Map());
+    
     // Cleanup de blob URLs cuando el componente se desmonta o cambian los marcadores
     useEffect(() => {
         return () => {
@@ -304,6 +313,7 @@ export function LocationMap({
                 URL.revokeObjectURL(url);
             });
             blobUrlsRef.current.clear();
+            iconCacheRef.current.clear();
         };
     }, []);
     
@@ -314,6 +324,7 @@ export function LocationMap({
             URL.revokeObjectURL(url);
         });
         blobUrlsRef.current.clear();
+        iconCacheRef.current.clear();
         
         // Log comentado para evitar spam
         // console.log('🔄 Forzando actualización de marcadores - selectedService:', selectedService);
@@ -495,32 +506,39 @@ export function LocationMap({
 
             // Tamaño mejorado para mejor visibilidad - estilo Airbnb
             const textLen = priceText.length;
-            // Hacer los labels más grandes y visibles
+            // ✅ Mínimo padding para badges ultra compactos - texto casi pegado al borde
             const baseWidth = isMobile ? (isLargeMobile ? 70 : 60) : 56;
             const baseHeight = isMobile ? (isLargeMobile ? 36 : 32) : 30;
-            const fontSize = isMobile ? (isLargeMobile ? 14 : 13) : 12;
-            const padding = isMobile ? 24 : 20;
+            const fontSize = 14; // ✅ Tamaño fijo: 14px
+            const padding = isMobile ? 4 : 3; // ✅ Mínimo padding posible - texto casi pegado al borde
             const w = Math.max(baseWidth, textLen * (isMobile ? 9 : 8) + padding);
             const h = baseHeight;
 
-            // SVG mejorado estilo Airbnb - Fondo blanco por defecto, negro si está seleccionado
-            // Simplificado para mejor compatibilidad con Google Maps
-            const svg = isSelected 
-                ? `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-                    <rect width="${w}" height="${h}" rx="${h/2}" fill="#000000"/>
-                    <text x="${w/2}" y="${h/2}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${priceText}</text>
-                </svg>`
-                : `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-                    <rect width="${w}" height="${h}" rx="${h/2}" fill="#ffffff"/>
-                    <text x="${w/2}" y="${h/2}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="700" fill="#000000" text-anchor="middle" dominant-baseline="central">${priceText}</text>
-                </svg>`;
+            // ✅ Usar caché de iconos para evitar recrearlos durante el drag
+            const iconCacheKey = `${priceText}-${isSelected}-${w}-${h}-${fontSize}`;
+            let iconUrl = iconCacheRef.current.get(iconCacheKey);
+            
+            if (!iconUrl) {
+                // ✅ SVG mejorado estilo Airbnb sin sombra - fuente correcta
+                const svg = isSelected 
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+                        <rect width="${w}" height="${h}" rx="${h/2}" fill="#000000"/>
+                        <text x="${w/2}" y="${h/2}" font-family="&quot;Airbnb Cereal VF&quot;, Circular, -apple-system, BlinkMacSystemFont, Roboto, &quot;Helvetica Neue&quot;, sans-serif" font-size="14" font-weight="700" line-height="18" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${priceText}</text>
+                    </svg>`
+                    : `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+                        <rect width="${w}" height="${h}" rx="${h/2}" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
+                        <text x="${w/2}" y="${h/2}" font-family="&quot;Airbnb Cereal VF&quot;, Circular, -apple-system, BlinkMacSystemFont, Roboto, &quot;Helvetica Neue&quot;, sans-serif" font-size="14" font-weight="700" line-height="18" fill="rgb(34, 34, 34)" text-anchor="middle" dominant-baseline="central">${priceText}</text>
+                    </svg>`;
 
-            // Usar blob URL en lugar de data URI para evitar problemas con Google Maps
-            // Google Maps a veces no carga correctamente los data URIs de SVG
-            const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-            const iconUrl = URL.createObjectURL(svgBlob);
-            // Guardar el URL para limpiarlo después
-            blobUrlsRef.current.add(iconUrl);
+                // Usar blob URL en lugar de data URI para evitar problemas con Google Maps
+                // Google Maps a veces no carga correctamente los data URIs de SVG
+                const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+                iconUrl = URL.createObjectURL(svgBlob);
+                // Guardar en caché
+                iconCacheRef.current.set(iconCacheKey, iconUrl);
+                // Guardar el URL para limpiarlo después
+                blobUrlsRef.current.add(iconUrl);
+            }
             
             // Log comentado para evitar spam en consola
             // console.log('🎨 Creando marcador con icono:', {
@@ -622,7 +640,7 @@ export function LocationMap({
 
             return (
                 <Marker
-                    key={`price-${expert.id}-${markerKey}-${isSelected ? 'selected' : 'unselected'}`}
+                    key={`price-${expert.id}-${isSelected ? 'selected' : 'unselected'}`}
                     position={{ lat: finalLat, lng: finalLng }}
                     onLoad={(marker) => {
                         if (marker) {
@@ -695,7 +713,7 @@ export function LocationMap({
         // console.log('✅ Marcadores creados:', markers.length, 'de', mapExperts.length, 'expertos');
         // console.log('🎨 Estado de selección - selectedService:', selectedService);
         return markers;
-    }, [mapExperts, services, selectedService, onServiceSelect, isLoaded, map, isMobile, isLargeMobile, markerKey, calculateOffset]);
+    }, [mapExperts, services, selectedService, onServiceSelect, isLoaded, map, isMobile, isLargeMobile, calculateOffset]);
 
     // Limpiar listeners cuando los marcadores cambien
     useEffect(() => {
