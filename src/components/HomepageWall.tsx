@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
@@ -8,6 +9,7 @@ import { Footer } from './Footer';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { showToast } from '../lib/toast';
+import { HomepageServiceCardSkeleton, ShimmerSkeleton } from './ui/skeleton';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -690,10 +692,36 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
 
   if (isLoading || geoLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando servicios...</p>
+      <div className="w-full flex justify-center">
+        <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
+          {/* ✅ Skeleton para secciones en móvil */}
+          <div className="space-y-8 md:space-y-12">
+            {/* Primera sección skeleton */}
+            <div>
+              <div className="mb-4 px-6 md:px-0">
+                <ShimmerSkeleton className="h-6 w-48 rounded mb-2" />
+                <ShimmerSkeleton className="h-4 w-32 rounded" />
+              </div>
+              <div className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {[...Array(4)].map((_, index) => (
+                  <HomepageServiceCardSkeleton key={index} />
+                ))}
+              </div>
+            </div>
+            
+            {/* Segunda sección skeleton */}
+            <div>
+              <div className="mb-4 px-6 md:px-0">
+                <ShimmerSkeleton className="h-6 w-48 rounded mb-2" />
+                <ShimmerSkeleton className="h-4 w-32 rounded" />
+              </div>
+              <div className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {[...Array(4)].map((_, index) => (
+                  <HomepageServiceCardSkeleton key={index} />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -775,8 +803,34 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
     return filtered.map(mapServiceToDetail);
   };
 
+  // ✅ Variantes de animación para las secciones
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: [0.25, 0.46, 0.45, 0.94],
+      },
+    },
+  };
+
   return (
-    <>
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.1,
+          },
+        },
+      }}
+    >
       <div className="w-full flex justify-center">
         <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
           {/* ✅ Iterar el array de secciones - no necesitas conocer las claves */}
@@ -789,24 +843,28 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
             }
             
             return (
-              <HorizontalScrollSection
+              <motion.div
                 key={index}
-                title={section.title} // ✅ Título ya viene formateado del backend
-                subtitle={section.categoryName && section.country 
-                  ? `${section.pagination.totalCount} servicios en ${section.country}` 
-                  : undefined}
-                services={filteredServices}
-                forceGuestFavorite={index === 1} // Marcar la segunda sección como "Featured"
-              />
+                variants={sectionVariants}
+              >
+                <HorizontalScrollSection
+                  title={section.title} // ✅ Título ya viene formateado del backend
+                  subtitle={section.categoryName && section.country 
+                    ? `${section.pagination.totalCount} servicios en ${section.country}` 
+                    : undefined}
+                  services={filteredServices}
+                  forceGuestFavorite={index === 1} // Marcar la segunda sección como "Featured"
+                />
+              </motion.div>
             );
           })}
         </div>
       </div>
       
       {/* Footer */}
-      <div className="mt-16 w-full">
+      <motion.div className="mt-16 w-full" variants={sectionVariants}>
         <Footer />
-      </div>
-    </>
+      </motion.div>
+    </motion.div>
   );
 };

@@ -1109,6 +1109,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const sentinelRefDesktop = useRef<HTMLDivElement>(null);
     // ✅ Ref para el elemento del servicio seleccionado en móvil (para scroll automático)
     const selectedServiceRef = useRef<HTMLDivElement | null>(null);
+    // ✅ Ref para evitar múltiples aperturas del drawer
+    const drawerOpenedRef = useRef(false);
     
     // Calcular altura del header dinámicamente
     useEffect(() => {
@@ -1281,21 +1283,33 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         // ✅ NO abrir automáticamente si el usuario lo cerró manualmente
         if (wasManuallyClosed) return;
         
+        // ✅ Evitar múltiples aperturas - si ya está abierto y visible, no hacer nada
+        if (isDrawerVisible && isDrawerOpen) return;
+        
         if (isMobile && comesFromSearch && !isDrawerVisible) {
-            // Si viene de búsqueda, abrir inmediatamente
-            setIsDrawerOpen(true);
-            setIsDrawerVisible(true);
-            setActiveSnapPoint(0.7); // SnapPoint de reposo (70%)
-        } else if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible && !comesFromSearch) {
-            // Si no viene de búsqueda, esperar a que carguen los servicios
-            const timer = setTimeout(() => {
+            // Si viene de búsqueda, abrir inmediatamente (solo una vez)
+            if (!drawerOpenedRef.current) {
+                drawerOpenedRef.current = true;
                 setIsDrawerOpen(true);
                 setIsDrawerVisible(true);
-                setActiveSnapPoint(0.7);
+                setActiveSnapPoint(0.7); // SnapPoint de reposo (70%)
+            }
+        } else if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible && !comesFromSearch) {
+            // Si no viene de búsqueda, esperar a que carguen los servicios (solo una vez)
+            if (drawerOpenedRef.current) return; // ✅ Ya se abrió antes
+            
+            const timer = setTimeout(() => {
+                // ✅ Doble verificación para evitar múltiples aperturas
+                if (!drawerOpenedRef.current && !isDrawerVisible && !isDrawerOpen) {
+                    drawerOpenedRef.current = true;
+                    setIsDrawerOpen(true);
+                    setIsDrawerVisible(true);
+                    setActiveSnapPoint(0.7);
+                }
             }, 50);
             return () => clearTimeout(timer);
         }
-    }, [allServices.length, isLoadingServices, isDrawerVisible, comesFromSearch, wasManuallyClosed]);
+    }, [allServices.length, isLoadingServices, isDrawerVisible, isDrawerOpen, comesFromSearch, wasManuallyClosed]);
     
     // ✅ Detectar clicks fuera del drawer para cerrarlo
     useEffect(() => {
@@ -1846,15 +1860,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     
                 {/* Mobile: Map View */}
                 <div className="lg:hidden flex-1 relative w-full flex flex-col">
-                        {/* Loading overlay mientras cargan los servicios */}
-                        {isLoadingServices && (
-                            <div className="absolute inset-0 bg-white z-[10000] flex items-center justify-center">
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                                    <p className="text-sm text-gray-600">Cargando servicios...</p>
-                                </div>
-                            </div>
-                        )}
+                        {/* ✅ Loading overlay - Reemplazado por skeleton en la transición */}
+                        {/* El skeleton se muestra desde AirbnbSearchBar y SearchCreationPage */}
                         {/* Header móvil - Completamente transparente, solo botones flotantes */}
                         <div 
                             id="mobile-search-header"
@@ -1970,34 +1977,47 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             }}
                                             size="lg"
                                             className={`shadow-[0_4px_16px_rgba(0,0,0,0.2)] border-0 h-14 px-8 text-base rounded-full font-semibold transition-all duration-200 pointer-events-auto ${
-                                                services.length === 0 
+                                                allServicesCombined.length === 0 
                                                     ? 'bg-white/90 backdrop-blur-md text-gray-400 cursor-not-allowed' 
                                                     : 'bg-[#222222] text-white hover:bg-[#000000] active:bg-[#000000] hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.98]'
                                             }`}
-                                            disabled={services.length === 0}
+                                            disabled={allServicesCombined.length === 0}
                                             style={{
                                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                                 letterSpacing: '-0.01em',
                                             }}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="relative">
-                                                    <List className={`w-5 h-5 ${services.length === 0 ? 'text-gray-400' : 'text-white'}`} strokeWidth={2.5} />
-                                                    {services.length > 0 && (
-                                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                                                            <span className="text-[10px] font-bold text-[#222222] leading-none">
-                                                                {services.length > 99 ? '99+' : services.length}
+                                                <div className="relative flex-shrink-0">
+                                                    <List className={`w-5 h-5 ${allServicesCombined.length === 0 ? 'text-gray-400' : 'text-white'}`} strokeWidth={2.5} />
+                                                    {allServicesCombined.length > 0 && (
+                                                        <div 
+                                                            className="absolute -top-1 -right-1 bg-white rounded-full flex items-center justify-center shadow-sm z-10"
+                                                            style={{
+                                                                minWidth: allServicesCombined.length > 9 ? '20px' : '18px',
+                                                                height: '18px',
+                                                                paddingLeft: '4px',
+                                                                paddingRight: '4px',
+                                                            }}
+                                                        >
+                                                            <span 
+                                                                className="text-[10px] font-bold text-[#222222] leading-none whitespace-nowrap"
+                                                                style={{
+                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                                }}
+                                                            >
+                                                                {allServicesCombined.length > 99 ? '99+' : allServicesCombined.length}
                                                             </span>
                                                         </div>
                                                     )}
                                                 </div>
                                                 <span>
-                                                    {services.length > 0 
-                                                        ? `Ver ${services.length} ${services.length === 1 ? 'resultado' : 'resultados'}`
+                                                    {allServicesCombined.length > 0 
+                                                        ? `Ver ${allServicesCombined.length} ${allServicesCombined.length === 1 ? 'resultado' : 'resultados'}`
                                                         : 'Ver resultados'
                                                     }
                                                 </span>
-                                                <ChevronUp className={`w-4 h-4 ${services.length === 0 ? 'text-gray-400' : 'text-white/80'}`} strokeWidth={2.5} />
+                                                <ChevronUp className={`w-4 h-4 ${allServicesCombined.length === 0 ? 'text-gray-400' : 'text-white/80'}`} strokeWidth={2.5} />
                                             </div>
                                         </Button>
                                 </div>
@@ -2071,9 +2091,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             if (!open) {
                                 setWasManuallyClosed(true);
                                 setSelectedService(null); // ✅ Deseleccionar servicio al cerrar
+                                drawerOpenedRef.current = false; // ✅ Resetear ref cuando se cierra
                             } else {
                                 // Si lo abre, resetear el flag (puede abrirse manualmente)
                                 setWasManuallyClosed(false);
+                                drawerOpenedRef.current = true; // ✅ Marcar como abierto
                             }
                         }}
                         title={(() => {
