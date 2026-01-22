@@ -34,6 +34,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
       dismissible={true}
       snapToSequentialPoint={true}
       shouldScaleBackground={false} // ✅ Sin escalado del fondo
+      {...({} as any)} // ✅ Type assertion para children (DrawerPrimitive.Root acepta children en runtime)
     >
       <DrawerContent
         className={cn(
