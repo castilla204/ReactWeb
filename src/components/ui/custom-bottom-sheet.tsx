@@ -1,5 +1,5 @@
 import * as React from "react";
-import { motion, useScroll, useTransform, useMotionValue, useDragControls, PanInfo } from "framer-motion";
+import { motion, useMotionValue, useDragControls, PanInfo } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -11,8 +11,8 @@ interface CustomBottomSheetProps {
   className?: string;
   style?: React.CSSProperties;
   headerHeight?: number;
-  initialHeight?: number; // Altura inicial en píxeles (50% de pantalla)
-  maxHeight?: number; // Altura máxima en píxeles (100vh)
+  initialHeight?: number;
+  maxHeight?: number;
 }
 
 export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
@@ -27,151 +27,149 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   maxHeight,
 }) => {
   const contentRef = React.useRef<HTMLDivElement>(null);
-  const sheetRef = React.useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
-  
-  // Calcular alturas basadas en viewport
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Calcular basado en viewport
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-  const calculatedInitialHeight = initialHeight || viewportHeight * 0.7; // 70% por defecto (estado de reposo más alto)
-  const calculatedMaxHeight = maxHeight || viewportHeight - headerHeight; // 100vh menos header
-  
-  // Motion values
-  const sheetHeight = useMotionValue(calculatedInitialHeight);
-  const y = useMotionValue(0);
-  
-  // Scroll tracking del contenido
-  const { scrollY } = useScroll({ container: contentRef });
-  
-  // Transformar scroll a altura adicional (expansión proporcional)
-  // Cuando scrollY va de 0 a 300px, la altura adicional va de 0 a (maxHeight - initialHeight)
-  const scrollRange = 300; // Rango de scroll para expansión completa
-  const heightRange = calculatedMaxHeight - calculatedInitialHeight;
-  
-  // Vincular scroll a altura - expansión proporcional
-  const expandedHeight = useTransform(
-    scrollY,
-    [0, scrollRange],
-    [calculatedInitialHeight, calculatedMaxHeight],
-    { clamp: true }
-  );
-  
-  // Snap points
-  const snapPoints = [
-    0, // cerrado
-    calculatedInitialHeight, // reposo (50%)
-    calculatedMaxHeight, // máximo
-  ];
-  
-  // Calcular snap point más cercano
-  const getClosestSnapPoint = (currentY: number, currentHeight: number): number => {
-    const currentBottom = viewportHeight - currentHeight + currentY;
-    const distances = snapPoints.map(snap => Math.abs(viewportHeight - snap - currentBottom));
-    const minDistance = Math.min(...distances);
-    const closestIndex = distances.indexOf(minDistance);
-    return snapPoints[closestIndex];
+  const calculatedInitialHeight = initialHeight || viewportHeight * 0.7; // 70% por defecto - NUNCA se cierra
+
+  // Height como motion value - crece infinitamente con el scroll
+  const height = useMotionValue(calculatedInitialHeight);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [isContentAtTop, setIsContentAtTop] = React.useState(true);
+
+  // ✅ VINCULAR SCROLL CON ALTURA: el drawer crece infinitamente mientras scrolleas
+  React.useEffect(() => {
+    if (!contentRef.current || !open) return;
+
+    const handleScroll = () => {
+      if (!contentRef.current) return;
+      const scrollTop = contentRef.current.scrollTop;
+      setIsContentAtTop(scrollTop <= 1);
+
+      // ✅ El drawer crece proporcionalmente con el scroll
+      // Cada píxel de scroll = 1 píxel más de altura del drawer
+      const baseHeight = calculatedInitialHeight;
+      const scrollHeight = scrollTop;
+      const newHeight = baseHeight + scrollHeight; // ✅ CRECIMIENTO INFINITO
+
+      height.set(newHeight);
+    };
+
+    const content = contentRef.current;
+    content.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => content.removeEventListener('scroll', handleScroll);
+  }, [open, calculatedInitialHeight, height]);
+
+  const handleDragStart = () => {
+    setIsDragging(true);
   };
-  
-  // Manejar drag end
-  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const currentHeight = sheetHeight.get();
-    const currentY = y.get();
-    const velocity = info.velocity.y;
+
+  const handleDrag = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (!contentRef.current) return;
     
-    // Si la velocidad es alta, cerrar o abrir completamente
-    if (Math.abs(velocity) > 500) {
-      if (velocity > 0) {
-        // Arrastrando hacia abajo - cerrar
-        sheetHeight.set(0);
-        y.set(0);
-        onOpenChange(false);
-        return;
-      } else {
-        // Arrastrando hacia arriba - abrir al máximo
-        sheetHeight.set(calculatedMaxHeight);
-        y.set(0);
-        return;
+    const currentH = height.get();
+    const scrollTop = contentRef.current.scrollTop;
+
+    // ✅ Si está en el tope del scroll, permitir arrastrar el drawer
+    if (isContentAtTop) {
+      // Actualizar height: delta.y negativo (drag up) = + height
+      const newHeight = currentH - info.delta.y;
+      const minHeight = calculatedInitialHeight; // ✅ NUNCA menos que la altura inicial
+      height.set(Math.max(minHeight, newHeight)); // ✅ SIN LÍMITE SUPERIOR - CRECIMIENTO INFINITO
+      
+      // Si el drawer crece, ajustar el scroll para mantener la posición visual
+      if (newHeight > currentH) {
+        const heightDiff = newHeight - currentH;
+        contentRef.current.scrollTop = Math.max(0, scrollTop - heightDiff);
+      }
+    } else {
+      // Si NO está en el tope, el scroll interno maneja el crecimiento
+      // No hacer nada - el useEffect del scroll ya maneja el crecimiento
+    }
+  };
+
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    setIsDragging(false);
+    const currentH = height.get();
+
+    // ✅ NUNCA cerrar completamente - solo volver a altura inicial si está muy bajo
+    if (currentH < calculatedInitialHeight * 0.8) {
+      height.set(calculatedInitialHeight);
+      if (contentRef.current) {
+        contentRef.current.scrollTop = 0;
       }
     }
-    
-    // Snap al punto más cercano
-    const closestSnap = getClosestSnapPoint(currentY, currentHeight);
-    sheetHeight.set(closestSnap);
-    y.set(0);
-    
-    // Si está en 0, cerrar
-    if (closestSnap === 0) {
-      onOpenChange(false);
-    }
+    // Si está por encima de la altura inicial, dejarlo donde está (sin snap)
   };
-  
-  // Sincronizar altura con scroll cuando hay scroll - usar useTransform directamente
+
+  // Inicializar/reset
   React.useEffect(() => {
-    if (!open) return;
-    
-    const unsubscribe = expandedHeight.on("change", (latest) => {
-      sheetHeight.set(latest);
-    });
-    
-    return () => unsubscribe();
-  }, [open, expandedHeight, sheetHeight]);
-  
-  // Reset cuando se cierra
-  React.useEffect(() => {
-    if (!open) {
-      sheetHeight.set(calculatedInitialHeight);
-      y.set(0);
+    if (open) {
+      height.set(calculatedInitialHeight);
+      if (contentRef.current) {
+        contentRef.current.scrollTop = 0;
+      }
     }
-  }, [open, calculatedInitialHeight, sheetHeight, y]);
-  
+  }, [open, calculatedInitialHeight, height]);
+
+  // ✅ Siempre se puede arrastrar si está en el tope del scroll
+  const canDrag = isContentAtTop;
+
   if (!open) return null;
-  
+
   return (
     <>
       {/* Sin overlay - permite interacción con el mapa */}
-      
-      {/* Bottom Sheet */}
+
       <motion.div
-        ref={sheetRef}
-        drag="y"
-        dragConstraints={{ top: -(calculatedMaxHeight - calculatedInitialHeight), bottom: calculatedInitialHeight }}
-        dragElastic={0.2}
-        dragMomentum={false}
-        onDragEnd={handleDragEnd}
-        dragControls={dragControls}
-        initial={{ y: calculatedInitialHeight, height: calculatedInitialHeight }}
-        animate={{ 
-          height: expandedHeight,
-          y: y,
-        }}
+        ref={containerRef}
         style={{
           ...style,
-          willChange: 'transform, height',
-          touchAction: 'none', // Prevenir interacción con el mapa cuando se arrastra el drawer
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height, // ✅ Height dinámica que crece infinitamente con el scroll
+          zIndex: 10000,
+          touchAction: isDragging ? 'none' : 'auto',
         }}
+        animate={{ height: height.get() }}
         transition={{
-          type: "spring",
-          damping: 30,
-          stiffness: 300,
+          type: isDragging ? false : "spring",
+          damping: 25,
+          stiffness: 400,
         }}
         className={cn(
-          "fixed bottom-0 left-0 right-0 z-[10000] bg-white rounded-t-[20px] shadow-[0_-8px_32px_rgba(0,0,0,0.15)]",
-          "flex flex-col",
+          "bg-white rounded-t-[20px] shadow-[0_-8px_32px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden",
           className
         )}
-        onTouchStart={(e) => {
-          // Prevenir que el mapa se mueva cuando se toca el drawer
-          e.stopPropagation();
-        }}
+        onTouchStart={e => e.stopPropagation()}
       >
-        {/* Handle */}
-        <div className="flex-shrink-0 px-6 py-1.5 cursor-grab active:cursor-grabbing touch-none">
+        {/* Handle con drag - solo cuando está en el tope */}
+        <motion.div
+          className="flex-shrink-0 px-6 py-1.5 cursor-grab active:cursor-grabbing touch-none"
+          onPointerDown={(e) => {
+            if (canDrag) dragControls.start(e);
+          }}
+          drag={canDrag ? "y" : false}
+          dragControls={dragControls}
+          dragElastic={0}
+          dragMomentum={false}
+          onDragStart={handleDragStart}
+          onDrag={handleDrag}
+          onDragEnd={handleDragEnd}
+        >
           <div className="mx-auto w-12 h-1 bg-gray-300 rounded-full" />
-        </div>
-        
+        </motion.div>
+
         {/* Header */}
         {title && (
           <div className="flex-shrink-0 px-6 py-1.5 flex items-center justify-between">
-            <div className="flex-1"></div>
+            <div className="flex-1" />
             <div className="flex flex-col items-center flex-1">
               <h2
                 style={{
@@ -199,36 +197,25 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
             </div>
           </div>
         )}
-        
-        {/* Contenido con scroll */}
-        <motion.div
+
+        {/* ✅ Contenido: SIEMPRE scrolleable - el scroll hace crecer el drawer infinitamente */}
+        <div
           ref={contentRef}
-          className="flex-1 overflow-y-auto bg-white px-0"
+          className="flex-1 bg-white px-0 overflow-y-auto"
           style={{
             overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch',
-            willChange: 'scroll-position',
-            touchAction: 'pan-y', // Solo permitir scroll vertical, prevenir pan del mapa
+            pointerEvents: isDragging ? 'none' : 'auto',
           }}
           onTouchStart={(e) => {
-            // Prevenir que el mapa se mueva cuando se toca el drawer
             e.stopPropagation();
           }}
-          onTouchMove={(e) => {
-            // Prevenir propagación durante el scroll
-            e.stopPropagation();
-          }}
-          onTouchEnd={(e) => {
-            // Prevenir propagación al soltar
-            e.stopPropagation();
-          }}
-          onWheel={(e) => {
-            // Prevenir que el scroll del mouse se propague al mapa
-            e.stopPropagation();
-          }}
+          onTouchMove={e => e.stopPropagation()}
+          onTouchEnd={e => e.stopPropagation()}
+          onWheel={e => e.stopPropagation()}
         >
           {children}
-        </motion.div>
+        </div>
       </motion.div>
     </>
   );

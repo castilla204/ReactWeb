@@ -106,6 +106,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const categoriesContainerRef = useRef<HTMLDivElement>(null);
 
+
   // Actualizar el cache key periódicamente para detectar cambios en imágenes
   useEffect(() => {
     // Actualizar frecuentemente para detectar cambios en las imágenes
@@ -161,6 +162,67 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   // Buscar selecciones actuales en los datos normalizados
   selectedServiceType = normalizedServiceTypes.find(st => st.id === serviceTypeId);
   selectedCategory = normalizedCategories.find(c => c.id === categoryId);
+
+  // ✅ Leer parámetros de retorno desde SearchParameterForm y abrir modal automáticamente
+  useEffect(() => {
+    const returnToSearch = sessionStorage.getItem('returnToSearch');
+    if (returnToSearch && normalizedCategories.length > 0) {
+      try {
+        const params = JSON.parse(returnToSearch);
+        if (params.serviceTypeId && params.categoryId) {
+          // Establecer los parámetros
+          setServiceTypeId(params.serviceTypeId);
+          setCategoryId(params.categoryId);
+          if (params.adUrl) {
+            setAdUrl(params.adUrl);
+          }
+          
+          // Determinar el tab activo basado en la categoría
+          if (params.categoryId === CATEGORIES.COCHES) {
+            setActiveTab('coches');
+          } else if (params.categoryId === CATEGORIES.INMOBILIARIA) {
+            setActiveTab('inmobiliaria');
+          } else {
+            // Para otras categorías, usar el drawer
+            setActiveTab('inmobiliaria');
+            // Buscar la categoría en la lista para obtener su nombre e imagen
+            const category = normalizedCategories.find(c => c.id === params.categoryId);
+            if (category) {
+              const categoryImage = getCategoryImage(category.name) || getImageWithCache('casapng.png', imageCacheKey);
+              setDrawerCategoryReplacement({
+                id: params.categoryId,
+                name: category.name,
+                image: categoryImage
+              });
+            }
+          }
+          
+          // Abrir el modal móvil automáticamente
+          const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+          if (isMobile) {
+            setIsMobileSearchOpen(true);
+            // ✅ Desplegar automáticamente el acordeón de tipo de servicio
+            setExpandedAccordion('type');
+          }
+          
+          // Llamar a onSearch si existe
+          if (onSearch) {
+            onSearch({
+              serviceTypeId: params.serviceTypeId,
+              categoryId: params.categoryId,
+              adUrl: params.adUrl || ''
+            });
+          }
+          
+          // Limpiar sessionStorage
+          sessionStorage.removeItem('returnToSearch');
+        }
+      } catch (error) {
+        console.error('Error parsing returnToSearch:', error);
+        sessionStorage.removeItem('returnToSearch');
+      }
+    }
+  }, [normalizedCategories, imageCacheKey, onSearch]);
 
   // Forzar sombreado siempre en el contenedor de categorías - se ejecuta en cada render
   useEffect(() => {
@@ -792,7 +854,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
       {isMobileSearchOpen && typeof document !== 'undefined' && createPortal(
         <>
           <div 
-            className="md:hidden fixed inset-0 z-50 bg-white flex flex-col pb-4"
+            className="md:hidden fixed inset-0 z-50 bg-gray-50 flex flex-col pb-4"
             style={{
               boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)'
             }}
@@ -828,7 +890,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="pt-16 px-4 pb-4 space-y-3">
+              <div className="pt-20 px-4 pb-6 space-y-4">
               {/* Categorías - Div más alto con categorías visibles */}
               <div 
                 ref={categoriesContainerRef}
@@ -836,9 +898,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                   expandedAccordion === 'where' ? 'fixed inset-0 z-[60] rounded-none' : ''
                 }`}
                 style={{
-                  height: expandedAccordion === 'where' ? '100vh' : '45vh',
-                  minHeight: expandedAccordion === 'where' ? '100vh' : '300px',
-                  maxHeight: expandedAccordion === 'where' ? '100vh' : '500px',
+                  height: expandedAccordion === 'where' ? '100vh' : 'auto',
+                  minHeight: expandedAccordion === 'where' ? '100vh' : '280px',
+                  maxHeight: expandedAccordion === 'where' ? '100vh' : '320px',
                   boxShadow: expandedAccordion === 'where' 
                     ? '0 8px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.12)'
                     : '0 8px 20px rgba(0, 0, 0, 0.18), 0 4px 8px rgba(0, 0, 0, 0.12)',
@@ -848,28 +910,37 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 {expandedAccordion === 'where' ? (
                   <>
                     {/* Header con título y buscador cuando está expandido - Estilo Airbnb */}
-                    <div className="px-3 pt-12 pb-3 border-b border-gray-200">
-                      <h2 
-                        tabIndex={-1}
-                        className="mb-3"
-                        style={{
-                          fontSize: '22px',
-                          lineHeight: '28px',
-                          fontWeight: 600,
-                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                          color: 'rgb(34, 34, 34)',
-                          letterSpacing: '-0.01em',
-                          fontFeatureSettings: '"liga" 1, "kern" 1',
-                          WebkitFontSmoothing: 'antialiased',
-                          MozOsxFontSmoothing: 'grayscale',
-                        }}
-                      >
-                        Categorías
-                      </h2>
+                    <div className="px-4 pt-16 pb-4 border-b border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 
+                          tabIndex={-1}
+                          style={{
+                            fontSize: '22px',
+                            lineHeight: '26px',
+                            fontWeight: 700,
+                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                            color: 'rgb(34, 34, 34)',
+                            letterSpacing: '-0.01em',
+                            fontFeatureSettings: '"liga" 1, "kern" 1',
+                            WebkitFontSmoothing: 'antialiased',
+                            MozOsxFontSmoothing: 'grayscale',
+                          }}
+                        >
+                          ¿Qué revisamos?
+                        </h2>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedAccordion(null)}
+                          className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-50 transition-colors border border-gray-200 shadow-sm"
+                          aria-label="Comprimir categorías"
+                        >
+                          <ChevronDown className="w-5 h-5 text-gray-900 rotate-180" style={{ strokeWidth: 2.5 }} />
+                        </button>
+                      </div>
                       <form role="search" className="w-full">
                         <label 
                           htmlFor="categories-search-input"
-                          className="flex items-center w-full px-4 py-3 border-0 rounded-lg bg-gray-50 shadow-sm"
+                          className="flex items-center w-full px-4 py-3.5 border-0 rounded-lg bg-gray-50 shadow-sm"
                           style={{ 
                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
                           }}
@@ -910,7 +981,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                     </div>
 
                     {/* Contenido expandido al 100% */}
-                    <div className="flex-1 overflow-y-auto px-3 py-3">
+                    <div className="flex-1 overflow-y-auto px-4 py-4">
                       <div>
                         {categoriesLoading ? (
                           <div 
@@ -943,6 +1014,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                               onClick={() => {
                                 setCategoryId(category.id);
                                 setCategorySearchQuery('');
+                                // Colapsar categorías y abrir tipo de servicio
+                                setExpandedAccordion('type');
                                 // Llamar a onSearch para actualizar los filtros
                                 if (onSearch) {
                                   onSearch({
@@ -952,7 +1025,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                   });
                                 }
                               }}
-                                    className={`w-full flex items-center gap-3 p-3 mb-2 rounded-lg text-left transition-all duration-200 border-0 ${
+                                    className={`w-full flex items-center gap-4 p-4 mb-3 rounded-lg text-left transition-all duration-200 border-0 ${
                                       categoryId === category.id 
                                         ? 'bg-gray-900 text-white shadow-md' 
                                         : 'hover:bg-gray-50 shadow-sm'
@@ -973,23 +1046,24 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                       )}
                               <div>
                                     <div 
-                                      className={`font-medium ${categoryId === category.id ? 'text-white' : 'text-gray-900'}`}
+                                      className={`font-medium ${categoryId === category.id ? 'text-white' : ''}`}
                                       style={{ 
                                         fontSize: '14px',
                                         lineHeight: '18px',
-                                        fontWeight: 500,
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                                        fontWeight: 600,
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        color: categoryId === category.id ? 'rgb(255, 255, 255)' : 'rgb(34, 34, 34)'
                                       }}
                                     >
                                   {category.name}
                                 </div>
                                       <div 
-                                        className={categoryId === category.id ? 'text-white/80' : 'text-gray-500'}
                                         style={{ 
-                                          fontSize: '12px',
-                                          lineHeight: '16px',
+                                          fontSize: '14px',
+                                          lineHeight: '18px',
                                           fontWeight: 400,
-                                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                          color: categoryId === category.id ? 'rgba(255, 255, 255, 0.8)' : 'rgb(106, 106, 106)'
                                         }}
                                       >
                                   Explorar servicios
@@ -1026,14 +1100,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 ) : (
                   <>
                     {/* Header fijo con título y buscador - Estilo Airbnb */}
-                    <div className="px-3 pt-3 pb-3 border-b border-gray-200">
+                    <div className="px-4 pt-6 pb-4 border-b border-gray-200">
                       <h2 
                         tabIndex={-1}
-                        className="mb-3"
+                        className="mb-4"
                         style={{
                           fontSize: '22px',
-                          lineHeight: '28px',
-                          fontWeight: 600,
+                          lineHeight: '26px',
+                          fontWeight: 700,
                           fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                           color: 'rgb(34, 34, 34)',
                           letterSpacing: '-0.01em',
@@ -1042,14 +1116,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                           MozOsxFontSmoothing: 'grayscale',
                         }}
                       >
-                        Categorías
+                        ¿Qué revisamos?
                       </h2>
                       
                       {/* Buscador fijo fuera del scroll */}
                       <form role="search" className="w-full">
                         <label 
                           htmlFor="categories-search-input-collapsed"
-                          className="flex items-center w-full px-4 py-3 border-0 rounded-lg bg-gray-50 shadow-sm"
+                          className="flex items-center w-full px-4 py-3.5 border-0 rounded-lg bg-gray-50 shadow-sm"
                           style={{ 
                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
                           }}
@@ -1090,7 +1164,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                     </div>
 
                     {/* Lista de categorías con scroll */}
-                    <div className="flex-1 overflow-y-auto px-3 py-3">
+                    <div className="flex-1 overflow-y-auto px-4 py-4">
                       <div>
                         {categoriesLoading ? (
                           <div 
@@ -1123,6 +1197,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                     onClick={() => {
                                       setCategoryId(category.id);
                                       setCategorySearchQuery('');
+                                      // Colapsar categorías y abrir tipo de servicio
+                                      setExpandedAccordion('type');
                                       // Llamar a onSearch para actualizar los filtros
                                       if (onSearch) {
                                         onSearch({
@@ -1132,7 +1208,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                         });
                                       }
                                     }}
-                                    className={`w-full flex items-center gap-3 p-3 mb-2 rounded-lg text-left transition-all duration-200 border-0 ${
+                                    className={`w-full flex items-center gap-4 p-4 mb-3 rounded-lg text-left transition-all duration-200 border-0 ${
                                       categoryId === category.id 
                                         ? 'bg-gray-900 text-white shadow-md' 
                                         : 'hover:bg-gray-50 shadow-sm'
@@ -1153,23 +1229,24 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                     )}
                   <div>
                                       <div 
-                                        className={`font-medium ${categoryId === category.id ? 'text-white' : 'text-gray-900'}`}
+                                        className={`font-medium ${categoryId === category.id ? 'text-white' : ''}`}
                                         style={{ 
                                           fontSize: '14px',
                                           lineHeight: '18px',
                                           fontWeight: 500,
-                                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                          color: categoryId === category.id ? 'rgb(255, 255, 255)' : 'rgb(34, 34, 34)'
                                         }}
                                       >
                                         {category.name}
                     </div>
                                       <div 
-                                        className={categoryId === category.id ? 'text-white/80' : 'text-gray-500'}
                                         style={{ 
-                                          fontSize: '12px',
-                                          lineHeight: '16px',
+                                          fontSize: '14px',
+                                          lineHeight: '18px',
                                           fontWeight: 400,
-                                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                          color: categoryId === category.id ? 'rgba(255, 255, 255, 0.8)' : 'rgb(106, 106, 106)'
                                         }}
                                       >
                                         Explorar servicios
@@ -1207,13 +1284,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
 
                 {/* Separador y flecha al final - Solo cuando NO está expandido */}
                 {expandedAccordion !== 'where' && (
-                  <div className="border-t border-gray-200">
+                  <div className="border-t border-gray-200 mt-auto">
                     <button
                       type="button"
                       onClick={() => setExpandedAccordion('where')}
-                      className="w-full flex items-center justify-center p-4 bg-transparent border-none cursor-pointer"
+                      className="w-full flex items-center justify-center py-3 bg-transparent border-none cursor-pointer hover:bg-gray-50 transition-colors"
                     >
-                      <ChevronDown className="w-3 h-3 text-gray-400" style={{ strokeWidth: 4 }} />
+                      <ChevronDown className="w-4 h-4 text-gray-600" style={{ strokeWidth: 2.5 }} />
                     </button>
                   </div>
                 )}
@@ -1224,7 +1301,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 <button
                   type="button"
                   onClick={() => setExpandedAccordion(expandedAccordion === 'type' ? null : 'type')}
-                  className="w-full flex items-center justify-between px-3 py-4 bg-transparent border-none cursor-pointer"
+                  className="w-full flex items-center justify-between px-4 py-5 bg-transparent border-none cursor-pointer"
                 >
                   <div className="flex flex-col items-start">
                     <span 
@@ -1254,7 +1331,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 </button>
                 
                 {expandedAccordion === 'type' && (
-                  <div className="px-4 pb-4">
+                  <div className="px-4 pb-6">
                       {serviceTypesLoading ? (
                       <div className="text-center py-4 text-sm text-gray-500">Cargando...</div>
                       ) : (
@@ -1278,7 +1355,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                               // Mantener el desplegable abierto
                               setExpandedAccordion('type');
                             }}
-                            className={`w-full px-3 py-3 rounded-lg text-left transition-colors flex flex-col gap-1 ${
+                            className={`w-full px-4 py-4 rounded-lg text-left transition-colors flex flex-col gap-1 ${
                               serviceTypeId === st.id 
                                 ? 'bg-gray-900 text-white' 
                                 : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
@@ -1307,7 +1384,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 <button
                   type="button"
                   onClick={() => setExpandedAccordion(expandedAccordion === 'url' ? null : 'url')}
-                  className="w-full flex items-center justify-between p-4 bg-transparent border-none cursor-pointer"
+                  className="w-full flex items-center justify-between px-4 py-5 bg-transparent border-none cursor-pointer"
                 >
                   <label className="text-xs font-semibold text-gray-900 flex items-center gap-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
                       URL del anuncio
@@ -1317,13 +1394,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 </button>
                 
                 {expandedAccordion === 'url' && (
-                  <div className="px-4 pb-4">
+                  <div className="px-4 pb-6">
                       <input
                         type="text"
                       placeholder="Pega la URL aquí..."
                         value={adUrl}
                         onChange={(e) => setAdUrl(e.target.value)}
-                      className="w-full px-3 py-3 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
+                      className="w-full px-4 py-4 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
                       autoFocus
                     />
                     </div>
@@ -1332,7 +1409,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             </div>
           </div>
 
-          <div className="p-4 border-t border-gray-200 bg-white flex justify-between gap-4">
+          <div className="px-4 py-5 border-t border-gray-200 bg-white flex justify-between gap-4">
             <button
               type="button"
               onClick={() => {
@@ -1349,11 +1426,15 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             <button
               type="button"
               onClick={() => {
-                handleSearch();
+                // ✅ OPTIMIZADO: Cerrar modal primero para transición más fluida
                 setIsMobileSearchOpen(false);
                 setExpandedAccordion(null);
+                // Pequeño delay para que la animación de cierre se vea
+                setTimeout(() => {
+                  handleSearch();
+                }, 150);
               }}
-              className="px-6 py-3.5 bg-[#FF385C] text-white rounded-lg text-sm font-semibold border-none cursor-pointer flex items-center gap-2"
+              className="px-6 py-3.5 bg-[#FF385C] text-white rounded-lg text-sm font-semibold border-none cursor-pointer flex items-center gap-2 transition-all active:scale-95"
             >
               <Search className="w-4 h-4" />
               Buscar
@@ -1484,7 +1565,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                             style={{
                               fontSize: '16px',
                               lineHeight: '20px',
-                              fontWeight: 500,
+                              fontWeight: 600,
                               fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                               color: 'rgb(34, 34, 34)',
                             }}
@@ -1492,13 +1573,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                             {category.name}
                           </h3>
                           <p 
-                            className="text-gray-500"
                             style={{
                               fontSize: '14px',
                               lineHeight: '18px',
                               fontWeight: 400,
                               fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                              color: 'rgb(113, 113, 113)',
+                              color: 'rgb(106, 106, 106)',
                             }}
                           >
                             Explorar servicios
