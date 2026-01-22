@@ -19,72 +19,113 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   className,
 }) => {
   const [activeSnapPoint, setActiveSnapPoint] = React.useState<number | string | null>(0.7);
-  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-  const lastScrollTopRef = React.useRef(0);
-  const scrollThresholdRef = React.useRef(0);
+  const drawerContentRef = React.useRef<HTMLDivElement>(null);
+  const lastYRef = React.useRef<number | null>(null);
+  const isDraggingRef = React.useRef(false);
   
   // Snap points: 0.7 = reposo (70%), 0.95 = casi arriba
   const snapPoints: (number | string)[] = [0.7, 0.95];
   
-  // ✅ Detectar scroll y cambiar snap point suavemente con umbral reducido
+  // ✅ Detectar movimiento del drawer para cambiar snap point más rápido
   React.useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container || !open) return;
+    if (!open) return;
     
-    let rafId: number | null = null;
+    let cleanup: (() => void) | null = null;
     
-    const handleScroll = () => {
-      if (rafId !== null) return; // Evitar múltiples llamadas
+    // ✅ Esperar a que el drawer se monte completamente
+    const timeoutId = setTimeout(() => {
+      const drawerElement = drawerContentRef.current;
+      if (!drawerElement) return;
       
-      rafId = requestAnimationFrame(() => {
-        const scrollTop = container.scrollTop;
-        const scrollDelta = scrollTop - lastScrollTopRef.current;
-        lastScrollTopRef.current = scrollTop;
+      const viewportHeight = window.innerHeight;
+      const threshold = viewportHeight * 0.03; // ✅ 3% de la pantalla = umbral ultra sensible
+      
+      const handleTouchStart = (e: TouchEvent) => {
+        isDraggingRef.current = true;
+        lastYRef.current = e.touches[0].clientY;
+      };
+      
+      const handleTouchMove = (e: TouchEvent) => {
+        if (!isDraggingRef.current || lastYRef.current === null) return;
         
-        // ✅ Umbral MUY reducido: solo 20px de scroll acumulado para cambiar snap point
-        const threshold = 20;
-        scrollThresholdRef.current += scrollDelta;
+        const currentY = e.touches[0].clientY;
+        const deltaY = lastYRef.current - currentY; // Positivo = arrastra arriba, negativo = abajo
         
-        // ✅ Si el usuario hace scroll hacia arriba (positivo) y supera el umbral
-        if (scrollThresholdRef.current > threshold && activeSnapPoint !== 0.95) {
-          setActiveSnapPoint(0.95); // Ir al snap point superior
-          scrollThresholdRef.current = 0; // Resetear contador
+        // ✅ Si el movimiento es significativo (más de 3% de la pantalla), cambiar snap point
+        if (Math.abs(deltaY) > threshold) {
+          const currentIndex = snapPoints.findIndex(sp => sp === activeSnapPoint);
+          
+          if (deltaY > 0 && currentIndex < snapPoints.length - 1) {
+            // ✅ Arrastra hacia arriba → siguiente snap point
+            setActiveSnapPoint(snapPoints[currentIndex + 1]);
+            lastYRef.current = currentY; // Reset para evitar cambios múltiples
+          } else if (deltaY < 0 && currentIndex > 0) {
+            // ✅ Arrastra hacia abajo → snap point anterior
+            setActiveSnapPoint(snapPoints[currentIndex - 1]);
+            lastYRef.current = currentY; // Reset para evitar cambios múltiples
+          }
         }
-        // ✅ Si el usuario hace scroll hacia abajo (negativo) y está en el top
-        else if (scrollTop <= 5 && scrollThresholdRef.current < -threshold && activeSnapPoint !== 0.7) {
-          setActiveSnapPoint(0.7); // Volver al snap point de reposo
-          scrollThresholdRef.current = 0; // Resetear contador
-        }
-        // ✅ Si está en el top y hace scroll hacia abajo, acumular para cerrar
-        else if (scrollTop <= 5 && scrollDelta < 0) {
-          // Mantener el acumulador negativo para detectar cuando supere el umbral
-        }
-        // ✅ Si hace scroll hacia arriba pero no está en el top, resetear acumulador negativo
-        else if (scrollTop > 5 && scrollDelta > 0) {
-          scrollThresholdRef.current = Math.max(0, scrollThresholdRef.current);
-        }
+      };
+      
+      const handleTouchEnd = () => {
+        isDraggingRef.current = false;
+        lastYRef.current = null;
+      };
+      
+      // ✅ También detectar mouse para desktop
+      const handleMouseDown = (e: MouseEvent) => {
+        isDraggingRef.current = true;
+        lastYRef.current = e.clientY;
+      };
+      
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!isDraggingRef.current || lastYRef.current === null) return;
         
-        rafId = null;
-      });
-    };
-    
-    container.addEventListener('scroll', handleScroll, { passive: true });
+        const currentY = e.clientY;
+        const deltaY = lastYRef.current - currentY;
+        
+        if (Math.abs(deltaY) > threshold) {
+          const currentIndex = snapPoints.findIndex(sp => sp === activeSnapPoint);
+          
+          if (deltaY > 0 && currentIndex < snapPoints.length - 1) {
+            setActiveSnapPoint(snapPoints[currentIndex + 1]);
+            lastYRef.current = currentY;
+          } else if (deltaY < 0 && currentIndex > 0) {
+            setActiveSnapPoint(snapPoints[currentIndex - 1]);
+            lastYRef.current = currentY;
+          }
+        }
+      };
+      
+      const handleMouseUp = () => {
+        isDraggingRef.current = false;
+        lastYRef.current = null;
+      };
+      
+      drawerElement.addEventListener('touchstart', handleTouchStart, { passive: true });
+      drawerElement.addEventListener('touchmove', handleTouchMove, { passive: true });
+      drawerElement.addEventListener('touchend', handleTouchEnd, { passive: true });
+      drawerElement.addEventListener('mousedown', handleMouseDown);
+      drawerElement.addEventListener('mousemove', handleMouseMove);
+      drawerElement.addEventListener('mouseup', handleMouseUp);
+      drawerElement.addEventListener('mouseleave', handleMouseUp);
+      
+      cleanup = () => {
+        drawerElement.removeEventListener('touchstart', handleTouchStart);
+        drawerElement.removeEventListener('touchmove', handleTouchMove);
+        drawerElement.removeEventListener('touchend', handleTouchEnd);
+        drawerElement.removeEventListener('mousedown', handleMouseDown);
+        drawerElement.removeEventListener('mousemove', handleMouseMove);
+        drawerElement.removeEventListener('mouseup', handleMouseUp);
+        drawerElement.removeEventListener('mouseleave', handleMouseUp);
+      };
+    }, 100); // ✅ Pequeño delay para asegurar que el drawer esté montado
     
     return () => {
-      container.removeEventListener('scroll', handleScroll);
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
+      clearTimeout(timeoutId);
+      if (cleanup) cleanup();
     };
-  }, [activeSnapPoint, open]);
-  
-  // ✅ Resetear contador cuando cambia el snap point o se abre/cierra
-  React.useEffect(() => {
-    scrollThresholdRef.current = 0;
-    if (scrollContainerRef.current) {
-      lastScrollTopRef.current = scrollContainerRef.current.scrollTop;
-    }
-  }, [activeSnapPoint, open]);
+  }, [open, activeSnapPoint, snapPoints]);
 
   return (
     <Drawer
@@ -100,6 +141,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
       {...({} as any)} // ✅ Type assertion para children (DrawerPrimitive.Root acepta children en runtime)
     >
       <DrawerContent
+        ref={drawerContentRef}
         className={cn(
           "rounded-t-[20px] w-full !max-w-full shadow-[0_-8px_32px_rgba(0,0,0,0.15)] border-0 bg-white",
           "focus:outline-none focus-visible:outline-none",
@@ -113,7 +155,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           willChange: 'transform',
         }}
         noOverlay={true} // ✅ Sin overlay
-        noHandle={true} // ✅ Ocultar handle
+        noHandle={false} // ✅ Mostrar handle para drag
         title={title}
       >
         {/* Header con título y botón cerrar */}
@@ -150,7 +192,6 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
 
         {/* Contenido scrolleable */}
         <div
-          ref={scrollContainerRef}
           className="flex-1 overflow-y-auto bg-white px-0"
           style={{
             overscrollBehavior: 'contain',
