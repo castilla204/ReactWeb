@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 import { useLoadScript } from '@react-google-maps/api';
 import { useServices } from '../hooks/useServices';
+import { useInfiniteServices } from '../hooks/useInfiniteServices';
 import { useMapExperts } from '../hooks/useMapExperts'; // ✅ Mantener para compatibilidad
 import { useMapMarkers } from '../hooks/useMapMarkers'; // ✅ NUEVO: Marcadores ultra ligeros
 import { LocationMap } from './LocationMap';
@@ -1102,6 +1103,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const drawerContentRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const [headerHeight, setHeaderHeight] = useState(81); // Altura por defecto del header
+    // ✅ INFINITE SCROLL: Refs para los sentinels
+    const sentinelRefMobile = useRef<HTMLDivElement>(null);
+    const sentinelRefDesktop = useRef<HTMLDivElement>(null);
     
     // Calcular altura del header dinámicamente
     useEffect(() => {
@@ -1140,13 +1144,20 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     } | null>(null);
     const [mapZoom, setMapZoom] = useState<number>(10);
    
-    // Cargar servicios cuando hay ubicación seleccionada (Caso 3: búsqueda por ubicación)
-    const { services: allServices, isLoading: isLoadingServices } = useServices({
+    // ✅ INFINITE SCROLL: Cargar servicios con paginación infinita
+    const {
+        services: allServices,
+        isLoading: isLoadingServices,
+        isFetchingNextPage,
+        hasNextPage,
+        fetchNextPage,
+    } = useInfiniteServices({
         categoryId: selectedCategory || undefined,
         serviceTypeId: serviceTypeId || undefined,
         latitude: formData.latitude || undefined,
         longitude: formData.longitude || undefined,
         locationRange: formData.locationRange ? parseInt(formData.locationRange) : undefined,
+        pageSize: 20, // ✅ Cargar 20 servicios por página
     });
    
     // ✅ OPTIMIZADO: Cargar marcadores ultra ligeros para el mapa
@@ -1240,6 +1251,25 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const serviceIds = useMemo(() => services.map(s => s.id || s.Id), [services]);
     const { data: favoritesData } = checkMultipleFavorites(serviceIds);
     const favoritesMap = favoritesData?.data || {};
+    
+    // ✅ INFINITE SCROLL: IntersectionObserver para cargar más servicios
+    useEffect(() => {
+        const sentinel = sentinelRefMobile.current || sentinelRefDesktop.current;
+        if (!sentinel || !hasNextPage || isFetchingNextPage) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                    console.log('🔍 [InfiniteScroll] Cargando más servicios...');
+                    fetchNextPage();
+                }
+            },
+            { threshold: 0.1, rootMargin: '100px' } // ✅ Cargar 100px antes de llegar al final
+        );
+
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
     
     // ✅ OPTIMIZADO: Mostrar drawer inmediatamente si viene de búsqueda, sino esperar servicios
     // ✅ PERO NO reabrir si el usuario lo cerró manualmente
@@ -1986,7 +2016,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 ? `Más de ${drawerServicesCount} ${drawerServicesCount === 1 ? 'revisión' : 'revisiones'}` 
                                 : 'Sin servicios';
                         })()}
-                        headerHeight={headerHeight}
                         className="lg:hidden"
                     >
                         {/* Contenido con scroll */}
@@ -1997,7 +2026,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             onTouchEnd={(e) => e.stopPropagation()}
                             onWheel={(e) => e.stopPropagation()}
                         >
-                            {services.length > 0 ? (
+                            {allServices.length > 0 ? (
                                 <div 
                                     className="flex flex-col" 
                                     style={{ 
@@ -2010,7 +2039,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     onTouchEnd={(e) => e.stopPropagation()}
                                     onWheel={(e) => e.stopPropagation()}
                                 >
-                                    {services.map((service) => {
+                                    {allServices.map((service) => {
                                         const serviceId = service.id || service.Id;
                                         const isSelected = selectedService === serviceId;
                                         return (
@@ -2023,6 +2052,30 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             />
                                         );
                                     })}
+                                    
+                                    {/* ✅ INFINITE SCROLL: Sentinel para detectar cuando llegar al final (móvil) */}
+                                    {hasNextPage && (
+                                        <div
+                                            ref={sentinelRefMobile}
+                                            className="h-20 flex items-center justify-center"
+                                        >
+                                            {isFetchingNextPage && (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+                                                    <p className="text-sm text-gray-500">Cargando más servicios...</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    {/* ✅ Indicador de fin de lista */}
+                                    {!hasNextPage && allServices.length > 0 && (
+                                        <div className="py-8 text-center">
+                                            <p className="text-sm text-gray-500">
+                                                Has visto todos los servicios disponibles
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="py-12 text-center">
@@ -2196,7 +2249,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         contain: 'layout style paint',
                                     }}
                                 >
-                                    {services.map((service) => {
+                                    {allServices.map((service) => {
                                         const serviceId = service.id || service.Id;
                                         const isSelected = selectedService === serviceId;
                                         return (
@@ -2209,6 +2262,29 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             />
                                         );
                                     })}
+                                    
+                                    {/* ✅ INFINITE SCROLL: Sentinel para detectar cuando llegar al final (desktop) */}
+                                    {hasNextPage && (
+                                        <div
+                                            ref={sentinelRefDesktop}
+                                            className="h-20 flex items-center justify-center"
+                                        >
+                                            {isFetchingNextPage && (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+                                                    <p className="text-sm text-gray-500">Cargando más servicios...</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    {!hasNextPage && allServices.length > 0 && (
+                                        <div className="py-8 text-center">
+                                            <p className="text-sm text-gray-500">
+                                                Has visto todos los servicios disponibles
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : (
