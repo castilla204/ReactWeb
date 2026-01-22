@@ -28,6 +28,7 @@ import Autocomplete from 'react-google-autocomplete';
 import logoImg from '../media/logoi.png';
 
 import { Footer } from '../components/Footer';
+import { MapPageSkeleton } from '../components/ui/map-page-skeleton';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
 
@@ -613,7 +614,11 @@ const SearchCreationPage: React.FC = () => {
                 </>
             )}
                     {currentStep === 1 && (
-                <div className="w-full h-screen flex flex-col lg:flex-row bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative">
+                <>
+                    {/* ✅ Mostrar skeleton mientras carga el mapa */}
+                    {!isMapLoaded && <MapPageSkeleton />}
+                    
+                    <div className={`w-full h-screen flex flex-col lg:flex-row bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative ${!isMapLoaded ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}>
                     {/* Left Side - Content */}
                     <div className="flex-1 flex flex-col overflow-hidden lg:overflow-y-auto">
                             {searchParameters.category && searchParameters.serviceTypeId ? (
@@ -681,6 +686,7 @@ const SearchCreationPage: React.FC = () => {
                     )}
                         </div>
                 </div>
+                </>
             )}
             
                     {currentStep === 2 && selectedServiceId && (

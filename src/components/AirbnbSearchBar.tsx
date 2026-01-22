@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronDown, FolderTree, ArrowLeft, Filter } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -61,6 +62,8 @@ const getImageWithCache = (filename: string, cacheKey: number): string => {
 };
 import { ResponsiveModal } from './ui/responsive-modal';
 import { Separator } from './ui/separator';
+import { CategorySkeletonShimmer, ServiceTypeSkeletonShimmer } from './ui/skeleton';
+import { MapPageSkeleton } from './ui/map-page-skeleton';
 
 const CATEGORIES = {
   COCHES: 1,
@@ -113,6 +116,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const [drawerCategoryReplacement, setDrawerCategoryReplacement] = useState<{ id: number; name: string; image: string } | null>(null);
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [imageCacheKey, setImageCacheKey] = useState(Date.now());
+  const [waveKey, setWaveKey] = useState(0); // ✅ Para forzar re-render del efecto onda
   const formRef = useRef<HTMLFormElement>(null);
   const serviceTypeDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -293,6 +297,21 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   //   }
   // }, []);
 
+  const [isNavigating, setIsNavigating] = useState(false);
+  
+  // ✅ Resetear estado de navegación cuando la ruta cambia
+  const location = useLocation();
+  useEffect(() => {
+    // Si estamos navegando y la ruta cambió a crear-busqueda, resetear después de un delay
+    if (isNavigating && location.pathname === '/crear-busqueda') {
+      const timer = setTimeout(() => {
+        setIsNavigating(false);
+      }, 2000); // Mantener skeleton 2 segundos para que se vea la transición
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isNavigating, location.pathname]);
+
   const handleSearch = () => {
     if (onSearch) {
       onSearch({
@@ -303,11 +322,17 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
     }
     
     if (serviceTypeId && categoryId) {
+      // ✅ Activar estado de navegación para mostrar skeletons INMEDIATAMENTE
+      setIsNavigating(true);
+      
+      // ✅ Navegar inmediatamente - el skeleton ya está visible
       const params = new URLSearchParams();
       params.append('serviceTypeId', serviceTypeId.toString());
       params.append('categoryId', categoryId.toString());
       if (adUrl) params.append('adUrl', adUrl);
-      navigate(`/crear-busqueda?${params.toString()}`);
+      
+      // ✅ Navegar directamente sin pasar por homepage
+      navigate(`/crear-busqueda?${params.toString()}`, { replace: true });
     }
   };
 
@@ -315,6 +340,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
     setActiveTab(tab);
     setCategoryId(categoryIdValue);
     setIsDrawerOpen(false);
+    setWaveKey(prev => prev + 1); // ✅ Trigger efecto onda
     
     if (tab === 'inmobiliaria' && categoryIdValue === CATEGORIES.INMOBILIARIA) {
       setDrawerCategoryReplacement(null);
@@ -365,7 +391,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   // Radix Popover maneja el cierre automáticamente, no necesitamos handleClickOutside
 
   return (
-    <header className="sticky top-0 z-50 bg-[#fbfbfb] border-b border-gray-200">
+    <>
+      {/* ✅ Overlay de transición con skeletons */}
+      {isNavigating && <MapPageSkeleton />}
+      
+      <header className="sticky top-0 z-50 bg-[#fbfbfb] border-b border-gray-200">
       {/* Desktop */}
       <div className="hidden md:block max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4 relative">
         {userIsAdmin && (
@@ -380,51 +410,91 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
         {/* Categorías encima de la barra de búsqueda - Solo Desktop */}
         <div className="flex items-center justify-center mb-3 max-w-[850px] mx-auto">
           <div className="flex items-center gap-8">
-            <button
+            <motion.button
               type="button"
               role="tab"
               aria-selected={activeTab === 'coches'}
               onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
               onMouseEnter={() => setHoveredTab('coches')}
               onMouseLeave={() => setHoveredTab(null)}
-              className="flex items-center gap-3 py-2 relative bg-transparent border-none cursor-pointer"
+              className={`flex items-center gap-3 py-2 relative bg-transparent border-none cursor-pointer ${
+                activeTab === 'coches' ? 'category-tab-active' : ''
+              }`}
+              key={`coches-${waveKey}`}
+              whileTap={{ scale: 0.95 }}
             >
+              <AnimatePresence mode="wait">
+                {activeTab === 'coches' && (
+                  <motion.div
+                    key="wave"
+                    className="absolute inset-0 rounded-full"
+                    initial={{ scale: 0.8, opacity: 0.6 }}
+                    animate={{ scale: 1.4, opacity: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    style={{
+                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+              </AnimatePresence>
               <img 
                 key={`coche-${imageCacheKey}`}
                 src={getImageWithCache('cochepng.png', imageCacheKey)} 
                 alt="Coche" 
-                className="w-6 h-6 object-contain" 
+                className="w-6 h-6 object-contain relative z-10" 
               />
-              <span className={`text-sm whitespace-nowrap ${activeTab === 'coches' ? 'font-semibold text-gray-900' : 'font-normal text-gray-600'}`}>
+              <span className={`text-sm whitespace-nowrap relative z-10 ${activeTab === 'coches' ? 'font-semibold text-gray-900' : 'font-normal text-gray-600'}`}>
                 Coches
               </span>
-              <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
+              <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform relative z-10 ${
                 activeTab === 'coches' ? 'scale-x-100' : 'scale-x-0'
               }`} />
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
               type="button"
               role="tab"
               aria-selected={activeTab === 'inmobiliaria'}
               onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
               onMouseEnter={() => setHoveredTab('inmobiliaria')}
               onMouseLeave={() => setHoveredTab(null)}
-              className="flex items-center gap-3 py-2 relative bg-transparent border-none cursor-pointer"
+              className={`flex items-center gap-3 py-2 relative bg-transparent border-none cursor-pointer ${
+                activeTab === 'inmobiliaria' ? 'category-tab-active' : ''
+              }`}
+              key={`inmobiliaria-${waveKey}`}
+              whileTap={{ scale: 0.95 }}
             >
+              <AnimatePresence mode="wait">
+                {activeTab === 'inmobiliaria' && (
+                  <motion.div
+                    key="wave"
+                    className="absolute inset-0 rounded-full"
+                    initial={{ scale: 0.8, opacity: 0.6 }}
+                    animate={{ scale: 1.4, opacity: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    style={{
+                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+              </AnimatePresence>
               <img
                 key={`casa-${imageCacheKey}`}
                 src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
                 alt={drawerCategoryReplacement?.name || "Casa"}
-                className="w-6 h-6 object-contain"
+                className="w-6 h-6 object-contain relative z-10"
               />
-              <span className={`text-sm whitespace-nowrap ${activeTab === 'inmobiliaria' ? 'font-semibold text-gray-900' : 'font-normal text-gray-600'}`}>
+              <span className={`text-sm whitespace-nowrap relative z-10 ${activeTab === 'inmobiliaria' ? 'font-semibold text-gray-900' : 'font-normal text-gray-600'}`}>
                 {drawerCategoryReplacement?.name || 'Inmobiliaria'}
               </span>
-              <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
+              <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform relative z-10 ${
                 activeTab === 'inmobiliaria' || hoveredTab === 'inmobiliaria' ? 'scale-x-100' : 'scale-x-0'
               }`} />
-            </button>
+            </motion.button>
 
             <button
               type="button"
@@ -520,7 +590,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 >
                   <div className="max-h-[300px] overflow-y-auto py-2">
                     {serviceTypesLoading ? (
-                      <div className="p-4 text-center text-sm text-gray-500">Cargando...</div>
+                      <div className="p-2 space-y-0">
+                        {[...Array(3)].map((_, index) => (
+                          <ServiceTypeSkeletonShimmer key={index} />
+                        ))}
+                      </div>
                     ) : normalizedServiceTypes.length === 0 ? (
                       <div className="p-4 text-center text-sm text-gray-500">No hay tipos disponibles</div>
                     ) : (
@@ -607,13 +681,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 >
                   <div className="max-h-[300px] overflow-y-auto py-2">
                     {categoriesLoading ? (
-                      <div 
-                        className="p-4 text-center text-sm text-gray-500"
-                        style={{
-                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif'
-                        }}
-                      >
-                        Cargando...
+                      <div className="p-2 space-y-0">
+                        {[...Array(3)].map((_, index) => (
+                          <CategorySkeletonShimmer key={index} />
+                        ))}
                       </div>
                     ) : normalizedCategories.length === 0 ? (
                       <div 
@@ -996,16 +1067,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                     <div className="flex-1 overflow-y-auto px-4 py-4">
                       <div>
                         {categoriesLoading ? (
-                          <div 
-                            className="text-center py-4 text-gray-500"
-                            style={{ 
-                              fontSize: '14px',
-                              lineHeight: '18px',
-                              fontWeight: 400,
-                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
-                            }}
-                          >
-                            Cargando...
+                          <div className="space-y-0">
+                            {[...Array(4)].map((_, index) => (
+                              <CategorySkeletonShimmer key={index} />
+                            ))}
                           </div>
                         ) : (
                     <div>
@@ -1017,7 +1082,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                   }
                                   return true;
                                 })
-                        .map((category) => {
+                        .map((category, index) => {
                                   const categoryImage = getCategoryImage(category.name);
                                   return (
                                     <button
@@ -1037,11 +1102,15 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                                   });
                                 }
                               }}
-                                    className={`w-full flex items-center gap-4 p-4 mb-3 rounded-lg text-left transition-all duration-200 border-0 ${
+                                    className={`w-full flex items-center gap-4 p-4 mb-3 rounded-lg text-left transition-all duration-300 ease-out border-0 animate-fade-in ${
                                       categoryId === category.id 
                                         ? 'bg-gray-900 text-white shadow-md' 
                                         : 'hover:bg-gray-50 shadow-sm'
                                     }`}
+                                    style={{
+                                      animationDelay: `${Math.min(index * 50, 300)}ms`,
+                                      animationFillMode: 'both'
+                                    }}
                                     >
                                       {categoryImage ? (
                                         <img 
@@ -1179,16 +1248,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                     <div className="flex-1 overflow-y-auto px-4 py-4">
                       <div>
                         {categoriesLoading ? (
-                          <div 
-                            className="text-center py-4 text-gray-500"
-                            style={{ 
-                              fontSize: '14px',
-                              lineHeight: '18px',
-                              fontWeight: 400,
-                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
-                            }}
-                          >
-                            Cargando...
+                          <div className="space-y-0">
+                            {[...Array(4)].map((_, index) => (
+                              <CategorySkeletonShimmer key={index} />
+                            ))}
                           </div>
                         ) : (
                           <div>
@@ -1345,7 +1408,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 {expandedAccordion === 'type' && (
                   <div className="px-4 pb-6">
                       {serviceTypesLoading ? (
-                      <div className="text-center py-4 text-sm text-gray-500">Cargando...</div>
+                      <div className="space-y-2">
+                        {[...Array(4)].map((_, index) => (
+                          <ServiceTypeSkeletonShimmer key={index} />
+                        ))}
+                      </div>
                       ) : (
                       <div className="flex flex-col gap-2">
                         {normalizedServiceTypes.map((st) => (
@@ -1521,19 +1588,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             }}
           >
             {categoriesLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div 
-                  className="text-sm text-gray-500"
-                  style={{
-                    fontSize: '14px',
-                    lineHeight: '18px',
-                    fontWeight: 400,
-                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                    color: 'rgb(113, 113, 113)',
-                  }}
-                >
-                  Cargando categorías...
-                </div>
+              <div className="flex flex-col px-4 py-6">
+                {[...Array(4)].map((_, index) => (
+                  <CategorySkeletonShimmer key={index} />
+                ))}
               </div>
             ) : (
               <div className="flex flex-col pb-4">
@@ -1676,5 +1734,6 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
         </div>
       )}
     </header>
+    </>
   );
 };

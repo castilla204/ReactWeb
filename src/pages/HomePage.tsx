@@ -1,12 +1,21 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { HomepageWall } from '../components/HomepageWall';
 import { AirbnbSearchBar } from '../components/AirbnbSearchBar';
 import { MobileBottomBar } from '../components/MobileBottomBar';
 import { WelcomePopup } from '../components/WelcomePopup';
+import { HomepageSkeleton } from '../components/ui/homepage-skeleton';
+import { useCategories } from '../contexts/CategoryContext';
+import { useServiceTypes } from '../hooks/useServiceTypes';
 
 const HomePage: React.FC = () => {
   const location = useLocation();
+  const { categories, loading: categoriesLoading } = useCategories();
+  const { serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
+  
+  // ✅ Mostrar skeleton completo mientras cargan categorías o tipos de servicio
+  const isLoading = categoriesLoading || serviceTypesLoading;
   
   // Posicionar arriba cuando se carga o se vuelve a la homepage (sin scroll)
   useEffect(() => {
@@ -45,19 +54,60 @@ const HomePage: React.FC = () => {
     });
   };
 
+  // ✅ Mostrar skeleton completo mientras carga
+  if (isLoading) {
+    return <HomepageSkeleton />;
+  }
+
+  // ✅ Animación simultánea para todos los elementos
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0.4,
+        staggerChildren: 0.05,
+        ease: [0.25, 0.46, 0.45, 0.94], // easeOutQuad
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: [0.25, 0.46, 0.45, 0.94],
+      },
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">
+    <motion.div
+      className="min-h-screen bg-white"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Welcome Popup - Solo se muestra la primera vez */}
       <WelcomePopup />
       
       {/* Search Bar Header con Tabs */}
-      <AirbnbSearchBar onSearch={handleSearch} />
+      <motion.div variants={itemVariants}>
+        <AirbnbSearchBar onSearch={handleSearch} />
+      </motion.div>
       
       {/* Main Content with proper spacing - Same as Airbnb */}
-      <div className="pt-3 md:pt-10 pb-20 md:pb-0" style={{ 
-        paddingTop: '12px', 
-        paddingBottom: 'max(80px, calc(80px + env(safe-area-inset-bottom)))' 
-      }}>
+      <motion.div
+        className="pt-3 md:pt-10 md:pb-0"
+        style={{ 
+          paddingTop: '12px', 
+          paddingBottom: 'calc(65px + max(11px, env(safe-area-inset-bottom)))' // ✅ Altura exacta del bottom bar: 65px + padding
+        }}
+        variants={itemVariants}
+      >
         <div className="md:pt-4" style={{ paddingTop: '8px' }} data-services-section>
           <HomepageWall 
             countryCode={countryCode}
@@ -65,11 +115,13 @@ const HomePage: React.FC = () => {
             categoryId={searchFilters.categoryId}
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* Mobile Bottom Bar */}
-      <MobileBottomBar />
-    </div>
+      <motion.div variants={itemVariants}>
+        <MobileBottomBar />
+      </motion.div>
+    </motion.div>
   );
 };
 
