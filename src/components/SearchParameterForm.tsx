@@ -1101,11 +1101,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [wasManuallyClosed, setWasManuallyClosed] = useState(false);
     
     const drawerContentRef = useRef<HTMLDivElement>(null);
+    const drawerRef = useRef<HTMLDivElement>(null); // ✅ Ref para detectar clicks fuera del drawer
     const headerRef = useRef<HTMLDivElement>(null);
     const [headerHeight, setHeaderHeight] = useState(81); // Altura por defecto del header
     // ✅ INFINITE SCROLL: Refs para los sentinels
     const sentinelRefMobile = useRef<HTMLDivElement>(null);
     const sentinelRefDesktop = useRef<HTMLDivElement>(null);
+    // ✅ Ref para el elemento del servicio seleccionado en móvil (para scroll automático)
+    const selectedServiceRef = useRef<HTMLDivElement | null>(null);
     
     // Calcular altura del header dinámicamente
     useEffect(() => {
@@ -1294,12 +1297,56 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }
     }, [allServices.length, isLoadingServices, isDrawerVisible, comesFromSearch, wasManuallyClosed]);
     
+    // ✅ Detectar clicks fuera del drawer para cerrarlo
+    useEffect(() => {
+        if (!isDrawerOpen || !isDrawerVisible || !isMobileDevice) return;
+        
+        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+            const target = event.target as HTMLElement;
+            
+            // ✅ Verificar que el click no sea en el drawer ni en sus elementos hijos
+            const drawerElement = document.querySelector('[data-vaul-drawer]') as HTMLElement;
+            if (!drawerElement) return;
+            
+            if (!drawerElement.contains(target)) {
+                // ✅ Verificar que no sea un click en el mapa o header (para no interferir)
+                const isMapClick = target.closest('[role="button"]') || 
+                                   target.closest('.gm-style') || 
+                                   target.closest('[class*="map"]') ||
+                                   target.closest('#mobile-search-header');
+                
+                // ✅ Solo cerrar si no es un click en el mapa o header
+                if (!isMapClick) {
+                    setIsDrawerOpen(false);
+                    setIsDrawerVisible(false);
+                    setWasManuallyClosed(true);
+                    setSelectedService(null); // ✅ Deseleccionar servicio al cerrar
+                }
+            }
+        };
+        
+        // ✅ Añadir listener con un pequeño delay para evitar que se cierre inmediatamente al abrir
+        const timeoutId = setTimeout(() => {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('touchstart', handleClickOutside);
+        }, 100);
+        
+        return () => {
+            clearTimeout(timeoutId);
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
+    }, [isDrawerOpen, isDrawerVisible, isMobileDevice]);
     
     // Detectar cuando el usuario interactúa con el drawer (arrastra o abre manualmente)
     const handleDrawerOpenChange = (open: boolean) => {
         // ✅ Permitir abrir tanto en móvil como en PC
         // El ResponsiveModal se encargará de mostrar Drawer o Dialog según el tamaño
         setIsDrawerOpen(open);
+        // ✅ Si se cierra el drawer, deseleccionar el servicio
+        if (!open) {
+            setSelectedService(null);
+        }
     };
     // Logs para debugging
     useEffect(() => {
@@ -2020,9 +2067,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         onOpenChange={(open) => {
                             setIsDrawerOpen(open);
                             setIsDrawerVisible(open);
-                            // ✅ Si el usuario cierra el drawer, marcar como cerrado manualmente
+                            // ✅ Si el usuario cierra el drawer, marcar como cerrado manualmente y deseleccionar servicio
                             if (!open) {
                                 setWasManuallyClosed(true);
+                                setSelectedService(null); // ✅ Deseleccionar servicio al cerrar
                             } else {
                                 // Si lo abre, resetear el flag (puede abrirse manualmente)
                                 setWasManuallyClosed(false);
@@ -2038,13 +2086,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     >
                         {/* Contenido con scroll */}
                         <div 
+                            ref={drawerContentRef}
                             style={{ padding: '0 16px' }}
                             onTouchStart={(e) => e.stopPropagation()}
                             onTouchMove={(e) => e.stopPropagation()}
                             onTouchEnd={(e) => e.stopPropagation()}
                             onWheel={(e) => e.stopPropagation()}
                         >
-                            {allServices.length > 0 ? (
+                            {services.length > 0 ? (
                                 <div 
                                     className="flex flex-col" 
                                     style={{ 
@@ -2057,17 +2106,26 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     onTouchEnd={(e) => e.stopPropagation()}
                                     onWheel={(e) => e.stopPropagation()}
                                 >
-                                    {allServices.map((service) => {
-                                        const serviceId = service.id;
+                                    {services.map((service) => {
+                                        const serviceId = service.id || (service as any).Id;
                                         const isSelected = selectedService === serviceId;
                                         return (
-                                            <MapServiceCard
+                                            <div
                                                 key={serviceId}
-                                                service={service}
-                                                isSelected={isSelected}
-                                                onSelect={handleServiceSelect}
-                                                initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
-                                            />
+                                                ref={(node) => {
+                                                    // ✅ Guardar ref del servicio seleccionado
+                                                    if (isSelected) {
+                                                        selectedServiceRef.current = node;
+                                                    }
+                                                }}
+                                            >
+                                                <MapServiceCard
+                                                    service={service}
+                                                    isSelected={isSelected}
+                                                    onSelect={handleServiceSelect}
+                                                    initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
+                                                />
+                                            </div>
                                         );
                                     })}
                                     
