@@ -40,15 +40,11 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   const [isContentAtTop, setIsContentAtTop] = React.useState(true);
 
   // ✅ VINCULAR SCROLL CON ALTURA: el drawer crece infinitamente mientras scrolleas
-  // El scrollTop es la fuente de verdad - el drawer crece basado en él
-  const lastScrollTopRef = React.useRef(0);
-  
   React.useEffect(() => {
     if (!contentRef.current || !open) return;
 
     const handleScroll = () => {
       if (!contentRef.current) return;
-      
       const scrollTop = contentRef.current.scrollTop;
       setIsContentAtTop(scrollTop <= 1);
 
@@ -58,20 +54,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
       const scrollHeight = scrollTop;
       const newHeight = baseHeight + scrollHeight; // ✅ CRECIMIENTO INFINITO
 
-      // ✅ Actualizar altura
-      const currentHeight = height.get();
       height.set(newHeight);
-      
-      // ✅ Si el drawer creció, ajustar el scrollTop para mantener la posición visual
-      // Esto asegura que el contenido no se mueva cuando el drawer crece
-      const heightDiff = newHeight - currentHeight;
-      if (heightDiff > 0 && scrollTop > 0) {
-        // El scrollTop ya aumentó (es la causa del crecimiento), pero necesitamos
-        // asegurarnos de que la posición visual se mantenga
-        // No hacemos nada aquí porque el scrollTop ya es correcto
-      }
-      
-      lastScrollTopRef.current = scrollTop;
     };
 
     const content = contentRef.current;
@@ -166,9 +149,9 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
         )}
         onTouchStart={e => e.stopPropagation()}
       >
-        {/* Handle con drag - FIJO, no scrolleable */}
+        {/* Handle con drag - solo cuando está en el tope */}
         <motion.div
-          className="flex-shrink-0 px-6 py-1.5 cursor-grab active:cursor-grabbing touch-none bg-white"
+          className="flex-shrink-0 px-6 py-1.5 cursor-grab active:cursor-grabbing touch-none"
           onPointerDown={(e) => {
             if (canDrag) dragControls.start(e);
           }}
@@ -183,9 +166,9 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           <div className="mx-auto w-12 h-1 bg-gray-300 rounded-full" />
         </motion.div>
 
-        {/* Header - FIJO, no scrolleable */}
+        {/* Header */}
         {title && (
-          <div className="flex-shrink-0 px-6 py-1.5 flex items-center justify-between bg-white">
+          <div className="flex-shrink-0 px-6 py-1.5 flex items-center justify-between">
             <div className="flex-1" />
             <div className="flex flex-col items-center flex-1">
               <h2
@@ -215,19 +198,14 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           </div>
         )}
 
-        {/* ✅ Contenido: SOLO el contenido es scrolleable - el scroll hace crecer el drawer infinitamente */}
+        {/* ✅ Contenido: SIEMPRE scrolleable - el scroll hace crecer el drawer infinitamente */}
         <div
           ref={contentRef}
           className="flex-1 bg-white px-0 overflow-y-auto"
           style={{
-            // ✅ flex-1 para que ocupe todo el espacio disponible
-            // La altura se calcula automáticamente: drawer height - header height
-            minHeight: 0, // Importante para que flex-1 funcione correctamente
             overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch',
             pointerEvents: isDragging ? 'none' : 'auto',
-            // ✅ Sin padding-top - el contenido empieza inmediatamente, la primera card se ve completa
-            paddingTop: 0,
           }}
           onTouchStart={(e) => {
             e.stopPropagation();
