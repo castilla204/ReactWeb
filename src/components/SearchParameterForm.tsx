@@ -1121,10 +1121,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         return () => window.removeEventListener('resize', updateHeaderHeight);
     }, []);
     
-    // ✅ SnapPoints estilo Airbnb: 0 = cerrado, 0.7 = reposo (70%), 0.95 = casi arriba
-    // Vaul manejará los gestos y animaciones de forma nativa y fluida
+    // ✅ SnapPoints MÁS FLUIDOS: Más puntos intermedios para transiciones suaves
+    // 0 = cerrado, 0.5 = medio, 0.7 = reposo (70%), 0.85 = expandido, 0.95 = casi arriba
     const SNAP_POINTS = useMemo(() => {
-        return [0, 0.7, 0.95] as const;
+        return [0, 0.5, 0.7, 0.85, 0.95] as const;
     }, []);
     
     // ✅ Posición de reposo: 0.7 (70% de la pantalla) - Vaul manejará los cambios de forma fluida

@@ -20,8 +20,9 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
 }) => {
   const [activeSnapPoint, setActiveSnapPoint] = React.useState<number | string | null>(0.7);
   
-  // Snap points: 0.7 = reposo (70%), 0.95 = casi arriba
-  const snapPoints: (number | string)[] = [0.7, 0.95];
+  // ✅ SNAP POINTS MÁS FLUIDOS: Más puntos intermedios para transiciones suaves
+  // 0.5 = medio, 0.7 = reposo, 0.85 = expandido, 0.95 = casi arriba
+  const snapPoints: (number | string)[] = [0.5, 0.7, 0.85, 0.95];
 
   return (
     <Drawer
@@ -32,7 +33,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
       setActiveSnapPoint={setActiveSnapPoint}
       modal={false} // ✅ Sin overlay para permitir interacción con el mapa
       dismissible={true}
-      snapToSequentialPoint={true}
+      snapToSequentialPoint={true} // ✅ Snap secuencial para fluidez
       shouldScaleBackground={false} // ✅ Sin escalado del fondo
       {...({} as any)} // ✅ Type assertion para children (DrawerPrimitive.Root acepta children en runtime)
     >
@@ -47,7 +48,13 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           maxWidth: '100%',
           maxHeight: '100vh',
           zIndex: 10000,
+          // ✅ OPTIMIZACIONES MÁXIMAS PARA FLUIDEZ
           willChange: 'transform',
+          // ✅ Aceleración de hardware para drag fluido
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
+          // ✅ Mejorar rendimiento durante el drag
+          contain: 'layout style paint',
         }}
         noOverlay={true} // ✅ Sin overlay
         noHandle={false} // ✅ Mostrar handle para drag
@@ -85,12 +92,18 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           </div>
         )}
 
-        {/* Contenido scrolleable */}
+        {/* Contenido scrolleable - OPTIMIZADO PARA FLUIDEZ MÁXIMA */}
         <div
           className="flex-1 overflow-y-auto bg-white px-0"
           style={{
             overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch',
+            // ✅ Optimizaciones de rendimiento para fluidez
+            touchAction: 'pan-y',
+            willChange: 'scroll-position',
+            // ✅ Mejorar rendimiento del scroll
+            transform: 'translateZ(0)', // Aceleración de hardware
+            backfaceVisibility: 'hidden',
           }}
           onTouchStart={(e) => {
             // Prevenir que el mapa se mueva cuando se toca el drawer
