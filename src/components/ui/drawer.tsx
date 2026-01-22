@@ -34,99 +34,20 @@ const Drawer = ({
   handleOnly = false,
   snapToSequentialPoint = true, // ✅ true para mejor fluidez y snap points secuenciales
   ...props
-}: DrawerProps) => {
-  // ✅ Añadir estilos CSS específicos SOLO para el drawer (no afectar al mapa)
-  React.useEffect(() => {
-    const style = document.createElement('style');
-    style.id = 'vaul-drawer-sensitivity';
-    style.textContent = `
-      /* ✅ Asegurar que el mapa de Google Maps NO se vea afectado - PRIORIDAD ALTA */
-      .gm-style,
-      .gm-style > div,
-      [class*="LocationMap"],
-      [id*="map"],
-      div[style*="map"],
-      /* Contenedores del mapa de Google */
-      div[role="button"][aria-label*="Map"],
-      /* Asegurar que todos los elementos del mapa mantengan touch-action: auto */
-      .gm-style * {
-        touch-action: auto !important;
-        pointer-events: auto !important;
-      }
-      /* ✅ Aumentar sensibilidad del drag SOLO en el drawer - selectores muy específicos */
-      [data-vaul-drawer][class*="rounded-t"] {
-        touch-action: pan-y !important;
-        -webkit-overflow-scrolling: touch !important;
-        /* ✅ Reducir resistencia del drag para mayor sensibilidad */
-        -webkit-tap-highlight-color: transparent;
-      }
-      /* ✅ Mejorar respuesta del handle - solo en drawer */
-      [data-vaul-drawer][class*="rounded-t"] [data-vaul-drawer-handle] {
-        touch-action: none !important;
-        cursor: grab !important;
-        /* ✅ Aumentar área táctil del handle */
-        padding: 8px 0 !important;
-        margin: -8px 0 !important;
-      }
-      [data-vaul-drawer][class*="rounded-t"] [data-vaul-drawer-handle]:active {
-        cursor: grabbing !important;
-      }
-      /* ✅ Reducir umbral de distancia para cambiar snap point - solo drawer */
-      [data-vaul-drawer][class*="rounded-t"] > * {
-        will-change: transform !important;
-      }
-      /* ✅ Asegurar que el contenido scrolleable del drawer no bloquee el mapa */
-      [data-vaul-drawer][class*="rounded-t"] > div[class*="overflow-y-auto"] {
-        touch-action: pan-y !important;
-      }
-      /* ✅ ELIMINAR CUALQUIER FONDO GRIS - Asegurar que no haya overlay visible */
-      [data-vaul-overlay],
-      [data-vaul-overlay-wrapper],
-      [class*="vaul-overlay"],
-      /* Overlay de vaul */
-      [data-radix-portal] > div[class*="bg-black"],
-      [data-radix-portal] > div[style*="background"] {
-        display: none !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-        background: transparent !important;
-      }
-      /* ✅ Asegurar que el drawer NO tenga fondo gris */
-      [data-vaul-drawer] {
-        background: transparent !important;
-      }
-      [data-vaul-drawer][class*="bg-white"] {
-        background: white !important; /* Solo el drawer debe ser blanco */
-      }
-    `;
-    // Solo añadir si no existe
-    if (!document.getElementById('vaul-drawer-sensitivity')) {
-      document.head.appendChild(style);
-    }
-    return () => {
-      const existingStyle = document.getElementById('vaul-drawer-sensitivity');
-      if (existingStyle) {
-        document.head.removeChild(existingStyle);
-      }
-    };
-  }, []);
-
-  return (
-    <DrawerPrimitive.Root
-      shouldScaleBackground={shouldScaleBackground}
-      snapPoints={snapPoints}
-      activeSnapPoint={activeSnapPoint}
-      setActiveSnapPoint={setActiveSnapPoint}
-      modal={modal}
-      dismissible={dismissible}
-      fadeFromIndex={fadeFromIndex}
-      handleOnly={handleOnly}
-      snapToSequentialPoint={snapToSequentialPoint}
-      {...props}
-    />
-  );
-}
+}: DrawerProps) => (
+  <DrawerPrimitive.Root
+    shouldScaleBackground={shouldScaleBackground}
+    snapPoints={snapPoints}
+    activeSnapPoint={activeSnapPoint}
+    setActiveSnapPoint={setActiveSnapPoint}
+    modal={modal}
+    dismissible={dismissible}
+    fadeFromIndex={fadeFromIndex}
+    handleOnly={handleOnly}
+    snapToSequentialPoint={snapToSequentialPoint}
+    {...props}
+  />
+)
 Drawer.displayName = "Drawer"
 
 const DrawerTrigger = DrawerPrimitive.Trigger
@@ -135,7 +56,7 @@ const DrawerPortal = DrawerPrimitive.Portal
 
 const DrawerClose = DrawerPrimitive.Close
 
-// Handle component optimizado para drag fluido y más sensible
+// Handle component optimizado para drag fluido
 const DrawerHandle = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -151,11 +72,6 @@ const DrawerHandle = React.forwardRef<
       userSelect: 'none',
       WebkitUserSelect: 'none',
       willChange: 'opacity',
-      // ✅ Aumentar área táctil del handle para mayor sensibilidad (manteniendo centrado)
-      padding: '12px 0',
-      margin: '-12px auto', // ✅ Centrado horizontal con margin auto
-      touchAction: 'none', // ✅ Permitir drag sin interferir con scroll
-      display: 'block', // ✅ Asegurar que margin auto funcione
       ...props.style,
     }}
     {...props}
@@ -206,7 +122,6 @@ const DrawerContent = React.forwardRef<
   
   return (
     <DrawerPortal>
-      {/* ✅ NO renderizar overlay si noOverlay es true */}
       {showOverlay && <DrawerOverlay />}
       <DrawerPrimitive.Content
         ref={(node) => {
@@ -235,9 +150,6 @@ const DrawerContent = React.forwardRef<
           contain: 'layout style',
           // ✅ Asegurar que Vaul controle completamente el transform durante el drag
           transition: 'none', // Vaul maneja las transiciones internamente
-          // ✅ Aumentar sensibilidad del drag: reducir resistencia táctil
-          // Solo pan-y en el drawer, no afecta al mapa que está debajo
-          touchAction: 'pan-y',
         }}
         {...props}
       >

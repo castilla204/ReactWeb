@@ -664,6 +664,8 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                     streetViewControl: false,
                                     rotateControl: false,
                                     fullscreenControl: true,
+                                    minZoom: 3, // ✅ Limitar zoom mínimo: permite ver continentes pero no tanto fondo gris
+                                    maxZoom: 20, // ✅ Limitar zoom máximo también
                                 }}
                                 onClick={(e) => {
                                     // Cerrar drawer si está abierto, o no hacer nada
@@ -768,6 +770,8 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                     streetViewControl: false,
                                     rotateControl: false,
                                     fullscreenControl: true,
+                                    minZoom: 3, // ✅ Limitar zoom mínimo: permite ver continentes pero no tanto fondo gris
+                                    maxZoom: 20, // ✅ Limitar zoom máximo también
                                 }}
                             >
                                 {/* Circle for search range */}
