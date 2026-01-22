@@ -6,6 +6,9 @@ import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
+import { useLoadScript } from '@react-google-maps/api';
+
+const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
 // Importar imágenes directamente desde src/media para que Vite las procese
 import casapngImg from '../media/casapng.png';
 import cochepngImg from '../media/cochepng.png';
@@ -80,6 +83,15 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const { user, isAuthenticated } = useAuth();
   const { serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
   const { categories, loading: categoriesLoading } = useCategories();
+  
+  // ✅ PRERENDERIZAR MAPA: Cargar Google Maps API en móvil para que esté listo cuando navegue
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+  const { isLoaded: isMapPreloaded } = useLoadScript({
+    googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
+    libraries,
+    // ✅ Solo cargar en móvil para prerenderizar
+    // En desktop no es necesario porque el mapa se carga después
+  });
   
   const userEmail = (user as any)?.Email || user?.email;
   const userRole = (user as any)?.Role || user?.role;
@@ -1625,6 +1637,44 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
           </div>
         </div>
       </ResponsiveModal>
+      
+      {/* ✅ PRERENDERIZAR MAPA: Inicializar mapa oculto en móvil para que el script ya esté cargado */}
+      {isMobile && isMapPreloaded && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            top: '-9999px', 
+            left: '-9999px', 
+            width: '1px', 
+            height: '1px', 
+            opacity: 0, 
+            pointerEvents: 'none',
+            zIndex: -1 
+          }}
+          aria-hidden="true"
+        >
+          {/* ✅ Inicializar el mapa oculto para que Google Maps API ya esté lista */}
+          <div 
+            id="preload-map-container"
+            style={{ width: '1px', height: '1px' }}
+            ref={(node) => {
+              if (node && isMapPreloaded && typeof window !== 'undefined' && window.google?.maps) {
+                // ✅ Crear instancia del mapa oculta para prerenderizar
+                try {
+                  new window.google.maps.Map(node, {
+                    zoom: 10,
+                    center: { lat: 40.4168, lng: -3.7038 }, // Madrid por defecto
+                    disableDefaultUI: true,
+                    gestureHandling: 'none',
+                  });
+                } catch (e) {
+                  // Ignorar errores de inicialización
+                }
+              }
+            }}
+          />
+        </div>
+      )}
     </header>
   );
 };
