@@ -236,7 +236,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                                 whiteSpace: 'nowrap',
                                             }}
                                         >
-                                            <span style={{ fontSize: '14px', color: '#000000' }}>✓</span>
+                                            <CheckCircle className="w-3.5 h-3.5 text-gray-900 flex-shrink-0" strokeWidth={2.5} />
                                             <span
                                                 style={{
                                                     fontSize: '12px',
@@ -653,7 +653,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                             whiteSpace: 'nowrap',
                                         }}
                                     >
-                                        <span style={{ fontSize: '14px', color: '#000000' }}>✓</span>
+                                        <CheckCircle className="w-3.5 h-3.5 text-gray-900 flex-shrink-0" strokeWidth={2.5} />
                                         <span
                                             style={{
                                                 fontSize: '12px',
@@ -1091,9 +1091,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     // ✅ Estado para controlar el modal (Drawer en móvil, Dialog en PC)
     // Detectar si es móvil al inicio
     const initialIsMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-    // En móvil, iniciar abierto pero invisible hasta que carguen los servicios
+    // ✅ OPTIMIZADO: Detectar si viene de búsqueda (tiene categoryId y serviceTypeId)
+    const comesFromSearch = selectedCategory !== null && serviceTypeId !== null;
+    // En móvil, iniciar abierto y visible si viene de búsqueda, sino esperar a que carguen servicios
     const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile);
-    const [isDrawerVisible, setIsDrawerVisible] = useState(false); // Controla la visibilidad
+    const [isDrawerVisible, setIsDrawerVisible] = useState(initialIsMobile && comesFromSearch); // Abrir inmediatamente si viene de búsqueda
     
     const drawerContentRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
@@ -1237,20 +1239,24 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const { data: favoritesData } = checkMultipleFavorites(serviceIds);
     const favoritesMap = favoritesData?.data || {};
     
-    // Mostrar drawer cuando hay servicios disponibles en móvil
+    // ✅ OPTIMIZADO: Mostrar drawer inmediatamente si viene de búsqueda, sino esperar servicios
     useEffect(() => {
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-        if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible) {
-            // Pequeño delay para asegurar que el drawer se renderice completamente
+        if (isMobile && comesFromSearch && !isDrawerVisible) {
+            // Si viene de búsqueda, abrir inmediatamente
+            setIsDrawerOpen(true);
+            setIsDrawerVisible(true);
+            setActiveSnapPoint(0.7); // SnapPoint de reposo (70%)
+        } else if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible && !comesFromSearch) {
+            // Si no viene de búsqueda, esperar a que carguen los servicios
             const timer = setTimeout(() => {
                 setIsDrawerOpen(true);
                 setIsDrawerVisible(true);
-                // Empezar siempre en el snapPoint de reposo (0.5 = 50% - mitad de pantalla)
-                setActiveSnapPoint(0.5);
+                setActiveSnapPoint(0.7);
             }, 50);
             return () => clearTimeout(timer);
         }
-    }, [allServices.length, isLoadingServices, isDrawerVisible]);
+    }, [allServices.length, isLoadingServices, isDrawerVisible, comesFromSearch]);
     
     
     // Detectar cuando el usuario interactúa con el drawer (arrastra o abre manualmente)
@@ -1791,93 +1797,39 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     <ArrowLeft className="w-5 h-5 text-gray-900" />
                                 </button>
                                 
-                                {/* Botón de filtros */}
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <button
-                                            type="button"
-                                            aria-label="Show filters"
-                                            className="w-10 h-10 rounded-full bg-white hover:bg-gray-100 transition-all flex items-center justify-center flex-shrink-0 shadow-lg"
+                                {/* Botón de filtros - Navega de vuelta a búsqueda */}
+                                {isMobileDevice && selectedCategory && serviceTypeId && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            // Guardar parámetros en sessionStorage para que AirbnbSearchBar los lea
+                                            const searchParams = {
+                                                serviceTypeId,
+                                                categoryId: selectedCategory,
+                                                adUrl: initialUserSearch || ''
+                                            };
+                                            sessionStorage.setItem('returnToSearch', JSON.stringify(searchParams));
+                                            // Navegar a homepage
+                                            navigate('/');
+                                        }}
+                                        aria-label="Cambiar búsqueda"
+                                        className="w-10 h-10 rounded-full bg-white hover:bg-gray-100 transition-all flex items-center justify-center flex-shrink-0 shadow-lg"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 32 32"
+                                            aria-hidden="true"
+                                            role="presentation"
+                                            focusable="false"
+                                            className="block fill-none h-4 w-4 stroke-current stroke-[2.5] overflow-visible text-gray-900"
                                         >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 32 32"
-                                                aria-hidden="true"
-                                                role="presentation"
-                                                focusable="false"
-                                                className="block fill-none h-4 w-4 stroke-current stroke-[2.5] overflow-visible text-gray-900"
-                                            >
-                                                <path
-                                                    fill="none"
-                                                    d="M7 16H3m26 0H15M29 6h-4m-8 0H3m26 20h-4M7 16a4 4 0 1 0 8 0 4 4 0 0 0-8 0zM17 6a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 20a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 0H3"
-                                                />
-                                            </svg>
-                                        </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-80 p-5" align="end">
-                                        <div className="space-y-6">
-                                            <h4 className="font-semibold text-gray-900">Filtros</h4>
-                                            
-                                            {/* Filtro de Precio */}
-                                            <div className="space-y-4">
-                                                <h5 className="text-sm font-medium text-gray-700">Rango de precio</h5>
-                                                <Slider
-                                                    value={filters.priceRange}
-                                                    onValueChange={(value) => setFilters({...filters, priceRange: value as [number, number]})}
-                                                    min={0}
-                                                    max={1000}
-                                                    step={10}
-                                                    className="w-full"
-                                                />
-                                                <div className="flex items-center justify-between gap-4">
-                                                    <div className="flex-1">
-                                                        <label className="text-xs text-gray-500 mb-1 block">Mínimo</label>
-                                                        <div className="h-10 px-3 border border-gray-300 rounded-lg flex items-center text-sm">
-                                                            €{filters.priceRange[0]}
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-gray-400 mt-5">—</div>
-                                                    <div className="flex-1">
-                                                        <label className="text-xs text-gray-500 mb-1 block">Máximo</label>
-                                                        <div className="h-10 px-3 border border-gray-300 rounded-lg flex items-center text-sm">
-                                                            €{filters.priceRange[1]}+
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Filtro de Valoración */}
-                                            <div className="space-y-4">
-                                                <h5 className="text-sm font-medium text-gray-700">Valoración mínima</h5>
-                                                <div className="flex gap-2">
-                                                    {[0, 3, 3.5, 4, 4.5].map((rating) => (
-                                                        <button
-                                                            key={rating}
-                                                            onClick={() => setFilters({...filters, rating})}
-                                                            className={`flex-1 h-10 rounded-lg border text-sm font-medium transition-all ${
-                                                                filters.rating === rating
-                                                                    ? 'border-gray-900 bg-gray-900 text-white'
-                                                                    : 'border-gray-300 hover:border-gray-900'
-                                                            }`}
-                                                        >
-                                                            {rating === 0 ? 'Todas' : `${rating}+`}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Botón Borrar */}
-                                            {(filters.priceRange[0] > 0 || filters.priceRange[1] < 100000 || filters.rating > 0) && (
-                                                <button
-                                                    onClick={() => setFilters({ priceRange: [0, 100000], rating: 0 })}
-                                                    className="text-sm font-medium text-gray-900 underline w-full text-left"
-                                                >
-                                                    Borrar filtros
-                                                </button>
-                                            )}
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
+                                            <path
+                                                fill="none"
+                                                d="M7 16H3m26 0H15M29 6h-4m-8 0H3m26 20h-4M7 16a4 4 0 1 0 8 0 4 4 0 0 0-8 0zM17 6a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 20a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 0H3"
+                                            />
+                                        </svg>
+                                    </button>
+                                )}
                             </div>
                         </div>
                         

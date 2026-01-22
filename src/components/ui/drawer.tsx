@@ -148,6 +148,8 @@ const DrawerContent = React.forwardRef<
           // Mejorar rendimiento de animaciones
           willChange: 'transform',
           contain: 'layout style',
+          // ✅ Asegurar que Vaul controle completamente el transform durante el drag
+          transition: 'none', // Vaul maneja las transiciones internamente
         }}
         {...props}
       >
