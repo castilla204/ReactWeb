@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle, AlertTriangle, Clock, XCircle, UserX, Loader2, Settings, RefreshCw, MessageCircle, HelpCircle } from 'lucide-react';
-import { useExpertStripeStatus, STRIPE_STATUS } from '../hooks/useExpertStripeStatus';
+import { useExpertStripeStatus } from '../hooks/useExpertStripeStatus';
+import { STRIPE_STATUS } from '../constants/stripeStatus';
 import { ErrorDisplay } from './ErrorDisplay';
 import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from './ui/empty';
 

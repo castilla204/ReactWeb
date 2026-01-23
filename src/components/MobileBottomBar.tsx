@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { MobileProfileMenu } from './MobileProfileMenu';
 import { authService } from '../services/authService';
+import { nativeAuthService } from '../services/nativeAuthService';
+import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import { MessageSquare } from 'lucide-react';
 import { UserRole, RoleChecker } from '../utils/roleChecker';
@@ -344,7 +346,7 @@ export const MobileBottomBar: React.FC = () => {
     }
   };
 
-  const handleLoginClick = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleLoginClick = async (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -361,6 +363,56 @@ export const MobileBottomBar: React.FC = () => {
       console.log('🔘 [MobileBottomBar] Iniciando sesión con Google...');
       setIsGoogleLoading(true);
 
+      // ✅ En Capacitor, usar autenticación nativa
+      if (Capacitor.isNativePlatform()) {
+        try {
+          console.log('📱 [MobileBottomBar] Usando autenticación nativa de Google');
+          const result = await nativeAuthService.signInWithGoogle();
+          
+          if (result.success) {
+            const token = authService.getAccessToken();
+            if (result.user && token) {
+              // Verificar MFA si es necesario
+              const { RoleChecker } = await import('../utils/roleChecker');
+              const userRole = RoleChecker.getUserRole(token);
+              const requiresMfa = RoleChecker.requiresMfa(userRole);
+              
+              let shouldNavigate = true;
+              
+              if (requiresMfa) {
+                const { mfaService } = await import('../services/mfaService');
+                try {
+                  const mfaStatus = await mfaService.getMFAStatus();
+                  if (mfaStatus.isEnabled) {
+                    shouldNavigate = false;
+                    updateUser(result.user, token, () => {
+                      navigate('/mfa/verify', { state: { returnTo: null } });
+                    });
+                    return;
+                  }
+                } catch (error) {
+                  console.error('Error checking MFA status:', error);
+                }
+              }
+              
+              if (shouldNavigate) {
+                updateUser(result.user, token, () => {
+                  console.log('✅ [MobileBottomBar] Autenticación exitosa');
+                });
+              }
+            }
+          }
+        } catch (error: any) {
+          console.error('❌ [MobileBottomBar] Error en autenticación nativa:', error);
+          const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
+          toast.error(errorMessage, { duration: 5000 });
+        } finally {
+          setIsGoogleLoading(false);
+        }
+        return;
+      }
+
+      // ✅ En web, usar SDK de Google
       // Intentar hacer click en el botón de Google
       if (isGoogleReady && triggerGoogleSignIn()) {
         // El loading se resetea en handleGoogleCredential

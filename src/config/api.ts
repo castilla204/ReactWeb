@@ -20,6 +20,7 @@ export const API_CONFIG = {
     endpoints: {
         auth: {
             googleAuth: `${API_PATH}/User/google-auth`,
+            appleAuth: `${API_PATH}/User/apple-auth`,
             sendVerification: `${API_PATH}/User/send-verification`,
             verifyCode: `${API_PATH}/User/verify-code`,
             refreshToken: `${API_PATH}/auth/refresh-token`,

@@ -1,10 +1,15 @@
 ﻿import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
 import { showToast } from '../lib/toast';
+import { Capacitor } from '@capacitor/core';
+import { CapacitorHttp } from '@capacitor/core';
 
 interface RequestConfig extends RequestInit {
     requiresAuth?: boolean;
 }
+
+// ✅ Detectar si estamos en Capacitor (Android/iOS)
+const isNative = Capacitor.isNativePlatform();
 
 export const useApi = () => {
     const fetchApi = async <T>(endpoint: string, config: RequestConfig = {}): Promise<T> => {
@@ -21,7 +26,8 @@ export const useApi = () => {
                 requiresAuth,
                 hasToken: !!getAuthToken(),
                 token: getAuthToken()?.substring(0, 20) + '...',
-                body: config.body
+                body: config.body,
+                isNative, // ✅ Log si estamos en Capacitor
             });
         }
 
@@ -39,12 +45,53 @@ export const useApi = () => {
         }
 
         try {
-            const response = await fetch(url, {
-                ...fetchConfig,
-                headers,
-            });
+            let response: Response;
+            
+            // ✅ SOLUCIÓN CORS: Usar CapacitorHttp en Capacitor (bypass CORS), fetch() en navegador
+            if (isNative && !(config.body instanceof FormData)) {
+                // En Capacitor, usar CapacitorHttp que no tiene restricciones CORS
+                // NOTA: FormData no se puede usar con CapacitorHttp, así que usamos fetch para FormData
+                const method = (fetchConfig.method || 'GET').toUpperCase();
+                let body: string | undefined;
+                
+                // Convertir body a string si es necesario
+                if (config.body) {
+                    if (typeof config.body === 'string') {
+                        body = config.body;
+                    } else {
+                        body = JSON.stringify(config.body);
+                    }
+                }
+                
+                const capacitorResponse = await CapacitorHttp.request({
+                    url,
+                    method: method as any,
+                    headers,
+                    data: body,
+                });
+                
+                // Convertir respuesta de CapacitorHttp a formato Response-like
+                responseText = typeof capacitorResponse.data === 'string' 
+                    ? capacitorResponse.data 
+                    : JSON.stringify(capacitorResponse.data);
+                
+                // Crear un objeto Response-like para mantener compatibilidad
+                response = {
+                    ok: capacitorResponse.status >= 200 && capacitorResponse.status < 300,
+                    status: capacitorResponse.status,
+                    statusText: capacitorResponse.status >= 200 && capacitorResponse.status < 300 ? 'OK' : 'Error',
+                    text: async () => responseText,
+                    json: async () => JSON.parse(responseText),
+                } as Response;
+            } else {
+                // En navegador O si es FormData en Capacitor, usar fetch normal
+                response = await fetch(url, {
+                    ...fetchConfig,
+                    headers,
+                });
 
-            responseText = await response.text();
+                responseText = await response.text();
+            }
 
             // Log response for debugging GetServiceByHireId calls
             if (endpoint.includes('GetServiceByHireId') || endpoint.includes('dispute-service') || endpoint.includes('map-experts')) {

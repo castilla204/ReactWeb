@@ -20,16 +20,31 @@ const ERROR_NOTIFICATION_COOLDOWN = 10000; // 10 segundos entre notificaciones d
  */
 async function checkApiHealth(): Promise<boolean> {
     try {
-        const apiUrl = import.meta.env.DEV 
-            ? 'http://localhost:7124' 
-            : 'https://newapi-yn9v.onrender.com';
+        // ✅ Usar API_CONFIG para obtener la URL correcta (desarrollo o producción)
+        const { API_CONFIG } = await import('../config/api');
+        const apiUrl = API_CONFIG.baseUrl;
         
-        const response = await fetch(`${apiUrl}/health`, {
-            method: 'GET',
-            signal: AbortSignal.timeout(5000), // Timeout de 5 segundos
-        });
+        // ✅ Usar capacitorFetch que automáticamente usa CapacitorHttp en Capacitor (bypass CORS)
+        const { capacitorFetch } = await import('../utils/capacitorFetch');
         
-        return response.ok;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout de 5 segundos
+        
+        try {
+            const response = await capacitorFetch(`${apiUrl}/health`, {
+                method: 'GET',
+                signal: controller.signal,
+            });
+            
+            clearTimeout(timeoutId);
+            return response.ok;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error instanceof Error && error.name === 'AbortError') {
+                return false; // Timeout
+            }
+            throw error;
+        }
     } catch {
         return false;
     }
