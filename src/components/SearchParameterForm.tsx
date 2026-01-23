@@ -1094,9 +1094,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const initialIsMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
     // ✅ OPTIMIZADO: Detectar si viene de búsqueda (tiene categoryId y serviceTypeId)
     const comesFromSearch = selectedCategory !== null && serviceTypeId !== null;
-    // En móvil, iniciar abierto y visible si viene de búsqueda, sino esperar a que carguen servicios
-    const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile);
-    const [isDrawerVisible, setIsDrawerVisible] = useState(initialIsMobile && comesFromSearch); // Abrir inmediatamente si viene de búsqueda
+    // ✅ Drawer cerrado por defecto - NO se abre automáticamente
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [isDrawerVisible, setIsDrawerVisible] = useState(false);
     // ✅ Rastrear si el usuario cerró el drawer manualmente para evitar reabrir automáticamente
     const [wasManuallyClosed, setWasManuallyClosed] = useState(false);
     
@@ -1132,8 +1132,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         return [0, 0.7, 0.85] as const;
     }, []);
     
-    // ✅ Posición de reposo: 0.7 (70% de la pantalla) - Vaul manejará los cambios de forma fluida
-    const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0.7);
+    // ✅ Posición inicial: 0 (cerrado) - El drawer no se abre automáticamente
+    const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0);
     
     // ✅ Eliminada lógica de scroll personalizada - Vaul maneja todo nativamente con gestos suaves
     
@@ -1276,40 +1276,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         return () => observer.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
     
-    // ✅ OPTIMIZADO: Mostrar drawer inmediatamente si viene de búsqueda, sino esperar servicios
-    // ✅ PERO NO reabrir si el usuario lo cerró manualmente
-    useEffect(() => {
-        const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-        // ✅ NO abrir automáticamente si el usuario lo cerró manualmente
-        if (wasManuallyClosed) return;
-        
-        // ✅ Evitar múltiples aperturas - si ya está abierto y visible, no hacer nada
-        if (isDrawerVisible && isDrawerOpen) return;
-        
-        if (isMobile && comesFromSearch && !isDrawerVisible) {
-            // Si viene de búsqueda, abrir inmediatamente (solo una vez)
-            if (!drawerOpenedRef.current) {
-                drawerOpenedRef.current = true;
-                setIsDrawerOpen(true);
-                setIsDrawerVisible(true);
-                setActiveSnapPoint(0.7); // SnapPoint de reposo (70%)
-            }
-        } else if (isMobile && allServices.length > 0 && !isLoadingServices && !isDrawerVisible && !comesFromSearch) {
-            // Si no viene de búsqueda, esperar a que carguen los servicios (solo una vez)
-            if (drawerOpenedRef.current) return; // ✅ Ya se abrió antes
-            
-            const timer = setTimeout(() => {
-                // ✅ Doble verificación para evitar múltiples aperturas
-                if (!drawerOpenedRef.current && !isDrawerVisible && !isDrawerOpen) {
-                    drawerOpenedRef.current = true;
-                    setIsDrawerOpen(true);
-                    setIsDrawerVisible(true);
-                    setActiveSnapPoint(0.7);
-                }
-            }, 50);
-            return () => clearTimeout(timer);
-        }
-    }, [allServices.length, isLoadingServices, isDrawerVisible, isDrawerOpen, comesFromSearch, wasManuallyClosed]);
+    // ✅ Drawer cerrado por defecto - NO se abre automáticamente
+    // El usuario debe abrirlo manualmente o usando el botón "Ver resultados"
     
     // ✅ Detectar clicks fuera del drawer para cerrarlo
     useEffect(() => {
@@ -1976,12 +1944,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 }
                                             }}
                                             size="lg"
-                                            className={`shadow-[0_4px_16px_rgba(0,0,0,0.2)] border-0 h-14 px-8 text-base rounded-full font-semibold transition-all duration-200 pointer-events-auto ${
-                                                allServicesCombined.length === 0 
-                                                    ? 'bg-white/90 backdrop-blur-md text-gray-400 cursor-not-allowed' 
-                                                    : 'bg-[#222222] text-white hover:bg-[#000000] active:bg-[#000000] hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.98]'
-                                            }`}
-                                            disabled={allServicesCombined.length === 0}
+                                            className="shadow-[0_4px_16px_rgba(0,0,0,0.2)] border-0 h-14 px-8 text-base rounded-full font-semibold transition-all duration-200 pointer-events-auto bg-[#222222] text-white hover:bg-[#000000] active:bg-[#000000] hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.98]"
+                                            disabled={false}
                                             style={{
                                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                                 letterSpacing: '-0.01em',
@@ -1989,7 +1953,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className="relative flex-shrink-0">
-                                                    <List className={`w-5 h-5 ${allServicesCombined.length === 0 ? 'text-gray-400' : 'text-white'}`} strokeWidth={2.5} />
+                                                    <List className="w-5 h-5 text-white" strokeWidth={2.5} />
                                                     {allServicesCombined.length > 0 && (
                                                         <div 
                                                             className="absolute -top-1 -right-1 bg-white rounded-full flex items-center justify-center shadow-sm z-10"
@@ -2017,7 +1981,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         : 'Ver resultados'
                                                     }
                                                 </span>
-                                                <ChevronUp className={`w-4 h-4 ${allServicesCombined.length === 0 ? 'text-gray-400' : 'text-white/80'}`} strokeWidth={2.5} />
+                                                <ChevronUp className="w-4 h-4 text-white/80" strokeWidth={2.5} />
                                             </div>
                                         </Button>
                                 </div>
