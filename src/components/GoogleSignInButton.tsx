@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { nativeAuthService } from '../services/nativeAuthService';
+import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -44,8 +46,15 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
     const navigate = useNavigate();
     const buttonRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const isNative = Capacitor.isNativePlatform();
 
     useEffect(() => {
+        // Si es nativo, no necesitamos inicializar Google web
+        if (isNative) {
+            setIsReady(true);
+            return;
+        }
+        
         // Inicializar Google Auth cuando el componente se monta
         const initGoogleAuth = () => {
             if (window.google?.accounts?.id && buttonRef.current) {
@@ -212,10 +221,71 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
             if (checkInterval) clearInterval(checkInterval);
             if (retryTimeout) clearTimeout(retryTimeout);
         };
-    }, [updateUser, navigate, onSuccess, variant]);
+    }, [updateUser, navigate, onSuccess, variant, isNative]);
+
+    // Función para autenticación nativa
+    const handleNativeSignIn = async () => {
+        try {
+            setIsAuthenticating(true);
+            setAuthStep('Iniciando sesión con Google...');
+            
+            const result = await nativeAuthService.signInWithGoogle();
+            
+            if (!result.success) {
+                throw new Error('Authentication failed');
+            }
+            
+            setAuthStep('Configurando sesión...');
+            const token = authService.getAccessToken();
+            
+            updateUser(result.user, token, () => {
+                console.log('✅ [GoogleSignIn Native] Usuario y token actualizados');
+            });
+            
+            // Verificar MFA si es necesario
+            if (token) {
+                setAuthStep('Verificando seguridad...');
+                const { RoleChecker } = await import('../utils/roleChecker');
+                const userRole = RoleChecker.getUserRole(token);
+                const requiresMfa = RoleChecker.requiresMfa(userRole);
+                
+                if (requiresMfa) {
+                    const { mfaService } = await import('../services/mfaService');
+                    try {
+                        const mfaStatus = await mfaService.getMFAStatus();
+                        if (mfaStatus.isEnabled && !mfaStatus.isVerified) {
+                            setAuthStep('Redirigiendo a verificación MFA...');
+                            navigate('/mfa/verify', { state: { returnTo: null } });
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error checking MFA status:', error);
+                    }
+                }
+            }
+            
+            setAuthStep('¡Inicio de sesión exitoso!');
+            if (onSuccess) {
+                onSuccess();
+            }
+        } catch (error: any) {
+            console.error('❌ [GoogleSignIn Native] Error:', error);
+            const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
+            toast.error(errorMessage, { duration: 5000 });
+            setAuthStep('');
+        } finally {
+            setIsAuthenticating(false);
+        }
+    };
 
     // Función para hacer clic en el botón renderizado de Google (igual que en el paso 2)
     const handleCustomClick = () => {
+        // Si es nativo, usar autenticación nativa
+        if (isNative) {
+            handleNativeSignIn();
+            return;
+        }
+        
         if (!isReady || !buttonRef.current) {
             console.warn('Google Sign-In not ready yet');
             return;

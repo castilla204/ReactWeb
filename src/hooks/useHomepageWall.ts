@@ -99,9 +99,12 @@ export const useHomepageWallQuery = (params: HomepageWallParams) => {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
+      // ✅ Usar capacitorFetch que automáticamente usa CapacitorHttp en Capacitor (bypass CORS)
+      const { capacitorFetch } = await import('../utils/capacitorFetch');
+      
       let response: Response;
       try {
-        response = await fetch(url, {
+        response = await capacitorFetch(url, {
           headers,
           signal: controller.signal,
         });

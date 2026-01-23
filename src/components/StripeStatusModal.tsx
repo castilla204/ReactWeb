@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { X, AlertTriangle, CheckCircle, Clock, XCircle, UserX } from 'lucide-react';
-import { STRIPE_STATUS } from '../hooks/useExpertStripeStatus';
+import { STRIPE_STATUS } from '../constants/stripeStatus';
 
 interface StripeStatusModalProps {
     isOpen: boolean;

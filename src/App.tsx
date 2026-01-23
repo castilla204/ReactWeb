@@ -113,6 +113,23 @@ const AppContent: React.FC = () => {
         
         // 3. Configurar interceptor de errores HTTP (debe ir después de rateLimitHandler)
         setupErrorInterceptor();
+        
+        // 4. Configurar StatusBar (barra de estado blanca)
+        const initStatusBar = async () => {
+            try {
+                const { Capacitor } = await import('@capacitor/core');
+                if (Capacitor.isNativePlatform()) {
+                    // En Capacitor 8, StatusBar se importa desde @capacitor/status-bar
+                    const { StatusBar, Style } = await import('@capacitor/status-bar');
+                    await StatusBar.setBackgroundColor({ color: '#ffffff' });
+                    await StatusBar.setStyle({ style: Style.Light }); // Iconos oscuros sobre fondo blanco
+                }
+            } catch (error) {
+                // StatusBar no disponible (probablemente en navegador)
+                console.log('StatusBar no disponible (probablemente en navegador)');
+            }
+        };
+        initStatusBar();
     }, []);
     
     // Ocultar header en móvil cuando se está en las páginas del formulario (SearchParameterForm o SearchForm)
