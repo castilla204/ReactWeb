@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useGeolocation } from '../hooks/useGeolocation';
 import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
 import { Star, ChevronRight } from 'lucide-react';
@@ -9,19 +8,33 @@ import { Footer } from './Footer';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { showToast } from '../lib/toast';
-import { HomepageServiceCardSkeleton, ShimmerSkeleton } from './ui/skeleton';
+import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
+// ✅ OPTIMIZADO: Debounce para resize events y memoización
 const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      // ✅ Debounce para evitar demasiadas actualizaciones
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsMobile(window.innerWidth < 768);
+      }, 150); // 150ms debounce
     };
     
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener('resize', checkMobile, { passive: true });
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', checkMobile);
+    };
   }, []);
 
   return isMobile;
@@ -33,7 +46,8 @@ interface ServiceCardProps {
   initialIsFavorite?: boolean; // Estado inicial desde el backend (IsFavorite)
 }
 
-const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite = false, initialIsFavorite = false }) => {
+// ✅ Memoizar ServiceCard para evitar re-renders innecesarios
+const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGuestFavorite = false, initialIsFavorite = false }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { toggleFavoriteAsync } = useServiceFavorites();
@@ -146,18 +160,48 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
       style={{ width: isMobile ? '160px' : '169px' }}
     >
       {/* Contenedor principal - Estructura exacta de Airbnb */}
-      <div className="relative cursor-pointer group w-full">
+      <div 
+        className="relative cursor-pointer group w-full"
+        style={{
+          // ✅ Optimizaciones máximas para fluidez
+          willChange: 'transform',
+          contain: 'layout style paint',
+          // ✅ GPU acceleration
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
+        }}
+      >
         {/* Contenedor de imagen con todos los subdivs */}
-        <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '20px', width: '100%' }}>
+        <div 
+          className="relative w-full overflow-hidden mb-2" 
+          style={{ 
+            aspectRatio: '1', 
+            borderRadius: '20px', 
+            width: '100%',
+            // ✅ Optimizaciones máximas para fluidez
+            willChange: 'transform',
+            contain: 'layout style paint',
+            // ✅ GPU acceleration
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden',
+          }}
+        >
           {imageUrls.length > 0 ? (
             <>
-              {/* Imagen principal */}
+              {/* Imagen principal - Optimizada para webview */}
               <div className="relative w-full h-full">
                 <img
                   src={imageUrls[imageIndex]}
                   alt={service.serviceTypeName}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  style={{ display: 'block' }}
+                  style={{ 
+                    display: 'block',
+                    willChange: 'transform', // ✅ Optimización para animaciones
+                    contentVisibility: 'auto', // ✅ Lazy rendering del navegador
+                  }}
+                  loading="lazy" // ✅ Lazy loading nativo
+                  decoding="async" // ✅ Decodificación asíncrona
+                  fetchPriority="low" // ✅ Prioridad baja para imágenes no críticas
                 />
               </div>
               
@@ -432,7 +476,15 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, forceGuestFavorite =
       </div>
     </a>
   );
-};
+}, (prevProps, nextProps) => {
+  // ✅ Comparación personalizada: solo re-renderizar si cambian props relevantes
+  return (
+    prevProps.service.id === nextProps.service.id &&
+    prevProps.service.isFavorite === nextProps.service.isFavorite &&
+    prevProps.forceGuestFavorite === nextProps.forceGuestFavorite &&
+    prevProps.initialIsFavorite === nextProps.initialIsFavorite
+  );
+});
 
 interface HorizontalScrollSectionProps {
   title: string;
@@ -441,7 +493,8 @@ interface HorizontalScrollSectionProps {
   forceGuestFavorite?: boolean;
 }
 
-const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
+// ✅ Memoizar HorizontalScrollSection para evitar re-renders innecesarios
+const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.memo(({
   title,
   subtitle,
   services,
@@ -451,29 +504,49 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const checkScroll = () => {
+  // ✅ OPTIMIZADO: Debounce para scroll events
+  const checkScroll = useCallback(() => {
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
       setCanScrollLeft(scrollLeft > 0);
       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
     }
-  };
+  }, []);
 
   useEffect(() => {
     checkScroll();
     const scrollElement = scrollRef.current;
     if (scrollElement) {
-      scrollElement.addEventListener('scroll', checkScroll);
-      return () => scrollElement.removeEventListener('scroll', checkScroll);
+      // ✅ OPTIMIZADO: Usar requestAnimationFrame para máxima fluidez
+      let rafId: number | null = null;
+      const throttledCheckScroll = () => {
+        if (rafId === null) {
+          rafId = requestAnimationFrame(() => {
+            checkScroll();
+            rafId = null;
+          });
+        }
+      };
+      
+      scrollElement.addEventListener('scroll', throttledCheckScroll, { passive: true });
+      return () => {
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+        }
+        scrollElement.removeEventListener('scroll', throttledCheckScroll);
+      };
     }
-  }, [services]);
+  }, [services, checkScroll]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const scrollAmount = 300;
-      scrollRef.current.scrollBy({
-        left: direction === 'right' ? scrollAmount : -scrollAmount,
-        behavior: 'smooth',
+      // ✅ OPTIMIZADO: Usar requestAnimationFrame para scroll más fluido
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollBy({
+          left: direction === 'right' ? scrollAmount : -scrollAmount,
+          behavior: 'smooth',
+        });
       });
     }
   };
@@ -481,7 +554,15 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
   if (services.length === 0) return null;
 
   return (
-    <div className="mb-12" style={{ marginBottom: '32px' }}>
+    <div 
+      className="mb-12" 
+      style={{ 
+        marginBottom: '32px',
+        // ✅ Optimizaciones para webview
+        willChange: 'contents',
+        contain: 'layout style paint',
+      }}
+    >
       {/* Header */}
       <div className="mb-4" style={{ paddingLeft: '24px', paddingRight: '24px', paddingTop: '0', paddingBottom: '0' }}>
         <div className="flex items-center justify-between">
@@ -573,6 +654,10 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
           style={{
             paddingLeft: '24px',
             paddingRight: '24px',
+            // ✅ Optimizaciones para scroll en webview
+            WebkitOverflowScrolling: 'touch',
+            willChange: 'scroll-position',
+            contain: 'layout style paint',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
             WebkitOverflowScrolling: 'touch',
@@ -660,7 +745,19 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = ({
 
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // ✅ Comparación personalizada: solo re-renderizar si cambian props relevantes
+  return (
+    prevProps.title === nextProps.title &&
+    prevProps.subtitle === nextProps.subtitle &&
+    prevProps.services.length === nextProps.services.length &&
+    prevProps.services.every((service, index) => 
+      service.id === nextProps.services[index]?.id &&
+      service.isFavorite === nextProps.services[index]?.isFavorite
+    ) &&
+    prevProps.forceGuestFavorite === nextProps.forceGuestFavorite
+  );
+});
 
 interface HomepageWallProps {
   countryCode?: string;
@@ -668,87 +765,36 @@ interface HomepageWallProps {
   categoryId: number; // ✅ OBLIGATORIO: ID de la categoría
 }
 
-export const HomepageWall: React.FC<HomepageWallProps> = ({ 
+export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({ 
   countryCode = 'ES',
   serviceTypeId,
   categoryId,
 }) => {
-  const { latitude, longitude, error: _geoError, loading: geoLoading } = useGeolocation();
-
+  // ✅ OPTIMIZADO: El backend ahora devuelve la ubicación por IP
+  // No necesitamos solicitar permisos de geolocalización del navegador
+  // Pasamos null para lat/long y el backend detecta automáticamente la ubicación por IP
+  
   // Memoizar los parámetros de la query para evitar re-renderizados innecesarios
   const queryParams = useMemo(() => ({
     categoryId,
-    latitude,
-    longitude,
+    latitude: null, // ✅ Backend detecta ubicación por IP automáticamente
+    longitude: null, // ✅ Backend detecta ubicación por IP automáticamente
     countryCode,
     locationRange: 50,
     nearbyPage: 1,
     nearbyPageSize: 20,
     popularPage: 1,
     popularPageSize: 20,
-  }), [categoryId, latitude, longitude, countryCode]);
+    _enabled: true, // ✅ Siempre habilitado, no hay que esperar geolocalización
+  }), [categoryId, countryCode]);
 
   const { data: sections, isLoading, error } = useHomepageWallQuery(queryParams);
 
-  if (isLoading || geoLoading) {
-    return (
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
-          {/* ✅ Skeleton para secciones en móvil */}
-          <div className="space-y-8 md:space-y-12">
-            {/* Primera sección skeleton */}
-            <div>
-              <div className="mb-4 px-6 md:px-0">
-                <ShimmerSkeleton className="h-6 w-48 rounded mb-2" />
-                <ShimmerSkeleton className="h-4 w-32 rounded" />
-              </div>
-              <div className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {[...Array(4)].map((_, index) => (
-                  <HomepageServiceCardSkeleton key={index} />
-                ))}
-              </div>
-            </div>
-            
-            {/* Segunda sección skeleton */}
-            <div>
-              <div className="mb-4 px-6 md:px-0">
-                <ShimmerSkeleton className="h-6 w-48 rounded mb-2" />
-                <ShimmerSkeleton className="h-4 w-32 rounded" />
-              </div>
-              <div className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {[...Array(4)].map((_, index) => (
-                  <HomepageServiceCardSkeleton key={index} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    console.error('❌ HomepageWall - Error:', error);
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-600">Error al cargar servicios: {error.message}</p>
-        <p className="text-gray-500 text-sm mt-2">Revisa la consola para más detalles</p>
-      </div>
-    );
-  }
-
-  if (!sections || sections.length === 0) {
-    console.warn('⚠️ HomepageWall - No hay secciones');
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-600">No hay datos disponibles</p>
-      </div>
-    );
-  }
-
-  // ✅ Función para convertir SearchServiceHomepageDto (PascalCase) a SearchServiceDetailDto (camelCase)
-  const mapServiceToDetail = (service: SearchServiceHomepageDto): SearchServiceDetailDto => {
-    return {
+  // ✅ CRÍTICO: Todos los hooks deben estar ANTES de los early returns
+  // ✅ Memoizar función de mapeo para evitar recrearla en cada render
+  const mapServiceToDetail = useMemo(() => {
+    return (service: SearchServiceHomepageDto): SearchServiceDetailDto => {
+      return {
       id: service.Id,
       categoryId: service.CategoryId,
       serviceTypeId: service.ServiceTypeId,
@@ -790,31 +836,117 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
       isActive: true,
       selectedDeliverableTypes: [],
     };
-  };
+    };
+  }, []);
 
-  // ✅ Filtrar servicios según serviceTypeId si está presente
-  const filterServices = (services: SearchServiceHomepageDto[]): SearchServiceDetailDto[] => {
-    let filtered = services;
-    
-    if (serviceTypeId) {
-      filtered = services.filter(service => service.ServiceTypeId === serviceTypeId);
-    }
-    
-    return filtered.map(mapServiceToDetail);
-  };
+  // ✅ Memoizar función de filtrado para evitar recrearla en cada render
+  const filterServices = useMemo(() => {
+    return (services: SearchServiceHomepageDto[]): SearchServiceDetailDto[] => {
+      let filtered = services;
+      
+      if (serviceTypeId) {
+        filtered = services.filter(service => service.ServiceTypeId === serviceTypeId);
+      }
+      
+      return filtered.map(mapServiceToDetail);
+    };
+  }, [serviceTypeId, mapServiceToDetail]);
 
-  // ✅ Variantes de animación para las secciones
-  const sectionVariants = {
-    hidden: { opacity: 0, y: 20 },
+  // ✅ OPTIMIZADO PARA MÁXIMA FLUIDEZ: Animaciones más rápidas y suaves
+  const sectionVariants = useMemo(() => ({
+    hidden: { opacity: 0, y: 10 }, // ✅ Reducido de y: 20 a y: 10
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.5,
-        ease: [0.25, 0.46, 0.45, 0.94],
+        duration: 0.25, // ✅ Reducido de 0.5 a 0.25 para máxima fluidez
+        ease: [0.4, 0.0, 0.2, 1], // ✅ easeInOut más suave
       },
     },
-  };
+  }), []);
+
+  // ✅ Ahora sí, los early returns después de todos los hooks
+  if (isLoading) {
+    return (
+      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+        <div className="w-full flex justify-center">
+          <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
+            {/* ✅ Skeleton para secciones */}
+            <div className="space-y-8 md:space-y-12">
+              {/* Primera sección skeleton */}
+              <div>
+                <div className="mb-4 px-6 md:px-0">
+                  <Skeleton height={24} width={192} borderRadius={4} className="mb-2" />
+                  <Skeleton height={16} width={128} borderRadius={4} />
+                </div>
+                <div 
+                  className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" 
+                  style={{ 
+                    scrollbarWidth: 'none', 
+                    msOverflowStyle: 'none',
+                    WebkitOverflowScrolling: 'touch',
+                    willChange: 'scroll-position',
+                    contain: 'layout style paint',
+                  }}
+                >
+                  {[...Array(4)].map((_, index) => (
+                    <div key={index} className="flex-shrink-0" style={{ width: '160px' }}>
+                      <Skeleton height={160} width={160} borderRadius={20} className="mb-2" />
+                      <Skeleton height={16} width="100%" borderRadius={4} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Segunda sección skeleton */}
+              <div>
+                <div className="mb-4 px-6 md:px-0">
+                  <Skeleton height={24} width={192} borderRadius={4} className="mb-2" />
+                  <Skeleton height={16} width={128} borderRadius={4} />
+                </div>
+                <div 
+                  className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" 
+                  style={{ 
+                    scrollbarWidth: 'none', 
+                    msOverflowStyle: 'none',
+                    WebkitOverflowScrolling: 'touch',
+                    willChange: 'scroll-position',
+                    contain: 'layout style paint',
+                  }}
+                >
+                  {[...Array(4)].map((_, index) => (
+                    <div key={index} className="flex-shrink-0" style={{ width: '160px' }}>
+                      <Skeleton height={160} width={160} borderRadius={20} className="mb-2" />
+                      <Skeleton height={16} width="100%" borderRadius={4} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </SkeletonTheme>
+    );
+  }
+
+  if (error) {
+    console.error('❌ HomepageWall - Error:', error);
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600">Error al cargar servicios: {error.message}</p>
+        <p className="text-gray-500 text-sm mt-2">Revisa la consola para más detalles</p>
+      </div>
+    );
+  }
+
+  if (!sections || sections.length === 0) {
+    console.warn('⚠️ HomepageWall - No hay secciones');
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">No hay datos disponibles</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -825,16 +957,28 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
         visible: {
           opacity: 1,
           transition: {
-            staggerChildren: 0.1,
-            delayChildren: 0.1,
+            staggerChildren: 0.03,
+            delayChildren: 0,
+            // ✅ Transición más suave para evitar tirones
+            duration: 0.2,
+            ease: [0.4, 0.0, 0.2, 1],
           },
         },
+      }}
+      style={{
+        // ✅ Evitar layout shifts - Altura mínima estable
+        minHeight: '400px',
+        // ✅ Estructura estable para transición suave
+        position: 'relative',
+        willChange: 'contents',
+        contain: 'layout style paint',
       }}
     >
       <div className="w-full flex justify-center">
         <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
           {/* ✅ Iterar el array de secciones - no necesitas conocer las claves */}
           {sections.map((section: HomepageSection, index: number) => {
+            // ✅ NO usar useMemo dentro de map - usar función normal (ya está memoizada en filterServices)
             const filteredServices = filterServices(section.services);
             
             // Solo renderizar si hay servicios después del filtrado
@@ -844,7 +988,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
             
             return (
               <motion.div
-                key={index}
+                key={`section-${index}-${section.title}`} // ✅ Key más estable
                 variants={sectionVariants}
               >
                 <HorizontalScrollSection
@@ -867,4 +1011,11 @@ export const HomepageWall: React.FC<HomepageWallProps> = ({
       </motion.div>
     </motion.div>
   );
-};
+}, (prevProps, nextProps) => {
+  // ✅ Comparación personalizada: solo re-renderizar si cambian los props relevantes
+  return (
+    prevProps.countryCode === nextProps.countryCode &&
+    prevProps.serviceTypeId === nextProps.serviceTypeId &&
+    prevProps.categoryId === nextProps.categoryId
+  );
+});
