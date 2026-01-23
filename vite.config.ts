@@ -33,10 +33,40 @@ export default defineConfig({
     },
     build: {
         assetsDir: '',
+        // ✅ Optimizaciones de build
+        minify: 'terser',
+        terserOptions: {
+            compress: {
+                drop_console: true, // Eliminar console.log en producción
+                drop_debugger: true,
+            },
+        },
         rollupOptions: {
             output: {
                 assetFileNames: '[name].[hash][extname]',
+                // ✅ Code splitting optimizado para webview: chunks más pequeños
+                manualChunks: (id) => {
+                    // Separar vendor chunks más pequeños para mejor caching
+                    if (id.includes('node_modules')) {
+                        if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                            return 'vendor-react';
+                        }
+                        if (id.includes('framer-motion')) {
+                            return 'vendor-motion';
+                        }
+                        if (id.includes('@react-google-maps') || id.includes('google')) {
+                            return 'vendor-maps';
+                        }
+                        if (id.includes('lucide-react')) {
+                            return 'vendor-icons';
+                        }
+                        // Otros vendors en chunks más pequeños
+                        return 'vendor-other';
+                    }
+                },
             },
         },
+        // ✅ Chunk size warning limit
+        chunkSizeWarningLimit: 1000,
     },
 });

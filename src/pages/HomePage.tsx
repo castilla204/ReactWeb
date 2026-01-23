@@ -1,13 +1,41 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { HomepageWall } from '../components/HomepageWall';
-import { AirbnbSearchBar } from '../components/AirbnbSearchBar';
-import { MobileBottomBar } from '../components/MobileBottomBar';
-import { WelcomePopup } from '../components/WelcomePopup';
-import { HomepageSkeleton } from '../components/ui/homepage-skeleton';
 import { useCategories } from '../contexts/CategoryContext';
 import { useServiceTypes } from '../hooks/useServiceTypes';
+
+// ✅ LAZY LOADING: Cargar componentes pesados solo cuando se necesiten
+const HomepageWall = lazy(() => import('../components/HomepageWall').then(module => ({ default: module.HomepageWall })));
+const AirbnbSearchBar = lazy(() => import('../components/AirbnbSearchBar').then(module => ({ default: module.AirbnbSearchBar })));
+const MobileBottomBar = lazy(() => import('../components/MobileBottomBar').then(module => ({ default: module.MobileBottomBar })));
+const WelcomePopup = lazy(() => import('../components/WelcomePopup').then(module => ({ default: module.WelcomePopup })));
+
+// ✅ OPTIMIZADO PARA MÁXIMA FLUIDEZ: Animaciones más rápidas y suaves
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.15, // ✅ Reducido para transición más suave sin tirones
+      staggerChildren: 0.01, // ✅ Reducido para animación más rápida
+      ease: [0.4, 0.0, 0.2, 1], // ✅ easeInOut más suave
+      // ✅ Evitar tirones durante la transición
+      when: 'beforeChildren',
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 5 }, // ✅ Reducido para movimiento más sutil y sin tirones
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.2, // ✅ Reducido para transición más suave
+      ease: [0.4, 0.0, 0.2, 1], // ✅ easeInOut más suave
+    },
+  },
+};
 
 const HomePage: React.FC = () => {
   const location = useLocation();
@@ -43,85 +71,85 @@ const HomePage: React.FC = () => {
     adUrl: '',
   });
 
-  const handleSearch = (searchData: {
+  // ✅ Memoizar handleSearch para evitar re-renders innecesarios
+  const handleSearch = useCallback((searchData: {
     serviceTypeId: number | null;
     categoryId: number | null;
     adUrl: string;
   }) => {
-    setSearchFilters({
-      ...searchData,
-      categoryId: searchData.categoryId || 3,
+    setSearchFilters(prev => {
+      const newCategoryId = searchData.categoryId || 3;
+      // ✅ Solo actualizar si realmente cambió
+      if (prev.serviceTypeId === searchData.serviceTypeId && 
+          prev.categoryId === newCategoryId && 
+          prev.adUrl === searchData.adUrl) {
+        return prev;
+      }
+      return {
+        ...searchData,
+        categoryId: newCategoryId,
+      };
     });
-  };
+  }, []);
 
-  // ✅ Mostrar skeleton completo mientras carga
-  if (isLoading) {
-    return <HomepageSkeleton />;
-  }
-
-  // ✅ Animación simultánea para todos los elementos
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0.4,
-        staggerChildren: 0.05,
-        ease: [0.25, 0.46, 0.45, 0.94], // easeOutQuad
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: [0.25, 0.46, 0.45, 0.94],
-      },
-    },
-  };
+  // ✅ No mostrar skeleton completo, solo el HomepageWall mostrará su skeleton interno
 
   return (
-    <motion.div
-      className="min-h-screen bg-white"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {/* Welcome Popup - Solo se muestra la primera vez */}
-      <WelcomePopup />
-      
-      {/* Search Bar Header con Tabs */}
-      <motion.div variants={itemVariants}>
-        <AirbnbSearchBar onSearch={handleSearch} />
-      </motion.div>
-      
-      {/* Main Content with proper spacing - Same as Airbnb */}
+    <>
       <motion.div
-        className="pt-3 md:pt-10 md:pb-0"
-        style={{ 
-          paddingTop: '12px', 
-          paddingBottom: 'calc(65px + max(11px, env(safe-area-inset-bottom)))' // ✅ Altura exacta del bottom bar: 65px + padding
+        className="min-h-screen bg-white"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        style={{
+          // ✅ Optimizaciones máximas para fluidez en webview
+          willChange: 'contents',
+          contain: 'layout style paint',
+          // ✅ GPU acceleration
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
+          perspective: '1000px',
+          // ✅ Padding para el bottom bar siempre presente
+          paddingBottom: 'calc(65px + max(11px, env(safe-area-inset-bottom)))',
         }}
-        variants={itemVariants}
       >
-        <div className="md:pt-4" style={{ paddingTop: '8px' }} data-services-section>
-          <HomepageWall 
-            countryCode={countryCode}
-            serviceTypeId={searchFilters.serviceTypeId}
-            categoryId={searchFilters.categoryId}
-          />
-        </div>
+        {/* Welcome Popup - Solo se muestra la primera vez */}
+        <Suspense fallback={null}>
+          <WelcomePopup />
+        </Suspense>
+        
+        {/* Search Bar Header con Tabs */}
+        <motion.div variants={itemVariants}>
+          <Suspense fallback={<div className="h-20 bg-white" />}>
+            <AirbnbSearchBar onSearch={handleSearch} />
+          </Suspense>
+        </motion.div>
+        
+        {/* Main Content with proper spacing - Same as Airbnb */}
+        <motion.div
+          className="pt-3 md:pt-10 md:pb-0"
+          style={{ 
+            paddingTop: '12px', 
+          }}
+          variants={itemVariants}
+        >
+          <div className="md:pt-4" style={{ paddingTop: '8px' }} data-services-section>
+            <Suspense fallback={null}>
+              <HomepageWall 
+                countryCode={countryCode}
+                serviceTypeId={searchFilters.serviceTypeId}
+                categoryId={searchFilters.categoryId}
+              />
+            </Suspense>
+          </div>
+        </motion.div>
       </motion.div>
 
-      {/* Mobile Bottom Bar */}
-      <motion.div variants={itemVariants}>
+      {/* ✅ Mobile Bottom Bar - SIEMPRE PRESENTE (fuera del motion.div para estar siempre visible) */}
+      <Suspense fallback={null}>
         <MobileBottomBar />
-      </motion.div>
-    </motion.div>
+      </Suspense>
+    </>
   );
 };
 

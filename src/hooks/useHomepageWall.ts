@@ -13,6 +13,7 @@ interface HomepageWallParams {
   nearbyPageSize?: number;
   popularPage?: number;
   popularPageSize?: number;
+  _enabled?: boolean; // ✅ Flag interno para controlar si la query debe ejecutarse
 }
 
 export const useHomepageWallQuery = (params: HomepageWallParams) => {
@@ -21,17 +22,24 @@ export const useHomepageWallQuery = (params: HomepageWallParams) => {
     throw new Error('categoryId es requerido para homepage-wall');
   }
 
+  // ✅ OPTIMIZADO: Normalizar queryKey para evitar llamadas duplicadas
+  // CRÍTICO: Si _enabled es false, usar queryKey estable (sin lat/long) para evitar que React Query
+  // vea dos queries diferentes. Solo cuando _enabled es true, usar los valores reales.
+  // Esto evita que la query se ejecute dos veces: una sin lat/long y otra con lat/long
+  const normalizedLatitude = params._enabled !== false ? (params.latitude || '') : '';
+  const normalizedLongitude = params._enabled !== false ? (params.longitude || '') : '';
+
   return useQuery<HomepageWallResponse>({
     queryKey: ['homepage-wall', 
       params.categoryId, // ✅ categoryId es el primer parámetro (más importante)
-      params.latitude, 
-      params.longitude, 
-      params.countryCode, 
-      params.locationRange, 
-      params.nearbyPage, 
-      params.nearbyPageSize, 
-      params.popularPage, 
-      params.popularPageSize,
+      normalizedLatitude, 
+      normalizedLongitude, 
+      params.countryCode || '', 
+      params.locationRange || 50, 
+      params.nearbyPage || 1, 
+      params.nearbyPageSize || 20, 
+      params.popularPage || 1, 
+      params.popularPageSize || 20,
     ],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
@@ -154,6 +162,8 @@ export const useHomepageWallQuery = (params: HomepageWallParams) => {
     },
     staleTime: 5 * 60 * 1000, // Cache por 5 minutos
     refetchOnWindowFocus: false,
-    enabled: !!params.categoryId, // ✅ Solo ejecutar si categoryId está presente
+    refetchOnMount: false, // ✅ No refetch al montar si ya hay datos en cache
+    // ✅ CRÍTICO: Solo ejecutar si categoryId está presente Y si _enabled es true (geolocalización lista)
+    enabled: !!params.categoryId && (params._enabled !== false), // Por defecto true si no se especifica
   });
 };

@@ -62,7 +62,8 @@ const getImageWithCache = (filename: string, cacheKey: number): string => {
 };
 import { ResponsiveModal } from './ui/responsive-modal';
 import { Separator } from './ui/separator';
-import { CategorySkeletonShimmer, ServiceTypeSkeletonShimmer } from './ui/skeleton';
+import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import { MapPageSkeleton } from './ui/map-page-skeleton';
 
 const CATEGORIES = {
@@ -81,14 +82,27 @@ interface AirbnbSearchBarProps {
   }) => void;
 }
 
-export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) => {
+export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onSearch }) => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  // ✅ OPTIMIZADO: useServiceTypes y useCategories ya tienen cache, no hay problema en llamarlos aquí
+  // Además, AirbnbSearchBar puede usarse independientemente, así que es correcto tenerlos aquí
   const { serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
   const { categories, loading: categoriesLoading } = useCategories();
   
   // ✅ PRERENDERIZAR MAPA: Cargar Google Maps API en móvil para que esté listo cuando navegue
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+  // ✅ OPTIMIZADO: Solo cargar cuando realmente se necesita (móvil y cuando el modal está abierto)
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // ✅ Solo cargar Google Maps cuando es móvil Y el modal está abierto (o está a punto de abrirse)
   const { isLoaded: isMapPreloaded } = useLoadScript({
     googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
     libraries,
@@ -123,27 +137,17 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
   const categoriesContainerRef = useRef<HTMLDivElement>(null);
 
 
-  // Actualizar el cache key periódicamente para detectar cambios en imágenes
-  useEffect(() => {
-    // Actualizar frecuentemente para detectar cambios en las imágenes
-    const interval = setInterval(() => {
-      setImageCacheKey(Date.now());
-    }, 1000); // Actualizar cada 1 segundo para forzar recarga de imágenes
-    
-    return () => clearInterval(interval);
-  }, []);
-  
-  // También escuchar cambios en el archivo para forzar recarga inmediata
+  // ✅ OPTIMIZADO: Solo actualizar cache key en desarrollo y solo cuando sea necesario
   useEffect(() => {
     if (import.meta.env.DEV) {
-      // Forzar recarga cuando el componente se monta o se actualiza
+      // Solo en desarrollo: actualizar cache key cuando la ventana vuelve a estar visible
       const handleVisibilityChange = () => {
         if (!document.hidden) {
           setImageCacheKey(Date.now());
         }
       };
       
-      // Forzar recarga al hacer foco en la ventana
+      // Forzar recarga al hacer foco en la ventana (solo en dev)
       const handleFocus = () => {
         setImageCacheKey(Date.now());
       };
@@ -590,11 +594,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 >
                   <div className="max-h-[300px] overflow-y-auto py-2">
                     {serviceTypesLoading ? (
-                      <div className="p-2 space-y-0">
-                        {[...Array(3)].map((_, index) => (
-                          <ServiceTypeSkeletonShimmer key={index} />
-                        ))}
-                      </div>
+                      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+                        <div className="p-2 space-y-2">
+                          {[...Array(3)].map((_, index) => (
+                            <Skeleton key={index} height={48} borderRadius={8} />
+                          ))}
+                        </div>
+                      </SkeletonTheme>
                     ) : normalizedServiceTypes.length === 0 ? (
                       <div className="p-4 text-center text-sm text-gray-500">No hay tipos disponibles</div>
                     ) : (
@@ -681,11 +687,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 >
                   <div className="max-h-[300px] overflow-y-auto py-2">
                     {categoriesLoading ? (
-                      <div className="p-2 space-y-0">
-                        {[...Array(3)].map((_, index) => (
-                          <CategorySkeletonShimmer key={index} />
-                        ))}
-                      </div>
+                      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+                        <div className="p-2 space-y-2">
+                          {[...Array(3)].map((_, index) => (
+                            <Skeleton key={index} height={80} width={80} borderRadius={12} />
+                          ))}
+                        </div>
+                      </SkeletonTheme>
                     ) : normalizedCategories.length === 0 ? (
                       <div 
                         className="p-4 text-center text-sm text-gray-500"
@@ -1067,11 +1075,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                     <div className="flex-1 overflow-y-auto px-4 py-4">
                       <div>
                         {categoriesLoading ? (
-                          <div className="space-y-0">
-                            {[...Array(4)].map((_, index) => (
-                              <CategorySkeletonShimmer key={index} />
-                            ))}
-                          </div>
+                          <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+                            <div className="space-y-2">
+                              {[...Array(4)].map((_, index) => (
+                                <Skeleton key={index} height={80} width={80} borderRadius={12} />
+                              ))}
+                            </div>
+                          </SkeletonTheme>
                         ) : (
                     <div>
                               {normalizedCategories
@@ -1248,11 +1258,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                     <div className="flex-1 overflow-y-auto px-4 py-4">
                       <div>
                         {categoriesLoading ? (
-                          <div className="space-y-0">
-                            {[...Array(4)].map((_, index) => (
-                              <CategorySkeletonShimmer key={index} />
-                            ))}
-                          </div>
+                          <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+                            <div className="space-y-2">
+                              {[...Array(4)].map((_, index) => (
+                                <Skeleton key={index} height={80} width={80} borderRadius={12} />
+                              ))}
+                            </div>
+                          </SkeletonTheme>
                         ) : (
                           <div>
                             {normalizedCategories
@@ -1408,11 +1420,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
                 {expandedAccordion === 'type' && (
                   <div className="px-4 pb-6">
                       {serviceTypesLoading ? (
-                      <div className="space-y-2">
-                        {[...Array(4)].map((_, index) => (
-                          <ServiceTypeSkeletonShimmer key={index} />
-                        ))}
-                      </div>
+                      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+                        <div className="space-y-2">
+                          {[...Array(4)].map((_, index) => (
+                            <Skeleton key={index} height={48} borderRadius={8} />
+                          ))}
+                        </div>
+                      </SkeletonTheme>
                       ) : (
                       <div className="flex flex-col gap-2">
                         {normalizedServiceTypes.map((st) => (
@@ -1588,11 +1602,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
             }}
           >
             {categoriesLoading ? (
-              <div className="flex flex-col px-4 py-6">
-                {[...Array(4)].map((_, index) => (
-                  <CategorySkeletonShimmer key={index} />
-                ))}
-              </div>
+              <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+                <div className="flex flex-col px-4 py-6 space-y-2">
+                  {[...Array(4)].map((_, index) => (
+                    <Skeleton key={index} height={64} borderRadius={8} />
+                  ))}
+                </div>
+              </SkeletonTheme>
             ) : (
               <div className="flex flex-col pb-4">
                 {normalizedCategories
@@ -1736,4 +1752,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = ({ onSearch }) =>
     </header>
     </>
   );
-};
+}, (prevProps, nextProps) => {
+  // ✅ Comparación personalizada: solo re-renderizar si onSearch cambia
+  return prevProps.onSearch === nextProps.onSearch;
+});

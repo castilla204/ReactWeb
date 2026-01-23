@@ -1,4 +1,5 @@
-import { CategorySkeletonShimmer } from './skeleton';
+import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 export function MapPageSkeleton() {
   return (
@@ -22,11 +23,13 @@ export function MapPageSkeleton() {
           <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
         </div>
         
-        <div className="space-y-0">
-          {[...Array(3)].map((_, index) => (
-            <CategorySkeletonShimmer key={index} />
-          ))}
-        </div>
+        <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+          <div className="space-y-2">
+            {[...Array(3)].map((_, index) => (
+              <Skeleton key={index} height={64} borderRadius={8} />
+            ))}
+          </div>
+        </SkeletonTheme>
       </div>
     </div>
   );
