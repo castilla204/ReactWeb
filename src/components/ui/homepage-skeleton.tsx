@@ -1,130 +1,266 @@
-import { ShimmerSkeleton } from './skeleton';
+import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 export function HomepageSkeleton() {
   return (
-    <div className="min-h-screen bg-white">
-      {/* ✅ Header skeleton (AirbnbSearchBar) */}
-      <div className="sticky top-0 z-50 bg-[#fbfbfb] border-b border-gray-200">
-        {/* Desktop header skeleton */}
-        <div className="hidden md:block max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          {/* Tabs skeleton */}
-          <div className="flex items-center justify-center mb-3 max-w-[850px] mx-auto gap-8">
-            {[...Array(3)].map((_, index) => (
-              <div key={index} className="flex items-center gap-3 py-2">
-                <ShimmerSkeleton className="w-6 h-6 rounded" />
-                <ShimmerSkeleton className="h-4 w-20 rounded" />
+    <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+      <div 
+        className="min-h-screen bg-white"
+        style={{
+          // ✅ Evitar layout shifts - Estructura estable
+          position: 'relative',
+          overflow: 'hidden',
+          // ✅ Asegurar que el bottom bar siempre esté presente
+          paddingBottom: 'calc(65px + max(11px, env(safe-area-inset-bottom)))',
+        }}
+      >
+        {/* ✅ Bottom Bar skeleton - SIEMPRE PRESENTE EN MÓVIL (elemento estático) */}
+        <nav 
+          className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50" 
+          style={{ 
+            height: '65px', 
+            paddingTop: '11px', 
+            paddingBottom: 'max(11px, env(safe-area-inset-bottom))',
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+            display: 'block',
+            visibility: 'visible',
+          }}
+        >
+          <div 
+            className="flex items-center justify-center h-[44px] px-1 gap-0 w-full"
+            style={{ height: '44px' }}
+          >
+            {[...Array(4)].map((_, index) => (
+              <div 
+                key={index} 
+                className="flex flex-col items-center justify-center" 
+                style={{ 
+                  width: '80px', 
+                  height: '44px',
+                  flexShrink: 0,
+                }}
+              >
+                <Skeleton 
+                  height={24} 
+                  width={24} 
+                  borderRadius="50%" 
+                  className="mb-1"
+                  style={{ display: 'block' }}
+                />
+                <Skeleton 
+                  height={8} 
+                  width={48} 
+                  borderRadius={4}
+                  style={{ display: 'block' }}
+                />
               </div>
             ))}
           </div>
-          
-          {/* Search bar skeleton */}
-          <div className="max-w-[850px] mx-auto">
-            <div className="flex items-center gap-4">
-              <ShimmerSkeleton className="h-14 flex-1 rounded-full" />
+        </nav>
+
+        {/* ✅ Header skeleton - Solo Desktop (sin drawer en móvil) */}
+        <div className="hidden md:block bg-white border-b border-gray-200">
+          <div className="max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div 
+              className="flex items-center justify-center mb-3 max-w-[850px] mx-auto gap-8"
+              style={{ minHeight: '40px' }}
+            >
+              {[...Array(3)].map((_, index) => (
+                <Skeleton key={index} height={40} width={96} borderRadius={4} />
+              ))}
+            </div>
+            <div className="max-w-[850px] mx-auto" style={{ minHeight: '56px' }}>
+              <Skeleton height={56} borderRadius={9999} />
             </div>
           </div>
         </div>
-        
-        {/* Mobile header skeleton */}
-        <div className="md:hidden px-4 py-4">
-          <ShimmerSkeleton className="h-14 w-full rounded-full" />
-        </div>
-      </div>
 
-      {/* ✅ Main content skeleton */}
-      <div className="pt-3 md:pt-10 md:pb-0" style={{ 
-        paddingTop: '12px', 
-        paddingBottom: 'calc(65px + max(11px, env(safe-area-inset-bottom)))'
-      }}>
-        <div className="md:pt-4" style={{ paddingTop: '8px' }}>
-          <div className="w-full flex justify-center">
-            <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
-              {/* Skeleton para secciones */}
-              <div className="space-y-8 md:space-y-12">
-                {/* Primera sección skeleton */}
-                <div>
-                  <div className="mb-4 px-6 md:px-0">
-                    <ShimmerSkeleton className="h-6 w-48 rounded mb-2" />
-                    <ShimmerSkeleton className="h-4 w-32 rounded" />
+        {/* ✅ Main content - Estructura exacta del contenido real */}
+        <div 
+          className="pt-3 md:pt-10 md:pb-0" 
+          style={{ 
+            paddingTop: '12px', 
+            paddingBottom: 'calc(65px + max(11px, env(safe-area-inset-bottom)))',
+            // ✅ Altura mínima estable para evitar shifts
+            // En móvil: 100vh - 65px (bottom bar), en desktop: 100vh - 120px (header) - 65px (bottom bar)
+            minHeight: 'calc(100vh - 65px)',
+          }}
+        >
+          <div className="md:pt-4" style={{ paddingTop: '8px' }}>
+            <div className="w-full flex justify-center">
+              <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
+                <div className="space-y-8 md:space-y-12">
+                  {/* Primera sección - Estructura exacta */}
+                  <div style={{ minHeight: '240px' }}>
+                    {/* Título y subtítulo - Altura fija */}
+                    <div 
+                      className="mb-4 px-6 md:px-0" 
+                      style={{ 
+                        minHeight: '48px',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <Skeleton height={24} width={192} borderRadius={4} className="mb-2" />
+                      <Skeleton height={16} width={128} borderRadius={4} />
+                    </div>
+                    {/* Cards horizontales - Altura fija del contenedor */}
+                    <div 
+                      className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" 
+                      style={{ 
+                        scrollbarWidth: 'none', 
+                        msOverflowStyle: 'none',
+                        // ✅ Altura fija exacta: 160px imagen + 16px texto + 8px margin = 184px
+                        minHeight: '184px',
+                        height: '184px',
+                      }}
+                    >
+                      {[...Array(4)].map((_, index) => (
+                        <div 
+                          key={index} 
+                          className="flex-shrink-0" 
+                          style={{ 
+                            width: '160px', 
+                            height: '184px',
+                            // ✅ Evitar reflows
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Skeleton 
+                            height={160} 
+                            width={160} 
+                            borderRadius={20} 
+                            className="mb-2"
+                            style={{ 
+                              display: 'block',
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Skeleton 
+                            height={16} 
+                            width="100%" 
+                            borderRadius={4}
+                            style={{ 
+                              display: 'block',
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    {[...Array(4)].map((_, index) => (
-                      <div key={index} className="flex-shrink-0 w-[160px] md:w-[169px] animate-fade-in">
-                        <div className="relative">
-                          <ShimmerSkeleton className="w-full aspect-square rounded-[20px] mb-2" />
-                          <div className="absolute top-3 left-3">
-                            <ShimmerSkeleton className="h-6 w-20 rounded-full" />
-                          </div>
-                          <div className="absolute top-3 right-3">
-                            <ShimmerSkeleton className="h-8 w-8 rounded-full" />
-                          </div>
+                  
+                  {/* Segunda sección - Estructura exacta */}
+                  <div style={{ minHeight: '240px' }}>
+                    <div 
+                      className="mb-4 px-6 md:px-0" 
+                      style={{ 
+                        minHeight: '48px',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <Skeleton height={24} width={192} borderRadius={4} className="mb-2" />
+                      <Skeleton height={16} width={128} borderRadius={4} />
+                    </div>
+                    <div 
+                      className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" 
+                      style={{ 
+                        scrollbarWidth: 'none', 
+                        msOverflowStyle: 'none',
+                        // ✅ Altura fija exacta
+                        minHeight: '184px',
+                        height: '184px',
+                      }}
+                    >
+                      {[...Array(4)].map((_, index) => (
+                        <div 
+                          key={index} 
+                          className="flex-shrink-0" 
+                          style={{ 
+                            width: '160px', 
+                            height: '184px',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Skeleton 
+                            height={160} 
+                            width={160} 
+                            borderRadius={20} 
+                            className="mb-2"
+                            style={{ 
+                              display: 'block',
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Skeleton 
+                            height={16} 
+                            width="100%" 
+                            borderRadius={4}
+                            style={{ 
+                              display: 'block',
+                            }}
+                          />
                         </div>
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <ShimmerSkeleton className="h-4 w-3/4 rounded" />
-                            <ShimmerSkeleton className="h-4 w-12 rounded" />
-                          </div>
-                          <ShimmerSkeleton className="h-3 w-1/2 rounded" />
-                          <div className="flex items-center gap-2">
-                            <ShimmerSkeleton className="h-3 w-16 rounded" />
-                            <ShimmerSkeleton className="h-3 w-16 rounded" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Segunda sección skeleton */}
-                <div>
-                  <div className="mb-4 px-6 md:px-0">
-                    <ShimmerSkeleton className="h-6 w-48 rounded mb-2" />
-                    <ShimmerSkeleton className="h-4 w-32 rounded" />
-                  </div>
-                  <div className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    {[...Array(4)].map((_, index) => (
-                      <div key={index} className="flex-shrink-0 w-[160px] md:w-[169px] animate-fade-in">
-                        <div className="relative">
-                          <ShimmerSkeleton className="w-full aspect-square rounded-[20px] mb-2" />
-                          <div className="absolute top-3 left-3">
-                            <ShimmerSkeleton className="h-6 w-20 rounded-full" />
-                          </div>
-                          <div className="absolute top-3 right-3">
-                            <ShimmerSkeleton className="h-8 w-8 rounded-full" />
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <ShimmerSkeleton className="h-4 w-3/4 rounded" />
-                            <ShimmerSkeleton className="h-4 w-12 rounded" />
-                          </div>
-                          <ShimmerSkeleton className="h-3 w-1/2 rounded" />
-                          <div className="flex items-center gap-2">
-                            <ShimmerSkeleton className="h-3 w-16 rounded" />
-                            <ShimmerSkeleton className="h-3 w-16 rounded" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ✅ Mobile Bottom Bar skeleton */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50" style={{ height: '65px', paddingTop: '11px', paddingBottom: 'max(11px, env(safe-area-inset-bottom))' }}>
-        <div className="flex items-center justify-center h-[44px] px-1 gap-0 w-full">
-          {[...Array(4)].map((_, index) => (
-            <div key={index} className="flex flex-col items-center justify-center" style={{ width: '80px', height: '44px' }}>
-              <ShimmerSkeleton className="w-6 h-6 rounded mb-1" />
-              <ShimmerSkeleton className="h-2 w-12 rounded" />
-            </div>
-          ))}
-        </div>
-      </nav>
-    </div>
+        {/* ✅ Bottom Bar skeleton - Visible en móvil */}
+        <nav 
+          className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50" 
+          style={{ 
+            height: '65px', 
+            paddingTop: '11px', 
+            paddingBottom: 'max(11px, env(safe-area-inset-bottom))',
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+            // ✅ Asegurar visibilidad
+            display: 'block',
+            visibility: 'visible',
+          }}
+        >
+          <div 
+            className="flex items-center justify-center h-[44px] px-1 gap-0 w-full"
+            style={{ height: '44px' }}
+          >
+            {[...Array(4)].map((_, index) => (
+              <div 
+                key={index} 
+                className="flex flex-col items-center justify-center" 
+                style={{ 
+                  width: '80px', 
+                  height: '44px',
+                  flexShrink: 0,
+                }}
+              >
+                <Skeleton 
+                  height={24} 
+                  width={24} 
+                  borderRadius="50%" 
+                  className="mb-1"
+                  style={{ display: 'block' }}
+                />
+                <Skeleton 
+                  height={8} 
+                  width={48} 
+                  borderRadius={4}
+                  style={{ display: 'block' }}
+                />
+              </div>
+            ))}
+          </div>
+        </nav>
+      </div>
+    </SkeletonTheme>
   );
 }

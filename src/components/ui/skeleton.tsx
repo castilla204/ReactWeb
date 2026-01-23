@@ -68,42 +68,18 @@ export function ServiceTypeSkeletonShimmer() {
   );
 }
 
-// ✅ Skeleton para card de servicio de homepage (móvil y desktop)
+// ✅ Skeleton simplificado para card de servicio de homepage (menos detalles)
 export function HomepageServiceCardSkeleton() {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const cardWidth = isMobile ? '160px' : '169px';
   
   return (
-    <div className="flex-shrink-0 animate-fade-in" style={{ width: cardWidth }}>
-      <div className="relative cursor-pointer group w-full">
-        {/* Imagen skeleton */}
-        <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '20px', width: '100%' }}>
-          <ShimmerSkeleton className="w-full h-full rounded-[20px]" />
-          
-          {/* Badge skeleton */}
-          <div className="absolute top-3 left-3 z-10">
-            <ShimmerSkeleton className="h-6 w-20 rounded-full" />
-          </div>
-          
-          {/* Botón favorito skeleton */}
-          <div className="absolute top-3 right-3 z-10">
-            <ShimmerSkeleton className="h-8 w-8 rounded-full" />
-          </div>
-        </div>
-        
-        {/* Información skeleton */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <ShimmerSkeleton className="h-4 w-3/4 rounded" />
-            <ShimmerSkeleton className="h-4 w-12 rounded" />
-          </div>
-          <ShimmerSkeleton className="h-3 w-1/2 rounded" />
-          <div className="flex items-center gap-2">
-            <ShimmerSkeleton className="h-3 w-16 rounded" />
-            <ShimmerSkeleton className="h-3 w-16 rounded" />
-          </div>
-        </div>
-      </div>
+    <div className="flex-shrink-0" style={{ width: cardWidth }}>
+      {/* Imagen skeleton simplificada - sin badges ni botones */}
+      <ShimmerSkeleton className="w-full aspect-square rounded-[20px] mb-2" />
+      {/* Texto skeleton simplificado - solo 2 líneas */}
+      <ShimmerSkeleton className="h-4 w-3/4 rounded mb-1" />
+      <ShimmerSkeleton className="h-3 w-1/2 rounded" />
     </div>
   );
 }
