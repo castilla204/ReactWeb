@@ -3,22 +3,7 @@ import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
 import { ExpertStatusResponse, StripeSyncStatusResponse, StripeStatus } from '../types/stripe';
 import { handleStripeStatusChange } from '../utils/stripeNotifications';
-
-// Estados de Stripe alineados con backend 2025
-export const STRIPE_STATUS = {
-    NOT_REQUESTED: 'NotRequested',
-    PENDING: 'Pending',
-    ACTION_REQUIRED: 'ActionRequired',
-    PENDING_VERIFICATION: 'PendingVerification',
-    REQUIREMENTS_DUE: 'RequirementsDue',
-    REQUIREMENTS_PAST_DUE: 'RequirementsPastDue',
-    RESTRICTED_SOON: 'RestrictedSoon',
-    RESTRICTED: 'Restricted',
-    DISABLED: 'Disabled',
-    APPROVED: 'Approved',
-    REJECTED: 'Rejected',
-    DEAUTHORIZED: 'Deauthorized'
-} as const;
+import { STRIPE_STATUS } from '../constants/stripeStatus';
 
 const POLLING_STATUSES = new Set<string>([
     STRIPE_STATUS.PENDING,

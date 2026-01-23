@@ -1,0 +1,34 @@
+═══════════════════════════════════════════════════════════════
+  SHA-1 FINGERPRINT PARA GOOGLE CLOUD CONSOLE
+═══════════════════════════════════════════════════════════════
+
+COPIA Y PEGA ESTE VALOR EN GOOGLE CLOUD CONSOLE:
+
+A7:77:CA:D5:A4:43:D5:EA:C5:A2:66:C5:40:CA:94:4D:94:42:65:10
+
+═══════════════════════════════════════════════════════════════
+  INSTRUCCIONES
+═══════════════════════════════════════════════════════════════
+
+1. Ve a: https://console.cloud.google.com/apis/credentials
+
+2. Haz clic en "+ CREATE CREDENTIALS" > "OAuth client ID"
+
+3. Selecciona "Android" como Application type
+
+4. Completa los campos:
+   - Name: Inspecciono Android
+   - Package name: com.inspecciono.app
+   - SHA-1 certificate fingerprint: [PEGA EL SHA-1 DE ARRIBA]
+
+5. Haz clic en "CREATE"
+
+6. Copia el Client ID que se genera (formato: xxxxx.apps.googleusercontent.com)
+
+═══════════════════════════════════════════════════════════════
+  VALOR COMPLETO (sin espacios)
+═══════════════════════════════════════════════════════════════
+
+A7:77:CA:D5:A4:43:D5:EA:C5:A2:66:C5:40:CA:94:4D:94:42:65:10
+
+═══════════════════════════════════════════════════════════════

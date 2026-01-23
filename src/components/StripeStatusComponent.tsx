@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle, AlertTriangle, Clock, XCircle, UserX } from 'lucide-react';
-import { STRIPE_STATUS } from '../hooks/useExpertStripeStatus';
+import { STRIPE_STATUS } from '../constants/stripeStatus';
 
 interface StripeStatusComponentProps {
     stripeStatus: string;

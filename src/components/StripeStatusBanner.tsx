@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, AlertDescription } from './ui/alert';
 import { Info, AlertTriangle, X } from 'lucide-react';
-import { STRIPE_STATUS } from '../hooks/useExpertStripeStatus';
+import { STRIPE_STATUS } from '../constants/stripeStatus';
 import { Button } from './ui/button';
 
 interface StripeStatusBannerProps {

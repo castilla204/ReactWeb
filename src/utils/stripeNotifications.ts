@@ -1,4 +1,4 @@
-import { STRIPE_STATUS } from '../hooks/useExpertStripeStatus';
+import { STRIPE_STATUS } from '../constants/stripeStatus';
 
 export interface StripeNotificationData {
     stripeStatus: string;

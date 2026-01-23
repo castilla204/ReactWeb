@@ -61,8 +61,11 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos
             
+            // ✅ Usar capacitorFetch que automáticamente usa CapacitorHttp en Capacitor (bypass CORS)
+            const { capacitorFetch } = await import('../utils/capacitorFetch');
+            
             // ✅ Crear promise y guardarlo en cache para evitar llamadas duplicadas
-            const fetchPromise = fetch(url, {
+            const fetchPromise = capacitorFetch(url, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

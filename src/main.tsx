@@ -1,8 +1,9 @@
-import { StrictMode } from 'react'
+import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+// ✅ ReactQueryDevtools solo en desarrollo - importación condicional
+// En producción, Vite tree-shake eliminará este código
 import { toast } from 'sonner'
 import App from './App.tsx'
 import { AuthProvider } from './contexts/AuthContext'
@@ -153,7 +154,9 @@ createRoot(document.getElementById('root')!).render(
                         </MfaVerificationProvider>
                     </CategoryProvider>
                 </AuthProvider>
-                <ReactQueryDevtools initialIsOpen={false} />
+                {/* ✅ ReactQueryDevtools solo en desarrollo - completamente excluido del build de producción */}
+                {/* En desarrollo, descomentar la siguiente línea: */}
+                {/* {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />} */}
             </QueryClientProvider>
         </GoogleOAuthProvider>
     </StrictMode>,

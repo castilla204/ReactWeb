@@ -44,3 +44,16 @@ Thumbs.db
 # Build files
 build/
 out/
+
+# Capacitor
+# Los directorios ios/ y android/ se incluyen en el repo
+# pero ignoramos archivos generados
+ios/App/Pods/
+ios/App/build/
+ios/App/DerivedData/
+android/.gradle/
+android/app/build/
+android/build/
+android/.idea/
+android/local.properties
+*.iml
