@@ -404,8 +404,18 @@ export const MobileBottomBar: React.FC = () => {
           }
         } catch (error: any) {
           console.error('❌ [MobileBottomBar] Error en autenticación nativa:', error);
-          const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
-          toast.error(errorMessage, { duration: 5000 });
+          
+          // Mensaje de error más descriptivo para el error 28444
+          let errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
+          
+          if (errorMessage.includes('28444') || errorMessage.includes('Developer console is not set up correctly')) {
+            errorMessage = 'Error de configuración de Google. Verifica que el SHA-1 esté configurado correctamente en Google Cloud Console. Consulta SOLUCION_ERROR_28444_GOOGLE_SIGNIN.md para más detalles.';
+          }
+          
+          toast.error(errorMessage, { 
+            duration: 8000,
+            description: 'Si el problema persiste, verifica la configuración en Google Cloud Console.'
+          });
         } finally {
           setIsGoogleLoading(false);
         }

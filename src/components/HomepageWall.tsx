@@ -56,6 +56,10 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
   const [imageIndex, setImageIndex] = useState(0);
   const isMobile = useIsMobile();
 
+  // ✅ OPTIMIZADO: Memoizar cálculos costosos PRIMERO
+  const imageUrls = useMemo(() => service.imageUrls || [], [service.imageUrls]);
+  const hasMultipleImages = useMemo(() => imageUrls.length > 1, [imageUrls.length]);
+  
   // Sincronizar con el estado del servicio cuando cambia (viene del backend)
   useEffect(() => {
     if (service.isFavorite !== undefined) {
@@ -65,12 +69,12 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
     }
   }, [service.isFavorite, initialIsFavorite]);
 
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     // Navegar a la página de detalle del servicio primero
     navigate(`/service/${service.id}`);
-  };
+  }, [navigate, service.id]);
 
-  const handleFavoriteClick = async (e: React.MouseEvent) => {
+  const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     
@@ -87,11 +91,10 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
       console.error('Error al actualizar favorito:', error);
       showToast('error', error.message || 'Error al actualizar favorito', 3000);
     }
-  };
+  }, [isAuthenticated, toggleFavoriteAsync, service.id]);
 
-  const handleImageNavigation = (e: React.MouseEvent, direction: 'prev' | 'next') => {
+  const handleImageNavigation = useCallback((e: React.MouseEvent, direction: 'prev' | 'next') => {
     e.stopPropagation();
-    const imageUrls = service.imageUrls || [];
     if (imageUrls.length <= 1) return;
     
     if (direction === 'next') {
@@ -99,18 +102,21 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
     } else {
       setImageIndex((prev) => (prev - 1 + imageUrls.length) % imageUrls.length);
     }
-  };
-
-  const imageUrls = service.imageUrls || [];
-  const hasMultipleImages = imageUrls.length > 1;
-  const isGuestFavorite = forceGuestFavorite || (service.completedSearches > 10 && service.averageRating >= 4.5);
+  }, [imageUrls.length]);
+  const isGuestFavorite = useMemo(() => 
+    forceGuestFavorite || (service.completedSearches > 10 && service.averageRating >= 4.5),
+    [forceGuestFavorite, service.completedSearches, service.averageRating]
+  );
 
   // ✅ Información real del servicio para la segunda línea: Precio · Horario
   // Precio del servicio
-  const price = service.price ? `€${Math.round(service.price)}` : 'Consultar';
+  const price = useMemo(() => 
+    service.price ? `€${Math.round(service.price)}` : 'Consultar',
+    [service.price]
+  );
   
   // Horario de disponibilidad (formato compacto para que quepa)
-  const formatAvailability = () => {
+  const formatAvailability = useCallback(() => {
     const availability = service.expert?.currentAvailability;
     if (!availability) return 'Flexible';
     
@@ -145,9 +151,9 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
       return `${dayAbbr} ${startHour}-${endHour}h`;
     }
     return dayAbbr || 'Flexible';
-  };
+  }, [service.expert?.currentAvailability]);
   
-  const availabilityInfo = formatAvailability();
+  const availabilityInfo = useMemo(() => formatAvailability(), [formatAvailability]);
 
   return (
     <a
@@ -160,7 +166,7 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
       style={{ width: isMobile ? '160px' : '169px' }}
     >
       {/* Contenedor principal - Estructura exacta de Airbnb */}
-      <div 
+      <motion.div 
         className="relative cursor-pointer group w-full"
         style={{
           // ✅ Optimizaciones máximas para fluidez
@@ -170,6 +176,9 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
           transform: 'translateZ(0)',
           backfaceVisibility: 'hidden',
         }}
+        whileHover={{ scale: 1.05, y: -4 }} // ✅ Efecto hover más pronunciado con elevación
+        whileTap={{ scale: 0.95 }} // ✅ Efecto de presión al hacer tap
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
       >
         {/* Contenedor de imagen con todos los subdivs */}
         <div 
@@ -473,7 +482,7 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </a>
   );
 }, (prevProps, nextProps) => {
@@ -499,10 +508,12 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
   subtitle,
   services,
   forceGuestFavorite = false,
+  isLastSection = false, // ✅ Solo la última sección tendrá margen inferior
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   // ✅ OPTIMIZADO: Debounce para scroll events
   const checkScroll = useCallback(() => {
@@ -517,14 +528,26 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
     checkScroll();
     const scrollElement = scrollRef.current;
     if (scrollElement) {
-      // ✅ OPTIMIZADO: Usar requestAnimationFrame para máxima fluidez
+      // ✅ OPTIMIZADO: Throttling mejorado con performance.now para ~60fps
       let rafId: number | null = null;
+      let lastScrollTime = 0;
+      const THROTTLE_MS = 16; // ~60fps
+      
       const throttledCheckScroll = () => {
-        if (rafId === null) {
-          rafId = requestAnimationFrame(() => {
-            checkScroll();
-            rafId = null;
-          });
+        const now = performance.now();
+        if (now - lastScrollTime >= THROTTLE_MS) {
+          lastScrollTime = now;
+          if (rafId === null) {
+            rafId = requestAnimationFrame(() => {
+              checkScroll();
+              // ✅ Calcular progreso del scroll para efecto parallax
+              const { scrollLeft, scrollWidth, clientWidth } = scrollElement;
+              const maxScroll = scrollWidth - clientWidth;
+              const progress = maxScroll > 0 ? scrollLeft / maxScroll : 0;
+              setScrollProgress(progress);
+              rafId = null;
+            });
+          }
         }
       };
       
@@ -536,9 +559,9 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
         scrollElement.removeEventListener('scroll', throttledCheckScroll);
       };
     }
-  }, [services, checkScroll]);
+  }, [checkScroll]);
 
-  const scroll = (direction: 'left' | 'right') => {
+  const scroll = useCallback((direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const scrollAmount = 300;
       // ✅ OPTIMIZADO: Usar requestAnimationFrame para scroll más fluido
@@ -549,15 +572,15 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
         });
       });
     }
-  };
+  }, []);
 
   if (services.length === 0) return null;
 
   return (
     <div 
-      className="mb-12" 
+      className={isLastSection ? "" : ""} // ✅ Sin margen inferior adicional
       style={{ 
-        marginBottom: '32px',
+        marginBottom: isLastSection ? '0px' : '0px', // ✅ Sin margen inferior - el footer ya tiene su margen
         // ✅ Optimizaciones para webview
         willChange: 'contents',
         contain: 'layout style paint',
@@ -585,7 +608,13 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
                   padding: 0,
                 }}
               >
-                <span>{title.replace(' >', '')}</span>
+                <span style={{
+                  fontSize: '18px',
+                  lineHeight: '24px',
+                  fontWeight: 600,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  color: 'rgb(34, 34, 34)',
+                }}>{title.replace(' >', '')}</span>
               </h2>
             </a>
             {subtitle && (
@@ -654,25 +683,67 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
           style={{
             paddingLeft: '24px',
             paddingRight: '24px',
-            // ✅ Optimizaciones para scroll en webview
-            WebkitOverflowScrolling: 'touch',
+            // ✅ Scroll táctil mejorado - Momentum y snap
+            WebkitOverflowScrolling: 'touch', // Momentum scrolling en iOS
+            scrollBehavior: 'smooth', // Scroll suave
+            scrollSnapType: 'x mandatory', // Snap a posiciones
+            scrollPaddingLeft: '24px', // ✅ Respeta el padding izquierdo en snap
+            scrollPaddingRight: '24px', // ✅ Respeta el padding derecho en snap
+            overscrollBehaviorX: 'contain', // Evita bounce del body
             willChange: 'scroll-position',
             contain: 'layout style paint',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
-            WebkitOverflowScrolling: 'touch',
             gap: '12px',
+            // ✅ Perspectiva 3D para efecto parallax
+            perspective: '1000px',
           }}
           onScroll={checkScroll}
         >
-          {services.map((service) => (
-            <ServiceCard 
-              key={service.id} 
-              service={service} 
-              forceGuestFavorite={forceGuestFavorite}
-              initialIsFavorite={service.isFavorite ?? false}
-            />
-          ))}
+          {useMemo(() => services.map((service, index) => {
+            // ✅ OPTIMIZADO: Memoizar cálculos de parallax
+            const parallaxY = Math.sin((index * 0.5) + scrollProgress * Math.PI * 2) * 3;
+            const parallaxRotate = Math.sin((index * 0.3) + scrollProgress * Math.PI) * 2;
+            
+            return (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, scale: 0.95, x: 30 }}
+                animate={{ 
+                  opacity: 1, 
+                  scale: 1, 
+                  x: 0,
+                  // ✅ Efecto parallax suave basado en scroll
+                  y: parallaxY,
+                  rotateY: parallaxRotate,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500, // ✅ Aumentado para respuesta más rápida
+                  damping: 35, // ✅ Aumentado para menos rebote
+                  delay: index * 0.015, // ✅ Reducido delay para entrada más rápida
+                  // ✅ Transición ultra-rápida para cambios de scroll
+                  y: { type: "spring", stiffness: 200, damping: 25 },
+                  rotateY: { type: "spring", stiffness: 200, damping: 25 },
+                }}
+                style={{ 
+                  flexShrink: 0,
+                  transformStyle: 'preserve-3d',
+                  backfaceVisibility: 'hidden',
+                  willChange: 'transform, opacity',
+                  // ✅ Scroll snap para efecto táctil
+                  scrollSnapAlign: 'start',
+                  scrollSnapStop: 'normal',
+                }}
+              >
+                <ServiceCard 
+                  service={service} 
+                  forceGuestFavorite={forceGuestFavorite}
+                  initialIsFavorite={service.isFavorite ?? false}
+                />
+              </motion.div>
+            );
+          }), [services, scrollProgress, forceGuestFavorite])}
         </div>
 
         {/* Scroll buttons - Solo en desktop */}
@@ -774,6 +845,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   // No necesitamos solicitar permisos de geolocalización del navegador
   // Pasamos null para lat/long y el backend detecta automáticamente la ubicación por IP
   
+  // ✅ CRÍTICO: Todos los hooks deben estar ANTES de cualquier return condicional
   // Memoizar los parámetros de la query para evitar re-renderizados innecesarios
   const queryParams = useMemo(() => ({
     categoryId,
@@ -788,7 +860,8 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     _enabled: true, // ✅ Siempre habilitado, no hay que esperar geolocalización
   }), [categoryId, countryCode]);
 
-  const { data: sections, isLoading, error } = useHomepageWallQuery(queryParams);
+  // ✅ isFetching se actualiza inmediatamente cuando cambia categoryId (query key cambia)
+  const { data: sections, isLoading, error, isFetching } = useHomepageWallQuery(queryParams);
 
   // ✅ CRÍTICO: Todos los hooks deben estar ANTES de los early returns
   // ✅ Memoizar función de mapeo para evitar recrearla en cada render
@@ -852,21 +925,65 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     };
   }, [serviceTypeId, mapServiceToDetail]);
 
-  // ✅ OPTIMIZADO PARA MÁXIMA FLUIDEZ: Animaciones más rápidas y suaves
+  // ✅ OPTIMIZADO PARA MÁXIMA FLUIDEZ: Animaciones ultra-rápidas y coordinadas
   const sectionVariants = useMemo(() => ({
-    hidden: { opacity: 0, y: 10 }, // ✅ Reducido de y: 20 a y: 10
+    hidden: { opacity: 0, y: 5 }, // ✅ Reducido para transición más rápida
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.25, // ✅ Reducido de 0.5 a 0.25 para máxima fluidez
+        duration: 0.15, // ✅ Ultra-rápido para cambio de categoría fluido
         ease: [0.4, 0.0, 0.2, 1], // ✅ easeInOut más suave
       },
     },
   }), []);
 
+  // ✅ CRÍTICO: Memoizar el renderizado de secciones ANTES de los early returns
+  // Esto evita violar las reglas de hooks cuando hay early returns
+  const renderedSections = useMemo(() => {
+    if (!sections || sections.length === 0) {
+      return [];
+    }
+    
+    return sections.map((section: HomepageSection, index: number) => {
+      // ✅ NO usar useMemo dentro de map - usar función normal (ya está memoizada en filterServices)
+      const filteredServices = filterServices(section.services);
+      
+      // Solo renderizar si hay servicios después del filtrado
+      if (filteredServices.length === 0) {
+        return null;
+      }
+      
+      // ✅ Calcular si es la última sección
+      const isLastSection = index === sections.length - 1;
+      const subtitle = section.categoryName && section.country 
+        ? `${section.pagination.totalCount} servicios en ${section.country}` 
+        : undefined;
+      
+      return (
+        <motion.div
+          key={`section-${index}-${section.title}`} // ✅ Key más estable
+          variants={sectionVariants}
+          className={index > 0 ? "mt-3" : ""} // ✅ Mismo margen superior entre secciones que desde arriba (pt-3 = 12px)
+          style={index > 0 ? { 
+            marginTop: '12px' // ✅ Mismo espaciado que el padding-top del contenedor (12px)
+          } : {}} 
+        >
+          <HorizontalScrollSection
+            title={section.title} // ✅ Título ya viene formateado del backend
+            subtitle={subtitle}
+            services={filteredServices}
+            forceGuestFavorite={index === 1} // Marcar la segunda sección como "Featured"
+            isLastSection={isLastSection} // ✅ Pasar si es la última sección
+          />
+        </motion.div>
+      );
+    });
+  }, [sections, filterServices, sectionVariants]);
+
   // ✅ Ahora sí, los early returns después de todos los hooks
-  if (isLoading) {
+  // ✅ Mostrar skeleton inmediatamente si está cargando o haciendo fetch (isFetching se actualiza al cambiar categoryId)
+  if (isLoading || isFetching) {
     return (
       <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
         <div className="w-full flex justify-center">
@@ -957,14 +1074,15 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
         visible: {
           opacity: 1,
           transition: {
-            staggerChildren: 0.03,
+            staggerChildren: 0.01, // ✅ Mínimo stagger para entrada coordinada
             delayChildren: 0,
-            // ✅ Transición más suave para evitar tirones
-            duration: 0.2,
+            // ✅ Transición ultra-rápida para cambio de categoría fluido
+            duration: 0.1, // ✅ Ultra-rápido para cambio instantáneo
             ease: [0.4, 0.0, 0.2, 1],
           },
         },
       }}
+      key={`homepage-wall-${categoryId}`} // ✅ Key basada en categoryId para transición limpia y rápida
       style={{
         // ✅ Evitar layout shifts - Altura mínima estable
         minHeight: '400px',
@@ -976,46 +1094,26 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     >
       <div className="w-full flex justify-center">
         <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
-          {/* ✅ Iterar el array de secciones - no necesitas conocer las claves */}
-          {sections.map((section: HomepageSection, index: number) => {
-            // ✅ NO usar useMemo dentro de map - usar función normal (ya está memoizada en filterServices)
-            const filteredServices = filterServices(section.services);
-            
-            // Solo renderizar si hay servicios después del filtrado
-            if (filteredServices.length === 0) {
-              return null;
-            }
-            
-            return (
-              <motion.div
-                key={`section-${index}-${section.title}`} // ✅ Key más estable
-                variants={sectionVariants}
-              >
-                <HorizontalScrollSection
-                  title={section.title} // ✅ Título ya viene formateado del backend
-                  subtitle={section.categoryName && section.country 
-                    ? `${section.pagination.totalCount} servicios en ${section.country}` 
-                    : undefined}
-                  services={filteredServices}
-                  forceGuestFavorite={index === 1} // Marcar la segunda sección como "Featured"
-                />
-              </motion.div>
-            );
-          })}
+          {/* ✅ OPTIMIZADO: Usar secciones memoizadas (ya calculadas antes de los early returns) */}
+          {renderedSections}
         </div>
       </div>
       
       {/* Footer */}
-      <motion.div className="mt-16 w-full" variants={sectionVariants}>
+      <motion.div className="mt-8 w-full" variants={sectionVariants} style={{ marginTop: '24px' }}>
         <Footer />
       </motion.div>
     </motion.div>
   );
 }, (prevProps, nextProps) => {
-  // ✅ Comparación personalizada: solo re-renderizar si cambian los props relevantes
+  // ✅ Comparación ultra-optimizada: forzar re-render cuando cambia categoryId para transición limpia
+  if (prevProps.categoryId !== nextProps.categoryId) {
+    return false; // ✅ Re-renderizar inmediatamente para cambio fluido
+  }
+  
+  // ✅ Comparación normal para otros cambios
   return (
     prevProps.countryCode === nextProps.countryCode &&
-    prevProps.serviceTypeId === nextProps.serviceTypeId &&
-    prevProps.categoryId === nextProps.categoryId
+    prevProps.serviceTypeId === nextProps.serviceTypeId
   );
 });

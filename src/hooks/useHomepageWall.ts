@@ -163,10 +163,12 @@ export const useHomepageWallQuery = (params: HomepageWallParams) => {
       
       return sections;
     },
-    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
+    staleTime: 0, // ✅ Sin cache para cambio de categoría instantáneo
     refetchOnWindowFocus: false,
-    refetchOnMount: false, // ✅ No refetch al montar si ya hay datos en cache
+    refetchOnMount: true, // ✅ Refetch al montar para asegurar datos frescos
     // ✅ CRÍTICO: Solo ejecutar si categoryId está presente Y si _enabled es true (geolocalización lista)
     enabled: !!params.categoryId && (params._enabled !== false), // Por defecto true si no se especifica
+    // ✅ Forzar refetch cuando cambia categoryId (no usar cache)
+    refetchOnReconnect: false,
   });
 };

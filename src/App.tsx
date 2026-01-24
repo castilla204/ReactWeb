@@ -72,6 +72,7 @@ import CountrySelector from './components/CountrySelector';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { StatusPage } from './pages/StatusPage';
+import { ScrollToTop } from './components/ScrollToTop';
 import logoImg from './media/logoi.png';
 
 const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
@@ -669,6 +670,7 @@ const App: React.FC = React.memo(() => {
     return (
         <ErrorBoundary>
             <Router>
+                <ScrollToTop />
                 <AppContent />
             </Router>
         </ErrorBoundary>

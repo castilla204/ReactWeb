@@ -110,7 +110,7 @@ export default defineConfig({
             'Referrer-Policy': 'strict-origin-when-cross-origin',
             'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
             // ✅ Content-Security-Policy con frame-ancestors 'none' para prevenir iframes
-            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://newapi-yn9v.onrender.com https://accounts.google.com https://api.stripe.com https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com; frame-src 'self' https://accounts.google.com https://js.stripe.com; frame-ancestors 'none';",
+            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' http://localhost:7124 ws://localhost:7124 https://newapi-yn9v.onrender.com https://accounts.google.com https://api.stripe.com https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com; frame-src 'self' https://accounts.google.com https://js.stripe.com; frame-ancestors 'none';",
         },
         proxy: {
             '/api': {

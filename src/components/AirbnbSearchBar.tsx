@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronDown, FolderTree, ArrowLeft, Filter } from 'lucide-react';
@@ -340,7 +340,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     }
   };
 
-  const handleTabClick = (tab: 'coches' | 'inmobiliaria', categoryIdValue: number) => {
+  const handleTabClick = useCallback((tab: 'coches' | 'inmobiliaria', categoryIdValue: number) => {
+    // ✅ Cambios instantáneos y coordinados
     setActiveTab(tab);
     setCategoryId(categoryIdValue);
     setIsDrawerOpen(false);
@@ -350,6 +351,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       setDrawerCategoryReplacement(null);
     }
     
+    // ✅ Llamar onSearch de forma síncrona para respuesta inmediata
     if (onSearch) {
       onSearch({
         serviceTypeId,
@@ -357,7 +359,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         adUrl,
       });
     }
-  };
+  }, [serviceTypeId, adUrl, onSearch]);
 
   const getCategoryImage = (categoryName: string): string | null => {
     const nameLower = categoryName.toLowerCase();
@@ -421,7 +423,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
               onMouseEnter={() => setHoveredTab('coches')}
               onMouseLeave={() => setHoveredTab(null)}
-              className={`flex items-center gap-3 py-2 relative bg-transparent border-none cursor-pointer ${
+              className={`flex items-center gap-2 py-2 relative bg-transparent border-none cursor-pointer ${
                 activeTab === 'coches' ? 'category-tab-active' : ''
               }`}
               key={`coches-${waveKey}`}
@@ -449,7 +451,16 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 alt="Coche" 
                 className="w-6 h-6 object-contain relative z-10" 
               />
-              <span className={`text-sm whitespace-nowrap relative z-10 ${activeTab === 'coches' ? 'font-semibold text-gray-900' : 'font-normal text-gray-600'}`}>
+              <span 
+                className="whitespace-nowrap relative z-10"
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '10px',
+                  fontWeight: 400,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  color: 'rgb(106, 106, 106)',
+                }}
+              >
                 Coches
               </span>
               <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform relative z-10 ${
@@ -464,7 +475,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
               onMouseEnter={() => setHoveredTab('inmobiliaria')}
               onMouseLeave={() => setHoveredTab(null)}
-              className={`flex items-center gap-3 py-2 relative bg-transparent border-none cursor-pointer ${
+              className={`flex items-center gap-2 py-2 relative bg-transparent border-none cursor-pointer ${
                 activeTab === 'inmobiliaria' ? 'category-tab-active' : ''
               }`}
               key={`inmobiliaria-${waveKey}`}
@@ -492,7 +503,16 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 alt={drawerCategoryReplacement?.name || "Casa"}
                 className="w-6 h-6 object-contain relative z-10"
               />
-              <span className={`text-sm whitespace-nowrap relative z-10 ${activeTab === 'inmobiliaria' ? 'font-semibold text-gray-900' : 'font-normal text-gray-600'}`}>
+              <span 
+                className="whitespace-nowrap relative z-10"
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '10px',
+                  fontWeight: 400,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  color: 'rgb(106, 106, 106)',
+                }}
+              >
                 {drawerCategoryReplacement?.name || 'Inmobiliaria'}
               </span>
               <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform relative z-10 ${
@@ -507,14 +527,23 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               onClick={() => setIsDrawerOpen(true)}
               onMouseEnter={() => setHoveredTab('services')}
               onMouseLeave={() => setHoveredTab(null)}
-              className="flex items-center gap-3 py-2 relative bg-transparent border-none cursor-pointer"
+              className="flex items-center gap-2 py-2 relative bg-transparent border-none cursor-pointer"
             >
               <div className="flex items-center justify-center gap-1 w-6 h-6">
                 <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
                 <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
                 <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
               </div>
-              <span className={`text-sm whitespace-nowrap ${activeTab === 'drawer' ? 'font-semibold text-gray-900' : 'font-normal text-gray-600'}`}>
+              <span 
+                className="whitespace-nowrap"
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '10px',
+                  fontWeight: 400,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  color: 'rgb(106, 106, 106)',
+                }}
+              >
                 Más
               </span>
               <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
@@ -868,63 +897,201 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         {/* Tabs Mobile - Estructura como Airbnb */}
         <div className="relative w-full" role="tablist">
           {/* Contenedor de tabs con flex */}
-          <div className="flex w-full px-5 pt-1.5">
+          <motion.div 
+            className="flex w-full px-5 pt-1.5"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.1,
+                  delayChildren: 0.2,
+                }
+              }
+            }}
+          >
             {/* Tab 1: Coches */}
-            <button
+            <motion.button
               type="button"
               role="tab"
               aria-selected={activeTab === 'coches'}
               onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
-              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer"
+              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative"
+              variants={{
+                hidden: { opacity: 0, scale: 0.8, y: 20 },
+                visible: { 
+                  opacity: 1, 
+                  scale: 1, 
+                  y: 0,
+                  transition: {
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 20,
+                  }
+                }
+              }}
+              whileTap={{ scale: 0.95 }}
             >
+              <AnimatePresence mode="wait">
+                {activeTab === 'coches' && (
+                  <motion.div
+                    key="wave-mobile-coches"
+                    className="absolute inset-0 rounded-full"
+                    initial={{ scale: 0.8, opacity: 0.6 }}
+                    animate={{ scale: 1.4, opacity: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    style={{
+                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+              </AnimatePresence>
               <img 
                 key={`coche-mobile-${imageCacheKey}`}
                 src={getImageWithCache('cochepng.png', imageCacheKey)} 
                 alt="Coche" 
-                className="w-16 h-16 object-contain" 
+                className="w-16 h-16 object-contain mb-0" 
+                style={{ marginBottom: '0px' }}
               />
-              <span className={`text-xs leading-3 text-center mt-0.5 ${activeTab === 'coches' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
+              <span 
+                className="text-center"
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '10px',
+                  fontWeight: 400,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  color: 'rgb(106, 106, 106)',
+                  marginTop: '2px',
+                }}
+              >
                 Coches
               </span>
-            </button>
+            </motion.button>
 
             {/* Tab 2: Inmobiliaria */}
-            <button
+            <motion.button
               type="button"
               role="tab"
               aria-selected={activeTab === 'inmobiliaria'}
               onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
-              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer"
+              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative"
+              variants={{
+                hidden: { opacity: 0, scale: 0.8, y: 20 },
+                visible: { 
+                  opacity: 1, 
+                  scale: 1, 
+                  y: 0,
+                  transition: {
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 20,
+                    delay: 0.1,
+                  }
+                }
+              }}
+              whileTap={{ scale: 0.95 }}
             >
+              <AnimatePresence mode="wait">
+                {activeTab === 'inmobiliaria' && (
+                  <motion.div
+                    key="wave-mobile-inmobiliaria"
+                    className="absolute inset-0 rounded-full"
+                    initial={{ scale: 0.8, opacity: 0.6 }}
+                    animate={{ scale: 1.4, opacity: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    style={{
+                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+              </AnimatePresence>
               <img
                 key={`casa-mobile-${imageCacheKey}`}
                 src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
                 alt={drawerCategoryReplacement?.name || "Casa"}
-                className="w-16 h-16 object-contain"
+                className="w-16 h-16 object-contain mb-0"
+                style={{ marginBottom: '0px' }}
               />
-              <span className={`text-xs leading-3 text-center mt-0.5 ${activeTab === 'inmobiliaria' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
+              <span 
+                className="text-center"
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '10px',
+                  fontWeight: 400,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  color: 'rgb(106, 106, 106)',
+                  marginTop: '2px',
+                }}
+              >
                 {drawerCategoryReplacement?.name || 'Inmobiliaria'}
               </span>
-            </button>
+            </motion.button>
 
             {/* Tab 3: Más */}
-            <button
+            <motion.button
               type="button"
               role="tab"
               aria-selected={activeTab === 'drawer'}
               onClick={() => setIsDrawerOpen(true)}
-              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer"
+              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative"
+              variants={{
+                hidden: { opacity: 0, scale: 0.8, y: 20 },
+                visible: { 
+                  opacity: 1, 
+                  scale: 1, 
+                  y: 0,
+                  transition: {
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 20,
+                    delay: 0.2,
+                  }
+                }
+              }}
+              whileTap={{ scale: 0.95 }}
             >
+              <AnimatePresence mode="wait">
+                {activeTab === 'drawer' && (
+                  <motion.div
+                    key="wave-mobile-mas"
+                    className="absolute inset-0 rounded-full"
+                    initial={{ scale: 0.8, opacity: 0.6 }}
+                    animate={{ scale: 1.4, opacity: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    style={{
+                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+              </AnimatePresence>
               <div className="flex items-center justify-center gap-1.5 w-16 h-16">
                 <div className="w-2 h-2 rounded-full bg-gray-900" />
                 <div className="w-2 h-2 rounded-full bg-gray-900" />
                 <div className="w-2 h-2 rounded-full bg-gray-900" />
               </div>
-              <span className={`text-xs leading-3 text-center mt-0.5 ${activeTab === 'drawer' ? 'font-semibold text-gray-900' : 'font-normal text-gray-500'}`}>
+              <span 
+                className="text-center"
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '10px',
+                  fontWeight: 400,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  color: 'rgb(106, 106, 106)',
+                  marginTop: '2px',
+                }}
+              >
                 Más
               </span>
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
 
           {/* Indicador/Subrayado - Exactamente al ras del borde inferior del contenedor */}
           <div 
