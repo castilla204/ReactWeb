@@ -122,25 +122,29 @@ const HomePage: React.FC = () => {
         </Suspense>
         
         {/* Search Bar Header con Tabs */}
-        <motion.div 
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
+        {/* ✅ Contenedor estático con sombra - NO se anima */}
+        <div
           style={{
             backgroundColor: '#f5f5f5', // ✅ Fondo más gris
-            boxShadow: '0 6px 20px 0 rgba(0, 0, 0, 0.15)', // ✅ Sombra divisoria más larga y extendida - SIEMPRE visible
-          }}
-          // ✅ CRÍTICO: Excluir boxShadow de las animaciones - siempre presente
-          transition={{
-            opacity: { duration: 0.12 },
-            y: { duration: 0.12 },
-            boxShadow: { duration: 0, delay: 0 }, // ✅ Sin animación, siempre presente
+            boxShadow: '0 6px 20px 0 rgba(0, 0, 0, 0.15)', // ✅ Sombra divisoria más larga y extendida - SIEMPRE visible (no se anima)
+            position: 'relative',
+            zIndex: 1,
           }}
         >
-          <Suspense fallback={<div className="h-20 bg-white" />}>
-            <AirbnbSearchBar onSearch={handleSearch} />
-          </Suspense>
-        </motion.div>
+          {/* ✅ Contenido animado - sin sombra */}
+          <motion.div 
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            style={{
+              backgroundColor: 'transparent', // ✅ Transparente porque el fondo está en el padre
+            }}
+          >
+            <Suspense fallback={<div className="h-20 bg-white" />}>
+              <AirbnbSearchBar onSearch={handleSearch} />
+            </Suspense>
+          </motion.div>
+        </div>
         
         {/* Main Content with proper spacing - Same as Airbnb */}
         <motion.div
