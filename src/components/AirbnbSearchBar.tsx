@@ -17,6 +17,7 @@ import motorcycleImg from '../media/motorcycle.png';
 import motoaguaImg from '../media/motoagua.png';
 import internet61Img from '../media/internet-61.png';
 import houseImg from '../media/house.png';
+import camarapngImg from '../media/camarapng.png';
 
 // Mapa de imágenes importadas
 const imageMap: Record<string, string> = {
@@ -27,6 +28,7 @@ const imageMap: Record<string, string> = {
   'motoagua.png': motoaguaImg,
   'internet-61.png': internet61Img,
   'house.png': houseImg,
+  'camarapng.png': camarapngImg,
 };
 
 // Función para obtener la ruta de imagen (desde src/media con Vite)
@@ -366,7 +368,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     if (nameLower.includes('moto') && !nameLower.includes('agua')) return getImageWithCache('motopng.png', imageCacheKey);
     if (nameLower.includes('coche') || nameLower.includes('vehículo')) return getImageWithCache('cochepng.png', imageCacheKey);
     if (nameLower.includes('inmobiliaria') || nameLower.includes('casa') || nameLower.includes('inmueble')) return getImageWithCache('casapng.png', imageCacheKey);
-    if (nameLower.includes('cámara') || nameLower.includes('camara')) return getImageWithCache('internet-61.png', imageCacheKey);
+    if (nameLower.includes('cámara') || nameLower.includes('camara')) return getImageWithCache('camarapng.png', imageCacheKey);
     if (nameLower.includes('fontanería') || nameLower.includes('fontaneria') || nameLower.includes('caldera')) return getImageWithCache('house.png', imageCacheKey);
     return null;
   };
@@ -423,7 +425,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
               onMouseEnter={() => setHoveredTab('coches')}
               onMouseLeave={() => setHoveredTab(null)}
-              className={`flex items-center gap-2 py-2 relative bg-transparent border-none cursor-pointer ${
+              className={`flex items-center gap-0 py-2 relative bg-transparent border-none cursor-pointer ${
                 activeTab === 'coches' ? 'category-tab-active' : ''
               }`}
               key={`coches-${waveKey}`}
@@ -450,6 +452,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 src={getImageWithCache('cochepng.png', imageCacheKey)} 
                 alt="Coche" 
                 className="w-6 h-6 object-contain relative z-10" 
+                style={{ margin: '0' }}
               />
               <span 
                 className="whitespace-nowrap relative z-10"
@@ -475,7 +478,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
               onMouseEnter={() => setHoveredTab('inmobiliaria')}
               onMouseLeave={() => setHoveredTab(null)}
-              className={`flex items-center gap-2 py-2 relative bg-transparent border-none cursor-pointer ${
+              className={`flex items-center gap-0 py-2 relative bg-transparent border-none cursor-pointer ${
                 activeTab === 'inmobiliaria' ? 'category-tab-active' : ''
               }`}
               key={`inmobiliaria-${waveKey}`}
@@ -502,6 +505,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
                 alt={drawerCategoryReplacement?.name || "Casa"}
                 className="w-6 h-6 object-contain relative z-10"
+                style={{ margin: '0' }}
               />
               <span 
                 className="whitespace-nowrap relative z-10"
@@ -527,7 +531,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               onClick={() => setIsDrawerOpen(true)}
               onMouseEnter={() => setHoveredTab('services')}
               onMouseLeave={() => setHoveredTab(null)}
-              className="flex items-center gap-2 py-2 relative bg-transparent border-none cursor-pointer"
+              className="flex items-center gap-0 py-2 relative bg-transparent border-none cursor-pointer"
             >
               <div className="flex items-center justify-center gap-1 w-6 h-6">
                 <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
@@ -830,16 +834,17 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         <div className="px-5 pt-4 pb-0">
           <div
             onClick={() => setIsMobileSearchOpen(true)}
-            className="w-full bg-white border border-gray-300 rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer relative"
+            className="w-full bg-white border border-gray-200 rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer relative"
+            
             style={{
               height: '56px',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.08), 0 4px 12px 0 rgba(0, 0, 0, 0.05)',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 8px 16px 0 rgba(0, 0, 0, 0.08)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 2px 4px 0 rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08)';
+              e.currentTarget.style.boxShadow = '0 2px 4px 0 rgba(0, 0, 0, 0.06), 0 12px 24px 0 rgba(0, 0, 0, 0.12)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.08), 0 4px 12px 0 rgba(0, 0, 0, 0.05)';
+              e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 8px 16px 0 rgba(0, 0, 0, 0.08)';
             }}
           >
             {/* Contenido centrado: Texto */}
@@ -955,7 +960,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 src={getImageWithCache('cochepng.png', imageCacheKey)} 
                 alt="Coche" 
                 className="w-16 h-16 object-contain mb-0" 
-                style={{ marginBottom: '0px' }}
+                style={{ margin: '0' }}
               />
               <span 
                 className="text-center"
@@ -965,7 +970,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   fontWeight: 400,
                   fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                   color: 'rgb(106, 106, 106)',
-                  marginTop: '2px',
+                  marginTop: '0px',
                 }}
               >
                 Coches
@@ -1016,7 +1021,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
                 alt={drawerCategoryReplacement?.name || "Casa"}
                 className="w-16 h-16 object-contain mb-0"
-                style={{ marginBottom: '0px' }}
+                style={{ margin: '0' }}
               />
               <span 
                 className="text-center"
@@ -1026,7 +1031,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   fontWeight: 400,
                   fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                   color: 'rgb(106, 106, 106)',
-                  marginTop: '2px',
+                  marginTop: '0px',
                 }}
               >
                 {drawerCategoryReplacement?.name || 'Inmobiliaria'}
@@ -1085,7 +1090,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   fontWeight: 400,
                   fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                   color: 'rgb(106, 106, 106)',
-                  marginTop: '2px',
+                  marginTop: '0px',
                 }}
               >
                 Más
