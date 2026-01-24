@@ -26,6 +26,7 @@ import motoAguaImg from '../media/motoagua.png';
 import motoImg from '../media/motopng.png';
 import cocheImg from '../media/cochepng.png';
 import casaImg from '../media/casapng.png';
+import camaraImg from '../media/camarapng.png';
 
 interface HomePresentationProps {
     onScrollToForm: () => void;
@@ -53,6 +54,7 @@ const CategoryImage: React.FC<{ categoryName: string; size?: 'sm' | 'md' }> = ({
     const isMoto = categoryNameLower.includes('moto') && !isMotoAgua;
     const isCoche = categoryNameLower.includes('coche') || categoryNameLower.includes('vehículo');
     const isCasa = categoryNameLower.includes('inmobiliaria') || categoryNameLower.includes('casa') || categoryNameLower.includes('inmueble');
+    const isCamara = categoryNameLower.includes('cámara') || categoryNameLower.includes('camara');
 
     if (isMotoAgua) {
         return (
@@ -89,6 +91,16 @@ const CategoryImage: React.FC<{ categoryName: string; size?: 'sm' | 'md' }> = ({
             <img 
                 src={casaImg}
                 alt="Casa"
+                className={`${sizeClasses[size]} object-contain rounded-md`}
+            />
+        );
+    }
+    
+    if (isCamara) {
+        return (
+            <img 
+                src={camaraImg}
+                alt="Cámara"
                 className={`${sizeClasses[size]} object-contain rounded-md`}
             />
         );
