@@ -10,14 +10,14 @@ const AirbnbSearchBar = lazy(() => import('../components/AirbnbSearchBar').then(
 const MobileBottomBar = lazy(() => import('../components/MobileBottomBar').then(module => ({ default: module.MobileBottomBar })));
 const WelcomePopup = lazy(() => import('../components/WelcomePopup').then(module => ({ default: module.WelcomePopup })));
 
-// ✅ OPTIMIZADO PARA MÁXIMA FLUIDEZ: Animaciones más rápidas y suaves
+// ✅ OPTIMIZADO PARA MÁXIMA FLUIDEZ: Animaciones ultra-rápidas y coordinadas
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      duration: 0.15, // ✅ Reducido para transición más suave sin tirones
-      staggerChildren: 0.01, // ✅ Reducido para animación más rápida
+      duration: 0.08, // ✅ Ultra-rápido para cambio de categoría instantáneo
+      staggerChildren: 0.005, // ✅ Mínimo stagger para entrada coordinada
       ease: [0.4, 0.0, 0.2, 1], // ✅ easeInOut más suave
       // ✅ Evitar tirones durante la transición
       when: 'beforeChildren',
@@ -26,12 +26,15 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 5 }, // ✅ Reducido para movimiento más sutil y sin tirones
+  hidden: { 
+    opacity: 0, 
+    y: 3,
+  },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.2, // ✅ Reducido para transición más suave
+      duration: 0.12, // ✅ Ultra-rápido para cambio de categoría fluido
       ease: [0.4, 0.0, 0.2, 1], // ✅ easeInOut más suave
     },
   },
@@ -119,7 +122,21 @@ const HomePage: React.FC = () => {
         </Suspense>
         
         {/* Search Bar Header con Tabs */}
-        <motion.div variants={itemVariants}>
+        <motion.div 
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+          style={{
+            backgroundColor: '#f5f5f5', // ✅ Fondo más gris
+            boxShadow: '0 6px 20px 0 rgba(0, 0, 0, 0.15)', // ✅ Sombra divisoria más larga y extendida - SIEMPRE visible
+          }}
+          // ✅ CRÍTICO: Excluir boxShadow de las animaciones - siempre presente
+          transition={{
+            opacity: { duration: 0.12 },
+            y: { duration: 0.12 },
+            boxShadow: { duration: 0, delay: 0 }, // ✅ Sin animación, siempre presente
+          }}
+        >
           <Suspense fallback={<div className="h-20 bg-white" />}>
             <AirbnbSearchBar onSearch={handleSearch} />
           </Suspense>
@@ -129,11 +146,12 @@ const HomePage: React.FC = () => {
         <motion.div
           className="pt-3 md:pt-10 md:pb-0"
           style={{ 
-            paddingTop: '12px', 
+            paddingTop: '12px',
+            paddingBottom: '0px', // ✅ Sin padding inferior - el bottom bar es fixed
           }}
           variants={itemVariants}
         >
-          <div className="md:pt-4" style={{ paddingTop: '8px' }} data-services-section>
+          <div className="md:pt-4" style={{ paddingTop: '8px', paddingBottom: '0px' }} data-services-section>
             <Suspense fallback={null}>
               <HomepageWall 
                 countryCode={countryCode}

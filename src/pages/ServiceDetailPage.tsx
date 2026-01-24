@@ -4,6 +4,7 @@ import { ServiceReviewPage } from './ServiceReviewPage';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 import { Service } from '../hooks/useServices';
+import { ServiceDetailSkeleton } from '../components/ui/service-detail-skeleton';
 
 const ServiceDetailPage: React.FC = () => {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -159,14 +160,7 @@ const ServiceDetailPage: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando servicio...</p>
-        </div>
-      </div>
-    );
+    return <ServiceDetailSkeleton />;
   }
 
   if (error || !service) {
