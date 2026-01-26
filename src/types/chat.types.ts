@@ -17,7 +17,8 @@ export interface DBMessage {
 /** Conversación tal como viene de la base de datos */
 export interface DBConversation {
   Id: number
-  SearchHireId: number
+  SearchHireId: number | null  // ✅ Ahora nullable (pre-contratación)
+  SearchServiceId: number | null  // ✅ NUEVO: Para chat pre-contratación
   ClientId: number | null
   ExpertId: number | null
   IsActive: boolean
@@ -46,7 +47,8 @@ export interface MessageDto {
 /** Conversación tal como viene de la API REST */
 export interface ConversationDto {
   Id: number
-  SearchHireId: number
+  SearchHireId: number | null  // ✅ Ahora nullable (pre-contratación)
+  SearchServiceId: number | null  // ✅ NUEVO: Para chat pre-contratación
   ClientId: number | null
   ExpertId: number | null
   IsActive: boolean
@@ -154,7 +156,8 @@ export interface LegacyMessage {
 /** Conversación en formato legacy (compatible con el Chat.tsx actual) */
 export interface LegacyConversation {
   id: number
-  searchHireId: number
+  searchHireId: number | null  // ✅ Ahora nullable
+  searchServiceId: number | null  // ✅ NUEVO
   clientId: number | null
   expertId: number | null
   isActive: boolean
@@ -170,6 +173,36 @@ export interface Deliverable {
   searchHireId: number
   deliverableUrls: string[]
   createdAt: string
+}
+
+// ==========================================
+// TIPOS PARA CHAT PRE-CONTRATACIÓN
+// ==========================================
+
+/** Resumen de mensaje para listas */
+export interface MessageSummaryDto {
+  Id: number
+  Content: string
+  SentAt: string
+  SenderId?: number | null
+  SenderName: string
+  IsRead: boolean
+}
+
+/** Resumen de conversación pre-contratación para el experto */
+export interface PreHireConversationSummaryDto {
+  ConversationId: number
+  SearchServiceId: number
+  ServiceName: string
+  ServicePrice: number
+  ServiceImageUrl?: string
+  ClientId?: number
+  ClientName: string
+  ClientProfilePictureUrl?: string
+  LastMessage?: MessageSummaryDto
+  UnreadCount: number
+  CreatedAt: string
+  UpdatedAt: string
 }
 
 // ==========================================
@@ -196,7 +229,8 @@ export function toLegacyMessage(dto: MessageDto): LegacyMessage {
 export function toLegacyConversation(dto: ConversationDto): LegacyConversation {
   return {
     id: dto.Id,
-    searchHireId: dto.SearchHireId,
+    searchHireId: dto.SearchHireId ?? null,
+    searchServiceId: dto.SearchServiceId ?? null,  // ✅ NUEVO
     clientId: dto.ClientId,
     expertId: dto.ExpertId,
     isActive: dto.IsActive,

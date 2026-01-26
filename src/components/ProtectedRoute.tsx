@@ -1,34 +1,57 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { showToast } from '../lib/toast';
+import { authService } from '../services/authService';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
 }
 
 export const ProtectedRoute = React.memo(({ children }: ProtectedRouteProps) => {
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isLoading: authLoading, user } = useAuth();
     const location = useLocation();
     const hasShownNotification = useRef(false);
+    
+    // ✅ Verificar token directamente
+    const token = authService.getAccessToken();
+    const hasUser = !!user;
+    const hasToken = !!token;
+    
+    // ✅ Esperar un momento adicional si hay token pero no hay usuario todavía
+    // Esto da tiempo a que AuthContext termine de restaurar la sesión
+    const [waitingForAuth, setWaitingForAuth] = useState(false);
+    
+    useEffect(() => {
+        if (hasToken && !hasUser && !authLoading) {
+            // Hay token pero no hay usuario todavía - esperar un momento
+            setWaitingForAuth(true);
+            const timeout = setTimeout(() => {
+                setWaitingForAuth(false);
+            }, 500); // Esperar 500ms para que AuthContext termine de restaurar
+            return () => clearTimeout(timeout);
+        } else {
+            setWaitingForAuth(false);
+        }
+    }, [hasToken, hasUser, authLoading]);
 
     // Mostrar notificación cuando el usuario no está autenticado intenta acceder
     useEffect(() => {
-        if (!isLoading && !isAuthenticated && !hasShownNotification.current) {
+        if (!authLoading && !waitingForAuth && !isAuthenticated && !hasToken && !hasShownNotification.current) {
             showToast('error', '🔒 Por favor, inicia sesión para continuar');
             hasShownNotification.current = true;
         }
-    }, [isAuthenticated, isLoading]);
+    }, [isAuthenticated, authLoading, waitingForAuth, hasToken]);
 
     // Resetear el flag cuando el usuario se autentica
     useEffect(() => {
-        if (isAuthenticated) {
+        if (isAuthenticated || (hasToken && hasUser)) {
             hasShownNotification.current = false;
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, hasToken, hasUser]);
 
-    // Mostrar loading mientras se verifica la autenticación
-    if (isLoading) {
+    // ✅ CRÍTICO: Esperar a que termine la carga antes de redirigir
+    if (authLoading || waitingForAuth) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-gray-600">Cargando...</div>
@@ -36,8 +59,20 @@ export const ProtectedRoute = React.memo(({ children }: ProtectedRouteProps) => 
         );
     }
 
+    // ✅ Verificar autenticación: debe tener token Y usuario (o isAuthenticated debe ser true)
+    const isReallyAuthenticated = (hasToken && hasUser) || isAuthenticated;
+    
     // Si no está autenticado, redirigir a la home
-    if (!isAuthenticated) {
+    if (!token || !isReallyAuthenticated) {
+        console.log('[ProtectedRoute] No autenticado, redirigiendo a /', {
+            hasToken: !!token,
+            hasUser: !!user,
+            isAuthenticated,
+            isReallyAuthenticated,
+            authLoading,
+            waitingForAuth,
+            path: location.pathname
+        });
         return <Navigate to="/" replace state={{ from: location }} />;
     }
 

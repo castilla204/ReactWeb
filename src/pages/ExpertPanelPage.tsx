@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X, MessageCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -43,6 +43,7 @@ import { useStripeAccountLink } from '../hooks/useStripeAccountLink';
 import { useVacationMode } from '../hooks/useVacationMode';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
+import { PreHireConversationsTab } from '../components/expertPanel/PreHireConversationsTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
 import { ProfileEditForm } from '../components/expertPanel/ProfileEditForm';
 
@@ -102,19 +103,19 @@ export function ExpertPanelPage() {
 
     // Leer el tab desde los query params, por defecto 'services'
     const tabFromUrl = searchParams.get('tab');
-    const initialTab = (tabFromUrl === 'hires' || tabFromUrl === 'services') ? tabFromUrl : 'services';
-    const [activeTab, setActiveTab] = useState<'services' | 'hires'>(initialTab as 'services' | 'hires');
+    const initialTab = (tabFromUrl === 'hires' || tabFromUrl === 'services' || tabFromUrl === 'messages') ? tabFromUrl : 'services';
+    const [activeTab, setActiveTab] = useState<'services' | 'hires' | 'messages'>(initialTab as 'services' | 'hires' | 'messages');
     
     // Sincronizar el tab con la URL cuando cambia
     useEffect(() => {
-        if (tabFromUrl && (tabFromUrl === 'hires' || tabFromUrl === 'services')) {
-            setActiveTab(tabFromUrl as 'services' | 'hires');
+        if (tabFromUrl && (tabFromUrl === 'hires' || tabFromUrl === 'services' || tabFromUrl === 'messages')) {
+            setActiveTab(tabFromUrl as 'services' | 'hires' | 'messages');
         }
     }, [tabFromUrl]);
     
     // Actualizar la URL cuando cambia el tab
     const handleTabChange = (value: string) => {
-        setActiveTab(value as 'services' | 'hires');
+        setActiveTab(value as 'services' | 'hires' | 'messages');
         setSearchParams({ tab: value });
     };
     const [hireTab, setHireTab] = useState<'active' | 'inactive'>('active');
@@ -1075,7 +1076,7 @@ export function ExpertPanelPage() {
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         {/* Navegación con Tabs */}
                         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                            <TabsList className="w-full grid grid-cols-2 h-auto p-1">
+                            <TabsList className="w-full grid grid-cols-3 h-auto p-1">
                                 <TabsTrigger 
                                     value="services" 
                                     className="flex items-center gap-2 justify-center text-sm font-medium data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground"
@@ -1096,6 +1097,14 @@ export function ExpertPanelPage() {
                                             {hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0)}
                                         </Badge>
                                     )}
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="messages" 
+                                    className="flex items-center gap-2 justify-center text-sm font-medium data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground relative"
+                                >
+                                    <MessageCircle className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Mensajes</span>
+                                    <span className="sm:hidden">Msg.</span>
                                 </TabsTrigger>
                             </TabsList>
                         </Tabs>
@@ -1229,7 +1238,7 @@ export function ExpertPanelPage() {
                         </Button>
                         <div className="flex items-center gap-4 flex-1">
                             <h1 className="text-lg font-semibold">
-                                {activeTab === 'services' ? 'Servicios' : 'Contrataciones'}
+                                {activeTab === 'services' ? 'Servicios' : activeTab === 'hires' ? 'Contrataciones' : 'Mensajes sin contratación'}
                             </h1>
                             </div>
                         <Button
@@ -1406,7 +1415,7 @@ export function ExpertPanelPage() {
                                     isDeletingService={isDeletingService}
                                     onEditService={handleEditService}
                                 />
-                                    ) : (
+                                    ) : activeTab === 'hires' ? (
                                 <HiresTab
                                     activeTab={activeTab}
                                     hireTab={hireTab}
@@ -1421,6 +1430,11 @@ export function ExpertPanelPage() {
                                     pagination={hiresPagination}
                                     onPageChange={setHiresPage}
                                     onPageSizeChange={setHiresPageSize}
+                                />
+                                    ) : (
+                                <PreHireConversationsTab
+                                    token={getAuthToken() || ''}
+                                    userId={user?.id || user?.Id || 0}
                                 />
                                     )}
                                 </CardContent>

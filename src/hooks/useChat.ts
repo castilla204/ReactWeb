@@ -25,7 +25,8 @@ interface Message {
 
 interface Conversation {
     id: number;
-    searchHireId: number;
+    searchHireId: number | null;  // ✅ Ahora nullable (pre-contratación)
+    searchServiceId: number | null;  // ✅ NUEVO: Para chat pre-contratación
     clientId: number | null;
     expertId: number | null;
     isActive: boolean;
@@ -94,9 +95,10 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                 
                 const normalizedConversation: Conversation = {
                     id: rawResponse.Id ?? rawResponse.id,
-                    searchHireId: rawResponse.SearchHireId ?? rawResponse.searchHireId,
-                    clientId: rawResponse.ClientId ?? rawResponse.clientId,
-                    expertId: rawResponse.ExpertId ?? rawResponse.expertId,
+                    searchHireId: rawResponse.SearchHireId ?? rawResponse.searchHireId ?? null,  // ✅ Ahora nullable
+                    searchServiceId: rawResponse.SearchServiceId ?? rawResponse.searchServiceId ?? null,  // ✅ NUEVO
+                    clientId: rawResponse.ClientId ?? rawResponse.clientId ?? null,
+                    expertId: rawResponse.ExpertId ?? rawResponse.expertId ?? null,
                     isActive: rawResponse.IsActive ?? rawResponse.isActive ?? true,
                     createdAt: rawResponse.CreatedAt ?? rawResponse.createdAt,
                     updatedAt: rawResponse.UpdatedAt ?? rawResponse.updatedAt,

@@ -36,6 +36,7 @@ import { showToast } from '../lib/toast';
 import { authService } from '../services/authService';
 import { getCountryName } from '../utils/countries';
 import AppointmentMap from '../components/AppointmentMap';
+import { PreHireChat } from '../components/PreHireChat';
 
 interface ServiceReviewPageProps {
     serviceId: number;
@@ -98,8 +99,26 @@ export function ServiceReviewPage({
     const [isFavorite, setIsFavorite] = useState(false);
     const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
     const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+    const [showPreHireChat, setShowPreHireChat] = useState(false);
+    const [showLoginDialog, setShowLoginDialog] = useState(false);
     const carouselRef = useRef<HTMLDivElement>(null);
     const { serviceTypes } = useServiceTypes();
+    
+    // Obtener token y userId para el chat
+    const token = authService.getAccessToken() || '';
+    const user = useAuth().user;
+    const userId = user?.id || user?.Id || 0;
+    
+    // Handler para abrir chat o login
+    const handleChatClick = () => {
+        if (isAuthenticated && token && userId > 0) {
+            // Usuario autenticado: navegar a la página de chat
+            navigate(`/chat-pre-contratacion/${serviceId}`);
+        } else {
+            // Usuario no autenticado: abrir login
+            setShowLoginDialog(true);
+        }
+    };
 
     // ✅ Si el servicio viene como prop, usarlo directamente; si no, buscarlo con useServices
     const { services, isLoading } = useServices({
@@ -352,6 +371,7 @@ export function ServiceReviewPage({
     const [authStep, setAuthStep] = useState<string>('');
     const googleButtonRefMobile = useRef<HTMLDivElement>(null);
     const googleButtonRefDesktop = useRef<HTMLDivElement>(null);
+    const googleButtonRefLoginDialog = useRef<HTMLDivElement>(null);
 
     // Inicializar Google Sign-In
     useEffect(() => {
@@ -400,6 +420,18 @@ export function ServiceReviewPage({
                                     updateUser(result.user, token, () => {
                                         setAuthStep('Redirigiendo...');
                                         console.log('✅ [ServiceReviewPage] Autenticación exitosa, redirigiendo...');
+                                        
+                                        // Si el login fue desde el diálogo de chat, cerrar el diálogo y navegar al chat
+                                        const loginFromChat = sessionStorage.getItem('loginFromChat');
+                                        if (loginFromChat === 'true') {
+                                            sessionStorage.removeItem('loginFromChat');
+                                            setShowLoginDialog(false);
+                                            setTimeout(() => {
+                                                navigate(`/chat-pre-contratacion/${serviceId}`);
+                                            }, 300);
+                                            return;
+                                        }
+                                        
                                         // Después de actualizar el usuario, redirigir a checkout
                                         setTimeout(() => {
                                             // Verificar si hay una ruta guardada para redirigir
@@ -451,6 +483,17 @@ export function ServiceReviewPage({
                         width: '100%',
                     });
                 }
+                
+                // Renderizar en Login Dialog
+                if (googleButtonRefLoginDialog.current) {
+                    window.google.accounts.id.renderButton(googleButtonRefLoginDialog.current, {
+                        type: 'standard',
+                        theme: 'outline',
+                        size: 'large',
+                        text: 'signin_with',
+                        width: '100%',
+                    });
+                }
 
                 setIsGoogleReady(true);
             } else {
@@ -472,8 +515,36 @@ export function ServiceReviewPage({
             initGoogleSignIn();
         }
     }, []);
+    
+    // Renderizar botón de Google cuando se abre el diálogo de login
+    useEffect(() => {
+        if (showLoginDialog && window.google?.accounts?.id && googleButtonRefLoginDialog.current) {
+            const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
+            
+            // Limpiar el contenedor
+            googleButtonRefLoginDialog.current.innerHTML = '';
+            
+            // Renderizar el botón
+            window.google.accounts.id.renderButton(googleButtonRefLoginDialog.current, {
+                type: 'standard',
+                theme: 'outline',
+                size: 'large',
+                text: 'signin_with',
+                width: '100%',
+            });
+        }
+    }, [showLoginDialog]);
 
     const handleGoogleSignIn = () => {
+        // Intentar login dialog primero si está abierto
+        if (showLoginDialog && googleButtonRefLoginDialog.current) {
+            const googleButton = googleButtonRefLoginDialog.current.querySelector('div[role="button"]') as HTMLElement;
+            if (googleButton) {
+                googleButton.click();
+                return;
+            }
+        }
+        
         // Intentar desktop primero, si es visible
         const containerDesktop = googleButtonRefDesktop.current;
         if (containerDesktop && containerDesktop.offsetParent !== null) {
@@ -881,6 +952,17 @@ export function ServiceReviewPage({
                                         Revisor verificado de inspecciono.com
                                     </div>
                                 </div>
+                            </div>
+                            {/* Botón de Chat - Siempre visible */}
+                            <div className="flex-shrink-0">
+                                <Button
+                                    onClick={handleChatClick}
+                                    variant="outline"
+                                    className="flex items-center gap-2"
+                                >
+                                    <MessageCircle className="w-4 h-4" />
+                                    <span>Chat</span>
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -2293,6 +2375,17 @@ export function ServiceReviewPage({
                                             </div>
                                         </div>
                                     </div>
+                                    {/* Botón de Chat - Siempre visible */}
+                                    <div className="flex-shrink-0">
+                                        <Button
+                                            onClick={handleChatClick}
+                                            variant="outline"
+                                            className="flex items-center gap-2"
+                                        >
+                                            <MessageCircle className="w-4 h-4" />
+                                            <span>Chat</span>
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -2850,6 +2943,51 @@ export function ServiceReviewPage({
                     scroll-behavior: smooth;
                 }
             `}</style>
+            
+            {/* Dialog para Login cuando el usuario no está autenticado */}
+            <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+                <DialogContent className="max-w-md">
+                    <div className="flex flex-col items-center gap-6 p-6">
+                        <div className="text-center">
+                            <MessageCircle className="w-12 h-12 text-primary mx-auto mb-4" />
+                            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                                Inicia sesión para chatear
+                            </h2>
+                            <p className="text-gray-600">
+                                Necesitas iniciar sesión para poder chatear con el experto antes de contratar el servicio.
+                            </p>
+                        </div>
+                        
+                        <div className="w-full">
+                            {/* Hidden Google button */}
+                            <div ref={googleButtonRefLoginDialog} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }}></div>
+                            
+                            {/* Custom button */}
+                            <button
+                                onClick={() => {
+                                    sessionStorage.setItem('loginFromChat', 'true');
+                                    handleGoogleSignIn();
+                                }}
+                                disabled={!isGoogleReady || isAuthenticating}
+                                type="button"
+                                className={`relative w-full h-12 px-6 bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] hover:from-[#D70466] hover:via-[#E61E4D] hover:to-[#E31C5F] text-white text-[16px] font-semibold transition-all duration-200 overflow-hidden rounded-lg flex items-center justify-center gap-3 ${isAuthenticating ? 'opacity-75 cursor-wait' : ''}`}
+                            >
+                                {isAuthenticating ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                        <span>{authStep || 'Iniciando sesión...'}</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <GoogleIcon />
+                                        <span>Iniciar sesión con Google</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
         </>
     );
