@@ -44,6 +44,7 @@ import TransactionsPage from './pages/TransactionsPage';
 import HomePage from './pages/HomePage';
 import ServiceDetailPage from './pages/ServiceDetailPage';
 import { CheckoutPage } from './pages/CheckoutPage';
+import { PreHireChatPage } from './pages/PreHireChatPage';
 import QuienesSomosPage from './pages/QuienesSomosPage';
 import ComoFuncionaPage from './pages/ComoFuncionaPage';
 import FAQPage from './pages/FAQPage';
@@ -644,6 +645,7 @@ const AppContent: React.FC = () => {
                             <Route path="/transacciones" element={<ProtectedRouteWithMFA><TransactionsPage /></ProtectedRouteWithMFA>} />
                             <Route path="/service/:serviceId" element={<ServiceDetailPage />} />
                             <Route path="/checkout/:serviceId" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+                            <Route path="/chat-pre-contratacion/:serviceId" element={<ProtectedRoute><PreHireChatPage /></ProtectedRoute>} />
                             <Route path="/crear-busqueda" element={<SearchCreationPage />} />
                             <Route path="/quienes-somos" element={<QuienesSomosPage />} />
                             <Route path="/como-funciona" element={<ComoFuncionaPage />} />
