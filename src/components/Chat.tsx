@@ -555,221 +555,12 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
     }, []) || [];
 
     return (
-        <div className="flex flex-col h-full w-full bg-gray-50" style={{ minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: '1 1 0%', margin: 0, padding: 0 }}>
-            {/* Messages Container - Takes remaining space with padding for input */}
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8" style={{ 
-                minHeight: 0, 
-                flex: '1 1 0%', 
-                overflowY: 'auto', 
-                overflowX: 'hidden', 
-                margin: 0, 
-                paddingLeft: '1rem', 
-                paddingRight: '1rem', 
-                paddingBottom: '120px',
-                marginBottom: 0 
-            }}>
-                <div className="space-y-4 pt-5 sm:pt-6 lg:pt-8 pb-4" data-chat-messages style={{ paddingBottom: '1rem', marginBottom: 0 }}>
-                    {/* Mensajes de bienvenida - Siempre se muestran */}
-                    {isExpert ? (
-                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-8 lg:pt-12' : 'pt-4 lg:pt-6'} pb-6 text-center px-4`}>
-                            <div className="max-w-2xl w-full space-y-3">
-                                {/* Primer mensaje de bienvenida - Experto */}
-                                <div className="flex gap-3 justify-start">
-                                    <Avatar className="w-8 h-8 flex-shrink-0">
-                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Sistema" />
-                                        <AvatarFallback className="bg-gray-200 text-gray-600 font-medium text-xs">
-                                            AI
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
-                                            <p 
-                                                className="text-gray-700 leading-relaxed"
-                                                style={{
-                                                    fontSize: '15px',
-                                                    lineHeight: '20px',
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                ¡Hola! 👋 Bienvenido al chat de este servicio. El cliente te ha contratado y está esperando poder comunicarse contigo.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                {/* Segundo mensaje de bienvenida - Experto con sugerencias */}
-                                <div className="flex gap-3 justify-start">
-                                    <Avatar className="w-8 h-8 flex-shrink-0">
-                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Sistema" />
-                                        <AvatarFallback className="bg-gray-200 text-gray-600 font-medium text-xs">
-                                            AI
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
-                                            <div className="space-y-2">
-                                                <p 
-                                                    className="text-gray-700 leading-relaxed mb-2 font-medium"
-                                                    style={{
-                                                        fontSize: '15px',
-                                                        lineHeight: '20px',
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    }}
-                                                >
-                                                    Aquí tienes algunas cosas que puedes hacer:
-                                                </p>
-                                                <ul 
-                                                    className="space-y-1.5 text-gray-600"
-                                                    style={{
-                                                        fontSize: '13px',
-                                                        lineHeight: '18px',
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    }}
-                                                >
-                                                    <li className="flex items-start gap-2">
-                                                        <MessageSquare className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                                                        <span>Responder preguntas sobre el servicio</span>
-                                                    </li>
-                                                    <li className="flex items-start gap-2">
-                                                        <Calendar className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                                                        <span>Coordinar detalles de la inspección</span>
-                                                    </li>
-                                                    <li className="flex items-start gap-2">
-                                                        <Paperclip className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                                                        <span>Compartir archivos e imágenes</span>
-                                                    </li>
-                                                </ul>
-                                                {conversation.messages?.length === 0 && (
-                                                    <p className="text-xs text-gray-500 italic mt-3 pt-2 border-t border-gray-200">
-                                                        Escribe un mensaje para comenzar la conversación con el cliente.
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className={`flex flex-col items-center justify-start ${conversation.messages?.length === 0 ? 'pt-8 lg:pt-12' : 'pt-4 lg:pt-6'} pb-6 text-center px-4`}>
-                            <div className="max-w-2xl w-full space-y-3">
-                                {/* Primer mensaje de bienvenida - Cliente */}
-                                <div className="flex gap-3 justify-start">
-                                    <Avatar className="w-10 h-10 flex-shrink-0">
-                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Experto" />
-                                        <AvatarFallback className="bg-blue-600 text-white font-semibold text-sm">
-                                            {expertData?.name?.charAt(0).toUpperCase() || 'E'}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
-                                            <p 
-                                                className="text-gray-700 leading-relaxed"
-                                                style={{
-                                                    fontSize: '15px',
-                                                    lineHeight: '20px',
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                ¡Hola! 👋 Soy <span className="font-semibold text-gray-900">{expertData?.name || 'tu experto'}</span>. Estoy aquí para ayudarte con tu búsqueda. Puedes preguntarme cualquier cosa sobre el servicio.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Segundo mensaje de bienvenida - Cliente con sugerencias */}
-                                <div className="flex gap-3 justify-start">
-                                    <Avatar className="w-10 h-10 flex-shrink-0">
-                                        <AvatarImage src={expertData?.profilePictureUrl} alt="Experto" />
-                                        <AvatarFallback className="bg-blue-600 text-white font-semibold text-sm">
-                                            {expertData?.name?.charAt(0).toUpperCase() || 'E'}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 flex justify-start">
-                                        <div className="max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] bg-white border border-gray-200 text-gray-900 rounded-2xl px-4 py-3 shadow-sm">
-                                            <div className="space-y-2">
-                                                <p 
-                                                    className="text-gray-700 leading-relaxed mb-2 font-medium"
-                                                    style={{
-                                                        fontSize: '15px',
-                                                        lineHeight: '20px',
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    }}
-                                                >
-                                                    ¿En qué puedo ayudarte hoy?
-                                                </p>
-                                                {conversation.messages?.length === 0 && (
-                                                    <>
-                                                        <div className="grid grid-cols-1 gap-2">
-                                                            <button 
-                                                                onClick={() => {
-                                                                    setNewMessage("¿Podrías explicarme cómo funciona el servicio?");
-                                                                }}
-                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-gray-700 group flex items-center gap-2 font-medium"
-                                                                style={{
-                                                                    fontSize: '15px',
-                                                                    lineHeight: '20px',
-                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                }}
-                                                            >
-                                                                <div className="p-1 rounded-md bg-blue-600 text-white">
-                                                                    <HelpCircle className="w-3.5 h-3.5" />
-                                                                </div>
-                                                                <span>Explicación del servicio</span>
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    setNewMessage("¿Cuándo podemos coordinar la cita?");
-                                                                }}
-                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-gray-700 group flex items-center gap-2 font-medium"
-                                                                style={{
-                                                                    fontSize: '15px',
-                                                                    lineHeight: '20px',
-                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                }}
-                                                            >
-                                                                <div className="p-1 rounded-md bg-orange-500 text-white">
-                                                                    <Calendar className="w-3.5 h-3.5" />
-                                                                </div>
-                                                                <span>Coordinar cita</span>
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    setNewMessage("¿Qué documentos necesito?");
-                                                                }}
-                                                                className="text-left px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 text-gray-700 group flex items-center gap-2 font-medium"
-                                                                style={{
-                                                                    fontSize: '15px',
-                                                                    lineHeight: '20px',
-                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                }}
-                                                            >
-                                                                <div className="p-1 rounded-md bg-blue-600 text-white">
-                                                                    <FileText className="w-3.5 h-3.5" />
-                                                                </div>
-                                                                <span>Documentos necesarios</span>
-                                                            </button>
-                                                        </div>
-                                                        <p className="text-xs text-gray-500 italic mt-3 pt-2 border-t border-gray-200">
-                                                            O simplemente escribe tu pregunta y te responderé lo antes posible.
-                                                        </p>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Mensajes reales de la conversación */}
-                    {groupedMessages && groupedMessages.length > 0 && (
-                        groupedMessages.map((group, groupIndex) => (
-                        <div key={groupIndex} className="w-full">
-                            {/* Message group - Inspirado en Vercel AI SDK Chatbot */}
-                            <div className="space-y-2">
-                                {group.messages.map((message: any, msgIndex: number) => {
+        <div className="flex flex-col h-full bg-white">
+            {/* Lista de mensajes */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+                {groupedMessages && groupedMessages.length > 0 ? (
+                    groupedMessages.flatMap((group) =>
+                        group.messages.map((message: any, msgIndex: number) => {
                                     const isStatusMessage = message.content && isAppointmentStatusChangeMessage(message.content);
                                     
                                     // Si es mensaje de estado, renderizar de forma especial sin avatar
@@ -832,489 +623,107 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                         );
                                     }
                                     
-                                    // Mensaje normal con avatar
+                                    // Mensaje normal con avatar - Estilo igual a PreHireChat
+                                    const isOwnMessage = group.isOwn;
+                                    
                                     return (
-                                    <div key={message.id} className={`flex gap-3 ${group.isOwn ? 'flex-row-reverse' : 'flex-row'} ${msgIndex === 0 ? 'mt-3' : 'mt-1'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                                        {/* Avatar solo en el primer mensaje del grupo */}
-                                        {msgIndex === 0 && (
+                                        <div
+                                            key={message.id}
+                                            className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} max-w-[70%] ${isOwnMessage ? 'ml-auto' : 'mr-auto'}`}
+                                        >
+                                            {/* ✅ Foto de perfil */}
+                                            {!isOwnMessage && (
                                             <Avatar className="w-8 h-8 flex-shrink-0">
                                                 <AvatarImage 
                                                     src={getAvatarImage(group.senderId) || undefined} 
-                                                    alt="Avatar"
-                                                    className="object-cover"
+                                                        alt={message.senderName || 'Usuario'}
                                                 />
-                                                <AvatarFallback className={`text-xs font-semibold ${getAvatarColor(group.senderId)} text-white`}>
+                                                    <AvatarFallback className="bg-gray-900 text-white text-xs">
                                                     {getAvatarInitials(group.senderId)}
                                                 </AvatarFallback>
                                             </Avatar>
                                         )}
-                                        {msgIndex > 0 && <div className="w-8" />}
-
-                                        <div className="flex-1 space-y-2">
-                                        {/* Message Content - Diseño más limpio y moderno */}
-                                            <div className={`${group.isOwn ? 'flex justify-end' : 'flex justify-start'}`}>
+                                            
+                                            <div className={`flex flex-col gap-1 ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                                                {!isOwnMessage && (
+                                                    <span className="text-xs font-semibold text-gray-600">{message.senderName || 'Usuario'}</span>
+                                                )}
                                             {message.content && (
-                                                <div className={`group relative max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] ${
-                                                    group.isOwn 
-                                                        ? 'bg-blue-600 text-white' 
-                                                        : 'bg-white text-gray-900 border border-gray-200'
-                                                } rounded-2xl px-4 py-3 shadow-sm`}>
-                                                    <p 
-                                                        className="leading-relaxed whitespace-pre-wrap break-words"
-                                                        style={{
-                                                            fontSize: '15px',
-                                                            lineHeight: '20px',
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
+                                                    <div
+                                                        className={`px-3 py-2 rounded-2xl ${
+                                                            isOwnMessage
+                                                                ? 'bg-primary text-white rounded-tr-sm'
+                                                                : 'bg-gray-100 text-gray-900 rounded-tl-sm'
+                                                        }`}
                                                     >
-                                                        {message.content}
-                                                    </p>
-                                                    {/* Timestamp y botón compartir */}
-                                                    <div className={`flex items-center justify-between gap-2 mt-2 pt-2 border-t ${
-                                                        group.isOwn 
-                                                            ? 'border-white/20 text-white/70' 
-                                                            : 'border-gray-200 text-gray-500'
-                                                    }`}>
-                                                        <span 
-                                                            className="text-xs"
-                                                            style={{
-                                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                            }}
-                                                        >
-                                                            {(() => {
-                                                                const date = new Date(message.sentAt);
-                                                                return isNaN(date.getTime()) 
-                                                                    ? 'Ahora'
-                                                                    : date.toLocaleTimeString('es-ES', {
-                                                                        hour: '2-digit',
-                                                                        minute: '2-digit'
-                                                                    });
-                                                            })()}
-                                                        </span>
-                                                        <button
-                                                            onClick={async (e) => {
-                                                                e.stopPropagation();
-                                                                try {
-                                                                    const textToShare = message.content || '';
-                                                                    if (navigator.share) {
-                                                                        await navigator.share({
-                                                                            text: textToShare,
-                                                                            title: 'Mensaje del chat'
-                                                                        });
-                                                                    } else {
-                                                                        await navigator.clipboard.writeText(textToShare);
-                                                                        showToast('success', 'Mensaje copiado al portapapeles');
-                                                                    }
-                                                                } catch (error) {
-                                                                    if (error instanceof Error && error.name !== 'AbortError') {
-                                                                        try {
-                                                                            await navigator.clipboard.writeText(message.content || '');
-                                                                            showToast('success', 'Mensaje copiado al portapapeles');
-                                                                        } catch (clipboardError) {
-                                                                            showToast('error', 'No se pudo compartir el mensaje');
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }}
-                                                            className={`opacity-70 hover:opacity-100 transition-opacity p-1 rounded-md ${
-                                                                group.isOwn 
-                                                                    ? 'hover:bg-white/20' 
-                                                                    : 'hover:bg-gray-100'
-                                                            }`}
-                                                            title="Compartir mensaje"
-                                                        >
-                                                            <Share2 className={`w-3.5 h-3.5 ${
-                                                                group.isOwn 
-                                                                    ? 'text-white/70' 
-                                                                    : 'text-gray-500'
-                                                            }`} />
-                                                        </button>
-                                                </div>
+                                                        <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                                             </div>
                                         )}
-                                            </div>
-
-                                        {/* Attachments - Redesigned */}
+                                                <span className="text-xs text-gray-500">
+                                                    {new Date(message.sentAt).toLocaleTimeString('es-ES', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </span>
+                                                
+                                                {/* Adjuntos */}
                                         {message.attachmentUrls && message.attachmentUrls.length > 0 && (
-                                            <div className={`w-full ${group.isOwn ? 'flex justify-end' : 'flex justify-start'} mb-3`}>
-                                                <div className={`relative w-32 ${group.isOwn ? 'ml-auto' : 'mr-auto'}`}>
-                                                    {message.attachmentUrls.length === 1 ? (
-                                                        // Single image - full width
-                                                        <div className="group cursor-pointer" onClick={() => setSelectedImage(message.attachmentUrls[0])}>
-                                                            {message.attachmentUrls[0].endsWith('.mp4') ? (
-                                                                <div className={`relative overflow-hidden shadow-lg ${
-                                                                    group.isOwn 
-                                                                        ? 'bg-blue-500' 
-                                                                        : 'bg-white border border-gray-200'
-                                                                }`}
-                                                                style={{
-                                                                    borderRadius: group.isOwn 
-                                                                        ? '18px 18px 4px 18px' 
-                                                                        : '18px 18px 18px 4px'
-                                                                }}>
-                                                                    <video
-                                                                        src={message.attachmentUrls[0]}
-                                                                        controls
-                                                                        className="w-full h-24 object-cover"
-                                                                        style={{
-                                                                            borderRadius: group.isOwn 
-                                                                                ? '18px 18px 4px 18px' 
-                                                                                : '18px 18px 18px 4px'
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            ) : (
-                                                                <div className="relative overflow-hidden shadow-lg"
-                                                                     style={{
-                                                                         borderRadius: group.isOwn 
-                                                                             ? '18px 18px 4px 18px' 
-                                                                             : '18px 18px 18px 4px'
-                                                                     }}>
-                                                                    <img
-                                                                        src={message.attachmentUrls[0]}
-                                                                        alt="Imagen compartida"
-                                                                        className="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-300"
-                                                                        style={{
-                                                                            borderRadius: group.isOwn 
-                                                                                ? '18px 18px 4px 18px' 
-                                                                                : '18px 18px 18px 4px'
-                                                                        }}
-                                                                    />
-                                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
-                                                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-full p-3">
-                                                                            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                                                                            </svg>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        // Multiple images - grid layout
-                                                        <div className={`grid gap-1 ${
-                                                            message.attachmentUrls.length === 2 ? 'grid-cols-2' : 
-                                                            message.attachmentUrls.length === 3 ? 'grid-cols-2' :
-                                                            'grid-cols-2'
-                                                        }`}>
-                                                            {message.attachmentUrls.map((url: string, index: number) => (
-                                                                <div 
-                                                                    key={index} 
-                                                                    className={`group cursor-pointer relative overflow-hidden ${
-                                                                        message.attachmentUrls.length === 3 && index === 0 ? 'row-span-2' : ''
-                                                                    }`}
-                                                                    onClick={() => setSelectedImage(url)}
-                                                                   style={{
-                                                                       borderRadius: '12px',
-                                                                       aspectRatio: '1'
-                                                                   }}
-                                                                >
-                                                                    {url.endsWith('.mp4') ? (
-                                                                        <video
+                                                    <div className="flex flex-wrap gap-2 mt-2">
+                                                        {message.attachmentUrls.map((url: string, idx: number) => (
+                                                            <img
+                                                                key={idx}
                                                                             src={url}
-                                                                            className="w-full h-full object-cover"
-                                                                            style={{ borderRadius: '12px' }}
-                                                                        />
-                                                                    ) : (
-                                                                        <>
-                                                                            <img
-                                                                                src={url}
-                                                                                alt={`Imagen ${index + 1}`}
-                                                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                                                                style={{ borderRadius: '12px' }}
-                                                                            />
-                                                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
-                                                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-full p-2">
-                                                                                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                                                                                    </svg>
+                                                                alt={`Adjunto ${idx + 1}`}
+                                                                className="max-w-[200px] max-h-[200px] rounded-lg object-cover"
+                                                            />
+                                                        ))}
                                                                                 </div>
-                                                                            </div>
-                                                                            {message.attachmentUrls.length > 4 && index === 3 && (
-                                                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center" style={{ borderRadius: '12px' }}>
-                                                                                    <span className="text-white font-bold text-lg">+{message.attachmentUrls.length - 4}</span>
-                                                                                </div>
-                                                                            )}
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            )).slice(0, 4)}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Location */}
-                                        {(message.locationLatitude || message.locationLongitude) && isLoaded && !loadError && (
-                                                <div className={`w-full ${group.isOwn ? 'flex justify-end' : 'flex justify-start'}`}>
-                                                <div className={`relative w-32 ${group.isOwn ? 'ml-auto' : 'mr-auto'}`}>
-                                                    <div className="bg-white border border-gray-200 shadow-lg overflow-hidden"
-                                                         style={{
-                                                             borderRadius: group.isOwn 
-                                                                 ? '18px 18px 4px 18px' 
-                                                                 : '18px 18px 18px 4px'
-                                                         }}>
-                                                        <GoogleMap
-                                                            mapContainerStyle={{ width: '100%', height: '96px' }}
-                                                    zoom={14}
-                                                    center={{
-                                                        lat: parseFloat(message.locationLatitude || defaultCenter.lat.toString()),
-                                                        lng: parseFloat(message.locationLongitude || defaultCenter.lng.toString()),
-                                                    }}
-                                                    options={{
-                                                        disableDefaultUI: true,
-                                                        zoomControl: false,
-                                                        mapTypeControl: false,
-                                                        streetViewControl: false,
-                                                        fullscreenControl: false,
-                                                        styles: mapStyles,
-                                                    }}
-                                                >
-                                                    <Marker
-                                                        position={{
-                                                            lat: parseFloat(message.locationLatitude || defaultCenter.lat.toString()),
-                                                            lng: parseFloat(message.locationLongitude || defaultCenter.lng.toString()),
-                                                        }}
-                                                        icon={markerIcon}
-                                                    />
-                                                        </GoogleMap>
-                                                        <div className="p-1.5">
-                                                            <a
-                                                                href={`https://www.google.com/maps?q=${message.locationLatitude},${message.locationLongitude}`}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-gray-600 hover:text-gray-800 text-xs font-medium flex items-center gap-1"
-                                                            >
-                                                                <MapPin className="w-2.5 h-2.5" />
-                                                                Ver
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         )}
                                         </div>
                                     </div>
                                     );
-                                })}
-                            </div>
-                        </div>
-                    ))
-                    )}
-                    <div ref={messagesEndRef} style={{ height: '1px', margin: 0, padding: 0, minHeight: '1px', maxHeight: '1px', lineHeight: '1px' }} />
-                </div>
-            </div>
-
-            {/* Fixed Input Area at Bottom - Optimizado para móvil y desktop - Siempre visible */}
-            <div 
-                className="flex-shrink-0 bg-white z-10 border-t border-gray-200 chat-input-container" 
-                style={{ 
-                    flexShrink: 0, 
-                    minHeight: 'auto', 
-                    margin: 0, 
-                    padding: 0, 
-                    marginBottom: 0, 
-                    paddingBottom: 0,
-                }}
-            >
-                <style>{`
-                    .chat-input-container {
-                        position: fixed;
-                        bottom: 0;
-                        left: 0;
-                        right: 0;
-                        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-                    }
-                    @media (min-width: 1024px) {
-                        .chat-input-container {
-                            position: relative !important;
-                            left: auto !important;
-                            right: auto !important;
-                            bottom: auto !important;
-                            box-shadow: none !important;
-                        }
-                    }
-                `}</style>
-                <div className="w-full px-4 pt-4 pb-4 sm:px-4 sm:pt-4 sm:pb-4 lg:px-6 lg:pt-3 lg:pb-3" style={{ 
-                    paddingBottom: 'max(1rem, calc(1rem + env(safe-area-inset-bottom, 0px)))', 
-                    paddingTop: '1rem', 
-                    marginBottom: 0 
-                }}>
-                    <div className="max-w-4xl mx-auto">
-                        {/* PromptInput Container - Más limpio y moderno */}
-                        <div className="relative bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden focus-within:border-blue-400 focus-within:shadow-md transition-all duration-200">
-                            {/* Header - Attachments */}
-                            {(selectedFiles.length > 0 || location) && (
-                                <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/80">
-                                    <div className="flex flex-wrap gap-2">
-                                        {selectedFiles.map((file, index) => (
-                                            <div
-                                                key={index}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-xs shadow-sm"
-                                                style={{
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                <Paperclip className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-                                                <div className="flex-1 min-w-0">
-                                                    <p 
-                                                        className="font-medium text-gray-900 truncate max-w-[100px] sm:max-w-[120px]"
-                                                        style={{
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        {file.name}
-                                                    </p>
-                                                    <p 
-                                                        className="text-gray-500"
-                                                        style={{
-                                                            fontSize: '11px',
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        {formatFileSize(file.size)}
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const newFiles = [...selectedFiles];
-                                                        newFiles.splice(index, 1);
-                                                        setSelectedFiles(newFiles);
-                                                    }}
-                                                    className="ml-0.5 p-0.5 rounded hover:bg-gray-100 transition-colors"
-                                                >
-                                                    <X className="w-3 h-3 text-gray-500" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {location && (
-                                            <div 
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-xs shadow-sm"
-                                                style={{
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                <MapPin className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
-                                                <div 
-                                                    className="font-medium text-green-700"
-                                                    style={{
-                                                        fontSize: '11px',
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    }}
-                                                >
-                                                    {parseFloat(location.latitude).toFixed(4)}, {parseFloat(location.longitude).toFixed(4)}
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setLocation(null)}
-                                                    className="ml-0.5 p-0.5 rounded hover:bg-green-100 transition-colors"
-                                                >
-                                                    <X className="w-3 h-3 text-green-700" />
-                                                </button>
+                                })
+                        )
+                    ) : (
+                        <div className="flex items-center justify-center h-full">
+                            <p className="text-gray-500 text-center">
+                                No hay mensajes aún. ¡Empieza la conversación!
+                            </p>
                                             </div>
                                         )}
+                <div ref={messagesEndRef} />
                                     </div>
-                                </div>
-                            )}
 
-                            {/* Body - Textarea - Más limpio */}
-                            <div className="px-5 py-3.5">
-                                <textarea
+            {/* Input */}
+            <div className="flex gap-2 p-4 border-t border-gray-200 bg-white rounded-b-lg relative z-10">
+                <input
+                    type="text"
                                     value={newMessage}
-                                    onChange={(e) => {
-                                        setNewMessage(e.target.value);
-                                        // Auto-resize
-                                        e.target.style.height = 'auto';
-                                        e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                                    }}
-                                    placeholder="Escribe un mensaje..."
-                                    className="w-full bg-transparent resize-none text-gray-900 placeholder:text-gray-400 leading-relaxed focus:outline-none border-0 focus:ring-0"
-                                    rows={1}
-                                    style={{ 
-                                        minHeight: '48px', 
-                                        maxHeight: '120px',
-                                        fontSize: '16px',
-                                        lineHeight: '22px',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey && (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending) {
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
                                             e.preventDefault();
+                            if (newMessage.trim() || selectedFiles.length > 0 || location) {
                                             handleSendMessage();
+                            }
                                         }
                                     }}
+                    placeholder={isSending ? "Enviando..." : "Escribe tu mensaje..."}
                                     disabled={isSending}
-                                />
-                            </div>
-
-                            {/* Footer - Tools and Submit - Más limpio */}
-                            <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3 min-w-0">
-                                {/* Tools - Left side */}
-                                <div className="flex items-center gap-2.5 flex-shrink-0">
-                                    <label className="cursor-pointer">
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    style={{ pointerEvents: 'auto' }}
+                />
                                         <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            asChild
-                                            className="h-10 w-10 rounded-full hover:bg-gray-200/80 transition-all active:scale-95"
-                                        >
-                                            <span>
-                                                <Paperclip className="w-4.5 h-4.5 text-gray-600" />
-                                                <span className="sr-only">Adjuntar archivo</span>
-                                            </span>
-                                        </Button>
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept=".jpg,.jpeg,.png,.mp4"
-                                            onChange={handleFileChange}
-                                            className="hidden"
-                                            disabled={isSending}
-                                        />
-                                    </label>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={handleOpenMapModal}
-                                        className="h-10 w-10 rounded-full hover:bg-gray-200/80 transition-all active:scale-95"
-                                        title="Seleccionar ubicación"
-                                    >
-                                        <MapPin className="w-4.5 h-4.5 text-gray-600" />
-                                        <span className="sr-only">Ubicación</span>
-                                    </Button>
-                                </div>
-
-                                {/* Submit Button - Right side */}
-                                <Button
-                                    type="button"
                                     onClick={handleSendMessage}
-                                    size="icon"
-                                    className={`h-10 w-10 rounded-full transition-all duration-200 shrink-0 shadow-sm ${
-                                        isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)
-                                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                            : messageSent
-                                            ? 'bg-green-500 text-white hover:bg-green-600 active:scale-95'
-                                            : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
-                                    }`}
-                                    disabled={isSending || (!newMessage.trim() && selectedFiles.length === 0 && !location)}
+                    disabled={!newMessage.trim() && selectedFiles.length === 0 && !location || isSending}
+                    className="rounded-full px-6"
                                 >
                                     {isSending ? (
-                                        <Loader2 className="w-4.5 h-4.5 animate-spin" />
-                                    ) : messageSent ? (
-                                        <CheckCircle2 className="w-4.5 h-4.5" />
+                        'Enviando...'
                                     ) : (
-                                        <Send className="w-4.5 h-4.5" />
+                        <Send className="w-4 h-4" />
                                     )}
-                                    <span className="sr-only">Enviar mensaje</span>
                                 </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             {/* Map Modal */}

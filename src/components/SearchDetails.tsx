@@ -73,6 +73,7 @@ interface NewAd {
 interface SearchDetailsProps {
     isAdmin: boolean;
     onBack?: () => void;
+    searchHireId?: number; // ✅ Opcional: si se pasa, se usa directamente (para rutas /searchhire/:id)
 }
 
 const categoryBanners: { [key: number]: string } = {
@@ -88,7 +89,7 @@ const statusRoadmap = [
     { label: 'Completado', status: 'completed', color: 'bg-green-600' },
 ];
 
-export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
+export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHireIdProp }: SearchDetailsProps) {
     const queryClient = useQueryClient();
     const { id } = useParams<{ id: string }>();
     const searchIdParam = parseInt(id || '0', 10);
@@ -201,9 +202,10 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
     }, [searchIdParam]);
 
     // ? HOOK OPTIMIZADO - Reemplaza múltiples queries
-    // ✅ Obtener searchHireId desde la URL o intentar obtenerlo de los datos después
+    // ✅ Obtener searchHireId desde prop, URL query params, o intentar obtenerlo de los datos después
+    // Prioridad: 1) Prop searchHireId, 2) Query param, 3) De los datos
     const searchHireIdFromUrl = new URLSearchParams(window.location.search).get('searchHireId');
-    const initialSearchHireId = searchHireIdFromUrl ? parseInt(searchHireIdFromUrl, 10) : undefined;
+    const initialSearchHireId = searchHireIdProp || (searchHireIdFromUrl ? parseInt(searchHireIdFromUrl, 10) : undefined);
     
     const {
         search,
@@ -1282,7 +1284,7 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 bg-gray-50 lg:gap-2 overflow-hidden" style={{ minHeight: 0, flex: '1 1 0%', overflow: 'hidden', padding: 0 }}>
                 {/* Chat Section - Izquierda en desktop, tabs en móvil - Más grande */}
                 {canViewChat && (
-                    <div className="flex-1 lg:w-[70%] xl:w-[75%] bg-white flex flex-col lg:rounded-lg lg:border lg:border-gray-200/60 lg:overflow-hidden flex-shrink-0 min-h-0" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', margin: 0 }}>
+                    <div className="flex-1 lg:w-[70%] xl:w-[75%] bg-white flex flex-col flex-shrink-0 min-h-0 overflow-hidden" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', margin: 0, padding: 0 }}>
                         {/* Tabs - Solo en móvil - Minimalista */}
                         <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')} className="w-full flex flex-col flex-1 min-h-0" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
                             <div className="bg-white sticky top-0 z-40 lg:hidden flex-shrink-0 border-b border-gray-200">
@@ -1318,8 +1320,8 @@ export default function SearchDetails({ isAdmin, onBack }: SearchDetailsProps) {
 
                             {/* Chat Content - Visible siempre en desktop, solo en tab chat en móvil - Con scroll interno */}
                             {(activeTab === 'chat' || !activeTab) && (
-                                <TabsContent value="chat" className="mt-0 flex-1 flex flex-col lg:mt-0 lg:flex min-h-0 overflow-hidden" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', flex: '1 1 0%', overflow: 'hidden' }}>
-                                    <div className="h-full flex-1 min-h-0 flex flex-col overflow-hidden" style={{ minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', marginBottom: 0, paddingBottom: 0 }}>
+                                <TabsContent value="chat" className="mt-0 flex-1 flex flex-col min-h-0 overflow-hidden p-0 m-0 h-full">
+                                    <div className="flex-1 w-full overflow-hidden flex flex-col bg-white min-h-0 h-full">
                                     <Chat 
                                         searchId={searchId} 
                                         searchHireId={searchHireId}
