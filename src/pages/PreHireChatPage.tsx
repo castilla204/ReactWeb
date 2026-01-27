@@ -6,7 +6,7 @@ import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 import { Service } from '../hooks/useServices';
 import { PreHireChat } from '../components/PreHireChat';
-import { ArrowLeft, MoreVertical, MapPin, MessageCircle, Star, Clock, Heart } from 'lucide-react';
+import { ArrowLeft, MoreVertical, MapPin, MessageCircle, Star, Clock, Heart, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import {
@@ -38,9 +38,10 @@ export function PreHireChatPage() {
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [authStep, setAuthStep] = useState<string>('');
     const [isChatConnected, setIsChatConnected] = useState(false);
+    const [showAvatarModal, setShowAvatarModal] = useState(false);
     const googleButtonRefLoginDialog = useRef<HTMLDivElement>(null);
     
-    // ✅ Bloquear scroll del body y calcular altura real del viewport en móviles
+    // ✅ Bloquear scroll del body y usar altura dinámica del viewport en móviles
     useEffect(() => {
         const originalOverflow = document.body.style.overflow;
         const originalPosition = document.body.style.position;
@@ -51,7 +52,7 @@ export function PreHireChatPage() {
         
         // Función para calcular altura real del viewport (considera barra de direcciones en móviles)
         const setViewportHeight = () => {
-            // Usar window.innerHeight que es más preciso en móviles
+            // Usar window.innerHeight que es más preciso en móviles (excluye barra de Chrome)
             const vh = window.innerHeight * 0.01;
             document.documentElement.style.setProperty('--vh', `${vh}px`);
         };
@@ -59,9 +60,20 @@ export function PreHireChatPage() {
         // Calcular altura inicial
         setViewportHeight();
         
-        // Recalcular en resize y orientationchange (importante para móviles)
-        window.addEventListener('resize', setViewportHeight);
-        window.addEventListener('orientationchange', setViewportHeight);
+        // Recalcular en resize, orientationchange y visualViewport (importante para móviles)
+        const handleResize = () => {
+            // Pequeño delay para asegurar que la barra de Chrome se haya ocultado/mostrado
+            setTimeout(setViewportHeight, 100);
+        };
+        
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
+        
+        // Visual Viewport API - más preciso para móviles
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleResize);
+            window.visualViewport.addEventListener('scroll', handleResize);
+        }
         
         // Bloquear scroll del body
         document.body.style.overflow = 'hidden';
@@ -77,8 +89,12 @@ export function PreHireChatPage() {
         html.style.overflow = 'hidden';
         
         return () => {
-            window.removeEventListener('resize', setViewportHeight);
-            window.removeEventListener('orientationchange', setViewportHeight);
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleResize);
+                window.visualViewport.removeEventListener('scroll', handleResize);
+            }
             document.body.style.overflow = originalOverflow || '';
             document.body.style.position = originalPosition || '';
             document.body.style.width = originalWidth || '';
@@ -411,6 +427,16 @@ export function PreHireChatPage() {
         return dayMap[day] || day.charAt(0);
     };
     
+    // Función para obtener todos los días de la semana en orden
+    const getAllDays = () => {
+        return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    };
+    
+    // Función para verificar si un día está disponible
+    const isDayAvailable = (day: string) => {
+        return expertAvailability?.daysOfWeek?.includes(day) || false;
+    };
+    
     // Handler para favorito
     const handleFavoriteClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -449,16 +475,15 @@ export function PreHireChatPage() {
         <div 
             className="fixed inset-0 bg-gray-50 flex flex-col overflow-hidden" 
             style={{ 
-                height: 'calc(var(--vh, 1vh) * 100)',
-                height: '100dvh', // Fallback para navegadores modernos
-                height: '100vh' // Fallback final
+                height: '100dvh', // Dynamic Viewport Height - se ajusta cuando la barra de Chrome se oculta
+                height: 'calc(var(--vh, 1vh) * 100)', // Fallback para navegadores que no soportan dvh
             }}
         >
             {/* Header con información del servicio - Estilo Wallapop */}
-            <div className="bg-white flex-shrink-0 shadow-sm border-b border-gray-100">
+            <div className="bg-white flex-shrink-0 shadow-md border-b border-gray-200">
                 <div className="max-w-4xl mx-auto">
                     {/* Header superior con botón atrás y menú */}
-                    <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center justify-between px-4 py-2">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -474,7 +499,7 @@ export function PreHireChatPage() {
                                 to={`/service/${serviceIdNumber}`}
                                 className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                             >
-                                <div className="relative">
+                                <div className="relative cursor-pointer hover:opacity-90 transition-opacity" onClick={(e) => { e.preventDefault(); setShowAvatarModal(true); }}>
                                     <Avatar className="w-10 h-10">
                                         <AvatarImage src={expertAvatar} alt={expertName} />
                                         <AvatarFallback className="bg-gray-900 text-white text-sm">
@@ -511,7 +536,7 @@ export function PreHireChatPage() {
                     
                     {/* Información del servicio - Móvil */}
                     <div className="md:hidden">
-                        <div className="px-4 py-3">
+                        <div className="px-4 py-2">
                             <div className="flex items-start gap-4">
                                 {serviceImage && (
                                     <div 
@@ -632,31 +657,48 @@ export function PreHireChatPage() {
                                         </div>
                                         
                                         {/* Horario del experto */}
-                                        {expertAvailability && expertAvailability.daysOfWeek && expertAvailability.daysOfWeek.length > 0 && (
-                                            <div className="pt-1">
-                                                <div 
-                                                    className="flex flex-wrap items-center gap-1.5"
-                                                    style={{
-                                                        fontSize: '13px',
-                                                        lineHeight: '18px',
-                                                        fontWeight: 400,
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        color: 'rgb(34, 34, 34)',
-                                                    }}
-                                                >
-                                                    {expertAvailability.daysOfWeek.slice(0, 7).map((day: string, idx: number) => (
+                                        <div className="pt-1">
+                                            <div 
+                                                className="flex flex-wrap items-center gap-1.5"
+                                                style={{
+                                                    fontSize: '13px',
+                                                    lineHeight: '18px',
+                                                    fontWeight: 400,
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    color: 'rgb(34, 34, 34)',
+                                                }}
+                                            >
+                                                {getAllDays().map((day: string, idx: number) => {
+                                                    const available = isDayAvailable(day);
+                                                    return (
                                                         <span 
                                                             key={idx} 
-                                                            className="px-2 py-1 bg-gray-100 rounded-md text-gray-700 font-medium"
+                                                            className="px-2 py-1 bg-gray-100 rounded-md font-medium relative inline-block"
                                                             style={{
                                                                 fontSize: '12px',
                                                                 lineHeight: '16px',
+                                                                color: available ? 'rgb(113, 113, 113)' : 'rgb(113, 113, 113)',
                                                             }}
                                                         >
-                                                            {formatDay(day)}
+                                                            <span className="relative z-0">{formatDay(day)}</span>
+                                                            {!available && (
+                                                                <span 
+                                                                    className="absolute text-red-500 font-bold pointer-events-none z-10"
+                                                                    style={{ 
+                                                                        fontSize: '16px',
+                                                                        lineHeight: '1',
+                                                                        top: '2px',
+                                                                        left: '50%',
+                                                                        transform: 'translateX(-50%)',
+                                                                    }}
+                                                                >
+                                                                    ×
+                                                                </span>
+                                                            )}
                                                         </span>
-                                                    ))}
-                                                    {expertAvailability.startTime && expertAvailability.endTime && (
+                                                    );
+                                                })}
+                                                    {expertAvailability?.startTime && expertAvailability?.endTime && (
                                                         <>
                                                             <span className="text-gray-400 mx-1">·</span>
                                                             <span className="text-gray-700 font-medium">
@@ -665,14 +707,13 @@ export function PreHireChatPage() {
                                                         </>
                                                     )}
                                                 </div>
-                                            </div>
-                                        )}
+                                        </div>
                                     </Link>
                                 </div>
                             </div>
                             
                             {/* Barra de botones - Debajo de la imagen */}
-                            <div className="pt-3 pb-2 flex items-center gap-2 w-full">
+                            <div className="pt-2 pb-2 flex items-center gap-2 w-full">
                                 <Button
                                     onClick={handleFavoriteClick}
                                     variant="outline"
@@ -707,7 +748,7 @@ export function PreHireChatPage() {
                     
                     {/* Información del servicio - Desktop */}
                     <div className="hidden md:flex flex-col">
-                        <div className="px-4 py-3">
+                        <div className="px-4 py-2">
                             <div className="flex items-start gap-4">
                                 {serviceImage && (
                                     <div 
@@ -716,7 +757,7 @@ export function PreHireChatPage() {
                                     >
                                         {/* Avatar del experto dentro de la imagen */}
                                         <div className="absolute left-2 bottom-2">
-                                            <div className="relative">
+                                            <div className="relative cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setShowAvatarModal(true)}>
                                                 <Avatar className="w-10 h-10 border-2 border-white shadow-md">
                                                     <AvatarImage src={expertAvatar} alt={expertName} />
                                                     <AvatarFallback className="bg-gray-900 text-white text-sm">
@@ -828,31 +869,48 @@ export function PreHireChatPage() {
                                         </div>
                                         
                                         {/* Horario del experto */}
-                                        {expertAvailability && expertAvailability.daysOfWeek && expertAvailability.daysOfWeek.length > 0 && (
-                                            <div className="pt-1">
-                                                <div 
-                                                    className="flex flex-wrap items-center gap-1.5"
-                                                    style={{
-                                                        fontSize: '13px',
-                                                        lineHeight: '18px',
-                                                        fontWeight: 400,
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        color: 'rgb(34, 34, 34)',
-                                                    }}
-                                                >
-                                                    {expertAvailability.daysOfWeek.slice(0, 7).map((day: string, idx: number) => (
+                                        <div className="pt-1">
+                                            <div 
+                                                className="flex flex-wrap items-center gap-1.5"
+                                                style={{
+                                                    fontSize: '13px',
+                                                    lineHeight: '18px',
+                                                    fontWeight: 400,
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    color: 'rgb(34, 34, 34)',
+                                                }}
+                                            >
+                                                {getAllDays().map((day: string, idx: number) => {
+                                                    const available = isDayAvailable(day);
+                                                    return (
                                                         <span 
                                                             key={idx} 
-                                                            className="px-2 py-1 bg-gray-100 rounded-md text-gray-700 font-medium"
+                                                            className="px-2 py-1 bg-gray-100 rounded-md font-medium relative inline-block"
                                                             style={{
                                                                 fontSize: '12px',
                                                                 lineHeight: '16px',
+                                                                color: available ? 'rgb(113, 113, 113)' : 'rgb(113, 113, 113)',
                                                             }}
                                                         >
-                                                            {formatDay(day)}
+                                                            <span className="relative z-0">{formatDay(day)}</span>
+                                                            {!available && (
+                                                                <span 
+                                                                    className="absolute text-red-500 font-bold pointer-events-none z-10"
+                                                                    style={{ 
+                                                                        fontSize: '16px',
+                                                                        lineHeight: '1',
+                                                                        top: '2px',
+                                                                        left: '50%',
+                                                                        transform: 'translateX(-50%)',
+                                                                    }}
+                                                                >
+                                                                    ×
+                                                                </span>
+                                                            )}
                                                         </span>
-                                                    ))}
-                                                    {expertAvailability.startTime && expertAvailability.endTime && (
+                                                    );
+                                                })}
+                                                    {expertAvailability?.startTime && expertAvailability?.endTime && (
                                                         <>
                                                             <span className="text-gray-400 mx-1">·</span>
                                                             <span className="text-gray-700 font-medium">
@@ -861,14 +919,13 @@ export function PreHireChatPage() {
                                                         </>
                                                     )}
                                                 </div>
-                                            </div>
-                                        )}
+                                        </div>
                                     </Link>
                                 </div>
                             </div>
                             
                             {/* Barra de botones - Debajo de la imagen */}
-                            <div className="pt-3 pb-3 flex items-center gap-2 w-full">
+                            <div className="pt-2 pb-2 flex items-center gap-2 w-full">
                                 <Button
                                     onClick={handleFavoriteClick}
                                     variant="outline"
@@ -905,7 +962,7 @@ export function PreHireChatPage() {
             
             {/* Chat Container - Ocupa el resto del espacio */}
             {service && !loading && (
-                <div className="flex-1 max-w-4xl mx-auto w-full overflow-hidden flex flex-col bg-white">
+                <div className="flex-1 max-w-4xl mx-auto w-full overflow-hidden flex flex-col bg-white min-h-0">
                     <PreHireChat
                         serviceId={serviceIdNumber}
                         token={token}
@@ -914,6 +971,30 @@ export function PreHireChatPage() {
                     />
                 </div>
             )}
+            
+            {/* Modal para ampliar foto de perfil */}
+            <Dialog open={showAvatarModal} onOpenChange={setShowAvatarModal}>
+                <DialogContent className="max-w-2xl p-0 bg-transparent border-0 shadow-none">
+                    <div className="relative bg-black/80 backdrop-blur-sm rounded-lg p-4">
+                        <button
+                            onClick={() => setShowAvatarModal(false)}
+                            className="absolute -top-3 -right-3 text-white bg-black/70 rounded-full p-2 hover:bg-black/90 transition-colors z-10 shadow-lg"
+                            aria-label="Cerrar"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                        <img
+                            src={expertAvatar || (service?.expert?.id ? `/api/Users/${service.expert.id}/profile-picture` : '')}
+                            alt={expertName}
+                            className="w-full h-auto rounded-lg shadow-2xl max-h-[80vh] object-contain mx-auto"
+                            onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                            }}
+                        />
+                    </div>
+                </DialogContent>
+            </Dialog>
             
             {/* Dialog para Login cuando el usuario no está autenticado */}
             <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
