@@ -142,6 +142,7 @@ export const API_CONFIG = {
             conversationBySearchHire: (searchHireId: number) => `${API_PATH}/chat/by-searchhire/${searchHireId}`,
             conversationByService: (searchServiceId: number) => `${API_PATH}/Chat/conversation-by-service?searchServiceId=${searchServiceId}`,
             preHireConversations: `${API_PATH}/Chat/pre-hire-conversations`,  // ✅ NUEVO: Lista de conversaciones pre-contratación del experto
+            myConversations: `${API_PATH}/Chat/my-conversations`,  // ✅ NUEVO: Todas las conversaciones del cliente (pre y post contratación)
             message: `${API_PATH}/chat/message`,
             markAsRead: (messageId: number) => `${API_PATH}/chat/message/${messageId}/read`,
             ws: `${API_PATH}/chat/ws`,
