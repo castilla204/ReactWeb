@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase, Wallet, Globe } from 'lucide-react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { NotificationCenter } from './components/NotificationCenter';
 import { useNotifications } from './hooks/useNotifications';
@@ -45,6 +45,7 @@ import HomePage from './pages/HomePage';
 import ServiceDetailPage from './pages/ServiceDetailPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { PreHireChatPage } from './pages/PreHireChatPage';
+import { MessagesPage } from './pages/MessagesPage';
 import QuienesSomosPage from './pages/QuienesSomosPage';
 import ComoFuncionaPage from './pages/ComoFuncionaPage';
 import FAQPage from './pages/FAQPage';
@@ -83,6 +84,22 @@ const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
         <SearchDetails 
             onBack={() => navigate(-1)} 
             isAdmin={isAdmin} 
+        />
+    );
+};
+
+// ✅ Wrapper específico para rutas con searchHireId (post-contratación)
+// La ruta /searchhire/:id pasa el id como searchHireId directamente
+const SearchDetailsByHireWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
+    const navigate = useNavigate();
+    const { id } = useParams<{ id: string }>();
+    const searchHireId = id ? parseInt(id, 10) : undefined;
+    
+    return (
+        <SearchDetails 
+            onBack={() => navigate(-1)} 
+            isAdmin={isAdmin}
+            searchHireId={searchHireId}
         />
     );
 };
@@ -628,6 +645,8 @@ const AppContent: React.FC = () => {
                             {/* Rutas protegidas con MFA */}
                             <Route path="/busquedas" element={<ProtectedRouteWithMFA><SearchesPage /></ProtectedRouteWithMFA>} />
                             <Route path="/busquedas/:id" element={<ProtectedRouteWithMFA><SearchDetailsWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRouteWithMFA>} />
+                            {/* ✅ Ruta específica para searchHireId (post-contratación) */}
+                            <Route path="/searchhire/:id" element={<ProtectedRouteWithMFA><SearchDetailsByHireWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRouteWithMFA>} />
                             <Route path="/detalles/:id" element={<ProtectedRouteWithMFA><SearchResultsPage /></ProtectedRouteWithMFA>} />
                             {/* Admin Routes */}
                             <Route path="/admin" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Admin]}><AdminLayout /></ProtectedRouteWithMFA>}>
@@ -646,6 +665,7 @@ const AppContent: React.FC = () => {
                             <Route path="/service/:serviceId" element={<ServiceDetailPage />} />
                             <Route path="/checkout/:serviceId" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
                             <Route path="/chat-pre-contratacion/:serviceId" element={<ProtectedRoute><PreHireChatPage /></ProtectedRoute>} />
+                            <Route path="/mis-mensajes" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                             <Route path="/crear-busqueda" element={<SearchCreationPage />} />
                             <Route path="/quienes-somos" element={<QuienesSomosPage />} />
                             <Route path="/como-funciona" element={<ComoFuncionaPage />} />

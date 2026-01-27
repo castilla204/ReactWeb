@@ -181,12 +181,19 @@ export interface Deliverable {
 
 /** Resumen de mensaje para listas */
 export interface MessageSummaryDto {
-  Id: number
-  Content: string
-  SentAt: string
+  id: number
+  content: string
+  sentAt: string
+  senderId?: number | null
+  senderName: string
+  isRead: boolean
+  // Compatibilidad con PascalCase (legacy)
+  Id?: number
+  Content?: string
+  SentAt?: string
   SenderId?: number | null
-  SenderName: string
-  IsRead: boolean
+  SenderName?: string
+  IsRead?: boolean
 }
 
 /** Resumen de conversación pre-contratación para el experto */
@@ -203,6 +210,61 @@ export interface PreHireConversationSummaryDto {
   UnreadCount: number
   CreatedAt: string
   UpdatedAt: string
+}
+
+/** Resumen de conversación para la lista de mensajes (puede ser pre-contratación o details-complete) */
+export interface ConversationSummaryDto {
+  ConversationId: number
+  SearchServiceId: number | null  // null si es details-complete
+  SearchHireId: number | null  // null si es pre-contratación
+  ServiceName?: string  // Solo para pre-contratación
+  ServicePrice?: number  // Solo para pre-contratación
+  ServiceImageUrl?: string  // Solo para pre-contratación
+  ClientId?: number
+  ClientName: string
+  ClientProfilePictureUrl?: string
+  ExpertId?: number
+  ExpertName?: string
+  ExpertProfilePictureUrl?: string
+  LastMessage?: MessageSummaryDto
+  UnreadCount: number
+  CreatedAt: string
+  UpdatedAt: string
+  IsPreHire: boolean  // true si es pre-contratación, false si es details-complete
+}
+
+/** Resumen de conversación del cliente (pre y post contratación) - DTO del backend */
+export interface ClientConversationSummaryDto {
+  // Información básica de la conversación
+  conversationId: number
+  conversationType: "pre-hire" | "post-hire"
+  createdAt: string
+  updatedAt: string
+  unreadCount: number
+  lastMessage: MessageSummaryDto | null
+
+  // Información del experto (común para ambos tipos)
+  expertId: number | null
+  expertName: string
+  expertProfilePictureUrl: string | null
+
+  // Información para PRE-CONTRATACIÓN (solo si conversationType === "pre-hire")
+  searchServiceId?: number | null
+  serviceName?: string | null
+  servicePrice?: number | null
+  serviceImageUrl?: string | null
+
+  // Información para POST-CONTRATACIÓN (solo si conversationType === "post-hire")
+  searchHireId?: number | null
+  hireStatus?: string | null
+  hireStatusTranslated?: string | null
+  hireCreatedAt?: string | null
+  hireAmount?: number | null
+  hireBaseAmount?: number | null
+  hireTaxAmount?: number | null
+  searchTitle?: string | null
+  searchDescription?: string | null
+  // También incluye searchServiceId, serviceName, servicePrice, serviceImageUrl para post-hire
 }
 
 // ==========================================

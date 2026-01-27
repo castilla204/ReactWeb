@@ -289,6 +289,7 @@ export const MobileBottomBar: React.FC = () => {
   const exploreActive = isActive('/');
   const wishlistsActive = isActive('/favoritos');
   const searchesActive = isActive('/busquedas');
+  const messagesActive = isActive('/mis-mensajes');
   // profileActive solo cuando está autenticado Y está en perfil
   const profileActive = isAuthenticated && showProfileMenu;
 
@@ -306,6 +307,14 @@ export const MobileBottomBar: React.FC = () => {
     } else {
       // Si no está autenticado, redirigir a la página principal donde puede iniciar sesión
       navigate('/');
+    }
+  };
+
+  const handleMessagesClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isAuthenticated) {
+      navigate('/mis-mensajes');
     }
   };
 
@@ -635,10 +644,10 @@ export const MobileBottomBar: React.FC = () => {
         {isAuthenticated && (
           <button
             type="button"
-            onClick={handleSearchesClick}
-            onTouchEnd={handleSearchesClick}
-            aria-current={searchesActive ? 'page' : undefined}
-            disabled={searchesActive}
+            onClick={handleMessagesClick}
+            onTouchEnd={handleMessagesClick}
+            aria-current={messagesActive ? 'page' : undefined}
+            disabled={messagesActive}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -651,8 +660,8 @@ export const MobileBottomBar: React.FC = () => {
               border: 'none',
               background: 'transparent',
               padding: 0,
-              color: searchesActive ? '#ec4899' : '#717171',
-              cursor: searchesActive ? 'default' : 'pointer',
+              color: messagesActive ? '#ec4899' : '#717171',
+              cursor: messagesActive ? 'default' : 'pointer',
               touchAction: 'manipulation',
               WebkitTapHighlightColor: 'transparent',
             }}
@@ -672,7 +681,7 @@ export const MobileBottomBar: React.FC = () => {
                   size={24}
                   strokeWidth={2}
                   style={{
-                    color: searchesActive ? '#ec4899' : '#717171',
+                    color: messagesActive ? '#ec4899' : '#717171',
                   }}
                 />
               </div>
@@ -681,7 +690,7 @@ export const MobileBottomBar: React.FC = () => {
               fontSize: '10px',
               lineHeight: '12px',
               fontWeight: 600,
-              color: searchesActive ? '#ec4899' : '#717171',
+              color: messagesActive ? '#ec4899' : '#717171',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
               letterSpacing: '0',
             }}>

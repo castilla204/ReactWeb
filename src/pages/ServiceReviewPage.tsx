@@ -948,8 +948,11 @@ export function ServiceReviewPage({
                                     <div style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(34, 34, 34)', fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
                                         Revisor: {finalExpertName}
                                         </div>
-                                    <div className="mt-1" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(113, 113, 113)', fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
+                                    <div className="mt-1 hidden md:block" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(113, 113, 113)', fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
                                         Revisor verificado de inspecciono.com
+                                    </div>
+                                    <div className="mt-1 md:hidden" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(113, 113, 113)', fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
+                                        Revisor verificado
                                     </div>
                                 </div>
                             </div>
@@ -958,7 +961,7 @@ export function ServiceReviewPage({
                                 <Button
                                     onClick={handleChatClick}
                                     variant="outline"
-                                    className="flex items-center gap-2"
+                                    className="flex items-center gap-2 rounded-full border-gray-300 hover:border-gray-400"
                                 >
                                     <MessageCircle className="w-4 h-4" />
                                     <span>Chat</span>
@@ -2370,8 +2373,11 @@ export function ServiceReviewPage({
                                             <div style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(34, 34, 34)', fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
                                                 Revisor: {finalExpertName}
                                             </div>
-                                            <div className="mt-1" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(113, 113, 113)', fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
+                                            <div className="mt-1 hidden md:block" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(113, 113, 113)', fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
                                                 Revisor verificado de inspecciono.com
+                                            </div>
+                                            <div className="mt-1 md:hidden" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(113, 113, 113)', fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' }}>
+                                                Revisor verificado
                                             </div>
                                         </div>
                                     </div>
@@ -2380,7 +2386,7 @@ export function ServiceReviewPage({
                                         <Button
                                             onClick={handleChatClick}
                                             variant="outline"
-                                            className="flex items-center gap-2"
+                                            className="flex items-center gap-2 rounded-full border-gray-300 hover:border-gray-400"
                                         >
                                             <MessageCircle className="w-4 h-4" />
                                             <span>Chat</span>
