@@ -37,7 +37,58 @@ export function PreHireChatPage() {
     const [isGoogleReady, setIsGoogleReady] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [authStep, setAuthStep] = useState<string>('');
+    const [isChatConnected, setIsChatConnected] = useState(false);
     const googleButtonRefLoginDialog = useRef<HTMLDivElement>(null);
+    
+    // ✅ Bloquear scroll del body y calcular altura real del viewport en móviles
+    useEffect(() => {
+        const originalOverflow = document.body.style.overflow;
+        const originalPosition = document.body.style.position;
+        const originalWidth = document.body.style.width;
+        const originalHeight = document.body.style.height;
+        const originalTop = document.body.style.top;
+        const originalLeft = document.body.style.left;
+        
+        // Función para calcular altura real del viewport (considera barra de direcciones en móviles)
+        const setViewportHeight = () => {
+            // Usar window.innerHeight que es más preciso en móviles
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        
+        // Calcular altura inicial
+        setViewportHeight();
+        
+        // Recalcular en resize y orientationchange (importante para móviles)
+        window.addEventListener('resize', setViewportHeight);
+        window.addEventListener('orientationchange', setViewportHeight);
+        
+        // Bloquear scroll del body
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.body.style.height = '100%';
+        document.body.style.top = '0';
+        document.body.style.left = '0';
+        
+        // También bloquear scroll del html
+        const html = document.documentElement;
+        const originalHtmlOverflow = html.style.overflow;
+        html.style.overflow = 'hidden';
+        
+        return () => {
+            window.removeEventListener('resize', setViewportHeight);
+            window.removeEventListener('orientationchange', setViewportHeight);
+            document.body.style.overflow = originalOverflow || '';
+            document.body.style.position = originalPosition || '';
+            document.body.style.width = originalWidth || '';
+            document.body.style.height = originalHeight || '';
+            document.body.style.top = originalTop || '';
+            document.body.style.left = originalLeft || '';
+            html.style.overflow = originalHtmlOverflow || '';
+            document.documentElement.style.removeProperty('--vh');
+        };
+    }, []);
     
     // Hook para favoritos - DEBE estar antes de cualquier return
     const { toggleFavoriteAsync, checkFavorite } = useServiceFavorites();
@@ -395,12 +446,19 @@ export function PreHireChatPage() {
     };
     
     return (
-        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+        <div 
+            className="fixed inset-0 bg-gray-50 flex flex-col overflow-hidden" 
+            style={{ 
+                height: 'calc(var(--vh, 1vh) * 100)',
+                height: '100dvh', // Fallback para navegadores modernos
+                height: '100vh' // Fallback final
+            }}
+        >
             {/* Header con información del servicio - Estilo Wallapop */}
-            <div className="bg-white flex-shrink-0">
+            <div className="bg-white flex-shrink-0 shadow-sm border-b border-gray-100">
                 <div className="max-w-4xl mx-auto">
                     {/* Header superior con botón atrás y menú */}
-                    <div className="flex items-center justify-between px-4 py-2">
+                    <div className="flex items-center justify-between px-4 py-3">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -416,12 +474,17 @@ export function PreHireChatPage() {
                                 to={`/service/${serviceIdNumber}`}
                                 className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                             >
-                                <Avatar className="w-10 h-10">
-                                    <AvatarImage src={expertAvatar} alt={expertName} />
-                                    <AvatarFallback className="bg-gray-900 text-white text-sm">
-                                        {expertName.charAt(0)}
-                                    </AvatarFallback>
-                                </Avatar>
+                                <div className="relative">
+                                    <Avatar className="w-10 h-10">
+                                        <AvatarImage src={expertAvatar} alt={expertName} />
+                                        <AvatarFallback className="bg-gray-900 text-white text-sm">
+                                            {expertName.charAt(0)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    {isChatConnected && (
+                                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse"></span>
+                                    )}
+                                </div>
                                 <h5 className="font-semibold text-gray-900">{expertName}</h5>
                             </Link>
                         </div>
@@ -448,7 +511,7 @@ export function PreHireChatPage() {
                     
                     {/* Información del servicio - Móvil */}
                     <div className="md:hidden">
-                        <div className="px-4 py-1">
+                        <div className="px-4 py-3">
                             <div className="flex items-start gap-4">
                                 {serviceImage && (
                                     <div 
@@ -457,12 +520,17 @@ export function PreHireChatPage() {
                                     >
                                         {/* Avatar del experto dentro de la imagen */}
                                         <div className="absolute left-2 bottom-2">
-                                            <Avatar className="w-10 h-10 border-2 border-white shadow-md">
-                                                <AvatarImage src={expertAvatar} alt={expertName} />
-                                                <AvatarFallback className="bg-gray-900 text-white text-sm">
-                                                    {expertName.charAt(0)}
-                                                </AvatarFallback>
-                                            </Avatar>
+                                            <div className="relative">
+                                                <Avatar className="w-10 h-10 border-2 border-white shadow-md">
+                                                    <AvatarImage src={expertAvatar} alt={expertName} />
+                                                    <AvatarFallback className="bg-gray-900 text-white text-sm">
+                                                        {expertName.charAt(0)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                {isChatConnected && (
+                                                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse"></span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -472,7 +540,7 @@ export function PreHireChatPage() {
                                         className="flex flex-col gap-1"
                                     >
                                     {/* Precio del servicio */}
-                                    <div>
+                                    <div className="flex items-center gap-2">
                                         <div 
                                             style={{
                                                 fontSize: '18px',
@@ -486,6 +554,12 @@ export function PreHireChatPage() {
                                         >
                                             {formatPrice(servicePrice)}€
                                         </div>
+                                        {isChatConnected && (
+                                            <span className="flex items-center gap-1 text-xs text-green-600">
+                                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                                <span>Conectado</span>
+                                            </span>
+                                        )}
                                     </div>
                                         
                                         {/* Información del experto */}
@@ -598,7 +672,7 @@ export function PreHireChatPage() {
                             </div>
                             
                             {/* Barra de botones - Debajo de la imagen */}
-                            <div className="pt-1.5 flex items-center gap-2 w-full">
+                            <div className="pt-3 pb-2 flex items-center gap-2 w-full">
                                 <Button
                                     onClick={handleFavoriteClick}
                                     variant="outline"
@@ -633,7 +707,7 @@ export function PreHireChatPage() {
                     
                     {/* Información del servicio - Desktop */}
                     <div className="hidden md:flex flex-col">
-                        <div className="px-4 py-1">
+                        <div className="px-4 py-3">
                             <div className="flex items-start gap-4">
                                 {serviceImage && (
                                     <div 
@@ -642,12 +716,17 @@ export function PreHireChatPage() {
                                     >
                                         {/* Avatar del experto dentro de la imagen */}
                                         <div className="absolute left-2 bottom-2">
-                                            <Avatar className="w-10 h-10 border-2 border-white shadow-md">
-                                                <AvatarImage src={expertAvatar} alt={expertName} />
-                                                <AvatarFallback className="bg-gray-900 text-white text-sm">
-                                                    {expertName.charAt(0)}
-                                                </AvatarFallback>
-                                            </Avatar>
+                                            <div className="relative">
+                                                <Avatar className="w-10 h-10 border-2 border-white shadow-md">
+                                                    <AvatarImage src={expertAvatar} alt={expertName} />
+                                                    <AvatarFallback className="bg-gray-900 text-white text-sm">
+                                                        {expertName.charAt(0)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                {isChatConnected && (
+                                                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse"></span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -657,7 +736,7 @@ export function PreHireChatPage() {
                                         className="flex flex-col gap-1 hover:opacity-90 transition-opacity"
                                     >
                                 {/* Precio */}
-                                <div>
+                                <div className="flex items-center gap-2">
                                     <div 
                                         style={{
                                             fontSize: '22px',
@@ -671,6 +750,12 @@ export function PreHireChatPage() {
                                     >
                                         {formatPrice(servicePrice)}€
                                     </div>
+                                    {isChatConnected && (
+                                        <span className="flex items-center gap-1 text-xs text-green-600">
+                                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                            <span>Conectado</span>
+                                        </span>
+                                    )}
                                 </div>
                                             
                                         {/* Información del experto */}
@@ -783,7 +868,7 @@ export function PreHireChatPage() {
                             </div>
                             
                             {/* Barra de botones - Debajo de la imagen */}
-                            <div className="pt-1.5 flex items-center gap-2 w-full">
+                            <div className="pt-3 pb-3 flex items-center gap-2 w-full">
                                 <Button
                                     onClick={handleFavoriteClick}
                                     variant="outline"
@@ -820,11 +905,12 @@ export function PreHireChatPage() {
             
             {/* Chat Container - Ocupa el resto del espacio */}
             {service && !loading && (
-                <div className="flex-1 max-w-4xl mx-auto w-full overflow-hidden flex flex-col">
+                <div className="flex-1 max-w-4xl mx-auto w-full overflow-hidden flex flex-col bg-white">
                     <PreHireChat
                         serviceId={serviceIdNumber}
                         token={token}
                         userId={userId}
+                        onConnectionChange={setIsChatConnected}
                     />
                 </div>
             )}
