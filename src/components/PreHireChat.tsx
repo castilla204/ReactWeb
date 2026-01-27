@@ -13,6 +13,7 @@ interface PreHireChatProps {
   token: string;
   userId: number;
   onClose?: () => void;
+  onConnectionChange?: (isConnected: boolean) => void;
 }
 
 interface Message {
@@ -42,7 +43,7 @@ interface Conversation {
   messages: Message[];
 }
 
-export const PreHireChat = ({ serviceId, token, userId, onClose }: PreHireChatProps) => {
+export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionChange }: PreHireChatProps) => {
   const { user } = useAuth();
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -447,7 +448,13 @@ export const PreHireChat = ({ serviceId, token, userId, onClose }: PreHireChatPr
           console.error('❌ [PreHireChat] Error:', err);
         }
         
-        setIsConnected(status === 'SUBSCRIBED');
+        const connected = status === 'SUBSCRIBED';
+        setIsConnected(connected);
+        
+        // Notificar cambio de conexión al componente padre
+        if (onConnectionChange) {
+          onConnectionChange(connected);
+        }
         
         if (status === 'SUBSCRIBED') {
           console.log('✅ [PreHireChat] Conectado a Supabase Realtime');
@@ -463,8 +470,16 @@ export const PreHireChat = ({ serviceId, token, userId, onClose }: PreHireChatPr
             console.log('🔑 [PreHireChat] Sesión:', data.session ? 'Activa' : 'Inactiva');
             console.log('🔑 [PreHireChat] Error:', error);
           });
+          // Notificar desconexión
+          if (onConnectionChange) {
+            onConnectionChange(false);
+          }
         } else if (status === 'TIMED_OUT') {
           console.error('⏱️ [PreHireChat] Timeout. Verifica conexión y CSP.');
+          // Notificar desconexión
+          if (onConnectionChange) {
+            onConnectionChange(false);
+          }
         }
       });
 
@@ -667,25 +682,9 @@ export const PreHireChat = ({ serviceId, token, userId, onClose }: PreHireChatPr
                 </div>
             )}
             
-            {/* Indicador de conexión cuando no hay header (página completa) */}
-            {!onClose && (
-                <div className="flex items-center justify-end px-4 py-2 border-b border-gray-200 bg-gray-50">
-                    {isConnected ? (
-                        <span className="text-xs text-green-600 flex items-center gap-1">
-                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            Conectado
-                        </span>
-                    ) : (
-                        <span className="text-xs text-red-600 flex items-center gap-1">
-                            <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                            Desconectado
-                        </span>
-                    )}
-                </div>
-            )}
 
       {/* Lista de mensajes */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-500 text-center">
