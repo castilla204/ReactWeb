@@ -475,15 +475,14 @@ export function PreHireChatPage() {
         <div 
             className="fixed inset-0 bg-gray-50 flex flex-col overflow-hidden" 
             style={{ 
-                height: '100dvh', // Dynamic Viewport Height - se ajusta cuando la barra de Chrome se oculta
                 height: 'calc(var(--vh, 1vh) * 100)', // Fallback para navegadores que no soportan dvh
             }}
         >
             {/* Header con información del servicio - Estilo Wallapop */}
-            <div className="bg-white flex-shrink-0 shadow-md border-b border-gray-200">
+            <div className="bg-gray-50 flex-shrink-0 shadow-sm border-b border-gray-200">
                 <div className="max-w-4xl mx-auto">
                     {/* Header superior con botón atrás y menú */}
-                    <div className="flex items-center justify-between px-4 py-2">
+                    <div className="flex items-center justify-between px-4 py-1.5">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -536,60 +535,21 @@ export function PreHireChatPage() {
                     
                     {/* Información del servicio - Móvil */}
                     <div className="md:hidden">
-                        <div className="px-4 py-2">
-                            <div className="flex items-start gap-4">
-                                {serviceImage && (
-                                    <div 
-                                        className="relative w-32 h-40 rounded-lg flex-shrink-0 bg-gray-200 bg-cover bg-center overflow-hidden"
-                                        style={{ backgroundImage: `url(${serviceImage})` }}
-                                    >
-                                        {/* Avatar del experto dentro de la imagen */}
-                                        <div className="absolute left-2 bottom-2">
-                                            <div className="relative">
-                                                <Avatar className="w-10 h-10 border-2 border-white shadow-md">
-                                                    <AvatarImage src={expertAvatar} alt={expertName} />
-                                                    <AvatarFallback className="bg-gray-900 text-white text-sm">
-                                                        {expertName.charAt(0)}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                {isChatConnected && (
-                                                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse"></span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="flex-1 min-w-0 flex flex-col gap-1">
-                                    <Link 
-                                        to={`/service/${serviceIdNumber}`}
-                                        className="flex flex-col gap-1"
-                                    >
-                                    {/* Precio del servicio */}
-                                    <div className="flex items-center gap-2">
+                        <div className="px-4 py-3">
+                            {/* Sección del experto - A la derecha de la foto */}
+                            <div className="mb-3">
+                                <div className="flex items-start gap-3">
+                                    {serviceImage && (
                                         <div 
-                                            style={{
-                                                fontSize: '18px',
-                                                lineHeight: '24px',
-                                                fontWeight: 600,
-                                                color: 'rgb(34, 34, 34)',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                margin: 0,
-                                                padding: 0,
-                                            }}
+                                            className="relative w-16 h-16 rounded-lg flex-shrink-0 bg-gray-200 bg-cover bg-center overflow-hidden"
+                                            style={{ backgroundImage: `url(${serviceImage})` }}
+                                        />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <Link 
+                                            to={`/service/${serviceIdNumber}`}
+                                            className="block"
                                         >
-                                            {formatPrice(servicePrice)}€
-                                        </div>
-                                        {isChatConnected && (
-                                            <span className="flex items-center gap-1 text-xs text-green-600">
-                                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                                <span>Conectado</span>
-                                            </span>
-                                        )}
-                                    </div>
-                                        
-                                        {/* Información del experto */}
-                                        <div className="pt-1">
-                                            <div className="flex items-center gap-2">
                                             <div 
                                                 style={{
                                                     fontSize: '14px',
@@ -597,15 +557,25 @@ export function PreHireChatPage() {
                                                     fontWeight: 400,
                                                     color: 'rgb(34, 34, 34)',
                                                     fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    margin: 0,
-                                                    padding: 0,
+                                                    marginBottom: '4px',
                                                 }}
                                             >
                                                 {expertName}
                                             </div>
-                                                {expertRating > 0 && (
-                                                    <div className="flex items-center gap-1">
-                                                        <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                                            {expertRating > 0 && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="flex items-center gap-0.5">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <Star
+                                                                key={star}
+                                                                className={`w-3.5 h-3.5 ${
+                                                                    star <= Math.round(expertRating)
+                                                                        ? 'fill-gray-900 text-gray-900'
+                                                                        : 'fill-gray-200 text-gray-200'
+                                                                }`}
+                                                            />
+                                                        ))}
+                                                    </div>
                                                     <span 
                                                         style={{
                                                             fontSize: '14px',
@@ -613,17 +583,13 @@ export function PreHireChatPage() {
                                                             fontWeight: 400,
                                                             color: 'rgb(113, 113, 113)',
                                                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                            margin: 0,
-                                                            padding: 0,
                                                         }}
                                                     >
                                                         {expertRating.toFixed(1)} ({reviewsCount})
                                                     </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col gap-0.5 mt-0.5">
-                                                {(expertCity || expertCountryName) && (
+                                                </div>
+                                            )}
+                                            {(expertCity || expertCountryName) && (
                                                 <div 
                                                     style={{
                                                         fontSize: '14px',
@@ -631,89 +597,22 @@ export function PreHireChatPage() {
                                                         fontWeight: 400,
                                                         color: 'rgb(113, 113, 113)',
                                                         fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        margin: 0,
-                                                        padding: 0,
+                                                        marginTop: '4px',
                                                     }}
                                                 >
                                                     {expertCity ? `${expertCity}${expertCountryName ? `, ${expertCountryName}` : ''}` : expertCountryName || 'Sin localización'}
                                                 </div>
-                                                )}
-                                                {responseTime && (
-                                                <div 
-                                                    style={{
-                                                        fontSize: '14px',
-                                                        lineHeight: '20px',
-                                                        fontWeight: 400,
-                                                        color: 'rgb(113, 113, 113)',
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        margin: 0,
-                                                        padding: 0,
-                                                    }}
-                                                >
-                                                    Responde en {responseTime}
-                                                </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                        
-                                        {/* Horario del experto */}
-                                        <div className="pt-1">
-                                            <div 
-                                                className="flex flex-wrap items-center gap-1.5"
-                                                style={{
-                                                    fontSize: '13px',
-                                                    lineHeight: '18px',
-                                                    fontWeight: 400,
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    color: 'rgb(34, 34, 34)',
-                                                }}
-                                            >
-                                                {getAllDays().map((day: string, idx: number) => {
-                                                    const available = isDayAvailable(day);
-                                                    return (
-                                                        <span 
-                                                            key={idx} 
-                                                            className="px-2 py-1 bg-gray-100 rounded-md font-medium relative inline-block"
-                                                            style={{
-                                                                fontSize: '12px',
-                                                                lineHeight: '16px',
-                                                                color: available ? 'rgb(113, 113, 113)' : 'rgb(113, 113, 113)',
-                                                            }}
-                                                        >
-                                                            <span className="relative z-0">{formatDay(day)}</span>
-                                                            {!available && (
-                                                                <span 
-                                                                    className="absolute text-red-500 font-bold pointer-events-none z-10"
-                                                                    style={{ 
-                                                                        fontSize: '16px',
-                                                                        lineHeight: '1',
-                                                                        top: '2px',
-                                                                        left: '50%',
-                                                                        transform: 'translateX(-50%)',
-                                                                    }}
-                                                                >
-                                                                    ×
-                                                                </span>
-                                                            )}
-                                                        </span>
-                                                    );
-                                                })}
-                                                    {expertAvailability?.startTime && expertAvailability?.endTime && (
-                                                        <>
-                                                            <span className="text-gray-400 mx-1">·</span>
-                                                            <span className="text-gray-700 font-medium">
-                                                                {expertAvailability.startTime.substring(0, 5)} - {expertAvailability.endTime.substring(0, 5)}
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                        </div>
-                                    </Link>
+                                            )}
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                             
-                            {/* Barra de botones - Debajo de la imagen */}
-                            <div className="pt-2 pb-2 flex items-center gap-2 w-full">
+                            {/* Barra de separación */}
+                            <div className="border-t border-gray-200 my-3"></div>
+                            
+                            {/* Barra de botones */}
+                            <div className="flex items-center gap-2">
                                 <Button
                                     onClick={handleFavoriteClick}
                                     variant="outline"
@@ -748,60 +647,21 @@ export function PreHireChatPage() {
                     
                     {/* Información del servicio - Desktop */}
                     <div className="hidden md:flex flex-col">
-                        <div className="px-4 py-2">
-                            <div className="flex items-start gap-4">
-                                {serviceImage && (
-                                    <div 
-                                        className="relative w-40 h-48 rounded-lg flex-shrink-0 bg-gray-200 bg-cover bg-center overflow-hidden"
-                                        style={{ backgroundImage: `url(${serviceImage})` }}
-                                    >
-                                        {/* Avatar del experto dentro de la imagen */}
-                                        <div className="absolute left-2 bottom-2">
-                                            <div className="relative cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setShowAvatarModal(true)}>
-                                                <Avatar className="w-10 h-10 border-2 border-white shadow-md">
-                                                    <AvatarImage src={expertAvatar} alt={expertName} />
-                                                    <AvatarFallback className="bg-gray-900 text-white text-sm">
-                                                        {expertName.charAt(0)}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                {isChatConnected && (
-                                                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse"></span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="flex-1 min-w-0 flex flex-col gap-1">
-                                    <Link 
-                                        to={`/service/${serviceIdNumber}`}
-                                        className="flex flex-col gap-1 hover:opacity-90 transition-opacity"
-                                    >
-                                {/* Precio */}
-                                <div className="flex items-center gap-2">
-                                    <div 
-                                        style={{
-                                            fontSize: '22px',
-                                            lineHeight: '26px',
-                                            fontWeight: 600,
-                                            color: 'rgb(34, 34, 34)',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            margin: 0,
-                                            padding: 0,
-                                        }}
-                                    >
-                                        {formatPrice(servicePrice)}€
-                                    </div>
-                                    {isChatConnected && (
-                                        <span className="flex items-center gap-1 text-xs text-green-600">
-                                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                            <span>Conectado</span>
-                                        </span>
+                        <div className="px-4 py-3">
+                            {/* Sección del experto - A la derecha de la foto */}
+                            <div className="mb-3">
+                                <div className="flex items-start gap-4">
+                                    {serviceImage && (
+                                        <div 
+                                            className="relative w-20 h-20 rounded-lg flex-shrink-0 bg-gray-200 bg-cover bg-center overflow-hidden"
+                                            style={{ backgroundImage: `url(${serviceImage})` }}
+                                        />
                                     )}
-                                </div>
-                                            
-                                        {/* Información del experto */}
-                                        <div className="pt-1">
-                                            <div className="flex items-center gap-2">
+                                    <div className="flex-1 min-w-0">
+                                        <Link 
+                                            to={`/service/${serviceIdNumber}`}
+                                            className="block hover:opacity-90 transition-opacity"
+                                        >
                                             <div 
                                                 style={{
                                                     fontSize: '14px',
@@ -809,15 +669,25 @@ export function PreHireChatPage() {
                                                     fontWeight: 400,
                                                     color: 'rgb(34, 34, 34)',
                                                     fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    margin: 0,
-                                                    padding: 0,
+                                                    marginBottom: '4px',
                                                 }}
                                             >
                                                 {expertName}
                                             </div>
-                                                {expertRating > 0 && (
-                                                    <div className="flex items-center gap-1">
-                                                        <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                                            {expertRating > 0 && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="flex items-center gap-0.5">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <Star
+                                                                key={star}
+                                                                className={`w-3.5 h-3.5 ${
+                                                                    star <= Math.round(expertRating)
+                                                                        ? 'fill-gray-900 text-gray-900'
+                                                                        : 'fill-gray-200 text-gray-200'
+                                                                }`}
+                                                            />
+                                                        ))}
+                                                    </div>
                                                     <span 
                                                         style={{
                                                             fontSize: '14px',
@@ -825,17 +695,13 @@ export function PreHireChatPage() {
                                                             fontWeight: 400,
                                                             color: 'rgb(113, 113, 113)',
                                                             fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                            margin: 0,
-                                                            padding: 0,
                                                         }}
                                                     >
                                                         {expertRating.toFixed(1)} ({reviewsCount})
                                                     </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col gap-0.5 mt-0.5">
-                                                {(expertCity || expertCountryName) && (
+                                                </div>
+                                            )}
+                                            {(expertCity || expertCountryName) && (
                                                 <div 
                                                     style={{
                                                         fontSize: '14px',
@@ -843,89 +709,36 @@ export function PreHireChatPage() {
                                                         fontWeight: 400,
                                                         color: 'rgb(113, 113, 113)',
                                                         fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        margin: 0,
-                                                        padding: 0,
+                                                        marginTop: '4px',
                                                     }}
                                                 >
                                                     {expertCity ? `${expertCity}${expertCountryName ? `, ${expertCountryName}` : ''}` : expertCountryName || 'Sin localización'}
                                                 </div>
-                                                )}
-                                                {responseTime && (
-                                                <div 
-                                                    style={{
-                                                        fontSize: '14px',
-                                                        lineHeight: '20px',
-                                                        fontWeight: 400,
-                                                        color: 'rgb(113, 113, 113)',
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        margin: 0,
-                                                        padding: 0,
-                                                    }}
-                                                >
-                                                    Responde en {responseTime}
-                                                </div>
-                                                )}
-                                            </div>
+                                            )}
+                                        </Link>
+                                    </div>
+                                    {/* Avatar del experto a la derecha */}
+                                    <div className="flex-shrink-0">
+                                        <div className="relative cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setShowAvatarModal(true)}>
+                                            <Avatar className="w-10 h-10">
+                                                <AvatarImage src={expertAvatar} alt={expertName} />
+                                                <AvatarFallback className="bg-gray-900 text-white text-sm">
+                                                    {expertName.charAt(0)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            {isChatConnected && (
+                                                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse"></span>
+                                            )}
                                         </div>
-                                        
-                                        {/* Horario del experto */}
-                                        <div className="pt-1">
-                                            <div 
-                                                className="flex flex-wrap items-center gap-1.5"
-                                                style={{
-                                                    fontSize: '13px',
-                                                    lineHeight: '18px',
-                                                    fontWeight: 400,
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    color: 'rgb(34, 34, 34)',
-                                                }}
-                                            >
-                                                {getAllDays().map((day: string, idx: number) => {
-                                                    const available = isDayAvailable(day);
-                                                    return (
-                                                        <span 
-                                                            key={idx} 
-                                                            className="px-2 py-1 bg-gray-100 rounded-md font-medium relative inline-block"
-                                                            style={{
-                                                                fontSize: '12px',
-                                                                lineHeight: '16px',
-                                                                color: available ? 'rgb(113, 113, 113)' : 'rgb(113, 113, 113)',
-                                                            }}
-                                                        >
-                                                            <span className="relative z-0">{formatDay(day)}</span>
-                                                            {!available && (
-                                                                <span 
-                                                                    className="absolute text-red-500 font-bold pointer-events-none z-10"
-                                                                    style={{ 
-                                                                        fontSize: '16px',
-                                                                        lineHeight: '1',
-                                                                        top: '2px',
-                                                                        left: '50%',
-                                                                        transform: 'translateX(-50%)',
-                                                                    }}
-                                                                >
-                                                                    ×
-                                                                </span>
-                                                            )}
-                                                        </span>
-                                                    );
-                                                })}
-                                                    {expertAvailability?.startTime && expertAvailability?.endTime && (
-                                                        <>
-                                                            <span className="text-gray-400 mx-1">·</span>
-                                                            <span className="text-gray-700 font-medium">
-                                                                {expertAvailability.startTime.substring(0, 5)} - {expertAvailability.endTime.substring(0, 5)}
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                        </div>
-                                    </Link>
+                                    </div>
                                 </div>
                             </div>
                             
-                            {/* Barra de botones - Debajo de la imagen */}
-                            <div className="pt-2 pb-2 flex items-center gap-2 w-full">
+                            {/* Barra de separación */}
+                            <div className="border-t border-gray-200 my-3"></div>
+                            
+                            {/* Barra de botones */}
+                            <div className="flex items-center gap-2">
                                 <Button
                                     onClick={handleFavoriteClick}
                                     variant="outline"
