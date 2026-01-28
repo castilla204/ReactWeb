@@ -5,7 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 import { showToast } from '../lib/toast';
-import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
+import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import { Service } from '../hooks/useServices';
 import { useSearch } from '../hooks/useSearch.hooks';
 
@@ -22,12 +23,10 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const [service, setService] = useState<Service | null>(null);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedPaymentPlan, setSelectedPaymentPlan] = useState<'full' | 'split'>('full');
+    const [showPriceDetails, setShowPriceDetails] = useState(true);
     
-    // Datos de la reserva (pueden venir de location.state o ser hardcodeados para demo)
-    const [checkInDate, setCheckInDate] = useState<string>('17 abr 2026');
-    const [checkOutDate, setCheckOutDate] = useState<string>('19 abr 2026');
-    const [guests, setGuests] = useState<number>(1);
+    // Datos del servicio
+    const serviceDuration = service?.durationInHours ? `${service.durationInHours} ${service.durationInHours === 1 ? 'hora' : 'horas'}` : 'No especificada';
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -290,213 +289,168 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 </div>
 
                 {/* Contenido principal */}
-                            <div className="space-y-8">
-                        {/* Detalles de la reserva */}
-                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                            <div className="space-y-0">
-                                <div className="flex items-center justify-between py-4">
-                                    <div>
-                                        <div className="text-sm font-semibold text-gray-900 mb-1" style={{ fontSize: '14px', lineHeight: '18px' }}>Fechas</div>
-                                        <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px' }}>{checkInDate} – {checkOutDate}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {/* Detalles del servicio */}
+                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                            <div style={{ padding: '12px' }}>
+                                {/* Separador arriba de Servicio */}
+                                <div className="h-px bg-gray-200" style={{ marginTop: '0px', marginBottom: '0px', height: '1px' }}></div>
+                                
+                                {/* Tipo de servicio */}
+                                <div className="flex items-center justify-between" role="group" aria-labelledby="description-row-servicio" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
+                                    <div className="flex-1">
+                                        <div className="text-sm font-semibold text-gray-900 mb-1" id="description-row-servicio" style={{ fontSize: '14px', lineHeight: '18px' }}>Servicio</div>
+                                        <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px' }}>{finalServiceTypeName}</div>
                                     </div>
-                                    <button 
-                                        type="button"
-                                        className="text-sm font-semibold text-gray-900 bg-gray-100 border border-gray-200 rounded-lg px-3 py-1 hover:bg-gray-200 hover:border-gray-300 transition-all"
-                                        style={{
-                                            height: '28px',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        <span>Cambiar</span>
-                                    </button>
                                 </div>
 
-                                <div className="h-px bg-gray-200"></div>
+                                <div className="h-px bg-gray-200" style={{ marginTop: '0px', marginBottom: '0px', height: '1px' }}></div>
 
-                                <div className="flex items-center justify-between py-4">
-                                    <div>
-                                        <div className="text-sm font-semibold text-gray-900 mb-1" style={{ fontSize: '14px', lineHeight: '18px' }}>Viajeros</div>
-                                        <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px' }}>{guests} {guests === 1 ? 'adulto' : 'adultos'}</div>
+                                {/* Duración */}
+                                <div className="flex items-center justify-between" role="group" aria-labelledby="description-row-duracion" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
+                                    <div className="flex-1">
+                                        <div className="text-sm font-semibold text-gray-900 mb-1" id="description-row-duracion" style={{ fontSize: '14px', lineHeight: '18px' }}>Duración estimada</div>
+                                        <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px' }}>{serviceDuration}</div>
                                     </div>
-                                    <button 
-                                        type="button"
-                                        className="text-sm font-semibold text-gray-900 bg-gray-100 border border-gray-200 rounded-lg px-3 py-1 hover:bg-gray-200 hover:border-gray-300 transition-all"
-                                        style={{
-                                            height: '28px',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        <span>Cambiar</span>
-                                    </button>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* Opciones de pago */}
-                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Elige cuándo quieres pagar</h2>
-                            
-                            <div className="space-y-0">
-                                {/* Opción 1: Pago completo */}
-                                <label className="block">
-                                    <div className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:border-gray-900 transition-colors cursor-pointer">
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-base font-semibold text-gray-900 mb-1">
-                                                Paga {formatPrice(finalPrice)} € ahora
+                                {service?.categoryName && (
+                                    <>
+                                        <div className="h-px bg-gray-200" style={{ marginTop: '0px', marginBottom: '0px', height: '1px' }}></div>
+                                        {/* Categoría */}
+                                        <div className="flex items-center justify-between" role="group" aria-labelledby="description-row-categoria" style={{ paddingTop: '12px', paddingBottom: '0px' }}>
+                                            <div className="flex-1">
+                                                <div className="text-sm font-semibold text-gray-900 mb-1" id="description-row-categoria" style={{ fontSize: '14px', lineHeight: '18px' }}>Categoría</div>
+                                                <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px' }}>{service.categoryName}</div>
                                             </div>
                                         </div>
-                                        <input
-                                            type="radio"
-                                            name="payment-plan"
-                                            value="full"
-                                            checked={selectedPaymentPlan === 'full'}
-                                            onChange={(e) => setSelectedPaymentPlan(e.target.value as 'full' | 'split')}
-                                            className="w-5 h-5 text-gray-900 border-gray-300 focus:ring-gray-900 mt-0.5"
-                                        />
-                                    </div>
-                                </label>
-
-                                <div className="h-px bg-gray-200 my-2"></div>
-
-                                {/* Opción 2: Pago dividido */}
-                                <label className="block">
-                                    <div className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:border-gray-900 transition-colors cursor-pointer">
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-base font-semibold text-gray-900 mb-1">
-                                                Paga 0 € ahora
-                                            </div>
-                                            <div className="text-sm text-gray-700">
-                                                Cantidad cobrada el {checkInDate}: {formatPrice(finalPrice)} €. Sin costes adicionales.{' '}
-                                                <button 
-                                                    type="button"
-                                                    className="text-sm font-semibold text-gray-900 underline decoration-gray-300 underline-offset-2 hover:no-underline transition-all"
-                                                >
-                                                    Más información
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <input
-                                            type="radio"
-                                            name="payment-plan"
-                                            value="split"
-                                            checked={selectedPaymentPlan === 'split'}
-                                            onChange={(e) => setSelectedPaymentPlan(e.target.value as 'full' | 'split')}
-                                            className="w-5 h-5 text-gray-900 border-gray-300 focus:ring-gray-900 mt-0.5"
-                                        />
-                                    </div>
-                                </label>
+                                        {/* Separador abajo de Categoría */}
+                                        <div className="h-px bg-gray-200" style={{ marginTop: '12px', marginBottom: '0px', height: '1px' }}></div>
+                                    </>
+                                )}
+                                {!service?.categoryName && (
+                                    <>
+                                        {/* Separador abajo de Duración si no hay categoría */}
+                                        <div className="h-px bg-gray-200" style={{ marginTop: '0px', marginBottom: '0px', height: '1px' }}></div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
-                        {/* Política de cancelación */}
-                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Política de cancelación</h2>
-                            <div className="text-sm font-semibold text-gray-900 mb-2">Cancelación gratuita</div>
-                            <div className="text-sm text-gray-700">
-                                Si cancelas antes del {checkInDate}, recibirás un reembolso completo.{' '}
-                                <button 
-                                    type="button"
-                                    className="text-sm font-semibold text-gray-900 underline decoration-gray-300 underline-offset-2 hover:no-underline transition-all"
-                                >
-                                    Política entera
-                                </button>
-                            </div>
-                        </div>
                             </div>
                         </div>
 
-                        {/* Sidebar derecho fijo */}
+                        {/* Sidebar derecho fijo - Estilo Airbnb */}
                         <div className="sticky top-8 h-fit" style={{ marginTop: '72px' }}>
-                            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                        {/* Información del servicio en sidebar */}
-                        <div className="flex items-start gap-4 mb-6">
-                            {finalImages[0] && (
-                                <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
-                                    <img 
-                                        src={finalImages[0]} 
-                                        alt={finalServiceTypeName}
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                                <h3 className="text-base font-semibold text-gray-900 mb-1" style={{
-                                    fontSize: '18px',
-                                    lineHeight: '24px',
-                                    fontWeight: 600,
-                                    letterSpacing: '-0.01em',
-                                }}>
-                                    {finalServiceTypeName} por {finalExpertName}
-                                </h3>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style={{ display: 'block', height: '12px', width: '12px', fill: 'currentcolor', flexShrink: 0 }}>
-                                            <path fillRule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path>
-                                        </svg>
-                                        <span className="text-sm text-gray-600 font-bold">
-                                            {finalRating.toFixed(2).replace('.', ',')} ({finalReviews})
+                            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                                {/* Información del servicio - Estilo Airbnb */}
+                                <div style={{ padding: '12px' }}>
+                                    <div className="mb-6">
+                                        {finalImages[0] && (
+                                            <div className="w-full rounded-lg overflow-hidden mb-4" style={{ aspectRatio: '1' }}>
+                                                <img 
+                                                    src={finalImages[0]} 
+                                                    alt={finalServiceTypeName}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        )}
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-2" style={{
+                                            fontSize: '18px',
+                                            lineHeight: '24px',
+                                            fontWeight: 600,
+                                            letterSpacing: '-0.01em',
+                                        }}>
+                                            {finalServiceTypeName}
+                                        </h3>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <div className="flex items-center gap-1.5">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style={{ display: 'block', height: '12px', width: '12px', fill: 'currentcolor' }}>
+                                                    <path fillRule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path>
+                                                </svg>
+                                                <span className="text-sm text-gray-600" style={{ fontSize: '14px', lineHeight: '18px' }}>
+                                                    Valoración de {finalRating.toFixed(2).replace('.', ',')}&nbsp;sobre 5; {finalReviews}&nbsp;evaluaciones
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="h-px bg-gray-200" style={{ marginTop: '16px', marginBottom: '16px' }}></div>
+
+                                    {/* Precio total - Estilo Airbnb con desglose IVA */}
+                                    <div className="mb-6">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>Precio total</span>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-lg font-semibold text-gray-900" style={{ fontSize: '18px', lineHeight: '24px' }}>
+                                                    {formatPrice(finalPrice * 1.21)}&nbsp;€
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Desglose del precio */}
+                                        {showPriceDetails && (
+                                            <div className="mt-3 space-y-2 pb-3">
+                                                <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
+                                                    <span>Precio del servicio</span>
+                                                    <span>{formatPrice(finalPrice)}&nbsp;€</span>
+                                                </div>
+                                                <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
+                                                    <span>IVA (21%)</span>
+                                                    <span>{formatPrice(finalPrice * 0.21)}&nbsp;€</span>
+                                                </div>
+                                                <div className="h-px bg-gray-200 my-2"></div>
+                                                <div className="flex justify-between text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
+                                                    <span>Total</span>
+                                                    <span>{formatPrice(finalPrice * 1.21)}&nbsp;€</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        <button 
+                                            type="button"
+                                            onClick={() => setShowPriceDetails(!showPriceDetails)}
+                                            className="text-sm font-semibold text-gray-900 underline decoration-gray-300 underline-offset-2 hover:no-underline transition-all"
+                                            style={{ fontSize: '14px', lineHeight: '18px' }}
+                                        >
+                                            {showPriceDetails ? 'Ocultar' : 'Detalles'}
+                                        </button>
+                                    </div>
+
+                                    <div className="h-px bg-gray-200" style={{ marginTop: '16px', marginBottom: '16px' }}></div>
+
+                                    {/* Cancelación gratuita - Estilo Airbnb */}
+                                    <div className="mb-6">
+                                        <div className="text-base font-semibold text-gray-900 mb-2" style={{ fontSize: '16px', lineHeight: '20px' }}>Cancelación gratuita</div>
+                                        <div className="text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
+                                            Si cancelas antes de que el experto comience la revisión, recibirás un reembolso completo.{' '}
+                                            <button 
+                                                type="button"
+                                                className="text-sm font-semibold text-gray-900 underline decoration-gray-300 underline-offset-2 hover:no-underline transition-all"
+                                                style={{ fontSize: '14px', lineHeight: '18px' }}
+                                            >
+                                                Política&nbsp;entera
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Botón de reserva - Estilo Airbnb */}
+                                    <button
+                                        onClick={handlePayment}
+                                        disabled={isSubmitting || createSearchWithHire.isPending}
+                                        type="button"
+                                        className="relative w-full h-12 px-6 bg-gray-900 hover:bg-gray-800 text-white text-[16px] font-semibold transition-all duration-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                        style={{ fontSize: '16px', lineHeight: '20px', fontWeight: 600 }}
+                                    >
+                                        <span className="relative z-10" data-button-content="true">
+                                            {isSubmitting || createSearchWithHire.isPending ? 'Procesando...' : 'Reservar'}
                                         </span>
-                                    </div>
-                                    <div className="flex items-center gap-1 min-w-0 overflow-hidden">
-                                        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="presentation" focusable="false" style={{ display: 'block', height: '12px', width: '12px', fill: 'currentcolor', flexShrink: 0 }}>
-                                            <path d="m3.21684098 6.36820948c.69286.63327.95745 1.53818.79375 2.71472-1.28708.14974-2.27704-.09198-2.96991-.72524-.692873-.63329-.95745494-1.53818-.793752-2.71471 1.287062-.14979 2.277042.09195 2.969912.72523zm.01823-5.61820948c1.0236.743338 1.54043 1.567488 1.55049 2.472468.01006.90497-.48856 1.71941-1.49585 2.44334-1.02358-.74338-1.54042-1.56751-1.55048-2.47247-.01006-.90499.48856-1.71942 1.49584-2.443338zm-2.524114 9.883578c1.034374-.7302 2.021244-.98278 2.960614-.75762.63073992.1511584 1.15987526.4985198 1.58740902 1.0419992l-.07821789-.02145c1.39197832.3681397 2.20787023 1.0733199 2.19755429 2.1491723-.00983089 1.0237908-.74501936 1.7707365-2.02138366 2.256627l-.53366353-1.401857c.7621544-.2901395 1.05238772-.5850143 1.05511624-.8691626.00211728-.220812-.24880712-.4483858-.96854292-.6537179-.71044194.3168616-1.39543503.3952123-2.05688155.236709-.93937-.2252-1.65337-.8854-2.142004-1.9807zm15.10285402-4.99059852c.1637 1.17653-.1009 2.08142-.7937 2.71471-.6929.63326-1.6829.87498-2.9699.72524-.1637-1.17654.1009-2.08145.7937-2.71472.6929-.63328 1.6829-.87502 2.9699-.72523zm-2.9881-4.89297948c1.0073.723918 1.5059 1.538348 1.4958 2.443338-.01.90496-.5269 1.72909-1.5505 2.47247-1.0072-.72393-1.5059-1.53837-1.4958-2.44334.0101-.90498.5269-1.72913 1.5505-2.472468zm2.5239 9.883578c-.4887 1.0953-1.2027 1.7555-2.1421 1.9807-.6614043.1585033-1.3464097.0801526-2.0549813-.2350171l.1110343-.0326099c-.8063957.2132596-1.0834017.4526742-1.0811775.684637.0027242.284151.2929566.579019 1.0551448.8691571l-.5336407 1.4018658c-1.27641442-.4858858-2.01161974-1.2328341-2.02143515-2.2566418-.01011718-1.0551234.77444821-1.7537176 2.11778055-2.1275085.4288532-.5436828.9579753-.8910442 1.588675-1.0422026.9394-.22516 1.9263.02742 2.9607.75762z"></path>
-                                        </svg>
-                                        <span className="text-sm text-gray-600 font-bold truncate">Recomendación del viajero</span>
-                                    </div>
+                                    </button>
+                                    <p className="mt-3 text-center text-sm text-gray-500 font-normal" style={{ fontSize: '14px', lineHeight: '18px' }}>
+                                        No se te cobrará nada todavía
+                                    </p>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="h-px bg-gray-200 my-6"></div>
-
-                        {/* Detalles del precio */}
-                        <h2 className="text-xl font-semibold text-gray-900 mb-4">Detalles del precio</h2>
-                        <div className="space-y-3 mb-6">
-                            <div className="flex justify-between text-base text-gray-700">
-                                <span>{formatPrice(finalPrice)} € x 2 noches</span>
-                                <span>{formatPrice(finalPrice * 2)} €</span>
-                            </div>
-                            <div className="flex justify-between text-base text-gray-700">
-                                <span className="underline decoration-gray-300 underline-offset-2">Limpieza</span>
-                                <span>0 €</span>
-                            </div>
-                            <div className="flex justify-between text-base text-gray-700">
-                                <span className="underline decoration-gray-300 underline-offset-2">Descuento semanal</span>
-                                <span>-0 €</span>
-                            </div>
-                            <div className="flex justify-between text-base text-gray-700">
-                                <span>IVA (21%)</span>
-                                <span>{formatPrice((finalPrice * 2) * 0.21)} €</span>
-                            </div>
-                        </div>
-
-                        <div className="h-px bg-gray-200 my-6"></div>
-
-                        {/* Total */}
-                        <div className="flex justify-between items-center text-lg font-semibold text-gray-900 mb-6">
-                            <span>Total (EUR)</span>
-                            <span>{formatPrice((finalPrice * 2) * 1.21)} €</span>
-                        </div>
-
-                        {/* Botón de reserva */}
-                        <button
-                            onClick={handlePayment}
-                            disabled={isSubmitting || createSearchWithHire.isPending}
-                            type="button"
-                            className="relative w-full h-12 px-6 bg-gray-900 hover:bg-gray-800 text-white text-[16px] font-semibold transition-all duration-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <span className="relative z-10" data-button-content="true">
-                                {isSubmitting || createSearchWithHire.isPending ? 'Procesando...' : 'Reservar'}
-                            </span>
-                        </button>
-                        <p className="mt-3 text-center text-sm text-gray-500 font-normal">
-                            No se te cobrará nada todavía
-                        </p>
-                    </div>
                         </div>
                     </div>
                 </div>
@@ -526,30 +480,44 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 </div>
 
                 {/* Título fuera del header */}
-                <div className="pt-6 pb-4">
+                <div className="pt-2 pb-6">
                     <h1 
                         className="text-gray-900 px-6" 
                         tabIndex={-1} 
-                        aria-label="Confirmar y pagar"
+                        aria-label="Finaliza tu reserva"
                         style={{
                             fontSize: '26px',
                             lineHeight: '32px',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             letterSpacing: '-0.01em',
                             fontFamily: 'inherit',
+                            position: 'relative',
+                            display: 'inline-block',
                         }}
                     >
-                        Confirmar y pagar
+                        Finaliza tu reserva
+                        <span 
+                            style={{
+                                position: 'absolute',
+                                bottom: '-4px',
+                                left: '24px',
+                                right: '24px',
+                                height: '3px',
+                                background: 'linear-gradient(to right, #e61e4d, #e31c5f, #d70466)',
+                                borderRadius: '2px',
+                                opacity: 0.8,
+                            }}
+                        />
                     </h1>
                 </div>
 
                 {/* Contenido principal */}
                 <div className="pb-32">
                     {/* Contenedor principal con borde */}
-                    <div className="mx-6 mb-6 bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                    <div className="mx-6 bg-white rounded-xl border border-gray-200 shadow-sm" style={{ marginBottom: '0px', padding: '12px' }}>
                         {/* Información del servicio */}
-                        <div className="mb-6">
-                            <div className="flex items-start gap-4">
+                        <div style={{ marginBottom: '12px', marginTop: '0px' }}>
+                            <div className="flex items-center gap-4" style={{ marginTop: '0px' }}>
                                 {finalImages[0] && (
                                     <div 
                                         className="rounded-lg overflow-hidden flex-shrink-0"
@@ -557,6 +525,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                             width: '96px',
                                             height: '96px',
                                             aspectRatio: '1',
+                                            marginTop: '0px',
                                         }}
                                     >
                                         <img 
@@ -567,7 +536,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     </div>
                                 )}
                                 <div 
-                                    className="flex-1 min-w-0 flex flex-col justify-start"
+                                    className="flex-1 min-w-0 flex flex-col justify-center"
                                 >
                                     <h2 
                                         className="text-gray-900 mb-1" 
@@ -581,181 +550,127 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     >
                                     {finalServiceTypeName} por {finalExpertName}
                                 </h2>
-                                    <div className="flex flex-col md:flex-row md:items-center gap-2 min-w-0">
-                                        <div className="flex items-center gap-1.5 min-w-0 flex-shrink-0">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style={{ display: 'block', height: '12px', width: '12px', fill: 'currentcolor', flexShrink: 0 }}>
-                                                <path fillRule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path>
-                                            </svg>
-                                            <span className="text-sm text-gray-600 font-bold">
-                                                {finalRating.toFixed(2).replace('.', ',')} ({finalReviews})
+                                    <div className="flex items-center gap-1.5 min-w-0 flex-shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style={{ display: 'block', height: '12px', width: '12px', fill: 'currentcolor', flexShrink: 0 }}>
+                                            <path fillRule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path>
+                                        </svg>
+                                        <span className="text-sm text-gray-600 font-bold">
+                                            {finalRating.toFixed(2).replace('.', ',')} ({finalReviews})
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Detalles del servicio - dentro del mismo contenedor */}
+                        {/* Separador arriba de Servicio */}
+                        <div className="h-px bg-gray-200" style={{ marginTop: '0px', marginBottom: '12px', height: '1px' }}></div>
+                        
+                        <div className="mb-0">
+                            <div className="flex items-start justify-between gap-4" style={{ paddingTop: '0px', paddingBottom: '12px' }}>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-semibold text-gray-900 mb-1" style={{ fontSize: '14px', lineHeight: '18px' }}>Servicio</div>
+                                        <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px' }}>{finalServiceTypeName}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                            <div className="h-px bg-gray-200" style={{ marginTop: '0px', marginBottom: '0px', height: '1px' }}></div>
+
+                            <div className="mb-0">
+                                <div className="flex items-start justify-between gap-4" style={{ paddingTop: '12px', paddingBottom: '12px' }}>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-semibold text-gray-900 mb-1" style={{ fontSize: '14px', lineHeight: '18px' }}>Duración estimada</div>
+                                        <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px' }}>{serviceDuration}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {service?.categoryName && (
+                            <>
+                                <div className="h-px bg-gray-200" style={{ marginTop: '0px', marginBottom: '0px', height: '1px' }}></div>
+                                <div className="mb-0">
+                                    <div className="flex items-start justify-between gap-4" style={{ paddingTop: '12px', paddingBottom: '0px' }}>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm font-semibold text-gray-900 mb-1" style={{ fontSize: '14px', lineHeight: '18px' }}>Categoría</div>
+                                            <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px' }}>{service.categoryName}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        {!service?.categoryName && (
+                            <>
+                                {/* Separador abajo de Duración si no hay categoría */}
+                                <div className="h-px bg-gray-200" style={{ marginTop: '0px', marginBottom: '0px', height: '1px' }}></div>
+                            </>
+                        )}
+
+                        {/* Separador entre secciones */}
+                        <div className="h-px bg-gray-200" style={{ marginTop: '12px', marginBottom: '12px', height: '1px' }}></div>
+
+                        {/* Precio total con desglose IVA */}
+                        <div style={{ marginBottom: '0px' }}>
+                            <div className="flex items-center justify-between" style={{ paddingTop: '0px', paddingBottom: '12px' }}>
+                                <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>Precio total</span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
+                                        {formatPrice(finalPrice * 1.21)} €
                                     </span>
                                 </div>
-                                        <div className="flex items-center gap-1 min-w-0 overflow-hidden">
-                                            <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="presentation" focusable="false" style={{ display: 'block', height: '12px', width: '12px', fill: 'currentcolor', flexShrink: 0 }}>
-                                        <path d="m3.21684098 6.36820948c.69286.63327.95745 1.53818.79375 2.71472-1.28708.14974-2.27704-.09198-2.96991-.72524-.692873-.63329-.95745494-1.53818-.793752-2.71471 1.287062-.14979 2.277042.09195 2.969912.72523zm.01823-5.61820948c1.0236.743338 1.54043 1.567488 1.55049 2.472468.01006.90497-.48856 1.71941-1.49585 2.44334-1.02358-.74338-1.54042-1.56751-1.55048-2.47247-.01006-.90499.48856-1.71942 1.49584-2.443338zm-2.524114 9.883578c1.034374-.7302 2.021244-.98278 2.960614-.75762.63073992.1511584 1.15987526.4985198 1.58740902 1.0419992l-.07821789-.02145c1.39197832.3681397 2.20787023 1.0733199 2.19755429 2.1491723-.00983089 1.0237908-.74501936 1.7707365-2.02138366 2.256627l-.53366353-1.401857c.7621544-.2901395 1.05238772-.5850143 1.05511624-.8691626.00211728-.220812-.24880712-.4483858-.96854292-.6537179-.71044194.3168616-1.39543503.3952123-2.05688155.236709-.93937-.2252-1.65337-.8854-2.142004-1.9807zm15.10285402-4.99059852c.1637 1.17653-.1009 2.08142-.7937 2.71471-.6929.63326-1.6829.87498-2.9699.72524-.1637-1.17654.1009-2.08145.7937-2.71472.6929-.63328 1.6829-.87502 2.9699-.72523zm-2.9881-4.89297948c1.0073.723918 1.5059 1.538348 1.4958 2.443338-.01.90496-.5269 1.72909-1.5505 2.47247-1.0072-.72393-1.5059-1.53837-1.4958-2.44334.0101-.90498.5269-1.72913 1.5505-2.472468zm2.5239 9.883578c-.4887 1.0953-1.2027 1.7555-2.1421 1.9807-.6614043.1585033-1.3464097.0801526-2.0549813-.2350171l.1110343-.0326099c-.8063957.2132596-1.0834017.4526742-1.0811775.684637.0027242.284151.2929566.579019 1.0551448.8691571l-.5336407 1.4018658c-1.27641442-.4858858-2.01161974-1.2328341-2.02143515-2.2566418-.01011718-1.0551234.77444821-1.7537176 2.11778055-2.1275085.4288532-.5436828.9579753-.8910442 1.588675-1.0422026.9394-.22516 1.9263.02742 2.9607.75762z"></path>
-                                    </svg>
-                                            <span className="text-sm text-gray-600 font-bold truncate">Recomendación del viajero</span>
-                                        </div>
+                            </div>
+                            
+                            {/* Desglose del precio móvil */}
+                            {showPriceDetails && (
+                                <div className="mt-3 space-y-2 pb-3">
+                                    <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
+                                        <span>Precio del servicio</span>
+                                        <span>{formatPrice(finalPrice)} €</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
+                                        <span>IVA (21%)</span>
+                                        <span>{formatPrice(finalPrice * 0.21)} €</span>
+                                    </div>
+                                    <div className="h-px bg-gray-200 my-2"></div>
+                                    <div className="flex justify-between text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
+                                        <span>Total</span>
+                                        <span>{formatPrice(finalPrice * 1.21)} €</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Separador */}
-                        <div className="h-px bg-gray-200 mb-6"></div>
-
-                    {/* Detalles de la reserva */}
-                        <div className="mb-6">
-                            <div className="mb-0">
-                                <div className="flex items-start justify-between gap-4 py-4">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-semibold text-gray-900 mb-1" style={{ fontSize: '14px', lineHeight: '18px' }}>Fechas</div>
-                                        <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px' }}>{checkInDate} – {checkOutDate}</div>
-                                </div>
-                                <button 
-                                    type="button"
-                                        className="text-sm font-semibold text-gray-900 bg-gray-100 border border-gray-200 rounded-lg px-3 py-1 hover:bg-gray-200 hover:border-gray-300 transition-all flex-shrink-0"
-                                        style={{
-                                            height: '28px',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        <span>Cambiar</span>
-                                </button>
-                            </div>
-                        </div>
-
-                            <div className="h-px bg-gray-200"></div>
-
-                            <div className="mb-0">
-                                <div className="flex items-start justify-between gap-4 py-4">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-semibold text-gray-900 mb-1" style={{ fontSize: '14px', lineHeight: '18px' }}>Viajeros</div>
-                                        <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px' }}>{guests} {guests === 1 ? 'adulto' : 'adultos'}</div>
-                                </div>
-                                <button 
-                                    type="button"
-                                        className="text-sm font-semibold text-gray-900 bg-gray-100 border border-gray-200 rounded-lg px-3 py-1 hover:bg-gray-200 hover:border-gray-300 transition-all flex-shrink-0"
-                                        style={{
-                                            height: '28px',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        <span>Cambiar</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Separador */}
-                        <div className="h-px bg-gray-200 mb-6"></div>
-
-                    {/* Precio total */}
-                        <div className="mb-6">
-                        <div className="flex items-center justify-between mb-3">
-                                <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>Precio total</span>
-                            <div className="flex items-baseline gap-1">
-                                    <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
-                                        {formatPrice((finalPrice * 2) * 1.21)} €
-                                </span>
-                            </div>
-                        </div>
-                        <button 
-                            type="button"
-                                className="text-sm font-semibold text-gray-900 bg-gray-100 border border-gray-200 rounded-lg px-3 py-1 hover:bg-gray-200 hover:border-gray-300 transition-all"
-                                style={{
-                                    height: '28px',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
-                                <span>Detalles</span>
-                        </button>
-                    </div>
-
-                    {/* Separador */}
-                        <div className="h-px bg-gray-200 mb-6"></div>
-
-                    {/* Política de cancelación */}
-                        <div>
-                            <div className="text-base font-semibold text-gray-900 mb-2" style={{ fontSize: '16px', lineHeight: '20px' }}>Cancelación gratuita</div>
-                            <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px' }}>
-                            Si cancelas antes del {checkInDate}, recibirás un reembolso completo.{' '}
+                            )}
+                            
                             <button 
                                 type="button"
+                                onClick={() => setShowPriceDetails(!showPriceDetails)}
+                                className="text-sm font-semibold text-gray-900 underline decoration-gray-300 underline-offset-2 hover:no-underline transition-all"
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '18px',
+                                }}
+                            >
+                                <span>{showPriceDetails ? 'Ocultar' : 'Detalles'}</span>
+                            </button>
+                        </div>
+
+                        {/* Separador entre secciones */}
+                        <div className="h-px bg-gray-200" style={{ marginTop: '12px', marginBottom: '12px', height: '1px' }}></div>
+
+                        {/* Política de cancelación */}
+                        <div style={{ marginBottom: '0px' }}>
+                            <div className="text-base font-semibold text-gray-900 mb-2" style={{ fontSize: '16px', lineHeight: '20px', paddingTop: '0px', paddingBottom: '8px' }}>Cancelación gratuita</div>
+                            <div className="text-base text-gray-700" style={{ fontSize: '16px', lineHeight: '20px', paddingBottom: '12px' }}>
+                                Si cancelas antes de que el experto comience la revisión, recibirás un reembolso completo.{' '}
+                                <button 
+                                    type="button"
                                     className="text-base font-semibold text-gray-900 underline decoration-gray-300 underline-offset-2 hover:no-underline transition-all"
                                     style={{ fontSize: '16px', lineHeight: '20px' }}
-                            >
-                                Política entera
-                            </button>
+                                >
+                                    Política entera
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Separador grande */}
-                    <div className="h-6"></div>
-
-                    {/* Opciones de pago */}
-                    <div className="mx-6 mb-6 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Elige cuándo quieres pagar</h2>
-                        
-                        <div className="space-y-0">
-                            {/* Opción 1: Pago completo */}
-                            <label className="block cursor-pointer">
-                                <div className="flex items-start gap-3 p-3 hover:bg-gray-50 transition-colors rounded-lg">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-base font-semibold text-gray-900">
-                                            Paga {formatPrice((finalPrice * 2) * 1.21)} € ahora
-                                        </div>
-                                    </div>
-                                    <input
-                                        type="radio"
-                                        name="payment-plan"
-                                        value="full"
-                                        checked={selectedPaymentPlan === 'full'}
-                                        onChange={(e) => setSelectedPaymentPlan(e.target.value as 'full' | 'split')}
-                                        className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900 mt-0.5 flex-shrink-0"
-                                    />
-                                </div>
-                            </label>
-
-                            <div className="h-px bg-gray-200"></div>
-
-                            {/* Opción 2: Pago dividido (Stripe) */}
-                            <label className="block cursor-pointer">
-                                <div className="flex items-start gap-3 p-3 hover:bg-gray-50 transition-colors rounded-lg">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-base font-semibold text-gray-900 mb-1">
-                                            Paga 0 € ahora
-                                        </div>
-                                        <div className="text-base text-gray-700">
-                                            Cantidad cobrada el {checkInDate}: {formatPrice((finalPrice * 2) * 1.21)} €. Sin costes adicionales.{' '}
-                                            <button 
-                                                type="button"
-                                                className="text-base font-semibold text-gray-900 underline decoration-gray-300 underline-offset-2 hover:no-underline transition-all"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                Más información
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <input
-                                        type="radio"
-                                        name="payment-plan"
-                                        value="split"
-                                        checked={selectedPaymentPlan === 'split'}
-                                        onChange={(e) => setSelectedPaymentPlan(e.target.value as 'full' | 'split')}
-                                        className="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900 mt-0.5 flex-shrink-0"
-                                    />
-                                </div>
-                            </label>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Footer fijo móvil */}
@@ -766,22 +681,30 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             disabled={isSubmitting}
                             type="button"
                             className="relative w-full h-12 px-6 bg-gray-900 hover:bg-gray-800 text-white text-[16px] font-semibold transition-all duration-200 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ marginTop: '16px' }}
                         >
                             <span className="relative z-10" data-button-content="true">
                                 {isSubmitting ? 'Procesando...' : 'Reservar'}
                             </span>
                         </button>
-                        <p className="mt-3 text-center text-sm text-gray-500 font-normal">
-                            No se te cobrará nada todavía
-                        </p>
                     </div>
                 </div>
             </div>
 
-            <StripeLoadingOverlay 
-                isOpen={isSubmitting}
-                message="Procesando pago con Stripe..."
-            />
+            {isSubmitting && (
+                <div className="fixed inset-0 z-[9999] bg-white">
+                    <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+                        <div className="min-h-screen p-6">
+                            <div className="max-w-2xl mx-auto space-y-6">
+                                <Skeleton height={40} width="60%" borderRadius={0} />
+                                <Skeleton height={300} width="100%" borderRadius={0} />
+                                <Skeleton height={200} width="100%" borderRadius={0} />
+                                <Skeleton height={150} width="100%" borderRadius={0} />
+                            </div>
+                        </div>
+                    </SkeletonTheme>
+                </div>
+            )}
         </>
     );
 }
