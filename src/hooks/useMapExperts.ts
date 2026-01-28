@@ -419,9 +419,24 @@ export const useMapExperts = (
         setExperts(mappedExperts);
         setServices(mappedServices);
         setTotalCount(total);
-      } catch (err) {
+      } catch (err: any) {
         console.error('❌ Error fetching map experts:', err);
-        setError(err instanceof Error ? err.message : 'Error al cargar expertos');
+        
+        // ✅ Mejorar mensaje de error para incluir detalles del backend
+        let errorMessage = 'Error al cargar expertos';
+        if (err?.response?.data) {
+          const errorData = err.response.data;
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+          if (errorData.detail) {
+            errorMessage += `: ${errorData.detail}`;
+          }
+        } else if (err?.message) {
+          errorMessage = err.message;
+        }
+        
+        setError(errorMessage);
         setExperts([]);
         setServices([]);
         setTotalCount(0);

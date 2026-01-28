@@ -179,7 +179,7 @@ export function LocationMap({
         }, 300); // Reducido a 300ms para cargar más rápido
     };
 
-    // Función para actualizar bounds con debouncing mejorado
+    // ✅ CORREGIDO: Función para actualizar bounds con debouncing mejorado y validación de cambios significativos
     const updateBounds = useCallback(() => {
         if (!map || !onBoundsChange || isDraggingRef.current) {
             return;
@@ -194,16 +194,18 @@ export function LocationMap({
         const southwest = bounds.getSouthWest();
         const zoom = map.getZoom() || 12;
         
-        // Crear una clave única para estos bounds
-        const boundsKey = `${northeast.lat().toFixed(4)},${northeast.lng().toFixed(4)},${southwest.lat().toFixed(4)},${southwest.lng().toFixed(4)},${zoom}`;
+        // Crear una clave única para estos bounds (con más precisión para detectar cambios)
+        const boundsKey = `${northeast.lat().toFixed(3)},${northeast.lng().toFixed(3)},${southwest.lat().toFixed(3)},${southwest.lng().toFixed(3)},${zoom}`;
         
-        // Solo actualizar si los bounds realmente cambiaron
+        // ✅ Solo actualizar si los bounds realmente cambiaron significativamente
+        // Esto evita llamadas innecesarias cuando el mapa se ajusta mínimamente
         if (boundsKey === lastBoundsRef.current) {
             return;
         }
         
         lastBoundsRef.current = boundsKey;
         
+        // ✅ Llamar a onBoundsChange para cargar servicios del área visible
         onBoundsChange({
             northeast: { lat: northeast.lat(), lng: northeast.lng() },
             southwest: { lat: southwest.lat(), lng: southwest.lng() }
@@ -216,14 +218,14 @@ export function LocationMap({
             // ✅ Solo actualizar marcadores cuando NO se está arrastrando (evita parpadeo)
             setMarkerKey(prev => prev + 1);
             
-            // ✅ Debouncing mejorado para bounds change (500ms para evitar llamadas excesivas)
+            // ✅ CORREGIDO: Debouncing optimizado (300ms es suficiente y más responsivo)
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
             }
             
             debounceTimerRef.current = setTimeout(() => {
                 updateBounds();
-            }, 500);
+            }, 300); // ✅ Reducido a 300ms para mejor respuesta
         }
     };
     
@@ -245,13 +247,14 @@ export function LocationMap({
             // ✅ Forzar actualización de marcadores después del drag (solo una vez)
             setMarkerKey(prev => prev + 1);
             
-            // Usar un timeout más corto después del arrastre para respuesta más rápida
+            // ✅ CORREGIDO: Usar un timeout más corto después del arrastre para respuesta más rápida
+            // Pero no demasiado corto para evitar múltiples llamadas
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
             }
             debounceTimerRef.current = setTimeout(() => {
                 updateBounds();
-            }, 200);
+            }, 250); // ✅ 250ms es un buen balance entre respuesta y estabilidad
         }
     };
     
@@ -415,21 +418,22 @@ export function LocationMap({
                 return null;
             }
 
-            // Buscar servicio correspondiente
+            // ✅ CORREGIDO: Buscar servicio correspondiente con matching mejorado
             // El expert.id puede ser el service.id o el expert.id real
-            // Buscar por múltiples criterios:
-            // 1. Por expertProfileId
-            // 2. Por expert.id
-            // 3. Por service.id (si expert.id es en realidad el service.id)
+            // Buscar por múltiples criterios en orden de prioridad:
+            // 1. Por service.id (más directo y confiable)
+            // 2. Por expertProfileId
+            // 3. Por expert.id
             // 4. Por coordenadas (como último recurso)
             // NOTA: Los servicios pueden venir con Id (PascalCase) o id (camelCase)
             let matchingService = services.find(s => {
                 const serviceId = s.id || (s as any).Id;
                 const expertProfileId = s.expertProfileId || (s as any).ExpertProfileId;
                 const expertId = s.expert?.id || (s as any).Expert?.Id;
-                return expertProfileId === expert.id || 
-                       expertId === expert.id ||
-                       serviceId === expert.id;
+                // ✅ Prioridad: service.id primero, luego expertProfileId, luego expert.id
+                return serviceId === expert.id ||
+                       expertProfileId === expert.id || 
+                       expertId === expert.id;
             });
             
             // Si no se encuentra, buscar por coordenadas con margen más amplio

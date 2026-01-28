@@ -1165,51 +1165,47 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         pageSize: 20, // ✅ Cargar 20 servicios por página
     });
    
-    // ✅ OPTIMIZADO: Cargar marcadores ultra ligeros para el mapa
-    const { markers: mapMarkers, loading: markersLoading } = useMapMarkers(
+    // ✅ CORREGIDO: Usar useMapExperts con bounds para cargar servicios completos cuando se mueve el mapa
+    // Esto carga tanto marcadores como servicios completos con toda la información
+    const { 
+        experts: mapExperts, 
+        services: servicesFromBounds, 
+        loading: boundsLoading 
+    } = useMapExperts(
         selectedCategory,
         serviceTypeId,
         mapBounds ? {
             bounds: mapBounds,
             zoom: mapZoom,
-            limit: 200 // Límite recomendado para bounds
-        } : {
-            limit: 500 // Límite para carga inicial
-        }
+            limit: 50 // Límite recomendado para bounds (optimizado)
+        } : undefined // Sin bounds = carga inicial
     );
     
-    // ✅ Convertir marcadores a formato MapExpert para compatibilidad con LocationMap
-    const mapExperts = mapMarkers.map(marker => ({
-        id: marker.serviceId,
-        name: '', // No disponible en marcadores ligeros
-        profilePictureUrl: undefined,
-        averageRating: 0,
-        totalReviews: 0,
-        completedSearches: 0,
-        registeredSince: '',
-        latitude: marker.latitude,
-        longitude: marker.longitude,
-        price: marker.price,
-    }));
-    
-    // ✅ Para servicios completos, usar useMapSidebar cuando sea necesario
-    const servicesFromBounds: any[] = [];
-    
     // Handler para cuando cambian los bounds del mapa
-    // ✅ Mejorado: Se ejecuta inmediatamente para cargar datos al mismo tiempo que el mapa
+    // ✅ CORREGIDO: Con debouncing mejorado para evitar múltiples llamadas
     const handleBoundsChange = useCallback((bounds: {
         northeast: { lat: number; lng: number };
         southwest: { lat: number; lng: number };
     }, zoom: number) => {
-        // Actualizar bounds inmediatamente para que useMapExperts pueda cargar datos
+        // Actualizar bounds para que useMapExperts cargue servicios del área visible
         setMapBounds(bounds);
         setMapZoom(zoom);
     }, []);
    
-    // ✅ Combinar servicios: de bounds (cuando se mueve el mapa) o de ubicación (cuando hay locationRange)
-    const allServicesCombined = mapBounds 
-        ? servicesFromBounds 
-        : allServices;
+    // ✅ CORREGIDO: Combinar servicios: de bounds (cuando se mueve el mapa) o de ubicación (cuando hay locationRange)
+    // Si hay bounds, usar servicios de bounds. Si no, usar servicios de ubicación.
+    const allServicesCombined = useMemo(() => {
+        if (mapBounds && servicesFromBounds.length > 0) {
+            // Cuando se mueve el mapa, usar servicios de bounds
+            return servicesFromBounds;
+        } else if (formData.latitude && formData.longitude && formData.locationRange) {
+            // Cuando hay ubicación específica, usar servicios de ubicación
+            return allServices;
+        } else {
+            // Carga inicial: usar servicios de ubicación si existen
+            return allServices;
+        }
+    }, [mapBounds, servicesFromBounds, allServices, formData.latitude, formData.longitude, formData.locationRange]);
     
     // ✅ Reordenar servicios: el seleccionado aparece primero (como en Airbnb)
     const reorderedServices = useMemo(() => {
@@ -1918,6 +1914,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 }
                                             }}
                                             onServiceSelect={handleServiceSelect}
+                                            onBoundsChange={handleBoundsChange}
                                             locationRange={parseInt(formData.locationRange)}
                                             isMobile={true}
                                             isLoaded={isLoaded}
@@ -2030,6 +2027,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             }
                                         }}
                                         onServiceSelect={handleServiceSelect}
+                                        onBoundsChange={handleBoundsChange}
                                         locationRange={25}
                                         isMobile={false}
                                         isLoaded={isLoaded}

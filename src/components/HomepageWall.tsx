@@ -646,7 +646,6 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
               width: '24px',
               height: '24px',
               borderRadius: '50%',
-              border: '1px solid #DDDDDD',
               backgroundColor: '#F7F7F7',
             }}>
               <svg
