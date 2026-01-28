@@ -140,7 +140,7 @@ const HomePage: React.FC = () => {
               backgroundColor: 'transparent', // ✅ Transparente porque el fondo está en el padre
             }}
           >
-            <Suspense fallback={<div className="h-20 bg-white" />}>
+            <Suspense fallback={null}>
               <AirbnbSearchBar onSearch={handleSearch} />
             </Suspense>
           </motion.div>
