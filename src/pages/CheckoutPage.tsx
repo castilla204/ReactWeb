@@ -675,13 +675,12 @@ export function CheckoutPage({}: CheckoutPageProps) {
 
                 {/* Footer fijo móvil */}
                 <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe">
-                    <div className="px-6 py-4">
+                    <div className="px-6" style={{ paddingTop: '12px', paddingBottom: '16px' }}>
                         <button
                             onClick={handlePayment}
                             disabled={isSubmitting}
                             type="button"
                             className="relative w-full h-12 px-6 bg-gray-900 hover:bg-gray-800 text-white text-[16px] font-semibold transition-all duration-200 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
-                            style={{ marginTop: '16px' }}
                         >
                             <span className="relative z-10" data-button-content="true">
                                 {isSubmitting ? 'Procesando...' : 'Reservar'}
