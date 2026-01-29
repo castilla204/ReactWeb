@@ -96,7 +96,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       streetViewControl: false,
       rotateControl: false,
       fullscreenControl: !isMobile,
-      gestureHandling: isMobile ? 'cooperative' : 'greedy',
+      gestureHandling: 'greedy', // ✅ Permite desplazamiento con un solo dedo en móvil
       clickableIcons: false,
       minZoom: 3,
       maxZoom: 20,
@@ -462,26 +462,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           </div>
         )}
 
-        {/* Contador de servicios visible (opcional, útil para debug) */}
-        {import.meta.env.DEV && isMapLoaded && (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '16px',
-              left: '16px',
-              background: 'rgba(0, 0, 0, 0.7)',
-              color: '#ffffff',
-              padding: '6px 12px',
-              borderRadius: '12px',
-              fontSize: '12px',
-              fontWeight: '600',
-              zIndex: 1000,
-              fontFamily: 'monospace',
-            }}
-          >
-            {services.length} servicios cargados
-          </div>
-        )}
       </APIProvider>
 
       {/* Estilos de animación */}

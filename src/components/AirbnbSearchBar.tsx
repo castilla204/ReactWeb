@@ -1175,16 +1175,16 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               <div 
                 ref={categoriesContainerRef}
                 className={`bg-white border-0 rounded-2xl flex flex-col ${
-                  expandedAccordion === 'where' ? 'fixed inset-0 z-[60] rounded-none' : ''
+                  (expandedAccordion === 'where' || isMobile) ? 'fixed inset-0 z-[60] rounded-none' : ''
                 }`}
                 style={{
-                  height: expandedAccordion === 'where' ? '100vh' : 'auto',
-                  minHeight: expandedAccordion === 'where' ? '100vh' : '280px',
-                  maxHeight: expandedAccordion === 'where' ? '100vh' : '320px',
-                  boxShadow: expandedAccordion === 'where' 
+                  height: (expandedAccordion === 'where' || isMobile) ? '100vh' : 'auto',
+                  minHeight: (expandedAccordion === 'where' || isMobile) ? '100vh' : '280px',
+                  maxHeight: (expandedAccordion === 'where' || isMobile) ? '100vh' : '320px',
+                  boxShadow: (expandedAccordion === 'where' || isMobile)
                     ? '0 8px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.12)'
                     : '0 8px 20px rgba(0, 0, 0, 0.18), 0 4px 8px rgba(0, 0, 0, 0.12)',
-                  transition: 'height 150ms cubic-bezier(0.4, 0, 0.2, 1), min-height 150ms cubic-bezier(0.4, 0, 0.2, 1), max-height 150ms cubic-bezier(0.4, 0, 0.2, 1)'
+                  transition: isMobile ? 'none' : 'height 150ms cubic-bezier(0.4, 0, 0.2, 1), min-height 150ms cubic-bezier(0.4, 0, 0.2, 1), max-height 150ms cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
               >
                 {/* ✅ En móvil: Siempre mostrar desplegado, sin modo colapsado */}
@@ -1592,6 +1592,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 )}
 
                 {/* Separador y flecha al final - Solo cuando NO está expandido Y NO es móvil */}
+                {/* ✅ En móvil: Nunca mostrar la flecha de expandir */}
                 {expandedAccordion !== 'where' && !isMobile && (
                   <div className="border-t border-gray-200 mt-auto">
                     <button

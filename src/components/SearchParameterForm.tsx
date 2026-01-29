@@ -1184,86 +1184,75 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
    
     // MapContainer maneja la carga de servicios internamente - ya no necesitamos useMapExperts ni handleBoundsChange
    
-    // ✅ Combinar servicios: usar servicios de ubicación (useInfiniteServices)
-    // MapContainer maneja la carga dinámica por viewport internamente
+    // ✅ LÓGICA CORREGIDA: PRIORIZAR servicios del mapa cuando están disponibles
+    // Si hay servicios del mapa (viewport), usar SOLO esos (son los visibles)
+    // Si NO hay servicios del mapa, usar servicios de ubicación (useInfiniteServices)
+    // Esto evita que aparezcan más servicios en el drawer de los que se ven en el mapa
     const allServicesCombined = useMemo(() => {
+        // ✅ PRIORIDAD 1: Si hay servicios del mapa, usar SOLO esos (son los visibles en el viewport)
+        // Esto asegura que el drawer muestre exactamente los mismos servicios que el mapa
+        if (mapServices.length > 0) {
+            // Convertir servicios del mapa al formato esperado
+            const convertedServices = mapServices
+                .map(mapService => {
+                    const rawService = mapService.raw || {};
+                    const rawExpert = rawService.expert || rawService.Expert || {};
+                    const rawUser = rawExpert.user || rawExpert.User || {};
+                    
+                    return {
+                        id: mapService.id,
+                        expertProfileId: rawExpert.id || rawExpert.Id,
+                        categoryId: rawService.categoryId || rawService.CategoryId || selectedCategory,
+                        serviceTypeId: rawService.serviceTypeId || rawService.ServiceTypeId || serviceTypeId,
+                        serviceTypeName: mapService.type || rawService.serviceTypeName || rawService.ServiceTypeName,
+                        serviceTypeDescription: rawService.serviceTypeDescription || rawService.ServiceTypeDescription,
+                        price: mapService.price,
+                        conditions: rawService.conditions || rawService.Conditions || '',
+                        durationInHours: rawService.durationInHours || rawService.DurationInHours || null,
+                        createdAt: rawService.createdAt || rawService.CreatedAt || new Date().toISOString(),
+                        imageUrls: rawService.imageUrls || rawService.ImageUrls || [],
+                        categoryName: rawService.categoryName || rawService.CategoryName,
+                        completedSearches: rawService.completedSearches || rawService.CompletedSearches || 0,
+                        totalReviews: rawService.totalReviews || rawService.TotalReviews || 0,
+                        averageRating: rawService.averageRating || rawService.AverageRating || 0,
+                        isActive: rawService.isActive !== undefined ? rawService.isActive : true,
+                        expert: {
+                            id: rawExpert.id || rawExpert.Id,
+                            profilePictureUrl: rawExpert.profilePictureUrl || rawExpert.ProfilePictureUrl || '',
+                            description: rawExpert.description || rawExpert.Description || '',
+                            createdAt: rawExpert.createdAt || rawExpert.CreatedAt || new Date().toISOString(),
+                            user: {
+                                name: mapService.name || rawUser.name || rawUser.Name || 'Experto',
+                                email: rawUser.email || rawUser.Email || '',
+                            },
+                            latitude: rawExpert.latitude || rawExpert.Latitude || mapService.lat?.toString(),
+                            longitude: rawExpert.longitude || rawExpert.Longitude || mapService.lng?.toString(),
+                        },
+                    } as typeof allServices[0];
+                })
+                .filter(service => {
+                    // Filtrar por categoría si está seleccionada
+                    if (selectedCategory > 0) {
+                        const serviceCategoryId = service.categoryId || (service as any).CategoryId;
+                        return serviceCategoryId === selectedCategory;
+                    }
+                    return true;
+                });
+            
+            return convertedServices;
+        }
+        
+        // ✅ PRIORIDAD 2: Si NO hay servicios del mapa, usar servicios de ubicación (allServices)
+        // Esto es para cuando el usuario busca por ubicación específica, no por viewport del mapa
         let services: typeof allServices = allServices;
         
-        // ✅ DEDUPLICAR: Crear un Map para evitar servicios duplicados por ID
-        const servicesMap = new Map<number, typeof allServices[0]>();
-        
-        // Primero agregar todos los servicios de allServices
-        allServices.forEach(service => {
-            const serviceId = service.id || (service as any).Id;
-            if (serviceId && !servicesMap.has(serviceId)) {
-                servicesMap.set(serviceId, service);
-            }
-        });
-        
-        // ✅ INCLUIR SERVICIOS DEL MAPA: Solo agregar servicios del mapa que NO están ya en allServices
-        // Esto permite que los servicios nuevos (fuera del rango de ubicación) sean clicables
-        // PERO evitamos duplicados
-        mapServices.forEach(mapService => {
-            const mapServiceId = mapService.id;
-            // Solo agregar si no existe ya en allServices
-            if (mapServiceId && !servicesMap.has(mapServiceId)) {
-                // Convertir Service de useServiceLoader al formato de Service de useServices
-                const rawService = mapService.raw || {};
-                const rawExpert = rawService.expert || rawService.Expert || {};
-                const rawUser = rawExpert.user || rawExpert.User || {};
-                
-                const convertedService = {
-                    id: mapService.id,
-                    expertProfileId: rawExpert.id || rawExpert.Id,
-                    categoryId: rawService.categoryId || rawService.CategoryId || selectedCategory,
-                    serviceTypeId: rawService.serviceTypeId || rawService.ServiceTypeId || serviceTypeId,
-                    serviceTypeName: mapService.type || rawService.serviceTypeName || rawService.ServiceTypeName,
-                    serviceTypeDescription: rawService.serviceTypeDescription || rawService.ServiceTypeDescription,
-                    price: mapService.price,
-                    conditions: rawService.conditions || rawService.Conditions || '',
-                    durationInHours: rawService.durationInHours || rawService.DurationInHours || null,
-                    createdAt: rawService.createdAt || rawService.CreatedAt || new Date().toISOString(),
-                    imageUrls: rawService.imageUrls || rawService.ImageUrls || [],
-                    categoryName: rawService.categoryName || rawService.CategoryName,
-                    completedSearches: rawService.completedSearches || rawService.CompletedSearches || 0,
-                    totalReviews: rawService.totalReviews || rawService.TotalReviews || 0,
-                    averageRating: rawService.averageRating || rawService.AverageRating || 0,
-                    isActive: rawService.isActive !== undefined ? rawService.isActive : true,
-                    expert: {
-                        id: rawExpert.id || rawExpert.Id,
-                        profilePictureUrl: rawExpert.profilePictureUrl || rawExpert.ProfilePictureUrl || '',
-                        description: rawExpert.description || rawExpert.Description || '',
-                        createdAt: rawExpert.createdAt || rawExpert.CreatedAt || new Date().toISOString(),
-                        user: {
-                            name: mapService.name || rawUser.name || rawUser.Name || 'Experto',
-                            email: rawUser.email || rawUser.Email || '',
-                        },
-                        latitude: rawExpert.latitude || rawExpert.Latitude || mapService.lat?.toString(),
-                        longitude: rawExpert.longitude || rawExpert.Longitude || mapService.lng?.toString(),
-                    },
-                } as typeof allServices[0];
-                
-                servicesMap.set(mapServiceId, convertedService);
-            }
-        });
-        
-        // Convertir Map a Array
-        services = Array.from(servicesMap.values());
-        
-        // ✅ FILTRAR POR CATEGORÍA: Solo servicios de la categoría seleccionada
+        // Filtrar por categoría si está seleccionada
         if (selectedCategory > 0) {
             services = services.filter(s => {
                 const serviceCategoryId = s.categoryId || (s as any).CategoryId;
                 return serviceCategoryId === selectedCategory;
             });
         }
-        
-        console.log('🔍 allServicesCombined:', {
-            allServicesCount: allServices.length,
-            mapServicesCount: mapServices.length,
-            combinedCount: services.length,
-            uniqueIds: services.map(s => s.id).slice(0, 10)
-        });
         
         return services;
     }, [allServices, selectedCategory, mapServices, serviceTypeId]);
@@ -1332,7 +1321,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries.some(e => e.isIntersecting) && hasNextPage && !isFetchingNextPage) {
-                    console.log('🔍 [InfiniteScroll] Cargando más servicios...');
                     fetchNextPage();
                 }
             },
@@ -1976,7 +1964,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             // ✅ Convertir Service a formato esperado por handleServiceSelect
                                             // El servicio ya está en mapServices, así que estará disponible en allServicesCombined
                                             const serviceId = service.id;
-                                            console.log('📍 Servicio seleccionado del mapa:', { serviceId, service });
                                             handleServiceSelect(serviceId);
                                         }}
                                         selectedServiceId={selectedService}
@@ -2058,7 +2045,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         // ✅ Convertir Service a formato esperado por handleServiceSelect
                                         // El servicio ya está en mapServices, así que estará disponible en allServicesCombined
                                         const serviceId = service.id;
-                                        console.log('📍 Servicio seleccionado del mapa (desktop):', { serviceId, service });
                                         handleServiceSelect(serviceId);
                                     }}
                                     selectedServiceId={selectedService}
